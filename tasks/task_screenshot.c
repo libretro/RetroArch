@@ -456,15 +456,17 @@ error:
    return false;
 }
 
-static bool take_screenshot_raw(const char *screenshot_dir,
+static bool take_screenshot_raw(
+      video_driver_state_t *video_st,
+      const char *screenshot_dir,
       const char *name_base, void *userbuf,
       bool savestate, uint32_t runloop_flags, bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
-   size_t pitch;
-   unsigned width, height;
-   const void *data                      = NULL;
-   video_driver_cached_frame_get(&data, &width, &height, &pitch);
+   const void *data       = video_st->frame_cache_data;
+   unsigned width         = video_st->frame_cache_width;
+   unsigned height        = video_st->frame_cache_height;
+   size_t pitch           = video_st->frame_cache_pitch;
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
@@ -500,7 +502,9 @@ static bool take_screenshot_choice(
    if (supports_viewport_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
-      video_driver_set_texture_enable(false, false);
+      if (video_st->poke && video_st->poke->set_texture_enable)
+         video_st->poke->set_texture_enable(video_st->data,
+               false, false);
       if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
          video_driver_cached_frame();
       return take_screenshot_viewport(screenshot_dir,
@@ -509,20 +513,17 @@ static bool take_screenshot_choice(
    }
 
    if (!has_valid_framebuffer)
-      return take_screenshot_raw(screenshot_dir,
+      return take_screenshot_raw(video_st, screenshot_dir,
             name_base, NULL, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
 
    if (supports_read_frame_raw)
    {
-      size_t old_pitch;
-      unsigned old_width, old_height;
-      void *frame_data            = NULL;
-      const void* old_data        = NULL;
-      video_driver_cached_frame_get(&old_data, &old_width, &old_height,
-            &old_pitch);
-
-      frame_data = video_driver_read_frame_raw(
+      const void *old_data          = video_st->frame_cache_data;
+      unsigned old_width            = video_st->frame_cache_width;
+      unsigned old_height           = video_st->frame_cache_height;
+      size_t old_pitch              = video_st->frame_cache_pitch;
+      void *frame_data              = video_driver_read_frame_raw(
             &old_width, &old_height, &old_pitch);
 
       video_st->frame_cache_data    = old_data;
@@ -533,7 +534,7 @@ static bool take_screenshot_choice(
       if (frame_data)
       {
          video_st->frame_cache_data = frame_data;
-         return take_screenshot_raw(screenshot_dir,
+         return take_screenshot_raw(video_st, screenshot_dir,
                name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
       }

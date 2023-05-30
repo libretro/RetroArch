@@ -967,11 +967,6 @@ bool video_driver_set_video_mode(unsigned width,
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height, char *desc, size_t desc_len);
 
-void video_driver_set_texture_enable(bool enable, bool full_screen);
-
-void video_driver_set_texture_frame(const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha);
-
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
@@ -987,12 +982,6 @@ void video_driver_get_size(unsigned *width, unsigned *height);
 void video_driver_set_size(unsigned width, unsigned height);
 
 float video_driver_get_aspect_ratio(void);
-
-void video_driver_cached_frame_set(const void *data, unsigned width,
-      unsigned height, size_t pitch);
-
-void video_driver_cached_frame_get(const void **data, unsigned *width,
-      unsigned *height, size_t *pitch);
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group);
@@ -1281,8 +1270,6 @@ void video_driver_set_viewport_config(
       bool video_aspect_ratio_auto);
 
 void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
-
-uint32_t video_driver_get_st_flags(void);
 
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled);
 

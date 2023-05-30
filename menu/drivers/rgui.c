@@ -6570,9 +6570,20 @@ static void rgui_free(void *data)
    rgui_thumbnail_free(&rgui->mini_left_thumbnail);
 }
 
+static void rgui_set_texture_frame(video_driver_state_t *video_st,
+      const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
+{
+   if (     video_st->poke
+         && video_st->poke->set_texture_frame)
+      video_st->poke->set_texture_frame(video_st->data,
+            frame, rgb32, width, height, alpha);
+}
+
 static void rgui_set_texture(void *data)
 {
    unsigned fb_width, fb_height;
+   video_driver_state_t *video_st  = video_state_get_ptr();
    settings_t            *settings = config_get_ptr();
    gfx_display_t          *p_disp  = disp_get_ptr();
 #if defined(DINGUX)
@@ -6592,7 +6603,7 @@ static void rgui_set_texture(void *data)
    p_disp->flags         &= ~GFX_DISP_FLAG_FB_DIRTY;
 
    if (internal_upscale_level == RGUI_UPSCALE_NONE)
-      video_driver_set_texture_frame(rgui->frame_buf.data,
+      rgui_set_texture_frame(video_st, rgui->frame_buf.data,
             false, fb_width, fb_height, 1.0f);
    else
    {
@@ -6604,7 +6615,7 @@ static void rgui_set_texture(void *data)
       /* If viewport is currently the same size (or smaller)
        * than the menu framebuffer, no scaling is required */
       if ((vp.width <= fb_width) && (vp.height <= fb_height))
-         video_driver_set_texture_frame(rgui->frame_buf.data,
+         rgui_set_texture_frame(video_st, rgui->frame_buf.data,
                false, fb_width, fb_height, 1.0f);
       else
       {
@@ -6651,7 +6662,7 @@ static void rgui_set_texture(void *data)
                configuration_set_uint(settings,
                      settings->uints.menu_rgui_internal_upscale_level,
                      RGUI_UPSCALE_NONE);
-               video_driver_set_texture_frame(frame_buf->data,
+               rgui_set_texture_frame(video_st, frame_buf->data,
                      false, fb_width, fb_height, 1.0f);
                return;
             }
@@ -6674,7 +6685,7 @@ static void rgui_set_texture(void *data)
          }
          
          /* Draw upscaled texture */
-         video_driver_set_texture_frame(upscale_buf->data,
+         rgui_set_texture_frame(video_st, upscale_buf->data,
             false, out_width, out_height, 1.0f);
       }
    }

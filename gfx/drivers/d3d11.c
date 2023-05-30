@@ -762,7 +762,8 @@ static void d3d11_gfx_free(void* data)
 {
    int i;
    uint32_t video_st_flags;
-   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   d3d11_video_t* d3d11           = (d3d11_video_t*)data;
+   video_driver_state_t *video_st = video_state_get_ptr();
 
    if (!d3d11)
       return;
@@ -818,7 +819,7 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->scissor_disabled);
    Release(d3d11->swapChain);
 
-   video_st_flags = video_driver_get_st_flags();
+   video_st_flags = video_st->flags;
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_d3d11          = d3d11->device;

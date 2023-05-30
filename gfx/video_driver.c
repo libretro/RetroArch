@@ -59,6 +59,8 @@
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
+#define FRAME_DELAY_AUTO_DEBUG 0
+
 typedef struct
 {
    struct string_list *list;
@@ -1656,25 +1658,6 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height, char 
    return true;
 }
 
-void video_driver_set_texture_enable(bool enable, bool fullscreen)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   if (video_st->poke && video_st->poke->set_texture_enable)
-      video_st->poke->set_texture_enable(video_st->data,
-            enable, fullscreen);
-}
-
-void video_driver_set_texture_frame(const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->poke
-         && video_st->poke->set_texture_frame)
-      video_st->poke->set_texture_frame(video_st->data,
-            frame, rgb32, width, height, alpha);
-}
-
-
 void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
@@ -1696,20 +1679,6 @@ void video_driver_set_filtering(unsigned index,
       video_st->poke->set_filtering(
             video_st->data,
             index, smooth, ctx_scaling);
-}
-
-void video_driver_cached_frame_get(const void **data, unsigned *width,
-      unsigned *height, size_t *pitch)
-{
-   video_driver_state_t *video_st= &video_driver_st;
-   if (data)
-      *data    = video_st->frame_cache_data;
-   if (width)
-      *width   = video_st->frame_cache_width;
-   if (height)
-      *height  = video_st->frame_cache_height;
-   if (pitch)
-      *pitch   = video_st->frame_cache_pitch;
 }
 
 void video_driver_get_size(unsigned *width, unsigned *height)
@@ -3278,7 +3247,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    }
 
 #if defined(PSP)
-   video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);
+   if (     video_st->poke
+         && video_st->poke->set_texture_frame)
+      video_st->poke->set_texture_frame(video_st->data,
+            &dummy_pixels, false, 1, 1, 1.0f);
 #endif
 
    video_context_driver_reset();
@@ -3968,13 +3940,6 @@ void video_driver_reinit(int flags)
    video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT;
 }
 
-uint32_t video_driver_get_st_flags(void)
-{
-   video_driver_state_t *video_st                 = &video_driver_st;
-   return video_st->flags;
-}
-
-#define FRAME_DELAY_AUTO_DEBUG 0
 void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)
 {
    int i;

@@ -563,6 +563,7 @@ static void d3d10_gfx_free(void* data)
 {
    int i;
 #if 0
+   video_driver_state_t *video_st = video_state_get_ptr();
    uint32_t video_st_flags;
 #endif
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
@@ -611,7 +612,7 @@ static void d3d10_gfx_free(void* data)
    font_driver_free_osd();
 
 #if 0
-   video_st_flags = video_driver_get_st_flags();
+   video_st_flags = video_st->flags;
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_d3d10 = d3d10->device;

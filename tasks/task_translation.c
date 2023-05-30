@@ -295,7 +295,10 @@ static void handle_translation_cb(
    if (raw_image_file_data)
    {
       /* Get the video frame dimensions reference */
-      video_driver_cached_frame_get(&dummy_data, &width, &height, &pitch);
+      dummy_data = video_st->frame_cache_data;
+      width      = video_st->frame_cache_width;
+      height     = video_st->frame_cache_height;
+      pitch      = video_st->frame_cache_pitch;
 
       /* try two different modes for text display *
        * In the first mode, we use display widget overlays, but they require
@@ -850,7 +853,10 @@ bool run_translation_service(settings_t *settings, bool paused)
    if (!scaler)
       goto finish;
 
-   video_driver_cached_frame_get(&data, &width, &height, &pitch);
+   data       = video_st->frame_cache_data;
+   width      = video_st->frame_cache_width;
+   height     = video_st->frame_cache_height;
+   pitch      = video_st->frame_cache_pitch;
 
    if (!data)
       goto finish;

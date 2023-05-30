@@ -175,11 +175,13 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
             if (x->ctx)
             {
                uint32_t video_st_flags;
+               video_driver_state_t *video_st = video_state_get_ptr();
+
                glXSwapBuffers(g_x11_dpy, x->glx_win);
                gl_finish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-               video_st_flags = video_driver_get_st_flags();
+               video_st_flags = video_st->flags;
                if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
                {
                   if (x->hw_ctx)

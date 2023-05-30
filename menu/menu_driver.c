@@ -6380,7 +6380,9 @@ void retroarch_menu_running_finished(bool quit)
          menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_SCREENSAVER,
                   NULL, menu_st->userdata);
    }
-   video_driver_set_texture_enable(false, false);
+   if (video_st->poke && video_st->poke->set_texture_enable)
+      video_st->poke->set_texture_enable(video_st->data,
+            false, false);
 #ifdef HAVE_OVERLAY
    if (!quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
