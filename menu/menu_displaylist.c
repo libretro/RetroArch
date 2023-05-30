@@ -4381,6 +4381,13 @@ static unsigned menu_displaylist_parse_cores(
       }
 #endif
 
+#ifdef IOS
+      /* For various reasons on iOS/tvOS, MoltenVK shows up
+       * in the cores directory; exclude it here */
+      if (string_is_equal(path, "libMoltenVK.dylib"))
+         continue;
+#endif
+
       count++;
       menu_entries_append(info->list, path, label,
             enum_idx,
