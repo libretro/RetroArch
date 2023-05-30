@@ -552,13 +552,18 @@ bool take_screenshot(
    bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
    bool supports_viewport_read    = video_st->current_video->read_viewport
          && (video_st->current_video->viewport_info);
-   bool prefer_viewport_read      = supports_viewport_read
-         && video_driver_is_hw_context()
-         && !video_st->current_video->read_frame_raw;
-
-   /* Avoid GPU screenshots with savestates */
-   if (supports_viewport_read && video_gpu_screenshot && !savestate)
-      prefer_viewport_read     = true;
+   bool prefer_viewport_read      = false;
+   if (supports_viewport_read)
+   {
+      /* Use VP read screenshots if it's a HW context core
+       * and read_frame_raw is not implemented */
+      if (      video_driver_is_hw_context()
+            && !video_st->current_video->read_frame_raw)
+         prefer_viewport_read     = true;
+      /* Avoid GPU screenshots with savestates */
+      if (video_gpu_screenshot && !savestate)
+         prefer_viewport_read     = true;
+   }
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)
