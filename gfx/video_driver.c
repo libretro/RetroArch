@@ -2838,9 +2838,9 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 enum gfx_ctx_api video_context_driver_get_api(void)
 {
    video_driver_state_t *video_st   = &video_driver_st;
-   enum gfx_ctx_api         ctx_api = video_st->context_data ?
-      video_st->current_video_context.get_api(
-            video_st->context_data) : GFX_CTX_NONE;
+   enum gfx_ctx_api         ctx_api = video_st->context_data
+      ? video_st->current_video_context.get_api(video_st->context_data)
+      : GFX_CTX_NONE;
 
    if (ctx_api == GFX_CTX_NONE)
    {
@@ -2889,15 +2889,6 @@ bool video_driver_has_windowed(void)
 #endif
    return false;
 }
-
-bool video_driver_cached_frame_has_valid_framebuffer(void)
-{
-   video_driver_state_t *video_st  = &video_driver_st;
-   if (video_st->frame_cache_data)
-      return (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID);
-   return false;
-}
-
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {

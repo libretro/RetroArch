@@ -551,17 +551,17 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
             BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             break;
          case CTR_BOTTOM_MENU_SELECT:
-            if (state_tmp_touch.px > 8 &&
-                  state_tmp_touch.px < 164 &&
-                  state_tmp_touch.py > 9 &&
-                  state_tmp_touch.py < 86)
+            if (     (state_tmp_touch.px > 8)
+                  && (state_tmp_touch.px < 164)
+                  && (state_tmp_touch.py > 9)
+                  && (state_tmp_touch.py < 86))
             {
                BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             }
-            else if (state_tmp_touch.px > 8 &&
-                  state_tmp_touch.px < 164 &&
-                  state_tmp_touch.py > 99 &&
-                  state_tmp_touch.py < 230) 
+            else if ((state_tmp_touch.px > 8)
+                  && (state_tmp_touch.px < 164)
+                  && (state_tmp_touch.py > 99)
+                  && (state_tmp_touch.py < 230)) 
             {
 
                struct ctr_bottom_texture_data *o =
@@ -604,23 +604,27 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                if (settings->bools.savestate_thumbnail_enable)
                {
                   char screenshot_full_path[PATH_MAX_LENGTH];
+                  video_driver_state_t *video_st = video_state_get_ptr();
                   fill_pathname_join_special(screenshot_full_path,
                      dir_get_ptr(RARCH_DIR_SAVESTATE),
                      ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
                      sizeof(screenshot_full_path));
 
-                  take_screenshot(NULL, screenshot_full_path, true,
-                     video_driver_cached_frame_has_valid_framebuffer(),
-                     true, true);
+                  take_screenshot(NULL,
+                        screenshot_full_path,
+                        true,
+                        video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                        true,
+                        true);
                }
 
                BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             }
             else if (
-                     state_tmp_touch.px > 176
-                  && state_tmp_touch.px < 311
-                  && state_tmp_touch.py > 9
-                  && state_tmp_touch.py < 230
+                     (state_tmp_touch.px > 176)
+                  && (state_tmp_touch.px < 311)
+                  && (state_tmp_touch.py > 9)
+                  && (state_tmp_touch.py < 230)
                   && ctr->state_data_exist) 
             {
                if (!command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL))

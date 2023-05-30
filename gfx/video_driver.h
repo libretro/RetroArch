@@ -898,8 +898,6 @@ bool video_driver_has_windowed(void);
 
 bool video_driver_has_focus(void);
 
-bool video_driver_cached_frame_has_valid_framebuffer(void);
-
 void video_driver_set_stub_frame(void);
 
 void video_driver_unset_stub_frame(void);

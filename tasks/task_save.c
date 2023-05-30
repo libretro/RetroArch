@@ -882,6 +882,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
    settings_t     *settings;
    retro_task_t       *task      = task_init();
+   video_driver_state_t *video_st= video_state_get_ptr();
    save_task_state_t *state      = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -895,7 +896,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    state->size                   = size;
    state->flags                 |= SAVE_TASK_FLAG_UNDO_SAVE;
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1437,6 +1438,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
+   video_driver_state_t *video_st  = video_state_get_ptr();
    save_task_state_t *state        = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
@@ -1458,7 +1460,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
       state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
    }
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1534,9 +1536,10 @@ static void content_load_and_save_state_cb(retro_task_t *task,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t      *task     = NULL;
-   settings_t        *settings = config_get_ptr();
-   save_task_state_t *state    = (save_task_state_t*)
+   retro_task_t      *task         = NULL;
+   settings_t        *settings     = config_get_ptr();
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   save_task_state_t *state        = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
    if (!state)
@@ -1561,7 +1564,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (load_to_backup_buffer)
       state->flags              |= SAVE_TASK_FLAG_MUTE;
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1748,9 +1751,10 @@ void content_wait_for_load_state_task(void)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t       *task     = NULL;
-   save_task_state_t *state     = NULL;
-   settings_t *settings         = config_get_ptr();
+   retro_task_t       *task        = NULL;
+   save_task_state_t *state        = NULL;
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   settings_t *settings            = config_get_ptr();
 
    if (!core_info_current_supports_savestate())
    {
@@ -1771,7 +1775,7 @@ bool content_load_state(const char *path,
    if (autoload)
       state->flags             |= SAVE_TASK_FLAG_AUTOLOAD;
    state->state_slot            = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)

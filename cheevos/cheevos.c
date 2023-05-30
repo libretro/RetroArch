@@ -376,6 +376,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
 
       if (shotname)
       {
+         video_driver_state_t *video_st  = video_state_get_ptr();;
          snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
                settings->paths.directory_screenshot,
                path_basename(path_get(RARCH_PATH_BASENAME)),
@@ -383,9 +384,11 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
          shotname[shotname_len - 1] = '\0';
 
          if (take_screenshot(settings->paths.directory_screenshot,
-                  shotname, true,
-                  video_driver_cached_frame_has_valid_framebuffer(),
-                  false, true))
+                  shotname,
+                  true,
+                  video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                  false,
+                  true))
             CHEEVOS_LOG(RCHEEVOS_TAG
                   "Captured screenshot for achievement %u\n",
                   cheevo->id);

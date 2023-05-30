@@ -2624,10 +2624,14 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_TAKE_SCREENSHOT:
 #ifdef HAVE_SCREENSHOTS
          {
-            const char *dir_screenshot = settings->paths.directory_screenshot;
+            const char *dir_screenshot      = settings->paths.directory_screenshot;
+            video_driver_state_t *video_st  = video_state_get_ptr();
             if (!take_screenshot(dir_screenshot,
-                     path_get(RARCH_PATH_BASENAME), false,
-                     video_driver_cached_frame_has_valid_framebuffer(), false, true))
+                     path_get(RARCH_PATH_BASENAME),
+                     false,
+                     video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                     false,
+                     true))
                return false;
          }
 #endif
