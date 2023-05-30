@@ -622,12 +622,6 @@ typedef struct gfx_ctx_metrics
    enum display_metric_types type;
 } gfx_ctx_metrics_t;
 
-typedef struct gfx_ctx_input
-{
-   input_driver_t **input;
-   void **input_data;
-} gfx_ctx_input_t;
-
 typedef struct gfx_ctx_ident
 {
    const char *ident;
