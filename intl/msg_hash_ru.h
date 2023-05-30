@@ -5853,6 +5853,14 @@ MSG_HASH(
    "Показывать опцию 'Сохранить переопределения для ядра' в меню 'Переопределений'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Показывать 'Сохранить переопределения для каталога контента'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Показывать опцию 'Сохранить переопределения для каталога контента' в меню 'Переопределения'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    "Показывать 'Сохранить переопределения для игры'"
    )

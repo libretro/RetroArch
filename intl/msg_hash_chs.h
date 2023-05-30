@@ -5037,10 +5037,6 @@ MSG_HASH(
    "显示「回溯」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "显示「回溯」选项。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "显示「保存核心覆盖」"
    )
