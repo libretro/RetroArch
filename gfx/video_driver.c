@@ -2460,9 +2460,15 @@ void video_driver_cached_frame(void)
    video_driver_state_t *video_st = &video_driver_st;
    void             *recording    = recording_st->data;
    struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
+   bool is_paused                 = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
 
    /* Cannot allow recording when pushing duped frames. */
    recording_st->data             = NULL;
+
+   /* Ensure paused state to stop frame count, since unpausing
+    * removes the flag too early. Paused flag does nothing else
+    * in `video_driver_frame()`. */
+   runloop_st->flags |= RUNLOOP_FLAG_PAUSED;
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
       cbs->frame_cb(
@@ -2474,6 +2480,12 @@ void video_driver_cached_frame(void)
             video_st->frame_cache_pitch);
 
    recording_st->data             = recording;
+
+   /* Restore paused state */
+   if (is_paused)
+      runloop_st->flags |=  RUNLOOP_FLAG_PAUSED;
+   else
+      runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
 }
 
 bool video_driver_has_focus(void)
@@ -3878,7 +3890,9 @@ void video_driver_frame(const void *data, unsigned width,
          video_st->flags &= ~VIDEO_FLAG_ACTIVE;
    }
 
-   video_st->frame_count++;
+   /* Don't count frames while paused. */
+   if (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
+      video_st->frame_count++;
 
    /* Display the status text, with a higher priority. */
    if (  (   video_info.fps_show
