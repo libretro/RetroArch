@@ -44,12 +44,42 @@
 
 RETRO_BEGIN_DECLS
 
+enum screenshot_task_flags
+{
+   SS_TASK_FLAG_BGR24               = (1 << 0),
+   SS_TASK_FLAG_SILENCE             = (1 << 1),
+   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
+   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
+   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+};
+
 typedef struct nbio_buf
 {
    void *buf;
    char *path;
    unsigned bufsize;
 } nbio_buf_t;
+
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   uint8_t flags;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[NAME_MAX_LENGTH];
+};
 
 #ifdef HAVE_NETWORKING
 typedef struct
@@ -220,36 +250,6 @@ void *task_push_decompress(
 
 void task_file_load_handler(retro_task_t *task);
 
-typedef struct screenshot_task_state screenshot_task_state_t;
-
-enum screenshot_task_flags
-{
-   SS_TASK_FLAG_BGR24               = (1 << 0),
-   SS_TASK_FLAG_SILENCE             = (1 << 1),
-   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
-   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
-   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
-   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
-};
-
-struct screenshot_task_state
-{
-   struct scaler_ctx scaler;
-   uint8_t *out_buffer;
-   const void *frame;
-   void *userbuf;
-
-   int pitch;
-   unsigned width;
-   unsigned height;
-   unsigned pixel_format_type;
-
-   uint8_t flags;
-
-   char filename[PATH_MAX_LENGTH];
-   char shotname[NAME_MAX_LENGTH];
-};
-
 bool take_screenshot(
       const char *screenshot_dir,
       const char *path, bool silence,
@@ -266,7 +266,6 @@ void *savefile_ptr_get(void);
 void path_init_savefile_new(void);
 
 /* Autoconfigure tasks */
-extern const char* const input_builtin_autoconfs[];
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
 bool input_autoconfigure_connect(
@@ -292,6 +291,8 @@ bool task_push_menu_explore_init(const char *directory_playlist,
 bool menu_explore_init_in_progress(void *data);
 void menu_explore_wait_for_init_task(void);
 #endif
+
+extern const char* const input_builtin_autoconfs[];
 
 RETRO_END_DECLS
 

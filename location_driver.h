@@ -38,7 +38,6 @@ typedef struct location_driver
    const char *ident;
 } location_driver_t;
 
-
 typedef struct
 {
    const location_driver_t *driver;

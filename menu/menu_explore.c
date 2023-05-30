@@ -22,6 +22,7 @@
 #include <array/rhmap.h>
 #include <formats/rjson.h>
 #include <formats/rjson_helpers.h>
+#include <retro_endianness.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"

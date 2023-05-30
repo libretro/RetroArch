@@ -68,6 +68,8 @@
    strlcpy(var, newvar, sizeof(var)); \
 }
 
+RETRO_BEGIN_DECLS
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -84,8 +86,6 @@ enum override_type
    OVERRIDE_CONTENT_DIR,
    OVERRIDE_GAME
 };
-
-RETRO_BEGIN_DECLS
 
 typedef struct settings
 {

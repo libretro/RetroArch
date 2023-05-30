@@ -24,6 +24,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <retro_endianness.h>
 
 #ifdef _WIN32
 #include <direct.h>

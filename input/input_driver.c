@@ -23,6 +23,7 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
+#include <retro_endianness.h>
 
 #include "input_driver.h"
 #include "input_keymaps.h"

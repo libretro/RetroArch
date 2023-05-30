@@ -86,6 +86,26 @@ RETRO_BEGIN_DECLS
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
 
+enum rarch_state_flags
+{
+   RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
+   RARCH_FLAGS_HAS_SET_VERBOSITY            = (1 << 1),
+   RARCH_FLAGS_HAS_SET_LIBRETRO             = (1 << 2),
+   RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   = (1 << 3),
+   RARCH_FLAGS_HAS_SET_SAVE_PATH            = (1 << 4),
+   RARCH_FLAGS_HAS_SET_STATE_PATH           = (1 << 5),
+   RARCH_FLAGS_HAS_SET_UPS_PREF             = (1 << 6),
+   RARCH_FLAGS_HAS_SET_BPS_PREF             = (1 << 7),
+   RARCH_FLAGS_HAS_SET_IPS_PREF             = (1 << 8),
+   RARCH_FLAGS_HAS_SET_LOG_TO_FILE          = (1 << 9),
+   RARCH_FLAGS_UPS_PREF                     = (1 << 10),
+   RARCH_FLAGS_BPS_PREF                     = (1 << 11),
+   RARCH_FLAGS_IPS_PREF                     = (1 << 12),
+   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
+   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14)
+};
+
+
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
@@ -162,25 +182,6 @@ bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
 void core_options_reset(void);
 void core_options_flush(void);
-
-enum rarch_state_flags
-{
-   RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
-   RARCH_FLAGS_HAS_SET_VERBOSITY            = (1 << 1),
-   RARCH_FLAGS_HAS_SET_LIBRETRO             = (1 << 2),
-   RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   = (1 << 3),
-   RARCH_FLAGS_HAS_SET_SAVE_PATH            = (1 << 4),
-   RARCH_FLAGS_HAS_SET_STATE_PATH           = (1 << 5),
-   RARCH_FLAGS_HAS_SET_UPS_PREF             = (1 << 6),
-   RARCH_FLAGS_HAS_SET_BPS_PREF             = (1 << 7),
-   RARCH_FLAGS_HAS_SET_IPS_PREF             = (1 << 8),
-   RARCH_FLAGS_HAS_SET_LOG_TO_FILE          = (1 << 9),
-   RARCH_FLAGS_UPS_PREF                     = (1 << 10),
-   RARCH_FLAGS_BPS_PREF                     = (1 << 11),
-   RARCH_FLAGS_IPS_PREF                     = (1 << 12),
-   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
-   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14)
-};
 
 /**
  * retroarch_fail:

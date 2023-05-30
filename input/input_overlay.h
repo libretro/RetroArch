@@ -36,29 +36,6 @@
 
 RETRO_BEGIN_DECLS
 
-/* Overlay driver acts as a medium between input drivers
- * and video driver.
- *
- * Coordinates are fetched from input driver, and an
- * overlay with pressable actions are displayed on-screen.
- *
- * This interface requires that the video driver has support
- * for the overlay interface.
- */
-
-typedef struct video_overlay_interface
-{
-   void (*enable)(void *data, bool state);
-   bool (*load)(void *data,
-         const void *images, unsigned num_images);
-   void (*tex_geom)(void *data, unsigned image,
-         float x, float y, float w, float h);
-   void (*vertex_geom)(void *data, unsigned image,
-         float x, float y, float w, float h);
-   void (*full_screen)(void *data, bool enable);
-   void (*set_alpha)(void *data, unsigned image, float mod);
-} video_overlay_interface_t;
-
 enum overlay_hitbox
 {
    OVERLAY_HITBOX_RADIAL = 0,
@@ -155,6 +132,29 @@ enum OVERLAY_DESC_FLAGS
    OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2)
 };
 
+/* Overlay driver acts as a medium between input drivers
+ * and video driver.
+ *
+ * Coordinates are fetched from input driver, and an
+ * overlay with pressable actions are displayed on-screen.
+ *
+ * This interface requires that the video driver has support
+ * for the overlay interface.
+ */
+
+typedef struct video_overlay_interface
+{
+   void (*enable)(void *data, bool state);
+   bool (*load)(void *data,
+         const void *images, unsigned num_images);
+   void (*tex_geom)(void *data, unsigned image,
+         float x, float y, float w, float h);
+   void (*vertex_geom)(void *data, unsigned image,
+         float x, float y, float w, float h);
+   void (*full_screen)(void *data, bool enable);
+   void (*set_alpha)(void *data, unsigned image, float mod);
+} video_overlay_interface_t;
+
 typedef struct overlay_eightway_config
 {
    input_bits_t up;
@@ -222,7 +222,6 @@ struct overlay_desc
 
    uint8_t flags;
 };
-
 
 struct overlay
 {

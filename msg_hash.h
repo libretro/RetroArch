@@ -28,6 +28,17 @@
 
 #define MSG_HASH(Id, str) case Id: return str;
 
+#define MENU_LABEL(STR) \
+   MENU_ENUM_LABEL_##STR, \
+   MENU_ENUM_SUBLABEL_##STR, \
+   MENU_ENUM_LABEL_VALUE_##STR
+
+#define MENU_LBL_H(STR) \
+   MENU_ENUM_LABEL_##STR, \
+   MENU_ENUM_SUBLABEL_##STR, \
+   MENU_ENUM_LABEL_VALUE_##STR, \
+   MENU_ENUM_LABEL_HELP_##STR
+
 RETRO_BEGIN_DECLS
 
 enum msg_hash_action
@@ -161,17 +172,6 @@ enum msg_file_type
 
    FILE_TYPE_LAST
 };
-
-#define MENU_LABEL(STR) \
-   MENU_ENUM_LABEL_##STR, \
-   MENU_ENUM_SUBLABEL_##STR, \
-   MENU_ENUM_LABEL_VALUE_##STR
-
-#define MENU_LBL_H(STR) \
-   MENU_ENUM_LABEL_##STR, \
-   MENU_ENUM_SUBLABEL_##STR, \
-   MENU_ENUM_LABEL_VALUE_##STR, \
-   MENU_ENUM_LABEL_HELP_##STR
 
 enum msg_hash_enums
 {

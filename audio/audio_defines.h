@@ -83,6 +83,17 @@ enum audio_mixer_state
    AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL
 };
 
+enum audio_driver_state_flags
+{
+   AUDIO_FLAG_ACTIVE       = (1 << 0),
+   AUDIO_FLAG_USE_FLOAT    = (1 << 1),
+   AUDIO_FLAG_SUSPENDED    = (1 << 2),
+   AUDIO_FLAG_MIXER_ACTIVE = (1 << 3),
+   AUDIO_FLAG_HARD_DISABLE = (1 << 4),
+   AUDIO_FLAG_CONTROL      = (1 << 5)
+};
+
+
 typedef struct audio_statistics
 {
    unsigned samples;

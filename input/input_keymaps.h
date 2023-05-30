@@ -66,7 +66,8 @@ extern const struct rarch_key_map rarch_key_map_ps4[];
 #endif
 
 #if defined(_WIN32) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
-enum winraw_scancodes {
+enum winraw_scancodes
+{
    SC_ESCAPE = 0x01,
    SC_1 = 0x02,
    SC_2 = 0x03,

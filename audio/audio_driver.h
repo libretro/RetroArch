@@ -158,16 +158,6 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-enum audio_driver_state_flags
-{
-   AUDIO_FLAG_ACTIVE       = (1 << 0),
-   AUDIO_FLAG_USE_FLOAT    = (1 << 1),
-   AUDIO_FLAG_SUSPENDED    = (1 << 2),
-   AUDIO_FLAG_MIXER_ACTIVE = (1 << 3),
-   AUDIO_FLAG_HARD_DISABLE = (1 << 4),
-   AUDIO_FLAG_CONTROL      = (1 << 5)
-};
-
 typedef struct
 {
    double source_ratio_original;
@@ -306,44 +296,6 @@ bool audio_driver_stop(void);
 bool audio_driver_is_ai_service_speech_running(void);
 #endif
 
-extern audio_driver_t audio_rsound;
-extern audio_driver_t audio_audioio;
-extern audio_driver_t audio_oss;
-extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
-extern audio_driver_t audio_tinyalsa;
-extern audio_driver_t audio_roar;
-extern audio_driver_t audio_openal;
-extern audio_driver_t audio_opensl;
-extern audio_driver_t audio_jack;
-extern audio_driver_t audio_sdl;
-extern audio_driver_t audio_xa;
-extern audio_driver_t audio_pulse;
-extern audio_driver_t audio_dsound;
-extern audio_driver_t audio_wasapi;
-extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_coreaudio3;
-extern audio_driver_t audio_xenon360;
-extern audio_driver_t audio_ps3;
-extern audio_driver_t audio_gx;
-extern audio_driver_t audio_ax;
-extern audio_driver_t audio_psp;
-extern audio_driver_t audio_ps2;
-extern audio_driver_t audio_ctr_csnd;
-extern audio_driver_t audio_ctr_dsp;
-#ifdef HAVE_THREADS
-extern audio_driver_t audio_ctr_dsp_thread;
-#endif
-extern audio_driver_t audio_switch;
-extern audio_driver_t audio_switch_thread;
-extern audio_driver_t audio_switch_libnx_audren;
-extern audio_driver_t audio_switch_libnx_audren_thread;
-extern audio_driver_t audio_rwebaudio;
-
-audio_driver_state_t *audio_state_get_ptr(void);
-
-extern audio_driver_t *audio_drivers[];
-
 /**
  * audio_compute_buffer_statistics:
  *
@@ -421,6 +373,44 @@ size_t audio_driver_sample_batch_rewind(
 #ifdef HAVE_MENU
 void audio_driver_menu_sample(void);
 #endif
+
+extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
+extern audio_driver_t audio_oss;
+extern audio_driver_t audio_alsa;
+extern audio_driver_t audio_alsathread;
+extern audio_driver_t audio_tinyalsa;
+extern audio_driver_t audio_roar;
+extern audio_driver_t audio_openal;
+extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_jack;
+extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_xa;
+extern audio_driver_t audio_pulse;
+extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_wasapi;
+extern audio_driver_t audio_coreaudio;
+extern audio_driver_t audio_coreaudio3;
+extern audio_driver_t audio_xenon360;
+extern audio_driver_t audio_ps3;
+extern audio_driver_t audio_gx;
+extern audio_driver_t audio_ax;
+extern audio_driver_t audio_psp;
+extern audio_driver_t audio_ps2;
+extern audio_driver_t audio_ctr_csnd;
+extern audio_driver_t audio_ctr_dsp;
+#ifdef HAVE_THREADS
+extern audio_driver_t audio_ctr_dsp_thread;
+#endif
+extern audio_driver_t audio_switch;
+extern audio_driver_t audio_switch_thread;
+extern audio_driver_t audio_switch_libnx_audren;
+extern audio_driver_t audio_switch_libnx_audren_thread;
+extern audio_driver_t audio_rwebaudio;
+
+audio_driver_state_t *audio_state_get_ptr(void);
+
+extern audio_driver_t *audio_drivers[];
 
 RETRO_END_DECLS
 
