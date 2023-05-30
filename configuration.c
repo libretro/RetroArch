@@ -2508,30 +2508,31 @@ void config_set_defaults(void *data)
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
-   global_t *global                = (global_t*)data;
-   settings_t *settings            = config_st;
-   recording_state_t *recording_st = recording_state_get_ptr();
-   int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
-   int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
-   int int_settings_size           = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
-   int uint_settings_size          = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
-   int size_settings_size          = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
-   const char *def_video           = config_get_default_video();
-   const char *def_audio           = config_get_default_audio();
-   const char *def_audio_resampler = config_get_default_audio_resampler();
-   const char *def_input           = config_get_default_input();
-   const char *def_joypad          = config_get_default_joypad();
+   global_t *global                 = (global_t*)data;
+   settings_t *settings             = config_st;
+   recording_state_t *recording_st  = recording_state_get_ptr();
+   int bool_settings_size           = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
+   int float_settings_size          = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
+   int int_settings_size            = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
+   int uint_settings_size           = sizeof(settings->uints)   / sizeof(settings->uints.placeholder);
+   int size_settings_size           = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
+   const char *def_video            = config_get_default_video();
+   const char *def_audio            = config_get_default_audio();
+   const char *def_audio_resampler  = config_get_default_audio_resampler();
+   const char *def_input            = config_get_default_input();
+   const char *def_joypad           = config_get_default_joypad();
 #ifdef HAVE_MENU
-   const char *def_menu            = config_get_default_menu();
+   const char *def_menu             = config_get_default_menu();
 #endif
-   const char *def_camera          = config_get_default_camera();
-   const char *def_bluetooth       = config_get_default_bluetooth();
-   const char *def_wifi            = config_get_default_wifi();
-   const char *def_led             = config_get_default_led();
-   const char *def_location        = config_get_default_location();
-   const char *def_record          = config_get_default_record();
-   const char *def_midi            = config_get_default_midi();
-   const char *def_mitm            = DEFAULT_NETPLAY_MITM_SERVER;
+   const char *def_camera           = config_get_default_camera();
+   const char *def_bluetooth        = config_get_default_bluetooth();
+   const char *def_wifi             = config_get_default_wifi();
+   const char *def_led              = config_get_default_led();
+   const char *def_location         = config_get_default_location();
+   const char *def_record           = config_get_default_record();
+   const char *def_midi             = config_get_default_midi();
+   const char *def_mitm             = DEFAULT_NETPLAY_MITM_SERVER;
+   struct video_viewport *custom_vp = &settings->video_viewport_custom;
    struct config_float_setting      *float_settings = populate_settings_float (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
    struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
@@ -2743,7 +2744,10 @@ void config_set_defaults(void *data)
       settings->uints.input_mouse_index[i] = (unsigned)i;
    }
 
-   video_driver_reset_custom_viewport(settings);
+   custom_vp->width  = 0;
+   custom_vp->height = 0;
+   custom_vp->x      = 0;
+   custom_vp->y      = 0;
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */

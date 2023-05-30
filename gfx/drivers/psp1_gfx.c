@@ -434,6 +434,7 @@ static void *psp_init(const video_info_t *video,
    else
    {
       u16 i;
+      video_driver_state_t *video_st = video_state_get_ptr(); 
       uint16_t* LUT_r_local = (uint16_t*)(SCEGU_VRAM_BP_2);
       uint16_t* LUT_b_local = (uint16_t*)(SCEGU_VRAM_BP_2) + (1 << 5);
 
@@ -446,8 +447,8 @@ static void *psp_init(const video_info_t *video,
       psp->bpp_log2         = 1;
 
       pixel_format          =
-         (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_0RGB1555)
-         ? GU_PSM_5551 : GU_PSM_5650 ;
+         (video_st->pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
+         ? GU_PSM_5551 : GU_PSM_5650;
 
       lut_pixel_format      = GU_PSM_T16;
 
@@ -824,7 +825,7 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    switch(src_pixelformat)
    {
    case PSP_DISPLAY_PIXEL_FORMAT_565:
-      for (j = (src_y_max - 1); j >= src_y ; j--)
+      for (j = (src_y_max - 1); j >= src_y; j--)
       {
          uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
          for (i = src_x; i < src_x_max; i++)
@@ -839,7 +840,7 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_5551:
-      for (j = (src_y_max - 1); j >= src_y ; j--)
+      for (j = (src_y_max - 1); j >= src_y; j--)
       {
          uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
          for (i = src_x; i < src_x_max; i++)
@@ -854,7 +855,7 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_4444:
-      for (j = (src_y_max - 1); j >= src_y ; j--)
+      for (j = (src_y_max - 1); j >= src_y; j--)
       {
          uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
          for (i = src_x; i < src_x_max; i++)
@@ -869,7 +870,7 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_8888:
-      for (j = (src_y_max - 1); j >= src_y ; j--)
+      for (j = (src_y_max - 1); j >= src_y; j--)
       {
          uint32_t* src = (uint32_t*)src_buffer + src_bufferwidth * j + src_x;
          for (i = src_x; i < src_x_max; i++)

@@ -1383,12 +1383,11 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         video_viewport_t *custom = video_viewport_get_custom();
-
-         *x          = custom->x;
-         *y          = custom->y;
-         *width      = custom->width;
-         *height     = custom->height;
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         *x                          = custom_vp->x;
+         *y                          = custom_vp->y;
+         *width                      = custom_vp->width;
+         *height                     = custom_vp->height;
       }
       else
 #endif

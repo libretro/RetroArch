@@ -242,13 +242,11 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
             vid->video.force_aspect);
    else if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom =
-         (const struct video_viewport*)video_viewport_get_custom();
-
-      vid->vp.x = custom->x;
-      vid->vp.y = custom->y;
-      vid->vp.width  = custom->width;
-      vid->vp.height = custom->height;
+      video_viewport_t *custom_vp = &settings->video_viewport_custom;
+      vid->vp.x                   = custom_vp->x;
+      vid->vp.y                   = custom_vp->y;
+      vid->vp.width               = custom_vp->width;
+      vid->vp.height              = custom_vp->height;
    }
    else if (vid->video.force_aspect)
    {

@@ -1524,18 +1524,20 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
    unsigned i;
+   const char *enabled_device_extensions[8];
    static const float one                  = 1.0f;
    bool found_queue                        = false;
+   video_driver_state_t *video_st          = video_state_get_ptr();
 
    VkPhysicalDeviceFeatures features       = { false };
    VkDeviceQueueCreateInfo queue_info      = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
    VkDeviceCreateInfo device_info          = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 
-   const char *enabled_device_extensions[8];
    unsigned enabled_device_extension_count = 0;
 
-   struct retro_hw_render_context_negotiation_interface_vulkan *iface =
-      (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
+   struct retro_hw_render_context_negotiation_interface_vulkan 
+                                    *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)
+                                    video_st->hw_render_context_negotiation;
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
    {
@@ -1593,11 +1595,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                &features);
       }
 
-      if (!ret)
-      {
-         RARCH_WARN("[Vulkan]: Failed to create device with negotiation interface. Falling back to default path.\n");
-      }
-      else
+      if (ret)
       {
          if (vk->context.gpu != VK_NULL_HANDLE && context.gpu != vk->context.gpu)
             RARCH_ERR("[Vulkan]: Got unexpected VkPhysicalDevice, despite RetroArch using explicit physical device.\n");
@@ -1615,6 +1613,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             RARCH_ERR("[Vulkan]: Present queue != graphics queue. This is currently not supported.\n");
             return false;
          }
+      }
+      else
+      {
+         RARCH_WARN("[Vulkan]: Failed to create device with negotiation interface. Falling back to default path.\n");
       }
    }
 
@@ -1752,7 +1754,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
 
-         video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
+         video_st->flags   |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
          RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
       }
       else if (vkCreateDevice(vk->context.gpu, &device_info,
@@ -1895,9 +1897,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
-   VkApplicationInfo app = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
-   struct retro_hw_render_context_negotiation_interface_vulkan *iface =
-      (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
+   VkApplicationInfo app          = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct retro_hw_render_context_negotiation_interface_vulkan 
+                           *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)video_st->hw_render_context_negotiation;
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
    {

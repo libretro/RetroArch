@@ -1,5 +1,5 @@
 /* CRT SwitchRes Core
- * Copyright (C) 2018 Alphanu / Ben Templeman.
+ *  Copyright (C) 2018 Alphanu / Ben Templeman.
  *
  * RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
@@ -83,10 +83,11 @@ static void crt_aspect_ratio_switch(
       float srm_width, float srm_height)
 {
    /* Send aspect float to video_driver */
-   p_switch->fly_aspect = (float)width / (float)height;
-   video_driver_set_aspect_ratio_value((float)p_switch->fly_aspect);
-   RARCH_LOG("[CRT]: Setting Aspect Ratio: %f \n",
-         (float)p_switch->fly_aspect);
+   video_driver_state_t *video_st = video_state_get_ptr();
+   float fly_aspect               = (float)width / (float)height;
+   p_switch->fly_aspect           = fly_aspect;
+   video_st->aspect_ratio         = fly_aspect;
+   RARCH_LOG("[CRT]: Setting Aspect Ratio: %f \n", fly_aspect);
    RARCH_LOG("[CRT]: Setting Video Screen Size to: %dx%d \n",
          width, height);
    video_driver_set_size(width , height);
@@ -419,9 +420,10 @@ void crt_switch_res_core(
 
       if (video_driver_get_aspect_ratio() != p_switch->fly_aspect)
       {
-         RARCH_LOG("[CRT]: Restoring Aspect Ratio: %f \n",
-               (float)p_switch->fly_aspect);
-         video_driver_set_aspect_ratio_value((float)p_switch->fly_aspect);
+         video_driver_state_t *video_st = video_state_get_ptr();
+         float fly_aspect               = (float)p_switch->fly_aspect;
+         RARCH_LOG("[CRT]: Restoring Aspect Ratio: %f \n", fly_aspect);
+         video_st->aspect_ratio         = fly_aspect;
          video_driver_apply_state_changes();
       }
    }

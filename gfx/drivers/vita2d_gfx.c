@@ -522,18 +522,16 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = video_viewport_get_custom();
-
-         x               = custom->x;
-         y               = custom->y;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         x                           = custom_vp->x;
+         y                           = custom_vp->y;
+         viewport_width              = custom_vp->width;
+         viewport_height             = custom_vp->height;
       }
       else
 #endif
       {
          float delta;
-
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
             /* If the aspect ratios of screen and desired aspect

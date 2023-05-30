@@ -292,10 +292,11 @@ static bool d3d8_setup_init(void *data,
 {
    unsigned width, height;
    d3d8_video_t *d3d                      = (d3d8_video_t*)data;
+   settings_t *settings                   = config_get_ptr();
    LPDIRECT3DDEVICE8 d3dr                 = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   struct video_viewport *custom_vp       = video_viewport_get_custom();
+   video_viewport_t *custom_vp            = &settings->video_viewport_custom;
 
    video_driver_get_size(&width, &height);
 
@@ -798,12 +799,12 @@ static void d3d8_calculate_rect(void *data,
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         video_viewport_t *custom = video_viewport_get_custom();
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
 
-         *x          = custom->x;
-         *y          = custom->y;
-         *width      = custom->width;
-         *height     = custom->height;
+         *x                          = custom_vp->x;
+         *y                          = custom_vp->y;
+         *width                      = custom_vp->width;
+         *height                     = custom_vp->height;
       }
       else
 #endif

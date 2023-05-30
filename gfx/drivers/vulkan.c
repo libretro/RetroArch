@@ -1974,18 +1974,16 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    }
    else if ((vk->flags & VK_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
+      float desired_aspect           = video_driver_get_aspect_ratio();
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = video_viewport_get_custom();
-
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
          /* Vulkan has top-left origin viewport. */
-         x               = custom->x;
-         y               = custom->y;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
+         x                           = custom_vp->x;
+         y                           = custom_vp->y;
+         viewport_width              = custom_vp->width;
+         viewport_height             = custom_vp->height;
       }
       else
 #endif

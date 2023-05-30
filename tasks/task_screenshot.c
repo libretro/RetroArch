@@ -418,6 +418,7 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
+   video_driver_state_t *video_st        = video_state_get_ptr();
    uint8_t *buffer                       = NULL;
 
    vp.x                                  = 0;
@@ -434,7 +435,9 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_read_viewport(buffer, runloop_flags & RUNLOOP_FLAG_IDLE))
+   if (!(   video_st->current_video->read_viewport
+         && video_st->current_video->read_viewport(
+            video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
       goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
@@ -542,13 +545,16 @@ bool take_screenshot(
       bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
-   bool ret                    = false;
-   uint32_t runloop_flags      = runloop_get_flags();
-   settings_t *settings        = config_get_ptr();
-   bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
-   bool supports_viewport_read = video_driver_supports_viewport_read();
-   bool prefer_viewport_read   = supports_viewport_read &&
-         video_driver_prefer_viewport_read();
+   bool ret                       = false;
+   uint32_t runloop_flags         = runloop_get_flags();
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr(); 
+   bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
+   bool supports_viewport_read    = video_st->current_video->read_viewport
+         && (video_st->current_video->viewport_info);
+   bool prefer_viewport_read      = supports_viewport_read
+         && video_driver_is_hw_context()
+         && !video_st->current_video->read_frame_raw;
 
    /* Avoid GPU screenshots with savestates */
    if (supports_viewport_read && video_gpu_screenshot && !savestate)
@@ -564,8 +570,8 @@ bool take_screenshot(
          name_base, savestate, runloop_flags,
          has_valid_framebuffer, fullpath, use_thread,
          prefer_viewport_read,
-         video_driver_supports_read_frame_raw(),
-         video_driver_get_pixel_format()
+         (video_st->current_video->read_frame_raw),
+         video_st->pix_fmt
          );
 
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)

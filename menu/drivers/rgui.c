@@ -5861,11 +5861,12 @@ bool rgui_is_video_config_equal(
 
 static void rgui_get_video_config(
       rgui_video_settings_t *video_settings,
+      settings_t *settings,
       unsigned video_aspect_ratio_idx)
 {
    /* Could use settings->video_viewport_custom directly,
     * but this seems to be the standard way of doing it... */
-   video_viewport_t *custom_vp      = video_viewport_get_custom();
+   video_viewport_t *custom_vp      = &settings->video_viewport_custom;
    video_settings->aspect_ratio_idx = video_aspect_ratio_idx;
    video_settings->viewport.width   = custom_vp->width;
    video_settings->viewport.height  = custom_vp->height;
@@ -5881,7 +5882,7 @@ static void rgui_set_video_config(
 {
    /* Could use settings->video_viewport_custom directly,
     * but this seems to be the standard way of doing it... */
-   video_viewport_t *custom_vp            = video_viewport_get_custom();
+   video_viewport_t *custom_vp            = &settings->video_viewport_custom;
    settings->uints.video_aspect_ratio_idx = video_settings->aspect_ratio_idx;
    custom_vp->width                       = video_settings->viewport.width;
    custom_vp->height                      = video_settings->viewport.height;
@@ -6432,7 +6433,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    /* Cache initial video settings */
-   rgui_get_video_config(&rgui->content_video_settings, settings->uints.video_aspect_ratio_idx);
+   rgui_get_video_config(&rgui->content_video_settings, settings, settings->uints.video_aspect_ratio_idx);
 
    /* Get initial 'window' dimensions */
    video_driver_get_viewport_info(&vp);
@@ -7339,7 +7340,7 @@ static void rgui_populate_entries(
          /* Make sure that any changes made while accessing
           * the video settings menu are preserved */
          rgui_video_settings_t current_video_settings = {{0}};
-         rgui_get_video_config(&current_video_settings, settings->uints.video_aspect_ratio_idx);
+         rgui_get_video_config(&current_video_settings, settings, settings->uints.video_aspect_ratio_idx);
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
          {
             rgui_set_video_config(rgui, settings, &rgui->content_video_settings, false);
@@ -7775,7 +7776,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
       if (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
       {
          /* Cache content video settings */
-         rgui_get_video_config(&rgui->content_video_settings, settings->uints.video_aspect_ratio_idx);
+         rgui_get_video_config(&rgui->content_video_settings, settings, settings->uints.video_aspect_ratio_idx);
          /* Update menu viewport */
          rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          /* Apply menu video settings */
@@ -7790,7 +7791,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
           * has not changed video settings since menu was
           * last toggled on */
          rgui_video_settings_t current_video_settings = {{0}};
-         rgui_get_video_config(&current_video_settings, settings->uints.video_aspect_ratio_idx);
+         rgui_get_video_config(&current_video_settings, settings, settings->uints.video_aspect_ratio_idx);
 
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
             rgui_set_video_config(rgui, settings, &rgui->content_video_settings, false);
@@ -7883,7 +7884,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          {
             settings_t *settings                         = config_get_ptr();
             rgui_video_settings_t current_video_settings = {{0}};
-            rgui_get_video_config(&current_video_settings, settings->uints.video_aspect_ratio_idx);
+            rgui_get_video_config(&current_video_settings, settings, settings->uints.video_aspect_ratio_idx);
             if (rgui_is_video_config_equal(&current_video_settings,
                   &rgui->menu_video_settings))
             {

@@ -505,12 +505,12 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = video_viewport_get_custom();
-         /* GL has bottom-left origin viewport. */
-         x      = custom->x;
-         y      = height - custom->y - custom->height;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         /* OpenGL has bottom-left origin viewport. */
+         x                           = custom_vp->x;
+         y                           = height - custom_vp->y - custom_vp->height;
+         viewport_width              = custom_vp->width;
+         viewport_height             = custom_vp->height;
       }
       else
 #endif

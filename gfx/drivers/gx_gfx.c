@@ -990,6 +990,7 @@ static void gx_resize(gx_video_t *gx,
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    const global_t           *global = global_get_ptr();
+   settings_t             *settings = config_get_ptr();
    unsigned width                   = gx->vp.full_width;
    unsigned height                  = gx->vp.full_height;
 
@@ -1012,14 +1013,14 @@ static void gx_resize(gx_video_t *gx,
    {
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
-         desired_aspect = 1.0;
-      if (gx->orientation == ORIENTATION_VERTICAL ||
-            gx->orientation == ORIENTATION_FLIPPED_ROTATED)
-         desired_aspect = 1.0 / desired_aspect;
+         desired_aspect    = 1.0;
+      if (     (gx->orientation == ORIENTATION_VERTICAL)
+            || (gx->orientation == ORIENTATION_FLIPPED_ROTATED))
+         desired_aspect    = 1.0 / desired_aspect;
 
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         struct video_viewport *custom_vp = video_viewport_get_custom();
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
 
          if (!custom_vp->width || !custom_vp->height)
          {

@@ -842,7 +842,7 @@ bool run_translation_service(settings_t *settings, bool paused)
       label_len    = strlen(label);
       system_label = (char*)malloc(label_len + system_id_len + 3);
       memcpy(system_label, system_id, system_id_len);
-      memcpy(system_label + system_id_len, "__", 2);
+      memcpy(system_label     + system_id_len, "__", 2);
       memcpy(system_label + 2 + system_id_len, label, label_len);
       system_label[system_id_len + 2 + label_len] = '\0';
    }
@@ -882,7 +882,9 @@ bool run_translation_service(settings_t *settings, bool paused)
       if (!bit24_image_prev || !bit24_image)
          goto finish;
 
-      if (!video_driver_read_viewport(bit24_image_prev, false))
+      if (!(      video_st->current_video->read_viewport
+               && video_st->current_video->read_viewport(
+                  video_st->data, bit24_image_prev, false)))
       {
          RARCH_LOG("Could not read viewport for translation service...\n");
          goto finish;

@@ -906,17 +906,9 @@ void video_driver_set_stub_frame(void);
 
 void video_driver_unset_stub_frame(void);
 
-bool video_driver_supports_viewport_read(void);
-
-bool video_driver_prefer_viewport_read(void);
-
-bool video_driver_supports_read_frame_raw(void);
-
 float video_driver_get_core_aspect(void);
 
 void video_driver_set_viewport_core(void);
-
-void video_driver_reset_custom_viewport(settings_t *settings);
 
 void video_driver_set_rgba(void);
 
@@ -942,16 +934,11 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
 
 void video_driver_apply_state_changes(void);
 
-bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
-
 void video_driver_cached_frame(void);
 
 bool video_driver_is_hw_context(void);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
-
-const struct retro_hw_render_context_negotiation_interface
-*video_driver_get_context_negotiation_interface(void);
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
@@ -1005,10 +992,6 @@ void video_driver_set_size(unsigned width, unsigned height);
 
 float video_driver_get_aspect_ratio(void);
 
-void video_driver_set_aspect_ratio_value(float value);
-
-enum retro_pixel_format video_driver_get_pixel_format(void);
-
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
@@ -1034,8 +1017,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       float aspect_ratio, bool keep_aspect);
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void);
-
-struct video_viewport *video_viewport_get_custom(void);
 
 /**
  * video_monitor_set_refresh_rate:

@@ -5498,8 +5498,8 @@ static int setting_uint_action_left_custom_viewport_width(
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
    settings_t                 *settings = config_get_ptr();
+   video_viewport_t            *custom  = &settings->video_viewport_custom;
    struct retro_game_geometry     *geom = (struct retro_game_geometry*)
       &av_info->geometry;
 
@@ -5538,8 +5538,8 @@ static int setting_uint_action_left_custom_viewport_height(
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
    settings_t                 *settings = config_get_ptr();
+   video_viewport_t            *custom  = &settings->video_viewport_custom;
    struct retro_game_geometry     *geom = (struct retro_game_geometry*)
       &av_info->geometry;
 
@@ -5799,8 +5799,8 @@ static int setting_uint_action_right_custom_viewport_width(
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
    settings_t                 *settings = config_get_ptr();
+   video_viewport_t            *custom  = &settings->video_viewport_custom;
    struct retro_game_geometry     *geom = (struct retro_game_geometry*)
       &av_info->geometry;
 
@@ -5833,8 +5833,8 @@ static int setting_uint_action_right_custom_viewport_height(
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
    settings_t                 *settings = config_get_ptr();
+   video_viewport_t            *custom  = &settings->video_viewport_custom;
    struct retro_game_geometry     *geom = (struct retro_game_geometry*)
       &av_info->geometry;
 
@@ -7226,8 +7226,8 @@ static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
    settings_t                 *settings = config_get_ptr();
+   video_viewport_t            *custom  = &settings->video_viewport_custom;
    struct retro_game_geometry     *geom = (struct retro_game_geometry*)
       &av_info->geometry;
 
@@ -7259,8 +7259,8 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
 {
    video_viewport_t vp;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   video_viewport_t            *custom  = video_viewport_get_custom();
    settings_t                 *settings = config_get_ptr();
+   video_viewport_t            *custom  = &settings->video_viewport_custom;
    struct retro_game_geometry     *geom = (struct retro_game_geometry*)
       &av_info->geometry;
 
@@ -7747,6 +7747,7 @@ static void write_handler_logging_verbosity(rarch_setting_t *setting)
 static void general_write_handler(rarch_setting_t *setting)
 {
    enum event_command rarch_cmd = CMD_EVENT_NONE;
+   settings_t *settings         = config_get_ptr();
 
    if (!setting)
       return;
@@ -7757,19 +7758,14 @@ static void general_write_handler(rarch_setting_t *setting)
    {
       case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         {
-            settings_t *settings        = config_get_ptr();
-            video_shader_toggle(settings);
-         }
+         video_shader_toggle(settings);
 #endif
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
-         {
-            if (*setting->value.target.boolean)
-               task_queue_set_threaded();
-            else
-               task_queue_unset_threaded();
-         }
+         if (*setting->value.target.boolean)
+            task_queue_set_threaded();
+         else
+            task_queue_unset_threaded();
          break;
       case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
          if (frontend_driver_has_gamemode())
@@ -7778,7 +7774,6 @@ static void general_write_handler(rarch_setting_t *setting)
 
             if (!frontend_driver_set_gamemode(on) && on)
             {
-               settings_t *settings = config_get_ptr();
 
                /* If we failed to enable game mode, display
                 * a notification and force disable the feature */
@@ -7802,7 +7797,7 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             video_viewport_t vp;
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-            video_viewport_t            *custom  = video_viewport_get_custom();
+            struct video_viewport *custom_vp     = &settings->video_viewport_custom;
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                &av_info->geometry;
 
@@ -7812,21 +7807,21 @@ static void general_write_handler(rarch_setting_t *setting)
             {
                unsigned int rotation = retroarch_get_rotation();
 
-               custom->x             = 0;
-               custom->y             = 0;
+               custom_vp->x          = 0;
+               custom_vp->y          = 0;
 
                if (rotation % 2)
                {
-                  custom->width  = ((custom->width + geom->base_height - 1) / geom->base_height)  * geom->base_height;
-                  custom->height = ((custom->height + geom->base_width - 1) / geom->base_width)   * geom->base_width;
+                  custom_vp->width   = ((custom_vp->width + geom->base_height - 1) / geom->base_height)  * geom->base_height;
+                  custom_vp->height  = ((custom_vp->height + geom->base_width - 1) / geom->base_width)   * geom->base_width;
                }
                else
                {
-                  custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
-                  custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+                  custom_vp->width   = ((custom_vp->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
+                  custom_vp->height  = ((custom_vp->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
                }
                aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-                  (float)custom->width / custom->height;
+                  (float)custom_vp->width / custom_vp->height;
             }
          }
          break;
@@ -7834,7 +7829,6 @@ static void general_write_handler(rarch_setting_t *setting)
          if (*setting->value.target.boolean)
          {
             menu_displaylist_info_t info;
-            settings_t *settings         = config_get_ptr();
             struct menu_state *menu_st   = menu_state_get_ptr();
             menu_list_t *menu_list       = menu_st->entries.list;
             file_list_t *menu_stack      = MENU_LIST_GET(menu_list, 0);
@@ -7853,12 +7847,9 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
-         {
-            settings_t *settings         = config_get_ptr();
-            configuration_set_float(settings,
-                  settings->floats.audio_max_timing_skew,
-                  *setting->value.target.fraction);
-         }
+         configuration_set_float(settings,
+               settings->floats.audio_max_timing_skew,
+               *setting->value.target.fraction);
          break;
 #ifdef HAVE_CHEEVOS
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
@@ -7881,7 +7872,6 @@ static void general_write_handler(rarch_setting_t *setting)
 #if defined(DINGUX) && defined(DINGUX_BETA)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE:
          {
-            settings_t *settings         = config_get_ptr();
             enum dingux_refresh_rate 
                current_refresh_rate      = DINGUX_REFRESH_RATE_60HZ;
             enum dingux_refresh_rate 
@@ -7922,27 +7912,20 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
 #endif
       case MENU_ENUM_LABEL_VIDEO_SCALE:
-         {
-            settings_t *settings         = config_get_ptr();
-            settings->modified           = true;
-            settings->uints.video_scale  = *setting->value.target.unsigned_integer;
+         settings->modified           = true;
+         settings->uints.video_scale  = *setting->value.target.unsigned_integer;
 
-            if (!settings->bools.video_fullscreen)
-               rarch_cmd = CMD_EVENT_REINIT;
-         }
+         if (!settings->bools.video_fullscreen)
+            rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
-         {
-            settings_t *settings             = config_get_ptr();
-            settings->modified               = true;
-            settings->bools.video_hdr_enable = *setting->value.target.boolean;
+         settings->modified               = true;
+         settings->bools.video_hdr_enable = *setting->value.target.boolean;
 
-            rarch_cmd = CMD_EVENT_REINIT;            
-         }
+         rarch_cmd = CMD_EVENT_REINIT;            
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
          {
-            settings_t *settings                = config_get_ptr();
             video_driver_state_t *video_st      = video_state_get_ptr();
             settings->modified                  = true;
             settings->floats.video_hdr_max_nits = roundf(*setting->value.target.fraction);
@@ -7965,7 +7948,6 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
          {
-            settings_t *settings                = config_get_ptr();
             video_driver_state_t *video_st      = video_state_get_ptr();
             settings->modified                  = true;
             settings->floats.video_hdr_display_contrast = *setting->value.target.fraction;
@@ -7976,7 +7958,6 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
          {
-            settings_t *settings                   = config_get_ptr();
             video_driver_state_t *video_st         = video_state_get_ptr();
             settings->modified                     = true;
             settings->bools.video_hdr_expand_gamut = *setting->value.target.boolean;
@@ -7993,25 +7974,18 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
       case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         {
-            settings_t *settings         = config_get_ptr();
-            settings->modified           = true;
-            settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
-         }
+         settings->modified           = true;
+         settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
          break;
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-       {
-           settings_t *settings         = config_get_ptr();
            settings->modified           = true;
            strlcpy(settings->arrays.input_android_physical_keyboard, setting->value.target.string, sizeof(settings->arrays.input_android_physical_keyboard));
-       }
            break;
 #endif
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
          {
-            settings_t *settings       = config_get_ptr();
             bool log_to_file           = settings->bools.log_to_file;
             bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
             const char *log_dir        = settings->paths.log_dir;
@@ -8031,7 +8005,6 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
          if (verbosity_is_enabled() && is_logging_to_file())
          {
-            settings_t *settings       = config_get_ptr();
             bool log_to_file           = settings->bools.log_to_file;
             bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
             const char *log_dir        = settings->paths.log_dir;
@@ -8051,24 +8024,21 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE:
 #endif
 #endif
-         {
-            settings_t *settings       = config_get_ptr();
-            video_driver_set_filtering(1, settings->bools.video_smooth,
-                  settings->bools.video_ctx_scaling);
-         }
+         video_driver_set_filtering(1, settings->bools.video_smooth,
+               settings->bools.video_ctx_scaling);
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             video_viewport_t vp;
             rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-            video_viewport_t             *custom = video_viewport_get_custom();
+            video_viewport_t *custom_vp          = &settings->video_viewport_custom;
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                   &av_info->geometry;
 
             if (system)
             {
-               unsigned int rotation = retroarch_get_rotation();
+               unsigned int rotation             = retroarch_get_rotation();
 
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
@@ -8076,22 +8046,22 @@ static void general_write_handler(rarch_setting_t *setting)
 
                /* Update Custom Aspect Ratio values */
                video_driver_get_viewport_info(&vp);
-               custom->x      = 0;
-               custom->y      = 0;
+               custom_vp->x         = 0;
+               custom_vp->y         = 0;
 
                /* Round down when rotation is "horizontal", round up when rotation is "vertical"
                   to avoid expanding viewport each time user rotates */
                if (rotation % 2)
                {
-                  custom->width  = MAX(1,(custom->width / geom->base_height))  * geom->base_height;
-                  custom->height = MAX(1,(custom->height/ geom->base_width ))  * geom->base_width;
+                  custom_vp->width  = MAX(1, (custom_vp->width  / geom->base_height))  * geom->base_height;
+                  custom_vp->height = MAX(1, (custom_vp->height / geom->base_width ))  * geom->base_width;
                }
                else
                {
-                  custom->width  = ((custom->width + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
-                  custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+                  custom_vp->width  = ((custom_vp->width  + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
+                  custom_vp->height = ((custom_vp->height + geom->base_height - 1)  / geom->base_height) * geom->base_height;
                }
-               aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom->width / custom->height;
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom_vp->width / custom_vp->height;
 
                /* Update Aspect Ratio (only useful for 1:1 PAR) */
                video_driver_set_aspect_ratio();
@@ -8099,13 +8069,11 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_SCREEN_ORIENTATION:
-         {
 #ifndef ANDROID
-             /* FIXME: Changing at runtime on Android causes setting to somehow be incremented again, many times */
-             video_display_server_set_screen_orientation(
-                   (enum rotation)(*setting->value.target.unsigned_integer));
+         /* FIXME: Changing at runtime on Android causes setting to somehow be incremented again, many times */
+         video_display_server_set_screen_orientation(
+               (enum rotation)(*setting->value.target.unsigned_integer));
 #endif
-         }
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          audio_set_float(AUDIO_ACTION_VOLUME_GAIN, *setting->value.target.fraction);
@@ -8123,13 +8091,10 @@ static void general_write_handler(rarch_setting_t *setting)
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_PAL60_ENABLE:
-         {
-            global_t *global             = global_get_ptr();
-            if (*setting->value.target.boolean && global->console.screen.pal_enable)
-               rarch_cmd = CMD_EVENT_REINIT;
-            else
-               setting_set_with_string_representation(setting, "false");
-         }
+         if (*setting->value.target.boolean && global_get_ptr()->console.screen.pal_enable)
+            rarch_cmd = CMD_EVENT_REINIT;
+         else
+            setting_set_with_string_representation(setting, "false");
          break;
       case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.target.boolean)
@@ -8146,65 +8111,41 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
-         {
 #ifdef HAVE_AUDIOMIXER
-            settings_t *settings       = config_get_ptr();
-            if (settings->bools.audio_enable_menu)
-               audio_driver_load_system_sounds();
-            else
-               audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+         if (settings->bools.audio_enable_menu)
+            audio_driver_load_system_sounds();
+         else
+            audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
-         }
          break;
       case MENU_ENUM_LABEL_MENU_SOUND_BGM:
-         {
 #ifdef HAVE_AUDIOMIXER
-            settings_t *settings       = config_get_ptr();
-            if (settings->bools.audio_enable_menu)
-            {
-               if (settings->bools.audio_enable_menu_bgm)
-                  audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-               else
-                  audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-            }
-#endif
+         if (settings->bools.audio_enable_menu)
+         {
+            if (settings->bools.audio_enable_menu_bgm)
+               audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+            else
+               audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
          }
+#endif
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
-         {
-            settings_t *settings       = config_get_ptr();
-            video_display_server_set_window_opacity(settings->uints.video_window_opacity);
-         }
+         video_display_server_set_window_opacity(settings->uints.video_window_opacity);
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:
-         {
-            settings_t *settings       = config_get_ptr();
-            video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
-         }
+         video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
          break;
       case MENU_ENUM_LABEL_MIDI_INPUT:
-         {
-            settings_t *settings       = config_get_ptr();
-            midi_driver_set_input(settings->arrays.midi_input);
-         }
+         midi_driver_set_input(settings->arrays.midi_input);
          break;
       case MENU_ENUM_LABEL_MIDI_OUTPUT:
-         {
-            settings_t *settings       = config_get_ptr();
-            midi_driver_set_output(settings, settings->arrays.midi_output);
-         }
+         midi_driver_set_output(settings, settings->arrays.midi_output);
          break;
       case MENU_ENUM_LABEL_MIDI_VOLUME:
-         {
-            settings_t *settings       = config_get_ptr();
-            midi_driver_set_volume(settings->uints.midi_volume);
-         }
+         midi_driver_set_volume(settings->uints.midi_volume);
          break;
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
-         {
-            settings_t *settings       = config_get_ptr();
-            frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
-         }
+         frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
@@ -8222,14 +8163,12 @@ static void general_write_handler(rarch_setting_t *setting)
                *(setting->value.target.unsigned_integer) = 0;
                setting->max = cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size);
             }
-            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE);
-            if (setting)
+            if ((setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE)))
             {
                *setting->value.target.unsigned_integer = 0;
                setting->max = cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size);
             }
-            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
-            if (setting)
+            if ((setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION)))
             {
                int max_bit_position;
                *setting->value.target.unsigned_integer = 0;
@@ -8248,14 +8187,12 @@ static void general_write_handler(rarch_setting_t *setting)
                *setting->value.target.unsigned_integer = 0;
                setting->max = cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size);
             }
-            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS);
-            if (setting)
+            if ((setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS)))
             {
                *setting->value.target.unsigned_integer = 0;
                setting->max = cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size);
             }
-            setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS);
-            if (setting)
+            if ((setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS)))
             {
                *setting->value.target.unsigned_integer = 0;
                setting->max = cheat_manager_get_state_search_size(cheat_manager_state.search_bit_size);
@@ -8265,15 +8202,12 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
          {
-            unsigned new_capacity;
-            settings_t *settings       = config_get_ptr();
+            unsigned new_capacity      = COLLECTION_SIZE;
             int content_favorites_size = settings->ints.content_favorites_size;
 
             /* Get new size */
-            if (content_favorites_size < 0)
-               new_capacity = COLLECTION_SIZE;
-            else
-               new_capacity = (unsigned)content_favorites_size;
+            if (content_favorites_size >= 0)
+               new_capacity            = (unsigned)content_favorites_size;
 
             /* Check whether capacity has changed */
             if (new_capacity != playlist_capacity(g_defaults.content_favorites))
@@ -8328,28 +8262,19 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         {
-            settings_t *settings       = config_get_ptr();
-            /* when changing the username, clear out the password and token */
-            settings->arrays.cheevos_password[0] = '\0';
-            settings->arrays.cheevos_token[0] = '\0';
-         }
+         /* When changing the username, clear out the password and token */
+         settings->arrays.cheevos_password[0] = '\0';
+         settings->arrays.cheevos_token[0]    = '\0';
          break;
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         {
-            settings_t *settings       = config_get_ptr();
-            /* when changing the password, clear out the token */
-            settings->arrays.cheevos_token[0] = '\0';
-         }
+         /* When changing the password, clear out the token */
+         settings->arrays.cheevos_token[0] = '\0';
          break;
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE:
-         {
 #ifdef HAVE_AUDIOMIXER
-            settings_t *settings       = config_get_ptr();
-            if (settings->bools.cheevos_unlock_sound_enable)
-               audio_driver_load_system_sounds();
+         if (settings->bools.cheevos_unlock_sound_enable)
+            audio_driver_load_system_sounds();
 #endif
-         }
          break;
       case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
          /* When toggling sensor input off, ensure
@@ -8395,7 +8320,6 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE:
          {
-            settings_t *settings           = config_get_ptr();
             const char *dir_libretro       = settings->paths.directory_libretro;
             const char *path_libretro_info = settings->paths.path_libretro_info;
 
@@ -8429,7 +8353,7 @@ static void general_write_handler(rarch_setting_t *setting)
             /* Whenever custom viewport dimensions are
              * changed, ASPECT_RATIO_CUSTOM must be
              * recalculated */
-            video_viewport_t *custom_vp = video_viewport_get_custom();
+            video_viewport_t *custom_vp = &settings->video_viewport_custom;
             float default_aspect        = aspectratio_lut[ASPECT_RATIO_CORE].value;
 
             aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
@@ -11567,7 +11491,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_VIDEO:
          {
-            struct video_viewport *custom_vp   = video_viewport_get_custom();
+            struct video_viewport *custom_vp   = &settings->video_viewport_custom;
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 

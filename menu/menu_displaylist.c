@@ -7215,11 +7215,15 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
 #ifdef HAVE_SCREENSHOTS
-            if (video_driver_supports_viewport_read())
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
+            {
+               video_driver_state_t *video_st    = video_state_get_ptr();
+               if (     video_st->current_video->read_viewport
+                     && video_st->current_video->viewport_info)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+            }
 #endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
