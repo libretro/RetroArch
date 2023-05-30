@@ -237,29 +237,15 @@
 		05A8C53C20DB72F000FF7857 /* rgui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rgui.c; sourceTree = "<group>"; };
 		05A8C53E20DB72F000FF7857 /* null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null.c; sourceTree = "<group>"; };
 		05A8C54020DB72F000FF7857 /* materialui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = materialui.c; sourceTree = "<group>"; };
-		05A8C54120DB72F000FF7857 /* menu_cbs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs.c; sourceTree = "<group>"; };
 		05A8C54320DB72F000FF7857 /* menu_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_driver.h; sourceTree = "<group>"; };
-		05A8C54520DB72F000FF7857 /* menu_entries.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_entries.c; sourceTree = "<group>"; };
 		05A8C54620DB72F000FF7857 /* menu_setting.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_setting.c; sourceTree = "<group>"; };
-		05A8C54720DB72F000FF7857 /* menu_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input.c; sourceTree = "<group>"; };
 		05A8C54920DB72F000FF7857 /* menu_displaylist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_displaylist.c; sourceTree = "<group>"; };
-		05A8C54A20DB72F000FF7857 /* menu_shader.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_shader.c; sourceTree = "<group>"; };
 		05A8C54B20DB72F000FF7857 /* gfx_animation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gfx_animation.h; sourceTree = "<group>"; };
 		05A8C54C20DB72F000FF7857 /* menu_cbs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_cbs.h; sourceTree = "<group>"; };
 		05A8C54D20DB72F000FF7857 /* menu_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_driver.c; sourceTree = "<group>"; };
 		05A8C55020DB72F000FF7857 /* menu_input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_input.h; sourceTree = "<group>"; };
 		05A8C55120DB72F000FF7857 /* menu_setting.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_setting.h; sourceTree = "<group>"; };
-		05A8C55320DB72F000FF7857 /* menu_input_bind_dialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_input_bind_dialog.h; sourceTree = "<group>"; };
-		05A8C55520DB72F000FF7857 /* menu_entry.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_entry.c; sourceTree = "<group>"; };
-		05A8C55620DB72F000FF7857 /* menu_dialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_dialog.h; sourceTree = "<group>"; };
-		05A8C55720DB72F000FF7857 /* menu_input_dialog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_input_dialog.h; sourceTree = "<group>"; };
-		05A8C55820DB72F000FF7857 /* menu_osk.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_osk.c; sourceTree = "<group>"; };
-		05A8C55920DB72F000FF7857 /* menu_entry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_entry.h; sourceTree = "<group>"; };
-		05A8C55B20DB72F000FF7857 /* menu_input_dialog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input_dialog.c; sourceTree = "<group>"; };
-		05A8C55C20DB72F000FF7857 /* menu_dialog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_dialog.c; sourceTree = "<group>"; };
-		05A8C55D20DB72F000FF7857 /* menu_input_bind_dialog.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_input_bind_dialog.c; sourceTree = "<group>"; };
 		05A8C55E20DB72F000FF7857 /* menu_osk_utf8_pages.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_osk_utf8_pages.h; sourceTree = "<group>"; };
-		05A8C55F20DB72F000FF7857 /* menu_osk.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_osk.h; sourceTree = "<group>"; };
 		05A8C56120DB72F000FF7857 /* gfx_display_vulkan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gfx_display_vulkan.c; sourceTree = "<group>"; };
 		05A8C56320DB72F000FF7857 /* gfx_display_gl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gfx_display_gl.c; sourceTree = "<group>"; };
 		05A8C56420DB72F000FF7857 /* gfx_display_d3d10.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gfx_display_d3d10.c; sourceTree = "<group>"; };
@@ -794,19 +780,15 @@
 				05A8C56020DB72F000FF7857 /* drivers_display */,
 				05A8C52E20DB72F000FF7857 /* gfx_animation.c */,
 				05A8C54B20DB72F000FF7857 /* gfx_animation.h */,
-				05A8C54120DB72F000FF7857 /* menu_cbs.c */,
 				05A8C54C20DB72F000FF7857 /* menu_cbs.h */,
 				05A8C54920DB72F000FF7857 /* menu_displaylist.c */,
 				05A8C52F20DB72F000FF7857 /* menu_displaylist.h */,
 				05A8C54D20DB72F000FF7857 /* menu_driver.c */,
 				05A8C54320DB72F000FF7857 /* menu_driver.h */,
-				05A8C54520DB72F000FF7857 /* menu_entries.c */,
 				05A8C57020DB72F000FF7857 /* menu_entries.h */,
-				05A8C54720DB72F000FF7857 /* menu_input.c */,
 				05A8C55020DB72F000FF7857 /* menu_input.h */,
 				05A8C54620DB72F000FF7857 /* menu_setting.c */,
 				05A8C55120DB72F000FF7857 /* menu_setting.h */,
-				05A8C54A20DB72F000FF7857 /* menu_shader.c */,
 				05A8C51B20DB72F000FF7857 /* menu_shader.h */,
 				05A8C55220DB72F000FF7857 /* widgets */,
 			);
@@ -855,15 +837,6 @@
 		05A8C55220DB72F000FF7857 /* widgets */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C55320DB72F000FF7857 /* menu_input_bind_dialog.h */,
-				05A8C55520DB72F000FF7857 /* menu_entry.c */,
-				05A8C55620DB72F000FF7857 /* menu_dialog.h */,
-				05A8C55720DB72F000FF7857 /* menu_input_dialog.h */,
-				05A8C55820DB72F000FF7857 /* menu_osk.c */,
-				05A8C55920DB72F000FF7857 /* menu_entry.h */,
-				05A8C55B20DB72F000FF7857 /* menu_input_dialog.c */,
-				05A8C55C20DB72F000FF7857 /* menu_dialog.c */,
-				05A8C55D20DB72F000FF7857 /* menu_input_bind_dialog.c */,
 				05A8C55E20DB72F000FF7857 /* menu_osk_utf8_pages.h */,
 				05A8C55F20DB72F000FF7857 /* menu_osk.h */,
 			);

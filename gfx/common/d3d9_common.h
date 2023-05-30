@@ -41,7 +41,6 @@
 #define D3D9_XRGB8888_FORMAT D3DFMT_X8R8G8B8
 #endif
 
-
 RETRO_BEGIN_DECLS
 
 typedef struct d3d9_video d3d9_video_t;

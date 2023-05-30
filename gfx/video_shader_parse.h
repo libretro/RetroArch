@@ -44,6 +44,39 @@ RETRO_BEGIN_DECLS
 #define GFX_MAX_FRAME_HISTORY 128
 #endif
 
+#define RARCH_WILDCARD_DELIMITER "$"
+
+/**
+ * video_shader_parse_type:
+ * @path              : Shader path.
+ *
+ * Parses type of shader.
+ *
+ * Returns: value of shader type if it could be determined,
+ * otherwise RARCH_SHADER_NONE.
+ **/
+#define video_shader_parse_type(path) video_shader_get_type_from_ext(path_get_extension((path)), NULL)
+
+enum wildcard_type
+{
+   RARCH_WILDCARD_CONTENT_DIR = 0,
+   RARCH_WILDCARD_CORE, 
+   RARCH_WILDCARD_GAME, 
+   RARCH_WILDCARD_VIDEO_DRIVER,
+   RARCH_WILDCARD_VIDEO_USER_ROTATION,
+   RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,
+   RARCH_WILDCARD_CORE_REQUESTED_ROTATION,
+   RARCH_WILDCARD_VIDEO_FINAL_ROTATION,
+   RARCH_WILDCARD_SCREEN_ORIENTATION,
+   RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION,
+   RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,
+   RARCH_WILDCARD_PRESET_DIR,
+   RARCH_WILDCARD_PRESET,
+   RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,
+   RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT
+};
+
+
 enum rarch_shader_type
 {
    RARCH_SHADER_NONE = 0,
@@ -67,6 +100,15 @@ enum
    RARCH_FILTER_LINEAR,
    RARCH_FILTER_NEAREST,
    RARCH_FILTER_MAX
+};
+
+enum video_shader_flags
+{
+   SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
+   /* Indicative of whether shader was modified - 
+    * for instance from the menus */
+   SHDR_FLAG_MODIFIED  = (1 << 1),
+   SHDR_FLAG_DISABLED  = (1 << 2)
 };
 
 enum gfx_wrap_type
@@ -148,15 +190,6 @@ struct video_shader_lut
    bool mipmap;
 };
 
-enum video_shader_flags
-{
-   SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
-   /* Indicative of whether shader was modified - 
-    * for instance from the menus */
-   SHDR_FLAG_MODIFIED  = (1 << 1),
-   SHDR_FLAG_DISABLED  = (1 << 2)
-};
-
 /* This is pretty big, shouldn't be put on the stack.
  * Avoid lots of allocation for convenience. */
 struct video_shader
@@ -188,33 +221,11 @@ struct video_shader
 
 };
 
-#define RARCH_WILDCARD_DELIMITER "$"
-
-enum wildcard_type
-{
-   RARCH_WILDCARD_CONTENT_DIR = 0,
-   RARCH_WILDCARD_CORE, 
-   RARCH_WILDCARD_GAME, 
-   RARCH_WILDCARD_VIDEO_DRIVER,
-   RARCH_WILDCARD_VIDEO_USER_ROTATION,
-   RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,
-   RARCH_WILDCARD_CORE_REQUESTED_ROTATION,
-   RARCH_WILDCARD_VIDEO_FINAL_ROTATION,
-   RARCH_WILDCARD_SCREEN_ORIENTATION,
-   RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION,
-   RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,
-   RARCH_WILDCARD_PRESET_DIR,
-   RARCH_WILDCARD_PRESET,
-   RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,
-   RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT
-};
-
 struct wildcard_token
 {
    enum wildcard_type token_id;
    char token_name[64];
 };
-
 
 /**
  * video_shader_resolve_parameters:
@@ -225,7 +236,6 @@ struct wildcard_token
  * from the #pragma parameter lines in the shader for each pass.
  **/
 void video_shader_resolve_parameters(struct video_shader *shader);
-
 
 /**
  * video_shader_load_current_parameter_values:
@@ -238,7 +248,6 @@ void video_shader_resolve_parameters(struct video_shader *shader);
  **/
 bool video_shader_load_current_parameter_values(config_file_t *conf, struct video_shader *shader);
 
-
 /**
  * video_shader_load_preset_into_shader:
  * @path              : Path to preset file, could be a Simple Preset (including a #reference) or Full Preset
@@ -250,7 +259,6 @@ bool video_shader_load_current_parameter_values(config_file_t *conf, struct vide
  **/
 bool video_shader_load_preset_into_shader(const char *path, struct video_shader *shader);
 
-
 /**
  * video_shader_write_preset:
  * @path              : File to write to
@@ -260,22 +268,10 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
  * Writes a preset to disk. Can be written as a simple preset (With the #reference directive in it) or a full preset.
  **/
 bool video_shader_write_preset(const char *path,
-                                 const struct video_shader *shader, 
-                                 bool reference);
-
+      const struct video_shader *shader, 
+      bool reference);
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext, bool *is_preset);
-
-/**
- * video_shader_parse_type:
- * @path              : Shader path.
- *
- * Parses type of shader.
- *
- * Returns: value of shader type if it could be determined,
- * otherwise RARCH_SHADER_NONE.
- **/
-#define video_shader_parse_type(path) video_shader_get_type_from_ext(path_get_extension((path)), NULL)
 
 bool video_shader_is_supported(enum rarch_shader_type type);
 

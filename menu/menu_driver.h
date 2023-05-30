@@ -36,7 +36,6 @@
 #include "menu_defines.h"
 #include "menu_input.h"
 #include "../input/input_osk.h"
-#include "menu_input_bind_dialog.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
@@ -793,6 +792,9 @@ size_t menu_update_fullscreen_thumbnail_label(
 
 bool menu_is_running_quick_menu(void);
 bool menu_is_nonrunning_quick_menu(void);
+
+bool menu_input_key_bind_set_mode(
+      enum menu_input_binds_ctl_state state, void *data);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

@@ -231,17 +231,6 @@ typedef struct key_desc
    char desc[32];
 } key_desc_t;
 
-/* TODO/FIXME - public global variables */
-extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
-
-/**
- * Copy parameters from the global menu_input_state to a menu_input_pointer_t
- * in order to provide access to all pointer device parameters.
- * 
- * @param copy_target  menu_input_pointer_t struct where values will be copied
- **/
-void menu_input_get_pointer_state(menu_input_pointer_t *copy_target);
-
 typedef struct menu_input_ctx_line
 {
    const char *label;
@@ -250,6 +239,14 @@ typedef struct menu_input_ctx_line
    unsigned idx;
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
+
+/**
+ * Copy parameters from the global menu_input_state to a menu_input_pointer_t
+ * in order to provide access to all pointer device parameters.
+ * 
+ * @param copy_target  menu_input_pointer_t struct where values will be copied
+ **/
+void menu_input_get_pointer_state(menu_input_pointer_t *copy_target);
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line);
 
@@ -260,6 +257,9 @@ bool menu_input_dialog_start_search(void);
 bool menu_input_dialog_get_display_kb(void);
 
 void menu_input_dialog_end(void);
+
+/* TODO/FIXME - public global variables */
+extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 
 RETRO_END_DECLS
 

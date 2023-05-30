@@ -36,7 +36,6 @@
 #include "../config.h"
 #endif
 
-#include "menu_input_bind_dialog.h"
 #include "menu_setting.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"

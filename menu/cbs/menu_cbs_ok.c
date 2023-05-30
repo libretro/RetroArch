@@ -50,7 +50,6 @@
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
 #endif
-#include "../menu_input_bind_dialog.h"
 #include "../menu_input.h"
 
 #include "../../core.h"

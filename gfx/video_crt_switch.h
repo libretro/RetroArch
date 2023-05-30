@@ -25,7 +25,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-
 RETRO_BEGIN_DECLS
 
 typedef struct videocrt_switch

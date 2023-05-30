@@ -83,6 +83,12 @@
 #include "../steam/steam.h"
 #endif
 
+typedef struct menu_input_ctx_bind
+{
+   char *s;
+   size_t len;
+} menu_input_ctx_bind_t;
+
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 

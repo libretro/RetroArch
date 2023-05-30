@@ -27,6 +27,10 @@
 #include "../msg_hash.h"
 #include "../setting_list.h"
 
+#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
+
+#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
+
 RETRO_BEGIN_DECLS
 
 /* NOTE: Order matters - only add new entries at
@@ -331,10 +335,6 @@ typedef struct menu_displaylist_info
    unsigned type_default;
    enum msg_hash_enums enum_idx;
 } menu_displaylist_info_t;
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
 
 bool menu_displaylist_process(menu_displaylist_info_t *info);
 

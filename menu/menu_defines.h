@@ -485,6 +485,13 @@ enum menu_dialog_type
    MENU_DIALOG_LAST
 };
 
+enum menu_input_binds_ctl_state
+{
+   MENU_INPUT_BINDS_CTL_BIND_NONE = 0,
+   MENU_INPUT_BINDS_CTL_BIND_SINGLE,
+   MENU_INPUT_BINDS_CTL_BIND_ALL
+};
+
 struct menu_dialog
 {
    unsigned              current_id;

@@ -35,6 +35,20 @@ RETRO_BEGIN_DECLS
 #define MENU_SEARCH_FILTER_MAX_TERMS  8
 #define MENU_SEARCH_FILTER_MAX_LENGTH 64
 
+#define MENU_ENTRY_INITIALIZE(entry) \
+   entry.path[0]            = '\0'; \
+   entry.label[0]           = '\0'; \
+   entry.sublabel[0]        = '\0'; \
+   entry.rich_label[0]      = '\0'; \
+   entry.value[0]           = '\0'; \
+   entry.password_value[0]  = '\0'; \
+   entry.enum_idx           = MSG_UNKNOWN; \
+   entry.entry_idx          = 0; \
+   entry.idx                = 0; \
+   entry.type               = 0; \
+   entry.spacing            = 0; \
+   entry.flags              = 0
+
 enum menu_list_type
 {
    MENU_LIST_PLAIN = 0,
@@ -58,6 +72,16 @@ enum menu_entry_type
    MENU_ENTRY_SIZE
 };
 
+enum menu_entry_flags
+{
+   MENU_ENTRY_FLAG_PATH_ENABLED       = (1 << 0),
+   MENU_ENTRY_FLAG_LABEL_ENABLED      = (1 << 1),
+   MENU_ENTRY_FLAG_RICH_LABEL_ENABLED = (1 << 2),
+   MENU_ENTRY_FLAG_VALUE_ENABLED      = (1 << 3),
+   MENU_ENTRY_FLAG_SUBLABEL_ENABLED   = (1 << 4),
+   MENU_ENTRY_FLAG_CHECKED            = (1 << 5)
+};
+
 
 typedef struct menu_ctx_list
 {
@@ -78,6 +102,23 @@ typedef struct menu_search_terms
    size_t size;
    char terms[MENU_SEARCH_FILTER_MAX_TERMS][MENU_SEARCH_FILTER_MAX_LENGTH];
 } menu_search_terms_t;
+
+typedef struct menu_entry
+{
+   size_t entry_idx;
+   unsigned idx;
+   unsigned type;
+   unsigned spacing;
+   enum msg_hash_enums enum_idx;
+   uint8_t setting_type;
+   uint8_t flags;
+   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
+   char path[255];
+   char label[255];
+   char rich_label[255];
+   char value[255];
+   char password_value[255];
+} menu_entry_t;
 
 typedef struct menu_file_list_cbs
 {
@@ -118,33 +159,6 @@ typedef struct menu_file_list_cbs
    char action_title_cache   [512];
    bool checked;
 } menu_file_list_cbs_t;
-
-enum menu_entry_flags
-{
-   MENU_ENTRY_FLAG_PATH_ENABLED       = (1 << 0),
-   MENU_ENTRY_FLAG_LABEL_ENABLED      = (1 << 1),
-   MENU_ENTRY_FLAG_RICH_LABEL_ENABLED = (1 << 2),
-   MENU_ENTRY_FLAG_VALUE_ENABLED      = (1 << 3),
-   MENU_ENTRY_FLAG_SUBLABEL_ENABLED   = (1 << 4),
-   MENU_ENTRY_FLAG_CHECKED            = (1 << 5)
-};
-
-typedef struct menu_entry
-{
-   size_t entry_idx;
-   unsigned idx;
-   unsigned type;
-   unsigned spacing;
-   enum msg_hash_enums enum_idx;
-   uint8_t setting_type;
-   uint8_t flags;
-   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
-   char path[255];
-   char label[255];
-   char rich_label[255];
-   char value[255];
-   char password_value[255];
-} menu_entry_t;
 
 int menu_entries_get_title(char *title, size_t title_len);
 
@@ -196,26 +210,11 @@ bool menu_entries_list_search(const char *needle, size_t *idx);
  * Its only interaction back to the UI is to arrange for
  * notify_list_loaded on the UI companion.
  */
-
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
 
 int menu_entry_action(
       menu_entry_t *entry, size_t i, enum menu_action action);
-
-#define MENU_ENTRY_INITIALIZE(entry) \
-   entry.path[0]            = '\0'; \
-   entry.label[0]           = '\0'; \
-   entry.sublabel[0]        = '\0'; \
-   entry.rich_label[0]      = '\0'; \
-   entry.value[0]           = '\0'; \
-   entry.password_value[0]  = '\0'; \
-   entry.enum_idx           = MSG_UNKNOWN; \
-   entry.entry_idx          = 0; \
-   entry.idx                = 0; \
-   entry.type               = 0; \
-   entry.spacing            = 0; \
-   entry.flags              = 0
 
 RETRO_END_DECLS
 
