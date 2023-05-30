@@ -689,9 +689,13 @@ static bool _rjson_optional_skip(rjson_t *json, const unsigned char **p, const u
       }
       else if (skip == 0xEF)
       {
+#if 0
+         /* Silence warning - state being set never used */
          if      (state == 0 && c == 0xBB)
             state = 1;
-         else if (state == 1 && c == 0xBF)
+         else
+#endif
+            if (state == 1 && c == 0xBF)
             return true;
          break;
       }
