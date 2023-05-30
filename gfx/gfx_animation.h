@@ -25,8 +25,6 @@
 
 #include "font_driver.h"
 
-RETRO_BEGIN_DECLS
-
 #define TICKER_SPACER_DEFAULT "   |   "
 
 #define ANIM_IS_ACTIVE(_p) (((_p)->flags & (GFX_ANIM_FLAG_IS_ACTIVE)) || ((_p)->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
@@ -34,10 +32,7 @@ RETRO_BEGIN_DECLS
 #define GFX_ANIMATION_CLEAR_ACTIVE(anim) ((anim)->flags &= ~(GFX_ANIM_FLAG_IS_ACTIVE | GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
 #define GFX_ANIMATION_SET_ACTIVE(anim) ((anim)->flags |= (GFX_ANIM_FLAG_IS_ACTIVE | GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
 
-typedef void  (*tween_cb)  (void*);
-
-typedef void (*update_time_cb) (float *ticker_pixel_increment,
-      unsigned width, unsigned height);
+RETRO_BEGIN_DECLS
 
 enum gfx_animation_easing_type
 {
@@ -96,6 +91,19 @@ enum gfx_animation_ticker_type
    TICKER_TYPE_LOOP,
    TICKER_TYPE_LAST
 };
+
+enum gfx_animation_flags
+{
+   GFX_ANIM_FLAG_PENDING_DELETES    = (1 << 0),
+   GFX_ANIM_FLAG_IN_UPDATE          = (1 << 1),
+   GFX_ANIM_FLAG_IS_ACTIVE          = (1 << 2),
+   GFX_ANIM_FLAG_TICKER_IS_ACTIVE   = (1 << 3)
+};
+
+typedef void  (*tween_cb)  (void*);
+
+typedef void (*update_time_cb) (float *ticker_pixel_increment,
+      unsigned width, unsigned height);
 
 typedef struct gfx_animation_ctx_entry
 {
@@ -198,14 +206,6 @@ struct tween
    float       target_value;
    float       *subject;
    bool        deleted;
-};
-
-enum gfx_animation_flags
-{
-   GFX_ANIM_FLAG_PENDING_DELETES    = (1 << 0),
-   GFX_ANIM_FLAG_IN_UPDATE          = (1 << 1),
-   GFX_ANIM_FLAG_IS_ACTIVE          = (1 << 2),
-   GFX_ANIM_FLAG_TICKER_IS_ACTIVE   = (1 << 3)
 };
 
 struct gfx_animation

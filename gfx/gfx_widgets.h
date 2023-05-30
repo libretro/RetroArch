@@ -253,7 +253,6 @@ typedef struct dispgfx_widget
    bool active;
 } dispgfx_widget_t;
 
-
 /* A widget */
 /* TODO/FIXME: cleanup all unused parameters */
 struct gfx_widget

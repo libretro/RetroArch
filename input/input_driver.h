@@ -302,7 +302,6 @@ typedef struct input_list_element_t
    unsigned int state_size;
 } input_list_element;
 
-
 /**
  * Organizes the functions and data structures of each driver that are accessed
  * by other parts of the input code. The input_driver structs are the "interface"

@@ -56,6 +56,12 @@ enum ui_msg_window_type
     UI_MSG_WINDOW_TYPE_WARNING
 };
 
+enum uico_driver_state_flags
+{
+   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
+   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
+};
+
 typedef struct ui_msg_window_state
 {
    enum ui_msg_window_buttons buttons;
@@ -131,12 +137,6 @@ typedef struct ui_companion_driver
    const char        *ident;
 } ui_companion_driver_t;
 
-enum uico_driver_state_flags
-{
-   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
-   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
-};
-
 typedef struct
 {
    const ui_companion_driver_t *drv;
@@ -146,12 +146,6 @@ typedef struct
 #endif
    uint8_t flags;
 } uico_driver_state_t;
-
-extern ui_companion_driver_t ui_companion_cocoa;
-extern ui_companion_driver_t ui_companion_qt;
-extern ui_companion_driver_t ui_companion_win32;
-
-extern ui_msg_window_t ui_msg_window_win32;
 
 uint8_t ui_companion_get_flags(void);
 
@@ -185,6 +179,13 @@ void ui_companion_driver_toggle(
       bool force);
 
 uico_driver_state_t *uico_state_get_ptr(void);
+
+extern ui_companion_driver_t ui_companion_cocoa;
+extern ui_companion_driver_t ui_companion_qt;
+extern ui_companion_driver_t ui_companion_win32;
+
+extern ui_msg_window_t ui_msg_window_win32;
+
 
 RETRO_END_DECLS
 

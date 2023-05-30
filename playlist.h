@@ -26,12 +26,10 @@
 
 #include "core_info.h"
 
-RETRO_BEGIN_DECLS
-
 /* Default maximum playlist size */
 #define COLLECTION_SIZE 0x7FFFFFFF
 
-typedef struct content_playlist playlist_t;
+RETRO_BEGIN_DECLS
 
 enum playlist_runtime_status
 {
@@ -85,6 +83,8 @@ enum playlist_thumbnail_id
    PLAYLIST_THUMBNAIL_RIGHT = 0,
    PLAYLIST_THUMBNAIL_LEFT
 };
+
+typedef struct content_playlist playlist_t;
 
 /* Holds all parameters required to uniquely
  * identify a playlist content path */

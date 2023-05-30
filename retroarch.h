@@ -42,8 +42,6 @@
 #include "runloop.h"
 #include "retroarch_types.h"
 
-RETRO_BEGIN_DECLS
-
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
 
 #define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (2 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
@@ -86,6 +84,9 @@ RETRO_BEGIN_DECLS
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
 
+
+RETRO_BEGIN_DECLS
+
 enum rarch_state_flags
 {
    RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
@@ -104,7 +105,6 @@ enum rarch_state_flags
    RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
    RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14)
 };
-
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 

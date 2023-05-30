@@ -26,8 +26,6 @@
 
 #include "../configuration.h"
 
-RETRO_BEGIN_DECLS
-
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 64
 #endif
@@ -57,6 +55,8 @@ RETRO_BEGIN_DECLS
  **/
 #define video_shader_parse_type(path) video_shader_get_type_from_ext(path_get_extension((path)), NULL)
 
+RETRO_BEGIN_DECLS
+
 enum wildcard_type
 {
    RARCH_WILDCARD_CONTENT_DIR = 0,
@@ -75,7 +75,6 @@ enum wildcard_type
    RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,
    RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT
 };
-
 
 enum rarch_shader_type
 {
@@ -218,7 +217,6 @@ struct video_shader
     * with the #reference directive, then this will be different 
     * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
-
 };
 
 struct wildcard_token

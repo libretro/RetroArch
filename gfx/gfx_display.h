@@ -32,15 +32,6 @@
 #include "../retroarch.h"
 #include "../gfx/font_driver.h"
 
-RETRO_BEGIN_DECLS
-
-enum gfx_display_flags
-{
-   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
-   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
-   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
-};
-
 #define GFX_SHADOW_ALPHA 0.75f
 
 /* Number of pixels corner-to-corner on a 1080p
@@ -74,6 +65,16 @@ enum gfx_display_flags
  * */
 #define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
 
+
+RETRO_BEGIN_DECLS
+
+enum gfx_display_flags
+{
+   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
+   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
+   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
+};
+
 enum menu_driver_id_type
 {
    MENU_DRIVER_ID_UNKNOWN = 0,
@@ -82,7 +83,6 @@ enum menu_driver_id_type
    MENU_DRIVER_ID_GLUI,
    MENU_DRIVER_ID_XMB
 };
-
 
 enum gfx_display_prim_type
 {
