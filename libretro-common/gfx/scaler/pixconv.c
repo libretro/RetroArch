@@ -41,6 +41,8 @@
 #include <emmintrin.h>
 #elif defined(__MMX__)
 #include <mmintrin.h>
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+#include <arm_neon.h>
 #endif
 
 void conv_rgb565_0rgb1555(void *output_, const void *input_,
@@ -220,6 +222,8 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
    const __m64 a          = _mm_set1_pi16(0x00ff);
 
    int max_width            = width - 3;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width            = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -282,6 +286,23 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
       }
 
       _mm_empty();
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+
+         uint16x8_t r = vsriq_n_u16(in, in, 5);
+         uint16x8_t b = vsliq_n_u16(in, in, 5);
+         uint16x8_t g = vsriq_n_u16(b,  b,  6);
+
+         uint8x8x4_t res;
+         res.val[3] = vdup_n_u8(0xffu);
+         res.val[2] = vshrn_n_u16(r, 8);
+         res.val[1] = vshrn_n_u16(g, 8);
+         res.val[0] = vshrn_n_u16(b, 2);
+
+         vst4_u8((uint8_t*)(output + w), res);
+      }
 #endif
 
       for (; w < width; w++)
@@ -315,6 +336,8 @@ void conv_rgb565_abgr8888(void *output_, const void *input_,
    const __m128i mul16_b    = _mm_set1_epi16(0x4200);
    const __m128i a          = _mm_set1_epi16(0x00ff);
     int max_width            = width - 7;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width            = width - 7;
 #endif
     for (h = 0; h < height;
          h++, output += out_stride >> 2, input += in_stride >> 1)
@@ -342,6 +365,23 @@ void conv_rgb565_abgr8888(void *output_, const void *input_,
                _mm_slli_si128(res_hi_ra, 2));
          _mm_storeu_si128((__m128i*)(output + w + 0), res_lo);
          _mm_storeu_si128((__m128i*)(output + w + 4), res_hi);
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+
+         uint16x8_t r = vsriq_n_u16(in, in, 5);
+         uint16x8_t b = vsliq_n_u16(in, in, 5);
+         uint16x8_t g = vsriq_n_u16(b,  b,  6);
+
+         uint8x8x4_t res;
+         res.val[3] = vdup_n_u8(0xffu);
+         res.val[2] = vshrn_n_u16(b, 2);
+         res.val[1] = vshrn_n_u16(g, 8);
+         res.val[0] = vshrn_n_u16(r, 8);
+
+         vst4_u8((uint8_t*)(output + w), res);
       }
 #endif
        for (; w < width; w++)
