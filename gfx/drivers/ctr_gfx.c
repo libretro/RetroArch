@@ -1414,8 +1414,9 @@ static bool ctr_frame(void* data, const void* frame,
        * This fixes screen tearing, but it has a significant impact on
        * performance...
        * */
-      bool next_event = false;
-      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+      bool next_event                      = false;
+      video_driver_state_t *video_st       = video_state_get_ptr();
+      struct retro_system_av_info *av_info = &video_st->av_info;
       if (av_info)
          next_event = av_info->timing.fps < video_refresh_rate * 0.9f;
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, next_event);

@@ -917,11 +917,6 @@ bool video_driver_monitor_adjust_system_rates(
    return input_fps <= target_video_sync_rate;
 }
 
-struct retro_system_av_info *video_viewport_get_system_av_info(void)
-{
-   return &video_driver_st.av_info;
-}
-
 void video_driver_gpu_record_deinit(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
@@ -1644,7 +1639,6 @@ bool video_driver_set_video_mode(unsigned width,
    if (     video_st->poke
          && video_st->poke->set_video_mode)
    {
-      RARCH_LOG("[SUBS] video_driver_set_video_mode\n");
       video_st->poke->set_video_mode(video_st->data,
             width, height, fullscreen);
       return true;
@@ -1702,18 +1696,6 @@ void video_driver_set_filtering(unsigned index,
       video_st->poke->set_filtering(
             video_st->data,
             index, smooth, ctx_scaling);
-}
-
-void video_driver_cached_frame_set(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-   video_driver_state_t *video_st= &video_driver_st;
-   if (data)
-      video_st->frame_cache_data = data;
-
-   video_st->frame_cache_width   = width;
-   video_st->frame_cache_height  = height;
-   video_st->frame_cache_pitch   = pitch;
 }
 
 void video_driver_cached_frame_get(const void **data, unsigned *width,
@@ -1844,12 +1826,6 @@ void video_driver_lock_new(void)
    if (!video_st->context_lock)
       video_st->context_lock = slock_new();
 #endif
-}
-
-void video_driver_set_cached_frame_ptr(const void *data)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   video_st->frame_cache_data     = data;
 }
 
 void video_driver_set_stub_frame(void)
@@ -2321,10 +2297,10 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned int rotation = retroarch_get_rotation();
 
       if (rotation % 2)
-         base_height = video_st->av_info.geometry.base_width;
+         base_height        = video_st->av_info.geometry.base_width;
 
       if (base_height == 0)
-         base_height = 1;
+         base_height        = 1;
 
       /* Account for non-square pixels.
        * This is sort of contradictory with the goal of integer scale,
@@ -3303,7 +3279,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
 
    if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
-      video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
+   {
+      video_st->frame_cache_data    = &dummy_pixels;
+      video_st->frame_cache_width   = 4;
+      video_st->frame_cache_height  = 4;
+      video_st->frame_cache_pitch   = 8;
+   }
 
 #if defined(PSP)
    video_driver_set_texture_frame(&dummy_pixels, false, 1, 1, 1.0f);

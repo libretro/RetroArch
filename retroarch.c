@@ -766,7 +766,7 @@ void drivers_init(
 #ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
 #endif
-      video_driver_set_cached_frame_ptr(NULL);
+      video_st->frame_cache_data  = NULL;
       if (!video_driver_init_internal(&video_is_threaded,
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
@@ -1041,8 +1041,8 @@ void driver_uninit(int flags)
    {
       video_driver_free_internal();
       VIDEO_DRIVER_LOCK_FREE(video_st);
-      video_st->data = NULL;
-      video_driver_set_cached_frame_ptr(NULL);
+      video_st->data              = NULL;
+      video_st->frame_cache_data  = NULL;
    }
 
    if (flags & DRIVER_AUDIO_MASK)
@@ -1104,7 +1104,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
                        );
    video_st->record_gpu_buffer          = NULL;
    video_st->current_video              = NULL;
-   video_driver_set_cached_frame_ptr(NULL);
+   video_st->frame_cache_data           = NULL;
 
    /* Audio */
    audio_state_get_ptr()->flags        &= ~AUDIO_FLAG_ACTIVE;

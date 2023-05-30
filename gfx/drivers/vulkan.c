@@ -869,11 +869,12 @@ static void vulkan_deinit_textures(vk_t *vk)
 {
    int i;
    const void* cached_frame;
+   video_driver_state_t *video_st = video_state_get_ptr(); 
 
    /* Avoid memcpying from a destroyed/unmapped texture later on. */
    video_driver_cached_frame_get(&cached_frame, NULL, NULL, NULL);
    if (vulkan_is_mapped_swapchain_texture_ptr(vk, cached_frame))
-      video_driver_set_cached_frame_ptr(NULL);
+      video_st->frame_cache_data     = NULL;
 
    vkDestroySampler(vk->context->device, vk->samplers.nearest,        NULL);
    vkDestroySampler(vk->context->device, vk->samplers.linear,         NULL);

@@ -900,8 +900,6 @@ bool video_driver_has_focus(void);
 
 bool video_driver_cached_frame_has_valid_framebuffer(void);
 
-void video_driver_set_cached_frame_ptr(const void *data);
-
 void video_driver_set_stub_frame(void);
 
 void video_driver_unset_stub_frame(void);
@@ -1015,8 +1013,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect);
-
-struct retro_system_av_info *video_viewport_get_system_av_info(void);
 
 /**
  * video_monitor_set_refresh_rate:

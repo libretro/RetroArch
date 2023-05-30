@@ -484,6 +484,7 @@ static bool take_screenshot_raw(const char *screenshot_dir,
 }
 
 static bool take_screenshot_choice(
+      video_driver_state_t *video_st,
       const char *screenshot_dir,
       const char *name_base,
       bool savestate,
@@ -524,12 +525,14 @@ static bool take_screenshot_choice(
       frame_data = video_driver_read_frame_raw(
             &old_width, &old_height, &old_pitch);
 
-      video_driver_cached_frame_set(old_data, old_width, old_height,
-            old_pitch);
+      video_st->frame_cache_data    = old_data;
+      video_st->frame_cache_width   = old_width;
+      video_st->frame_cache_height  = old_height;
+      video_st->frame_cache_pitch   = old_pitch;
 
       if (frame_data)
       {
-         video_driver_set_cached_frame_ptr(frame_data);
+         video_st->frame_cache_data = frame_data;
          return take_screenshot_raw(screenshot_dir,
                name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
@@ -571,6 +574,7 @@ bool take_screenshot(
       return false;
 
    ret       = take_screenshot_choice(
+		   video_st,
          screenshot_dir,
          name_base, savestate, runloop_flags,
          has_valid_framebuffer, fullpath, use_thread,

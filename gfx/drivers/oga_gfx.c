@@ -346,7 +346,8 @@ static void *oga_gfx_init(const video_info_t *video,
    int i;
    oga_video_t *vid                     = NULL;
    settings_t *settings                 = config_get_ptr();
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   video_driver_state_t *video_st       = video_state_get_ptr();
+   struct retro_system_av_info *av_info = &video_st->av_info;
    struct retro_game_geometry  *geom    = &av_info->geometry;
    int aw                               = ALIGN(geom->base_width, 32);
    int ah                               = ALIGN(geom->base_height, 32);

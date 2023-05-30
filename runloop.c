@@ -3791,11 +3791,12 @@ static retro_time_t runloop_core_runtime_tick(
 
 static bool core_unload_game(void)
 {
-   runloop_state_t *runloop_st  = &runloop_state;
+   runloop_state_t *runloop_st    = &runloop_state;
+   video_driver_state_t *video_st = video_state_get_ptr();
 
    video_driver_free_hw_context();
 
-   video_driver_set_cached_frame_ptr(NULL);
+   video_st->frame_cache_data     = NULL;
 
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
@@ -3892,7 +3893,7 @@ void runloop_event_deinit_core(void)
 
    core_unload_game();
 
-   video_driver_set_cached_frame_ptr(NULL);
+   video_st->frame_cache_data  = NULL;
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -4578,7 +4579,7 @@ bool runloop_event_init_core(
    /* Per-core saves: reset redirection paths */
    runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
-   video_driver_set_cached_frame_ptr(NULL);
+   video_st->frame_cache_data              = NULL;
 
    runloop_st->current_core.retro_init();
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_INITED;
@@ -7505,10 +7506,11 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
-   bool             game_loaded = false;
-   runloop_state_t *runloop_st  = &runloop_state;
+   bool             game_loaded   = false;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st    = &runloop_state;
 
-   video_driver_set_cached_frame_ptr(NULL);
+   video_st->frame_cache_data     = NULL;
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);
@@ -7642,9 +7644,9 @@ uint64_t core_serialization_quirks(void)
 
 void core_reset(void)
 {
-   runloop_state_t *runloop_st  = &runloop_state;
-
-   video_driver_set_cached_frame_ptr(NULL);
+   runloop_state_t *runloop_st    = &runloop_state;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   video_st->frame_cache_data     = NULL;
    runloop_st->current_core.retro_reset();
 }
 

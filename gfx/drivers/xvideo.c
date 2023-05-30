@@ -656,7 +656,8 @@ static void *xv_init(const video_info_t *video,
    XVisualInfo *visualinfo                = NULL;
    XvAdaptorInfo *adaptor_info            = NULL;
    const struct retro_game_geometry *geom = NULL;
-   struct retro_system_av_info *av_info   = NULL;
+   video_driver_state_t *video_st         = video_state_get_ptr();
+   struct retro_system_av_info *av_info   = &video_st->av_info;
    settings_t *settings                   = config_get_ptr();
    bool video_disable_composition         = settings->bools.video_disable_composition;
    xv_t                               *xv = (xv_t*)calloc(1, sizeof(*xv));
@@ -673,8 +674,6 @@ static void *xv_init(const video_info_t *video,
       RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
       goto error;
    }
-
-   av_info = video_viewport_get_system_av_info();
 
    if (av_info)
       geom        = &av_info->geometry;

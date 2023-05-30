@@ -644,7 +644,8 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    float                        x_scale      = 1;
    float                        y_scale      = 1;
    settings_t *settings                      = config_get_ptr();
-   struct retro_system_av_info *av_info      = video_viewport_get_system_av_info();
+   video_driver_state_t *video_st            = video_state_get_ptr();
+   struct retro_system_av_info *av_info      = &video_st->av_info;
 
    if (av_info)
    {

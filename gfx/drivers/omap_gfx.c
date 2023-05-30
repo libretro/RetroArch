@@ -396,7 +396,8 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
    struct omapfb_mem_info mi;
    void                              *mem = NULL;
    const struct retro_game_geometry *geom = NULL;
-   struct retro_system_av_info *av_info   = NULL;
+   video_driver_state_t *video_st         = video_state_get_ptr();
+   struct retro_system_av_info *av_info   = &video_st->av_info;
 
    pdata->current_state = (omapfb_state_t*)calloc(1, sizeof(omapfb_state_t));
 
@@ -426,12 +427,10 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
       }
    }
 
-   av_info  = video_viewport_get_system_av_info();
+   if (!av_info)
+      goto error;
 
-   if (av_info)
-      geom     = &av_info->geometry;
-
-   if (!geom)
+   if (!(geom = &av_info->geometry))
       goto error;
 
    mem_size = geom->max_width * geom->max_height *
