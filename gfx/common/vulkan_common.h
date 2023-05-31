@@ -731,13 +731,6 @@ void vulkan_set_uniform_buffer(
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
-static INLINE VkFormat vulkan_remap_to_texture_format(VkFormat fmt)
-{
-   if (fmt == VK_FORMAT_R5G6B5_UNORM_PACK16)
-      return VK_FORMAT_R8G8B8A8_UNORM;
-   return fmt;
-}
-
 RETRO_END_DECLS
 
 #endif

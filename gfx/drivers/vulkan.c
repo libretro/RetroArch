@@ -60,6 +60,8 @@
  * VULKAN COMMON
  */
 
+#define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
+
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static VkImage vk_images[4 * 1024];
 static unsigned vk_count;
@@ -211,7 +213,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    buffer_info.size        = buffer_width * height;
    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-   remap_tex_fmt           = vulkan_remap_to_texture_format(format);
+   remap_tex_fmt           = VK_REMAP_TO_TEXFMT(format);
 
    /* Compatibility concern. Some Apple hardware does not support rgb565.
     * Use compute shader uploads instead.
@@ -660,7 +662,7 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
       /* staging->format is always RGB565 here.
-       * Can be expanded as needed if more cases are added to vulkan_remap_to_texture_format. */
+       * Can be expanded as needed if more cases are added to VK_REMAP_TO_TEXFMT. */
       retro_assert(staging->format == VK_FORMAT_R5G6B5_UNORM_PACK16);
 
       set = vulkan_descriptor_manager_alloc(
@@ -2198,7 +2200,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.queue                 = vk->context->queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
-   info.original_format       = vulkan_remap_to_texture_format(vk->tex_fmt);
+   info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -2270,7 +2272,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.queue                 = vk->context->queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
-   info.original_format       = vulkan_remap_to_texture_format(vk->tex_fmt);
+   info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
