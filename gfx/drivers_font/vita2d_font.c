@@ -19,9 +19,7 @@
 #include <encodings/utf.h>
 
 #include "../common/vita2d_common.h"
-
 #include "../font_driver.h"
-
 #include "../../configuration.h"
 
 typedef struct
@@ -266,11 +264,12 @@ static void vita2d_font_render_msg(
    unsigned color, r, g, b, alpha;
    enum text_alignment text_align;
    float x, y, scale, drop_mod, drop_alpha;
-   bool full_screen           = false;
-   vita_video_t *vita         = (vita_video_t *)userdata;
-   vita_font_t *font          = (vita_font_t *)data;
-   unsigned width             = vita->video_width;
-   unsigned height            = vita->video_height;
+   bool full_screen                 = false;
+   vita_video_t *vita               = (vita_video_t *)userdata;
+   vita_font_t *font                = (vita_font_t *)data;
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   unsigned width                   = vita->video_width;
+   unsigned height                  = vita->video_height;
 
    if (!font || !msg || !*msg)
       return;
@@ -318,7 +317,9 @@ static void vita2d_font_render_msg(
       drop_alpha              = 1.0f;
    }
 
-   video_driver_set_viewport(width, height, full_screen, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, width, height, full_screen, false);
 
    if (drop_x || drop_y)
    {
@@ -358,7 +359,7 @@ font_renderer_t vita2d_vita_font = {
    vita2d_font_init,
    vita2d_font_free,
    vita2d_font_render_msg,
-   "vita2d_font",
+   "vita2d",
    vita2d_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */

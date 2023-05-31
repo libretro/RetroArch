@@ -372,7 +372,7 @@ font_renderer_t ps2_font = {
    ps2_font_init,
    ps2_font_free,
    ps2_font_render_msg,
-   "ps2_font",
+   "ps2",
    ps2_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */

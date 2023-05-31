@@ -380,7 +380,7 @@ font_renderer_t d3d10_font = {
    d3d10_font_init,
    d3d10_font_free,
    d3d10_font_render_msg,
-   "d3d10font",
+   "d3d10",
    d3d10_font_get_glyph,
    NULL, /* bind_block */
    NULL, /* flush */

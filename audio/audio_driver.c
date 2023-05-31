@@ -947,23 +947,6 @@ void audio_driver_set_buffer_size(size_t bufsize)
    audio_driver_st.buffer_size = bufsize;
 }
 
-float audio_driver_monitor_adjust_system_rates(
-      double input_sample_rate,
-      double input_fps,
-      float video_refresh_rate,
-      unsigned video_swap_interval,
-      float audio_max_timing_skew)
-{
-   float inp_sample_rate        = input_sample_rate;
-   float target_video_sync_rate = video_refresh_rate
-         / (float)video_swap_interval;
-   float timing_skew            =
-      fabs(1.0f - input_fps / target_video_sync_rate);
-   if (timing_skew <= audio_max_timing_skew)
-      return (inp_sample_rate * target_video_sync_rate / input_fps);
-   return inp_sample_rate;
-}
-
 #ifdef HAVE_REWIND
 void audio_driver_setup_rewind(void)
 {

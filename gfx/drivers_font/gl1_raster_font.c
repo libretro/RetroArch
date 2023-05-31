@@ -379,10 +379,15 @@ static void gl1_raster_font_render_message(
    }
 }
 
-static void gl1_raster_font_setup_viewport(unsigned width, unsigned height,
+static void gl1_raster_font_setup_viewport(
+      video_driver_state_t *video_st,
+      unsigned width, unsigned height,
       gl1_raster_t *font, bool full_screen)
 {
-   video_driver_set_viewport(width, height, full_screen, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, width, height,
+            full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -403,6 +408,7 @@ static void gl1_raster_font_render_msg(
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false;
    gl1_raster_t               *font = (gl1_raster_t*)data;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    unsigned width                   = font->gl->video_width;
    unsigned height                  = font->gl->video_height;
 
@@ -458,7 +464,7 @@ static void gl1_raster_font_render_msg(
    if (font->block)
       font->block->fullscreen = full_screen;
    else
-      gl1_raster_font_setup_viewport(width, height, font, full_screen);
+      gl1_raster_font_setup_viewport(video_st, width, height, font, full_screen);
 
    if (font->gl)
    {
@@ -485,12 +491,14 @@ static void gl1_raster_font_render_msg(
 
       if (!font->block)
       {
-         /* restore viewport */
+         /* Restore viewport */
          glEnable(GL_TEXTURE_2D);
          glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
          glDisable(GL_BLEND);
-         video_driver_set_viewport(width, height, false, true);
+         if (video_st->current_video && video_st->current_video->set_viewport)
+            video_st->current_video->set_viewport(
+                  video_st->data, width, height, false, true);
       }
    }
 }
@@ -508,22 +516,25 @@ static void gl1_raster_font_flush_block(unsigned width, unsigned height,
       void *data)
 {
    gl1_raster_t          *font       = (gl1_raster_t*)data;
-   video_font_raster_block_t *block = font ? font->block : NULL;
+   video_driver_state_t *video_st    = video_state_get_ptr();
+   video_font_raster_block_t *block  = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
-   gl1_raster_font_setup_viewport(width, height, font, block->fullscreen);
+   gl1_raster_font_setup_viewport(video_st, width, height, font, block->fullscreen);
    gl1_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
 
    if (font->gl)
    {
-      /* restore viewport */
+      /* Restore viewport */
       glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
 
       glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, block->fullscreen, true);
+      if (video_st->current_video && video_st->current_video->set_viewport)
+         video_st->current_video->set_viewport(
+               video_st->data, width, height, block->fullscreen, true);
    }
 }
 
@@ -548,7 +559,7 @@ font_renderer_t gl1_raster_font = {
    gl1_raster_font_init,
    gl1_raster_font_free,
    gl1_raster_font_render_msg,
-   "gl1_raster_font",
+   "gl1",
    gl1_raster_font_get_glyph,
    gl1_raster_font_bind_block,
    gl1_raster_font_flush_block,

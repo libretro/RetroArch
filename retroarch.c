@@ -575,15 +575,64 @@ static bool driver_find_next(const char *label, char *s, size_t len)
    return false;
 }
 
+static float audio_driver_monitor_adjust_system_rates(
+      double input_sample_rate,
+      double input_fps,
+      float video_refresh_rate,
+      unsigned video_swap_interval,
+      float audio_max_timing_skew)
+{
+   float inp_sample_rate        = input_sample_rate;
+   float target_video_sync_rate = video_refresh_rate
+         / (float)video_swap_interval;
+   float timing_skew            =
+      fabs(1.0f - input_fps / target_video_sync_rate);
+   if (timing_skew <= audio_max_timing_skew)
+      return (inp_sample_rate * target_video_sync_rate / input_fps);
+   return inp_sample_rate;
+}
+
+static bool video_driver_monitor_adjust_system_rates(
+      unsigned _video_swap_interval,
+      float timing_skew_hz,
+      float video_refresh_rate,
+      bool vrr_runloop_enable,
+      float audio_max_timing_skew,
+      unsigned video_swap_interval,
+      double input_fps)
+{
+   float target_video_sync_rate = timing_skew_hz;
+
+   /* Divide target rate only when using Auto interval */
+   if (_video_swap_interval == 0)
+      target_video_sync_rate /= (float)video_swap_interval;
+
+   if (!vrr_runloop_enable)
+   {
+      float timing_skew                    = fabs(
+            1.0f - input_fps / target_video_sync_rate);
+      /* We don't want to adjust pitch too much. If we have extreme cases,
+       * just don't readjust at all. */
+      if (timing_skew <= audio_max_timing_skew)
+         return true;
+      RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
+            " (Target = %.2f Hz, Game = %.2f Hz)\n",
+            target_video_sync_rate,
+            (float)input_fps);
+   }
+   return input_fps <= target_video_sync_rate;
+}
+
 static void driver_adjust_system_rates(
+      runloop_state_t *runloop_st,
+      video_driver_state_t *video_st,
+      settings_t *settings,
       bool vrr_runloop_enable,
       float video_refresh_rate,
       float audio_max_timing_skew,
       bool video_adaptive_vsync,
       unsigned video_swap_interval)
 {
-   runloop_state_t     *runloop_st        = runloop_state_get_ptr();
-   video_driver_state_t *video_st         = video_state_get_ptr();
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
@@ -631,12 +680,13 @@ static void driver_adjust_system_rates(
       video_st->core_hz             = input_fps;
 
       if (!video_driver_monitor_adjust_system_rates(
-         timing_skew_hz,
-         video_refresh_rate,
-         vrr_runloop_enable,
-         audio_max_timing_skew,
-         video_swap_interval,
-         input_fps))
+               settings->uints.video_swap_interval,
+               timing_skew_hz,
+               video_refresh_rate,
+               vrr_runloop_enable,
+               audio_max_timing_skew,
+               video_swap_interval,
+               input_fps))
       {
          /* We won't be able to do VSync reliably
             when game FPS > monitor FPS. */
@@ -746,7 +796,7 @@ void drivers_init(
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates(
+      driver_adjust_system_rates(runloop_st, video_st, settings,
                                  settings->bools.vrr_runloop_enable,
                                  settings->floats.video_refresh_rate,
                                  settings->floats.audio_max_timing_skew,
@@ -892,7 +942,9 @@ void drivers_init(
     * a global notifications on/off toggle switch */
    if (   video_font_enable
        && menu_enable_widgets
-       && video_driver_has_widgets())
+       && video_st->current_video
+       && video_st->current_video->gfx_widgets_enabled
+       && video_st->current_video->gfx_widgets_enabled(video_st->data))
    {
       bool rarch_force_fullscreen = video_st->flags &
          VIDEO_FLAG_FORCE_FULLSCREEN;
@@ -1160,17 +1212,19 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    {
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
          {
-            float *hz                    = (float*)data;
+            float *hz                     = (float*)data;
             audio_driver_state_t 
-               *audio_st                 = audio_state_get_ptr();
-            settings_t *settings         = config_get_ptr();
+               *audio_st                  = audio_state_get_ptr();
+            settings_t *settings          = config_get_ptr();
+            runloop_state_t *runloop_st   = runloop_state_get_ptr();
+            video_driver_state_t*video_st = video_state_get_ptr();
             unsigned 
-               audio_output_sample_rate  = settings->uints.audio_output_sample_rate;
-            bool vrr_runloop_enable      = settings->bools.vrr_runloop_enable;
-            float video_refresh_rate     = settings->floats.video_refresh_rate;
-            float audio_max_timing_skew  = settings->floats.audio_max_timing_skew;
-            bool video_adaptive_vsync    = settings->bools.video_adaptive_vsync;
-            unsigned video_swap_interval = settings->uints.video_swap_interval;
+               audio_output_sample_rate   = settings->uints.audio_output_sample_rate;
+            bool vrr_runloop_enable       = settings->bools.vrr_runloop_enable;
+            float video_refresh_rate      = settings->floats.video_refresh_rate;
+            float audio_max_timing_skew   = settings->floats.audio_max_timing_skew;
+            bool video_adaptive_vsync     = settings->bools.video_adaptive_vsync;
+            unsigned video_swap_interval  = settings->uints.video_swap_interval;
 
             video_monitor_set_refresh_rate(*hz);
 
@@ -1179,7 +1233,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             audio_st->source_ratio_current    =
             (double)audio_output_sample_rate / audio_st->input;
 
-            driver_adjust_system_rates(
+            driver_adjust_system_rates(runloop_st, video_st, settings,
                                        vrr_runloop_enable,
                                        video_refresh_rate,
                                        audio_max_timing_skew,

@@ -7022,6 +7022,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_handle_t *mui       = (materialui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    menu_input_t *menu_input       = &menu_st->input_state;
@@ -7062,7 +7063,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Clear text */
    materialui_font_bind(&mui->font_data.title);
@@ -7303,7 +7306,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_font_unbind(&mui->font_data.list);
    materialui_font_unbind(&mui->font_data.hint);
 
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }
 
 /* Determines current list view type, based on

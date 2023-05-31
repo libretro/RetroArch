@@ -11372,6 +11372,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    gfx_display_t            *p_disp       = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t *p_anim                = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
+   video_driver_state_t *video_st         = video_state_get_ptr();
    struct menu_state *menu_st             = menu_state_get_ptr();
    menu_list_t *menu_list                 = menu_st->entries.list;
 
@@ -11477,7 +11478,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       return;
    }
 
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Clear text */
    ozone_font_bind(&ozone->fonts.footer);
@@ -11748,7 +11751,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_font_unbind(&ozone->fonts.entries_sublabel);
    ozone_font_unbind(&ozone->fonts.sidebar);
 
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }
 
 static void ozone_set_header(ozone_handle_t *ozone)

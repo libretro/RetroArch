@@ -385,7 +385,7 @@ font_renderer_t wiiu_font =
    wiiu_font_init,
    wiiu_font_free,
    wiiu_font_render_msg,
-   "wiiu_font",
+   "gx2",
    wiiu_font_get_glyph,
    NULL,                   /* bind_block */
    NULL,                   /* flush */

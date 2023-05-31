@@ -304,13 +304,6 @@ bool audio_driver_is_ai_service_speech_running(void);
  **/
 bool audio_compute_buffer_statistics(audio_statistics_t *stats);
 
-float audio_driver_monitor_adjust_system_rates(
-      double input_sample_rate,
-      double input_fps,
-      float video_refresh_rate,
-      unsigned video_swap_interval,
-      float audio_max_timing_skew);
-
 bool audio_driver_init_internal(
       void *settings_data,
       bool audio_cb_inited);

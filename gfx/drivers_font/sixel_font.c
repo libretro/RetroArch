@@ -133,7 +133,7 @@ font_renderer_t sixel_font = {
    sixel_font_init,
    sixel_font_free,
    sixel_font_render_msg,
-   "sixel_font",
+   "sixel",
    sixel_font_get_glyph,
    NULL,                       /* bind_block */
    NULL,                       /* flush */

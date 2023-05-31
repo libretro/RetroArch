@@ -888,7 +888,17 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
 bool video_driver_has_windowed(void);
+#else
+#define video_driver_has_windowed() (false)
+#endif
+
+#ifdef HAVE_THREADS
+bool video_driver_is_threaded(void);
+#else
+#define video_driver_is_threaded() (false)
+#endif
 
 bool video_driver_has_focus(void);
 
@@ -968,9 +978,6 @@ void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 
 const char *video_driver_get_ident(void);
 
-void video_driver_set_viewport(unsigned width, unsigned height,
-      bool force_fullscreen, bool allow_rotate);
-
 void video_driver_get_size(unsigned *width, unsigned *height);
 
 void video_driver_set_size(unsigned width, unsigned height);
@@ -1028,16 +1035,6 @@ void video_monitor_compute_fps_statistics(uint64_t
  **/
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
-
-bool video_driver_monitor_adjust_system_rates(
-      float timing_skew_hz,
-      float video_refresh_rate,
-      bool vrr_runloop_enable,
-      float audio_max_timing_skew,
-      unsigned video_swap_interval,
-      double input_fps);
-
-void crt_switch_driver_refresh(void);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
@@ -1163,11 +1160,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
-#if defined(HAVE_GFX_WIDGETS)
-bool video_driver_has_widgets(void);
-#endif
-
-bool video_driver_is_threaded(void);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 

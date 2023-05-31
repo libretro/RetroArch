@@ -122,7 +122,7 @@ font_renderer_t d3d_xdk1_font = {
    xfonts_init,
    xfonts_free,
    xfonts_render_msg,
-   "xfonts",
+   "xdk1",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */

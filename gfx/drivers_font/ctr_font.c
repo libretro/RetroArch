@@ -446,7 +446,7 @@ font_renderer_t ctr_font =
    ctr_font_init,
    ctr_font_free,
    ctr_font_render_msg,
-   "ctr_font",
+   "ctr",
    ctr_font_get_glyph,
    NULL,                         /* bind_block */
    NULL,                         /* flush_block */

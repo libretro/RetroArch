@@ -5683,6 +5683,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    gfx_display_t            *p_disp        = (gfx_display_t*)video_info->disp_userdata;
    gfx_animation_t          *p_anim        = anim_get_ptr();
    gfx_display_ctx_driver_t *dispctx       = p_disp->dispctx;
+   video_driver_state_t *video_st          = video_state_get_ptr();
    struct menu_state   *menu_st            = menu_state_get_ptr();
    menu_list_t *menu_list                  = menu_st->entries.list;
    bool input_dialog_display_kb            = menu_input_dialog_get_display_kb();
@@ -5703,7 +5704,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       return;
    }
 
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4.0f;
    left_thumbnail_margin_width             = xmb->icon_size * 3.4f;
@@ -6405,7 +6408,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                video_height);
    }
 
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)

@@ -90,14 +90,17 @@ static void crt_aspect_ratio_switch(
    RARCH_LOG("[CRT]: Setting Aspect Ratio: %f \n", fly_aspect);
    RARCH_LOG("[CRT]: Setting Video Screen Size to: %dx%d \n",
          width, height);
-   video_driver_set_size(width , height);
-   video_driver_set_viewport(width , height,1,1);
+   video_driver_set_size(width, height);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, width, height, true, true);
 
    video_driver_apply_state_changes();
 
 }
 
-static void set_aspect(videocrt_switch_t *p_switch,
+static void crt_switch_set_aspect(
+      videocrt_switch_t *p_switch,
       unsigned int width, unsigned int height,
       unsigned int srm_width, unsigned srm_height,
       float srm_xscale, float srm_yscale,
@@ -320,7 +323,7 @@ static void switch_res_crt(
          get_modeline_for_kms(p_switch, &srm);
 #if 0
          /* Need trigger the context set video mode */
-         crt_switch_driver_refresh();
+         video_driver_reinit(DRIVER_VIDEO_MASK);
 #endif
          video_driver_set_video_mode(srm.width, srm.height, true);
       }
@@ -330,12 +333,17 @@ static void switch_res_crt(
          RARCH_LOG("[CRT]: SR failed to switch mode\n");
       p_switch->sr_core_hz = (float)srm.vfreq;
 
-      set_aspect(p_switch, retroarch_get_rotation()? h : w , retroarch_get_rotation()? w : h, srm.width, srm.height,
+      crt_switch_set_aspect(p_switch,
+            retroarch_get_rotation() ? h : w,
+            retroarch_get_rotation() ? w : h,
+            srm.width, srm.height,
             (float)srm.x_scale, (float)srm.y_scale, srm.is_stretched);
    }
    else
    {
-      set_aspect(p_switch, width , height, width, height,
+      crt_switch_set_aspect(p_switch,
+            width, height,
+            width, height,
             (float)1, (float)1, false);
       video_driver_set_size(width , height);
       video_driver_apply_state_changes();
@@ -405,7 +413,7 @@ void crt_switch_res_core(
             int corrected_height = 240;
             switch_res_crt(p_switch, corrected_width, corrected_height,
                   crt_mode, corrected_width, monitor_index-1, super_width);
-            set_aspect(p_switch, native_width, height, native_width,
+            crt_switch_set_aspect(p_switch, native_width, height, native_width,
                   height ,(float)1,(float)1, false);
             video_driver_set_size(native_width , height);
          }
@@ -519,7 +527,7 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
-   set_aspect(p_switch, width,
+   crt_switch_set_aspect(p_switch, width,
       height, width, height,
       (float)1, (float)1, false);
 
@@ -617,6 +625,6 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
          "fbset -g %d %d %d %d 24 > /dev/null",
          width, height, width, height);
    system(output2);
-   crt_switch_driver_refresh();
+   video_driver_reinit(DRIVER_VIDEO_MASK);
 }
 #endif

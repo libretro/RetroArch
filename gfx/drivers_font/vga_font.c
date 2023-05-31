@@ -137,7 +137,7 @@ font_renderer_t vga_font = {
    vga_font_init,
    vga_font_render_free,
    vga_font_render_msg,
-   "vga_font",
+   "vga",
    vga_font_get_glyph,         /* get_glyph */
    NULL,                       /* bind_block */
    NULL,                       /* flush */

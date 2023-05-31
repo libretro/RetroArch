@@ -320,10 +320,14 @@ static void gl3_raster_font_render_message(
    }
 }
 
-static void gl3_raster_font_setup_viewport(unsigned width, unsigned height,
+static void gl3_raster_font_setup_viewport(
+      video_driver_state_t *video_st,
+      unsigned width, unsigned height,
       gl3_raster_t *font, bool full_screen)
 {
-   video_driver_set_viewport(width, height, full_screen, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, width, height, full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -343,7 +347,8 @@ static void gl3_raster_font_render_msg(
    GLfloat x, y, scale, drop_mod, drop_alpha;
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
-   gl3_raster_t           *font = (gl3_raster_t*)data;
+   gl3_raster_t           *font     = (gl3_raster_t*)data;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    unsigned width                   = font->gl->video_width;
    unsigned height                  = font->gl->video_height;
    settings_t *settings             = config_get_ptr();
@@ -399,7 +404,7 @@ static void gl3_raster_font_render_msg(
    if (font->block)
       font->block->fullscreen = full_screen;
    else
-      gl3_raster_font_setup_viewport(width, height, font, full_screen);
+      gl3_raster_font_setup_viewport(video_st, width, height, font, full_screen);
 
    if (font->gl)
    {
@@ -427,7 +432,9 @@ static void gl3_raster_font_render_msg(
       if (!font->block)
       {
          glDisable(GL_BLEND);
-         video_driver_set_viewport(width, height, false, true);
+         if (video_st->current_video && video_st->current_video->set_viewport)
+            video_st->current_video->set_viewport(
+                  video_st->data, width, height, false, true);
       }
    }
 }
@@ -445,18 +452,21 @@ static void gl3_raster_font_flush_block(unsigned width, unsigned height,
       void *data)
 {
    gl3_raster_t          *font       = (gl3_raster_t*)data;
-   video_font_raster_block_t *block = font ? font->block : NULL;
+   video_driver_state_t *video_st    = video_state_get_ptr();
+   video_font_raster_block_t *block  = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
-   gl3_raster_font_setup_viewport(width, height, font, block->fullscreen);
+   gl3_raster_font_setup_viewport(video_st, width, height, font, block->fullscreen);
    gl3_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
 
    if (font->gl)
    {
       glDisable(GL_BLEND);
-      video_driver_set_viewport(width, height, block->fullscreen, true);
+      if (video_st->current_video && video_st->current_video->set_viewport)
+         video_st->current_video->set_viewport(
+               video_st->data, width, height, block->fullscreen, true);
    }
 }
 
@@ -481,7 +491,7 @@ font_renderer_t gl3_raster_font = {
    gl3_raster_font_init,
    gl3_raster_font_free,
    gl3_raster_font_render_msg,
-   "gl3_raster_font",
+   "glcore",
    gl3_raster_font_get_glyph,
    gl3_raster_font_bind_block,
    gl3_raster_font_flush_block,

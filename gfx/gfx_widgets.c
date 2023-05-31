@@ -1480,6 +1480,7 @@ void gfx_widgets_frame(void *data)
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
    gfx_display_t            *p_disp = (gfx_display_t*)video_info->disp_userdata;
    gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)video_info->widgets_userdata;
    bool fps_show                    = video_info->fps_show;
    bool framecount_show             = video_info->framecount_show;
@@ -1503,7 +1504,9 @@ void gfx_widgets_frame(void *data)
    if (menu_screensaver_active || notifications_hidden)
       return;
 
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Font setup */
    gfx_widgets_font_bind(&p_dispwidget->gfx_widget_fonts.regular);
@@ -1777,7 +1780,9 @@ void gfx_widgets_frame(void *data)
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.bold);
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.msg_queue);
 
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }
 
 static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)

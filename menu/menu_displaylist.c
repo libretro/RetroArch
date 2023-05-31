@@ -9717,7 +9717,10 @@ unsigned menu_displaylist_build_list(
             bool video_font_enable        = settings->bools.video_font_enable;
             bool video_msg_bgcolor_enable = settings->bools.video_msg_bgcolor_enable;
 #ifdef HAVE_GFX_WIDGETS
-            bool widgets_supported        = video_driver_has_widgets();
+            video_driver_state_t *video_st= video_state_get_ptr();
+            bool widgets_supported        = video_st->current_video
+               && video_st->current_video->gfx_widgets_enabled
+               && video_st->current_video->gfx_widgets_enabled(video_st->data);
             bool widgets_active           = gfx_widgets_ready();
             bool menu_widget_scale_auto   = settings->bools.menu_widget_scale_auto;
 #else

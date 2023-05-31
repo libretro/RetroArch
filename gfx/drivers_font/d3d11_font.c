@@ -383,7 +383,7 @@ font_renderer_t d3d11_font = {
    d3d11_font_init,
    d3d11_font_free,
    d3d11_font_render_msg,
-   "d3d11_font",
+   "d3d11",
    d3d11_font_get_glyph,
    NULL, /* bind_block */
    NULL, /* flush */

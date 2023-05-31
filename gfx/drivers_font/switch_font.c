@@ -302,7 +302,7 @@ font_renderer_t switch_font =
    switch_font_init,
    switch_font_free,
    switch_font_render_msg,
-   "switch_font",
+   "switch",
    switch_font_get_glyph,
    NULL, /* bind_block  */
    NULL, /* flush_block */

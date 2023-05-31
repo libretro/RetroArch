@@ -144,7 +144,7 @@ font_renderer_t caca_font = {
    caca_font_init,
    caca_font_free,
    caca_font_render_msg,
-   "caca font",
+   "caca",
    caca_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */

@@ -749,9 +749,10 @@ void menu_screensaver_iterate(
 void menu_screensaver_frame(menu_screensaver_t *screensaver,
       video_frame_info_t *video_info, gfx_display_t *p_disp)
 {
-   void *userdata = NULL;
    unsigned video_width;
    unsigned video_height;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   void *userdata                 = NULL;
 
    if (!screensaver)
       return;
@@ -761,7 +762,9 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    userdata     = video_info->userdata;
 
    /* Set viewport */
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Draw background */
    gfx_display_draw_quad(
@@ -816,5 +819,7 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    }
 
    /* Unset viewport */
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }

@@ -363,6 +363,7 @@ static void vulkan_font_render_msg(
    float x, y, scale, drop_mod, drop_alpha;
    vk_t *vk                         = NULL;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -417,7 +418,9 @@ static void vulkan_font_render_msg(
       color[3]    = 1.0f;
    }
 
-   video_driver_set_viewport(width, height, full_screen, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, width, height, full_screen, false);
 
    max_glyphs = strlen(msg);
    if (drop_x || drop_y)
@@ -481,7 +484,7 @@ font_renderer_t vulkan_raster_font = {
    vulkan_font_init,
    vulkan_font_free,
    vulkan_font_render_msg,
-   "vulkan_font",
+   "vulkan",
    vulkan_font_get_glyph,
    NULL,                            /* bind_block */
    NULL,                            /* flush_block */

@@ -23,9 +23,7 @@
 #endif
 
 #include "../font_driver.h"
-
 #include "../common/rsx_common.h"
-
 #include "../../configuration.h"
 
 #define RSX_FONT_EMIT(c, vx, vy) \
@@ -424,10 +422,14 @@ static void rsx_font_render_message(
    }
 }
 
-static void rsx_font_setup_viewport(unsigned width, unsigned height,
+static void rsx_font_setup_viewport(
+      video_driver_state_t *video_st,
+      unsigned width, unsigned height,
       rsx_font_t *font, bool full_screen)
 {
-   video_driver_set_viewport(width, height, full_screen, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, width, height, full_screen, false);
 
    if (font->rsx)
    {
@@ -454,6 +456,7 @@ static void rsx_font_render_msg(
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
    rsx_font_t *font                 = (rsx_font_t*)data;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    unsigned width                   = font->rsx->width;
    unsigned height                  = font->rsx->height;
    settings_t *settings             = config_get_ptr();
@@ -540,7 +543,9 @@ static void rsx_font_render_msg(
          rsxTextureControl(font->rsx->context, font->tex_unit->index,
                GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
          rsxSetBlendEnable(font->rsx->context, GCM_FALSE);
-         video_driver_set_viewport(width, height, false, true);
+         if (video_st->current_video && video_st->current_video->set_viewport)
+            video_st->current_video->set_viewport(
+                  video_st->data, width, height, false, true);
       }
       font->rsx->font_vert_idx = 0;
    }
@@ -558,13 +563,14 @@ static const struct font_glyph *rsx_font_get_glyph(
 static void rsx_font_flush_block(unsigned width, unsigned height,
       void *data)
 {
-   rsx_font_t          *font       = (rsx_font_t*)data;
+   rsx_font_t          *font        = (rsx_font_t*)data;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    video_font_raster_block_t *block = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
-   rsx_font_setup_viewport(width, height, font, block->fullscreen);
+   rsx_font_setup_viewport(video_st, width, height, font, block->fullscreen);
    rsx_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
 
    if (font->rsx)
@@ -573,7 +579,9 @@ static void rsx_font_flush_block(unsigned width, unsigned height,
       rsxTextureControl(font->rsx->context, font->tex_unit->index,
             GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
       rsxSetBlendEnable(font->rsx->context, GCM_FALSE);
-      video_driver_set_viewport(width, height, block->fullscreen, true);
+      if (video_st->current_video && video_st->current_video->set_viewport)
+         video_st->current_video->set_viewport(
+               video_st->data, width, height, block->fullscreen, true);
    }
    font->rsx->font_vert_idx = 0;
 }
@@ -599,7 +607,7 @@ font_renderer_t rsx_font = {
    rsx_font_init,
    rsx_font_free,
    rsx_font_render_msg,
-   "rsx_font",
+   "rsx",
    rsx_font_get_glyph,
    rsx_font_bind_block,
    rsx_font_flush_block,

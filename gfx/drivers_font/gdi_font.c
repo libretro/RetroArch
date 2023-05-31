@@ -201,7 +201,7 @@ font_renderer_t gdi_font = {
    gdi_font_init,
    gdi_font_free,
    gdi_font_render_msg,
-   "gdi_font",
+   "gdi",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */

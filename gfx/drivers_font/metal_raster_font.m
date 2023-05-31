@@ -547,7 +547,7 @@ font_renderer_t metal_raster_font = {
    metal_raster_font_init,
    metal_raster_font_free,
    metal_raster_font_render_msg,
-   "metal_raster",
+   "metal",
    metal_raster_font_get_glyph,
    NULL, /* bind_block  */
    NULL, /* flush_block */

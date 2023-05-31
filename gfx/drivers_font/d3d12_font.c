@@ -388,7 +388,7 @@ font_renderer_t d3d12_font = {
    d3d12_font_init,
    d3d12_font_free,
    d3d12_font_render_msg,
-   "d3d12_font",
+   "d3d12",
    d3d12_font_get_glyph,
    NULL, /* bind_block */
    NULL, /* flush */
