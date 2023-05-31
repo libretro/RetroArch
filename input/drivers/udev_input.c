@@ -28,7 +28,6 @@
 #endif
 #endif
 
-
 #include <stdint.h>
 #include <string.h>
 
@@ -3220,13 +3219,13 @@ static int udev_input_add_device(udev_input_t *udev,
          device->mouse.y_max = absinfo.maximum;
       }
 
-#ifdef UDEV_TOUCH_SUPPORT
       if (touch)
       {
+#ifdef UDEV_TOUCH_SUPPORT
           udev_init_touch_dev(device);
           udev_sync_touch(device);
-      }
 #endif 
+      }
 
       if (!mouse)
          goto end;
@@ -3338,8 +3337,13 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    }
    else if (val_touchscreen && string_is_equal(val_touchscreen, "1") && devnode)
    {
+#ifdef UDEV_TOUCH_SUPPORT
       dev_type   = UDEV_INPUT_TOUCHSCREEN;
       cb         = udev_handle_touch;
+#else
+      dev_type   = UDEV_INPUT_TOUCHPAD;
+      cb         = udev_handle_mouse;
+#endif
    }
    else
       goto end;
