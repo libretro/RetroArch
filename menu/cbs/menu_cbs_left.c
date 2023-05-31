@@ -252,27 +252,14 @@ static int action_left_scroll(unsigned type, const char *label,
    return 0;
 }
 
-static int action_left_goto_tab(void)
-{
-   struct menu_state *menu_st = menu_state_get_ptr();
-   menu_list_t *menu_list     = menu_st->entries.list;
-   file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-
-   if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
-      menu_st->driver_ctx->list_cache(menu_st->userdata,
-            MENU_LIST_HORIZONTAL, MENU_ACTION_LEFT);
-   return menu_driver_deferred_push_content_list(selection_buf);
-}
-
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
+#ifdef HAVE_XMB
    struct menu_state    *menu_st       = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
    size_t size                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
-
-#ifdef HAVE_XMB
+   const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
    /* Tab switching functionality only applies
     * to XMB */
    if (  (size == 1)
@@ -282,7 +269,15 @@ static int action_left_mainmenu(unsigned type, const char *label,
       bool menu_nav_wraparound_enable  = settings->bools.menu_navigation_wraparound_enable;
       size_t selection                 = (driver_ctx && driver_ctx->list_get_selection) ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
       if ((selection != 0) || menu_nav_wraparound_enable)
-         return action_left_goto_tab();
+      {
+         menu_list_t *menu_list        = menu_st->entries.list;
+         file_list_t *selection_buf    = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+
+         if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+            menu_st->driver_ctx->list_cache(menu_st->userdata,
+                  MENU_LIST_HORIZONTAL, MENU_ACTION_LEFT);
+         return menu_driver_deferred_push_content_list(selection_buf);
+      }
    }
    else
 #endif

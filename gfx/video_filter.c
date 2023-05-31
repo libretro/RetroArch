@@ -136,7 +136,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
-   unsigned input_fmts, input_fmt, output_fmts, i = 0;
+   unsigned input_fmts, input_fmt, output_fmts;
    struct config_file_userdata userdata;
    char key[64], name[64];
    name[0] = '\0';
@@ -236,9 +236,9 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 #ifdef HAVE_THREADS
    if (filt->threads > 1)
    {
-      filt->thread_data = (struct filter_thread_data*)
-         calloc(threads, sizeof(*filt->thread_data));
-      if (!filt->thread_data)
+      unsigned i;
+      if (!(filt->thread_data = (struct filter_thread_data*)
+         calloc(threads, sizeof(*filt->thread_data))))
          return false;
 
       for (i = 0; i < threads; i++)
