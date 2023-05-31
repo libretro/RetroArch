@@ -71,15 +71,6 @@
 /*
  * D3D12 COMMON
  */
-static void
-d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIPTOR_HANDLE handle)
-{
-   unsigned i   = (handle.ptr - heap->cpu.ptr) / heap->stride;
-   heap->map[i] = false;
-   if (heap->start > (int)i)
-      heap->start = i;
-}
-
 static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_heap_t* heap)
 {
    int i;
@@ -108,10 +99,17 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
    if (texture->srv_heap && texture->desc.MipLevels <= countof(texture->cpu_descriptor))
    {
       int i;
+      d3d12_descriptor_heap_t *heap            = texture->srv_heap;
       for (i = 0; i < texture->desc.MipLevels; i++)
       {
-         if (texture->cpu_descriptor[i].ptr)
-            d3d12_descriptor_heap_slot_free(texture->srv_heap, texture->cpu_descriptor[i]);
+         D3D12_CPU_DESCRIPTOR_HANDLE handle    = texture->cpu_descriptor[i];
+         if (handle.ptr)
+         {
+            unsigned _i                        = (handle.ptr - heap->cpu.ptr) / heap->stride;
+            heap->map[_i]                      = false;
+            if (heap->start > (int)_i)
+               heap->start                     = _i;
+         }
          texture->cpu_descriptor[i].ptr = 0;
       }
    }
@@ -132,9 +130,9 @@ static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DAT
    {
       D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { *format };
       if (SUCCEEDED(device->lpVtbl->CheckFeatureSupport(
-                device, D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support))) &&
-          ((format_support.Support1 & desired->Support1) == desired->Support1) &&
-          ((format_support.Support2 & desired->Support2) == desired->Support2))
+                device, D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support)))
+          && ((format_support.Support1 & desired->Support1) == desired->Support1)
+          && ((format_support.Support2 & desired->Support2) == desired->Support2))
          break;
       format++;
    }
@@ -148,8 +146,8 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    if (!texture->desc.MipLevels)
       texture->desc.MipLevels          = 1;
 
-   if (!(texture->desc.Width  >> (texture->desc.MipLevels - 1)) &&
-       !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
+   if (   !(texture->desc.Width  >> (texture->desc.MipLevels - 1))
+       && !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
    {
       unsigned width                   = texture->desc.Width >> 5;
       unsigned height                  = texture->desc.Height >> 5;
@@ -256,22 +254,14 @@ static void d3d12_update_texture(
 {
    uint8_t *dst;
    D3D12_RANGE read_range;
-
-   if (!texture || !texture->upload_buffer)
-      return;
-
-   read_range.Begin = 0;
-   read_range.End   = 0;
-
-   D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
-
-   dxgi_copy(
-         width, height, format, pitch, data, texture->desc.Format,
+   ID3D12Resource *resource = (ID3D12Resource*)texture->upload_buffer;
+   read_range.Begin         = 0;
+   read_range.End           = 0;
+   resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst);
+   dxgi_copy(width, height, format, pitch, data, texture->desc.Format,
          texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
-
-   D3D12Unmap(texture->upload_buffer, 0, NULL);
-
-   texture->dirty = true;
+   resource->lpVtbl->Unmap(resource, 0, NULL);
+   texture->dirty           = true;
 }
 
 /*
@@ -311,10 +301,11 @@ static void * d3d12_font_init(void* data, const char* font_path,
    font->texture.srv_heap    = &d3d12->desc.srv_heap;
    d3d12_release_texture(&font->texture);
    d3d12_init_texture(d3d12->device, &font->texture);
-   d3d12_update_texture(
-         font->atlas->width, font->atlas->height,
-         font->atlas->width, DXGI_FORMAT_A8_UNORM,
-         font->atlas->buffer, &font->texture);
+   if (font->texture.upload_buffer)
+      d3d12_update_texture(
+            font->atlas->width, font->atlas->height,
+            font->atlas->width, DXGI_FORMAT_A8_UNORM,
+            font->atlas->buffer, &font->texture);
    font->atlas->dirty = false;
 
    return font;
@@ -463,10 +454,11 @@ static void d3d12_font_render_line(
 
    if (font->atlas->dirty)
    {
-      d3d12_update_texture(
-            font->atlas->width, font->atlas->height,
-            font->atlas->width, DXGI_FORMAT_A8_UNORM,
-            font->atlas->buffer, &font->texture);
+      if (font->texture.upload_buffer)
+         d3d12_update_texture(
+               font->atlas->width, font->atlas->height,
+               font->atlas->width, DXGI_FORMAT_A8_UNORM,
+               font->atlas->buffer, &font->texture);
       font->atlas->dirty = false;
    }
 
@@ -823,10 +815,11 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
 
       d3d12_release_texture(&d3d12->overlays.textures[i]);
       d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
-      d3d12_update_texture(
-            images[i].width, images[i].height,
-            0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
-            &d3d12->overlays.textures[i]);
+      if (d3d12->overlays.textures[i].upload_buffer)
+         d3d12_update_texture(
+               images[i].width, images[i].height,
+               0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
+               &d3d12->overlays.textures[i]);
 
       sprites[i].pos.x           = 0.0f;
       sprites[i].pos.y           = 0.0f;
@@ -1409,9 +1402,10 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       d3d12_release_texture(&d3d12->luts[i]);
       d3d12_init_texture(d3d12->device, &d3d12->luts[i]);
 
-      d3d12_update_texture(
-            image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
-            &d3d12->luts[i]);
+      if (d3d12->luts[i].upload_buffer)
+         d3d12_update_texture(
+               image.width, image.height, 0, DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
+               &d3d12->luts[i]);
 
       image_texture_free(&image);
    }
@@ -3049,8 +3043,9 @@ static bool d3d12_gfx_frame(
       }
       else
       {
-         d3d12_update_texture(width, height, pitch, d3d12->format,
-               frame, &d3d12->frame.texture[0]);
+         if (d3d12->frame.texture[0].upload_buffer)
+            d3d12_update_texture(width, height, pitch, d3d12->format,
+                  frame, &d3d12->frame.texture[0]);
 
          d3d12_upload_texture(cmd, &d3d12->frame.texture[0], d3d12);
       }
@@ -3559,8 +3554,9 @@ static void d3d12_set_menu_texture_frame(
       d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
    }
 
-   d3d12_update_texture(width, height, pitch,
-         format, frame, &d3d12->menu.texture);
+   if (d3d12->menu.texture.upload_buffer)
+      d3d12_update_texture(width, height, pitch,
+            format, frame, &d3d12->menu.texture);
 
    d3d12->menu.alpha = alpha;
 
@@ -3667,9 +3663,10 @@ static uintptr_t d3d12_gfx_load_texture(
    d3d12_release_texture(texture);
    d3d12_init_texture(d3d12->device, texture);
 
-   d3d12_update_texture(
-         image->width, image->height, 0,
-         DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
+   if (texture->upload_buffer)
+      d3d12_update_texture(
+            image->width, image->height, 0,
+            DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
 
    return (uintptr_t)texture;
 }

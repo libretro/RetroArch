@@ -191,8 +191,8 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    {
       UINT         format_support;
       if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
-                  &format_support)) &&
-            ((format_support & desired_format_support) == desired_format_support))
+                  &format_support))
+            && ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
    }
@@ -366,9 +366,9 @@ static void d3d11_font_free(void* data, bool is_threaded)
 static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_len, float scale)
 {
    int i;
-   int      delta_x   = 0;
+   int delta_x                      = 0;
    const struct font_glyph* glyph_q = NULL;
-   d3d11_font_t* font = (d3d11_font_t*)data;
+   d3d11_font_t* font               = (d3d11_font_t*)data;
 
    if (!font)
       return 0;
@@ -453,13 +453,13 @@ static void d3d11_font_render_line(
 
       v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d11->viewport.Width;
       v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d11->viewport.Height;
-      v->pos.w           = glyph->width * scale / (float)d3d11->viewport.Width;
-      v->pos.h           = glyph->height * scale / (float)d3d11->viewport.Height;
+      v->pos.w           = glyph->width               * scale   / (float)d3d11->viewport.Width;
+      v->pos.h           = glyph->height              * scale   / (float)d3d11->viewport.Height;
 
       v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
       v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
-      v->coords.w        = glyph->width / (float)font->texture.desc.Width;
-      v->coords.h        = glyph->height / (float)font->texture.desc.Height;
+      v->coords.w        = glyph->width          / (float)font->texture.desc.Width;
+      v->coords.h        = glyph->height         / (float)font->texture.desc.Height;
 
       v->params.scaling  = 1;
       v->params.rotation = 0;
@@ -531,8 +531,8 @@ static void d3d11_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (   !font->font_driver->get_line_metrics
+       || !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       size_t msg_len = strlen(msg);
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
