@@ -15,9 +15,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 #include <dpmi.h>
 #include <pc.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -30,6 +37,76 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 
+/*
+ * FONT DRIVER
+ */
+
+typedef struct
+{
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   vga_t *vga;
+} vga_raster_t;
+
+static void *vga_font_init(void *data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   vga_raster_t *font  = (vga_raster_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   font->vga = (vga_t*)data;
+
+   font_size = 1;
+
+   if (!font_renderer_create_default(
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
+      return NULL;
+
+   return font;
+}
+
+static void vga_font_render_free(void *data, bool is_threaded)
+{
+  vga_raster_t *font  = (vga_raster_t*)data;
+
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
+}
+
+static int vga_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale) { return 0; }
+static const struct font_glyph *vga_font_get_glyph(
+      void *data, uint32_t code) { return NULL; }
+/* TODO/FIXME -implement font rendering */
+static void vga_font_render_msg(
+      void *userdata,
+      void *data, const char *msg,
+      const struct font_params *params) { }
+
+font_renderer_t vga_font = {
+   vga_font_init,
+   vga_font_render_free,
+   vga_font_render_msg,
+   "vga",
+   vga_font_get_glyph,         /* get_glyph */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   vga_font_get_message_width, /* get_message_width */
+   NULL                        /* get_line_metrics */
+};
+
+/*
+ * VIDEO DRIVER
+ */
 
 static void vga_set_mode_13h(void)
 {

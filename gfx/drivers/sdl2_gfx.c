@@ -43,6 +43,10 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+/*
+ * FORWARD DECLARATIONS
+ */
+
 static void sdl2_gfx_free(void *data);
 
 static INLINE void sdl_tex_zero(sdl2_tex_t *t)

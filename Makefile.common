@@ -23,8 +23,6 @@ ifeq ($(HAVE_SAPI), 1)
    LIBS += sapi.dll
 endif
 
-
-
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -803,14 +801,6 @@ ifeq ($(HAVE_CORETEXT), 1)
    OBJ += gfx/drivers_font_renderer/coretext.o
 endif
 
-ifeq ($(TARGET), retroarch_3ds)
-   OBJ += gfx/drivers_font/ctr_font.o
-endif
-
-ifeq ($(TARGET), retroarch_ps2)
-   OBJ += gfx/drivers_font/ps2_font.o
-endif
-
 ifeq ($(HAVE_LIBNX), 1)
    OBJ += gfx/drivers_font/switch_font.o
 endif
@@ -1136,8 +1126,7 @@ ifeq ($(HAVE_VITA2D), 1)
 
    OBJ += gfx/drivers_display/gfx_display_vita2d.o
 
-   OBJ += gfx/drivers/vita2d_gfx.o \
-          gfx/drivers_font/vita2d_font.o
+   OBJ += gfx/drivers/vita2d_gfx.o
 
    INCLUDE_DIRS += -I$(DEPS_DIR)/libvita2d/include
 endif
@@ -1403,7 +1392,7 @@ endif
 
 ifeq ($(HAVE_CACA), 1)
    DEFINES += -DHAVE_CACA
-   OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
+   OBJ += gfx/drivers/caca_gfx.o
    LIBS += $(CACA_LIBS)
    DEF_FLAGS += $(CACA_CFLAGS)
 endif
@@ -1411,8 +1400,7 @@ endif
 ifeq ($(HAVE_SIXEL), 1)
    DEFINES += -DHAVE_SIXEL
    INCLUDE_DIRS += -I/usr/include/sixel
-   OBJ += gfx/drivers/sixel_gfx.o \
-			 gfx/drivers_font/sixel_font.o
+   OBJ += gfx/drivers/sixel_gfx.o
    LIBS += $(SIXEL_LIBS)
    DEF_FLAGS += $(SIXEL_CFLAGS)
 endif
@@ -1445,7 +1433,6 @@ endif
 ifeq ($(HAVE_VITAGL), 1)
    DEFINES += -DHAVE_OPENGL1 -DHAVE_VITAGL
    OBJ += gfx/drivers/gl1.o \
-          gfx/drivers_font/gl1_raster_font.o \
           gfx/drivers_context/vita_ctx.o \
           gfx/drivers_display/gfx_display_gl1.o
 endif
@@ -1460,7 +1447,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEFINES += -DHAVE_OPENGL
       OBJ += gfx/drivers/gl2.o \
              $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl2_raster_font.o \
 	     gfx/drivers_display/gfx_display_gl2.o
    endif
 
@@ -1469,7 +1455,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_OPENGL1), 1)
       DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
-             gfx/drivers_font/gl1_raster_font.o \
 	     gfx/drivers_display/gfx_display_gl1.o
    endif
 
@@ -1549,7 +1534,6 @@ ifeq ($(HAVE_METAL), 1)
    OBJ += \
 	  gfx/common/metal/metal_renderer.o \
 	  gfx/drivers/metal.o \
-	  gfx/drivers_font/metal_raster_font.o \
 	  gfx/drivers_display/gfx_display_metal.o
 endif
 
@@ -1623,8 +1607,7 @@ ifeq ($(HAVE_VULKAN), 1)
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o \
-          gfx/drivers_font/vulkan_raster_font.o \
-			 gfx/drivers_display/gfx_display_vulkan.o
+	  gfx/drivers_display/gfx_display_vulkan.o
 
    ifeq ($(HAVE_SLANG), 1)
       OBJ += gfx/drivers_shader/shader_vulkan.o
@@ -1640,7 +1623,6 @@ endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
    OBJ += gfx/drivers/gl3.o \
-          gfx/drivers_font/gl3_raster_font.o \
 	  gfx/drivers_shader/shader_gl3.o \
 	  gfx/drivers_display/gfx_display_gl3.o
 
@@ -1710,8 +1692,7 @@ ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d10.o \
           gfx/common/d3d10_common.o \
-          gfx/drivers_font/d3d10_font.o \
-			 gfx/drivers_display/gfx_display_d3d10.o
+	  gfx/drivers_display/gfx_display_d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
@@ -1719,8 +1700,7 @@ ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d11.o \
           gfx/common/d3d11_common.o \
-          gfx/drivers_font/d3d11_font.o \
-			 gfx/drivers_display/gfx_display_d3d11.o
+	  gfx/drivers_display/gfx_display_d3d11.o
    DEFINES += -DHAVE_D3D11
 endif
 
@@ -1728,8 +1708,7 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o \
           gfx/common/d3d12_common.o \
-          gfx/drivers_font/d3d12_font.o \
-			 gfx/drivers_display/gfx_display_d3d12.o
+	  gfx/drivers_display/gfx_display_d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
@@ -2238,9 +2217,8 @@ ifneq ($(findstring Win32,$(OS)),)
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o \
-				 gfx/drivers_font/gdi_font.o \
-				 gfx/drivers_display/gfx_display_gdi.o
-		LIBS += -lmsimg32
+	     gfx/drivers_display/gfx_display_gdi.o
+      LIBS += -lmsimg32
    endif
    LIBS += -lhid -lsetupapi
 endif
@@ -2328,7 +2306,6 @@ endif
 
 ifneq ($(findstring DOS,$(OS)),)
    OBJ += gfx/drivers/vga_gfx.o \
-          gfx/drivers_font/vga_font.o \
           input/drivers/dos_input.o \
           input/drivers_joypad/dos_joypad.o \
           frontend/drivers/platform_dos.o

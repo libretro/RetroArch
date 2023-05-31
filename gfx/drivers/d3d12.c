@@ -23,7 +23,12 @@
 
 #define CINTERFACE
 
+#include <string.h>
+#include <malloc.h>
+#include <math.h>
+
 #include <boolean.h>
+
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
@@ -62,6 +67,591 @@
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif
+
+/*
+ * D3D12 COMMON
+ */
+static void
+d3d12_descriptor_heap_slot_free(d3d12_descriptor_heap_t* heap, D3D12_CPU_DESCRIPTOR_HANDLE handle)
+{
+   unsigned i   = (handle.ptr - heap->cpu.ptr) / heap->stride;
+   heap->map[i] = false;
+   if (heap->start > (int)i)
+      heap->start = i;
+}
+
+static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_heap_t* heap)
+{
+   int i;
+   D3D12_CPU_DESCRIPTOR_HANDLE handle;
+
+   handle.ptr = 0;
+
+   for (i = heap->start; i < (int)heap->desc.NumDescriptors; i++)
+   {
+      if (!heap->map[i])
+      {
+         heap->map[i] = true;
+         handle.ptr   = heap->cpu.ptr + i * heap->stride;
+         heap->start  = i + 1;
+         break;
+      }
+   }
+   return handle;
+}
+
+static void d3d12_release_texture(d3d12_texture_t* texture)
+{
+   if (!texture->handle)
+      return;
+
+   if (texture->srv_heap && texture->desc.MipLevels <= countof(texture->cpu_descriptor))
+   {
+      int i;
+      for (i = 0; i < texture->desc.MipLevels; i++)
+      {
+         if (texture->cpu_descriptor[i].ptr)
+            d3d12_descriptor_heap_slot_free(texture->srv_heap, texture->cpu_descriptor[i]);
+         texture->cpu_descriptor[i].ptr = 0;
+      }
+   }
+
+   Release(texture->handle);
+   Release(texture->upload_buffer);
+}
+
+static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired)
+{
+   DXGI_FORMAT  default_list[] = { desired->Format, DXGI_FORMAT_UNKNOWN };
+   DXGI_FORMAT* format         = dxgi_get_format_fallback_list(desired->Format);
+
+   if (!format)
+      format                   = default_list;
+
+   while (*format != DXGI_FORMAT_UNKNOWN)
+   {
+      D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { *format };
+      if (SUCCEEDED(device->lpVtbl->CheckFeatureSupport(
+                device, D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support))) &&
+          ((format_support.Support1 & desired->Support1) == desired->Support1) &&
+          ((format_support.Support2 & desired->Support2) == desired->Support2))
+         break;
+      format++;
+   }
+   return *format;
+}
+
+static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
+{
+   int i;
+
+   if (!texture->desc.MipLevels)
+      texture->desc.MipLevels          = 1;
+
+   if (!(texture->desc.Width  >> (texture->desc.MipLevels - 1)) &&
+       !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
+   {
+      unsigned width                   = texture->desc.Width >> 5;
+      unsigned height                  = texture->desc.Height >> 5;
+      texture->desc.MipLevels          = 1;
+      while (width && height)
+      {
+         width  >>= 1;
+         height >>= 1;
+         texture->desc.MipLevels++;
+      }
+   }
+
+   {
+      D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = {
+         texture->desc.Format, D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE
+      };
+      D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+
+      if (texture->desc.MipLevels > 1)
+      {
+         texture->desc.Flags        |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+         format_support.Support1    |= D3D12_FORMAT_SUPPORT1_MIP;
+         format_support.Support2    |= D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+      }
+
+      if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+         format_support.Support1    |= D3D12_FORMAT_SUPPORT1_RENDER_TARGET;
+
+      texture->desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      texture->desc.DepthOrArraySize = 1;
+      texture->desc.SampleDesc.Count = 1;
+      texture->desc.Format           = d3d12_get_closest_match(device, &format_support);
+
+      device->lpVtbl->CreateCommittedResource(
+            device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
+   }
+
+   {
+      D3D12_SHADER_RESOURCE_VIEW_DESC desc = { texture->desc.Format };
+
+      desc.Shader4ComponentMapping   = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      desc.ViewDimension             = D3D12_SRV_DIMENSION_TEXTURE2D;
+      desc.Texture2D.MipLevels       = texture->desc.MipLevels;
+
+      texture->cpu_descriptor[0]     = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      device->lpVtbl->CreateShaderResourceView(device, texture->handle, &desc, texture->cpu_descriptor[0]);
+      texture->gpu_descriptor[0].ptr = texture->cpu_descriptor[0].ptr - texture->srv_heap->cpu.ptr +
+                                       texture->srv_heap->gpu.ptr;
+   }
+
+   for (i = 1; i < texture->desc.MipLevels; i++)
+   {
+      D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { texture->desc.Format };
+
+      desc.ViewDimension             = D3D12_UAV_DIMENSION_TEXTURE2D;
+      desc.Texture2D.MipSlice        = i;
+
+      texture->cpu_descriptor[i]     = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      device->lpVtbl->CreateUnorderedAccessView(
+            device, (ID3D12Resource*)texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
+      texture->gpu_descriptor[i].ptr = texture->cpu_descriptor[i].ptr - texture->srv_heap->cpu.ptr +
+                                       texture->srv_heap->gpu.ptr;
+   }
+
+   if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+      device->lpVtbl->CreateRenderTargetView(device, (ID3D12Resource*)texture->handle, NULL, texture->rt_view);
+   else
+   {
+      D3D12_HEAP_PROPERTIES heap_props  = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+      D3D12_RESOURCE_DESC   buffer_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+
+      device->lpVtbl->GetCopyableFootprints(
+            device, &texture->desc, 0, 1, 0, &texture->layout, &texture->num_rows,
+            &texture->row_size_in_bytes, &texture->total_bytes);
+
+      buffer_desc.Width            = texture->total_bytes;
+      buffer_desc.Height           = 1;
+      buffer_desc.DepthOrArraySize = 1;
+      buffer_desc.MipLevels        = 1;
+      buffer_desc.SampleDesc.Count = 1;
+      buffer_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+      device->lpVtbl->CreateCommittedResource(
+            device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
+            D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)&texture->upload_buffer);
+   }
+
+   texture->size_data.x = texture->desc.Width;
+   texture->size_data.y = texture->desc.Height;
+   texture->size_data.z = 1.0f / texture->desc.Width;
+   texture->size_data.w = 1.0f / texture->desc.Height;
+}
+
+static void d3d12_update_texture(
+      int              width,
+      int              height,
+      int              pitch,
+      DXGI_FORMAT      format,
+      const void*      data,
+      d3d12_texture_t* texture)
+{
+   uint8_t *dst;
+   D3D12_RANGE read_range;
+
+   if (!texture || !texture->upload_buffer)
+      return;
+
+   read_range.Begin = 0;
+   read_range.End   = 0;
+
+   D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
+
+   dxgi_copy(
+         width, height, format, pitch, data, texture->desc.Format,
+         texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
+
+   D3D12Unmap(texture->upload_buffer, 0, NULL);
+
+   texture->dirty = true;
+}
+
+/*
+ * FONT DRIVER 
+ */
+
+typedef struct
+{
+   d3d12_texture_t               texture;
+   const font_renderer_driver_t* font_driver;
+   void*                         font_data;
+   struct font_atlas*            atlas;
+} d3d12_font_t;
+
+static void * d3d12_font_init(void* data, const char* font_path,
+      float font_size, bool is_threaded)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+   d3d12_font_t*  font  = (d3d12_font_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   if (!font_renderer_create_default(
+             &font->font_driver,
+             &font->font_data, font_path, font_size))
+   {
+      free(font);
+      return NULL;
+   }
+
+   font->atlas               = font->font_driver->get_atlas(font->font_data);
+   font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   font->texture.desc.Width  = font->atlas->width;
+   font->texture.desc.Height = font->atlas->height;
+   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_release_texture(&font->texture);
+   d3d12_init_texture(d3d12->device, &font->texture);
+   d3d12_update_texture(
+         font->atlas->width, font->atlas->height,
+         font->atlas->width, DXGI_FORMAT_A8_UNORM,
+         font->atlas->buffer, &font->texture);
+   font->atlas->dirty = false;
+
+   return font;
+}
+
+static void d3d12_font_free(void* data, bool is_threaded)
+{
+   d3d12_font_t* font = (d3d12_font_t*)data;
+
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data && font->font_driver->free)
+      font->font_driver->free(font->font_data);
+
+   d3d12_release_texture(&font->texture);
+
+   free(font);
+}
+
+static int d3d12_font_get_message_width(void* data,
+      const char* msg, size_t msg_len, float scale)
+{
+   int i, delta_x                   = 0;
+   const struct font_glyph* glyph_q = NULL;
+   d3d12_font_t* font               = (d3d12_font_t*)data;
+
+   if (!font)
+      return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph* glyph;
+      const char *msg_tmp = &msg[i];
+      unsigned    code    = utf8_walk(&msg_tmp);
+      unsigned    skip    = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      delta_x            += glyph->advance_x;
+   }
+
+   return delta_x * scale;
+}
+
+static void d3d12_font_render_line(
+      d3d12_video_t *d3d12,
+      d3d12_font_t*       font,
+      const char*         msg,
+      size_t              msg_len,
+      float               scale,
+      const unsigned int  color,
+      float               pos_x,
+      float               pos_y,
+      unsigned            width,
+      unsigned            height,
+      unsigned            text_align)
+{
+   int i;
+   D3D12_RANGE     range;
+   unsigned        count;
+   const struct font_glyph* glyph_q = NULL;
+   void*           mapped_vbo       = NULL;
+   d3d12_sprite_t* v                = NULL;
+   d3d12_sprite_t* vbo_start        = NULL;
+   D3D12GraphicsCommandList cmd     = d3d12->queue.cmd;
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
+
+   if (d3d12->sprites.offset + msg_len > (unsigned)d3d12->sprites.capacity)
+      d3d12->sprites.offset = 0;
+
+   switch (text_align)
+   {
+      case TEXT_ALIGN_RIGHT:
+         x -= d3d12_font_get_message_width(font, msg, msg_len, scale);
+         break;
+
+      case TEXT_ALIGN_CENTER:
+         x -= d3d12_font_get_message_width(font, msg, msg_len, scale) / 2;
+         break;
+   }
+
+   range.Begin = 0;
+   range.End   = 0;
+   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
+
+   v           = vbo_start + d3d12->sprites.offset;
+   range.Begin = (uintptr_t)v - (uintptr_t)vbo_start;
+   glyph_q     = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph* glyph;
+      const char *msg_tmp= &msg[i];
+      unsigned   code    = utf8_walk(&msg_tmp);
+      unsigned   skip    = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d12->chain.viewport.Width;
+      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d12->chain.viewport.Height;
+      v->pos.w           = glyph->width * scale  / (float)d3d12->chain.viewport.Width;
+      v->pos.h           = glyph->height * scale / (float)d3d12->chain.viewport.Height;
+
+      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
+      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
+      v->coords.w        = glyph->width          / (float)font->texture.desc.Width;
+      v->coords.h        = glyph->height         / (float)font->texture.desc.Height;
+
+      v->params.scaling  = 1;
+      v->params.rotation = 0;
+
+      v->colors[0]       = color;
+      v->colors[1]       = color;
+      v->colors[2]       = color;
+      v->colors[3]       = color;
+
+      v++;
+
+      x                 += glyph->advance_x * scale;
+      y                 += glyph->advance_y * scale;
+   }
+
+   range.End = (uintptr_t)v - (uintptr_t)vbo_start;
+   D3D12Unmap(d3d12->sprites.vbo, 0, &range);
+
+   count = v - vbo_start - d3d12->sprites.offset;
+
+   if (!count)
+      return;
+
+   if (font->atlas->dirty)
+   {
+      d3d12_update_texture(
+            font->atlas->width, font->atlas->height,
+            font->atlas->width, DXGI_FORMAT_A8_UNORM,
+            font->atlas->buffer, &font->texture);
+      font->atlas->dirty = false;
+   }
+
+   if (font->texture.dirty)
+      d3d12_upload_texture(cmd, &font->texture, d3d12);
+
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe_font);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         font->texture.gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         font->texture.sampler);
+   cmd->lpVtbl->DrawInstanced(cmd, count, 1, d3d12->sprites.offset, 0);
+
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+
+   d3d12->sprites.offset += count;
+}
+
+static void d3d12_font_render_message(
+      d3d12_video_t *d3d12,
+      d3d12_font_t*       font,
+      const char*         msg,
+      float               scale,
+      const unsigned int  color,
+      float               pos_x,
+      float               pos_y,
+      unsigned            width, 
+      unsigned            height,
+      unsigned            text_align)
+{
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
+   float line_height;
+
+   if (!msg || !*msg)
+      return;
+   if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
+      return;
+
+   /* If font line metrics are not supported just draw as usual */
+   if (!font->font_driver->get_line_metrics ||
+       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   {
+      size_t msg_len = strlen(msg);
+      if (msg_len <= d3d12->sprites.capacity)
+         d3d12_font_render_line(d3d12,
+               font, msg, msg_len,
+               scale, color, pos_x, pos_y, width, height, text_align);
+      return;
+   }
+
+   line_height = line_metrics->height * scale / height;
+
+   for (;;)
+   {
+      const char* delim = strchr(msg, '\n');
+      size_t msg_len    = delim ?
+         (delim - msg) : strlen(msg);
+
+      /* Draw the line */
+      if (msg_len <= d3d12->sprites.capacity)
+         d3d12_font_render_line(d3d12,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height, width, height, text_align);
+
+      if (!delim)
+         break;
+
+      msg += msg_len + 1;
+      lines++;
+   }
+}
+
+static void d3d12_font_render_msg(
+      void *userdata,
+      void* data,
+      const char* msg,
+      const struct font_params *params)
+{
+   float                     x, y, scale, drop_mod, drop_alpha;
+   int                       drop_x, drop_y;
+   enum text_alignment       text_align;
+   unsigned                  color, r, g, b, alpha;
+   d3d12_video_t           *d3d12   = (d3d12_video_t*)userdata;
+   d3d12_font_t*             font   = (d3d12_font_t*)data;
+   unsigned                  width  = d3d12->vp.full_width;
+   unsigned                  height = d3d12->vp.full_height;
+
+   if (!font || !msg || !*msg)
+      return;
+
+   if (params)
+   {
+      x          = params->x;
+      y          = params->y;
+      scale      = params->scale;
+      text_align = params->text_align;
+      drop_x     = params->drop_x;
+      drop_y     = params->drop_y;
+      drop_mod   = params->drop_mod;
+      drop_alpha = params->drop_alpha;
+
+      r          = FONT_COLOR_GET_RED(params->color);
+      g          = FONT_COLOR_GET_GREEN(params->color);
+      b          = FONT_COLOR_GET_BLUE(params->color);
+      alpha      = FONT_COLOR_GET_ALPHA(params->color);
+      color      = DXGI_COLOR_RGBA(r, g, b, alpha);
+   }
+   else
+   {
+      settings_t *settings      = config_get_ptr();
+      float video_msg_pos_x     = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y     = settings->floats.video_msg_pos_y;
+      float video_msg_color_r   = settings->floats.video_msg_color_r;
+      float video_msg_color_g   = settings->floats.video_msg_color_g;
+      float video_msg_color_b   = settings->floats.video_msg_color_b;
+      x                         = video_msg_pos_x;
+      y                         = video_msg_pos_y;
+      scale                     = 1.0f;
+      text_align                = TEXT_ALIGN_LEFT;
+
+      r                         = (video_msg_color_r * 255);
+      g                         = (video_msg_color_g * 255);
+      b                         = (video_msg_color_b * 255);
+      alpha                     = 255;
+      color                     = DXGI_COLOR_RGBA(r, g, b, alpha);
+
+      drop_x                    = -2;
+      drop_y                    = -2;
+      drop_mod                  = 0.3f;
+      drop_alpha                = 1.0f;
+   }
+
+   if (drop_x || drop_y)
+   {
+      unsigned r_dark           = r * drop_mod;
+      unsigned g_dark           = g * drop_mod;
+      unsigned b_dark           = b * drop_mod;
+      unsigned alpha_dark       = alpha * drop_alpha;
+      unsigned color_dark       = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+
+      d3d12_font_render_message(d3d12,
+            font, msg, scale, color_dark,
+            x + scale * drop_x / width,
+            y + scale * drop_y / height,
+            width, height, text_align);
+   }
+
+   d3d12_font_render_message(d3d12, font,
+         msg, scale, color, x, y,
+         width, height, text_align);
+}
+
+static const struct font_glyph* d3d12_font_get_glyph(
+      void* data, uint32_t code)
+{
+   d3d12_font_t* font = (d3d12_font_t*)data;
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
+}
+
+static bool d3d12_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
+{
+   d3d12_font_t* font = (d3d12_font_t*)data;
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return false;
+}
+
+font_renderer_t d3d12_font = {
+   d3d12_font_init,
+   d3d12_font_free,
+   d3d12_font_render_msg,
+   "d3d12",
+   d3d12_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d12_font_get_message_width,
+   d3d12_font_get_line_metrics
+};
+
+/*
+ * VIDEO DRIVER 
+ */
 
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
    TRUE,

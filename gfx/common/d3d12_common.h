@@ -392,21 +392,8 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 
 RETRO_BEGIN_DECLS
 
-D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_heap_t* heap);
-
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
-
-void d3d12_init_texture(D3D12Device device, d3d12_texture_t* tex);
-void d3d12_release_texture(d3d12_texture_t* texture);
-
-void d3d12_update_texture(
-      int              width,
-      int              height,
-      int              pitch,
-      DXGI_FORMAT      format,
-      const void*      data,
-      d3d12_texture_t* texture);
 
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata);

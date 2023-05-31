@@ -599,70 +599,8 @@ FONTS
 #include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
-#ifdef HAVE_OPENGL1
-#include "../gfx/drivers_font/gl1_raster_font.c"
-#endif
-
-#if defined(HAVE_OPENGL)
-#include "../gfx/drivers_font/gl2_raster_font.c"
-#endif
-
-#ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers_font/gl3_raster_font.c"
-#endif
-
 #if defined(_XBOX1)
 #include "../gfx/drivers_font/xdk1_xfonts.c"
-#endif
-
-#if defined(PS2)
-#include "../gfx/drivers_font/ps2_font.c"
-#endif
-
-#if defined(VITA)
-#include "../gfx/drivers_font/vita2d_font.c"
-#endif
-
-#if defined(_3DS)
-#include "../gfx/drivers_font/ctr_font.c"
-#endif
-
-#if defined(WIIU)
-#include "../gfx/drivers_font/wiiu_font.c"
-#endif
-
-#if defined(HAVE_GCM)
-#include "../gfx/drivers_font/rsx_font.c"
-#endif
-
-#if defined(HAVE_CACA)
-#include "../gfx/drivers_font/caca_font.c"
-#endif
-
-#if defined(DJGPP)
-#include "../gfx/drivers_font/vga_font.c"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#ifdef HAVE_GDI
-#include "../gfx/drivers_font/gdi_font.c"
-#endif
-#endif
-
-#if defined(HAVE_VULKAN)
-#include "../gfx/drivers_font/vulkan_raster_font.c"
-#endif
-
-#if defined(HAVE_D3D10)
-#include "../gfx/drivers_font/d3d10_font.c"
-#endif
-
-#if defined(HAVE_D3D11)
-#include "../gfx/drivers_font/d3d11_font.c"
-#endif
-
-#if defined(HAVE_D3D12)
-#include "../gfx/drivers_font/d3d12_font.c"
 #endif
 
 /*============================================================

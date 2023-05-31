@@ -313,7 +313,7 @@ static void oga_destroy_framebuf(oga_framebuf_t* framebuf)
    free(framebuf);
 }
 
-static void oga_gfx_free(void *data)
+static void oga_free(void *data)
 {
    unsigned i;
    oga_video_t *vid = (oga_video_t*)data;
@@ -340,7 +340,7 @@ static void oga_gfx_free(void *data)
    vid = NULL;
 }
 
-static void *oga_gfx_init(const video_info_t *video,
+static void *oga_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    int i;
@@ -383,13 +383,6 @@ static void *oga_gfx_init(const video_info_t *video,
    vid->display_ar = (float)vid->mode.vdisplay / vid->mode.hdisplay;
    vid->drm_width = vid->mode.vdisplay;
    vid->drm_height = vid->mode.hdisplay;
-
-   RARCH_LOG("oga_gfx_init video %dx%d rgb32 %d smooth %d ctx_scaling %d"
-         " input_scale %u force_aspect %d fullscreen %d threaded %d base_width %d base_height %d"
-         " max_width %d max_height %d aw %d ah %d\n",
-         video->width, video->height, video->rgb32, video->smooth, video->ctx_scaling,
-         video->input_scale, video->force_aspect, video->fullscreen, video->is_threaded, geom->base_width, geom->base_height,
-         geom->max_width, geom->max_height, aw, ah);
 
    vid->menu_surface = oga_create_surface(vid->fd, vid->drm_width, vid->drm_height, RK_FORMAT_BGRA_8888);
    vid->threaded = video->is_threaded;
@@ -553,7 +546,7 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
    }
 }
 
-static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
+static bool oga_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
@@ -635,7 +628,7 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void oga_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
+static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    oga_video_t *vid             = (oga_video_t*)data;
@@ -677,25 +670,20 @@ static void oga_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
    }
 }
 
-static void oga_gfx_texture_enable(void *data, bool state, bool full_screen)
-{
-   (void)data;
-   (void)state;
-   (void)full_screen;
-}
+/* TODO/FIXME - implement */
+static void oga_texture_enable(void *data, bool state, bool full_screen) { }
+static void oga_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
-static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-
-static bool oga_gfx_alive(void *data)
+static bool oga_alive(void *data)
 {
    return !frontend_driver_get_signal_handler_state();
 }
 
-static bool oga_gfx_focus(void *data) { return true; }
-static bool oga_gfx_suppress_screensaver(void *data, bool enable) { return false; }
-static bool oga_gfx_has_windowed(void *data) { return false; }
+static bool oga_focus(void *data) { return true; }
+static bool oga_suppress_screensaver(void *a, bool b) { return false; }
+static bool oga_has_windowed(void *data) { return false; }
 
-static void oga_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void oga_viewport_info(void *data, struct video_viewport *vp)
 {
    oga_video_t *vid = (oga_video_t*)data;
    if (unlikely(!vid))
@@ -706,12 +694,8 @@ static void oga_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->mode.hdisplay;
 }
 
-static bool oga_gfx_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool oga_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
-   (void)data;
-   (void)type;
-   (void)path;
-
    return false;
 }
 
@@ -769,8 +753,8 @@ video_poke_interface_t oga_poke_interface = {
    NULL,
    NULL,
    NULL,
-   oga_gfx_set_texture_frame,
-   oga_gfx_texture_enable,
+   oga_set_texture_frame,
+   oga_texture_enable,
    NULL,
    NULL,
    NULL,
@@ -785,19 +769,19 @@ static void oga_get_poke_interface(void *data, const video_poke_interface_t **if
 }
 
 video_driver_t video_oga = {
-   oga_gfx_init,
-   oga_gfx_frame,
-   oga_gfx_set_nonblock_state,
-   oga_gfx_alive,
-   oga_gfx_focus,
-   oga_gfx_suppress_screensaver,
-   oga_gfx_has_windowed,
-   oga_gfx_set_shader,
-   oga_gfx_free,
+   oga_init,
+   oga_frame,
+   oga_set_nonblock_state,
+   oga_alive,
+   oga_focus,
+   oga_suppress_screensaver,
+   oga_has_windowed,
+   oga_set_shader,
+   oga_free,
    "oga",
    NULL,
    oga_set_rotation,
-   oga_gfx_viewport_info,
+   oga_viewport_info,
    NULL,
    NULL,
 #ifdef HAVE_OVERLAY

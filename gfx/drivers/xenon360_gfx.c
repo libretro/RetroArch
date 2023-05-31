@@ -93,7 +93,7 @@ typedef struct xenos
 
 static float ScreenUv[4] = {0.f, 1.0f, 1.0f, 0.f};
 
-static void xenon360_gfx_free(void *data)
+static void xenon360_free(void *data)
 {
    xenos_t *xenos = data;
    if (!xenos)
@@ -102,7 +102,7 @@ static void xenon360_gfx_free(void *data)
    free(xenos);
 }
 
-static void *xenon360_gfx_init(const video_info_t *video,
+static void *xenon360_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    int i = 0;
@@ -193,7 +193,7 @@ static void *xenon360_gfx_init(const video_info_t *video,
    return xenos;
 }
 
-static bool xenon360_gfx_frame(void *data,
+static bool xenon360_frame(void *data,
       const void *frame, unsigned width, unsigned height,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
@@ -260,30 +260,30 @@ static bool xenon360_gfx_frame(void *data,
    return true;
 }
 
-static bool xenon360_gfx_alive(void *data)
+static bool xenon360_alive(void *data)
 {
    xenos_t *xenos = (xenos_t*)data;
    return !xenos->quitting;
 }
 
-static void xenon360_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-static bool xenon360_gfx_focus(void *data) { return true; }
-static bool xenon360_gfx_suppress_screensaver(void *data, bool enable) { return false; }
-static bool xenon360_gfx_set_shader(void *data,
+static void xenon360_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool xenon360_focus(void *data) { return true; }
+static bool xenon360_suppress_screensaver(void *data, bool enable) { return false; }
+static bool xenon360_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
-static void xenon360_gfx_get_poke_interface(void *data,
+static void xenon360_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { }
 
 video_driver_t video_xenon360 = {
-   xenon360_gfx_init,
-   xenon360_gfx_frame,
-   xenon360_gfx_set_nonblock_state,
-   xenon360_gfx_alive,
-   xenon360_gfx_focus,
-   xenon360_gfx_suppress_screensaver,
+   xenon360_init,
+   xenon360_frame,
+   xenon360_set_nonblock_state,
+   xenon360_alive,
+   xenon360_focus,
+   xenon360_suppress_screensaver,
    NULL, /* has_windowed */
-   xenon360_gfx_set_shader,
-   xenon360_gfx_free,
+   xenon360_set_shader,
+   xenon360_free,
    "xenon360",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
@@ -294,5 +294,5 @@ video_driver_t video_xenon360 = {
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif
-   xenon360_gfx_get_poke_interface
+   xenon360_get_poke_interface
 };

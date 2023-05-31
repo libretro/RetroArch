@@ -24,6 +24,10 @@
 #define CINTERFACE
 #define COBJMACROS
 
+#include <string.h>
+#include <malloc.h>
+#include <math.h>
+
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <encodings/utf.h>
@@ -55,6 +59,589 @@
 #ifdef __WINRT__
 #error "UWP does not support D3D10"
 #endif
+
+/*
+ * D3D10 COMMON
+ */
+
+static INLINE void d3d10_release_texture(d3d10_texture_t* texture)
+{
+   Release(texture->handle);
+   Release(texture->staging);
+   Release(texture->view);
+   Release(texture->rt_view);
+}
+
+static INLINE void d3d10_release_shader(d3d10_shader_t* shader)
+{
+   Release(shader->layout);
+   Release(shader->vs);
+   Release(shader->ps);
+   Release(shader->gs);
+}
+
+static DXGI_FORMAT
+d3d10_get_closest_match(D3D10Device device,
+      DXGI_FORMAT desired_format, UINT desired_format_support)
+{
+   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
+   DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
+
+   if (!format)
+      format = default_list;
+
+   while (*format != DXGI_FORMAT_UNKNOWN)
+   {
+      UINT format_support;
+      if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
+                  &format_support)) &&
+            ((format_support & desired_format_support) == desired_format_support))
+         break;
+      format++;
+   }
+   return *format;
+}
+
+static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
+{
+   bool is_render_target            = texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET;
+   UINT format_support              = D3D10_FORMAT_SUPPORT_TEXTURE2D | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
+
+   texture->desc.MipLevels          = 1;
+   texture->desc.ArraySize          = 1;
+   texture->desc.SampleDesc.Count   = 1;
+   texture->desc.SampleDesc.Quality = 0;
+   texture->desc.BindFlags         |= D3D10_BIND_SHADER_RESOURCE;
+   texture->desc.CPUAccessFlags     =
+      texture->desc.Usage == D3D10_USAGE_DYNAMIC ? D3D10_CPU_ACCESS_WRITE : 0;
+
+   if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
+   {
+      unsigned width, height;
+
+      texture->desc.BindFlags |= D3D10_BIND_RENDER_TARGET;
+      width                    = texture->desc.Width  >> 5;
+      height                   = texture->desc.Height >> 5;
+
+      while (width && height)
+      {
+         width  >>= 1;
+         height >>= 1;
+         texture->desc.MipLevels++;
+      }
+   }
+
+   if (texture->desc.BindFlags & D3D10_BIND_RENDER_TARGET)
+      format_support   |= D3D10_FORMAT_SUPPORT_RENDER_TARGET;
+
+   texture->desc.Format = d3d10_get_closest_match(device, texture->desc.Format, format_support);
+
+   device->lpVtbl->CreateTexture2D(device, &texture->desc, NULL,
+         &texture->handle);
+
+   {
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc;
+      view_desc.Format                          = texture->desc.Format;
+      view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
+      view_desc.Texture2D.MostDetailedMip       = 0;
+      view_desc.Texture2D.MipLevels             = -1;
+      device->lpVtbl->CreateShaderResourceView(device,
+            (D3D10Resource)texture->handle, &view_desc, &texture->view);
+   }
+
+   if (is_render_target)
+      device->lpVtbl->CreateRenderTargetView(device,
+            (D3D10Resource)texture->handle, NULL, &texture->rt_view);
+   else
+   {
+      D3D10_TEXTURE2D_DESC desc = texture->desc;
+      desc.MipLevels            = 1;
+      desc.BindFlags            = 0;
+      desc.MiscFlags            = 0;
+      desc.Usage                = D3D10_USAGE_STAGING;
+      desc.CPUAccessFlags       = D3D10_CPU_ACCESS_WRITE;
+      device->lpVtbl->CreateTexture2D(device, &desc, NULL, &texture->staging);
+   }
+
+   texture->size_data.x = texture->desc.Width;
+   texture->size_data.y = texture->desc.Height;
+   texture->size_data.z = 1.0f / texture->desc.Width;
+   texture->size_data.w = 1.0f / texture->desc.Height;
+}
+
+static void d3d10_update_texture(
+      D3D10Device      ctx,
+      int              width,
+      int              height,
+      int              pitch,
+      DXGI_FORMAT      format,
+      const void*      data,
+      d3d10_texture_t* texture)
+{
+   D3D10_MAPPED_TEXTURE2D mapped_texture;
+   D3D10_BOX                frame_box;
+
+   texture->staging->lpVtbl->Map(texture->staging, 0, D3D10_MAP_WRITE, 0,
+         &mapped_texture);
+
+   dxgi_copy(
+         width, height, format, pitch, data, texture->desc.Format,
+         mapped_texture.RowPitch,
+         mapped_texture.pData);
+
+   texture->staging->lpVtbl->Unmap(texture->staging, 0);
+   frame_box.left   = 0;
+   frame_box.top    = 0;
+   frame_box.front  = 0;
+   frame_box.right  = (UINT)width;
+   frame_box.bottom = (UINT)height;
+   frame_box.back   = 1;
+   ctx->lpVtbl->CopySubresourceRegion(
+         ctx, (D3D10Resource)texture->handle, 0, 0, 0, 0,
+         (D3D10Resource)texture->staging, 0, &frame_box);
+
+   if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
+      ctx->lpVtbl->GenerateMips(ctx, texture->view);
+}
+
+static bool d3d10_init_shader(
+      D3D10Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d10_shader_t*                 out)
+{
+   D3DBlob vs_code = NULL;
+   D3DBlob ps_code = NULL;
+   D3DBlob gs_code = NULL;
+
+   bool success = true;
+
+   if (!src) /* LPCWSTR filename */
+   {
+      if (vs_entry && !d3d_compile_from_file((LPCWSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile_from_file((LPCWSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
+   else /* char array */
+   {
+      if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_compile(src, size, (LPCSTR)src_name, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_compile(src, size, (LPCSTR)src_name, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
+
+
+   if (ps_code)
+      device->lpVtbl->CreatePixelShader(device,
+            ps_code->lpVtbl->GetBufferPointer(ps_code),
+            ps_code->lpVtbl->GetBufferSize(ps_code),
+            &out->ps);
+
+   if (gs_code)
+      device->lpVtbl->CreateGeometryShader(
+            device,
+            gs_code->lpVtbl->GetBufferPointer(gs_code),
+            gs_code->lpVtbl->GetBufferSize(gs_code),
+            &out->gs);
+
+   if (vs_code)
+   {
+      LPVOID buf_ptr  = vs_code->lpVtbl->GetBufferPointer(vs_code);
+      SIZE_T buf_size = vs_code->lpVtbl->GetBufferSize(vs_code);
+      device->lpVtbl->CreateVertexShader(device, buf_ptr, buf_size, &out->vs);
+      if (input_element_descs)
+         device->lpVtbl->CreateInputLayout(
+               device, (D3D10_INPUT_ELEMENT_DESC*)input_element_descs,
+               num_elements, buf_ptr, buf_size, &out->layout);
+   }
+
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+
+   return success;
+}
+
+/*
+ * FONT DRIVER
+ */
+
+typedef struct
+{
+   d3d10_texture_t               texture;
+   const font_renderer_driver_t* font_driver;
+   void*                         font_data;
+   struct font_atlas*            atlas;
+} d3d10_font_t;
+
+static void *d3d10_font_init(void* data, const char* font_path,
+      float font_size, bool is_threaded)
+{
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+   d3d10_font_t*  font  = (d3d10_font_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   if (!font_renderer_create_default(
+             &font->font_driver, &font->font_data, font_path, font_size))
+   {
+      free(font);
+      return NULL;
+   }
+
+   font->atlas               = font->font_driver->get_atlas(font->font_data);
+   font->texture.sampler     = d3d10->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   font->texture.desc.Width  = font->atlas->width;
+   font->texture.desc.Height = font->atlas->height;
+   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   d3d10_release_texture(&font->texture);
+   d3d10_init_texture(d3d10->device, &font->texture);
+   if (font->texture.staging)
+      d3d10_update_texture(
+            d3d10->device,
+            font->atlas->width, font->atlas->height, font->atlas->width,
+            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+   font->atlas->dirty        = false;
+
+   return font;
+}
+
+static void d3d10_font_free(void* data, bool is_threaded)
+{
+   d3d10_font_t* font = (d3d10_font_t*)data;
+
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data && font->font_driver->free)
+      font->font_driver->free(font->font_data);
+
+   Release(font->texture.handle);
+   Release(font->texture.staging);
+   Release(font->texture.view);
+   free(font);
+}
+
+static int d3d10_font_get_message_width(void* data, const char* msg, size_t msg_len, float scale)
+{
+   int i;
+   int      delta_x                 = 0;
+   const struct font_glyph* glyph_q = NULL;
+   d3d10_font_t* font               = (d3d10_font_t*)data;
+
+   if (!font)
+      return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph *glyph;
+      const char* msg_tmp = &msg[i];
+      unsigned    code    = utf8_walk(&msg_tmp);
+      unsigned    skip    = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      delta_x += glyph->advance_x;
+   }
+
+   return delta_x * scale;
+}
+
+static void d3d10_font_render_line(
+      d3d10_video_t *d3d10,
+      d3d10_font_t*       font,
+      const char*         msg,
+      size_t              msg_len,
+      float               scale,
+      const unsigned int  color,
+      float               pos_x,
+      float               pos_y,
+      unsigned            width,
+      unsigned            height,
+      unsigned            text_align)
+{
+   d3d10_sprite_t *v;
+   unsigned                 i, count;
+   void *                   mapped_vbo;
+   const struct font_glyph* glyph_q = NULL;
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
+
+   if (d3d10->sprites.offset + msg_len > (unsigned)d3d10->sprites.capacity)
+      d3d10->sprites.offset = 0;
+
+   switch (text_align)
+   {
+      case TEXT_ALIGN_RIGHT:
+         x -= d3d10_font_get_message_width(font, msg, msg_len, scale);
+         break;
+
+      case TEXT_ALIGN_CENTER:
+         x -= d3d10_font_get_message_width(font, msg, msg_len, scale) / 2;
+         break;
+   }
+
+   d3d10->sprites.vbo->lpVtbl->Map(d3d10->sprites.vbo,
+         D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&mapped_vbo);
+
+   v       = (d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset;
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph *glyph;
+      const char *msg_tmp = &msg[i];
+      unsigned   code     = utf8_walk(&msg_tmp);
+      unsigned   skip     = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      v->pos.x           = (x + (glyph->draw_offset_x * scale)) / (float)d3d10->viewport.Width;
+      v->pos.y           = (y + (glyph->draw_offset_y * scale)) / (float)d3d10->viewport.Height;
+      v->pos.w           = glyph->width * scale / (float)d3d10->viewport.Width;
+      v->pos.h           = glyph->height * scale / (float)d3d10->viewport.Height;
+
+      v->coords.u        = glyph->atlas_offset_x / (float)font->texture.desc.Width;
+      v->coords.v        = glyph->atlas_offset_y / (float)font->texture.desc.Height;
+      v->coords.w        = glyph->width / (float)font->texture.desc.Width;
+      v->coords.h        = glyph->height / (float)font->texture.desc.Height;
+
+      v->params.scaling  = 1;
+      v->params.rotation = 0;
+
+      v->colors[0]       = color;
+      v->colors[1]       = color;
+      v->colors[2]       = color;
+      v->colors[3]       = color;
+
+      v++;
+
+      x                 += glyph->advance_x * scale;
+      y                 += glyph->advance_y * scale;
+   }
+
+   count = v - ((d3d10_sprite_t*)mapped_vbo + d3d10->sprites.offset);
+   d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
+
+   if (!count)
+      return;
+
+   if (font->atlas->dirty)
+   {
+      if (font->texture.staging)
+         d3d10_update_texture(
+               d3d10->device,
+               font->atlas->width, font->atlas->height, font->atlas->width,
+               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      font->atlas->dirty = false;
+   }
+
+   d3d10_set_texture_and_sampler(d3d10->device, 0, &font->texture);
+   d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+         d3d10->blend_enable,
+         NULL, D3D10_DEFAULT_SAMPLE_MASK);
+
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader_font.ps);
+   d3d10->device->lpVtbl->Draw(d3d10->device, count, d3d10->sprites.offset);
+   d3d10->device->lpVtbl->PSSetShader(d3d10->device, d3d10->sprites.shader.ps);
+
+   d3d10->sprites.offset += count;
+}
+
+static void d3d10_font_render_message(
+      d3d10_video_t *d3d10,
+      d3d10_font_t*       font,
+      const char*         msg,
+      float               scale,
+      const unsigned int  color,
+      float               pos_x,
+      float               pos_y,
+      unsigned            width,
+      unsigned            height,
+      unsigned            text_align)
+{
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
+   float line_height;
+
+   if (!msg || !*msg)
+      return;
+   if (!d3d10 || (!(d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE)))
+      return;
+
+   /* If font line metrics are not supported just draw as usual */
+   if (   !font->font_driver->get_line_metrics
+       || !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   {
+      size_t msg_len = strlen(msg);
+      if (msg_len <= (unsigned)d3d10->sprites.capacity)
+         d3d10_font_render_line(d3d10,
+               font, msg, msg_len, scale, color, pos_x, pos_y,
+               width, height, text_align);
+      return;
+   }
+
+   line_height = line_metrics->height * scale / height;
+
+   for (;;)
+   {
+      const char* delim = strchr(msg, '\n');
+      size_t msg_len  = delim ?
+         (delim - msg) : strlen(msg);
+
+      /* Draw the line */
+      if (msg_len <= (unsigned)d3d10->sprites.capacity)
+         d3d10_font_render_line(d3d10,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height,
+               width, height, text_align);
+
+      if (!delim)
+         break;
+
+      msg += msg_len + 1;
+      lines++;
+   }
+}
+
+static void d3d10_font_render_msg(
+      void *userdata,
+      void* data,
+      const char* msg,
+      const struct font_params *params)
+{
+   int drop_x, drop_y;
+   enum text_alignment text_align;
+   unsigned color, r, g, b, alpha;
+   float x, y, scale, drop_mod, drop_alpha;
+   d3d10_font_t *font          = (d3d10_font_t*)data;
+   d3d10_video_t *d3d10        = (d3d10_video_t*)userdata;
+   unsigned width              = d3d10->vp.full_width;
+   unsigned height             = d3d10->vp.full_height;
+
+   if (!font || !msg || !*msg)
+      return;
+
+   if (params)
+   {
+      x                        = params->x;
+      y                        = params->y;
+      scale                    = params->scale;
+      text_align               = params->text_align;
+      drop_x                   = params->drop_x;
+      drop_y                   = params->drop_y;
+      drop_mod                 = params->drop_mod;
+      drop_alpha               = params->drop_alpha;
+
+      r                        = FONT_COLOR_GET_RED(params->color);
+      g                        = FONT_COLOR_GET_GREEN(params->color);
+      b                        = FONT_COLOR_GET_BLUE(params->color);
+      alpha                    = FONT_COLOR_GET_ALPHA(params->color);
+
+      color                    = DXGI_COLOR_RGBA(r, g, b, alpha);
+   }
+   else
+   {
+      settings_t *settings     = config_get_ptr();
+      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
+      float video_msg_color_r  = settings->floats.video_msg_color_r;
+      float video_msg_color_g  = settings->floats.video_msg_color_g;
+      float video_msg_color_b  = settings->floats.video_msg_color_b;
+      x                        = video_msg_pos_x;
+      y                        = video_msg_pos_y;
+      scale                    = 1.0f;
+      text_align               = TEXT_ALIGN_LEFT;
+
+      r                        = (video_msg_color_r * 255);
+      g                        = (video_msg_color_g * 255);
+      b                        = (video_msg_color_b * 255);
+      alpha                    = 255;
+      color                    = DXGI_COLOR_RGBA(r, g, b, alpha);
+
+      drop_x                   = -2;
+      drop_y                   = -2;
+      drop_mod                 = 0.3f;
+      drop_alpha               = 1.0f;
+   }
+
+   if (drop_x || drop_y)
+   {
+      unsigned r_dark          = r * drop_mod;
+      unsigned g_dark          = g * drop_mod;
+      unsigned b_dark          = b * drop_mod;
+      unsigned alpha_dark      = alpha * drop_alpha;
+      unsigned color_dark      = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
+
+      d3d10_font_render_message(d3d10,
+            font, msg, scale, color_dark,
+            x + scale * drop_x / width,
+            y + scale * drop_y / height,
+            width, height, text_align);
+   }
+
+   d3d10_font_render_message(d3d10, font, msg, scale,
+         color, x, y,
+         width, height, text_align);
+}
+
+static const struct font_glyph* d3d10_font_get_glyph(void *data, uint32_t code)
+{
+   d3d10_font_t* font = (d3d10_font_t*)data;
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
+}
+
+static bool d3d10_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
+{
+   d3d10_font_t* font = (d3d10_font_t*)data;
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return false;
+}
+
+font_renderer_t d3d10_font = {
+   d3d10_font_init,
+   d3d10_font_free,
+   d3d10_font_render_msg,
+   "d3d10",
+   d3d10_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d10_font_get_message_width,
+   d3d10_font_get_line_metrics
+};
+
+/*
+ * VIDEO DRIVER
+ */
 
 /* Temporary workaround for d3d10 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d10_fake_context;

@@ -299,38 +299,3 @@ typedef struct
    IDXGIAdapter1 *adapters[D3D11_MAX_GPU_COUNT];
    d3d11_texture_t      luts[GFX_MAX_TEXTURES];
 } d3d11_video_t;
-
-static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
-{
-   Release(texture->handle);
-   Release(texture->staging);
-   Release(texture->view);
-   Release(texture->rt_view);
-}
-
-void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);
-
-void d3d11_update_texture(
-      D3D11DeviceContext ctx,
-      unsigned           width,
-      unsigned           height,
-      unsigned           pitch,
-      DXGI_FORMAT        format,
-      const void*        data,
-      d3d11_texture_t*   texture);
-
-DXGI_FORMAT d3d11_get_closest_match(
-      D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
-
-bool d3d11_init_shader(
-      D3D11Device                     device,
-      const char*                     src,
-      size_t                          size,
-      const void*                     src_name,
-      LPCSTR                          vs_entry,
-      LPCSTR                          ps_entry,
-      LPCSTR                          gs_entry,
-      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      d3d11_shader_t*                 out,
-      enum d3d11_feature_level_hint   hint);

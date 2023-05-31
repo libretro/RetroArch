@@ -223,48 +223,6 @@ typedef struct
    uint16_t flags;
 } d3d10_video_t;
 
-void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);
-
-static INLINE void d3d10_release_texture(d3d10_texture_t* texture)
-{
-   Release(texture->handle);
-   Release(texture->staging);
-   Release(texture->view);
-   Release(texture->rt_view);
-}
-
-void d3d10_update_texture(
-      D3D10Device      ctx,
-      int              width,
-      int              height,
-      int              pitch,
-      DXGI_FORMAT      format,
-      const void*      data,
-      d3d10_texture_t* texture);
-
-DXGI_FORMAT d3d10_get_closest_match(
-      D3D10Device device, DXGI_FORMAT desired_format, UINT desired_format_support);
-
-bool d3d10_init_shader(
-      D3D10Device                     device,
-      const char*                     src,
-      size_t                          size,
-      const void*                     src_name,
-      LPCSTR                          vs_entry,
-      LPCSTR                          ps_entry,
-      LPCSTR                          gs_entry,
-      const D3D10_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                            num_elements,
-      d3d10_shader_t*                 out);
-
-static INLINE void d3d10_release_shader(d3d10_shader_t* shader)
-{
-   Release(shader->layout);
-   Release(shader->vs);
-   Release(shader->ps);
-   Release(shader->gs);
-}
-
 static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)
 {
    ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);

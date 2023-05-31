@@ -795,7 +795,7 @@ typedef struct omap_video
    } menu;
 } omap_video_t;
 
-static void omap_gfx_free(void *data)
+static void omap_free(void *data)
 {
    omap_video_t *vid = data;
    if (!vid)
@@ -925,7 +925,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 }
 
 /* FIXME/TODO: Filters not supported. */
-static void *omap_gfx_init(const video_info_t *video,
+static void *omap_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    settings_t *settings = config_get_ptr();
@@ -978,7 +978,7 @@ fail:
    return NULL;
 }
 
-static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
+static bool omap_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
@@ -1024,7 +1024,7 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void omap_gfx_set_nonblock_state(void *data, bool state, 
+static void omap_set_nonblock_state(void *data, bool state, 
       bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    omap_video_t *vid;
@@ -1036,10 +1036,10 @@ static void omap_gfx_set_nonblock_state(void *data, bool state,
    vid->omap->sync = !state;
 }
 
-static bool omap_gfx_alive(void *data) { return true; /* always alive */ }
-static bool omap_gfx_focus(void *data) { return true; /* fb device always has focus */ }
+static bool omap_alive(void *data) { return true; /* always alive */ }
+static bool omap_focus(void *data) { return true; /* fb device always has focus */ }
 
-static void omap_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void omap_viewport_info(void *data, struct video_viewport *vp)
 {
    omap_video_t *vid = (omap_video_t*)data;
 
@@ -1052,13 +1052,13 @@ static void omap_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height        = vp->full_height = vid->height;
 }
 
-static bool omap_gfx_suppress_screensaver(void *data, bool enable) { return false; }
-static bool omap_gfx_has_windowed(void *data) { return true; }
+static bool omap_suppress_screensaver(void *data, bool enable) { return false; }
+static bool omap_has_windowed(void *data) { return true; }
 
-static bool omap_gfx_set_shader(void *data,
+static bool omap_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
-static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
+static void omap_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    omap_video_t          *vid = (omap_video_t*)data;
@@ -1077,12 +1077,10 @@ static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
 }
 
-static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen)
+static void omap_set_texture_enable(void *data, bool state, bool full_screen)
 {
    omap_video_t *vid = (omap_video_t*)data;
-   vid->menu.active = state;
-
-   (void) full_screen;
+   vid->menu.active  = state;
 }
 
 static float omap_get_refresh_rate(void *data)
@@ -1095,7 +1093,7 @@ static float omap_get_refresh_rate(void *data)
           (s->yres + s->upper_margin + s->lower_margin + s->vsync_len);
 }
 
-static const video_poke_interface_t omap_gfx_poke_interface = {
+static const video_poke_interface_t omap_poke_interface = {
    NULL, /* get_flags  */
    NULL,
    NULL,
@@ -1109,8 +1107,8 @@ static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */
    NULL, /* apply_state_changes */
-   omap_gfx_set_texture_frame,
-   omap_gfx_set_texture_enable,
+   omap_set_texture_frame,
+   omap_set_texture_enable,
    NULL,
    NULL,                         /* show_mouse */
    NULL,                         /* grab_mouse_toggle */
@@ -1123,32 +1121,31 @@ static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL                          /* set_hdr_expand_gamut */
 };
 
-static void omap_gfx_get_poke_interface(void *data,
+static void omap_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
-   *iface = &omap_gfx_poke_interface;
+   *iface = &omap_poke_interface;
 }
 
 video_driver_t video_omap = {
-   omap_gfx_init,
-   omap_gfx_frame,
-   omap_gfx_set_nonblock_state,
-   omap_gfx_alive,
-   omap_gfx_focus,
-   omap_gfx_suppress_screensaver,
-   omap_gfx_has_windowed,
-   omap_gfx_set_shader,
-   omap_gfx_free,
+   omap_init,
+   omap_frame,
+   omap_set_nonblock_state,
+   omap_alive,
+   omap_focus,
+   omap_suppress_screensaver,
+   omap_has_windowed,
+   omap_set_shader,
+   omap_free,
    "omap",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
-   omap_gfx_viewport_info,
+   omap_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif
-   omap_gfx_get_poke_interface
+   omap_get_poke_interface
 };

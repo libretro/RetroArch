@@ -15,8 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_miscellaneous.h>
 #include <stdlib.h>
+
+#include <retro_miscellaneous.h>
+#include <string/stdstring.h>
+
+#include <sixel.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -56,6 +60,75 @@
 #ifndef SIXEL_PIXELFORMAT_BGRA8888
 #error "Old version of libsixel detected, please upgrade to at least 1.6.0."
 #endif
+
+/*
+ * FONT DRIVER
+ */
+
+typedef struct
+{
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   sixel_t *sixel;
+} sixel_raster_t;
+
+static void *sixel_font_init(void *data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   sixel_raster_t *font  = (sixel_raster_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   font->sixel = (sixel_t*)data;
+
+   if (!font_renderer_create_default(
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
+      return NULL;
+
+   return font;
+}
+
+static void sixel_font_free(void *data, bool is_threaded)
+{
+  sixel_raster_t *font  = (sixel_raster_t*)data;
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data && font->font_driver->free)
+     font->font_driver->free(font->font_data);
+
+  free(font);
+}
+
+static int sixel_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale) { return 0; }
+static const struct font_glyph *sixel_font_get_glyph(
+      void *data, uint32_t code) { return NULL; }
+/* TODO/FIXME: add text drawing support */
+static void sixel_font_render_msg(
+      void *userdata,
+      void *data,
+      const char *msg,
+      const struct font_params *_params) { }
+
+font_renderer_t sixel_font = {
+   sixel_font_init,
+   sixel_font_free,
+   sixel_font_render_msg,
+   "sixel",
+   sixel_font_get_glyph,
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   sixel_font_get_message_width,
+   NULL                        /* get_line_metrics */
+};
+
+/*
+ * VIDEO DRIVER
+ */
 
 static unsigned char *sixel_menu_frame = NULL;
 static unsigned sixel_menu_width       = 0;

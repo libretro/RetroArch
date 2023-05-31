@@ -382,7 +382,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
    dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
 
-static void *dispmanx_gfx_init(const video_info_t *video,
+static void *dispmanx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));
@@ -432,7 +432,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
    return _dispvars;
 }
 
-static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
+static bool dispmanx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
@@ -535,13 +535,13 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    dispmanx_surface_update_async(frame, _dispvars->menu_surface);
 }
 
-static void dispmanx_gfx_set_nonblock_state(void *a, bool b,
+static void dispmanx_set_nonblock_state(void *a, bool b,
       bool c, unsigned d) { }
 
-static bool dispmanx_gfx_alive(void *data) { return true; }
-static bool dispmanx_gfx_focus(void *data) { return true; }
+static bool dispmanx_alive(void *data) { return true; }
+static bool dispmanx_focus(void *data) { return true; }
 
-static void dispmanx_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void dispmanx_viewport_info(void *data, struct video_viewport *vp)
 {
    struct dispmanx_video *vid = data;
 
@@ -554,23 +554,9 @@ static void dispmanx_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->core_height;
 }
 
-static bool dispmanx_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static bool dispmanx_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+static bool dispmanx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool dispmanx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static uint32_t dispmanx_get_flags(void *data)
 {
@@ -607,14 +593,13 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL                          /* set_hdr_expand_gamut */
 };
 
-static void dispmanx_gfx_get_poke_interface(void *data,
+static void dispmanx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &dispmanx_poke_interface;
 }
 
-static void dispmanx_gfx_free(void *data)
+static void dispmanx_free(void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -639,24 +624,24 @@ static void dispmanx_gfx_free(void *data)
 }
 
 video_driver_t video_dispmanx = {
-   dispmanx_gfx_init,
-   dispmanx_gfx_frame,
-   dispmanx_gfx_set_nonblock_state,
-   dispmanx_gfx_alive,
-   dispmanx_gfx_focus,
-   dispmanx_gfx_suppress_screensaver,
+   dispmanx_init,
+   dispmanx_frame,
+   dispmanx_set_nonblock_state,
+   dispmanx_alive,
+   dispmanx_focus,
+   dispmanx_suppress_screensaver,
    NULL, /* has_windowed */
-   dispmanx_gfx_set_shader,
-   dispmanx_gfx_free,
+   dispmanx_set_shader,
+   dispmanx_free,
    "dispmanx",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
-   dispmanx_gfx_viewport_info,
+   dispmanx_viewport_info,
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif
-   dispmanx_gfx_get_poke_interface
+   dispmanx_get_poke_interface
 };

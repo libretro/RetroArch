@@ -618,7 +618,7 @@ static void sunxi_vsync_thread_func(void *data)
    }
 }
 
-static void *sunxi_gfx_init(const video_info_t *video,
+static void *sunxi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)
@@ -681,7 +681,7 @@ error:
    return NULL;
 }
 
-static void sunxi_gfx_free(void *data)
+static void sunxi_free(void *data)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -771,7 +771,7 @@ static void sunxi_setup_scale (void *data,
    sunxi_layer_show(_dispvars->sunxi_disp);
 }
 
-static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
+static bool sunxi_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
@@ -804,29 +804,13 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void sunxi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static void sunxi_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool sunxi_alive(void *data) { return true; }
+/* Framebuffer device always has focus */
+static bool sunxi_focus(void *data) { return true; }
+static bool sunxi_suppress_screensaver(void *a, bool b) { return false; }
 
-static bool sunxi_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
-
-static bool sunxi_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* fb device always has focus */
-}
-
-static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static void sunxi_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void sunxi_viewport_info(void *data, struct video_viewport *vp)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -839,15 +823,8 @@ static void sunxi_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = _dispvars->src_height;
 }
 
-static bool sunxi_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+static bool sunxi_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 {
@@ -958,32 +935,31 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL                          /* set_hdr_expand_gamut */
 };
 
-static void sunxi_gfx_get_poke_interface(void *data,
+static void sunxi_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &sunxi_poke_interface;
 }
 
 video_driver_t video_sunxi = {
-  sunxi_gfx_init,
-  sunxi_gfx_frame,
-  sunxi_gfx_set_nonblock_state,
-  sunxi_gfx_alive,
-  sunxi_gfx_focus,
-  sunxi_gfx_suppress_screensaver,
+  sunxi_init,
+  sunxi_frame,
+  sunxi_set_nonblock_state,
+  sunxi_alive,
+  sunxi_focus,
+  sunxi_suppress_screensaver,
   NULL, /* has_windowed */
-  sunxi_gfx_set_shader,
-  sunxi_gfx_free,
+  sunxi_set_shader,
+  sunxi_free,
   "sunxi",
   NULL, /* set_viewport */
   NULL, /* set_rotation */
-  sunxi_gfx_viewport_info,
+  sunxi_viewport_info,
   NULL, /* read_viewport */
   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif
-  sunxi_gfx_get_poke_interface
+  sunxi_get_poke_interface
 };
