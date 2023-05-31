@@ -95,22 +95,6 @@ void d3d8_deinitialize_symbols(void)
 #endif
 }
 
-void *d3d8_texture_new(LPDIRECT3DDEVICE8 dev,
-      unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, INT32 format,
-      INT32 pool, unsigned filter, unsigned mipfilter,
-      INT32 color_key, void *src_info_data,
-      PALETTEENTRY *palette, bool want_mipmap)
-{
-   void *buf             = NULL;
-   if (SUCCEEDED(IDirect3DDevice8_CreateTexture(dev,
-               width, height, miplevels, usage,
-               (D3DFORMAT)format, (D3DPOOL)pool,
-               (struct IDirect3DTexture8**)&buf)))
-      return buf;
-   return NULL;
-}
-
 static bool d3d8_create_device_internal(
       LPDIRECT3DDEVICE8 dev,
       D3DPRESENT_PARAMETERS *d3dpp,
