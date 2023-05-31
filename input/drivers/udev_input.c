@@ -1421,6 +1421,61 @@ static void udev_destroy_touch_dev(udev_input_device_t *dev)
 }
 
 /**
+ * Update options from settings if they changed.
+ *
+ * @param dev Input touch device to update.
+ * @param force Force setting of the values.
+ */
+static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
+{
+   settings_t *settings;
+
+   static bool pointer_en;
+   static bool mouse_en;
+   static bool touchpad_en;
+   static bool trackball_en;
+   static bool gest_en;
+
+   bool pointer_en_new;
+   bool mouse_en_new;
+   bool touchpad_en_new;
+   bool trackball_en_new;
+   bool gest_en_new;
+
+   settings = config_get_ptr();
+
+   pointer_en_new = UDEV_INPUT_TOUCH_POINTER_EN;
+   if (force || pointer_en_new != pointer_en)
+   {
+       dev->touch.pointer_enabled = pointer_en_new;
+   }
+
+   mouse_en_new = UDEV_INPUT_TOUCH_MOUSE_EN;
+   if (force || mouse_en_new != mouse_en)
+   {
+       dev->touch.mouse_enabled = mouse_en_new;
+   }
+
+   touchpad_en_new = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
+   if (force || touchpad_en_new != touchpad_en)
+   {
+       dev->touch.touchpad_enabled = touchpad_en_new;
+   }
+   
+   trackball_en_new = UDEV_INPUT_TOUCH_TRACKBALL_EN;
+   if (force || trackball_en_new != trackball_en)
+   {
+       dev->touch.trackball_enabled = trackball_en_new;
+   }
+
+   gest_en_new = UDEV_INPUT_TOUCH_GEST_EN;
+   if (force || gest_en_new != gest_en)
+   {
+       dev->touch.gest_enabled = gest_en_new;
+   }
+}
+
+/**
  * Initialize given touch device.
  *
  * @param dev Input touch device to initialize.
@@ -1661,6 +1716,9 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->gest_mcbs[iii].cb = NULL;
       touch->gest_mcbs[iii].data = NULL;
    }
+
+   /* Force load the options from settings */
+   udev_update_touch_dev_options(dev, true);
 
    /* Print debug information */
    udev_dump_touch_dev(dev);
@@ -2332,6 +2390,9 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                }
                else
                { /* Direct mode -> Direct virtual mouse. */
+                  /* Initialize mouse position to the current pointer position */
+                  touch->mouse_pos_x = touch->pointer_ma_pos_x;
+                  touch->mouse_pos_y = touch->pointer_ma_pos_y;
                }
 
                if (touch->trackball_enabled)
@@ -2978,9 +3039,11 @@ static int16_t udev_input_touch_state(
 
    if (touch->run_state_update)
    { /* Perform state update only once */
-       touch->run_state_update = false;
-       /* Update last update timestamp */
-       udev_touch_ts_copy(&now, &touch->last_state_update);
+      touch->run_state_update = false;
+      /* Update last update timestamp */
+      udev_touch_ts_copy(&now, &touch->last_state_update);
+      /* Force load the options from settings */
+      udev_update_touch_dev_options(dev, true);
    }
 
    switch (device)
