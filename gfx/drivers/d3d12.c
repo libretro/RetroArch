@@ -58,7 +58,7 @@
 
 #include "../common/d3d_common.h"
 #include "../common/dxgi_common.h"
-#include "../common/d3d12_common.h"
+#include "../common/d3d12_defines.h"
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
@@ -71,6 +71,45 @@
 /*
  * D3D12 COMMON
  */
+static INLINE HRESULT
+D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
+{
+   return ((ID3D12Resource*)resource)
+         ->lpVtbl->Map((ID3D12Resource*)resource, subresource, read_range, data);
+}
+
+static INLINE void D3D12Unmap(void* resource, UINT subresource, D3D12_RANGE* written_range)
+{
+   ((ID3D12Resource*)resource)
+         ->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
+}
+
+static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
+{
+   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS
+d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
+{
+   D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+   D3D12_RESOURCE_DESC   resource_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+
+   resource_desc.Width                 = size_in_bytes;
+   resource_desc.Height                = 1;
+   resource_desc.DepthOrArraySize      = 1;
+   resource_desc.MipLevels             = 1;
+   resource_desc.SampleDesc.Count      = 1;
+   resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+   device->lpVtbl->CreateCommittedResource(
+         device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
+         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)buffer);
+
+   return D3D12GetGPUVirtualAddress(*buffer);
+}
+
 static INLINE D3D12_CPU_DESCRIPTOR_HANDLE
 D3D12GetCPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 {
@@ -262,6 +301,90 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    texture->size_data.w = 1.0f / texture->desc.Height;
 }
 
+static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+
+   src.pResource        = texture->upload_buffer;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint  = texture->layout;
+
+   dst.pResource        = texture->handle;
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         texture->handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         texture->handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+   if (texture->desc.MipLevels > 1)
+   {
+      unsigned       i;
+      d3d12_video_t* d3d12 = (d3d12_video_t*)userdata;
+
+      cmd->lpVtbl->SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
+      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->mipmapgen_pipe);
+      cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
+
+      for (i = 1; i < texture->desc.MipLevels; i++)
+      {
+         unsigned width  = texture->desc.Width  >> i;
+         unsigned height = texture->desc.Height >> i;
+         struct
+         {
+            uint32_t src_level;
+            float    texel_size[2];
+         } cbuffer = { i - 1, { 1.0f / width, 1.0f / height } };
+
+         {
+            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+            barrier.Transition.pResource   = texture->handle;
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            barrier.Transition.Subresource = i;
+            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
+         }
+
+         {
+            UINT thread_group_count_x      = (width  + 0x7) >> 3;
+            UINT thread_group_count_y      = (height + 0x7) >> 3;
+            cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T, texture->gpu_descriptor[i]);
+            cmd->lpVtbl->SetComputeRoot32BitConstants(
+                  cmd, CS_ROOT_ID_CONSTANTS, sizeof(cbuffer) / sizeof(uint32_t), &cbuffer, 0);
+            cmd->lpVtbl->Dispatch(cmd, thread_group_count_x, thread_group_count_y, 1);
+         }
+
+         {
+            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_UAV };
+            barrier.UAV.pResource          = texture->handle;
+            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
+         }
+
+         {
+            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+            barrier.Transition.pResource   = texture->handle;
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            barrier.Transition.Subresource = i;
+            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
+         }
+      }
+   }
+
+   texture->dirty = false;
+}
+
 static void d3d12_update_texture(
       int              width,
       int              height,
@@ -281,6 +404,298 @@ static void d3d12_update_texture(
    resource->lpVtbl->Unmap(resource, 0, NULL);
    texture->dirty           = true;
 }
+
+/*
+ * DISPLAY DRIVER 
+ */
+
+static void gfx_display_d3d12_blend_begin(void *data)
+{
+   d3d12_video_t* d3d12         = (d3d12_video_t*)data;
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   d3d12->sprites.pipe          = d3d12->sprites.pipe_blend;
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+}
+
+static void gfx_display_d3d12_blend_end(void *data)
+{
+   d3d12_video_t* d3d12         = (d3d12_video_t*)data;
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   d3d12->sprites.pipe          = d3d12->sprites.pipe_noblend;
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+}
+
+static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   D3D12GraphicsCommandList cmd;
+   int vertex_count     = 1;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12 || !draw || !draw->texture)
+      return;
+
+   cmd                  = d3d12->queue.cmd;
+
+   switch (draw->pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->pipes[draw->pipeline_id]);
+         cmd->lpVtbl->DrawInstanced(cmd, draw->coords->vertices, 1, 0, 0);
+         cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+         cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+         cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
+         return;
+   }
+
+   if (draw->coords->vertex && draw->coords->tex_coord && draw->coords->color)
+      vertex_count = draw->coords->vertices;
+
+   if (   (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)) 
+         || (vertex_count > d3d12->sprites.capacity))
+      return;
+
+   if (d3d12->sprites.offset + vertex_count > d3d12->sprites.capacity)
+      d3d12->sprites.offset = 0;
+
+   {
+      d3d12_sprite_t* sprite;
+      D3D12_RANGE range;
+      range.Begin           = 0;
+      range.End             = 0;
+      D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&sprite);
+      sprite += d3d12->sprites.offset;
+
+      if (vertex_count == 1)
+      {
+
+         sprite->pos.x    = draw->x      / (float)d3d12->chain.viewport.Width;
+         sprite->pos.y    = 
+            (d3d12->chain.viewport.Height - draw->y - draw->height) /
+            (float)d3d12->chain.viewport.Height;
+         sprite->pos.w    = draw->width  / (float)d3d12->chain.viewport.Width;
+         sprite->pos.h    = draw->height / (float)d3d12->chain.viewport.Height;
+
+         sprite->coords.u = 0.0f;
+         sprite->coords.v = 0.0f;
+         sprite->coords.w = 1.0f;
+         sprite->coords.h = 1.0f;
+
+         if (draw->scale_factor)
+            sprite->params.scaling = draw->scale_factor;
+         else
+            sprite->params.scaling = 1.0f;
+
+         sprite->params.rotation   = draw->rotation;
+
+         sprite->colors[3]         = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[0],  0xFF * draw->coords->color[1],
+               0xFF * draw->coords->color[2],  0xFF * draw->coords->color[3]);
+         sprite->colors[2]         = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[4],  0xFF * draw->coords->color[5],
+               0xFF * draw->coords->color[6],  0xFF * draw->coords->color[7]);
+         sprite->colors[1]         = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[8],  0xFF * draw->coords->color[9],
+               0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
+         sprite->colors[0]         = DXGI_COLOR_RGBA(
+               0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
+               0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+      }
+      else
+      {
+         int          i;
+         const float* vertex    = draw->coords->vertex;
+         const float* tex_coord = draw->coords->tex_coord;
+         const float* color     = draw->coords->color;
+
+         for (i = 0; i < vertex_count; i++)
+         {
+            d3d12_vertex_t* v = (d3d12_vertex_t*)sprite;
+            v->position[0]    = *vertex++;
+            v->position[1]    = *vertex++;
+            v->texcoord[0]    = *tex_coord++;
+            v->texcoord[1]    = *tex_coord++;
+            v->color[0]       = *color++;
+            v->color[1]       = *color++;
+            v->color[2]       = *color++;
+            v->color[3]       = *color++;
+
+            sprite++;
+         }
+         cmd->lpVtbl->SetPipelineState(cmd,
+              (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+         cmd->lpVtbl->IASetPrimitiveTopology(cmd,
+               D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      }
+
+      range.Begin = d3d12->sprites.offset * sizeof(*sprite);
+      range.End   = (d3d12->sprites.offset + vertex_count) * sizeof(*sprite);
+      D3D12Unmap(d3d12->sprites.vbo, 0, &range);
+   }
+
+   {
+      d3d12_texture_t* texture = (d3d12_texture_t*)draw->texture;
+      if (texture->dirty)
+      {
+         d3d12_upload_texture(cmd, texture, d3d12);
+
+         if (vertex_count > 1)
+            cmd->lpVtbl->SetPipelineState(cmd,
+                 (D3D12PipelineState)d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+         else
+            cmd->lpVtbl->SetPipelineState(cmd,
+                 (D3D12PipelineState)d3d12->sprites.pipe);
+      }
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
+   }
+
+   cmd->lpVtbl->DrawInstanced(cmd, vertex_count, 1, d3d12->sprites.offset, 0);
+   d3d12->sprites.offset += vertex_count;
+
+   if (vertex_count > 1)
+   {
+      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+      cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   }
+}
+
+static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   D3D12GraphicsCommandList cmd;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12 || !draw)
+      return;
+
+   cmd                  = d3d12->queue.cmd;
+
+   switch (draw->pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      {
+         video_coord_array_t* ca   = &p_disp->dispca;
+
+         if (!d3d12->menu_pipeline_vbo)
+         {
+            D3D12_RANGE read_range;
+            void*       vertex_data_begin;
+
+            d3d12->menu_pipeline_vbo_view.StrideInBytes  = 2 * sizeof(float);
+            d3d12->menu_pipeline_vbo_view.SizeInBytes    =
+                  ca->coords.vertices * d3d12->menu_pipeline_vbo_view.StrideInBytes;
+            d3d12->menu_pipeline_vbo_view.BufferLocation = d3d12_create_buffer(
+                  d3d12->device, d3d12->menu_pipeline_vbo_view.SizeInBytes,
+                  &d3d12->menu_pipeline_vbo);
+
+            read_range.Begin           = 0;
+            read_range.End             = 0;
+            D3D12Map(d3d12->menu_pipeline_vbo, 0,
+                  &read_range, &vertex_data_begin);
+            memcpy(vertex_data_begin, ca->coords.vertex,
+                  d3d12->menu_pipeline_vbo_view.SizeInBytes);
+            D3D12Unmap(d3d12->menu_pipeline_vbo, 0, NULL);
+         }
+         cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
+               &d3d12->menu_pipeline_vbo_view);
+         draw->coords->vertices = ca->coords.vertices;
+         break;
+      }
+
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
+         draw->coords->vertices = 4;
+         break;
+      default:
+         return;
+   }
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd,
+         D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   d3d12->ubo_values.time += 0.01f;
+
+   {
+      D3D12_RANGE read_range;
+      d3d12_uniform_t* mapped_ubo;
+
+      read_range.Begin     = 0;
+      read_range.End       = 0;
+      D3D12Map(d3d12->ubo, 0, &read_range, (void**)&mapped_ubo);
+      *mapped_ubo = d3d12->ubo_values;
+      D3D12Unmap(d3d12->ubo, 0, NULL);
+   }
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->ubo_view.BufferLocation);
+}
+
+void gfx_display_d3d12_scissor_begin(void *data,
+      unsigned video_width, unsigned video_height,
+      int x, int y, unsigned width, unsigned height)
+{
+   D3D12_RECT rect;
+   D3D12GraphicsCommandList cmd;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   cmd                  = d3d12->queue.cmd;
+
+   rect.left            = x;
+   rect.top             = y;
+   rect.right           = width + x;
+   rect.bottom          = height + y;
+
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &rect);
+}
+
+void gfx_display_d3d12_scissor_end(void *data,
+      unsigned video_width,
+      unsigned video_height)
+{
+   D3D12_RECT rect;
+   D3D12GraphicsCommandList cmd;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   cmd                  = d3d12->queue.cmd;
+
+   rect.left            = 0;
+   rect.top             = 0;
+   rect.right           = video_width;
+   rect.bottom          = video_height;
+
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &rect);
+}
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
+   gfx_display_d3d12_draw,
+   gfx_display_d3d12_draw_pipeline,
+   gfx_display_d3d12_blend_begin,
+   gfx_display_d3d12_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   FONT_DRIVER_RENDER_D3D12_API,
+   GFX_VIDEO_DRIVER_DIRECT3D12,
+   "d3d12",
+   true,
+   gfx_display_d3d12_scissor_begin,
+   gfx_display_d3d12_scissor_end
+};
 
 /*
  * FONT DRIVER 

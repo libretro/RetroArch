@@ -15,7 +15,7 @@
 
 #define CINTERFACE
 
-#include "d3d10_common.h"
+#include "d3d10_defines.h"
 #include "d3dcompiler_common.h"
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)

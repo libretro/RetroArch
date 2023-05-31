@@ -14,7 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _D3D12_DEFINES_H_
+#define _D3D12_DEFINES_H_
 
 #include <retro_inline.h>
 #include <retro_math.h>
@@ -80,8 +81,6 @@ typedef enum
    CS_ROOT_ID_CONSTANTS,
    CS_ROOT_ID_MAX
 } compute_root_index_t;
-
-
 
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
 
@@ -354,27 +353,6 @@ typedef struct
    uint16_t flags;
 } d3d12_video_t;
 
-static INLINE HRESULT
-D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
-{
-   return ((ID3D12Resource*)resource)
-         ->lpVtbl->Map((ID3D12Resource*)resource, subresource, read_range, data);
-}
-
-static INLINE void D3D12Unmap(void* resource, UINT subresource, D3D12_RANGE* written_range)
-{
-   ((ID3D12Resource*)resource)
-         ->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
-}
-
 /* end of auto-generated */
 
-RETRO_BEGIN_DECLS
-
-D3D12_GPU_VIRTUAL_ADDRESS
-d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
-
-void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
-      d3d12_texture_t* texture, void *userdata);
-
-RETRO_END_DECLS
+#endif

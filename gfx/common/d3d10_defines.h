@@ -13,7 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _D3D10_DEFINES_H_
+#define _D3D10_DEFINES_H_
 
 #include <retro_inline.h>
 
@@ -224,19 +225,4 @@ typedef struct
    uint16_t flags;
 } d3d10_video_t;
 
-static INLINE void d3d10_set_shader(D3D10Device ctx, d3d10_shader_t* shader)
-{
-   ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);
-   ctx->lpVtbl->VSSetShader(ctx, shader->vs);
-   ctx->lpVtbl->PSSetShader(ctx, shader->ps);
-   ctx->lpVtbl->GSSetShader(ctx, shader->gs);
-}
-
-#if !defined(__cplusplus) || defined(CINTERFACE)
-static INLINE void
-d3d10_set_texture_and_sampler(D3D10Device ctx, UINT slot, d3d10_texture_t* texture)
-{
-   ctx->lpVtbl->PSSetShaderResources(ctx, slot, 1, &texture->view);
-   ctx->lpVtbl->PSSetSamplers(ctx, slot, 1, (D3D10SamplerState*)&texture->sampler);
-}
 #endif

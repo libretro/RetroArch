@@ -47,6 +47,108 @@
 #endif
 
 /*
+ * DISPLAY DRIVER 
+ */
+
+static const float *gfx_display_gdi_get_default_vertices(void)
+{
+   static float dummy[16] = {0.0f};
+   return &dummy[0];
+}
+
+static const float *gfx_display_gdi_get_default_tex_coords(void)
+{
+   static float dummy[16] = {0.0f};
+   return &dummy[0];
+}
+
+static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   struct gdi_texture *texture = NULL;
+   gdi_t *gdi                  = (gdi_t*)data;
+   BITMAPINFO info             = {{0}};
+
+   if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
+      return;
+
+   texture = (struct gdi_texture*)draw->texture;
+
+   if (!texture || texture->width <= 1 || texture->height <= 1)
+      return;
+
+   info.bmiHeader.biBitCount    = 32;
+   info.bmiHeader.biWidth       = texture->width;
+   info.bmiHeader.biHeight      = -texture->height;
+   info.bmiHeader.biPlanes      = 1;
+   info.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+   info.bmiHeader.biSizeImage   = 0;
+   info.bmiHeader.biCompression = BI_RGB;
+
+   if (gdi->memDC)
+   {
+#if _WIN32_WINNT >= 0x0410 /* Win98 */
+      BLENDFUNCTION blend = {0};
+#endif
+
+      if (!gdi->texDC)
+         gdi->texDC        = CreateCompatibleDC(gdi->winDC);
+
+      if (texture->bmp)
+         texture->bmp_old  = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
+      else
+      {
+         /* scale texture data into a bitmap we can easily blit later */
+         texture->bmp     = CreateCompatibleBitmap(gdi->winDC, draw->width, draw->height);
+         texture->bmp_old = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
+
+         StretchDIBits(gdi->texDC, 0, 0, draw->width, draw->height, 0, 0, texture->width, texture->height, texture->data, &info, DIB_RGB_COLORS, SRCCOPY);
+      }
+
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+#if _WIN32_WINNT >= 0x0410 /* Win98 */
+      blend.BlendOp = AC_SRC_OVER;
+      blend.BlendFlags = 0;
+      blend.SourceConstantAlpha = 255;
+#if 0
+      clamp_8bit(draw->coords->color[3] * 255.0f);
+#endif
+      blend.AlphaFormat = AC_SRC_ALPHA;
+
+      /* AlphaBlend() is only available since Win98 */
+      AlphaBlend(gdi->memDC, draw->x, video_height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, blend);
+#if 0
+      TransparentBlt(gdi->memDC, draw->x, video_height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, 0);
+#endif
+#else
+      /* Just draw without the blending */
+      StretchBlt(gdi->memDC, draw->x, video_height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, SRCCOPY);
+
+#endif
+
+      SelectObject(gdi->memDC, gdi->bmp_old);
+      SelectObject(gdi->texDC, texture->bmp_old);
+   }
+}
+
+gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
+   gfx_display_gdi_draw,
+   NULL,                                     /* draw_pipeline   */
+   NULL,                                     /* blend_begin     */
+   NULL,                                     /* blend_end       */
+   NULL,                                     /* get_default_mvp */
+   gfx_display_gdi_get_default_vertices,
+   gfx_display_gdi_get_default_tex_coords,
+   FONT_DRIVER_RENDER_GDI,
+   GFX_VIDEO_DRIVER_GDI,
+   "gdi",
+   false,
+   NULL,                                     /* scissor_begin */
+   NULL                                      /* scissor_end   */
+};
+
+/*
  * FONT DRIVER 
  */
 

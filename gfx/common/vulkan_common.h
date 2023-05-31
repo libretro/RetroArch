@@ -210,6 +210,27 @@
 
 RETRO_BEGIN_DECLS
 
+enum vk_flags
+{
+   VK_FLAG_VSYNC               = (1 << 0),
+   VK_FLAG_KEEP_ASPECT         = (1 << 1),
+   VK_FLAG_FULLSCREEN          = (1 << 2),
+   VK_FLAG_QUITTING            = (1 << 3),
+   VK_FLAG_SHOULD_RESIZE       = (1 << 4),
+   VK_FLAG_TRACKER_USE_SCISSOR = (1 << 5),
+   VK_FLAG_HW_ENABLE           = (1 << 6),
+   VK_FLAG_HW_VALID_SEMAPHORE  = (1 << 7),
+   VK_FLAG_MENU_ENABLE         = (1 << 8),
+   VK_FLAG_MENU_FULLSCREEN     = (1 << 9),
+   VK_FLAG_HDR_SUPPORT         = (1 << 10),
+   VK_FLAG_DISPLAY_BLEND       = (1 << 11),
+   VK_FLAG_READBACK_PENDING    = (1 << 12),
+   VK_FLAG_READBACK_STREAMED   = (1 << 13),
+   VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
+   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
+};
+
+
 enum vk_texture_type
 {
    /* We will use the texture as a sampled linear texture. */
@@ -504,26 +525,6 @@ struct vk_draw_triangles
    unsigned vertices;
 };
 
-enum vk_flags
-{
-   VK_FLAG_VSYNC               = (1 << 0),
-   VK_FLAG_KEEP_ASPECT         = (1 << 1),
-   VK_FLAG_FULLSCREEN          = (1 << 2),
-   VK_FLAG_QUITTING            = (1 << 3),
-   VK_FLAG_SHOULD_RESIZE       = (1 << 4),
-   VK_FLAG_TRACKER_USE_SCISSOR = (1 << 5),
-   VK_FLAG_HW_ENABLE           = (1 << 6),
-   VK_FLAG_HW_VALID_SEMAPHORE  = (1 << 7),
-   VK_FLAG_MENU_ENABLE         = (1 << 8),
-   VK_FLAG_MENU_FULLSCREEN     = (1 << 9),
-   VK_FLAG_HDR_SUPPORT         = (1 << 10),
-   VK_FLAG_DISPLAY_BLEND       = (1 << 11),
-   VK_FLAG_READBACK_PENDING    = (1 << 12),
-   VK_FLAG_READBACK_STREAMED   = (1 << 13),
-   VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
-   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
-};
-
 typedef struct vk
 {
    vulkan_filter_chain_t *filter_chain;
@@ -670,23 +671,7 @@ uint32_t vulkan_find_memory_type_fallback(
       uint32_t device_reqs, uint32_t host_reqs_first,
       uint32_t host_reqs_second);
 
-void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture);
-
 void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
-
-void vulkan_write_quad_descriptors(
-      VkDevice device,
-      VkDescriptorSet set,
-      VkBuffer buffer,
-      VkDeviceSize offset,
-      VkDeviceSize range,
-      const struct vk_texture *texture,
-      VkSampler sampler);
-
-/* The VBO needs to be written to before calling this.
- * Use vulkan_buffer_chain_alloc.
- */
-void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
 
 struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,

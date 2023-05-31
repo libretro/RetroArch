@@ -13,7 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _D3D11_DEFINES_H_
+#define _D3D11_DEFINES_H_
 
 #include <retro_inline.h>
 
@@ -298,3 +299,5 @@ typedef struct
    IDXGIAdapter1 *adapters[D3D11_MAX_GPU_COUNT];
    d3d11_texture_t      luts[GFX_MAX_TEXTURES];
 } d3d11_video_t;
+
+#endif

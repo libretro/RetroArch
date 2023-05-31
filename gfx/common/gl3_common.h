@@ -43,13 +43,6 @@ RETRO_BEGIN_DECLS
 #define GL_CORE_NUM_VBOS 256
 #define GL_CORE_NUM_FENCES 8
 
-struct gl3_streamed_texture
-{
-   GLuint tex;
-   unsigned width;
-   unsigned height;
-};
-
 enum gl3_flags
 {
    GL3_FLAG_PBO_READBACK_ENABLE    = (1 <<  0),
@@ -66,6 +59,14 @@ enum gl3_flags
    GL3_FLAG_SHOULD_RESIZE          = (1 << 11),
    GL3_FLAG_KEEP_ASPECT            = (1 << 12)
 };
+
+struct gl3_streamed_texture
+{
+   GLuint tex;
+   unsigned width;
+   unsigned height;
+};
+
 
 typedef struct gl3
 {

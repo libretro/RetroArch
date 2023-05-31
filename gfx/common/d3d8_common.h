@@ -73,29 +73,11 @@ typedef struct d3d8_video
    overlay_t *overlays;
 } d3d8_video_t;
 
-static INLINE void *
-d3d8_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER8 vertbuf)
-{
-   void *buf = NULL;
-   IDirect3DVertexBuffer8_Lock(vertbuf, 0, 0, (BYTE**)&buf, 0);
-   return buf;
-}
-
-bool d3d8_create_device(void *dev,
-      void *d3dpp,
-      LPDIRECT3D8 d3d,
-      HWND focus_window,
-      unsigned cur_mon_id);
-
-bool d3d8_reset(void *dev, void *d3dpp);
-
 void *d3d8_create(void);
 
 bool d3d8_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d8_deinitialize_symbols(void);
-
-void d3d8_set_mvp(void *data, const void *userdata);
 
 RETRO_END_DECLS
 

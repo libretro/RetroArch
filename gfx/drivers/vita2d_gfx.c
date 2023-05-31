@@ -54,6 +54,149 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
 
 /*
+ * DISPLAY DRIVER
+ */
+
+static const float vita2d_vertexes[8] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const float vita2d_tex_coords[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static const float vita2d_colors[16] = {
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+};
+
+static const float *gfx_display_vita2d_get_default_vertices(void)
+{
+   return &vita2d_vertexes[0];
+}
+
+static const float *gfx_display_vita2d_get_default_color(void)
+{
+   return &vita2d_colors[0];
+}
+
+static const float *gfx_display_vita2d_get_default_tex_coords(void)
+{
+   return &vita2d_tex_coords[0];
+}
+
+static void *gfx_display_vita2d_get_default_mvp(void *data)
+{
+   vita_video_t *vita2d = (vita_video_t*)data;
+
+   if (!vita2d)
+      return NULL;
+
+   return &vita2d->mvp_no_rot;
+}
+
+static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   unsigned i;
+   struct vita2d_texture *texture   = NULL;
+   const float *vertex              = NULL;
+   const float *tex_coord           = NULL;
+   const float *color               = NULL;
+   vita_video_t             *vita2d = (vita_video_t*)data;
+
+   if (!vita2d || !draw)
+      return;
+
+   texture            = (struct vita2d_texture*)draw->texture;
+   vertex             = draw->coords->vertex;
+   tex_coord          = draw->coords->tex_coord;
+   color              = draw->coords->color;
+
+   if (!vertex)
+      vertex          = &vita2d_vertexes[0];
+   if (!tex_coord)
+      tex_coord       = &vita2d_tex_coords[0];
+   if (!draw->coords->lut_tex_coord)
+      draw->coords->lut_tex_coord = &vita2d_tex_coords[0];
+   if (!texture)
+      return;
+   if (!color)
+      color           = &vita2d_colors[0];
+
+   vita2d_set_viewport(draw->x, draw->y, draw->width, draw->height);
+   vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)vita2d_pool_memalign(
+         draw->coords->vertices * sizeof(vita2d_texture_tint_vertex),
+         sizeof(vita2d_texture_tint_vertex));
+
+   for (i = 0; i < draw->coords->vertices; i++)
+   {
+      vertices[i].x = *vertex++;
+      vertices[i].y = *vertex++;
+      vertices[i].z = 1.0f;
+      vertices[i].u = *tex_coord++;
+      vertices[i].v = *tex_coord++;
+      vertices[i].r = *color++; 
+      vertices[i].g = *color++;
+      vertices[i].b = *color++;
+      vertices[i].a = *color++;
+   }
+
+   switch (draw->pipeline_id)
+   {
+      default:
+         {
+            vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, &vita2d->mvp_no_rot);
+            break;
+         }
+   }
+}
+
+static void gfx_display_vita2d_scissor_begin(void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y,
+      unsigned width, unsigned height)
+{
+   vita2d_set_clip_rectangle(x, y, x + width, y + height);  
+   vita2d_set_region_clip(SCE_GXM_REGION_CLIP_OUTSIDE, x, y, x + width, y + height);
+}
+
+static void gfx_display_vita2d_scissor_end(
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
+{
+   vita2d_set_region_clip(SCE_GXM_REGION_CLIP_NONE, 0, 0,
+         video_width, video_height);
+   vita2d_disable_clipping();
+}
+
+gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
+   gfx_display_vita2d_draw,
+   NULL,                                        /* draw_pipeline */
+   NULL,                                        /* blend_begin   */
+   NULL,                                        /* blend_end     */
+   gfx_display_vita2d_get_default_mvp,
+   gfx_display_vita2d_get_default_vertices,
+   gfx_display_vita2d_get_default_tex_coords,
+   FONT_DRIVER_RENDER_VITA2D,
+   GFX_VIDEO_DRIVER_VITA2D,
+   "vita2d",
+   true,
+   gfx_display_vita2d_scissor_begin,
+   gfx_display_vita2d_scissor_end
+};
+
+/*
  * FONT DRIVER
  */
 

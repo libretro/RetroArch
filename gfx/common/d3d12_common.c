@@ -20,12 +20,9 @@
 #include <boolean.h>
 
 #include "d3d_common.h"
-#include "d3d12_common.h"
+#include "d3d12_defines.h"
 #include "dxgi_common.h"
 #include "d3dcompiler_common.h"
-
-#include "../verbosity.h"
-#include "../../configuration.h"
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
@@ -139,113 +136,3 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
    return fp(pRootSignature, ppBlob, ppErrorBlob);
 }
 #endif
-
-static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
-{
-   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
-}
-
-D3D12_GPU_VIRTUAL_ADDRESS
-d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
-{
-   D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
-   D3D12_RESOURCE_DESC   resource_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
-
-   resource_desc.Width                 = size_in_bytes;
-   resource_desc.Height                = 1;
-   resource_desc.DepthOrArraySize      = 1;
-   resource_desc.MipLevels             = 1;
-   resource_desc.SampleDesc.Count      = 1;
-   resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-   device->lpVtbl->CreateCommittedResource(
-         device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
-         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)buffer);
-
-   return D3D12GetGPUVirtualAddress(*buffer);
-}
-
-void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
-      d3d12_texture_t* texture, void *userdata)
-{
-   D3D12_TEXTURE_COPY_LOCATION src, dst;
-
-   src.pResource        = texture->upload_buffer;
-   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   src.PlacedFootprint  = texture->layout;
-
-   dst.pResource        = texture->handle;
-   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-   dst.SubresourceIndex = 0;
-
-   D3D12_RESOURCE_TRANSITION(
-         cmd,
-         texture->handle,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-         D3D12_RESOURCE_STATE_COPY_DEST);
-
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
-
-   D3D12_RESOURCE_TRANSITION(
-         cmd,
-         texture->handle,
-         D3D12_RESOURCE_STATE_COPY_DEST,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-   if (texture->desc.MipLevels > 1)
-   {
-      unsigned       i;
-      d3d12_video_t* d3d12 = (d3d12_video_t*)userdata;
-
-      cmd->lpVtbl->SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
-      cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->mipmapgen_pipe);
-      cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
-
-      for (i = 1; i < texture->desc.MipLevels; i++)
-      {
-         unsigned width  = texture->desc.Width  >> i;
-         unsigned height = texture->desc.Height >> i;
-         struct
-         {
-            uint32_t src_level;
-            float    texel_size[2];
-         } cbuffer = { i - 1, { 1.0f / width, 1.0f / height } };
-
-         {
-            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
-            barrier.Transition.pResource   = texture->handle;
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            barrier.Transition.Subresource = i;
-            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
-         }
-
-         {
-            UINT thread_group_count_x      = (width  + 0x7) >> 3;
-            UINT thread_group_count_y      = (height + 0x7) >> 3;
-            cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T, texture->gpu_descriptor[i]);
-            cmd->lpVtbl->SetComputeRoot32BitConstants(
-                  cmd, CS_ROOT_ID_CONSTANTS, sizeof(cbuffer) / sizeof(uint32_t), &cbuffer, 0);
-            cmd->lpVtbl->Dispatch(cmd, thread_group_count_x, thread_group_count_y, 1);
-         }
-
-         {
-            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_UAV };
-            barrier.UAV.pResource          = texture->handle;
-            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
-         }
-
-         {
-            D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
-            barrier.Transition.pResource   = texture->handle;
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            barrier.Transition.Subresource = i;
-            cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
-         }
-      }
-   }
-
-   texture->dirty = false;
-}
