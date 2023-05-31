@@ -1447,30 +1447,35 @@ static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
    pointer_en_new = UDEV_INPUT_TOUCH_POINTER_EN;
    if (force || pointer_en_new != pointer_en)
    {
+       pointer_en = pointer_en_new;
        dev->touch.pointer_enabled = pointer_en_new;
    }
 
    mouse_en_new = UDEV_INPUT_TOUCH_MOUSE_EN;
    if (force || mouse_en_new != mouse_en)
    {
+       mouse_en = mouse_en_new;
        dev->touch.mouse_enabled = mouse_en_new;
    }
 
    touchpad_en_new = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
    if (force || touchpad_en_new != touchpad_en)
    {
+       touchpad_en = touchpad_en_new;
        dev->touch.touchpad_enabled = touchpad_en_new;
    }
    
    trackball_en_new = UDEV_INPUT_TOUCH_TRACKBALL_EN;
    if (force || trackball_en_new != trackball_en)
    {
+       trackball_en = trackball_en_new;
        dev->touch.trackball_enabled = trackball_en_new;
    }
 
    gest_en_new = UDEV_INPUT_TOUCH_GEST_EN;
    if (force || gest_en_new != gest_en)
    {
+       gest_en = gest_en_new;
        dev->touch.gest_enabled = gest_en_new;
    }
 }
@@ -3043,7 +3048,7 @@ static int16_t udev_input_touch_state(
       /* Update last update timestamp */
       udev_touch_ts_copy(&now, &touch->last_state_update);
       /* Force load the options from settings */
-      udev_update_touch_dev_options(dev, true);
+      udev_update_touch_dev_options(dev, false);
    }
 
    switch (device)
