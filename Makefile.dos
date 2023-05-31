@@ -75,8 +75,9 @@ HAVE_OZONE = 0
 
 OBJ := \
     frontend/drivers/platform_dos.o \
-    gfx/drivers/vga_gfx.o gfx/drivers_font/vga_font.o \
-    input/drivers/dos_input.o input/drivers_joypad/dos_joypad.o
+    gfx/drivers/vga_gfx.o \
+    input/drivers/dos_input.o \
+    input/drivers_joypad/dos_joypad.o
 
 include Makefile.common
 

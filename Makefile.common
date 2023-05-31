@@ -1160,15 +1160,14 @@ endif
 
 ifeq ($(TARGET), retroarch_wiiu)
    OBJ +=  gfx/drivers/gx2_gfx.o \
-			  gfx/drivers_font/wiiu_font.o \
-			  gfx/drivers_display/gfx_display_wiiu.o \
-			  input/drivers/wiiu_input.o \
-			  input/drivers_joypad/wiiu_joypad.o \
-			  input/drivers_joypad/wiiu/wpad_driver.o \
-			  input/drivers_joypad/wiiu/kpad_driver.o \
-			  input/drivers_joypad/wiiu/pad_functions.o \
-			  audio/drivers/wiiu_audio.o \
-			  frontend/drivers/platform_wiiu.o
+	   gfx/drivers_display/gfx_display_wiiu.o \
+	   input/drivers/wiiu_input.o \
+	   input/drivers_joypad/wiiu_joypad.o \
+	   input/drivers_joypad/wiiu/wpad_driver.o \
+	   input/drivers_joypad/wiiu/kpad_driver.o \
+	   input/drivers_joypad/wiiu/pad_functions.o \
+	   audio/drivers/wiiu_audio.o \
+	   frontend/drivers/platform_wiiu.o
 
       ifeq ($(WIIU_HID),1)
          DEFINES += -DWIIU_HID

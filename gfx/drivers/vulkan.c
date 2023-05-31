@@ -18,6 +18,7 @@
 #include <math.h>
 #include <string.h>
 
+#include <retro_assert.h>
 #include <encodings/utf.h>
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
@@ -54,6 +55,716 @@
 #include "../../record/record_driver.h"
 
 #include "../video_coord_array.h"
+
+/*
+ * VULKAN COMMON
+ */
+
+#ifdef VULKAN_DEBUG_TEXTURE_ALLOC
+static VkImage vk_images[4 * 1024];
+static unsigned vk_count;
+static unsigned track_seq;
+
+void vulkan_log_textures(void)
+{
+   unsigned i;
+   for (i = 0; i < vk_count; i++)
+   {
+      RARCH_WARN("[Vulkan]: Found leaked texture %llu.\n",
+            (unsigned long long)vk_images[i]);
+   }
+   vk_count = 0;
+}
+
+static void vulkan_track_alloc(VkImage image)
+{
+   vk_images[vk_count++] = image;
+   RARCH_LOG("[Vulkan]: Alloc %llu (%u).\n",
+         (unsigned long long)image, track_seq);
+   track_seq++;
+}
+
+static void vulkan_track_dealloc(VkImage image)
+{
+   unsigned i;
+   for (i = 0; i < vk_count; i++)
+   {
+      if (image == vk_images[i])
+      {
+         vk_count--;
+         memmove(vk_images + i, vk_images + 1 + i,
+               sizeof(VkImage) * (vk_count - i));
+         return;
+      }
+   }
+   retro_assert(0 && "Couldn't find VkImage in dealloc!");
+}
+#endif
+
+static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
+{
+   switch (format)
+   {
+      case VK_FORMAT_B8G8R8A8_UNORM:
+         return 4;
+      case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+      case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+      case VK_FORMAT_R5G6B5_UNORM_PACK16:
+         return 2;
+      case VK_FORMAT_R8_UNORM:
+         return 1;
+      default: /* Unknown format */
+         break;
+   }
+
+   return 0;
+}
+
+static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
+{
+   unsigned size   = MAX(width, height);
+   unsigned levels = 0;
+   while (size)
+   {
+      levels++;
+      size >>= 1;
+   }
+   return levels;
+}
+
+static void vulkan_destroy_texture(
+      VkDevice device,
+      struct vk_texture *tex)
+{
+   if (tex->mapped)
+      vkUnmapMemory(device, tex->memory);
+   if (tex->view)
+      vkDestroyImageView(device, tex->view, NULL);
+   if (tex->image)
+      vkDestroyImage(device, tex->image, NULL);
+   if (tex->buffer)
+      vkDestroyBuffer(device, tex->buffer, NULL);
+   if (tex->memory)
+      vkFreeMemory(device, tex->memory, NULL);
+
+#ifdef VULKAN_DEBUG_TEXTURE_ALLOC
+   if (tex->image)
+      vulkan_track_dealloc(tex->image);
+#endif
+   tex->type                          = VULKAN_TEXTURE_STREAMED;
+   tex->flags                         = 0;
+   tex->memory_type                   = 0;
+   tex->width                         = 0;
+   tex->height                        = 0;
+   tex->offset                        = 0;
+   tex->stride                        = 0;
+   tex->size                          = 0;
+   tex->mapped                        = NULL;
+   tex->image                         = VK_NULL_HANDLE;
+   tex->view                          = VK_NULL_HANDLE;
+   tex->memory                        = VK_NULL_HANDLE;
+   tex->buffer                        = VK_NULL_HANDLE;
+   tex->format                        = VK_FORMAT_UNDEFINED;
+   tex->memory_size                   = 0;
+   tex->layout                        = VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+static struct vk_texture vulkan_create_texture(vk_t *vk,
+      struct vk_texture *old,
+      unsigned width, unsigned height,
+      VkFormat format,
+      const void *initial,
+      const VkComponentMapping *swizzle,
+      enum vk_texture_type type)
+{
+   unsigned i;
+   uint32_t buffer_width;
+   struct vk_texture tex;
+   VkFormat remap_tex_fmt;
+   VkMemoryRequirements mem_reqs;
+   VkSubresourceLayout layout;
+   VkDevice device                      = vk->context->device;
+   VkImageCreateInfo info               = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+   VkBufferCreateInfo buffer_info       = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+   VkImageViewCreateInfo view           = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+   VkMemoryAllocateInfo alloc           = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+   VkImageSubresource subresource       = { VK_IMAGE_ASPECT_COLOR_BIT };
+   VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+   VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+   VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+
+   memset(&tex, 0, sizeof(tex));
+
+   info.imageType          = VK_IMAGE_TYPE_2D;
+   info.format             = format;
+   info.extent.width       = width;
+   info.extent.height      = height;
+   info.extent.depth       = 1;
+   info.arrayLayers        = 1;
+   info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+   info.mipLevels          = 1;
+   info.samples            = VK_SAMPLE_COUNT_1_BIT;
+
+   /* Align stride to 4 bytes to make sure we can use compute shader uploads without too many problems. */
+   buffer_width            = width * vulkan_format_to_bpp(format);
+   buffer_width            = (buffer_width + 3u) & ~3u;
+   buffer_info.size        = buffer_width * height;
+   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+   remap_tex_fmt           = vulkan_remap_to_texture_format(format);
+
+   /* Compatibility concern. Some Apple hardware does not support rgb565.
+    * Use compute shader uploads instead.
+    * If we attempt to use streamed texture, force staging path.
+    * If we're creating fallback dynamic texture, force RGBA8888. */
+   if (remap_tex_fmt != format)
+   {
+      if (type == VULKAN_TEXTURE_STREAMED)
+         type        = VULKAN_TEXTURE_STAGING;
+      else if (type == VULKAN_TEXTURE_DYNAMIC)
+      {
+         format      = remap_tex_fmt;
+         info.format = format;
+         info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+      }
+   }
+
+   if (type == VULKAN_TEXTURE_STREAMED)
+   {
+      VkFormatProperties format_properties;
+      const VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+         VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+
+      vkGetPhysicalDeviceFormatProperties(
+            vk->context->gpu, format, &format_properties);
+
+      if ((format_properties.linearTilingFeatures & required) != required)
+      {
+#ifdef VULKAN_DEBUG
+         RARCH_DBG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+#endif
+         type = VULKAN_TEXTURE_STAGING;
+      }
+   }
+
+   switch (type)
+   {
+      case VULKAN_TEXTURE_STATIC:
+         /* For simplicity, always build mipmaps for
+          * static textures, samplers can be used to enable it dynamically.
+          */
+         info.mipLevels     = vulkan_num_miplevels(width, height);
+         tex.flags         |= VK_TEX_FLAG_MIPMAP;
+         retro_assert(initial && "Static textures must have initial data.\n");
+         info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+         break;
+
+      case VULKAN_TEXTURE_DYNAMIC:
+         retro_assert(!initial && "Dynamic textures must not have initial data.\n");
+         info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+         info.usage        |= VK_IMAGE_USAGE_SAMPLED_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+         break;
+
+      case VULKAN_TEXTURE_STREAMED:
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.tiling        = VK_IMAGE_TILING_LINEAR;
+         info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+         break;
+
+      case VULKAN_TEXTURE_STAGING:
+         buffer_info.usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+         info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+         info.tiling        = VK_IMAGE_TILING_LINEAR;
+         break;
+
+      case VULKAN_TEXTURE_READBACK:
+         buffer_info.usage  = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+         info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+         info.tiling        = VK_IMAGE_TILING_LINEAR;
+         break;
+   }
+
+   if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
+   {
+      vkCreateImage(device, &info, NULL, &tex.image);
+      vulkan_debug_mark_image(device, tex.image);
+#if 0
+      vulkan_track_alloc(tex.image);
+#endif
+      vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
+   }
+   else
+   {
+      /* Linear staging textures are not guaranteed to be supported,
+       * use buffers instead. */
+      vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+      vulkan_debug_mark_buffer(device, tex.buffer);
+      vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
+   }
+   alloc.allocationSize = mem_reqs.size;
+
+   switch (type)
+   {
+      case VULKAN_TEXTURE_STATIC:
+      case VULKAN_TEXTURE_DYNAMIC:
+         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+               &vk->context->memory_properties,
+               mem_reqs.memoryTypeBits,
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+         break;
+
+      default:
+         /* Try to find a memory type which is cached, even if it means manual cache management. */
+         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+               &vk->context->memory_properties,
+               mem_reqs.memoryTypeBits,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+               VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+         if ((vk->context->memory_properties.memoryTypes
+                  [alloc.memoryTypeIndex].propertyFlags &
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+            tex.flags |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
+
+         /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
+          * so fallback to copy path. */
+         if (type == VULKAN_TEXTURE_STREAMED &&
+               (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+         {
+            /* Recreate texture but for STAGING this time ... */
+#ifdef VULKAN_DEBUG
+            RARCH_DBG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+#endif
+            type = VULKAN_TEXTURE_STAGING;
+            vkDestroyImage(device, tex.image, NULL);
+            tex.image          = VK_NULL_HANDLE;
+            info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+            buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
+            vulkan_debug_mark_buffer(device, tex.buffer);
+            vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
+
+            alloc.allocationSize  = mem_reqs.size;
+            alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+                  &vk->context->memory_properties,
+                  mem_reqs.memoryTypeBits,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+         }
+         break;
+   }
+
+   /* We're not reusing the objects themselves. */
+   if (old)
+   {
+      if (old->view != VK_NULL_HANDLE)
+         vkDestroyImageView(vk->context->device, old->view, NULL);
+      if (old->image != VK_NULL_HANDLE)
+      {
+         vkDestroyImage(vk->context->device, old->image, NULL);
+#ifdef VULKAN_DEBUG_TEXTURE_ALLOC
+         vulkan_track_dealloc(old->image);
+#endif
+      }
+      if (old->buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(vk->context->device, old->buffer, NULL);
+   }
+
+   /* We can pilfer the old memory and move it over to the new texture. */
+   if (old &&
+         old->memory_size >= mem_reqs.size &&
+         old->memory_type == alloc.memoryTypeIndex)
+   {
+      tex.memory      = old->memory;
+      tex.memory_size = old->memory_size;
+      tex.memory_type = old->memory_type;
+
+      if (old->mapped)
+         vkUnmapMemory(device, old->memory);
+
+      old->memory     = VK_NULL_HANDLE;
+   }
+   else
+   {
+      vkAllocateMemory(device, &alloc, NULL, &tex.memory);
+      vulkan_debug_mark_memory(device, tex.memory);
+      tex.memory_size = alloc.allocationSize;
+      tex.memory_type = alloc.memoryTypeIndex;
+   }
+
+   if (old)
+   {
+      if (old->memory != VK_NULL_HANDLE)
+         vkFreeMemory(device, old->memory, NULL);
+      memset(old, 0, sizeof(*old));
+   }
+
+   if (tex.image)
+      vkBindImageMemory(device, tex.image, tex.memory, 0);
+   if (tex.buffer)
+      vkBindBufferMemory(device, tex.buffer, tex.memory, 0);
+
+   if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
+   {
+      view.image                       = tex.image;
+      view.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
+      view.format                      = format;
+      if (swizzle)
+         view.components               = *swizzle;
+      else
+      {
+         view.components.r             = VK_COMPONENT_SWIZZLE_R;
+         view.components.g             = VK_COMPONENT_SWIZZLE_G;
+         view.components.b             = VK_COMPONENT_SWIZZLE_B;
+         view.components.a             = VK_COMPONENT_SWIZZLE_A;
+      }
+      view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      view.subresourceRange.levelCount = info.mipLevels;
+      view.subresourceRange.layerCount = 1;
+
+      vkCreateImageView(device, &view, NULL, &tex.view);
+   }
+   else
+      tex.view        = VK_NULL_HANDLE;
+
+   if (tex.image && info.tiling == VK_IMAGE_TILING_LINEAR)
+      vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
+   else if (tex.buffer)
+   {
+      layout.offset   = 0;
+      layout.size     = buffer_info.size;
+      layout.rowPitch = buffer_width;
+   }
+   else
+      memset(&layout, 0, sizeof(layout));
+
+   tex.stride = layout.rowPitch;
+   tex.offset = layout.offset;
+   tex.size   = layout.size;
+   tex.layout = info.initialLayout;
+
+   tex.width  = width;
+   tex.height = height;
+   tex.format = format;
+   tex.type   = type;
+
+   if (initial)
+   {
+      switch (type)
+      {
+         case VULKAN_TEXTURE_STREAMED:
+         case VULKAN_TEXTURE_STAGING:
+            {
+               unsigned y;
+               uint8_t *dst       = NULL;
+               const uint8_t *src = NULL;
+               void *ptr          = NULL;
+               unsigned bpp       = vulkan_format_to_bpp(tex.format);
+               unsigned stride    = tex.width * bpp;
+
+               vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
+
+               dst                = (uint8_t*)ptr;
+               src                = (const uint8_t*)initial;
+               for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
+                  memcpy(dst, src, width * bpp);
+
+               if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+                     && (tex.memory != VK_NULL_HANDLE))
+                  VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, tex.memory);
+               vkUnmapMemory(device, tex.memory);
+            }
+            break;
+         case VULKAN_TEXTURE_STATIC:
+            {
+               VkBufferImageCopy region;
+               VkCommandBuffer staging;
+               enum VkImageLayout layout_fmt = 
+                  (tex.flags & VK_TEX_FLAG_MIPMAP)
+                  ? VK_IMAGE_LAYOUT_GENERAL
+                  : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+               struct vk_texture tmp         = vulkan_create_texture(vk, NULL,
+                     width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
+
+               cmd_info.commandPool          = vk->staging_pool;
+               cmd_info.level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+               cmd_info.commandBufferCount   = 1;
+
+               vkAllocateCommandBuffers(vk->context->device,
+                     &cmd_info, &staging);
+
+               begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+               vkBeginCommandBuffer(staging, &begin_info);
+
+               /* If doing mipmapping on upload, keep in general 
+                * so we can easily do transfers to
+                * and transfers from the images without having to
+                * mess around with lots of extra transitions at 
+                * per-level granularity.
+                */
+               VULKAN_IMAGE_LAYOUT_TRANSITION(
+                     staging,
+                     tex.image,
+                     VK_IMAGE_LAYOUT_UNDEFINED,
+                     layout_fmt,
+                     0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                     VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+               memset(&region, 0, sizeof(region));
+               region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+               region.imageSubresource.layerCount = 1;
+               region.imageExtent.width           = width;
+               region.imageExtent.height          = height;
+               region.imageExtent.depth           = 1;
+
+               vkCmdCopyBufferToImage(staging, tmp.buffer,
+                     tex.image, layout_fmt, 1, &region);
+
+               if (tex.flags & VK_TEX_FLAG_MIPMAP)
+               {
+                  for (i = 1; i < info.mipLevels; i++)
+                  {
+                     VkImageBlit blit_region;
+                     unsigned src_width                        = MAX(width >> (i - 1), 1);
+                     unsigned src_height                       = MAX(height >> (i - 1), 1);
+                     unsigned target_width                     = MAX(width >> i, 1);
+                     unsigned target_height                    = MAX(height >> i, 1);
+                     memset(&blit_region, 0, sizeof(blit_region));
+
+                     blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+                     blit_region.srcSubresource.mipLevel       = i - 1;
+                     blit_region.srcSubresource.baseArrayLayer = 0;
+                     blit_region.srcSubresource.layerCount     = 1;
+                     blit_region.dstSubresource                = blit_region.srcSubresource;
+                     blit_region.dstSubresource.mipLevel       = i;
+                     blit_region.srcOffsets[1].x               = src_width;
+                     blit_region.srcOffsets[1].y               = src_height;
+                     blit_region.srcOffsets[1].z               = 1;
+                     blit_region.dstOffsets[1].x               = target_width;
+                     blit_region.dstOffsets[1].y               = target_height;
+                     blit_region.dstOffsets[1].z               = 1;
+
+                     /* Only injects execution and memory barriers,
+                      * not actual transition. */
+                     VULKAN_IMAGE_LAYOUT_TRANSITION(
+                           staging,
+                           tex.image,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           VK_ACCESS_TRANSFER_WRITE_BIT,
+                           VK_ACCESS_TRANSFER_READ_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+                     vkCmdBlitImage(
+                           staging,
+                           tex.image,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           tex.image,
+                           VK_IMAGE_LAYOUT_GENERAL,
+                           1,
+                           &blit_region,
+                           VK_FILTER_LINEAR);
+                  }
+               }
+
+               /* Complete our texture. */
+               VULKAN_IMAGE_LAYOUT_TRANSITION(
+                     staging,
+                     tex.image,
+                     layout_fmt,
+                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     VK_ACCESS_TRANSFER_WRITE_BIT,
+                     VK_ACCESS_SHADER_READ_BIT,
+                     VK_PIPELINE_STAGE_TRANSFER_BIT,
+                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+               vkEndCommandBuffer(staging);
+               submit_info.commandBufferCount = 1;
+               submit_info.pCommandBuffers    = &staging;
+
+#ifdef HAVE_THREADS
+               slock_lock(vk->context->queue_lock);
+#endif
+               vkQueueSubmit(vk->context->queue,
+                     1, &submit_info, VK_NULL_HANDLE);
+
+               /* TODO: Very crude, but texture uploads only happen
+                * during init, so waiting for GPU to complete transfer
+                * and blocking isn't a big deal. */
+               vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+               slock_unlock(vk->context->queue_lock);
+#endif
+
+               vkFreeCommandBuffers(vk->context->device,
+                     vk->staging_pool, 1, &staging);
+               vulkan_destroy_texture(
+                     vk->context->device, &tmp);
+               tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            }
+            break;
+         case VULKAN_TEXTURE_DYNAMIC:
+         case VULKAN_TEXTURE_READBACK:
+            /* TODO/FIXME - stubs */
+            break;
+      }
+   }
+
+   return tex;
+}
+
+
+/* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
+ * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
+ */
+static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *dynamic, struct vk_texture *staging)
+{
+   bool compute_upload = dynamic->format != staging->format;
+
+   if (compute_upload)
+   {
+      const uint32_t ubo[3] = { dynamic->width, dynamic->height, (uint32_t)(staging->stride / 4) /* in terms of u32 words */ };
+      VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+      VkDescriptorBufferInfo buffer_info;
+      VkDescriptorImageInfo image_info;
+      struct vk_buffer_range range;
+      VkDescriptorSet set;
+
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_GENERAL,
+            0,
+            VK_ACCESS_SHADER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+      /* staging->format is always RGB565 here.
+       * Can be expanded as needed if more cases are added to vulkan_remap_to_texture_format. */
+      retro_assert(staging->format == VK_FORMAT_R5G6B5_UNORM_PACK16);
+
+      set = vulkan_descriptor_manager_alloc(
+            vk->context->device,
+            &vk->chain->descriptor_manager);
+
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+            sizeof(ubo), &range))
+         return;
+
+      memcpy(range.data, ubo, sizeof(ubo));
+      vulkan_set_uniform_buffer(vk->context->device,
+            set,
+            0,
+            range.buffer,
+            range.offset,
+            sizeof(ubo));
+
+      image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+      image_info.imageView = dynamic->view;
+      image_info.sampler = VK_NULL_HANDLE;
+
+      buffer_info.buffer = staging->buffer;
+      buffer_info.offset = 0;
+      buffer_info.range = VK_WHOLE_SIZE;
+
+      write.descriptorCount = 1;
+      write.pTexelBufferView = NULL;
+      write.dstArrayElement = 0;
+      write.dstSet = set;
+
+      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      write.dstBinding = 3;
+      write.pImageInfo = &image_info;
+      write.pBufferInfo = NULL;
+
+      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+
+      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      write.dstBinding = 4;
+      write.pImageInfo = NULL;
+      write.pBufferInfo = &buffer_info;
+
+      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+
+      vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vk->pipelines.rgb565_to_rgba8888);
+      vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vk->pipelines.layout, 0, 1, &set, 0, NULL);
+      vkCmdDispatch(cmd, (dynamic->width + 15) / 16, (dynamic->height + 7) / 8, 1);
+
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_ACCESS_SHADER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   }
+   else
+   {
+      VkBufferImageCopy region;
+
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            0,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
+      region.bufferOffset = 0;
+      region.bufferRowLength = 0;
+      region.bufferImageHeight = 0;
+      region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      region.imageSubresource.mipLevel = 0;
+      region.imageSubresource.baseArrayLayer = 0;
+      region.imageSubresource.layerCount = 1;
+      region.imageOffset.x = 0;
+      region.imageOffset.y = 0;
+      region.imageOffset.z = 0;
+      region.imageExtent.width = dynamic->width;
+      region.imageExtent.height = dynamic->height;
+      region.imageExtent.depth = 1;
+      vkCmdCopyBufferToImage(
+            cmd,
+            staging->buffer,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &region);
+      VULKAN_IMAGE_LAYOUT_TRANSITION(
+            cmd,
+            dynamic->image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   }
+   dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
 
 /**
  * FORWARD DECLARATIONS

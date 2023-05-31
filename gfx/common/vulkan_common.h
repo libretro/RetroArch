@@ -653,24 +653,9 @@ uint32_t vulkan_find_memory_type_fallback(
       uint32_t device_reqs, uint32_t host_reqs_first,
       uint32_t host_reqs_second);
 
-struct vk_texture vulkan_create_texture(vk_t *vk,
-      struct vk_texture *old,
-      unsigned width, unsigned height,
-      VkFormat format,
-      const void *initial, const VkComponentMapping *swizzle,
-      enum vk_texture_type type);
-
 void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture);
 
-void vulkan_destroy_texture(
-      VkDevice device,
-      struct vk_texture *tex);
-
-/* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
- * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
- */
-void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
-      struct vk_texture *dynamic, struct vk_texture *staging);
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 
 /* We don't have to sync against previous TRANSFER,
  * since we observed the completion by fences.
