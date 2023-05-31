@@ -5609,6 +5609,10 @@ MSG_HASH(
    "Die Option zum Schließen des Inhalts anzeigen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Untermenü 'Savestates' anzeigen"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    "Die Optionen von Savestate in einem Untermenü anzeigen."
    )
@@ -5713,12 +5717,24 @@ MSG_HASH(
    "\"Zurückspulen\" anzeigen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "Die Option 'Zurückspulen' anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "\"Core-Überschreibungen speichern\" anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Die Option \"Core-Überschreibungen speichern\" im Menü \"Überschreibungen\" anzeigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "'Inhaltsverzeichnis-Überschreibungen speichern' anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Die Option 'Inhaltsverzeichnis-Überschreibungen speichern' im Menü 'Überschreibungen' anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,

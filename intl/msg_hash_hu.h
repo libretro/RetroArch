@@ -5713,6 +5713,10 @@ MSG_HASH(
    "A tartalom bezárásának lehetősége jelenjen meg."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "A \"Játékállások\" almenü jelenjen meg"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    "A játékállás mentés lehetőségeit egy almenüben mutassa."
    )
@@ -5817,12 +5821,24 @@ MSG_HASH(
    "\"Visszatekerés\" látható"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "A \"Visszatekerés\" lehetőség jelenjen meg."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "\"Magspecifikus felülbírálat mentése\" látható"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "A \"Magspecifikus felülbírálat mentése\" jelenjen meg a Felülbírálatok menüben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "A \"Tartalomkönyvtár specifikus felülbírálat mentése\" jelenjen meg"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "A \"Tartalomkönyvtár specifikus felülbírálat mentése\" jelenjen meg a Felülbírálatok menüben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,

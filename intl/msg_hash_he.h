@@ -25,8 +25,24 @@ MSG_HASH(
    "היסטוריה"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "תמונות"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "מוזיקה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "סרטונים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   "נטפליי"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "עיין"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -60,6 +76,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "עדכון מקוון"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "נטפליי"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -129,6 +149,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "מוזיקה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "תמונות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "סרטונים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "עיין"
    )
 
 /* Main Menu > Online Updater */
@@ -863,6 +895,10 @@ MSG_HASH(
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "נטפליי"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "עזרה"

@@ -5693,6 +5693,10 @@ MSG_HASH(
    "Afficher l'option 'Fermer le contenu'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Afficher le sous-menu 'Sauvegardes instantanées'."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    "Afficher les options de sauvegarde instantanée dans un sous-menu."
    )
@@ -5797,12 +5801,24 @@ MSG_HASH(
    "Afficher 'Rembobinage'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "Afficher l'option 'Rembobinage'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Afficher 'Sauvegarder la configuration de substitution pour le cœur'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Afficher l'option 'Sauvegarder la configuration de substitution pour le cœur' dans le menu 'Configuration de substitution'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Afficher 'Sauvegarder la configuration de substitution pour le dossier'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Afficher l'option 'Sauvegarder la configuration de substitution pour le dossier' dans le menu 'Configuration de substitution'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
