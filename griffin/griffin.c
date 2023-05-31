@@ -1325,10 +1325,6 @@ MENU
 #endif
 #endif
 
-#if defined(HAVE_LIBNX)
-#include "../gfx/drivers_display/gfx_display_switch.c"
-#endif
-
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
 #endif
