@@ -71,6 +71,24 @@
 /*
  * D3D12 COMMON
  */
+static INLINE D3D12_CPU_DESCRIPTOR_HANDLE
+D3D12GetCPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
+{
+   D3D12_CPU_DESCRIPTOR_HANDLE out;
+   ((void(STDMETHODCALLTYPE*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*))
+          descriptor_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(descriptor_heap, &out);
+   return out;
+}
+
+static INLINE D3D12_GPU_DESCRIPTOR_HANDLE
+D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
+{
+   D3D12_GPU_DESCRIPTOR_HANDLE out;
+   ((void(STDMETHODCALLTYPE*)(ID3D12DescriptorHeap*, D3D12_GPU_DESCRIPTOR_HANDLE*))
+          descriptor_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart)(descriptor_heap, &out);
+   return out;
+}
+
 static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descriptor_heap_t* heap)
 {
    int i;

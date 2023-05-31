@@ -34,6 +34,44 @@
 
 #define D3D11_MAX_GPU_COUNT 16
 
+enum d3d11_state_flags
+{
+   D3D11_ST_FLAG_VSYNC               = (1 << 0),
+   D3D11_ST_FLAG_WAITABLE_SWAPCHAINS = (1 << 1),
+   D3D11_ST_FLAG_WAIT_FOR_VBLANK     = (1 << 2),
+   D3D11_ST_FLAG_RESIZE_CHAIN        = (1 << 3),
+   D3D11_ST_FLAG_KEEP_ASPECT         = (1 << 4),
+   D3D11_ST_FLAG_RESIZE_VIEWPORT     = (1 << 5),
+   D3D11_ST_FLAG_RESIZE_RTS          = (1 << 6), /* RT = Render Target */
+   D3D11_ST_FLAG_INIT_HISTORY        = (1 << 7),
+   D3D11_ST_FLAG_HAS_FLIP_MODEL      = (1 << 8),
+   D3D11_ST_FLAG_HAS_ALLOW_TEARING   = (1 << 9),
+   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 10),
+   D3D11_ST_FLAG_HDR_SUPPORT         = (1 << 11),
+   D3D11_ST_FLAG_HDR_ENABLE          = (1 << 12),
+   D3D11_ST_FLAG_SPRITES_ENABLE      = (1 << 13),
+   D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 14),
+   D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 15),
+   D3D11_ST_FLAG_MENU_ENABLE         = (1 << 16),
+   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17)
+};
+
+enum d3d11_feature_level_hint
+{
+   D3D11_FEATURE_LEVEL_HINT_DONTCARE,
+   D3D11_FEATURE_LEVEL_HINT_1_0_CORE,
+   D3D11_FEATURE_LEVEL_HINT_9_1,
+   D3D11_FEATURE_LEVEL_HINT_9_2,
+   D3D11_FEATURE_LEVEL_HINT_9_3,
+   D3D11_FEATURE_LEVEL_HINT_10_0,
+   D3D11_FEATURE_LEVEL_HINT_10_1,
+   D3D11_FEATURE_LEVEL_HINT_11_0,
+   D3D11_FEATURE_LEVEL_HINT_11_1,
+   D3D11_FEATURE_LEVEL_HINT_12_0,
+   D3D11_FEATURE_LEVEL_HINT_12_1,
+   D3D11_FEATURE_LEVEL_HINT_12_2
+};
+
 typedef const ID3D11ShaderResourceView* D3D11ShaderResourceViewRef;
 typedef const ID3D11SamplerState*       D3D11SamplerStateRef;
 typedef const ID3D11BlendState*         D3D11BlendStateRef;
@@ -87,23 +125,6 @@ typedef ID3D11Debug*                    D3D11Debug;
 typedef ID3D11SwitchToRef*              D3D11SwitchToRef;
 typedef ID3D11TracingDevice*            D3D11TracingDevice;
 typedef ID3D11InfoQueue*                D3D11InfoQueue;
-
-
-enum d3d11_feature_level_hint
-{
-   D3D11_FEATURE_LEVEL_HINT_DONTCARE,
-   D3D11_FEATURE_LEVEL_HINT_1_0_CORE,
-   D3D11_FEATURE_LEVEL_HINT_9_1,
-   D3D11_FEATURE_LEVEL_HINT_9_2,
-   D3D11_FEATURE_LEVEL_HINT_9_3,
-   D3D11_FEATURE_LEVEL_HINT_10_0,
-   D3D11_FEATURE_LEVEL_HINT_10_1,
-   D3D11_FEATURE_LEVEL_HINT_11_0,
-   D3D11_FEATURE_LEVEL_HINT_11_1,
-   D3D11_FEATURE_LEVEL_HINT_12_0,
-   D3D11_FEATURE_LEVEL_HINT_12_1,
-   D3D11_FEATURE_LEVEL_HINT_12_2
-};
 
 typedef struct d3d11_vertex_t
 {
@@ -167,28 +188,6 @@ typedef struct d3d11_shader_t
    D3D11GeometryShader gs;
    D3D11InputLayout    layout;
 } d3d11_shader_t;
-
-enum d3d11_state_flags
-{
-   D3D11_ST_FLAG_VSYNC               = (1 << 0),
-   D3D11_ST_FLAG_WAITABLE_SWAPCHAINS = (1 << 1),
-   D3D11_ST_FLAG_WAIT_FOR_VBLANK     = (1 << 2),
-   D3D11_ST_FLAG_RESIZE_CHAIN        = (1 << 3),
-   D3D11_ST_FLAG_KEEP_ASPECT         = (1 << 4),
-   D3D11_ST_FLAG_RESIZE_VIEWPORT     = (1 << 5),
-   D3D11_ST_FLAG_RESIZE_RTS          = (1 << 6), /* RT = Render Target */
-   D3D11_ST_FLAG_INIT_HISTORY        = (1 << 7),
-   D3D11_ST_FLAG_HAS_FLIP_MODEL      = (1 << 8),
-   D3D11_ST_FLAG_HAS_ALLOW_TEARING   = (1 << 9),
-   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 10),
-   D3D11_ST_FLAG_HDR_SUPPORT         = (1 << 11),
-   D3D11_ST_FLAG_HDR_ENABLE          = (1 << 12),
-   D3D11_ST_FLAG_SPRITES_ENABLE      = (1 << 13),
-   D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 14),
-   D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 15),
-   D3D11_ST_FLAG_MENU_ENABLE         = (1 << 16),
-   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17)
-};
 
 typedef struct
 {

@@ -140,6 +140,11 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 }
 #endif
 
+static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
+{
+   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
+}
+
 D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {

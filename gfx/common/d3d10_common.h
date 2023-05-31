@@ -29,6 +29,22 @@
 
 #define D3D10_MAX_GPU_COUNT 16
 
+enum d3d10_video_flags
+{
+   D3D10_ST_FLAG_VSYNC               = (1 << 0),
+   D3D10_ST_FLAG_RESIZE_CHAIN        = (1 << 1),
+   D3D10_ST_FLAG_KEEP_ASPECT         = (1 << 2),
+   D3D10_ST_FLAG_RESIZE_VIEWPORT     = (1 << 3),
+   D3D10_ST_FLAG_RESIZE_RTS          = (1 << 4), /* RT = Render Target */
+   D3D10_ST_FLAG_INIT_HISTORY        = (1 << 5),
+   D3D10_ST_FLAG_SPRITES_ENABLE      = (1 << 6),
+   D3D10_ST_FLAG_OVERLAYS_ENABLE     = (1 << 7),
+   D3D10_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 8),
+   D3D10_ST_FLAG_MENU_ENABLE         = (1 << 9),
+   D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10)
+};
+
+
 typedef const ID3D10SamplerState*       D3D10SamplerStateRef;
 
 typedef ID3D10InputLayout*       D3D10InputLayout;
@@ -125,21 +141,6 @@ typedef struct d3d10_shader_t
    D3D10GeometryShader gs;
    D3D10InputLayout    layout;
 } d3d10_shader_t;
-
-enum d3d10_video_flags
-{
-   D3D10_ST_FLAG_VSYNC               = (1 << 0),
-   D3D10_ST_FLAG_RESIZE_CHAIN        = (1 << 1),
-   D3D10_ST_FLAG_KEEP_ASPECT         = (1 << 2),
-   D3D10_ST_FLAG_RESIZE_VIEWPORT     = (1 << 3),
-   D3D10_ST_FLAG_RESIZE_RTS          = (1 << 4), /* RT = Render Target */
-   D3D10_ST_FLAG_INIT_HISTORY        = (1 << 5),
-   D3D10_ST_FLAG_SPRITES_ENABLE      = (1 << 6),
-   D3D10_ST_FLAG_OVERLAYS_ENABLE     = (1 << 7),
-   D3D10_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 8),
-   D3D10_ST_FLAG_MENU_ENABLE         = (1 << 9),
-   D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10)
-};
 
 typedef struct
 {

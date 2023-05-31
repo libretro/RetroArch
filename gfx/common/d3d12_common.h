@@ -44,6 +44,45 @@
    cmd->lpVtbl->ResourceBarrier(cmd, 1, &_barrier); \
 }
 
+enum d3d12_video_flags
+{
+   D3D12_ST_FLAG_RESIZE_CHAIN          = (1 << 0),
+   D3D12_ST_FLAG_KEEP_ASPECT           = (1 << 1),
+   D3D12_ST_FLAG_RESIZE_VIEWPORT       = (1 << 2),
+   D3D12_ST_FLAG_RESIZE_RTS            = (1 << 3),
+   D3D12_ST_FLAG_INIT_HISTORY          = (1 << 4),
+   D3D12_ST_FLAG_OVERLAYS_ENABLE       = (1 << 5),
+   D3D12_ST_FLAG_OVERLAYS_FULLSCREEN   = (1 << 6),
+   D3D12_ST_FLAG_SPRITES_ENABLE        = (1 << 7),
+   D3D12_ST_FLAG_MENU_ENABLE           = (1 << 8),
+   D3D12_ST_FLAG_MENU_FULLSCREEN       = (1 << 9),
+   D3D12_ST_FLAG_HDR_SUPPORT           = (1 << 10),
+   D3D12_ST_FLAG_HDR_ENABLE            = (1 << 11),
+   D3D12_ST_FLAG_VSYNC                 = (1 << 12),
+   D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
+   D3D12_ST_FLAG_WAIT_FOR_VBLANK       = (1 << 14),
+   D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 15)
+};
+
+typedef enum
+{
+   ROOT_ID_TEXTURE_T = 0,
+   ROOT_ID_SAMPLER_T,
+   ROOT_ID_UBO,
+   ROOT_ID_PC,
+   ROOT_ID_MAX
+} root_signature_parameter_index_t;
+
+typedef enum
+{
+   CS_ROOT_ID_TEXTURE_T = 0,
+   CS_ROOT_ID_UAV_T,
+   CS_ROOT_ID_CONSTANTS,
+   CS_ROOT_ID_MAX
+} compute_root_index_t;
+
+
+
 typedef const ID3D12PipelineState* D3D12PipelineStateRef;
 
 /* auto-generated */
@@ -151,26 +190,6 @@ typedef struct ALIGN(16)
    } OutputSize;
    float time;
 } d3d12_uniform_t;
-
-enum d3d12_video_flags
-{
-   D3D12_ST_FLAG_RESIZE_CHAIN          = (1 << 0),
-   D3D12_ST_FLAG_KEEP_ASPECT           = (1 << 1),
-   D3D12_ST_FLAG_RESIZE_VIEWPORT       = (1 << 2),
-   D3D12_ST_FLAG_RESIZE_RTS            = (1 << 3),
-   D3D12_ST_FLAG_INIT_HISTORY          = (1 << 4),
-   D3D12_ST_FLAG_OVERLAYS_ENABLE       = (1 << 5),
-   D3D12_ST_FLAG_OVERLAYS_FULLSCREEN   = (1 << 6),
-   D3D12_ST_FLAG_SPRITES_ENABLE        = (1 << 7),
-   D3D12_ST_FLAG_MENU_ENABLE           = (1 << 8),
-   D3D12_ST_FLAG_MENU_FULLSCREEN       = (1 << 9),
-   D3D12_ST_FLAG_HDR_SUPPORT           = (1 << 10),
-   D3D12_ST_FLAG_HDR_ENABLE            = (1 << 11),
-   D3D12_ST_FLAG_VSYNC                 = (1 << 12),
-   D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
-   D3D12_ST_FLAG_WAIT_FOR_VBLANK       = (1 << 14),
-   D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 15)
-};
 
 typedef struct
 {
@@ -335,23 +354,6 @@ typedef struct
    uint16_t flags;
 } d3d12_video_t;
 
-typedef enum
-{
-   ROOT_ID_TEXTURE_T = 0,
-   ROOT_ID_SAMPLER_T,
-   ROOT_ID_UBO,
-   ROOT_ID_PC,
-   ROOT_ID_MAX
-} root_signature_parameter_index_t;
-
-typedef enum
-{
-   CS_ROOT_ID_TEXTURE_T = 0,
-   CS_ROOT_ID_UAV_T,
-   CS_ROOT_ID_CONSTANTS,
-   CS_ROOT_ID_MAX
-} compute_root_index_t;
-
 static INLINE HRESULT
 D3D12Map(void* resource, UINT subresource, D3D12_RANGE* read_range, void** data)
 {
@@ -365,30 +367,7 @@ static INLINE void D3D12Unmap(void* resource, UINT subresource, D3D12_RANGE* wri
          ->lpVtbl->Unmap((ID3D12Resource*)resource, subresource, written_range);
 }
 
-static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource)
-{
-   return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
-}
-
 /* end of auto-generated */
-
-static INLINE D3D12_CPU_DESCRIPTOR_HANDLE
-D3D12GetCPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
-{
-   D3D12_CPU_DESCRIPTOR_HANDLE out;
-   ((void(STDMETHODCALLTYPE*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*))
-          descriptor_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(descriptor_heap, &out);
-   return out;
-}
-
-static INLINE D3D12_GPU_DESCRIPTOR_HANDLE
-D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
-{
-   D3D12_GPU_DESCRIPTOR_HANDLE out;
-   ((void(STDMETHODCALLTYPE*)(ID3D12DescriptorHeap*, D3D12_GPU_DESCRIPTOR_HANDLE*))
-          descriptor_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart)(descriptor_heap, &out);
-   return out;
-}
 
 RETRO_BEGIN_DECLS
 
