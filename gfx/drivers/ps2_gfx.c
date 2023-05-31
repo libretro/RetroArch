@@ -32,7 +32,7 @@
 #include "../../verbosity.h"
 
 #include "../gfx_display.h"
-#include "../common/ps2_common.h"
+#include "../common/ps2_defines.h"
 
 /* Generic tint color */
 #define GS_TEXT GS_SETREG_RGBA(0x80, 0x80, 0x80, 0x80)

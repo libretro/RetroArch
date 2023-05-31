@@ -50,7 +50,7 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
-#include "../common/ctr_common.h"
+#include "../common/ctr_defines.h"
 #ifndef HAVE_THREADS
 #include "../../tasks/tasks_internal.h"
 #endif

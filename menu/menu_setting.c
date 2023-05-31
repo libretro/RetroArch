@@ -122,8 +122,8 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
-#include "gfx/common/ctr_common.h"
 #include <3ds/services/cfgu.h>
+#include "gfx/common/ctr_defines.h"
 #endif
 
 #if defined(DINGUX)

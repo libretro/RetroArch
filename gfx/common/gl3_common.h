@@ -42,6 +42,7 @@ RETRO_BEGIN_DECLS
 #define GL_CORE_NUM_PBOS 4
 #define GL_CORE_NUM_VBOS 256
 #define GL_CORE_NUM_FENCES 8
+
 struct gl3_streamed_texture
 {
    GLuint tex;

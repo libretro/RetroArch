@@ -21,7 +21,7 @@
 
 #include "../gfx_display.h"
 
-#include "../common/ctr_common.h"
+#include "../common/ctr_defines.h"
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 

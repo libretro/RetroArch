@@ -29,7 +29,7 @@
 #include "../common/egl_common.h"
 #endif
 
-#include "../common/orbis_common.h"
+#include "../common/orbis_defines.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include <defines/ps4_defines.h>

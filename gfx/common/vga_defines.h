@@ -15,16 +15,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __VGA_COMMON_H
-#define __VGA_COMMON_H
+#ifndef __VGA_DEFINES_H
+#define __VGA_DEFINES_H
 
 #define VGA_WIDTH 320
 #define VGA_HEIGHT 200
 
 typedef struct vga
 {
-   bool color;
-   bool vga_rgb32;
+   unsigned char *vga_menu_frame;
+   unsigned char *vga_frame;
 
    unsigned vga_menu_width;
    unsigned vga_menu_height;
@@ -35,8 +35,8 @@ typedef struct vga
    unsigned vga_video_pitch;
    unsigned vga_video_bits;
 
-   unsigned char *vga_menu_frame;
-   unsigned char *vga_frame;
+   bool color;
+   bool vga_rgb32;
 } vga_t;
 
 #endif

@@ -23,7 +23,7 @@
 
 #include "../gfx_display.h"
 
-#include "../common/vita2d_common.h"
+#include "../common/vita2d_defines.h"
 #include <defines/psp_defines.h>
 
 static const float vita2d_vertexes[8] = {

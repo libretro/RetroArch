@@ -37,7 +37,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/sixel_common.h"
+#include "../common/sixel_defines.h"
 
 #ifndef _WIN32
 #define HAVE_SYS_IOCTL_H

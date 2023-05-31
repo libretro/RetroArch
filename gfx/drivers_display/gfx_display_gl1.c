@@ -21,8 +21,7 @@
 #endif
 
 #include "../gfx_display.h"
-
-#include "../common/gl1_common.h"
+#include "../common/gl1_defines.h"
 
 static const GLfloat gl1_menu_vertexes[8] = {
    0, 0,

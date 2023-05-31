@@ -15,30 +15,59 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __CACA_COMMON_H
-#define __CACA_COMMON_H
+#ifndef __GDI_DEFINES_H
+#define __GDI_DEFINES_H
 
-struct caca_canvas;
-struct caca_dither;
-struct caca_display;
+#include <stdint.h>
 
-typedef struct caca_canvas caca_canvas_t;
-typedef struct caca_dither caca_dither_t;
-typedef struct caca_display caca_display_t;
+#include <retro_environment.h>
+#include <boolean.h>
 
-typedef struct caca
+typedef struct gdi_texture
 {
-   caca_canvas_t *cv;
-   caca_dither_t *dither;
-   caca_display_t *display;
-   unsigned char *menu_frame;
+   HBITMAP bmp;
+   HBITMAP bmp_old;
+   void *data;
+
+   int width;
+   int height;
+   int active_width;
+   int active_height;
+
+   enum texture_filter_type type;
+} gdi_texture_t;
+
+typedef struct gdi
+{
+#ifndef __WINRT__
+   WNDCLASSEX wndclass;
+#endif
+   HDC winDC;
+   HDC memDC;
+   HDC texDC;
+   HBITMAP bmp;
+   HBITMAP bmp_old;
+   uint16_t *temp_buf;
+   uint8_t *menu_frame;
+
+   unsigned video_width;
+   unsigned video_height;
+   unsigned screen_width;
+   unsigned screen_height;
+
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
-   unsigned video_width;
-   unsigned video_height;
    unsigned video_pitch;
+   unsigned video_bits;
+   unsigned menu_bits;
+   int win_major;
+   int win_minor;
+
    bool rgb32;
-} caca_t;
+   bool lte_win98;
+   bool menu_enable;
+   bool menu_full_screen;
+} gdi_t;
 
 #endif

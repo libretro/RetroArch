@@ -1,5 +1,5 @@
-#ifndef ORBIS_COMMON_H__
-#define ORBIS_COMMON_H__
+#ifndef ORBIS_DEFINES_H__
+#define ORBIS_DEFINES_H__
 
 #ifdef HAVE_EGL
 #include <piglet.h>
@@ -31,7 +31,6 @@ typedef struct
     SceShdrCacheConfig shdr_cache_config;
 #endif
 #endif
-
     SceWindow native_window;
     bool resize;
     unsigned width, height;

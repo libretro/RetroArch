@@ -22,7 +22,7 @@
 
 #include "../gfx_display.h"
 
-#include "../common/gx2_common.h"
+#include "../common/gx2_defines.h"
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 

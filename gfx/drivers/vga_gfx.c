@@ -30,7 +30,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/vga_common.h"
+#include "../common/vga_defines.h"
 
 #include "../font_driver.h"
 

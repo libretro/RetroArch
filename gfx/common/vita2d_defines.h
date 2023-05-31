@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VITA2D_COMMON_H__
-#define VITA2D_COMMON_H__
+#ifndef VITA2D_DEFINES_H__
+#define VITA2D_DEFINES_H__
 
 #include <vita2d.h>
 

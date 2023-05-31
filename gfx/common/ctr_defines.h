@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CTR_COMMON_H__
-#define CTR_COMMON_H__
+#ifndef CTR_DEFINES_H__
+#define CTR_DEFINES_H__
 
 #include <3ds.h>
 #include <retro_inline.h>
@@ -33,33 +33,6 @@
    (vec)->u =  1.0f / (texture_width); \
    (vec)->v = -1.0f / (texture_height)
 
-#ifdef USE_CTRULIB_2
-extern u8* gfxTopLeftFramebuffers[2];
-extern u8* gfxTopRightFramebuffers[2];
-extern u8* gfxBottomFramebuffers[2];
-#endif
-
-#ifdef CONSOLE_LOG
-extern PrintConsole* ctrConsole;
-#endif 
-
-extern const u8 ctr_sprite_shbin[];
-extern const u32 ctr_sprite_shbin_size;
-
-typedef struct
-{
-   float v;
-   float u;
-   float y;
-   float x;
-} ctr_scale_vector_t;
-
-typedef struct
-{
-   s16 x0, y0, x1, y1;
-   s16 u0, v0, u1, v1;
-} ctr_vertex_t;
-
 typedef enum
 {
    CTR_VIDEO_MODE_3D = 0,
@@ -75,6 +48,20 @@ typedef enum
    CTR_BOTTOM_MENU_DEFAULT,
    CTR_BOTTOM_MENU_SELECT
 } ctr_bottom_menu;
+
+typedef struct
+{
+   float v;
+   float u;
+   float y;
+   float x;
+} ctr_scale_vector_t;
+
+typedef struct
+{
+   s16 x0, y0, x1, y1;
+   s16 u0, v0, u1, v1;
+} ctr_vertex_t;
 
 typedef struct ctr_video
 {
@@ -191,4 +178,17 @@ struct ctr_overlay_data
 };
 #endif
 
-#endif /* CTR_COMMON_H__ */
+#ifdef USE_CTRULIB_2
+extern u8* gfxTopLeftFramebuffers[2];
+extern u8* gfxTopRightFramebuffers[2];
+extern u8* gfxBottomFramebuffers[2];
+#endif
+
+#ifdef CONSOLE_LOG
+extern PrintConsole* ctrConsole;
+#endif 
+
+extern const u8 ctr_sprite_shbin[];
+extern const u32 ctr_sprite_shbin_size;
+
+#endif /* CTR_DEFINES_H__ */

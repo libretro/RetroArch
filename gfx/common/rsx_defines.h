@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RSX_COMMON_H__
-#define RSX_COMMON_H__
+#ifndef RSX_DEFINES_H__
+#define RSX_DEFINES_H__
 
 #include <retro_inline.h>
 #include <string/stdstring.h>

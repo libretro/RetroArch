@@ -21,7 +21,7 @@
 
 #include "../gfx_display.h"
 
-#include "../common/rsx_common.h"
+#include "../common/rsx_defines.h"
 
 static const float rsx_vertexes[8] = {
    0, 0,

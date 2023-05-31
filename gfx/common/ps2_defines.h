@@ -1,5 +1,5 @@
-#ifndef PS2_COMMON_H__
-#define PS2_COMMON_H__
+#ifndef PS2_DEFINES_H__
+#define PS2_DEFINES_H__
 
 #include <stdint.h>
 #include <stdbool.h>

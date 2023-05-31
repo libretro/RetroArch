@@ -21,14 +21,16 @@
 
 #include "../../input/common/wayland_common.h"
 
-typedef struct toplevel_listener {
+typedef struct toplevel_listener
+{
 #ifdef HAVE_LIBDECOR_H
    struct libdecor_frame_interface libdecor_frame_interface;
 #endif
    struct xdg_toplevel_listener xdg_toplevel_listener;
 } toplevel_listener_t;
 
-typedef struct shm_buffer {
+typedef struct shm_buffer
+{
    struct wl_buffer *wl_buffer;
    void *data;
    size_t data_size;

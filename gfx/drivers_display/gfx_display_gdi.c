@@ -23,7 +23,7 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
-#include "../common/gdi_common.h"
+#include "../common/gdi_defines.h"
 #endif
 
 static const float *gfx_display_gdi_get_default_vertices(void)

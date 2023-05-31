@@ -34,7 +34,7 @@
 
 #include "../font_driver.h"
 
-#include "../common/vita2d_common.h"
+#include "../common/vita2d_defines.h"
 #include "../../driver.h"
 #include "../video_coord_array.h"
 #include "../../verbosity.h"

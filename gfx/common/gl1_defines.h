@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GL1_COMMON_H
-#define __GL1_COMMON_H
+#ifndef __GL1_DEFINES_H
+#define __GL1_DEFINES_H
 
 #include <retro_environment.h>
 #include <retro_inline.h>

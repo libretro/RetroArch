@@ -40,7 +40,7 @@
 #include "win32_common.h"
 
 #ifdef HAVE_GDI
-#include "gdi_common.h"
+#include "gdi_defines.h"
 #endif
 
 #include "../../frontend/frontend_driver.h"

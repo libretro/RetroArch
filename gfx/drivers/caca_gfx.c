@@ -30,8 +30,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/caca_common.h"
-
+#include "../common/caca_defines.h"
 #include "../font_driver.h"
 
 #include "../../driver.h"

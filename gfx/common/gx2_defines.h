@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __GX2_DEFINES_H
+#define __GX2_DEFINES_H
 
 #include <wiiu/gx2.h>
 
@@ -121,3 +122,5 @@ typedef struct
    bool should_resize;
    bool render_msg_enabled;
 } wiiu_video_t;
+
+#endif

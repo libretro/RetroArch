@@ -25,6 +25,12 @@
 #include "../font_driver.h"
 #include "../../retroarch.h"
 
+enum sd2l_flags
+{
+   SDL2_FLAG_QUITTING      = (1 << 0),
+   SDL2_FLAG_SHOULD_RESIZE = (1 << 1)
+};
+
 typedef struct sdl2_tex
 {
    SDL_Texture *tex;
@@ -35,12 +41,6 @@ typedef struct sdl2_tex
    bool active;
    bool rgb32;
 } sdl2_tex_t;
-
-enum sd2l_flags
-{
-   SDL2_FLAG_QUITTING      = (1 << 0),
-   SDL2_FLAG_SHOULD_RESIZE = (1 << 1)
-};
 
 typedef struct _sdl2_video
 {

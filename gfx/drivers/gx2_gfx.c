@@ -47,7 +47,7 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "gfx/common/gx2_common.h"
+#include "gfx/common/gx2_defines.h"
 #include "gfx/video_shader_parse.h"
 #include "gfx/drivers_shader/slang_process.h"
 #include "system/memory.h"

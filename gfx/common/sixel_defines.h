@@ -15,59 +15,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GDI_COMMON_H
-#define __GDI_COMMON_H
+#ifndef __SIXEL_DEFINES_H
+#define __SIXEL_DEFINES_H
 
-#include <stdint.h>
+#include <sixel.h>
 
-#include <retro_environment.h>
-#include <boolean.h>
+#define SIXEL_COLORS 256
 
-typedef struct gdi_texture
+typedef struct sixel
 {
-   HBITMAP bmp;
-   HBITMAP bmp_old;
-   void *data;
-
-   int width;
-   int height;
-   int active_width;
-   int active_height;
-
-   enum texture_filter_type type;
-} gdi_texture_t;
-
-typedef struct gdi
-{
-#ifndef __WINRT__
-   WNDCLASSEX wndclass;
-#endif
-   HDC winDC;
-   HDC memDC;
-   HDC texDC;
-   HBITMAP bmp;
-   HBITMAP bmp_old;
-   uint16_t *temp_buf;
-   uint8_t *menu_frame;
-
+   SIXELSTATUS sixel_status;
    unsigned video_width;
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
-
-   unsigned menu_width;
-   unsigned menu_height;
-   unsigned menu_pitch;
-   unsigned video_pitch;
-   unsigned video_bits;
-   unsigned menu_bits;
-   int win_major;
-   int win_minor;
-
-   bool rgb32;
-   bool lte_win98;
-   bool menu_enable;
-   bool menu_full_screen;
-} gdi_t;
+} sixel_t;
 
 #endif

@@ -34,7 +34,7 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
-#include "gfx/common/ctr_common.h"
+#include "gfx/common/ctr_defines.h"
 #endif
 
 /* Required for OpenDingux IPU filter + refresh

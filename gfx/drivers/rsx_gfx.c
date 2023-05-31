@@ -38,7 +38,7 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "../common/rsx_common.h"
+#include "../common/rsx_defines.h"
 #include "../font_driver.h"
 
 #include "../../configuration.h"

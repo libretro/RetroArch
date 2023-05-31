@@ -15,20 +15,30 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SIXEL_COMMON_H
-#define __SIXEL_COMMON_H
+#ifndef __CACA_DEFINES_H
+#define __CACA_DEFINES_H
 
-#include <sixel.h>
+struct caca_canvas;
+struct caca_dither;
+struct caca_display;
 
-#define SIXEL_COLORS 256
+typedef struct caca_canvas caca_canvas_t;
+typedef struct caca_dither caca_dither_t;
+typedef struct caca_display caca_display_t;
 
-typedef struct sixel
+typedef struct caca
 {
-   SIXELSTATUS sixel_status;
+   caca_canvas_t *cv;
+   caca_dither_t *dither;
+   caca_display_t *display;
+   unsigned char *menu_frame;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
    unsigned video_width;
    unsigned video_height;
-   unsigned screen_width;
-   unsigned screen_height;
-} sixel_t;
+   unsigned video_pitch;
+   bool rgb32;
+} caca_t;
 
 #endif
