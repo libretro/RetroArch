@@ -24,13 +24,18 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_D3DX
+
+#include <d3dx9core.h>
+#include <d3dx9tex.h>
+
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
 #include "../font_driver.h"
 
 #include "../../configuration.h"
 
-typedef struct d3dx_font_desc
+typedef struct d3d9x_font_desc
 {
     INT Height;
     UINT Width;
@@ -42,7 +47,7 @@ typedef struct d3dx_font_desc
     BYTE Quality;
     BYTE PitchAndFamily;
     CHAR FaceName[32];
-} d3dx_font_desc_t;
+} d3d9x_font_desc_t;
 
 typedef struct
 {
@@ -52,12 +57,29 @@ typedef struct
    uint32_t ascent;
 } d3dfonts_t;
 
-static void *d3d_win32_font_init(void *video_data,
+static void d3d9x_font_release(ID3DXFont *font)
+{
+   font->lpVtbl->Release(font);
+}
+
+static void d3d9x_font_get_text_metrics(ID3DXFont *font, TEXTMETRICA *metrics)
+{
+   font->lpVtbl->GetTextMetrics(font, metrics);
+}
+
+static void d3d9x_font_draw_text(ID3DXFont *font, LPD3DXSPRITE sprite_data, LPCTSTR string_data,
+      unsigned count, LPRECT rect_data, DWORD format, D3DCOLOR color)
+{
+   font->lpVtbl->DrawText(font, sprite_data,
+         string_data, count, rect_data, format, color);
+}
+
+static void *d3d9x_win32_font_init(void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
    TEXTMETRICA metrics;
-   d3dx_font_desc_t desc;
+   d3d9x_font_desc_t desc;
    d3dfonts_t *d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
    if (!d3dfonts)
 	   return NULL;
@@ -71,13 +93,14 @@ static void *d3d_win32_font_init(void *video_data,
    desc.OutputPrecision = OUT_TT_PRECIS;
    desc.Quality         = CLIP_DEFAULT_PRECIS;
    desc.PitchAndFamily  = DEFAULT_PITCH;
+   /* TODO/FIXME - don't hardcode this font */
 #ifdef UNICODE
    strlcpy(desc.FaceName, T(L"Verdana"), sizeof(desc.FaceName));
 #else
    strlcpy(desc.FaceName, (const char*)_T("Verdana"), sizeof(desc.FaceName));
 #endif
 
-   d3dfonts->font_size  = font_size * 1.2; /* to match the other font drivers */
+   d3dfonts->font_size  = font_size * 1.2; /* To match the other font drivers */
    d3dfonts->d3d        = (d3d9_video_t*)video_data;
 
    desc.Height          = d3dfonts->font_size;
@@ -97,7 +120,7 @@ error:
    return NULL;
 }
 
-static void d3d_win32_font_free(void *data, bool is_threaded)
+static void d3d9x_win32_font_free(void *data, bool is_threaded)
 {
    d3dfonts_t *d3dfonts = (d3dfonts_t*)data;
 
@@ -105,12 +128,12 @@ static void d3d_win32_font_free(void *data, bool is_threaded)
       return;
 
    if (d3dfonts->font)
-      d3d9x_font_release(d3dfonts->font);
+      d3d9x_font_release((ID3DXFont*)d3dfonts->font);
 
    free(d3dfonts);
 }
 
-static int d3d_win32_font_get_message_width(void* data, const char* msg,
+static int d3d9x_win32_font_get_message_width(void* data, const char* msg,
       size_t msg_len, float scale)
 {
    RECT box             = {0,0,0,0};
@@ -125,12 +148,12 @@ static int d3d_win32_font_get_message_width(void* data, const char* msg,
    return box.right - box.left;
 }
 
-static void d3d_win32_font_render_msg(
+static void d3d9x_win32_font_render_msg(
       void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
 {
-   unsigned format;
+   DWORD format;
    unsigned a, r, g, b;
    unsigned width, height;
    RECT rect, rect_shifted;
@@ -228,14 +251,16 @@ static void d3d_win32_font_render_msg(
       p_rect, format, D3DCOLOR_ARGB(a, r, g, b));
 }
 
-font_renderer_t d3d_win32_font = {
-   d3d_win32_font_init,
-   d3d_win32_font_free,
-   d3d_win32_font_render_msg,
-   "d3d_win32_font",
+font_renderer_t d3d9x_win32_font = {
+   d3d9x_win32_font_init,
+   d3d9x_win32_font_free,
+   d3d9x_win32_font_render_msg,
+   "d3d9x",
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   d3d_win32_font_get_message_width,
+   d3d9x_win32_font_get_message_width,
    NULL                       /* get_line_metrics */
 };
+
+#endif

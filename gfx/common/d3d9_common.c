@@ -439,36 +439,6 @@ bool d3d9x_compile_shader(
    return false;
 }
 
-void d3d9x_font_draw_text(void *data, void *sprite_data, void *string_data,
-      unsigned count, void *rect_data, unsigned format, unsigned color)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
-            (LPCTSTR)string_data, count, (LPRECT)rect_data,
-            (DWORD)format, (D3DCOLOR)color);
-#endif
-}
-
-void d3d9x_font_release(void *data)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->Release(font);
-#endif
-}
-
-void d3d9x_font_get_text_metrics(void *data, void *metrics)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
-#endif
-}
-
 bool d3d9x_compile_shader_from_file(
       const char *src,
       const void *pdefines,

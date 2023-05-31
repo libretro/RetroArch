@@ -183,7 +183,7 @@ static bool font_init_first(
       {
          static const font_renderer_t *d3d9_font_backends[] = {
 #if defined(_WIN32) && defined(HAVE_D3DX)
-            &d3d_win32_font,
+            &d3d9x_win32_font,
 #endif
             NULL
          };
