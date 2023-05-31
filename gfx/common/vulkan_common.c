@@ -271,12 +271,13 @@ static void vulkan_debug_mark_object(VkDevice device,
    if (vkSetDebugUtilsObjectNameEXT)
    {
       char merged_name[1024];
-      snprintf(merged_name, sizeof(merged_name), "%s (%u)", name, count);
-
       VkDebugUtilsObjectNameInfoEXT info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
-      info.objectType = object_type;
-      info.objectHandle = object_handle;
-      info.pObjectName = merged_name;
+      size_t _len                        = strlcpy(merged_name, name, sizeof(merged_name));
+      snprintf(merged_name + _len, sizeof(merged_name) - _len, " (%u)", count);
+
+      info.objectType                    = object_type;
+      info.objectHandle                  = object_handle;
+      info.pObjectName                   = merged_name;
       vkSetDebugUtilsObjectNameEXT(device, &info);
    }
 }
