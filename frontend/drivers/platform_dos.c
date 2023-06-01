@@ -26,6 +26,7 @@
 #include "../../command.h"
 #include "../../defaults.h"
 #include "../../paths.h"
+#include "../../verbosity.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 

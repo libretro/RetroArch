@@ -3707,12 +3707,9 @@ void config_read_keybinds_conf(void *data)
 }
 
 #ifdef HAVE_COMMAND
-void input_driver_init_command(
-      input_driver_state_t *input_st,
+void input_driver_init_command(input_driver_state_t *input_st,
       settings_t *settings)
 {
-   bool input_network_cmd_enable     = settings->bools.network_cmd_enable;
-   unsigned network_cmd_port         = settings->uints.network_cmd_port;
 #ifdef HAVE_STDIN_CMD
    bool input_stdin_cmd_enable       = settings->bools.stdin_cmd_enable;
 
@@ -3739,10 +3736,14 @@ void input_driver_init_command(
 
    /* Initialize the network command interface */
 #ifdef HAVE_NETWORK_CMD
-   if (input_network_cmd_enable)
    {
-      if (!(input_st->command[1] = command_network_new(network_cmd_port)))
-         RARCH_ERR("Failed to initialize the network command interface.\n");
+      bool input_network_cmd_enable = settings->bools.network_cmd_enable;
+      if (input_network_cmd_enable)
+      {
+         unsigned network_cmd_port  = settings->uints.network_cmd_port;
+         if (!(input_st->command[1] = command_network_new(network_cmd_port)))
+            RARCH_ERR("Failed to initialize the network command interface.\n");
+      }
    }
 #endif
 

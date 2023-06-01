@@ -379,7 +379,6 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    const char *directory_cache    = settings->paths.directory_cache;
    const char *directory_system   = settings->paths.directory_system;
    const char *path_username      = settings->paths.username;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    if (string_is_equal(arg, "video_fullscreen"))
    {
@@ -402,12 +401,16 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       value = directory_system;
    else if (string_is_equal(arg, "netplay_nickname"))
       value = path_username;
-   #ifdef HAVE_BSV_MOVIE
-   else if (string_is_equal(arg, "active_replay")) {
-      value = value_dynamic;
+#ifdef HAVE_BSV_MOVIE
+   else if (string_is_equal(arg, "active_replay"))
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      value            = value_dynamic;
       value_dynamic[0] = '\0';
       if(input_st->bsv_movie_state_handle)
-         snprintf(value_dynamic, sizeof(value_dynamic), "%lld %u", (long long)(input_st->bsv_movie_state_handle->identifier), input_st->bsv_movie_state.flags);
+         snprintf(value_dynamic, sizeof(value_dynamic), "%lld %u",
+               (long long)(input_st->bsv_movie_state_handle->identifier),
+               input_st->bsv_movie_state.flags);
       else
          snprintf(value_dynamic, sizeof(value_dynamic), "0 0");
    }

@@ -2592,6 +2592,7 @@ static int setting_action_ok_uint(
    return 1;
 }
 
+#if defined(HAVE_NETWORKING)
 static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
 {
    if (!string_is_empty(line))
@@ -2617,6 +2618,7 @@ static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
 
    menu_input_dialog_end();
 }
+#endif
 
 static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
       bool wraparound)
