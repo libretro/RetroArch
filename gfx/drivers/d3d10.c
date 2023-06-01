@@ -60,6 +60,18 @@
 #error "UWP does not support D3D10"
 #endif
 
+typedef struct
+{
+   d3d10_texture_t               texture;
+   const font_renderer_driver_t* font_driver;
+   void*                         font_data;
+   struct font_atlas*            atlas;
+} d3d10_font_t;
+
+/* Temporary workaround for d3d10 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d10_fake_context;
+static uint32_t d3d10_get_flags(void *data);
+
 /*
  * D3D10 COMMON
  */
@@ -566,14 +578,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
  * FONT DRIVER
  */
 
-typedef struct
-{
-   d3d10_texture_t               texture;
-   const font_renderer_driver_t* font_driver;
-   void*                         font_data;
-   struct font_atlas*            atlas;
-} d3d10_font_t;
-
 static void *d3d10_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
@@ -932,23 +936,6 @@ font_renderer_t d3d10_font = {
  * VIDEO DRIVER
  */
 
-/* Temporary workaround for d3d10 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d10_fake_context;
-static uint32_t d3d10_get_flags(void *data);
-
-static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned height)
-{
-   D3D10_RECT scissor_rect;
-
-   scissor_rect.left   = 0;
-   scissor_rect.top    = 0;
-   scissor_rect.right  = width;
-   scissor_rect.bottom = height;
-
-   d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
-         &scissor_rect);
-}
-
 #ifdef HAVE_OVERLAY
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
 {
@@ -959,7 +946,7 @@ static void d3d10_free_overlays(d3d10_video_t* d3d10)
    Release(d3d10->overlays.vbo);
 }
 
-   static void
+static void
 d3d10_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
 {
    d3d10_sprite_t* sprites = NULL;
@@ -2406,7 +2393,17 @@ static bool d3d10_gfx_frame(
          d3d10->clearcolor);
    context->lpVtbl->RSSetViewports(context, 1, &d3d10->frame.viewport);
 
-   d3d10_clear_scissor(d3d10, video_width, video_height);
+   {
+      D3D10_RECT scissor_rect;
+
+      scissor_rect.left   = 0;
+      scissor_rect.top    = 0;
+      scissor_rect.right  = video_width;
+      scissor_rect.bottom = video_height;
+
+      d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
+            &scissor_rect);
+   }
 
    context->lpVtbl->Draw(context, 4, 0);
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_enable, NULL,

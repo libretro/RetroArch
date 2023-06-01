@@ -64,7 +64,7 @@ enum exynos_buffer_type
 
 /* We have to handle three types of 'data' from the frontend, each abstracted by a *
  * G2D image object. The image objects are then backed by some storage buffer.     *
- * (1) the core framebuffer (backed by main buffer)                            *
+ * (1) the core framebuffer (backed by main buffer)                                *
  * (2) the menu buffer (backed by aux buffer)                                      *
  * (3) the font rendering buffer (backed by aux buffer)                            */
 enum exynos_image_type

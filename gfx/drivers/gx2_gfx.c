@@ -55,6 +55,15 @@
 
 #include "../font_driver.h"
 
+typedef struct
+{
+   GX2Texture texture;
+   GX2_vec2* ubo_tex;
+   const font_renderer_driver_t* font_driver;
+   void* font_data;
+   struct font_atlas* atlas;
+} gx2_font_t;
+
 /* Temporary workaround for GX2 not being able to poll flags during init */
 static gfx_ctx_driver_t gx2_fake_context;
 
@@ -69,6 +78,13 @@ static const wiiu_render_mode_t gx2_render_mode_map[] =
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}, /* GX2_TV_SCAN_MODE_1080I */
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
 };
+
+/*
+ * FORWARD DECLARATIONS
+ */
+
+static bool gx2_set_shader(void *data,
+      enum rarch_shader_type type, const char *path);
 
 /*
  * DISPLAY DRIVER
@@ -363,15 +379,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
 /*
  * FONT DRIVER
  */
-
-typedef struct
-{
-   GX2Texture texture;
-   GX2_vec2* ubo_tex;
-   const font_renderer_driver_t* font_driver;
-   void* font_data;
-   struct font_atlas* atlas;
-} gx2_font_t;
 
 static void* gx2_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
@@ -731,9 +738,6 @@ font_renderer_t wiiu_font =
 /*
  * VIDEO DRIVER
  */
-
-static bool gx2_set_shader(void *data,
-      enum rarch_shader_type type, const char *path);
 
 static void gx2_set_tex_coords(frame_vertex_t *v,
       GX2Texture *texture, float u0, float v0,

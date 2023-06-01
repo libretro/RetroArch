@@ -43,21 +43,16 @@
 #include <defines/psp_defines.h>
 #include <psp2/kernel/sysmem.h>
 
-/*
- * FORWARD DECLARATIONS
- */
+typedef struct
+{
+   vita_video_t *vita;
+   vita2d_texture *texture;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   struct font_atlas *atlas;
+} vita_font_t;
 
-extern void *memcpy_neon(void *dst, const void *src, size_t n);
-static void vita2d_update_viewport(vita_video_t* vita,
-      video_frame_info_t *video_info);
-static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
-
-/*
- * DISPLAY DRIVER
- */
-
-static const float vita2d_vertexes[8] = {
+static const float vita2d_vertexes[8]   = {
    0, 0,
    1, 0,
    0, 1,
@@ -71,12 +66,27 @@ static const float vita2d_tex_coords[8] = {
    1, 0
 };
 
-static const float vita2d_colors[16] = {
+static const float vita2d_colors[16]    = {
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
 };
+
+
+/*
+ * FORWARD DECLARATIONS
+ */
+
+extern void *memcpy_neon(void *dst, const void *src, size_t n);
+static void vita2d_update_viewport(vita_video_t* vita,
+      video_frame_info_t *video_info);
+static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate);
+
+/*
+ * DISPLAY DRIVER
+ */
 
 static const float *gfx_display_vita2d_get_default_vertices(void)
 {
@@ -145,14 +155,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       vertices[i].a = *color++;
    }
 
-   switch (draw->pipeline_id)
-   {
-      default:
-         {
-            vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, &vita2d->mvp_no_rot);
-            break;
-         }
-   }
+   vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, &vita2d->mvp_no_rot);
 }
 
 static void gfx_display_vita2d_scissor_begin(void *data,
@@ -194,15 +197,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
 /*
  * FONT DRIVER
  */
-
-typedef struct
-{
-   vita_video_t *vita;
-   vita2d_texture *texture;
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
-   struct font_atlas *atlas;
-} vita_font_t;
 
 static void *vita2d_font_init(void *data,
       const char *font_path, float font_size,
@@ -544,10 +538,11 @@ font_renderer_t vita2d_vita_font = {
 static void *vita2d_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
    unsigned temp_width                    = PSP_FB_WIDTH;
    unsigned temp_height                   = PSP_FB_HEIGHT;
    vita2d_video_mode_data video_mode_data = {0};
+   vita_video_t *vita                     = (vita_video_t *)
+	   calloc(1, sizeof(vita_video_t));
 
    if (!vita)
       return NULL;

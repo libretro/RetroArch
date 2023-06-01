@@ -98,17 +98,149 @@
    coords[5] = yamt; \
    coords[7] = yamt
 
-/**
- * FORWARD DECLARATIONS
- */
-static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
-      bool force_full, bool allow_rotate);
+#define MAX_FENCES 4
 
-/**
- * DISPLAY DRIVER
- */
+#if !defined(HAVE_PSGL)
+
+#ifndef HAVE_GL_SYNC
+#define HAVE_GL_SYNC
+#endif
+
+#endif
+
+#define GL_RASTER_FONT_EMIT(c, vx, vy) \
+   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0] = color[0]; \
+   font_color[      4 * (6 * i + c) + 1] = color[1]; \
+   font_color[      4 * (6 * i + c) + 2] = color[2]; \
+   font_color[      4 * (6 * i + c) + 3] = color[3]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+
+#define MAX_MSG_LEN_CHUNK 64
+
+#ifdef HAVE_GL_SYNC
+#if defined(HAVE_OPENGLES2)
+typedef struct __GLsync *GLsync;
+#endif
+#endif
+
+#if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#ifdef GL_PIXEL_PACK_BUFFER
+#define HAVE_GL_ASYNC_READBACK
+#endif
+#endif
+
+#if defined(HAVE_PSGL)
+#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DOES(a, b, c, d, e)
+#define gl2_check_fb_status(target) glCheckFramebufferStatusOES(target)
+#define gl2_gen_fb(n, ids)   glGenFramebuffersOES(n, ids)
+#define gl2_delete_fb(n, fb) glDeleteFramebuffersOES(n, fb)
+#define gl2_bind_fb(id)      glBindFramebufferOES(RARCH_GL_FRAMEBUFFER, id)
+#define gl2_gen_rb           glGenRenderbuffersOES
+#define gl2_bind_rb          glBindRenderbufferOES
+#define gl2_fb_rb            glFramebufferRenderbufferOES
+#define gl2_rb_storage       glRenderbufferStorageOES
+#define gl2_delete_rb        glDeleteRenderbuffersOES
+
+#elif (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DEXT(a, b, c, d, e)
+#define gl2_check_fb_status(target) glCheckFramebufferStatusEXT(target)
+#define gl2_gen_fb(n, ids)   glGenFramebuffersEXT(n, ids)
+#define gl2_delete_fb(n, fb) glDeleteFramebuffersEXT(n, fb)
+#define gl2_bind_fb(id)      glBindFramebufferEXT(RARCH_GL_FRAMEBUFFER, id)
+#define gl2_gen_rb           glGenRenderbuffersEXT
+#define gl2_bind_rb          glBindRenderbufferEXT
+#define gl2_fb_rb            glFramebufferRenderbufferEXT
+#define gl2_rb_storage       glRenderbufferStorageEXT
+#define gl2_delete_rb        glDeleteRenderbuffersEXT
+
+#else
+
+#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2D(a, b, c, d, e)
+#define gl2_check_fb_status(target) glCheckFramebufferStatus(target)
+#define gl2_gen_fb(n, ids)   glGenFramebuffers(n, ids)
+#define gl2_delete_fb(n, fb) glDeleteFramebuffers(n, fb)
+#define gl2_bind_fb(id)      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
+#define gl2_gen_rb           glGenRenderbuffers
+#define gl2_bind_rb          glBindRenderbuffer
+#define gl2_fb_rb            glFramebufferRenderbuffer
+#define gl2_rb_storage       glRenderbufferStorage
+#define gl2_delete_rb        glDeleteRenderbuffers
+
+#endif
+
+#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
+#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#endif
+
+#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
+#endif
+
+enum gl2_renderchain_flags
+{
+   GL2_CHAIN_FLAG_EGL_IMAGES           = (1 << 0),
+   GL2_CHAIN_FLAG_HAS_FP_FBO           = (1 << 1),
+   GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3   = (1 << 2),
+   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 3),
+   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 4)
+};
+
+typedef struct video_shader_ctx_scale
+{
+   struct gfx_fbo_scale *scale;
+} video_shader_ctx_scale_t;
+
+typedef struct video_shader_ctx_init
+{
+   const char *path;
+   const shader_backend_t *shader;
+   void *data;
+   void *shader_data;
+   enum rarch_shader_type shader_type;
+   struct
+   {
+      bool core_context_enabled;
+   } gl;
+} video_shader_ctx_init_t;
+
+typedef struct gl2_renderchain_data
+{
+   int fbo_pass;
+
+#ifdef HAVE_GL_SYNC
+   GLsync fences[MAX_FENCES];
+#endif
+
+   GLuint vao;
+   GLuint fbo[GFX_MAX_SHADERS];
+   GLuint fbo_texture[GFX_MAX_SHADERS];
+   GLuint hw_render_depth[GFX_MAX_TEXTURES];
+
+   unsigned fence_count;
+
+   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
+   uint8_t flags;
+} gl2_renderchain_data_t;
+
+/* TODO: Move viewport side effects to the caller: it's a source of bugs. */
+
+typedef struct
+{
+   gl2_t *gl;
+   GLuint tex;
+   unsigned tex_width, tex_height;
+
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   struct font_atlas *atlas;
+
+   video_font_raster_block_t *block;
+} gl2_raster_t;
 
 #if defined(__arm__) || defined(__aarch64__)
 static int scx0, scx1, scy0, scy1;
@@ -124,7 +256,87 @@ static const struct
    { "ARM Mali-4xx", 10 },
    { 0, 0 }
 };
+#endif
 
+static const shader_backend_t *gl2_shader_ctx_drivers[] = {
+#ifdef HAVE_GLSL
+   &gl_glsl_backend,
+#endif
+#ifdef HAVE_CG
+   &gl_cg_backend,
+#endif
+   NULL
+};
+
+static struct video_ortho default_ortho = {0, 1, 0, 1, -1, 1};
+
+/* Used for the last pass when rendering to the back buffer. */
+static const GLfloat vertexes_flipped[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+/* Used when rendering to an FBO.
+ * Texture coords have to be aligned
+ * with vertex coordinates. */
+static const GLfloat vertexes[8] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat gl2_vertexes[8] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat gl2_tex_coords[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static const GLfloat tex_coords[8] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat white_color[16] = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+};
+
+/**
+ * FORWARD DECLARATIONS
+ */
+static void gl2_set_viewport(gl2_t *gl,
+      unsigned viewport_width,
+      unsigned viewport_height,
+      bool force_full, bool allow_rotate);
+
+#ifdef IOS
+/* There is no default frame buffer on iOS. */
+void glkitview_bind_fbo(void);
+#define gl2_renderchain_bind_backbuffer() glkitview_bind_fbo()
+#else
+#define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
+#endif
+
+/**
+ * DISPLAY DRIVER
+ */
+
+#if defined(__arm__) || defined(__aarch64__)
 static void scissor_set_rectangle(
       int x0, int x1, int y0, int y1, int sc)
 {
@@ -152,20 +364,6 @@ static bool scissor_is_outside_rectangle(
 
 #define MALI_BUG
 #endif
-
-static const GLfloat gl2_vertexes[8] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat gl2_tex_coords[8] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
 
 static const float *gfx_display_gl2_get_default_vertices(void)
 {
@@ -469,36 +667,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
 /**
  * FONT DRIVER
  */
-
-/* TODO: Move viewport side effects to the caller: it's a source of bugs. */
-
-#define GL_RASTER_FONT_EMIT(c, vx, vy) \
-   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
-   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
-   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
-
-#define MAX_MSG_LEN_CHUNK 64
-
-typedef struct
-{
-   gl2_t *gl;
-   GLuint tex;
-   unsigned tex_width, tex_height;
-
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
-   struct font_atlas *atlas;
-
-   video_font_raster_block_t *block;
-} gl2_raster_t;
-
 static void gl2_raster_font_free(void *data,
       bool is_threaded)
 {
@@ -971,174 +1139,6 @@ font_renderer_t gl2_raster_font = {
 /*
  * VIDEO DRIVER
  */
-typedef struct video_shader_ctx_scale
-{
-   struct gfx_fbo_scale *scale;
-} video_shader_ctx_scale_t;
-
-typedef struct video_shader_ctx_init
-{
-   const char *path;
-   const shader_backend_t *shader;
-   void *data;
-   void *shader_data;
-   enum rarch_shader_type shader_type;
-   struct
-   {
-      bool core_context_enabled;
-   } gl;
-} video_shader_ctx_init_t;
-
-static const shader_backend_t *gl2_shader_ctx_drivers[] = {
-#ifdef HAVE_GLSL
-   &gl_glsl_backend,
-#endif
-#ifdef HAVE_CG
-   &gl_cg_backend,
-#endif
-   NULL
-};
-
-static struct video_ortho default_ortho = {0, 1, 0, 1, -1, 1};
-
-/* Used for the last pass when rendering to the back buffer. */
-static const GLfloat vertexes_flipped[8] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
-
-/* Used when rendering to an FBO.
- * Texture coords have to be aligned
- * with vertex coordinates. */
-static const GLfloat vertexes[8] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat tex_coords[8] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat white_color[16] = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-};
-
-#define MAX_FENCES 4
-
-#if !defined(HAVE_PSGL)
-
-#ifndef HAVE_GL_SYNC
-#define HAVE_GL_SYNC
-#endif
-
-#endif
-
-#ifdef HAVE_GL_SYNC
-#if defined(HAVE_OPENGLES2)
-typedef struct __GLsync *GLsync;
-#endif
-#endif
-
-enum gl2_renderchain_flags
-{
-   GL2_CHAIN_FLAG_EGL_IMAGES           = (1 << 0),
-   GL2_CHAIN_FLAG_HAS_FP_FBO           = (1 << 1),
-   GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3   = (1 << 2),
-   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 3),
-   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 4)
-};
-
-typedef struct gl2_renderchain_data
-{
-   int fbo_pass;
-
-#ifdef HAVE_GL_SYNC
-   GLsync fences[MAX_FENCES];
-#endif
-
-   GLuint vao;
-   GLuint fbo[GFX_MAX_SHADERS];
-   GLuint fbo_texture[GFX_MAX_SHADERS];
-   GLuint hw_render_depth[GFX_MAX_TEXTURES];
-
-   unsigned fence_count;
-
-   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-   uint8_t flags;
-} gl2_renderchain_data_t;
-
-#if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
-#ifdef GL_PIXEL_PACK_BUFFER
-#define HAVE_GL_ASYNC_READBACK
-#endif
-#endif
-
-#if defined(HAVE_PSGL)
-#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DOES(a, b, c, d, e)
-#define gl2_check_fb_status(target) glCheckFramebufferStatusOES(target)
-#define gl2_gen_fb(n, ids)   glGenFramebuffersOES(n, ids)
-#define gl2_delete_fb(n, fb) glDeleteFramebuffersOES(n, fb)
-#define gl2_bind_fb(id)      glBindFramebufferOES(RARCH_GL_FRAMEBUFFER, id)
-#define gl2_gen_rb           glGenRenderbuffersOES
-#define gl2_bind_rb          glBindRenderbufferOES
-#define gl2_fb_rb            glFramebufferRenderbufferOES
-#define gl2_rb_storage       glRenderbufferStorageOES
-#define gl2_delete_rb        glDeleteRenderbuffersOES
-
-#elif (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
-#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DEXT(a, b, c, d, e)
-#define gl2_check_fb_status(target) glCheckFramebufferStatusEXT(target)
-#define gl2_gen_fb(n, ids)   glGenFramebuffersEXT(n, ids)
-#define gl2_delete_fb(n, fb) glDeleteFramebuffersEXT(n, fb)
-#define gl2_bind_fb(id)      glBindFramebufferEXT(RARCH_GL_FRAMEBUFFER, id)
-#define gl2_gen_rb           glGenRenderbuffersEXT
-#define gl2_bind_rb          glBindRenderbufferEXT
-#define gl2_fb_rb            glFramebufferRenderbufferEXT
-#define gl2_rb_storage       glRenderbufferStorageEXT
-#define gl2_delete_rb        glDeleteRenderbuffersEXT
-
-#else
-
-#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2D(a, b, c, d, e)
-#define gl2_check_fb_status(target) glCheckFramebufferStatus(target)
-#define gl2_gen_fb(n, ids)   glGenFramebuffers(n, ids)
-#define gl2_delete_fb(n, fb) glDeleteFramebuffers(n, fb)
-#define gl2_bind_fb(id)      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
-#define gl2_gen_rb           glGenRenderbuffers
-#define gl2_bind_rb          glBindRenderbuffer
-#define gl2_fb_rb            glFramebufferRenderbuffer
-#define gl2_rb_storage       glRenderbufferStorage
-#define gl2_delete_rb        glDeleteRenderbuffers
-
-#endif
-
-#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
-#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
-#endif
-
-#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
-#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
-#endif
-
-/* Prototypes */
-#ifdef IOS
-/* There is no default frame buffer on iOS. */
-void glkitview_bind_fbo(void);
-#define gl2_renderchain_bind_backbuffer() glkitview_bind_fbo()
-#else
-#define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
-#endif
-
 static unsigned gl2_get_alignment(unsigned pitch)
 {
    if (pitch & 1)

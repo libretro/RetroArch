@@ -38,6 +38,28 @@
 #define UV_LEFT 2
 #define UV_RIGHT 3
 
+typedef struct DrawVerticeFormats
+{
+   float x, y, z, w;
+   unsigned int color;
+   float u, v;
+} DrawVerticeFormats;
+
+typedef struct xenon360_video xenon360_video_t;
+
+typedef struct xenos
+{
+   unsigned char *screen;
+   struct XenosVertexBuffer *vb;
+   struct XenosDevice *device;
+   struct XenosDevice real_device;
+   struct XenosShader *g_pVertexShader;
+   struct XenosShader *g_pPixelTexturedShader;
+   struct XenosSurface *g_pTexture;
+   bool quitting;
+} xenos_t;
+
+
 /* pixel shader */
 const unsigned int g_xps_PS[] =
 {
@@ -70,27 +92,6 @@ const unsigned int g_xvs_VS[] =
    0x00000000, 0x00000000, 0x00000000
 };
 
-typedef struct DrawVerticeFormats
-{
-   float x, y, z, w;
-   unsigned int color;
-   float u, v;
-} DrawVerticeFormats;
-
-typedef struct xenon360_video xenon360_video_t;
-
-typedef struct xenos
-{
-   bool quitting;
-   unsigned char *screen;
-   struct XenosVertexBuffer *vb;
-   struct XenosDevice *device;
-   struct XenosDevice real_device;
-   struct XenosShader *g_pVertexShader;
-   struct XenosShader *g_pPixelTexturedShader;
-   struct XenosSurface *g_pTexture;
-} xenos_t;
-
 static float ScreenUv[4] = {0.f, 1.0f, 1.0f, 0.f};
 
 static void xenon360_free(void *data)
@@ -105,17 +106,6 @@ static void xenon360_free(void *data)
 static void *xenon360_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   int i = 0;
-   xenos_t *xenos = calloc(1, sizeof(xenos_t));
-   if (!xenos)
-      return NULL;
-
-   xenos->device = &xenos->real_device;
-
-   Xe_Init(xenos->device);
-
-   Xe_SetRenderTarget(xenos->device, Xe_GetFramebufferSurface(xenos->device));
-
    static const struct XenosVBFFormat vbf =
    {
       3,
@@ -125,6 +115,21 @@ static void *xenon360_init(const video_info_t *video,
 	 {XE_USAGE_TEXCOORD, 0, XE_TYPE_FLOAT2},
       }
    };
+   int i          = 0;
+   /* enable filtering for now */
+   float x        = -1.0f;
+   float y        = 1.0f;
+   float w        = 4.0f;
+   float h        = 4.0f;
+   xenos_t *xenos = calloc(1, sizeof(xenos_t));
+   if (!xenos)
+      return NULL;
+
+   xenos->device = &xenos->real_device;
+
+   Xe_Init(xenos->device);
+
+   Xe_SetRenderTarget(xenos->device, Xe_GetFramebufferSurface(xenos->device));
 
    xenos->g_pPixelTexturedShader = Xe_LoadShaderFromMemory(
          xenos->device, (void*)g_xps_PS);
@@ -139,51 +144,44 @@ static void *xenon360_init(const video_info_t *video,
 
    edram_init(xenos->device);
 
-   /* enable filtering for now */
-
-   float x = -1.0f;
-   float y = 1.0f;
-   float w = 4.0f;
-   float h = 4.0f;
-
    xenos->vb = Xe_CreateVertexBuffer(xenos->device, 3 * sizeof(DrawVerticeFormats));
    DrawVerticeFormats *Rect = Xe_VB_Lock(xenos->device,
          xenos->vb, 0, 3 * sizeof (DrawVerticeFormats), XE_LOCK_WRITE);
 
-   ScreenUv[UV_TOP] = ScreenUv[UV_TOP] * 2;
+   ScreenUv[UV_TOP]  = ScreenUv[UV_TOP] * 2;
    ScreenUv[UV_LEFT] = ScreenUv[UV_LEFT] * 2;
 
-   /* top left */
-   Rect[0].x = x;
-   Rect[0].y = y;
-   Rect[0].u = ScreenUv[UV_BOTTOM];
-   Rect[0].v = ScreenUv[UV_RIGHT];
-   Rect[0].color = 0;
+   /* Top left */
+   Rect[0].x         = x;
+   Rect[0].y         = y;
+   Rect[0].u         = ScreenUv[UV_BOTTOM];
+   Rect[0].v         = ScreenUv[UV_RIGHT];
+   Rect[0].color     = 0;
 
-   /* bottom left */
-   Rect[1].x = x;
-   Rect[1].y = y - h;
-   Rect[1].u = ScreenUv[UV_BOTTOM];
-   Rect[1].v = ScreenUv[UV_LEFT];
-   Rect[1].color = 0;
+   /* Bottom left */
+   Rect[1].x         = x;
+   Rect[1].y         = y - h;
+   Rect[1].u         = ScreenUv[UV_BOTTOM];
+   Rect[1].v         = ScreenUv[UV_LEFT];
+   Rect[1].color     = 0;
 
-   /* top right */
-   Rect[2].x = x + w;
-   Rect[2].y = y;
-   Rect[2].u = ScreenUv[UV_TOP];
-   Rect[2].v = ScreenUv[UV_RIGHT];
-   Rect[2].color = 0;
+   /* Top right */
+   Rect[2].x         = x + w;
+   Rect[2].y         = y;
+   Rect[2].u         = ScreenUv[UV_TOP];
+   Rect[2].v         = ScreenUv[UV_RIGHT];
+   Rect[2].color     = 0;
 
-   Rect[3].x = x + w;
-   Rect[3].y = y;
-   Rect[3].u = ScreenUv[UV_TOP];
-   Rect[3].v = ScreenUv[UV_RIGHT];
-   Rect[3].color = 0;
+   Rect[3].x         = x + w;
+   Rect[3].y         = y;
+   Rect[3].u         = ScreenUv[UV_TOP];
+   Rect[3].v         = ScreenUv[UV_RIGHT];
+   Rect[3].color     = 0;
 
    for (i = 0; i < 3; i++)
    {
-      Rect[i].z = 0.0;
-      Rect[i].w = 1.0;
+      Rect[i].z      = 0.0;
+      Rect[i].w      = 1.0;
    }
 
    Xe_VB_Unlock(xenos->device, xenos->vb);
@@ -199,32 +197,33 @@ static bool xenon360_frame(void *data,
       video_frame_info_t *video_info)
 {
    unsigned y;
-   xenos_t *xenos     = (xenos_t*)data;
+   uint16_t *dest;
+   const uint16_t *src;
+   unsigned stride_in, stride_out, copy_size;
+   xenos_t *xenos           = (xenos_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive = video_info->menu_is_alive;
+   bool menu_is_alive       = video_info->menu_is_alive;
 #endif
-   DrawVerticeFormats
-      *Rect           = NULL;
+   DrawVerticeFormats *Rect = NULL;
 
-   ScreenUv[UV_TOP]	 = ((float) (width) / (float) XE_W)*2;
-   ScreenUv[UV_LEFT]	 = ((float) (height) / (float) XE_H)*2;
+   ScreenUv[UV_TOP]	    = ((float) (width) / (float) XE_W)*2;
+   ScreenUv[UV_LEFT]	    = ((float) (height) / (float) XE_H)*2;
 
-   Rect               = Xe_VB_Lock(
-         xenos->device,
-         xenos->vb, 0, 3 * sizeof(DrawVerticeFormats), XE_LOCK_WRITE);
+   Rect                     = Xe_VB_Lock(xenos->device, xenos->vb,
+		   0, 3 * sizeof(DrawVerticeFormats), XE_LOCK_WRITE);
 
-   /* bottom left */
-   Rect[1].v          = ScreenUv[UV_LEFT];
-   Rect[2].u          = ScreenUv[UV_TOP];
+   /* Bottom left */
+   Rect[1].v                = ScreenUv[UV_LEFT];
+   Rect[2].u                = ScreenUv[UV_TOP];
 
    Xe_VB_Unlock(xenos->device, xenos->vb);
 
    /* Refresh texture cache */
-   uint16_t *dst       = Xe_Surface_LockRect(xenos->device, xenos->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
-   const uint16_t *src = frame;
-   unsigned stride_in  = pitch >>1;
-   unsigned stride_out = xenos->g_pTexture->wpitch >> 1;
-   unsigned copy_size  = width << 1;
+   dst                      = Xe_Surface_LockRect(xenos->device, xenos->g_pTexture, 0, 0, 0, 0, XE_LOCK_WRITE);
+   src                      = frame;
+   stride_in                = pitch >>1;
+   stride_out               = xenos->g_pTexture->wpitch >> 1;
+   copy_size                = width << 1;
 
    for (y = 0; y < height; y++, dst += stride_out, src += stride_in)
       memcpy(dst, src, copy_size);

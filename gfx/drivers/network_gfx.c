@@ -52,13 +52,13 @@ enum
 
 typedef struct network
 {
+   int fd;
    unsigned video_width;
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
-   char address[256];
    uint16_t port;
-   int fd;
+   char address[256];
 } network_video_t;
 
 static unsigned char *network_menu_frame = NULL;

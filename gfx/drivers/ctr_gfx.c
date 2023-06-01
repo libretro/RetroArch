@@ -55,6 +55,46 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
+enum
+{
+   CTR_TEXTURE_BOTTOM_MENU = 0,
+   CTR_TEXTURE_STATE_THUMBNAIL,
+   CTR_TEXTURE_LAST
+};
+
+struct ctr_bottom_texture_data
+{
+   uintptr_t texture;
+   ctr_vertex_t* frame_coords;
+   ctr_scale_vector_t scale_vector;
+};
+
+typedef struct
+{
+   ctr_texture_t texture;
+   ctr_scale_vector_t scale_vector_top;
+   ctr_scale_vector_t scale_vector_bottom;
+   const font_renderer_driver_t* font_driver;
+   void* font_data;
+} ctr_font_t;
+
+
+/* An annoyance...
+ * Have to keep track of bottom screen enable state
+ * externally, otherwise cannot detect current state
+ * when reinitialising... */
+static bool ctr_bottom_screen_enabled  = true;
+static int fade_count                  = 256;
+
+/*
+ * FORWARD DECLARATIONS
+ */
+
+/* TODO/FIXME - global referenced outside */
+extern uint64_t lifecycle_state;
+
+static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
+
 /*
  * DISPLAY DRIVER 
  */
@@ -185,15 +225,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
 /*
  * FONT DRIVER 
  */
-
-typedef struct
-{
-   ctr_texture_t texture;
-   ctr_scale_vector_t scale_vector_top;
-   ctr_scale_vector_t scale_vector_bottom;
-   const font_renderer_driver_t* font_driver;
-   void* font_data;
-} ctr_font_t;
 
 static void* ctr_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
@@ -613,32 +644,6 @@ font_renderer_t ctr_font =
 /*
  * VIDEO DRIVER 
  */
-
-enum
-{
-   CTR_TEXTURE_BOTTOM_MENU,
-   CTR_TEXTURE_STATE_THUMBNAIL,
-   CTR_TEXTURE_LAST
-};
-
-struct ctr_bottom_texture_data
-{
-   uintptr_t texture;
-   ctr_vertex_t* frame_coords;
-   ctr_scale_vector_t scale_vector;
-};
-
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
-/* An annoyance...
- * Have to keep track of bottom screen enable state
- * externally, otherwise cannot detect current state
- * when reinitialising... */
-static bool ctr_bottom_screen_enabled  = true;
-static int fade_count                  = 256;
-
-static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum video_mode)
 {
@@ -2873,10 +2878,9 @@ static void ctr_overlay_full_screen(void *data, bool enable)
 
 static void ctr_overlay_set_alpha(void *data, unsigned image, float mod){ }
 
-static void ctr_render_overlay(void *data)
+static void ctr_render_overlay(ctr_video_t *ctr)
 {
    int i;
-   ctr_video_t *ctr = (ctr_video_t*)data;
 
    for (i = 0; i < ctr->overlays; i++)
    {

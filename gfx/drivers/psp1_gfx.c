@@ -93,18 +93,6 @@ typedef struct psp1_menu_frame
 
 typedef struct psp1_video
 {
-   bool vsync;
-   bool rgb32;
-   bool vblank_not_reached;
-   bool keep_aspect;
-   bool should_resize;
-   bool hw_render;
-
-   int tex_filter;
-   int bpp_log2;
-
-   unsigned rotation;
-
    psp1_menu_frame_t menu;
    video_viewport_t vp;
    void* main_dList;
@@ -112,9 +100,18 @@ typedef struct psp1_video
    void* draw_buffer;
    void* texture;
    psp1_sprite_t *frame_coords;
+   int tex_filter;
+   int bpp_log2;
+   unsigned rotation;
+   bool vsync;
+   bool rgb32;
+   bool vblank_not_reached;
+   bool keep_aspect;
+   bool should_resize;
+   bool hw_render;
 } psp1_video_t;
 
-/* both row and column count need to be a power of 2 */
+/* Both row and column count need to be a power of 2 */
 #define PSP_FRAME_ROWS_COUNT     4
 #define PSP_FRAME_COLUMNS_COUNT  16
 #define PSP_FRAME_SLICE_COUNT    (PSP_FRAME_ROWS_COUNT * PSP_FRAME_COLUMNS_COUNT)
@@ -129,8 +126,8 @@ static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords,
 
    if (rotation == 0)
    {
-      x0 = x;
-      y0 = y;
+      x0     = x;
+      y0     = y;
       step_x = ((float) width)  / PSP_FRAME_COLUMNS_COUNT;
       step_y = ((float) height) / PSP_FRAME_ROWS_COUNT;
 
@@ -152,8 +149,8 @@ static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords,
    }
    else if (rotation == 1) /* 90° */
    {
-      x0 = x + width;
-      y0 = y;
+      x0     = x + width;
+      y0     = y;
       step_x = -((float) width) / PSP_FRAME_ROWS_COUNT;
       step_y = ((float) height)  / PSP_FRAME_COLUMNS_COUNT;
 
@@ -175,8 +172,8 @@ static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords,
    }
    else if (rotation == 2) /* 180° */
    {
-      x0 = x + width;
-      y0 = y + height;
+      x0     = x + width;
+      y0     = y + height;
       step_x = -((float) width)  / PSP_FRAME_COLUMNS_COUNT;
       step_y = -((float) height) / PSP_FRAME_ROWS_COUNT;
 
@@ -198,8 +195,8 @@ static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords,
    }
    else /* 270° */
    {
-      x0 = x;
-      y0 = y + height;
+      x0     = x;
+      y0     = y + height;
       step_x = ((float) width)  / PSP_FRAME_ROWS_COUNT;
       step_y = -((float) height) / PSP_FRAME_COLUMNS_COUNT;
 
@@ -282,8 +279,8 @@ static void psp_update_viewport(psp1_video_t* psp,
          float delta;
          float desired_aspect = video_driver_get_aspect_ratio();
 
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
-               || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
+         if (     (fabsf(device_aspect - desired_aspect) < 0.0001f)
+               || (fabsf((16.0/9.0)    - desired_aspect) < 0.02f))
          {
             /* If the aspect ratios of screen and desired aspect
              * ratio are sufficiently equal (floating point stuff),

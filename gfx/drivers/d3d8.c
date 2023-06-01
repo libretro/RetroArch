@@ -80,10 +80,6 @@
 #define D3D8_ARGB8888_FORMAT D3DFMT_A8R8G8B8
 #endif
 
-static LPDIRECT3D8 g_pD3D8;
-
-void *dinput;
-
 typedef struct d3d8_renderchain
 {
    unsigned pixel_size;
@@ -105,6 +101,24 @@ struct d3d8_texture_info
    void *data;
    enum texture_filter_type type;
 };
+
+static const float d3d8_vertexes[8] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const float d3d8_tex_coords[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static LPDIRECT3D8 g_pD3D8;
+
+void *dinput;
 
 /*
  * D3D8 COMMON
@@ -524,20 +538,6 @@ static void *d3d8_renderchain_new(void)
 /*
  * DISPLAY DRIVER
  */
-
-static const float d3d8_vertexes[8] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const float d3d8_tex_coords[8] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
 
 static const float *gfx_display_d3d8_get_default_vertices(void)
 {

@@ -19,7 +19,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "../../verbosity.h"
 #include <fcntl.h>
 #include <rga/RgaApi.h>
 #include <rga/RockchipRgaMacro.h>
@@ -27,10 +26,7 @@
 #include <xf86drmMode.h>
 #include <drm/drm_fourcc.h>
 
-#include "frontend/frontend_driver.h"
-
-#include "../font_driver.h"
-#include "libretro.h"
+#include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -40,8 +36,13 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "frontend/frontend_driver.h"
+
+#include "../font_driver.h"
+
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)

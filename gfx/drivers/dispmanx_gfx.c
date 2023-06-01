@@ -85,32 +85,18 @@ struct dispmanx_video
 {
    DISPMANX_DISPLAY_HANDLE_T display;
    DISPMANX_UPDATE_HANDLE_T update;
-   uint32_t vc_image_ptr;
 
    struct dispmanx_surface *main_surface;
    struct dispmanx_surface *menu_surface;
    struct dispmanx_surface *back_surface;
 
    /* For console blanking */
-   int fb_fd;
    uint8_t *fb_addr;
-   unsigned int screensize;
    uint8_t *screen_bck;
-
-   /* Total dispmanx video dimensions. Not counting overscan settings. */
-   unsigned int dispmanx_width;
-   unsigned int dispmanx_height;
 
    /* For threading */
    scond_t *vsync_condition;
    slock_t *pending_mutex;
-   unsigned int pageflip_pending;
-
-   /* Menu */
-   bool menu_active;
-
-   bool rgb32;
-
    /* We use this to keep track of internal resolution changes
     * done by cores in the main surface or in the menu.
     * We need these outside the surface because we free surfaces
@@ -122,9 +108,23 @@ struct dispmanx_video
    int menu_width;
    int menu_height;
    int menu_pitch;
+   int fb_fd; /* For console blanking */
+
+   unsigned int screensize; /* For console blanking */
+   /* Total dispmanx video dimensions. Not counting overscan settings. */
+   unsigned int dispmanx_width;
+   unsigned int dispmanx_height;
+   unsigned int pageflip_pending; /* For threading */
+
+   uint32_t vc_image_ptr;
+
    /* Both main and menu surfaces are going to have the same aspect,
     * so we keep it here for future reference. */
    float aspect_ratio;
+
+   /* Menu */
+   bool menu_active;
+   bool rgb32;
 };
 
 /* If no free page is available when called, wait for a page flip. */

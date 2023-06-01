@@ -68,6 +68,54 @@
 #include "../../uwp/uwp_func.h"
 #endif
 
+#define D3D12_GFX_SYNC() \
+{ \
+   D3D12Fence fence = d3d12->queue.fence; \
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue); \
+   if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue) \
+   { \
+      fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent); \
+      WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE); \
+   } \
+}
+
+typedef struct
+{
+   d3d12_texture_t               texture;
+   const font_renderer_driver_t* font_driver;
+   void*                         font_data;
+   struct font_atlas*            atlas;
+} d3d12_font_t;
+
+static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
+   TRUE,
+   FALSE,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_LOGIC_OP_NOOP,
+   D3D12_COLOR_WRITE_ENABLE_ALL,
+};
+
+static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc = {
+   FALSE,
+   FALSE,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_BLEND_SRC_ALPHA,
+   D3D12_BLEND_INV_SRC_ALPHA,
+   D3D12_BLEND_OP_ADD,
+   D3D12_LOGIC_OP_NOOP,
+   D3D12_COLOR_WRITE_ENABLE_ALL,
+};
+
+/* Temporary workaround for d3d12 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d12_fake_context;
+
 /*
  * D3D12 COMMON
  */
@@ -639,7 +687,7 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d12->ubo_view.BufferLocation);
 }
 
-void gfx_display_d3d12_scissor_begin(void *data,
+static void gfx_display_d3d12_scissor_begin(void *data,
       unsigned video_width, unsigned video_height,
       int x, int y, unsigned width, unsigned height)
 {
@@ -660,7 +708,7 @@ void gfx_display_d3d12_scissor_begin(void *data,
    cmd->lpVtbl->RSSetScissorRects(cmd, 1, &rect);
 }
 
-void gfx_display_d3d12_scissor_end(void *data,
+static void gfx_display_d3d12_scissor_end(void *data,
       unsigned video_width,
       unsigned video_height)
 {
@@ -700,14 +748,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
 /*
  * FONT DRIVER 
  */
-
-typedef struct
-{
-   d3d12_texture_t               texture;
-   const font_renderer_driver_t* font_driver;
-   void*                         font_data;
-   struct font_atlas*            atlas;
-} d3d12_font_t;
 
 static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
@@ -1077,46 +1117,6 @@ font_renderer_t d3d12_font = {
 /*
  * VIDEO DRIVER 
  */
-
-static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
-   TRUE,
-   FALSE,
-   D3D12_BLEND_SRC_ALPHA,
-   D3D12_BLEND_INV_SRC_ALPHA,
-   D3D12_BLEND_OP_ADD,
-   D3D12_BLEND_SRC_ALPHA,
-   D3D12_BLEND_INV_SRC_ALPHA,
-   D3D12_BLEND_OP_ADD,
-   D3D12_LOGIC_OP_NOOP,
-   D3D12_COLOR_WRITE_ENABLE_ALL,
-};
-
-static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_disable_desc = {
-   FALSE,
-   FALSE,
-   D3D12_BLEND_SRC_ALPHA,
-   D3D12_BLEND_INV_SRC_ALPHA,
-   D3D12_BLEND_OP_ADD,
-   D3D12_BLEND_SRC_ALPHA,
-   D3D12_BLEND_INV_SRC_ALPHA,
-   D3D12_BLEND_OP_ADD,
-   D3D12_LOGIC_OP_NOOP,
-   D3D12_COLOR_WRITE_ENABLE_ALL,
-};
-
-#define D3D12_GFX_SYNC() \
-{ \
-   D3D12Fence fence = d3d12->queue.fence; \
-   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue); \
-   if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue) \
-   { \
-      fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent); \
-      WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE); \
-   } \
-}
-
-/* Temporary workaround for d3d12 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d12_fake_context;
 
 static uint32_t d3d12_get_flags(void *data)
 {

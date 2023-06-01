@@ -36,6 +36,13 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 
+typedef struct
+{
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   caca_t *caca;
+} caca_raster_t;
+
 /*
  * FORWARD DECLARATIONS
  */
@@ -44,13 +51,6 @@ static void caca_free(void *data);
 /*
  * FONT DRIVER
  */
-
-typedef struct
-{
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
-   caca_t *caca;
-} caca_raster_t;
 
 static void *caca_font_init(void *data,
       const char *font_path, float font_size,

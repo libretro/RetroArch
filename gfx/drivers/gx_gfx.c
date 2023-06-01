@@ -120,9 +120,6 @@ enum
    GX_RESOLUTIONS_LAST = GX_RESOLUTIONS_640_480,
 };
 
-extern syssram* __SYS_LockSram(void);
-extern u32 __SYS_UnlockSram(u32 write);
-
 struct gx_overlay_data
 {
    GXTexObj tex;
@@ -201,7 +198,7 @@ static size_t display_list_size        = 0;
 
 static GXRModeObj gx_mode;
 
-float verts[16] ATTRIBUTE_ALIGN(32) = {
+float verts[16] ATTRIBUTE_ALIGN(32)     = {
    -1,  1, -0.5,
     1,  1, -0.5,
    -1, -1, -0.5,
@@ -215,7 +212,7 @@ float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    1, 1,
 };
 
-u8 color_ptr[16] ATTRIBUTE_ALIGN(32)  = {
+u8 color_ptr[16] ATTRIBUTE_ALIGN(32)    = {
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
@@ -265,13 +262,17 @@ unsigned menu_gx_resolutions[][2] = {
    { 640, 480 },
 };
 
+/*
+ * FORWARD DECLARATIONS
+ */
+extern syssram* __SYS_LockSram(void);
+extern u32 __SYS_UnlockSram(u32 write);
+
 static void retrace_callback(u32 retrace_count)
 {
    uint32_t level = 0;
 
-   (void)retrace_count;
-
-   g_draw_done = true;
+   g_draw_done    = true;
    OSSignalCond(g_video_cond);
    _CPU_ISR_Disable(level);
    retraceCount = retrace_count;
@@ -282,9 +283,9 @@ static bool gx_is_valid_xorigin(gx_video_t *gx, int origin)
 {
    if (!gx)
       return false;
-   
-   if (origin < 0 || origin + gx->used_system_xOrigin < 0 ||
-         gx_mode.viWidth + origin + gx->used_system_xOrigin > 720)
+   if (     (origin < 0)
+         || (origin + gx->used_system_xOrigin < 0)
+         || (gx_mode.viWidth + origin + gx->used_system_xOrigin > 720))
       return false;
    return true;
 }
@@ -612,8 +613,6 @@ static void gx_get_video_output_size(void *data,
    global_t *global = global_get_ptr();
    if (!global)
       return;
-
-   (void)data;
 
    /* If the current index is out of bound default it to zero */
    if (global->console.screen.resolutions.current.id > GX_RESOLUTIONS_LAST)

@@ -437,16 +437,16 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
             return ret;
       }
 
-      if (     cgGetParameterDirection(param)   != CG_IN
-            || cgGetParameterVariability(param) != CG_VARYING)
+      if (     (cgGetParameterDirection(param)   != CG_IN)
+            || (cgGetParameterVariability(param) != CG_VARYING))
          continue;
 
       semantic = cgGetParameterSemantic(param);
       if (!semantic)
          continue;
 
-      if (string_is_equal(sem, semantic) &&
-            d3d9_cg_validate_param_name(cgGetParameterName(param)))
+      if (     string_is_equal(sem, semantic)
+            && d3d9_cg_validate_param_name(cgGetParameterName(param)))
          return param;
    }
 
@@ -467,8 +467,8 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
    CGcontext cgCtx            = chain->cgCtx;
 
    if (
-         fragment_profile == CG_PROFILE_UNKNOWN ||
-         vertex_profile   == CG_PROFILE_UNKNOWN)
+            (fragment_profile == CG_PROFILE_UNKNOWN)
+         || (vertex_profile   == CG_PROFILE_UNKNOWN))
    {
       RARCH_ERR("Invalid profile type\n");
       goto error;

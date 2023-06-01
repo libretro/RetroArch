@@ -59,6 +59,29 @@
 #include "../gfx_widgets.h"
 #endif
 
+static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
+
+static const float gl3_vertexes[8]   = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const float gl3_tex_coords[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static const float gl3_colors[16]    = {
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+   1.0f, 1.0f, 1.0f, 1.0f,
+};
+
 /**
  * FORWARD DECLARATIONS
  */
@@ -86,27 +109,6 @@ static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
 /**
  * DISPLAY DRIVER
  */
-
-static const float gl3_vertexes[8] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const float gl3_tex_coords[8] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
-
-static const float gl3_colors[16] = {
-   1.0f, 1.0f, 1.0f, 1.0f,
-   1.0f, 1.0f, 1.0f, 1.0f,
-   1.0f, 1.0f, 1.0f, 1.0f,
-   1.0f, 1.0f, 1.0f, 1.0f,
-};
 
 static void *gfx_display_gl3_get_default_mvp(void *data)
 {
@@ -858,8 +860,6 @@ font_renderer_t gl3_raster_font = {
 /**
  * VIDEO DRIVER
  */
-
-static const struct video_ortho gl3_default_ortho = {0, 1, 0, 1, -1, 1};
 
 static void gl3_deinit_fences(gl3_t *gl)
 {

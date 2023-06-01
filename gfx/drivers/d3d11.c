@@ -76,6 +76,13 @@ const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0
 #endif
 #endif
 
+/* Temporary workaround for d3d11 not being able to poll flags during init */
+static gfx_ctx_driver_t d3d11_fake_context;
+
+static D3D11Device           cached_device_d3d11;
+static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
+static D3D11DeviceContext    cached_context_d3d11;
+
 /*
  * D3D11 COMMON
  */
@@ -982,13 +989,6 @@ font_renderer_t d3d11_font = {
 /*
  * VIDEO DRIVER
  */
-
-/* Temporary workaround for d3d11 not being able to poll flags during init */
-static gfx_ctx_driver_t d3d11_fake_context;
-
-static D3D11Device           cached_device_d3d11;
-static D3D_FEATURE_LEVEL     cached_supportedFeatureLevel;
-static D3D11DeviceContext    cached_context_d3d11;
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 {

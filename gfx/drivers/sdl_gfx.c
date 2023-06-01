@@ -44,24 +44,23 @@
 
 typedef struct sdl_menu_frame
 {
-   bool active;
    struct scaler_ctx scaler;
    SDL_Surface *frame;
+   bool active;
 } sdl_menu_frame_t;
 
 typedef struct sdl_video
 {
-   bool quitting;
-   uint8_t font_r;
-   uint8_t font_g;
-   uint8_t font_b;
-
    struct scaler_ctx scaler;
    sdl_menu_frame_t menu;
    SDL_Surface *screen;
 
    void *font;
    const font_renderer_driver_t *font_driver;
+   uint8_t font_r;
+   uint8_t font_g;
+   uint8_t font_b;
+   bool quitting;
 } sdl_video_t;
 
 static void sdl_gfx_free(void *data)

@@ -64,8 +64,85 @@
 
 #ifdef VITA
 #include <defines/psp_defines.h>
-static bool vgl_inited = false;
 #endif
+
+/* TODO: Move viewport side effects to the caller: it's a source of bugs. */
+
+#define GL1_RASTER_FONT_EMIT(c, vx, vy) \
+   font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
+   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
+   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
+   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+
+#define IS_POT(x) (((x) & (x - 1)) == 0)
+
+#define GET_POT(x) (IS_POT((x)) ? (x) : next_pow2((x)))
+
+#define MAX_MSG_LEN_CHUNK 64
+
+typedef struct
+{
+   gl1_t *gl;
+   GLuint tex;
+   unsigned tex_width, tex_height;
+
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   struct font_atlas *atlas;
+
+   video_font_raster_block_t *block;
+} gl1_raster_t;
+
+static const GLfloat gl1_menu_vertexes[8]    = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat gl1_menu_tex_coords[8]  = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
+
+/* Used for the last pass when rendering to the back buffer. */
+static const GLfloat gl1_vertexes_flipped[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static const GLfloat gl1_vertexes[8]         = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat gl1_tex_coords[8]       = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat gl1_white_color[16]     = {
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+   1, 1, 1, 1,
+};
 
 /**
  * FORWARD DECLARATIONS
@@ -78,20 +155,6 @@ static void gl1_set_viewport(gl1_t *gl1,
 /**
  * DISPLAY DRIVER
  */
-
-static const GLfloat gl1_menu_vertexes[8] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat gl1_menu_tex_coords[8] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
 
 static const float *gfx_display_gl1_get_default_vertices(void)
 {
@@ -260,36 +323,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
  * FONT DRIVER
  */
 
-/* TODO: Move viewport side effects to the caller: it's a source of bugs. */
-
-#define GL1_RASTER_FONT_EMIT(c, vx, vy) \
-   font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
-   font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
-   font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
-   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
-   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
-   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
-
-#define MAX_MSG_LEN_CHUNK 64
-
-
-typedef struct
-{
-   gl1_t *gl;
-   GLuint tex;
-   unsigned tex_width, tex_height;
-
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
-   struct font_atlas *atlas;
-
-   video_font_raster_block_t *block;
-} gl1_raster_t;
-
 static void gl1_raster_font_free(void *data,
       bool is_threaded)
 {
@@ -302,9 +335,9 @@ static void gl1_raster_font_free(void *data,
 
    if (is_threaded)
       if (
-            font->gl && 
-            font->gl->ctx_driver &&
-            font->gl->ctx_driver->make_current)
+               font->gl
+            && font->gl->ctx_driver
+            && font->gl->ctx_driver->make_current)
          font->gl->ctx_driver->make_current(true);
 
    glDeleteTextures(1, &font->tex);
@@ -315,12 +348,10 @@ static void gl1_raster_font_free(void *data,
 static void gl1_raster_font_upload_atlas(gl1_raster_t *font)
 {
    unsigned i, j;
-   GLint  gl_internal                   = GL_LUMINANCE_ALPHA;
-   GLenum gl_format                     = GL_LUMINANCE_ALPHA;
-   size_t ncomponents                   = 2;
-   uint8_t       *tmp                   = NULL;
-
-   tmp = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
+   GLint  gl_internal = GL_LUMINANCE_ALPHA;
+   GLenum gl_format   = GL_LUMINANCE_ALPHA;
+   size_t ncomponents = 2;
+   uint8_t *tmp       = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
 
    switch (ncomponents)
    {
@@ -375,9 +406,9 @@ static void *gl1_raster_font_init(void *data,
 
    if (is_threaded)
       if (
-            font->gl && 
-            font->gl->ctx_driver &&
-            font->gl->ctx_driver->make_current)
+               font->gl
+            && font->gl->ctx_driver
+            && font->gl->ctx_driver->make_current)
          font->gl->ctx_driver->make_current(false);
 
    glGenTextures(1, &font->tex);
@@ -796,37 +827,6 @@ font_renderer_t gl1_raster_font = {
  * VIDEO DRIVER
  */
 
-static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
-
-/* Used for the last pass when rendering to the back buffer. */
-static const GLfloat gl1_vertexes_flipped[] = {
-   0, 1,
-   1, 1,
-   0, 0,
-   1, 0
-};
-
-static const GLfloat gl1_vertexes[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat gl1_tex_coords[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
-
-static const GLfloat gl1_white_color[] = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-};
-
 #ifdef HAVE_OVERLAY
 static void gl1_render_overlay(gl1_t *gl,
       unsigned width,
@@ -933,17 +933,15 @@ static void gl1_overlay_tex_geom(void *data,
    tex[6]       = x + w;
    tex[7]       = y + h;
 }
-
 #endif
-
-#define IS_POT(x) (((x) & (x - 1)) == 0)
-
-#define GET_POT(x) (IS_POT((x)) ? (x) : next_pow2((x)))
 
 static void *gl1_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
+#ifdef VITA
+   static bool vgl_inited               = false;
+#endif
    void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned mode_width                  = 0;

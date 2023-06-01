@@ -55,15 +55,9 @@ typedef struct xv
    XShmSegmentInfo shminfo;
 
    XvPortID port;
-   int depth;
-   int visualid;
 
    XvImage *image;
-   uint32_t fourcc;
 
-   unsigned width;
-   unsigned height;
-   bool keep_aspect;
    struct video_viewport vp;
 
    uint8_t *ytable;
@@ -73,20 +67,24 @@ typedef struct xv
    void *font;
    const font_renderer_driver_t *font_driver;
 
-   unsigned luma_index[2];
-   unsigned chroma_u_index;
-   unsigned chroma_v_index;
-
-   uint8_t font_y;
-   uint8_t font_u;
-   uint8_t font_v;
-
    void (*render_func)(struct xv*, const void *frame,
          unsigned width, unsigned height, unsigned pitch);
 
    void (*render_glyph)(struct xv*, int base_x, int base_y,
 			const uint8_t *glyph, int atlas_width,
 			int glyph_width, int glyph_height);
+   int depth;
+   int visualid;
+   unsigned luma_index[2];
+   unsigned chroma_u_index;
+   unsigned chroma_v_index;
+   unsigned width;
+   unsigned height;
+   uint32_t fourcc;
+   uint8_t font_y;
+   uint8_t font_u;
+   uint8_t font_v;
+   bool keep_aspect;
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)

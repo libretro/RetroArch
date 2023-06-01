@@ -99,27 +99,24 @@ typedef enum tag_DISP_CMD
 
 typedef struct
 {
+   uintptr_t           framebuffer_paddr; /* physical address */
    int                 fd_fb;
    int                 fd_disp;
    int                 fb_id;             /* /dev/fb0 = 0, /dev/fb1 = 1 */
-
-   int                 xres, yres, bits_per_pixel;
-   uint8_t            *framebuffer_addr;  /* mmapped address */
-   uintptr_t           framebuffer_paddr; /* physical address */
-   uint32_t            framebuffer_size;  /* total size of the framebuffer */
    int                 framebuffer_height;/* virtual vertical resolution */
-   uint32_t            gfx_layer_size;    /* the size of the primary layer */
-   float               refresh_rate;
-
+   int                 xres, yres, bits_per_pixel;
    /* Layers support */
    int                 gfx_layer_id;
    int                 layer_id;
    int                 layer_has_scaler;
-
    int                 layer_buf_x, layer_buf_y, layer_buf_w, layer_buf_h;
    int                 layer_win_x, layer_win_y;
    int                 layer_scaler_is_enabled;
    int                 layer_format;
+   uint32_t            framebuffer_size;  /* total size of the framebuffer */
+   uint32_t            gfx_layer_size;    /* the size of the primary layer */
+   float               refresh_rate;
+   uint8_t            *framebuffer_addr;  /* mmapped address */
 } sunxi_disp_t;
 
 typedef struct

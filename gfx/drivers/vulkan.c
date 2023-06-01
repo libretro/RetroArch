@@ -56,17 +56,36 @@
 
 #include "../video_coord_array.h"
 
-/*
- * VULKAN COMMON
- */
-
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
+
+typedef struct
+{
+   vk_t *vk;
+   void *font_data;
+   struct font_atlas *atlas;
+   const font_renderer_driver_t *font_driver;
+   struct vk_vertex *pv;
+   struct vk_texture texture;
+   struct vk_texture texture_optimal;
+   struct vk_buffer_range range;
+   unsigned vertices;
+
+   bool needs_update;
+} vulkan_raster_t;
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static VkImage vk_images[4 * 1024];
 static unsigned vk_count;
 static unsigned track_seq;
+#endif
 
+/*
+ * VULKAN COMMON
+ */
+
+
+#ifdef VULKAN_DEBUG_TEXTURE_ALLOC
+#if 0
 void vulkan_log_textures(void)
 {
    unsigned i;
@@ -77,6 +96,7 @@ void vulkan_log_textures(void)
    }
    vk_count = 0;
 }
+#endif
 
 static void vulkan_track_alloc(VkImage image)
 {
@@ -1273,21 +1293,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
 /**
  * FONT DRIVER
  */
-
-typedef struct
-{
-   vk_t *vk;
-   void *font_data;
-   struct font_atlas *atlas;
-   const font_renderer_driver_t *font_driver;
-   struct vk_vertex *pv;
-   struct vk_texture texture;
-   struct vk_texture texture_optimal;
-   struct vk_buffer_range range;
-   unsigned vertices;
-
-   bool needs_update;
-} vulkan_raster_t;
 
 static INLINE void vulkan_font_update_glyph(
       vulkan_raster_t *font, const struct font_glyph *glyph)

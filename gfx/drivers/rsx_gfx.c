@@ -73,16 +73,43 @@
    if (rsx->shared_context_use) \
       rsx->ctx_driver->bind_hw_render(rsx->ctx_data, enable)
 
-/*
- * FORWARD DECLARATIONS
- */
+#define RSX_FONT_EMIT(c, vx, vy) \
+   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0] = color[0]; \
+   font_color[      4 * (6 * i + c) + 1] = color[1]; \
+   font_color[      4 * (6 * i + c) + 2] = color[2]; \
+   font_color[      4 * (6 * i + c) + 3] = color[3]
 
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
+#define MAX_MSG_LEN_CHUNK 64
 
-/*
- * DISPLAY DRIVER
- */
+typedef struct
+{
+   rsx_t *rsx;
+   rsx_vertex_t *vertices;
+   rsx_texture_t texture;
+   rsxProgramConst *proj_matrix;
+   rsxProgramAttrib *pos_index;
+   rsxProgramAttrib *uv_index;
+   rsxProgramAttrib *col_index;
+   rsxProgramAttrib *tex_unit;
+   rsxVertexProgram* vpo;
+   rsxFragmentProgram* fpo;
+   void *vp_ucode;
+   void *fp_ucode;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   struct font_atlas *atlas;
+   video_font_raster_block_t *block;
+   u32 tex_width;
+   u32 tex_height;
+   u32 fp_offset;
+   u32 pos_offset;
+   u32 uv_offset;
+   u32 col_offset;
+} rsx_font_t;
 
 static const float rsx_vertexes[8] = {
    0, 0,
@@ -97,6 +124,18 @@ static const float rsx_tex_coords[8] = {
    0, 0,
    1, 0
 };
+
+
+/*
+ * FORWARD DECLARATIONS
+ */
+
+static void rsx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate);
+
+/*
+ * DISPLAY DRIVER
+ */
 
 static const float *gfx_display_rsx_get_default_vertices(void)
 {
@@ -293,44 +332,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
 /*
  * FONT DRIVER
  */
-
-#define RSX_FONT_EMIT(c, vx, vy) \
-   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
-   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
-   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]
-
-#define MAX_MSG_LEN_CHUNK 64
-
-typedef struct
-{
-   rsx_t *rsx;
-   rsx_vertex_t *vertices;
-   rsx_texture_t texture;
-   rsxProgramConst *proj_matrix;
-   rsxProgramAttrib *pos_index;
-   rsxProgramAttrib *uv_index;
-   rsxProgramAttrib *col_index;
-   rsxProgramAttrib *tex_unit;
-   rsxVertexProgram* vpo;
-   rsxFragmentProgram* fpo;
-   void *vp_ucode;
-   void *fp_ucode;
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
-   struct font_atlas *atlas;
-   video_font_raster_block_t *block;
-   u32 tex_width;
-   u32 tex_height;
-   u32 fp_offset;
-   u32 pos_offset;
-   u32 uv_offset;
-   u32 col_offset;
-} rsx_font_t;
 
 static void rsx_font_free(void *data,
       bool is_threaded)
