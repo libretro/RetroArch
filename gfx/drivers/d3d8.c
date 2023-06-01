@@ -39,7 +39,7 @@
 #include <d3d8.h>
 
 #include <defines/d3d_defines.h>
-#include "../common/d3d8_common.h"
+#include "../common/d3d8_defines.h"
 #include "../common/d3d_common.h"
 #include "../video_coord_array.h"
 #include "../../configuration.h"
@@ -109,6 +109,72 @@ struct d3d8_texture_info
 /*
  * D3D8 COMMON
  */
+
+/* For Xbox we will just link statically
+ * to Direct3D libraries instead. */
+
+#if !defined(_XBOX) && defined(HAVE_DYLIB)
+#define HAVE_DYNAMIC_D3D
+#endif
+
+#ifdef HAVE_DYNAMIC_D3D
+#include <dynamic/dylib.h>
+#endif
+
+/* TODO/FIXME - static globals */
+#ifdef HAVE_DYNAMIC_D3D
+static dylib_t g_d3d8_dll;
+static bool dylib_initialized = false;
+#endif
+
+typedef IDirect3D8 *(__stdcall *D3DCreate_t)(UINT);
+
+static D3DCreate_t D3DCreate;
+
+#ifdef HAVE_DYNAMIC_D3D
+static void d3d8_deinitialize_symbols(void)
+{
+   if (g_d3d8_dll)
+      dylib_close(g_d3d8_dll);
+   g_d3d8_dll         = NULL;
+   dylib_initialized = false;
+}
+#endif
+
+static bool d3d8_initialize_symbols(enum gfx_ctx_api api)
+{
+#ifdef HAVE_DYNAMIC_D3D
+   if (dylib_initialized)
+      return true;
+
+#if defined(DEBUG) || defined(_DEBUG)
+   if (!(g_d3d8_dll = dylib_load("d3d8d.dll")))
+#endif
+      g_d3d8_dll            = dylib_load("d3d8.dll");
+
+   if (!g_d3d8_dll)
+      return false;
+   D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d8_dll, "Direct3DCreate8");
+#else
+   D3DCreate                = Direct3DCreate8;
+#endif
+
+   if (!D3DCreate)
+      goto error;
+
+#ifdef HAVE_DYNAMIC_D3D
+   dylib_initialized        = true;
+#endif
+
+   return true;
+
+error:
+#ifdef HAVE_DYNAMIC_D3D
+   d3d8_deinitialize_symbols();
+#endif
+   return false;
+}
+
 
 static INLINE void *
 d3d8_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER8 vertbuf)
@@ -1068,7 +1134,11 @@ static bool d3d8_init_base(void *data, const video_info_t *info)
 #endif
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
-   g_pD3D8           = (LPDIRECT3D8)d3d8_create();
+#ifdef _XBOX
+   g_pD3D8           = (LPDIRECT3D8)D3DCreate(0);
+#else
+   g_pD3D8           = (LPDIRECT3D8)D3DCreate(220);
+#endif
 
    /* this needs g_pD3D created first */
    d3d8_make_d3dpp(d3d, info, &d3dpp);
@@ -1627,7 +1697,9 @@ static void d3d8_free(void *data)
    d3d->dev         = NULL;
    g_pD3D8          = NULL;
 
+#ifdef HAVE_DYNAMIC_D3D
    d3d8_deinitialize_symbols();
+#endif
 
 #ifndef _XBOX
    win32_monitor_from_window();

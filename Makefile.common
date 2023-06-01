@@ -1722,8 +1722,7 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
    DEFINES += -DHAVE_D3D8
-   OBJ += gfx/drivers/d3d8.o \
-	  gfx/common/d3d8_common.o
+   OBJ += gfx/drivers/d3d8.o
 endif
 
 ifeq ($(HAVE_D3D9), 1)

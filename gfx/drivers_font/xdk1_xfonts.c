@@ -22,7 +22,7 @@
 #endif
 
 #include "../common/d3d_common.h"
-#include "../common/d3d8_common.h"
+#include "../common/d3d8_defines.h"
 
 #include "../font_driver.h"
 

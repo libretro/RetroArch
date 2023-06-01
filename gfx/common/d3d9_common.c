@@ -690,7 +690,6 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 #endif
 }
 
-
 void d3d9_log_info(const struct LinkInfo *info)
 {
    RARCH_LOG("[D3D9]: Render pass info:\n");
@@ -842,10 +841,10 @@ static void d3d9_set_font_rect(
       d3d9_video_t *d3d,
       const struct font_params *params)
 {
-   settings_t *settings             = config_get_ptr();
-   float pos_x                      = settings->floats.video_msg_pos_x;
-   float pos_y                      = settings->floats.video_msg_pos_y;
-   float font_size                  = settings->floats.video_font_size;
+   settings_t *settings           = config_get_ptr();
+   float pos_x                    = settings->floats.video_msg_pos_x;
+   float pos_y                    = settings->floats.video_msg_pos_y;
+   float font_size                = settings->floats.video_font_size;
 
    if (params)
    {
@@ -1069,9 +1068,9 @@ void d3d9_set_menu_texture_frame(void *data,
    if (!d3d || !d3d->menu)
       return;
 
-   if (    !d3d->menu->tex            ||
-            d3d->menu->tex_w != width ||
-            d3d->menu->tex_h != height)
+   if (       (!d3d->menu->tex)
+            || (d3d->menu->tex_w != width)
+            || (d3d->menu->tex_h != height))
    {
       IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
@@ -1266,11 +1265,11 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    video_driver_get_size(&width, &height);
 
    if (
-         !d3d9_device_get_render_target(d3dr, 0, (void**)&target)     ||
-         !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
+            !d3d9_device_get_render_target(d3dr, 0, (void**)&target)
+         || !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             D3D9_XRGB8888_FORMAT,
-            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
-         !d3d9_device_get_render_target_data(d3dr, target, dest)
+            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL)
+         || !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
    {
       ret = false;
@@ -1577,7 +1576,6 @@ static const video_overlay_interface_t d3d9_overlay_interface = {
 void d3d9_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface)
 {
-   (void)data;
    *iface = &d3d9_overlay_interface;
 }
 #endif

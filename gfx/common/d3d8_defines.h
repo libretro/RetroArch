@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _D3D8_COMMON_H
-#define _D3D8_COMMON_H
+#ifndef _D3D8_DEFINES_H
+#define _D3D8_DEFINES_H
 
 #include <boolean.h>
 #include <retro_common_api.h>
@@ -72,12 +72,6 @@ typedef struct d3d8_video
    size_t overlays_size;
    overlay_t *overlays;
 } d3d8_video_t;
-
-void *d3d8_create(void);
-
-bool d3d8_initialize_symbols(enum gfx_ctx_api api);
-
-void d3d8_deinitialize_symbols(void);
 
 RETRO_END_DECLS
 
