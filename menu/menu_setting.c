@@ -2618,7 +2618,6 @@ static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
 
    menu_input_dialog_end();
 }
-#endif
 
 static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
       bool wraparound)
@@ -2639,6 +2638,7 @@ static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
 
    return 0;
 }
+#endif
 
 static int setting_action_ok_libretro_device_type(
       rarch_setting_t *setting, size_t idx, bool wraparound)
