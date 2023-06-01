@@ -83,11 +83,6 @@ static const float *gfx_display_vita2d_get_default_vertices(void)
    return &vita2d_vertexes[0];
 }
 
-static const float *gfx_display_vita2d_get_default_color(void)
-{
-   return &vita2d_colors[0];
-}
-
 static const float *gfx_display_vita2d_get_default_tex_coords(void)
 {
    return &vita2d_tex_coords[0];
@@ -546,7 +541,7 @@ font_renderer_t vita2d_vita_font = {
  * VIDEO DRIVER
  */
 
-static void *vita2d_init(const video_info_t *video,
+static void *vita2d_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
@@ -1435,7 +1430,7 @@ static void vita2d_get_overlay_interface(void *data, const video_overlay_interfa
 #endif
 
 video_driver_t video_vita2d = {
-   vita2d_init,
+   vita2d_gfx_init,
    vita2d_frame,
    vita2d_set_nonblock_state,
    vita2d_alive,
