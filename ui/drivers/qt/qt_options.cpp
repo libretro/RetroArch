@@ -256,7 +256,7 @@ QWidget *InputPage::widget()
       if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
          break;
 
-      layout->add(cbs->enum_idx);
+      layout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
    file_list_free(list);
@@ -289,7 +289,7 @@ QWidget *HotkeyBindsPage::widget()
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
          file_list_get_actiondata_at_offset(list, i);
 
-      mainLayout->add(cbs->enum_idx);
+      mainLayout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
    file_list_free(list);
@@ -399,17 +399,17 @@ QWidget *LatencyPage::widget()
       layout->addRow(hardSyncGroup);
    }
 
-   layout->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
-   layout->add(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS);
-   layout->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY));
 
-   layout->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
-   layout->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
-   layout->add(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_AUDIO_LATENCY));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR));
 
-   runAheadGpuSync->add(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES);
-   runAheadGpuSync->add(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE);
-   runAheadGpuSync->add(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS);
+   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES));
+   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE));
+   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS));
    layout->addRow(runAheadGpuSync);
 
    widget->setLayout(layout);
@@ -458,19 +458,19 @@ QWidget *NetplayPage::widget()
    unsigned row               = 0;
    unsigned column            = 0;
 
-   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
-   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
-   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_FADE_CHAT);
-   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING);
-   checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_FADE_CHAT));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS));
 
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_MAX_PING);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MAX_PING));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_PASSWORD));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL));
 
    serverLayout->addWidget(createMitmServerGroup());
    serverLayout->addSpacing(30);
@@ -736,14 +736,16 @@ QWidget *PlaylistsPage::widget()
 
    layout->addRow(history);
 
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME);
-   /*layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE); TOFIX */
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_COMPRESSION);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH);
-   layout->add(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME));
+#if 0
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE));
+#endif
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_COMPRESSION));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH));
 
    widget->setLayout(layout);
 
@@ -1061,7 +1063,7 @@ QWidget *ViewsPage::widget()
    leftLayout->addRow(mainMenu);
    leftLayout->addRow(settings);
    leftLayout->addRow(startScreen);
-   leftLayout->add(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS);
+   leftLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS));
 
    rightLayout->addWidget(tabs);
    rightLayout->addWidget(quickMenu);
@@ -1130,7 +1132,7 @@ QWidget *AppearancePage::widget()
          case MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE:
             break;
          default:
-            layout->add(cbs->enum_idx);
+            layout->add(menu_setting_find_enum(cbs->enum_idx));
             break;
       }
    }
@@ -1191,8 +1193,8 @@ QWidget *UserPage::widget()
    QWidget *widget    = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->add(MENU_ENUM_LABEL_NETPLAY_NICKNAME);
-   layout->add(MENU_ENUM_LABEL_USER_LANGUAGE);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_NICKNAME));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_USER_LANGUAGE));
 
    widget->setLayout(layout);
 
@@ -1546,10 +1548,10 @@ QWidget *CrtSwitchresPage::widget()
    m_crtSuperResolutionCombo->addItem("2560", 2560);
    m_crtSuperResolutionCombo->addItem("3840", 3840);
 
-   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION));
    layout->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER), m_crtSuperResolutionCombo);
-   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING);
-   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE));
 
    connect(m_crtSuperResolutionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onCrtSuperResolutionComboIndexChanged(int)));
 

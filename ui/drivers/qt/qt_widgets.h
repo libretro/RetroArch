@@ -115,12 +115,6 @@ public:
 
       return true;
    }
-
-   bool add(msg_hash_enums enum_idx)
-   {
-      rarch_setting_t *setting     = menu_setting_find_enum(enum_idx);
-      return add(setting);
-   }
 };
 
 class SettingsGroup : public QGroupBox
