@@ -29,26 +29,8 @@ RETRO_BEGIN_DECLS
 
 typedef struct d3d8_video
 {
-   bool keep_aspect;
-   bool should_resize;
-   bool quitting;
-   bool needs_restore;
-   bool overlays_enabled;
-   /* TODO - refactor this away properly. */
-   bool resolution_hd_enable;
-
-   /* Only used for Xbox */
-   bool widescreen_mode;
-
-   unsigned cur_mon_id;
-   unsigned dev_rotation;
-
    overlay_t *menu;
    void *renderchain_data;
-
-   math_matrix_4x4 mvp;
-   math_matrix_4x4 mvp_rotate;
-   math_matrix_4x4 mvp_transposed;
 
    struct video_viewport vp;
    struct video_shader shader;
@@ -63,14 +45,31 @@ typedef struct d3d8_video
 
    struct
    {
-      int size;
-      int offset;
       void *buffer;
       void *decl;
+      int size;
+      int offset;
    }menu_display;
 
-   size_t overlays_size;
    overlay_t *overlays;
+   size_t overlays_size;
+   unsigned cur_mon_id;
+   unsigned dev_rotation;
+   math_matrix_4x4 mvp; /* float alignment */
+   math_matrix_4x4 mvp_rotate; /* float alignment */
+   math_matrix_4x4 mvp_transposed; /* float alignment */
+
+   bool keep_aspect;
+   bool should_resize;
+   bool quitting;
+   bool needs_restore;
+   bool overlays_enabled;
+   /* TODO - refactor this away properly. */
+   bool resolution_hd_enable;
+
+   /* Only used for Xbox */
+   bool widescreen_mode;
+
 } d3d8_video_t;
 
 RETRO_END_DECLS

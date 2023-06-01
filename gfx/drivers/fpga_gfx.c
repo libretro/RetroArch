@@ -42,15 +42,17 @@
 
 typedef struct RegOp
 {
-   int fd;
    void *ptr;
+   int fd;
    int only_mmap;
    int only_munmap;
 } RegOp;
 
 typedef struct fpga
 {
-   bool rgb32;
+   RegOp regOp; /* ptr alignment */
+   volatile unsigned *framebuffer;
+   unsigned char *menu_frame;
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
@@ -59,10 +61,7 @@ typedef struct fpga
    unsigned video_pitch;
    unsigned video_bits;
    unsigned menu_bits;
-
-   RegOp regOp;
-   volatile unsigned *framebuffer;
-   unsigned char *menu_frame;
+   bool rgb32;
 } fpga_t;
 
 static unsigned int get_memory_size(void)

@@ -66,7 +66,6 @@ typedef struct oga_surface
    int pitch;
    int prime_fd;
    int rk_format;
-
    int display_fd;
    uint32_t handle;
 } oga_surface_t;
@@ -79,28 +78,25 @@ typedef struct oga_framebuf
 
 typedef struct oga_video
 {
-   int fd;
-   uint32_t connector_id;
    drmModeModeInfo mode;
-   int drm_width;
-   int drm_height;
-   float display_ar;
-   uint32_t crtc_id;
-
-   oga_surface_t* frame_surface;
-   oga_surface_t* menu_surface;
-
-   oga_framebuf_t* pages[NUM_PAGES];
-   int cur_page;
-   int scale_mode;
-   int rotation;
-   bool threaded;
-
-   oga_surface_t* msg_surface;
+   oga_surface_t *frame_surface;
+   oga_surface_t *menu_surface;
+   oga_framebuf_t *pages[NUM_PAGES];
+   oga_surface_t *msg_surface;
    const font_renderer_driver_t *font_driver;
    void *font;
    int msg_width;
    int msg_height;
+   int fd;
+   int drm_width;
+   int drm_height;
+   int cur_page;
+   int scale_mode;
+   int rotation;
+   uint32_t crtc_id;
+   uint32_t connector_id;
+   float display_ar;
+   bool threaded;
    char last_msg[128];
 } oga_video_t;
 

@@ -55,6 +55,21 @@
 
 #include "../font_driver.h"
 
+/* Temporary workaround for GX2 not being able to poll flags during init */
+static gfx_ctx_driver_t gx2_fake_context;
+
+static const wiiu_render_mode_t gx2_render_mode_map[] =
+{
+   {0},                                         /* GX2_TV_SCAN_MODE_NONE  */
+   {854,  480,  GX2_TV_RENDER_MODE_WIDE_480P},  /* GX2_TV_SCAN_MODE_576I  */
+   {854,  480,  GX2_TV_RENDER_MODE_WIDE_480P},  /* GX2_TV_SCAN_MODE_480I  */
+   {854,  480,  GX2_TV_RENDER_MODE_WIDE_480P},  /* GX2_TV_SCAN_MODE_480P  */
+   {1280, 720,  GX2_TV_RENDER_MODE_WIDE_720P},  /* GX2_TV_SCAN_MODE_720P  */
+   {0},                                         /* GX2_TV_SCAN_MODE_unk   */
+   {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}, /* GX2_TV_SCAN_MODE_1080I */
+   {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
+};
+
 /*
  * DISPLAY DRIVER
  */
@@ -716,21 +731,6 @@ font_renderer_t wiiu_font =
 /*
  * VIDEO DRIVER
  */
-
-/* Temporary workaround for gx2 not being able to poll flags during init */
-static gfx_ctx_driver_t gx2_fake_context;
-
-static const wiiu_render_mode_t gx2_render_mode_map[] =
-{
-   {0},                                         /* GX2_TV_SCAN_MODE_NONE  */
-   {854,  480,  GX2_TV_RENDER_MODE_WIDE_480P},  /* GX2_TV_SCAN_MODE_576I  */
-   {854,  480,  GX2_TV_RENDER_MODE_WIDE_480P},  /* GX2_TV_SCAN_MODE_480I  */
-   {854,  480,  GX2_TV_RENDER_MODE_WIDE_480P},  /* GX2_TV_SCAN_MODE_480P  */
-   {1280, 720,  GX2_TV_RENDER_MODE_WIDE_720P},  /* GX2_TV_SCAN_MODE_720P  */
-   {0},                                         /* GX2_TV_SCAN_MODE_unk   */
-   {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}, /* GX2_TV_SCAN_MODE_1080I */
-   {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
-};
 
 static bool gx2_set_shader(void *data,
       enum rarch_shader_type type, const char *path);
@@ -1549,8 +1549,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
          GX2CalcSurfaceSizeAndAlignment(&wiiu->pass[i].texture.surface);
          GX2InitTextureRegs(&wiiu->pass[i].texture);
 
-         if (     (i != (wiiu->shader_preset->passes - 1))
-               || (width != wiiu->vp.width)
+         if (     (i      != (wiiu->shader_preset->passes - 1))
+               || (width  != wiiu->vp.width)
                || (height != wiiu->vp.height))
          {
             wiiu->pass[i].mem1 = true;

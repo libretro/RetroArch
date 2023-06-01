@@ -64,27 +64,22 @@ typedef struct omapfb_state
 
 typedef struct omapfb_data
 {
-  const char* fbname;
-  int fd;
-
-  void *fb_mem;
-  unsigned fb_framesize;
-
   omapfb_page_t *pages;
-  int num_pages;
+  const char* fbname;
+  void *fb_mem;
   omapfb_page_t *cur_page;
   omapfb_page_t *old_page;
-
   /* current and saved (for later restore) states */
   omapfb_state_t* current_state;
   omapfb_state_t* saved_state;
 
+  int fd;
+  int num_pages;
+  unsigned fb_framesize;
   /* native screen size */
   unsigned nat_w, nat_h;
-
   /* bytes per pixel */
   unsigned bpp;
-
   bool sync;
 } omapfb_data_t;
 

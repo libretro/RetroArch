@@ -32,7 +32,7 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
-#include "../common/gl3_common.h"
+#include "../common/gl3_defines.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"

@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GL_CORE_COMMON_H
-#define __GL_CORE_COMMON_H
+#ifndef __GL3_DEFINES_H
+#define __GL3_DEFINES_H
 
 #include <boolean.h>
 #include <string.h>
@@ -138,8 +138,6 @@ typedef struct gl3
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
 } gl3_t;
-
-void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size);
 
 RETRO_END_DECLS
 

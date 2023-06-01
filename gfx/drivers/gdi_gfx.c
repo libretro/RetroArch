@@ -46,6 +46,19 @@
 #include "../common/win32_common.h"
 #endif
 
+struct bitmap_info
+{
+   BITMAPINFOHEADER header;
+   union
+   {
+      RGBQUAD          colors;
+      DWORD            masks[3];
+   } u;
+};
+
+HDC          win32_gdi_hdc;
+static void *dinput_gdi;
+
 /*
  * DISPLAY DRIVER 
  */
@@ -330,20 +343,6 @@ font_renderer_t gdi_font = {
 /*
  * VIDEO DRIVER 
  */
-
-HDC          win32_gdi_hdc;
-static void *dinput_gdi;
-
-struct bitmap_info
-{
-   BITMAPINFOHEADER header;
-   union
-   {
-      RGBQUAD          colors;
-      DWORD            masks[3];
-   } u;
-};
-
 
 static void gfx_ctx_gdi_update_title(void)
 {
@@ -881,10 +880,10 @@ static void gdi_set_texture_frame(void *data,
       free(gdi->menu_frame);
    gdi->menu_frame = NULL;
 
-   if ( !gdi->menu_frame            ||
-         gdi->menu_width != width   ||
-         gdi->menu_height != height ||
-         gdi->menu_pitch != pitch)
+   if (     !gdi->menu_frame
+         || (gdi->menu_width  != width)
+         || (gdi->menu_height != height)
+         || (gdi->menu_pitch  != pitch))
    {
       if (pitch && height)
       {

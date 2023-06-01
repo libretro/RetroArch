@@ -75,111 +75,6 @@
   }
 #endif
 
-extern syssram* __SYS_LockSram(void);
-extern u32 __SYS_UnlockSram(u32 write);
-
-struct gx_overlay_data
-{
-   GXTexObj tex;
-   float tex_coord[8];
-   float vertex_coord[8];
-   float alpha_mod;
-};
-
-typedef struct gx_video
-{
-   bool should_resize;
-   bool keep_aspect;
-   bool double_strike;
-   bool rgb32;
-   bool menu_texture_enable;
-   bool vsync;
-#ifdef HAVE_OVERLAY
-   bool overlay_enable;
-   bool overlay_full_screen;
-#endif
-
-   int8_t system_xOrigin;
-   int8_t used_system_xOrigin;
-   int8_t xOriginNeg;
-   int8_t xOriginPos;
-   int8_t yOriginNeg;
-   int8_t yOriginPos;
-
-   uint16_t xOrigin;
-   uint16_t yOrigin;
-
-   unsigned scale;
-   unsigned overscan_correction_top;
-   unsigned overscan_correction_bottom;
-   unsigned old_width;
-   unsigned old_height;
-   unsigned current_framebuf;
-#ifdef HAVE_OVERLAY
-   unsigned overlays;
-#endif
-
-   uint32_t orientation;
-
-   video_viewport_t vp;
-   void *framebuf[2];
-   uint32_t *menu_data; /* FIXME: Should be const uint16_t*. */
-#ifdef HAVE_OVERLAY
-   struct gx_overlay_data *overlay;
-#endif
-} gx_video_t;
-
-static struct
-{
-   unsigned width;
-   unsigned height;
-   GXTexObj obj;
-   uint32_t *data; /* needs to be resizable. */
-} g_tex;
-
-static struct
-{
-   uint32_t data[240 * 212];
-   GXTexObj obj;
-} menu_tex ATTRIBUTE_ALIGN(32);
-
-static OSCond g_video_cond;
-
-static volatile bool g_draw_done       = false;
-
-static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
-
-static uint32_t retraceCount           = 0;
-static uint32_t referenceRetraceCount  = 0;
-
-static unsigned max_height             = 0;
-
-static size_t display_list_size        = 0;
-
-GXRModeObj gx_mode;
-
-float verts[16] ATTRIBUTE_ALIGN(32) = {
-   -1,  1, -0.5,
-    1,  1, -0.5,
-   -1, -1, -0.5,
-    1, -1, -0.5,
-};
-
-float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1,
-};
-
-u8 color_ptr[16] ATTRIBUTE_ALIGN(32)  = {
-   0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF,
-   0xFF, 0xFF, 0xFF, 0xFF,
-};
-
 enum
 {
    GX_RESOLUTIONS_DEFAULT = 0,
@@ -223,6 +118,108 @@ enum
    GX_RESOLUTIONS_608_480,
    GX_RESOLUTIONS_640_480,
    GX_RESOLUTIONS_LAST = GX_RESOLUTIONS_640_480,
+};
+
+extern syssram* __SYS_LockSram(void);
+extern u32 __SYS_UnlockSram(u32 write);
+
+struct gx_overlay_data
+{
+   GXTexObj tex;
+   float tex_coord[8];
+   float vertex_coord[8];
+   float alpha_mod;
+};
+
+typedef struct gx_video
+{
+   video_viewport_t vp;
+   void *framebuf[2];
+   uint32_t *menu_data; /* FIXME: Should be const uint16_t*. */
+#ifdef HAVE_OVERLAY
+   struct gx_overlay_data *overlay;
+#endif
+
+   unsigned scale;
+   unsigned overscan_correction_top;
+   unsigned overscan_correction_bottom;
+   unsigned old_width;
+   unsigned old_height;
+   unsigned current_framebuf;
+#ifdef HAVE_OVERLAY
+   unsigned overlays;
+#endif
+   uint32_t orientation;
+   uint16_t xOrigin;
+   uint16_t yOrigin;
+   int8_t system_xOrigin;
+   int8_t used_system_xOrigin;
+   int8_t xOriginNeg;
+   int8_t xOriginPos;
+   int8_t yOriginNeg;
+   int8_t yOriginPos;
+
+   bool should_resize;
+   bool keep_aspect;
+   bool double_strike;
+   bool rgb32;
+   bool menu_texture_enable;
+   bool vsync;
+#ifdef HAVE_OVERLAY
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+} gx_video_t;
+
+static struct
+{
+   uint32_t *data; /* needs to be resizable. */
+   unsigned width;
+   unsigned height;
+   GXTexObj obj;
+} g_tex;
+
+static struct
+{
+   uint32_t data[240 * 212];
+   GXTexObj obj;
+} menu_tex ATTRIBUTE_ALIGN(32);
+
+static OSCond g_video_cond;
+
+static volatile bool g_draw_done       = false;
+
+static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
+
+static uint32_t retraceCount           = 0;
+static uint32_t referenceRetraceCount  = 0;
+
+static unsigned max_height             = 0;
+
+static size_t display_list_size        = 0;
+
+static GXRModeObj gx_mode;
+
+float verts[16] ATTRIBUTE_ALIGN(32) = {
+   -1,  1, -0.5,
+    1,  1, -0.5,
+   -1, -1, -0.5,
+    1, -1, -0.5,
+};
+
+float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1,
+};
+
+u8 color_ptr[16] ATTRIBUTE_ALIGN(32)  = {
+   0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF,
+   0xFF, 0xFF, 0xFF, 0xFF,
 };
 
 unsigned menu_gx_resolutions[][2] = {

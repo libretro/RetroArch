@@ -27,7 +27,7 @@
 
 #include <stdlib.h>
 
-#include "../common/gl3_common.h"
+#include "../common/gl3_defines.h"
 
 #include <encodings/utf.h>
 #include <gfx/gl_capabilities.h>
@@ -66,6 +66,22 @@ static void gl3_set_viewport(gl3_t *gl,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate);
+
+/**
+ * GL3 COMMON
+ */
+
+static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
+{
+   if (!gl->scratch_vbos[gl->scratch_vbo_index])
+      glGenBuffers(1, &gl->scratch_vbos[gl->scratch_vbo_index]);
+   glBindBuffer(GL_ARRAY_BUFFER, gl->scratch_vbos[gl->scratch_vbo_index]);
+   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+   gl->scratch_vbo_index++;
+   if (gl->scratch_vbo_index >= GL_CORE_NUM_VBOS)
+      gl->scratch_vbo_index = 0;
+}
+
 
 /**
  * DISPLAY DRIVER
@@ -951,17 +967,6 @@ static void gl3_fence_iterate(gl3_t *gl, unsigned hard_sync_frames)
       gl->fence_count--;
       memmove(gl->fences, gl->fences + 1, gl->fence_count * sizeof(GLsync));
    }
-}
-
-void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
-{
-   if (!gl->scratch_vbos[gl->scratch_vbo_index])
-      glGenBuffers(1, &gl->scratch_vbos[gl->scratch_vbo_index]);
-   glBindBuffer(GL_ARRAY_BUFFER, gl->scratch_vbos[gl->scratch_vbo_index]);
-   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
-   gl->scratch_vbo_index++;
-   if (gl->scratch_vbo_index >= GL_CORE_NUM_VBOS)
-      gl->scratch_vbo_index = 0;
 }
 
 #ifdef HAVE_OVERLAY
