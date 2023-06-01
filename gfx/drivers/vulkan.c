@@ -851,7 +851,7 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
          return;
 
       memcpy(range.data, ubo, sizeof(ubo));
-      vulkan_set_uniform_buffer(vk->context->device,
+      VULKAN_SET_UNIFORM_BUFFER(vk->context->device,
             set,
             0,
             range.buffer,
@@ -4408,7 +4408,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   vk->context->device,
                   &vk->chain->descriptor_manager);     
 
-            vulkan_set_uniform_buffer(vk->context->device,
+            VULKAN_SET_UNIFORM_BUFFER(vk->context->device,
                   set,
                   0,
                   vk->hdr.ubo.buffer,

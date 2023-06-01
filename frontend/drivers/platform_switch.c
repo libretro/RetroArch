@@ -67,7 +67,7 @@
 
 #ifdef HAVE_LIBNX
 #define SD_PREFIX
-#include "../../gfx/common/switch_common.h"
+#include "../../gfx/common/switch_defines.h"
 #else
 #define SD_PREFIX "/sd"
 #endif

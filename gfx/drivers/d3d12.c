@@ -89,7 +89,7 @@ static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource
    return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS
+static D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {
    D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,

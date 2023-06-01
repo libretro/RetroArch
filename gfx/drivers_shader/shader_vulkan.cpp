@@ -2565,12 +2565,14 @@ void Pass::build_commands(
    build_semantics(sets[sync_index], u, mvp, original, source);
 
    if (reflection.ubo_stage_mask)
-      vulkan_set_uniform_buffer(device,
+   {
+      VULKAN_SET_UNIFORM_BUFFER(device,
             sets[sync_index],
             reflection.ubo_binding,
             common->ubo->get_buffer(),
             ubo_offset + sync_index * common->ubo_sync_index_stride,
             reflection.ubo_size);
+   }
 
    /* The final pass is always executed inside
     * another render pass since the frontend will

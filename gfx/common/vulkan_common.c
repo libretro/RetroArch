@@ -2272,35 +2272,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    return true;
 }
 
-void vulkan_set_uniform_buffer(
-      VkDevice device,
-      VkDescriptorSet set,
-      unsigned binding,
-      VkBuffer buffer,
-      VkDeviceSize offset,
-      VkDeviceSize range)
-{
-   VkWriteDescriptorSet write;
-   VkDescriptorBufferInfo buffer_info;
-
-   buffer_info.buffer         = buffer;
-   buffer_info.offset         = offset;
-   buffer_info.range          = range;
-
-   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-   write.pNext                = NULL;
-   write.dstSet               = set;
-   write.dstBinding           = binding;
-   write.dstArrayElement      = 0;
-   write.descriptorCount      = 1;
-   write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-   write.pImageInfo           = NULL;
-   write.pBufferInfo          = &buffer_info;
-   write.pTexelBufferView     = NULL;
-
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
-}
-
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {

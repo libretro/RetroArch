@@ -24,7 +24,7 @@
 
 #include <switch.h>
 
-#include "../common/switch_common.h"
+#include "../common/switch_defines.h"
 #include "../../frontend/frontend_driver.h"
 
 /* TODO/FIXME - global referenced */

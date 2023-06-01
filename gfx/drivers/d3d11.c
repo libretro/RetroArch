@@ -199,7 +199,6 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    return *format;
 }
 
-
 static void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 {
    bool is_render_target            = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
@@ -719,10 +718,10 @@ static void d3d11_font_render_line(
    int i;
    unsigned count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d11_sprite_t *v = NULL;
+   d3d11_sprite_t *v                = NULL;
    const struct font_glyph* glyph_q = NULL;
-   int x = roundf(pos_x * width);
-   int y = roundf((1.0 - pos_y) * height);
+   int x                            = roundf(pos_x * width);
+   int y                            = roundf((1.0 - pos_y) * height);
 
    if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
@@ -828,9 +827,9 @@ static void d3d11_font_render_message(
       unsigned            height,
       unsigned            text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
 
    if (!msg || !*msg)
       return;

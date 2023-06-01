@@ -1,5 +1,5 @@
-#ifndef SWITCH_COMMON_H__
-#define SWITCH_COMMON_H__
+#ifndef SWITCH_DEFINES_H__
+#define SWITCH_DEFINES_H__
 
 #include <switch.h>
 #include <gfx/scaler/scaler.h>
@@ -83,7 +83,5 @@ typedef struct
     float refresh_rate;
     NWindow *win;
 } switch_ctx_data_t;
-
-void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend);
 
 #endif

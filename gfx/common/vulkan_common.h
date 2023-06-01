@@ -135,6 +135,26 @@
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
 }
 
+#define VULKAN_SET_UNIFORM_BUFFER(_device, _set, _binding, _buffer, _offset, _range) \
+{ \
+   VkWriteDescriptorSet write; \
+   VkDescriptorBufferInfo buffer_info; \
+   buffer_info.buffer         = _buffer; \
+   buffer_info.offset         = _offset; \
+   buffer_info.range          = _range; \
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   write.pNext                = NULL; \
+   write.dstSet               = _set; \
+   write.dstBinding           = _binding; \
+   write.dstArrayElement      = 0; \
+   write.descriptorCount      = 1; \
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; \
+   write.pImageInfo           = NULL; \
+   write.pBufferInfo          = &buffer_info; \
+   write.pTexelBufferView     = NULL; \
+   vkUpdateDescriptorSets(_device, 1, &write, 0, NULL); \
+}
+
 #define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
 { \
    float r        = (vulkan_color)->r; \
@@ -704,14 +724,6 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval);
-
-void vulkan_set_uniform_buffer(
-      VkDevice device,
-      VkDescriptorSet set,
-      unsigned binding,
-      VkBuffer buffer,
-      VkDeviceSize offset,
-      VkDeviceSize range);
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);

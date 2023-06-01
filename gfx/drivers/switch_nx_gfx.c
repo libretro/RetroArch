@@ -49,7 +49,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-#include "../common/switch_common.h"
+#include "../common/switch_defines.h"
 
 #ifndef HAVE_THREADS
 #include "../../tasks/tasks_internal.h"
@@ -379,6 +379,7 @@ font_renderer_t switch_font =
  * VIDEO DRIVER
  */
 
+#if 0
 /* (C) libtransistor */
 static int pdep(uint32_t mask, uint32_t value)
 {
@@ -400,7 +401,7 @@ static int pdep(uint32_t mask, uint32_t value)
 static uint32_t swizzle_x(uint32_t v) { return pdep(~0x7B4u, v); }
 static uint32_t swizzle_y(uint32_t v) { return pdep(0x7B4, v); }
 
-void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend)
+static void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, int tx, int ty, bool blend)
 {
     uint32_t *dest = buffer;
     uint32_t *src = image;
@@ -451,6 +452,7 @@ void gfx_slow_swizzling_blit(uint32_t *buffer, uint32_t *image, int w, int h, in
             offs_x0 += incr_y; /* wrap into next tile row */
     }
 }
+#endif
 
 static void gfx_cpy_dsp_buf(uint32_t *buffer, uint32_t *image, int w, int h, uint32_t stride, bool blend)
 {
