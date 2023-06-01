@@ -289,11 +289,6 @@ CheckBox::CheckBox(rarch_setting_t *setting, QWidget *parent) :
    add_sublabel_and_whats_this(this, m_setting);
 }
 
-CheckBox::CheckBox(const char *setting, QWidget *parent) :
-   CheckBox(menu_setting_find(setting), parent)
-{
-}
-
 CheckBox::CheckBox(msg_hash_enums enum_idx, QWidget *parent) :
    CheckBox(menu_setting_find_enum(enum_idx), parent)
 {
@@ -339,11 +334,6 @@ CheckableSettingsGroup::CheckableSettingsGroup(rarch_setting_t *setting, QWidget
    }
 }
 
-CheckableSettingsGroup::CheckableSettingsGroup(const char *setting, QWidget *parent) :
-   CheckableSettingsGroup(menu_setting_find(setting), parent)
-{
-}
-
 CheckableSettingsGroup::CheckableSettingsGroup(msg_hash_enums enum_idx, QWidget *parent) :
    CheckableSettingsGroup(menu_setting_find_enum(enum_idx), parent)
 {
@@ -368,11 +358,6 @@ void CheckableSettingsGroup::paintEvent(QPaintEvent *event)
    }
 
    QGroupBox::paintEvent(event);
-}
-
-CheckableIcon::CheckableIcon(const char *setting, const QIcon &icon, QWidget *parent) :
-   CheckableIcon(menu_setting_find(setting), icon, parent)
-{
 }
 
 CheckableIcon::CheckableIcon(msg_hash_enums enum_idx, const QIcon &icon, QWidget *parent) :
@@ -428,11 +413,6 @@ StringLineEdit::StringLineEdit(rarch_setting_t *setting, QWidget *parent) :
    add_sublabel_and_whats_this(this, m_setting);
 }
 
-StringLineEdit::StringLineEdit(const char *setting, QWidget *parent) :
-   StringLineEdit(menu_setting_find(setting), parent)
-{
-}
-
 void StringLineEdit::onEditingFinished()
 {
    strlcpy(m_value, text().toUtf8().data(), m_setting->size);
@@ -469,11 +449,6 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
    connect(this, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onCurrentTextChanged(const QString&)));
 
    add_sublabel_and_whats_this(this, m_setting);
-}
-
-StringComboBox::StringComboBox(const char *setting, QWidget *parent) :
-   StringComboBox(menu_setting_find(setting), parent)
-{
 }
 
 void StringComboBox::onCurrentTextChanged(const QString &text)
@@ -558,11 +533,6 @@ UIntComboBox::UIntComboBox(msg_hash_enums enum_idx, QWidget *parent) :
 
 UIntComboBox::UIntComboBox(msg_hash_enums enum_idx, double min, double max, QWidget *parent) :
    UIntComboBox(menu_setting_find_enum(enum_idx), min, max, parent)
-{
-}
-
-UIntComboBox::UIntComboBox(const char *setting, QWidget *parent) :
-   UIntComboBox(menu_setting_find(setting), parent)
 {
 }
 
@@ -756,11 +726,6 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    connect(m_buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onButtonClicked(int)));
 }
 
-UIntRadioButtons::UIntRadioButtons(const char *setting, QWidget *parent) :
-   UIntRadioButtons(menu_setting_find(setting), parent)
-{
-}
-
 UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
     UIntRadioButtons(menu_setting_find_enum(enum_idx), parent)
 {
@@ -804,11 +769,6 @@ void IntSpinBox::paintEvent(QPaintEvent *event)
    }
 
    QSpinBox::paintEvent(event);
-}
-
-FloatSpinBox::FloatSpinBox(const char *setting, QWidget *parent) :
-   FloatSpinBox(menu_setting_find(setting), parent)
-{
 }
 
 FloatSpinBox::FloatSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
@@ -874,11 +834,6 @@ PathButton::PathButton(rarch_setting_t *setting, QWidget *parent) :
    add_sublabel_and_whats_this(this, m_setting);
 }
 
-PathButton::PathButton(const char *setting, QWidget *parent) :
-   PathButton(menu_setting_find(setting), parent)
-{
-}
-
 QString PathButton::currentPath()
 {
    QString current(m_setting->value.target.string);
@@ -933,11 +888,6 @@ DirectorySelector::DirectorySelector(rarch_setting_t *setting, QWidget *parent) 
    connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
 }
 
-FileSelector::FileSelector(const char *setting, QWidget *parent) :
-   FileSelector(menu_setting_find(setting), parent)
-{
-}
-
 FileSelector::FileSelector(rarch_setting_t *setting, QWidget *parent) :
    QHBoxLayout(parent)
    ,m_lineEdit(new StringLineEdit(setting))
@@ -948,11 +898,6 @@ FileSelector::FileSelector(rarch_setting_t *setting, QWidget *parent) :
    addWidget(m_button);
 
    connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
-}
-
-FloatSlider::FloatSlider(const char *setting, QWidget *parent) :
-   FloatSlider(menu_setting_find(setting), parent)
-{
 }
 
 FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
@@ -1001,11 +946,6 @@ void FloatSlider::paintEvent(QPaintEvent *event)
    }
 
    QSlider::paintEvent(event);
-}
-
-FloatSliderAndSpinBox::FloatSliderAndSpinBox(const char *setting, QWidget *parent) :
-   FloatSliderAndSpinBox(menu_setting_find(setting), parent)
-{
 }
 
 FloatSliderAndSpinBox::FloatSliderAndSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
