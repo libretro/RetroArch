@@ -93,6 +93,9 @@ static int fade_count                  = 256;
 /* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
 
+#ifdef HAVE_OVERLAY
+static void ctr_render_overlay(ctr_video_t *ctr);
+#endif
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
 /*
@@ -736,7 +739,6 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 }
 
 #ifdef HAVE_OVERLAY
-static void ctr_render_overlay(void *data);
 static void ctr_free_overlay(ctr_video_t *ctr)
 {
    int i;
