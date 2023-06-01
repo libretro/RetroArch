@@ -742,7 +742,12 @@ static INLINE void android_input_poll_event_type_motion(
          /* If touchscreen was pressed for less than 200ms
           * then register time stamp of a quick tap */
          if ((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
-            android->quick_tap_time = AMotionEvent_getEventTime(event);
+         {
+            /* Prevent the quick tap if a button on the overlay is down */
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (!(input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT))
+               android->quick_tap_time = AMotionEvent_getEventTime(event);
+         }
          android->mouse_l = 0;
       }
 
