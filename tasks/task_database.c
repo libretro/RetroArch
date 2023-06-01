@@ -804,9 +804,30 @@ static int database_info_list_iterate_found_match(
       entry.last_played_second= 0;
 
       playlist_push(playlist, &entry);
-      RARCH_LOG("[Scanner]: Add \"%s\"\n", entry_label);
+      RARCH_LOG("[Scanner]: Add \"%s\" to \"%s\"\n", entry_label, entry.db_name);
       if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-         printf("Add \"%s\"\n", entry.label);
+      {
+         const char* no_color = getenv("NO_COLOR");
+         bool color           = (no_color && no_color[0] != '0') ? false : true;
+
+         /* Colorize " Add " prefix with green. */
+#ifdef _WIN32
+         HANDLE con = GetStdHandle(STD_OUTPUT_HANDLE);
+         if (color && con != INVALID_HANDLE_VALUE)
+         {
+            SetConsoleTextAttribute(con, 2);
+            WriteConsole(con, " Add ", 5, NULL, NULL);
+            SetConsoleTextAttribute(con, 7);
+         }
+#else
+         if (color)
+            fputs("\x1B[32m Add \x1B[0m", stdout);
+#endif
+         else
+            fputs(" Add ", stdout);
+
+         printf("\"%s\" to \"%s\"\n", entry.label, entry.db_name);
+      }
    }
 
    playlist_write_file(playlist);
