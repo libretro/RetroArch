@@ -13,19 +13,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _UWP_MAIN_H
+#define _UPW_MAIN_H
 
 #include "uwp_main.h"
 
 namespace RetroArchUWP
 {
-   // Main entry point for our app. Connects the app with the Windows shell and handles application lifecycle events.
+   /* Main entry point for our app. Connects the app with the Windows shell and handles application lifecycle events. */
    ref class App sealed : public Windows::ApplicationModel::Core::IFrameworkView
    {
    public:
       App();
 
-      // IFrameworkView methods.
+      /* IFrameworkView methods. */
       virtual void Initialize(Windows::ApplicationModel::Core::CoreApplicationView^ applicationView);
       virtual void SetWindow(Windows::UI::Core::CoreWindow^ window);
       virtual void Load(Platform::String^ entryPoint);
@@ -33,7 +34,7 @@ namespace RetroArchUWP
       virtual void Uninitialize();
 
    protected:
-      // Application lifecycle event handlers.
+      /* Application lifecycle event handlers. */
       void OnActivated(Windows::ApplicationModel::Core::CoreApplicationView^ applicationView, Windows::ApplicationModel::Activation::IActivatedEventArgs^ args);
       void OnSuspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ args);
       void OnResuming(Platform::Object^ sender, Platform::Object^ args);
@@ -41,7 +42,7 @@ namespace RetroArchUWP
 
       void OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args);
 
-      // Window event handlers.
+      /* Window event handlers. */
       void OnWindowSizeChanged(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowSizeChangedEventArgs^ args);
       void OnVisibilityChanged(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::VisibilityChangedEventArgs^ args);
       void OnWindowClosed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CoreWindowEventArgs^ args);
@@ -49,7 +50,7 @@ namespace RetroArchUWP
       void OnKey(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args);
       void OnPointer(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args);
 
-      // DisplayInformation event handlers.
+      /* DisplayInformation event handlers. */
       void OnDpiChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
       void OnOrientationChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
       void OnDisplayContentsInvalidated(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
@@ -83,3 +84,5 @@ ref class Direct3DApplicationSource sealed : Windows::ApplicationModel::Core::IF
 public:
    virtual Windows::ApplicationModel::Core::IFrameworkView^ CreateView();
 };
+
+#endif

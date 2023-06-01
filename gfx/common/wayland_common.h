@@ -13,7 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _WAYLAND_COMMON_H
+#define _WAYLAND_COMMON_H
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
@@ -91,3 +92,4 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 extern const struct libdecor_interface libdecor_interface;
 #endif
 
+#endif

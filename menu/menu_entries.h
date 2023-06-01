@@ -82,7 +82,6 @@ enum menu_entry_flags
    MENU_ENTRY_FLAG_CHECKED            = (1 << 5)
 };
 
-
 typedef struct menu_ctx_list
 {
    const char  *path;

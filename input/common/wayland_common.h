@@ -13,7 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _WAYLAND_COMMON_H
+#define _WAYLAND_COMMON_H
 
 #include <stdint.h>
 #include <boolean.h>
@@ -253,3 +254,5 @@ extern const struct wl_buffer_listener shm_buffer_listener;
 extern const struct wl_data_device_listener data_device_listener;
 
 extern const struct wl_data_offer_listener data_offer_listener;
+
+#endif
