@@ -2336,6 +2336,8 @@ MSG_HASH(
 #endif
 #ifdef GEKKO
 #endif
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
 #endif

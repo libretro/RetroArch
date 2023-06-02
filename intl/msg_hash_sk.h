@@ -6564,6 +6564,8 @@ MSG_HASH(
    "Mierka myši"
    )
 #endif
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
 #endif

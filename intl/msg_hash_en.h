@@ -2172,6 +2172,8 @@ MSG_HASH(
    "Adjust x/y scale for Wii-mote light gun speed."
    )
 #endif
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
