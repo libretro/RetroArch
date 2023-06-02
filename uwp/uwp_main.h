@@ -13,8 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _UWP_MAIN_H
-#define _UPW_MAIN_H
+#pragma once
 
 #include "uwp_main.h"
 
@@ -84,5 +83,3 @@ ref class Direct3DApplicationSource sealed : Windows::ApplicationModel::Core::IF
 public:
    virtual Windows::ApplicationModel::Core::IFrameworkView^ CreateView();
 };
-
-#endif
