@@ -133,7 +133,6 @@ HAVE_RBMP                := 1
 HAVE_RTGA                := 1
 HAVE_IBXM                := 1
 HAVE_OVERLAY             := 1
-HAVE_VIDEO_LAYOUT        := 0
 HAVE_ZLIB                := 1
 HAVE_7ZIP                := 1
 HAVE_CONFIGFILE          := 1

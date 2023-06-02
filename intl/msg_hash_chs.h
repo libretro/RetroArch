@@ -72,12 +72,20 @@ MSG_HASH(
    "选择使用的模拟器核心。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "浏览一个librettro 核心实现。浏览器从何处启动取决于您的核心文件夹在哪，如果留空，它将从根目录启动。\n如果核心文件夹是一个目录，菜单将使用该文件夹作为顶级目录。 如果核心文件夹是一个完整路径，它将从文件所在的目录启动。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "加载游戏"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "选择要加载的游戏 ROM。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "浏览内容。要加载内容，“核心”和内容文件是必备的。\n要设置主菜单浏览内容的初始目录，请设置“文件浏览器目录”。 如果未设置，默认在根目录。\n浏览器将筛选“加载核心”中最后一个核心的扩展，并在内容加载时使用该核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -200,6 +208,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "退出程序。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "退出 RetroArch，用 (SIGKILL 等) 终止程序将不保存任何配置而终止RetroArch等强制退出方式。另外，在类 Unix 中，用 SIGINT/SIGTERM 可以简洁地去初始化。"
    )
 
 /* Main Menu > Load Core */
@@ -340,6 +352,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "游戏下载"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "下载所选核心的免费内容。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -530,6 +546,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "防止修改当前安装的核心。当内容需要特定核心版本时可能会被用来避免不必要的更新 (例如街机的 ROM 集只适用于特定版本的核心)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "从「独立核心」菜单中排除"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "防止此核心显示在“独立核心”的选项卡/菜单中。只有当显示模式设置为“自定义”时才适用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1028,16 +1052,32 @@ MSG_HASH(
    "加载配置"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "加载已有的配置并替换当前配置。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "保存当前配置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "覆盖当前配置文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "另保为新配置"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "将当前配置另存到一个文件。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "重置为默认值"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "将当前配置重置为默认值。"
    )
 
 /* Main Menu > Help */
@@ -1163,6 +1203,86 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    "更改文件浏览器设置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "配置文件."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "压缩存档文件"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "写入配置文件"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "数据库光标文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "配置文件."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "着色器预设文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "着色器文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "控制器重映射文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "金手指文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "遮罩文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "数据库文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "TrueType 字体文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "纯文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "视频，选择使用视频播放器打开此文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "音乐，选择使用音乐播放器打开此文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "图像文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "图像，选择使用图像查看器打开此文件。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Libretro 核心。选择后此核心与游戏关联。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretro 核心。选择后 RetroArch 将加载此核心。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "目录，选择打开此目录。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1317,6 +1437,14 @@ MSG_HASH(
    "使用的输入驱动。某些视频驱动强制使用不同的输入驱动。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "Udev 输入设备使用最近的 evdev 手柄 API 来驱动游戏手柄，也支持即插即用和力反馈。\n设备读取 evdev 记录支持当前键盘及按键回滚、鼠标和触摸板。\n大多数发行版默认情况下，/dev/input的节点是root专用的 (模式600) 。您可以设置一个 udev 规则，使非 root 用户可以访问它们。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "使用的输入驱动。某些视频驱动可能需要使用特定的输入驱动才行。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "手柄"
    )
@@ -1333,12 +1461,64 @@ MSG_HASH(
    "使用的视频驱动。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "当前视频驱动。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "音频"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "使用的音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "RSound 音频驱动。用于网络音频系统。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "旧版 Open Sound System 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "默认 ALSA 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "多线程的 ALSA 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "无依赖的 ALSA 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "RoarAudio 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "OpenAL 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "OpenSL 音频驱动。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "DirectSound 音频驱动。主要用于 Windows 95 到 Windows XP 系统。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Windows Audio Session API 音频驱动。WASAPI 主要用于 Windows 7 及以上版本。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "PulseAudio 音频驱动。如果系统有 PulseAudio，请不要使用其他驱动，比如 ALSA。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Jack 音频驱动。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1589,10 +1769,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "遍历选项调整孔径设置以调整图像尺寸。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "使用高分辨率菜单"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -1880,7 +2056,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
-   "全双工"
+   "全屏"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1945,11 +2121,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "最高亮度"
+   "峰值亮度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "设置您显示的峰亮度(Cd/m2)。请查看显示的峰亮度。"
+   "设置屏幕的峰值亮度(cd/m2)。如果您不知道设备的最大亮度，请查看 RTings 网站。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2837,15 +3013,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "开始/停止在线视频直播。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "记录输入回放 (开关)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "打开或关闭 .bsv 格式的游戏操作录制。"
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "捕获鼠标 (开关)"
@@ -4870,10 +5037,6 @@ MSG_HASH(
    "显示「回溯」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "显示「回溯」选项。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "显示「保存核心覆盖」"
    )
@@ -5141,14 +5304,6 @@ MSG_HASH(
    "修改背景图像的不透明度。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "帧缓冲区不透明度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "修改帧缓冲区的不透明度。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "使用首选系统颜色主题"
    )
@@ -5290,10 +5445,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "排行榜"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "游戏特定排行榜。禁用「硬核模式」时无效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6242,10 +6393,6 @@ MSG_HASH(
    "状态存储"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "保存状态存储的文件夹。如果不设置，将尝试保存到游戏所在文件夹。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "缓存"
    )
@@ -6335,6 +6482,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
    "断开当前联机游戏连接。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "大厅过滤器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
@@ -6837,6 +6988,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "状态覆盖后，可以撤销并回到之前保存的状态."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "更改当前选择的状态卡槽。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -8426,16 +8581,8 @@ MSG_HASH(
    "显示列表缩略图"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "启用显示内嵌小缩略图。如果禁用的话，「顶部缩略图」仍然可以用全能手柄的 Y 键全屏显示。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "顶部缩略图"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "游戏列表右上方显示的缩略图类型。此缩略图可以用全能手柄的 Y 键全屏显示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11283,10 +11430,6 @@ MSG_HASH(
    "内存"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "视频不是有效的BSV1文件。"
-   )
-MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    "视频格式看起来使用了不同的序列化版本。很有可能失败。"
    )
@@ -12097,10 +12240,6 @@ MSG_HASH(
    "正在重置为：%dx%d - %s"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "选择显示模式。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "关机"
    )
@@ -12485,6 +12624,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "调整触摸屏坐标的 x/y 尺寸以适应操作系统的显示缩放。"
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
@@ -12542,6 +12683,10 @@ MSG_HASH(
    "触摸屏幕前往全能模拟器菜单"
    )
 MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "找不到资源包"
+   )
+MSG_HASH(
    MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
    "没有数据"
    )
@@ -12560,6 +12705,50 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
    "加载还原点"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   "启用字体"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "字体颜色红色通道"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "调整 3DS 下方屏幕字体红色通道。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "字体颜色绿色通道"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "调整 3DS 下方屏幕字体绿色通道。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "字体颜色蓝色通道"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "调整 3DS 下方屏幕字体蓝色通道。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "字体颜色不透明度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "调整 3DS 下方屏幕字体不透明度。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   "字体缩放"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "调整 3DS 下方屏幕字体缩放。"
    )
 #endif
 #ifdef HAVE_QT

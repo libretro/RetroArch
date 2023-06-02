@@ -660,7 +660,7 @@ bool x11_alive(void *data)
              * is a key press of the same key combination,
              * then it's auto-repeat and the key wasn't 
              * actually released. */
-            if(XEventsQueued(g_x11_dpy, QueuedAfterReading))
+            if (XEventsQueued(g_x11_dpy, QueuedAfterReading))
             {
                XEvent next_event;
                XPeekEvent(g_x11_dpy, &next_event);

@@ -13,20 +13,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _D3DCOMPILER_COMMON_H
+#define _D3DCOMPILER_COMMON_H
 
 #include <retro_inline.h>
 #include <boolean.h>
 
-#include "dxgi_common.h"
 #include <d3dcommon.h>
 #include <d3dcompiler.h>
 
-/* auto-generated */
 typedef ID3DBlob*                D3DBlob;
-/* end of auto-generated */
 
 bool d3d_compile(const char* src, size_t size,
       LPCSTR src_name, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);
 
 bool d3d_compile_from_file(LPCWSTR filename, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);
+
+#endif

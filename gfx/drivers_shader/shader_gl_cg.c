@@ -86,11 +86,13 @@ struct shader_program_cg
    CGparameter out_size_f;
    CGparameter frame_cnt_f;
    CGparameter frame_dir_f;
+   CGparameter rotation_f;
    CGparameter vid_size_v;
    CGparameter tex_size_v;
    CGparameter out_size_v;
    CGparameter frame_cnt_v;
    CGparameter frame_dir_v;
+   CGparameter rotation_v;
    CGparameter mvp;
 
    struct cg_fbo_params fbo[GFX_MAX_SHADERS];
@@ -164,7 +166,10 @@ static void gl_cg_set_uniform_parameter(
       }
 
       if (param->lookup.add_prefix)
-         snprintf(ident, sizeof(ident), "IN.%s", param->lookup.ident);
+      {
+         strlcpy(ident, "IN.", sizeof(ident));
+         strlcat(ident, param->lookup.ident, sizeof(ident));
+      }
       location = cgGetNamedParameter(prog, param->lookup.add_prefix ? ident : param->lookup.ident);
    }
    else
@@ -353,6 +358,8 @@ static void gl_cg_set_params(void *dat, void *shader_data)
             1.0);
    }
 #endif
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_f, (float)retroarch_get_rotation());
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_v, (float)retroarch_get_rotation());
 
    set_param_2f(cg->prg[cg->active_idx].vid_size_v, width, height);
    set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
@@ -743,28 +750,27 @@ static void gl_cg_set_pass_attrib(
       const char *attr)
 {
    char attr_buf[64];
-
-   attr_buf[0] = '\0';
-
-   snprintf(attr_buf, sizeof(attr_buf), "%s.texture", attr);
+   size_t _len = strlcpy(attr_buf, attr, sizeof(attr_buf));
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".texture");
    if (!fbo->tex)
       fbo->tex = cgGetNamedParameter(program->fprg, attr_buf);
 
-   snprintf(attr_buf, sizeof(attr_buf), "%s.video_size", attr);
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".tex_coord");
+   if (!fbo->coord)
+      fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
+
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".video_size");
    if (!fbo->vid_size_v)
       fbo->vid_size_v = cgGetNamedParameter(program->vprg, attr_buf);
    if (!fbo->vid_size_f)
       fbo->vid_size_f = cgGetNamedParameter(program->fprg, attr_buf);
 
-   snprintf(attr_buf, sizeof(attr_buf), "%s.texture_size", attr);
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".texture_size");
    if (!fbo->tex_size_v)
       fbo->tex_size_v = cgGetNamedParameter(program->vprg, attr_buf);
    if (!fbo->tex_size_f)
       fbo->tex_size_f = cgGetNamedParameter(program->fprg, attr_buf);
 
-   snprintf(attr_buf, sizeof(attr_buf), "%s.tex_coord", attr);
-   if (!fbo->coord)
-      fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
 }
 
 static INLINE void gl_cg_set_shaders(CGprogram frag, CGprogram vert)
@@ -790,11 +796,13 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    cg->prg[i].out_size_f = cgGetNamedParameter (cg->prg[i].fprg, "IN.output_size");
    cg->prg[i].frame_cnt_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.frame_count");
    cg->prg[i].frame_dir_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.frame_direction");
+   cg->prg[i].rotation_f  = cgGetNamedParameter(cg->prg[i].fprg, "IN.rotation");
    cg->prg[i].vid_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.video_size");
    cg->prg[i].tex_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.texture_size");
    cg->prg[i].out_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.output_size");
    cg->prg[i].frame_cnt_v = cgGetNamedParameter(cg->prg[i].vprg, "IN.frame_count");
    cg->prg[i].frame_dir_v = cgGetNamedParameter(cg->prg[i].vprg, "IN.frame_direction");
+   cg->prg[i].rotation_v  = cgGetNamedParameter(cg->prg[i].vprg, "IN.rotation");
 
    cg->prg[i].mvp                 = cgGetNamedParameter(cg->prg[i].vprg, "modelViewProj");
    if (!cg->prg[i].mvp)
@@ -817,10 +825,8 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    if (i > 1)
    {
       char pass_str[64];
-
-      pass_str[0] = '\0';
-
-      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
+      size_t _len = strlcpy(pass_str, "PASSPREV", sizeof(pass_str));
+      snprintf(pass_str + _len, sizeof(pass_str) - _len, "%u", i);
       gl_cg_set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
    }
 

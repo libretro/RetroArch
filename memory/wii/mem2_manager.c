@@ -53,7 +53,7 @@ static uint32_t __lwp_heap_block_size(heap_cntrl *theheap, void *ptr)
    _CPU_ISR_Disable(level);
    block = __lwp_heap_usrblockat(ptr);
 
-   if(!__lwp_heap_blockin(theheap, block) || __lwp_heap_blockfree(block))
+   if (!__lwp_heap_blockin(theheap, block) || __lwp_heap_blockfree(block))
    {
       _CPU_ISR_Restore(level);
       return 0;
@@ -101,7 +101,7 @@ bool gx_init_mem2(void)
 
 void *_mem2_memalign(uint8_t align, uint32_t size)
 {
-   if(size == 0)
+   if (size == 0)
       return NULL;
    return __lwp_heap_allocate(&gx_mem2_heap, size);
 }

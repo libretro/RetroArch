@@ -420,6 +420,10 @@ MSG_HASH(
    "Designação do núcleo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "Versão do Núcleo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
    "Nome do sistema"
    )
@@ -452,8 +456,20 @@ MSG_HASH(
    "API de Gráficos Necessária"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Posição de gravação de estado"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
    "Nenhum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Básico (Salvar/Carregar)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Serializado (Salvar/Carregar, Retroceder)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -537,6 +553,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arquitetura do processador"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Núcleos CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -809,8 +829,28 @@ MSG_HASH(
    "Conquistas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Categoria"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
    "Idioma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   "Região"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "Exclusivo Consola"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "Exclusivo de Plataforma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Mídia"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
@@ -1134,6 +1174,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Mídia"
+   )
 
 #ifdef HAVE_MIST
 #endif
@@ -1405,10 +1449,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Alterne entre estas opções para ajustar as configurações de \"porch\" para alterar o tamanho da imagem."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Usar menu de alta resolução"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -1995,7 +2035,6 @@ MSG_HASH(
    )
 
 
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Serviço IA"
@@ -2551,14 +2590,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Opacidade da imagem de fundo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacidade do buffer de fotogramas"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Altera a opacidade do buffer de fotogramas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
@@ -4835,10 +4866,6 @@ MSG_HASH(
    "Memória"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "O ficheiro de vídeo não é um ficheiro BSV1 válido."
-   )
-MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    "O formato do ficheiro parece ter uma versão de serializador diferente. A tarefa poderá falhar."
    )
@@ -5260,6 +5287,8 @@ MSG_HASH(
    )
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

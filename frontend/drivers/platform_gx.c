@@ -280,11 +280,6 @@ static void frontend_gx_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       g_defaults.dirs[DEFAULT_DIR_CORE], "overlays",
       sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-      g_defaults.dirs[DEFAULT_DIR_CORE], "layouts",
-      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
       g_defaults.dirs[DEFAULT_DIR_CORE], "filters/video",
       sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));

@@ -74,28 +74,29 @@ static INLINE uint64_t SWAP64(uint64_t val)
 }
 #endif
 
-
-#if defined (LSB_FIRST) || defined (MSB_FIRST)
-#  warning Defining MSB_FIRST and LSB_FIRST in compile options is deprecated
-#  undef LSB_FIRST
-#  undef MSB_FIRST
-#endif
-
 #ifdef _MSC_VER
 /* MSVC pre-defines macros depending on target arch */
 #if defined (_M_IX86) || defined (_M_AMD64) || defined (_M_ARM) || defined (_M_ARM64)
+#ifndef LSB_FIRST
 #define LSB_FIRST 1
+#endif
 #elif _M_PPC
+#ifndef MSB_FIRST
 #define MSB_FIRST 1
+#endif
 #else
 /* MSVC can run on _M_ALPHA and _M_IA64 too, but they're both bi-endian; need to find what mode MSVC runs them at */
 #error "unknown platform, can't determine endianness"
 #endif
 #else
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#ifndef MSB_FIRST
 #define MSB_FIRST 1
+#endif
 #elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef LSB_FIRST
 #define LSB_FIRST 1
+#endif
 #else
 #error "Invalid endianness macros"
 #endif

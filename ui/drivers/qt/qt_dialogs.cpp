@@ -1011,30 +1011,26 @@ void CoreOptionsDialog::reload()
 void CoreOptionsDialog::onSaveGameSpecificOptions()
 {
 #ifdef HAVE_MENU
-   bool refresh = false;
+   struct menu_state *menu_st = menu_state_get_ptr();
 #endif
-
    if (!core_options_create_override(true))
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
-
 #ifdef HAVE_MENU
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
 }
 
 void CoreOptionsDialog::onSaveFolderSpecificOptions()
 {
 #ifdef HAVE_MENU
-   bool refresh = false;
+   struct menu_state *menu_st = menu_state_get_ptr();
 #endif
-
    if (!core_options_create_override(false))
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
-
 #ifdef HAVE_MENU
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
 }
 
@@ -2045,10 +2041,6 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
                path_dir_video_shader,
                path_dir_menu_config))
       {
-#ifdef HAVE_MENU
-         bool refresh = false;
-#endif
-
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
                1, 100, true, NULL,
@@ -2057,7 +2049,7 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
                );
 
 #ifdef HAVE_MENU
-         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_state_get_ptr()->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 #endif
       }
       else

@@ -315,13 +315,12 @@ Mike Swanson (chungy)
 mikeOSX
 minucce
 misson20000
-Mohmoud Mohamed (esoptron) (Hedonium)
+Mohmoud (esoptron) (Hedonium)
 Monroe88
 Morgane (MorganeAD)
 mprobinson
 MrHuu
 MrJs (mrjschulte)
-mudlord
 Muhamed Hobi (mmhobi7)
 muzuiget
 N/A (inactive123)

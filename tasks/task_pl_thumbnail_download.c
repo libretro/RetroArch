@@ -607,8 +607,13 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    
    if (do_refresh)
    {
-      unsigned i = (unsigned)pl_thumb->list_index;
-      menu_driver_ctl(RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE, &i);
+      struct menu_state *menu_st = menu_state_get_ptr();
+      unsigned i                 = (unsigned)pl_thumb->list_index;
+      if (     menu_st->driver_ctx 
+            && menu_st->driver_ctx->refresh_thumbnail_image)
+         menu_st->driver_ctx->refresh_thumbnail_image(
+               menu_st->userdata, i);
+
    }
    
 #endif

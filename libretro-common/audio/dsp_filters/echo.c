@@ -75,11 +75,11 @@ static void echo_process(void *data, struct dspfilter_output *output,
          echo_right += echo->channels[c].buffer[(echo->channels[c].ptr << 1) + 1];
       }
 
-      echo_left  *= echo->amp;
-      echo_right *= echo->amp;
+      echo_left     *= echo->amp;
+      echo_right    *= echo->amp;
 
-      left        = out[0] + echo_left;
-      right       = out[1] + echo_right;
+      left           = out[0] + echo_left;
+      right          = out[1] + echo_right;
 
       for (c = 0; c < echo->num_channels; c++)
       {
@@ -121,28 +121,25 @@ static void *echo_init(const struct dspfilter_info *info,
          &num_feedback, default_feedback, 1);
    config->get_float(userdata, "amp", &echo->amp, 0.2f);
 
-   channels       = num_feedback = num_delay = MIN(num_delay, num_feedback);
+   channels            = num_feedback = num_delay = MIN(num_delay, num_feedback);
 
-   echo_channels = (struct echo_channel*)calloc(channels,
-         sizeof(*echo_channels));
-
-   if (!echo_channels)
+   if (!(echo_channels = (struct echo_channel*)calloc(channels,
+         sizeof(*echo_channels))))
       goto error;
 
-   echo->channels     = echo_channels;
-   echo->num_channels = channels;
+   echo->channels      = echo_channels;
+   echo->num_channels  = channels;
 
    for (i = 0; i < channels; i++)
    {
-      unsigned frames = (unsigned)(delay[i] * info->input_rate / 1000.0f + 0.5f);
+      unsigned frames  = (unsigned)(delay[i] * info->input_rate / 1000.0f + 0.5f);
       if (!frames)
          goto error;
 
-      echo->channels[i].buffer = (float*)calloc(frames, 2 * sizeof(float));
-      if (!echo->channels[i].buffer)
+      if (!(echo->channels[i].buffer = (float*)calloc(frames, 2 * sizeof(float))))
          goto error;
 
-      echo->channels[i].frames = frames;
+      echo->channels[i].frames   = frames;
       echo->channels[i].feedback = feedback[i];
    }
 
@@ -173,7 +170,6 @@ static const struct dspfilter_implementation echo_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)mask;
    return &echo_plug;
 }
 

@@ -579,6 +579,10 @@ MSG_HASH(
    "Kompilierungsdatum"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch-Version"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git-Version"
    )
@@ -2394,6 +2398,14 @@ MSG_HASH(
    "Audio automatisch stummschalten, wenn vorgespult wird."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Beim Vorspulen beschleunigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Audio beim schnellen Vorlauf beschleunigen. Verhindert Knackgeräusche, verändert aber die Tonhöhe."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Lautstärkeanpassung (dB)"
    )
@@ -3294,14 +3306,45 @@ MSG_HASH(
    "Startet/stoppt das Streaming der aktuellen Sitzung zu einer Online-Video-Plattform."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Eingaben-Aufnahme (Umschalten)"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Replay abspielen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Schaltet die Aufnahme von Gameplay-Eingaben im .bsv-Format ein/aus."
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "Replaydatei aus dem aktuell ausgewählten Slot abspielen."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Replay aufnehmen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Replaydatei in den aktuell ausgewählten Slot aufnehmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Aufzeichnung/Wiedergabe stoppen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Stoppt das Aufzeichnen/Abspielen des aktuellen Replays."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Nächster Replayslot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Erhöht den Index des aktuell ausgewählten Replayslots."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Vorheriger Replayslot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Verringert den Index des aktuell ausgewählten Replayslots."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Mauszeiger einfangen (Umschalten)"
@@ -3972,6 +4015,18 @@ MSG_HASH(
    "Automatisches Speichern des nichtflüchtigen SRAM in regelmäßigen Abständen. Dies ist standardmäßig deaktiviert, sofern nicht anders eingestellt. Das Intervall wird in Sekunden angegeben. Ein Wert von 0 deaktiviert die automatische Speicherung."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Intervall für Replay-Kontrollpunkte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatisch Lesezeichen für Spielstatus während Replay-Aufzeichnung in einem regelmäßigen Intervall setzen (in Sekunden)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Speichert den Spielstatus während der Replay-Aufnahme in einem regelmäßigen Intervall. Dies ist standardmäßig deaktiviert, es sei denn, es wird etwas anderes festgelegt. Das Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnung von Kontrollpunkten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Savestate-Speicherplatz-Index automatisch inkrementieren"
    )
@@ -3980,12 +4035,28 @@ MSG_HASH(
    "Vor dem Erstellen eines Savestates wird der Index des Speicherplatzes automatisch erhöht. Beim Laden von Inhalten wird der höchste vorhandene Index gewählt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Replay-Index automatisch erhöhen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Vor dem Erstellen eines Replays wird der Replay-Index automatisch erhöht. Beim Laden von Inhalten wird der Index auf den höchsten vorhandenen Index gesetzt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Maximale Anzahl automatisch erzeugter Savestates"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Die Anzahl der Savestates begrenzen, die erzeugt werden, wenn 'Savestate-Speicherplatz-Index automatisch inkrementieren' aktiviert ist. Wenn beim Speichern eines neuen Savestates das Limit überschritten wird, wird der Savestate mit dem niedrigsten Index gelöscht. Bei einem Wert von '0' werden unbegrenzt viele Savestates erzeugt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Maximal zu behaltende automatisch-erhöhter Replays"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Begrenzt die Anzahl zu erstellender Replays, wenn „Replay-Index automatisch erhöhen“ aktiviert ist. Wird mit einer neuen Replay-Aufzeichnung das Limit überschritten, wird das vorhandene Replay mit dem niedrigsten Index gelöscht. Ein Wert von „0“ bedeutet, dass unbegrenzt viele Replays aufgezeichnet werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -4206,7 +4277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Einzelbilder je nach Vorspulgeschwindigkeit überspringen. Dies spart Strom und ermöglicht die Verwendung von externen Frame-Limits."
+   "Einzelbilder je nach Vorspulgeschwindigkeit überspringen. Dies spart Energie und ermöglicht die Verwendung externer Frame-Begrenzung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -5539,7 +5610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Untermenü Savestatus anzeigen"
+   "Untermenü \"Savestates\" anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5552,6 +5623,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "Optionen zum Speichern/Laden eines Savestates anzeigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "„Replay-Steuerung“ anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Zeigt die Optionen für das Aufzeichenen/Abspielen von Replaydateien an."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -5648,6 +5727,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Die Option \"Core-Überschreibungen speichern\" im Menü \"Überschreibungen\" anzeigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "\"Inhaltsverzeichnis-Überschreibungen speichern\" anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Die Option \"Inhaltsverzeichnis-Überschreibungen speichern\" im Menü \"Überschreibungen\" anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -5930,11 +6017,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Framebuffer-Transparenz"
+   "Deckkraft für Menü"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modifiziere die Transparenz des Framebuffers."
+   "Ändert die Deckkraft des Standardhintergrunds für Menüs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -5990,7 +6077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Beim Wechseln zu einem anderen Tab die Position des Cursors im Menü merken."
+   "Vorherige Cursorposition in Tabs merken. RGUI hat keine Tabs, aber Wiedergabelisten und Einstellungen verhalten sich als solche."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6098,10 +6185,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Bestenlisten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Spielspezifische Bestenlisten. Hat keine Auswirkung, wenn der Hardcore-Modus deaktiviert ist."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6260,6 +6343,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Zeigt Indikatoren auf dem Bildschirm, während bestimmte Errungenschaften erzielt werden können."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Fortschritts-Indikator"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Zeigt einen Indikator auf dem Bildschirm, wenn Fortschritte bei bestimmten Errungenschaften erzielt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Startnachrichten einer Rangliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Zeigt eine Beschreibung einer Rangliste, wenn sie aktiv wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Einreichungsnachrichten einer Rangliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Zeigt eine Nachricht mit dem eingereichten Wert an, wenn der Versuch einer Rangliste abgeschlossen ist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Fehlschlagnachrichten einer Rangliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Zeigt eine Nachricht an, wenn ein Ranglistenversuch fehlschlägt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Ranglisten-Tracker"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Zeigt Tracker auf dem Bildschirm mit dem aktuellen Wert der aktiven Rangliste."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6798,6 +6921,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Wenn diese Option aktiviert ist und auch das Verzeichnis 'Dateibrowser' ausgewählt ist, wird der aktuelle Wert des Parameters 'Dateibrowser' in der Wiedergabeliste gespeichert. Wenn die Wiedergabeliste auf ein anderes System geladen wird, auf dem dieselbe Option aktiviert ist, wird der Wert des Parameters 'Dateibrowser' mit dem Wert der Wiedergabeliste verglichen. Wenn dies nicht der Fall ist, werden die Pfade der Wiedergabelisteneinträge automatisch korrigiert."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Verwalten"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -7171,7 +7298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Speichert alle Speicherdaten (*.srm) in diesem Verzeichnis. Dies beinhaltet verwandte Dateitypen wie .bsv, .rt, .psrm usw. Explizite Kommandozeilenoptionen überschreiben diese Einstellung."
+   "Alle Speicherdaten (*.srm) in diesem Verzeichnis speichern. Dies beinhaltet verwandte Dateitypen wie .rt, .psrm usw. Bestimmte Kommandozeilenoptionen überschreiben diese Einstellung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -7179,7 +7306,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Savestates werden in diesem Verzeichnis gespeichert. Wenn nicht festgelegt, wird versucht, sie in dem Verzeichnis zu speichern, in dem sich der Inhalt befindet."
+   "Savestates und Replays werden in diesem Verzeichnis gespeichert. Wenn nicht festgelegt, wird versucht, sie in dem Verzeichnis zu speichern, in dem sich der Inhalt befindet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -7853,6 +7980,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Wenn ein Savestate überschrieben wurde, wird es auf den vorherigen Zustand zurückgesetzt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Replayslot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Den aktuell gewählten Speicherplatz ändern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Replay abspielen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "Replaydatei aus dem aktuell ausgewählten Slot abspielen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Replay aufnehmen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Replaydatei in den aktuell ausgewählten Slot aufnehmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Aufzeichnung/Wiedergabe stoppen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Stoppt das Aufzeichnen/Abspielen des aktuellen Replays"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -9651,7 +9810,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Die Anzeige von verkleinerten Inline-Vorschaubildern beim Betrachten von Wiedergabelisten aktivieren. Wenn diese Option deaktiviert ist, kann 'Oberes Vorschaubild' durch Drücken von RetroPad Y weiterhin im Vollbild angezeigt werden."
+   "Aktiviert die Anzeige von herunterskalierten Vorschaubildern während dem Betrachten von Wiedergabelisten. Umschaltbar mit RetroPad Select. Wenn deaktiviert, können Vorschaubilder immer noch mit RetroPad Start zum Vollbild gewechselt werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -9659,7 +9818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Art des Vorschaubilds, das oben rechts in den Wiedergabelisten angezeigt werden soll. Dieses Vorschaubild kann durch Drücken von RetroPad Y im Vollbild angezeigt werden."
+   "Art der Miniaturansicht, die oben rechts in der Wiedergabeliste angezeigt wird. Dieser Typ von Miniaturansicht kann durch Drücken von RetroPad Y gewechselt werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -12427,6 +12586,18 @@ MSG_HASH(
    "Letzten Speicherplatz gefunden"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Letzten Replayslot gefunden"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Nicht von aktueller Aufnahme"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Nicht kompatibel mit Replay"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Shader gefunden"
    )
@@ -12555,8 +12726,8 @@ MSG_HASH(
    "Speicher"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Filmdatei ist keine gültige BSV1-Datei."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Eingegebene Replay-Filmdatei ist keine gültige REPLAY-Datei."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -12799,6 +12970,10 @@ MSG_HASH(
    "Spielstand-Speicherplatz"
    )
 MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Replayslot"
+   )
+MSG_HASH(
    MSG_TAKING_SCREENSHOT,
    "Erstelle Screenshot."
    )
@@ -12809,6 +12984,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Errungenschaft freigeschaltet"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Ranglistenversuch gestartet"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Ranglistenversuch fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "%s für %s eingereicht" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -13426,6 +13613,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Synchronisation mit exakter Inhaltssignalfrequenz deaktiviert."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Videoaktualisierungsrate auf %s Hz geändert."
+   )
 
 /* Lakka */
 
@@ -13502,7 +13693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Anzeigemodus wählen."
+   "Anzeigemodus auswählen (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -13913,6 +14104,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Die x/y-Skalierung der Touchscreen-Koordinaten an die Anzeigenskalierung des Betriebssystems anpassen."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

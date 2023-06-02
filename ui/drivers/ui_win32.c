@@ -248,6 +248,7 @@ static bool ui_browser_window_win32_core(
    OPENFILENAME ofn;
    bool            okay  = true;
    settings_t *settings  = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
    bool video_fullscreen = settings->bools.video_fullscreen;
 
    ofn.lStructSize       = sizeof(OPENFILENAME);
@@ -280,7 +281,11 @@ static bool ui_browser_window_win32_core(
 
    /* Full Screen: Show mouse for the file dialog */
    if (video_fullscreen)
-      video_driver_show_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, true);
+   }
 
    if (!save && !GetOpenFileName(&ofn))
       okay = false;
@@ -289,7 +294,11 @@ static bool ui_browser_window_win32_core(
 
    /* Full screen: Hide mouse after the file dialog */
    if (video_fullscreen)
-      video_driver_hide_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
 
    return okay;
 }
@@ -312,20 +321,15 @@ static ui_browser_window_t ui_browser_window_win32 = {
 
 static void ui_companion_win32_deinit(void *data) { } 
 static void *ui_companion_win32_init(void) { return (void*)-1; }
-static void ui_companion_win32_notify_content_loaded(void *data) { }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
       void *data, enum event_command cmd) { }
-static void ui_companion_win32_notify_list_pushed(void *data,
-        file_list_t *list, file_list_t *menu_list) { }
 
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
-   ui_companion_win32_notify_content_loaded,
-   ui_companion_win32_notify_list_pushed,
    NULL,
    NULL,
    NULL,

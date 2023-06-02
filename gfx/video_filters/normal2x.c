@@ -68,22 +68,17 @@ static void *normal2x_generic_create(const struct softfilter_config *config,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
-   (void)simd;
-   (void)config;
-   (void)userdata;
-
-   if (!filt) {
+   if (!filt)
+      return NULL;
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
+   {
+      free(filt);
       return NULL;
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
    filt->threads = 1;
    filt->in_fmt  = in_fmt;
-   if (!filt->workers) {
-      free(filt);
-      return NULL;
-   }
    return filt;
 }
 
@@ -91,16 +86,15 @@ static void normal2x_generic_output(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   *out_width = width << 1;
+   *out_width  = width << 1;
    *out_height = height << 1;
 }
 
 static void normal2x_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if (!filt) {
+   if (!filt)
       return;
-   }
    free(filt->workers);
    free(filt);
 }
@@ -119,16 +113,16 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
       uint32_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
+         uint32_t row_color[2];
          uint32_t *out_line_ptr = out_ptr;
          uint32_t color         = *(input + x);
-         uint32_t row_color[2];
 
-         row_color[0] = color;
-         row_color[1] = color;
+         row_color[0]           = color;
+         row_color[1]           = color;
 
          /* Row 1 */
          memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
+         out_line_ptr          += out_stride;
 
          /* Row 2 */
          memcpy(out_line_ptr, row_color, sizeof(row_color));
@@ -155,25 +149,25 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
       uint16_t *out_ptr = output;
       for (x = 0; x < thr->width; ++x)
       {
+         uint16_t row_color[2];
          uint16_t *out_line_ptr = out_ptr;
          uint16_t color         = *(input + x);
-         uint16_t row_color[2];
 
-         row_color[0] = color;
-         row_color[1] = color;
+         row_color[0]           = color;
+         row_color[1]           = color;
 
          /* Row 1 */
          memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
+         out_line_ptr          += out_stride;
 
          /* Row 2 */
          memcpy(out_line_ptr, row_color, sizeof(row_color));
 
-         out_ptr += 2;
+         out_ptr               += 2;
       }
 
-      input  += in_stride;
-      output += out_stride << 1;
+      input                    += in_stride;
+      output                   += out_stride << 1;
    }
 }
 
@@ -187,22 +181,21 @@ static void normal2x_generic_packets(void *data,
     * over threads and can cull some code. This only
     * makes the tiniest performance difference, but
     * every little helps when running on an o3DS... */
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt           = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data = (uint8_t*)output;
-   thr->in_data = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch = input_stride;
-   thr->width = width;
-   thr->height = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
-   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888) {
-      packets[0].work = normal2x_work_cb_xrgb8888;
-   } else if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
-      packets[0].work = normal2x_work_cb_rgb565;
-   }
-   packets[0].thread_data = thr;
+   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+      packets[0].work                 = normal2x_work_cb_xrgb8888;
+   else if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+      packets[0].work                 = normal2x_work_cb_rgb565;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation normal2x_generic = {
@@ -224,7 +217,6 @@ static const struct softfilter_implementation normal2x_generic = {
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &normal2x_generic;
 }
 

@@ -26,6 +26,7 @@
 #include "../../command.h"
 #include "../../defaults.h"
 #include "../../paths.h"
+#include "../../verbosity.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
@@ -95,10 +96,6 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 			   "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
 			   "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], base_path,
-			   "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
 			   "download", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,

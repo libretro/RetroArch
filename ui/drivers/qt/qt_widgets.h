@@ -115,12 +115,6 @@ public:
 
       return true;
    }
-
-   bool add(msg_hash_enums enum_idx)
-   {
-      rarch_setting_t *setting     = menu_setting_find_enum(enum_idx);
-      return add(setting);
-   }
 };
 
 class SettingsGroup : public QGroupBox
@@ -228,7 +222,6 @@ class CheckableSettingsGroup : public SettingsGroup
    Q_OBJECT
 public:
    CheckableSettingsGroup(rarch_setting_t *setting, QWidget *parent = 0);
-   CheckableSettingsGroup(const char *setting, QWidget *parent = 0);
    CheckableSettingsGroup(msg_hash_enums enum_idx, QWidget *parent = 0);
 private slots:
    void onClicked(bool clicked);
@@ -243,7 +236,6 @@ class CheckBox : public QCheckBox
    Q_OBJECT
 public:
    CheckBox(rarch_setting_t *setting, QWidget *parent = 0);
-   CheckBox(const char *setting, QWidget *parent = 0);
    CheckBox(msg_hash_enums enum_idx, QWidget *parent = 0);
 private slots:
    void onClicked(bool checked);
@@ -258,7 +250,6 @@ class CheckableIcon : public QToolButton
    Q_OBJECT
 public:
    CheckableIcon(rarch_setting_t *setting, const QIcon &icon, QWidget *parent = 0);
-   CheckableIcon(const char *setting, const QIcon &icon, QWidget *parent = 0);
    CheckableIcon(msg_hash_enums enum_idx, const QIcon &icon, QWidget *parent = 0);
 private slots:
    void onToggled(bool checked);
@@ -273,7 +264,6 @@ class StringLineEdit : public QLineEdit
    Q_OBJECT
 public:
    StringLineEdit(rarch_setting_t *setting, QWidget *parent = 0);
-   StringLineEdit(const char *setting, QWidget *parent = 0);
 private slots:
    void onEditingFinished();
    void paintEvent(QPaintEvent *event);
@@ -294,7 +284,6 @@ class StringComboBox : public QComboBox
    Q_OBJECT
 public:
    StringComboBox(rarch_setting_t *setting, QWidget *parent = 0);
-   StringComboBox(const char *setting, QWidget *parent = 0);
 private slots:
    void onCurrentTextChanged(const QString &text);
    void paintEvent(QPaintEvent *event);
@@ -311,7 +300,6 @@ public:
    UIntComboBox(rarch_setting_t *setting, double min, double max, QWidget *parent = 0);
    UIntComboBox(msg_hash_enums enum_idx, QWidget *parent = 0);
    UIntComboBox(msg_hash_enums enum_idx, double min, double max, QWidget *parent = 0);
-   UIntComboBox(const char *setting, QWidget *parent = 0);
 private slots:
    void onCurrentIndexChanged(int index);
    void paintEvent(QPaintEvent *event);
@@ -342,7 +330,6 @@ class UIntRadioButtons : public QGroupBox
    Q_OBJECT
 public:
    UIntRadioButtons(rarch_setting_t *setting, QWidget *parent = 0);
-   UIntRadioButtons(const char *setting, QWidget *parent = 0);
    UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent = 0);
 signals:
    void currentUIntChanged(unsigned value);
@@ -401,7 +388,6 @@ class FloatSpinBox : public QDoubleSpinBox
    Q_OBJECT
 public:
    FloatSpinBox(rarch_setting_t *setting, QWidget *parent = 0);
-   FloatSpinBox(const char *setting, QWidget *parent = 0);
    FloatSpinBox(msg_hash_enums enum_idx, QWidget *parent = 0);
 private slots:
    void onValueChanged(double value);
@@ -417,7 +403,6 @@ class PathButton : public QPushButton
    Q_OBJECT
 public:
    PathButton(rarch_setting_t *setting, QWidget *parent = 0);
-   PathButton(const char *setting, QWidget *parent = 0);
 signals:
    void changed();
 protected slots:
@@ -465,7 +450,6 @@ class FileSelector : public QHBoxLayout
    Q_OBJECT
 public:
    FileSelector(rarch_setting_t *setting, QWidget *parent = 0);
-   FileSelector(const char *setting, QWidget *parent = 0);
 private:
    StringLineEdit *m_lineEdit;
    FileButton *m_button;
@@ -476,7 +460,6 @@ class FloatSlider : public QSlider
    Q_OBJECT
 public:
    FloatSlider(rarch_setting_t *setting, QWidget *parent = 0);
-   FloatSlider(const char *setting, QWidget *parent = 0);
 private slots:
    void onValueChanged(int value);
    void paintEvent(QPaintEvent *event);
@@ -492,7 +475,6 @@ class FloatSliderAndSpinBox : public QHBoxLayout
    Q_OBJECT
 public:
    FloatSliderAndSpinBox(rarch_setting_t *setting, QWidget *parent = 0);
-   FloatSliderAndSpinBox(const char *setting, QWidget *parent = 0);
    FloatSliderAndSpinBox(msg_hash_enums enum_idx, QWidget *parent = 0);
 private slots:
    void onSliderValueChanged(int value);

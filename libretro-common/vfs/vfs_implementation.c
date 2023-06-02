@@ -120,9 +120,60 @@
 #endif
 
 #if defined(__PS3__) || defined(__PSL1GHT__)
-#include <defines/ps3_defines.h>
-#if defined(__PSL1GHT__)
+#define FS_SUCCEEDED 0
+#define FS_TYPE_DIR 1
+#ifdef __PSL1GHT__
 #include <lv2/sysfs.h>
+#ifndef O_RDONLY
+#define O_RDONLY SYS_O_RDONLY
+#endif
+#ifndef O_WRONLY
+#define O_WRONLY SYS_O_WRONLY
+#endif
+#ifndef O_CREAT
+#define O_CREAT SYS_O_CREAT
+#endif
+#ifndef O_TRUNC
+#define O_TRUNC SYS_O_TRUNC
+#endif
+#ifndef O_RDWR
+#define O_RDWR SYS_O_RDWR
+#endif
+#else
+#include <cell/cell_fs.h>
+#ifndef O_RDONLY
+#define O_RDONLY CELL_FS_O_RDONLY
+#endif
+#ifndef O_WRONLY
+#define O_WRONLY CELL_FS_O_WRONLY
+#endif
+#ifndef O_CREAT
+#define O_CREAT CELL_FS_O_CREAT
+#endif
+#ifndef O_TRUNC
+#define O_TRUNC CELL_FS_O_TRUNC
+#endif
+#ifndef O_RDWR
+#define O_RDWR CELL_FS_O_RDWR
+#endif
+#ifndef sysFsStat
+#define sysFsStat cellFsStat
+#endif
+#ifndef sysFSDirent
+#define sysFSDirent CellFsDirent
+#endif
+#ifndef sysFsOpendir
+#define sysFsOpendir cellFsOpendir
+#endif
+#ifndef sysFsReaddir
+#define sysFsReaddir cellFsReaddir
+#endif
+#ifndef sysFSDirent
+#define sysFSDirent CellFsDirent
+#endif
+#ifndef sysFsClosedir
+#define sysFsClosedir cellFsClosedir
+#endif
 #endif
 #endif
 

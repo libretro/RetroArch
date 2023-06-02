@@ -63,6 +63,9 @@ typedef struct
 
 static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
+   if (!autoconfig_handle)
+      return;
+
    if (autoconfig_handle->dir_autoconfig)
    {
       free(autoconfig_handle->dir_autoconfig);
@@ -532,33 +535,27 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       {
          /* A valid autoconfig was applied */
          if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
-         {
             snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT_NR),
                   device_display_name,
                   autoconfig_handle->port + 1);
-         }
       }
       /* Device is autoconfigured, but a (most likely
        * incorrect) fallback definition was used... */
       else
-      {
          snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR),
                   device_display_name,
                   autoconfig_handle->device_info.vid,
                   autoconfig_handle->device_info.pid);
-      }
    }
    /* Autoconfig failed */
    else
-   {
          snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_NR),
                   device_display_name,
                   autoconfig_handle->device_info.vid,
                   autoconfig_handle->device_info.pid);
-   }
 
    /* Update task title */
    task_free_title(task);
@@ -743,9 +740,7 @@ error:
       task = NULL;
    }
 
-   if (autoconfig_handle)
-      free_autoconfig_handle(autoconfig_handle);
-   autoconfig_handle = NULL;
+   free_autoconfig_handle(autoconfig_handle);
    return false;
 }
 
@@ -928,7 +923,6 @@ error:
    }
 
    free_autoconfig_handle(autoconfig_handle);
-   autoconfig_handle = NULL;
 
    return false;
 }

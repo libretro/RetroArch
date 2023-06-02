@@ -16,6 +16,12 @@
 #include <mach-o/getsect.h>
 #include <pthread.h>
 
+#if defined(HAVE_ALTKIT)
+@import AltKit;
+#endif
+
+#include "../../verbosity.h"
+
 extern int csops(pid_t pid, unsigned int ops, void * useraddr, size_t usersize);
 extern boolean_t exc_server(mach_msg_header_t *, mach_msg_header_t *);
 extern int ptrace(int request, pid_t pid, caddr_t addr, int data);
@@ -27,17 +33,20 @@ extern int ptrace(int request, pid_t pid, caddr_t addr, int data);
 #define PT_SIGEXC       12      /* signals as exceptions for current_proc */
 
 static void *exception_handler(void *argument) {
+#if !TARGET_OS_TV
     mach_port_t port = *(mach_port_t *)argument;
     mach_msg_server(exc_server, 2048, port, 0);
+#endif
     return NULL;
 }
 
-static bool jb_has_debugger_attached(void) {
+bool jb_has_debugger_attached(void) {
     int flags;
     return !csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) && flags & CS_DEBUGGED;
 }
 
 bool jb_enable_ptrace_hack(void) {
+#if !TARGET_OS_TV
     bool debugged = jb_has_debugger_attached();
     
     // Thanks to this comment: https://news.ycombinator.com/item?id=18431524
@@ -70,7 +79,38 @@ bool jb_enable_ptrace_hack(void) {
         task_set_exception_ports(mach_task_self(), EXC_MASK_SOFTWARE, port, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
         pthread_t thread;
         pthread_create(&thread, NULL, exception_handler, (void *)&port);
+    } else {
+        // JIT code frequently causes an EXC_BAD_ACCESS exception that lldb
+        // cannot be convinced to ignore. Instead we can set up a nul handler
+        // that effectively causes it to be ignored. Note that this sometimes
+        // also hides actual crashes from the debugger.
+        task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
     }
+#endif
     
     return true;
+}
+
+void jb_start_altkit(void) {
+#if HAVE_ALTKIT
+   // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
+   if (jb_has_debugger_attached())
+      return;
+
+   [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {
+      if (error)
+         return;
+
+      [connection enableUnsignedCodeExecutionWithCompletionHandler:^(BOOL success, NSError *error) {
+         if (success)
+            [[ALTServerManager sharedManager] stopDiscovering];
+         else
+            RARCH_WARN("AltServer failed: %s\n", [error.description UTF8String]);
+
+         [connection disconnect];
+      }];
+   }];
+
+   [[ALTServerManager sharedManager] startDiscovering];
+#endif
 }

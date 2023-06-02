@@ -55,15 +55,9 @@ typedef struct xv
    XShmSegmentInfo shminfo;
 
    XvPortID port;
-   int depth;
-   int visualid;
 
    XvImage *image;
-   uint32_t fourcc;
 
-   unsigned width;
-   unsigned height;
-   bool keep_aspect;
    struct video_viewport vp;
 
    uint8_t *ytable;
@@ -73,20 +67,24 @@ typedef struct xv
    void *font;
    const font_renderer_driver_t *font_driver;
 
-   unsigned luma_index[2];
-   unsigned chroma_u_index;
-   unsigned chroma_v_index;
-
-   uint8_t font_y;
-   uint8_t font_u;
-   uint8_t font_v;
-
    void (*render_func)(struct xv*, const void *frame,
          unsigned width, unsigned height, unsigned pitch);
 
    void (*render_glyph)(struct xv*, int base_x, int base_y,
 			const uint8_t *glyph, int atlas_width,
 			int glyph_width, int glyph_height);
+   int depth;
+   int visualid;
+   unsigned luma_index[2];
+   unsigned chroma_u_index;
+   unsigned chroma_v_index;
+   unsigned width;
+   unsigned height;
+   uint32_t fourcc;
+   uint8_t font_y;
+   uint8_t font_u;
+   uint8_t font_v;
+   bool keep_aspect;
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
@@ -656,7 +654,8 @@ static void *xv_init(const video_info_t *video,
    XVisualInfo *visualinfo                = NULL;
    XvAdaptorInfo *adaptor_info            = NULL;
    const struct retro_game_geometry *geom = NULL;
-   struct retro_system_av_info *av_info   = NULL;
+   video_driver_state_t *video_st         = video_state_get_ptr();
+   struct retro_system_av_info *av_info   = &video_st->av_info;
    settings_t *settings                   = config_get_ptr();
    bool video_disable_composition         = settings->bools.video_disable_composition;
    xv_t                               *xv = (xv_t*)calloc(1, sizeof(*xv));
@@ -673,8 +672,6 @@ static void *xv_init(const video_info_t *video,
       RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
       goto error;
    }
-
-   av_info = video_viewport_get_system_av_info();
 
    if (av_info)
       geom        = &av_info->geometry;
@@ -1157,9 +1154,6 @@ video_driver_t video_xvideo = {
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
 #endif
   xv_get_poke_interface
 };

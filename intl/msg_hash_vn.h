@@ -1479,7 +1479,6 @@ MSG_HASH(
    )
 
 
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Dịch vụ AI"
@@ -2519,10 +2518,6 @@ MSG_HASH(
    "Đang tải state"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Movie file is not a valid BSV1 file."
-   )
-MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    "Movie format seems to have a different serializer version. Will most likely fail."
    )
@@ -2636,6 +2631,8 @@ MSG_HASH(
    )
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

@@ -22,6 +22,11 @@
 #include "midi_driver.h"
 #include "verbosity.h"
 
+#ifdef HAVE_WASAPI
+#include "audio/audio_driver.h"
+#include "gfx/video_driver.h"
+#endif
+
 #define MIDI_DRIVER_BUF_SIZE 4096
 #define MIDI_DRIVER_OFF "OFF"
 
@@ -115,6 +120,19 @@ bool midi_driver_set_all_sounds_off(void)
 
    if (!rarch_midi_drv_data || !rarch_midi_drv_output_enabled)
       return false;
+
+#ifdef HAVE_WASAPI
+   /* FIXME: Due to some mysterious reason Frame Delay does not
+    * work with WASAPI unless MIDI output is active, even when
+    * MIDI is not used. Frame Delay also breaks if MIDI sounds
+    * are "set off", which happens on menu toggle, therefore
+    * skip this if WASAPI is used and Frame Delay is active.. */
+   if (string_is_equal(audio_state_get_ptr()->current_audio->ident, "wasapi"))
+   {
+      if (video_state_get_ptr()->frame_delay_target > 0)
+         return false;
+   }
+#endif
 
    event.data       = data;
    event.data_size  = sizeof(data);

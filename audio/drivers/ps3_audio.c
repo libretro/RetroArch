@@ -110,7 +110,7 @@ static void *ps3_audio_init(const char *device,
    params.param_attrib               = 0;
 #if 0
 #ifdef HAVE_HEADSET
-   if(global->console.sound.mode == SOUND_MODE_HEADSET)
+   if (global->console.sound.mode == SOUND_MODE_HEADSET)
       params.param_attrib            = CELL_AUDIO_PORTATTR_OUT_SECONDARY;
 #endif
 #endif

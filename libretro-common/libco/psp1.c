@@ -6,9 +6,9 @@
 
 typedef void (*entrypoint_t)(void);
 
-cothread_t co_active()
+cothread_t co_active(void)
 {
-  return (void *) sceKernelGetThreadId();
+  return (void *)sceKernelGetThreadId();
 }
 
 static int thread_wrap(unsigned int argc, void *argp)

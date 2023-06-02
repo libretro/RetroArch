@@ -368,7 +368,7 @@ static bool psp_joypad_rumble(unsigned pad,
 #ifdef VITA
    if (psp2_model != SCE_KERNEL_MODEL_VITATV)
       return false;
-   if(pad >= DEFAULT_MAX_PADS)
+   if (pad >= DEFAULT_MAX_PADS)
       return false;
    switch (effect)
    {

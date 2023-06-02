@@ -928,8 +928,6 @@ enum retro_mod
                                             * anything else.
                                             * It is recommended to expose all relevant pointers through
                                             * retro_get_memory_* as well.
-                                            *
-                                            * Can be called from retro_init and retro_load_game.
                                             */
 #define RETRO_ENVIRONMENT_SET_GEOMETRY 37
                                            /* const struct retro_game_geometry * --
@@ -1793,7 +1791,13 @@ enum retro_mod
                                              * this environment call to query support.
                                              */
 
-#define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (74 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_JIT_CAPABLE 74
+                                           /* bool * --
+                                            * Result is set to true if the frontend has already verified JIT can be
+                                            * used, mainly for use iOS/tvOS. On other platforms the result is true.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (75 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_microphone_interface * --
                                             * Returns an interface that can be used to receive input from the microphone driver.
                                             *
@@ -1979,13 +1983,13 @@ struct retro_vfs_interface_info
 
 enum retro_hw_render_interface_type
 {
-	RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
-	RETRO_HW_RENDER_INTERFACE_D3D9   = 1,
-	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
-	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
-	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
+   RETRO_HW_RENDER_INTERFACE_VULKAN     = 0,
+   RETRO_HW_RENDER_INTERFACE_D3D9       = 1,
+   RETRO_HW_RENDER_INTERFACE_D3D10      = 2,
+   RETRO_HW_RENDER_INTERFACE_D3D11      = 3,
+   RETRO_HW_RENDER_INTERFACE_D3D12      = 4,
    RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
-   RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
+   RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
 };
 
 /* Base struct. All retro_hw_render_interface_* types
@@ -2761,9 +2765,17 @@ enum retro_hw_context_type
    /* Vulkan, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE. */
    RETRO_HW_CONTEXT_VULKAN           = 6,
 
-   /* Direct3D, set version_major to select the type of interface
-    * returned by RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
-   RETRO_HW_CONTEXT_DIRECT3D         = 7,
+   /* Direct3D11, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D11            = 7,
+
+   /* Direct3D10, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D10            = 8,
+
+   /* Direct3D12, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D12            = 9,
+
+   /* Direct3D9, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D9             = 10,
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };

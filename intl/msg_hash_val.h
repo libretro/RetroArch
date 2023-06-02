@@ -45,6 +45,10 @@ MSG_HASH(
    "Explorar"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Nuclis sense continguts"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Afegir continguts"
    )
@@ -68,12 +72,20 @@ MSG_HASH(
    "Selecciona quin nucli vas a usar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Cerca una implementació per a un nucli de libretro. El cercador començarà a buscar en la carpeta que hages triat per al teu directori de nuclis. En cas de trobar-se en blanc, començarà al directori rael.\nSi el directori de nuclis és un directori, el menú usarà aquest com a carpeta inicial. Pel contrari, si és un directori complet, aquest s'iniciarà a la carpeta on es trobe l'arxiu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Carregar contingut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Selecciona quin contingut vas a executar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Cerca continguts. Per a carregar continguts necessites un 'nucli' i un arxiu de contingut.\nPer a configurar a on comença el menú a cercar-ne, configura el directori de l'explorador d'arxius. Si no està configurat, este començará a la rael.\nEl navegador filtrarà extensions per a l'últim nucli elegit en 'Carregar nucli', i emprarà aqueix nucli quan el contingut siga carregat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -197,6 +209,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Clou el programa."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Tanca RetroArch. Si tanques el programa d'una manera forçada (SIGKILL, etc.) RetroArch no guardarà les configuracions, etc. En sistemes Unix, SIGNIT/SIGTERM permet un tancament net."
+   )
 
 /* Main Menu > Load Core */
 
@@ -287,6 +303,10 @@ MSG_HASH(
    "Regira tot el contingut mitjançant una interfície de búsqueda categoritzada que coincidisca amb la base de dades."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Nuclis sense continguts"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "Ací apareixeran els nuclis instal·lats que puguen funcionar sense haver de carregar un contingut."
    )
@@ -332,6 +352,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Baixador de contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Baixa contingut gratuït per al nucli seleccionat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -520,6 +544,14 @@ MSG_HASH(
    "Preven qualsevol modificació sobre el nucli actual instal·lat. Esta opció pot fer-se servir per evitar actualitzacions no desitjades si un contingut requerix d'una versió específica d'un nucli (p.ex. conjunts de ROMs d'arcade)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Exclou del menú 'Nuclis sense continguts'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Prevén que el nucli siga mostrat a la secció 'Nuclis sense continguts'. Només s'aplica quan el mode de vídeo estiga configurat com a 'Personalitzat'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Eliminar nucli"
    )
@@ -561,6 +593,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Data de compilació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Versió de RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1527,10 +1563,6 @@ MSG_HASH(
    "Modifica esta opció si els pòrtics no estan ben ajustats i canviar la mida de la imatge."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Usar menú en alta resolució"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Canvia els menús a línia de mode (modeline) en alta resolució quan no s'haja carregat cap contingut."
    )
@@ -2034,6 +2066,14 @@ MSG_HASH(
    "Automàticament silencia l'àudio quan s'usa l'avançament ràpid."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelerar a l'usar l'avançament ràpid"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelera l'àudio a l'emprar l'avançament ràpid. Defugirá sorolls en l'àudio a canvi de la seua tonalitat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Guany de volum (dB)"
    )
@@ -2283,7 +2323,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Tancar RetroArch"
    )
-
 
 
 
@@ -2689,6 +2728,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Menú principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Vore 'Nuclis sense continguts'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Especifica el tipus de nucli (en cas que hagueren) a mostrar al menú 'Nuclis sense continguts'. Quan s'establix en 'Personalitzat', es pot canviar la disponibilitat de cada nucli individual mitjançant el menú 'Gestiona els nuclis' (Cal reiniciar en Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "Tots"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "Un sol ús"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "Personalitzat"
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
@@ -3257,6 +3316,10 @@ MSG_HASH(
 
 /* Notifications */
 
+MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Esperant al client..."
+   )
 
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
@@ -3273,6 +3336,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
    "No ha sigut configurat %s (%u/%u) usant l'opció secundària"
+   )
+MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Error a l'esborrar el nucli de la llista 'Nuclis sense continguts': "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Error a l'afegir el nucli a la llista 'Nuclis sense continguts': "
    )
 
 /* Lakka */
@@ -3324,6 +3395,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

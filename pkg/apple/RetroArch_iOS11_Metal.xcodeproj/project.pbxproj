@@ -1323,7 +1323,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.14.0;
+				CURRENT_PROJECT_VERSION = 1.15.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1352,7 +1352,7 @@
 					"@executable_path/Frameworks",
 					"$(PROJECT_DIR)/iOS/modules",
 				);
-				MARKETING_VERSION = 1.14.0;
+				MARKETING_VERSION = 1.15.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
@@ -1362,6 +1362,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -1390,7 +1391,6 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -1449,7 +1449,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.14.0;
+				CURRENT_PROJECT_VERSION = 1.15.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1478,7 +1478,7 @@
 					"@executable_path/Frameworks",
 					"$(PROJECT_DIR)/iOS/modules",
 				);
-				MARKETING_VERSION = 1.14.0;
+				MARKETING_VERSION = 1.15.0;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1489,6 +1489,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -1519,7 +1520,6 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -1548,6 +1548,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -1577,7 +1578,6 @@
 					"-DHAVE_DYNAMIC",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -1656,7 +1656,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.14.0;
+				CURRENT_PROJECT_VERSION = 1.15.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1690,7 +1690,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/modules",
 				);
-				MARKETING_VERSION = 1.14.0;
+				MARKETING_VERSION = 1.15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1701,6 +1701,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -1728,7 +1729,6 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -1798,7 +1798,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.14.0;
+				CURRENT_PROJECT_VERSION = 1.15.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1832,7 +1832,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/modules",
 				);
-				MARKETING_VERSION = 1.14.0;
+				MARKETING_VERSION = 1.15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
@@ -1844,6 +1844,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -1871,7 +1872,6 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -1953,6 +1953,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -1983,7 +1984,6 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -2028,6 +2028,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
@@ -2058,7 +2059,6 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",

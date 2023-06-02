@@ -30,6 +30,7 @@ extern "C" {
 #elif __STDC_VERSION__ < 199901L
 
 /* C89 redefinitions */
+#define RC_C89_HELPERS 1
 
 #ifndef snprintf
  extern int rc_snprintf(char* buffer, size_t size, const char* format, ...);
@@ -52,6 +53,17 @@ extern "C" {
 #endif
 
 #endif /* __STDC_VERSION__ < 199901L */
+
+#ifndef __STDC_WANT_SECURE_LIB__
+ /* _CRT_SECURE_NO_WARNINGS redefinitions */
+ #define strcpy_s(dest, sz, src) strcpy(dest, src)
+ #define sscanf_s sscanf
+
+ /* NOTE: Microsoft secure gmtime_s parameter order differs from C11 standard */
+ #include <time.h>
+ extern struct tm* rc_gmtime_s(struct tm* buf, const time_t* timer);
+ #define gmtime_s rc_gmtime_s
+#endif
 
 #ifdef __cplusplus
 }

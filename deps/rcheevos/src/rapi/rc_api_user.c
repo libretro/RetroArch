@@ -1,6 +1,8 @@
 #include "rc_api_user.h"
 #include "rc_api_common.h"
 
+#include "../rcheevos/rc_version.h"
+
 #include <string.h>
 
 /* --- Login --- */
@@ -32,13 +34,13 @@ int rc_api_init_login_request(rc_api_request_t* request, const rc_api_login_requ
 int rc_api_process_login_response(rc_api_login_response_t* response, const char* server_response) {
   int result;
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"User"},
-    {"Token"},
-    {"Score"},
-    {"Messages"},
-    {"DisplayName"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("User"),
+    RC_JSON_NEW_FIELD("Token"),
+    RC_JSON_NEW_FIELD("Score"),
+    RC_JSON_NEW_FIELD("Messages"),
+    RC_JSON_NEW_FIELD("DisplayName")
   };
 
   memset(response, 0, sizeof(*response));
@@ -86,6 +88,7 @@ int rc_api_init_start_session_request(rc_api_request_t* request, const rc_api_st
      */
     rc_url_builder_append_unum_param(&builder, "a", 3);
     rc_url_builder_append_unum_param(&builder, "m", api_params->game_id);
+    rc_url_builder_append_str_param(&builder, "l", RCHEEVOS_VERSION_STRING);
     request->post_data = rc_url_builder_finalize(&builder);
   }
 
@@ -94,8 +97,8 @@ int rc_api_init_start_session_request(rc_api_request_t* request, const rc_api_st
 
 int rc_api_process_start_session_response(rc_api_start_session_response_t* response, const char* server_response) {
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error")
   };
 
   memset(response, 0, sizeof(*response));
@@ -128,12 +131,12 @@ int rc_api_init_fetch_user_unlocks_request(rc_api_request_t* request, const rc_a
 int rc_api_process_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response, const char* server_response) {
   int result;
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"UserUnlocks"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("UserUnlocks")
     /* unused fields
-    { "GameID" },
-    { "HardcoreMode" }
+    RC_JSON_NEW_FIELD("GameID"),
+    RC_JSON_NEW_FIELD("HardcoreMode")
      * unused fields */
   };
 

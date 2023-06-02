@@ -64,7 +64,7 @@ static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
 static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 {
    if (font_data->font)
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
 
    font_data->font        = NULL;
    font_data->usage_count = 0;
@@ -110,28 +110,14 @@ static float gfx_display_get_widget_pixel_scale(
 #else
    float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
    float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
-   float menu_widget_scale_factor                      = fullscreen ?
-         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+   float menu_widget_scale_factor                      = fullscreen
+         ? menu_widget_scale_factor_fullscreen 
+         : menu_widget_scale_factor_windowed;
 #endif
    float menu_scale_factor                             = menu_widget_scale_factor;
 
    if (gfx_widget_scale_auto)
-   {
-#ifdef HAVE_RGUI
-      /* When using RGUI, _menu_scale_factor
-       * is ignored
-       * > If we are not using a widget scale factor override,
-       *   just set menu_scale_factor to 1.0 */
-      if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-         menu_scale_factor                             = 1.0f;
-      else
-#endif
-      {
-         float _menu_scale_factor                      = 
-            settings->floats.menu_scale_factor;
-         menu_scale_factor                             = _menu_scale_factor;
-      }
-   }
+      menu_scale_factor                                = settings->floats.menu_scale_factor;
 
    /* We need to perform a square root here, which
     * can be slow on some platforms (not *slow*, but
@@ -139,9 +125,9 @@ static float gfx_display_get_widget_pixel_scale(
     * to optimise). We therefore cache the pixel scale,
     * and only update on first run or when the video
     * size changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
+   if (   !scale_cached
+       || (width  != last_width)
+       || (height != last_height))
    {
       /* Baseline reference is a 1080p display */
       scale = (float)(
@@ -156,13 +142,12 @@ static float gfx_display_get_widget_pixel_scale(
 
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
+   if (    scale_updated
+       || (menu_scale_factor      != last_menu_scale_factor)
+       || (p_disp->menu_driver_id != last_menu_driver_id))
    {
-      adjusted_scale         = gfx_display_get_adjusted_scale(
-            p_disp,
-            scale, menu_scale_factor, width);
+      adjusted_scale         = scale * menu_scale_factor;
+      adjusted_scale         = (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = p_disp->menu_driver_id;
    }
@@ -424,8 +409,8 @@ static void gfx_widgets_move_end(void *userdata)
 
       gfx_animation_push(&entry);
 
-      unfold->flags               |= DISPWIDG_FLAG_UNFOLDED;
-      unfold->flags               |= DISPWIDG_FLAG_UNFOLDING;
+      unfold->flags               |= DISPWIDG_FLAG_UNFOLDED
+                                   | DISPWIDG_FLAG_UNFOLDING;
    }
    else
       p_dispwidget->flags         &= ~DISPGFX_WIDGET_FLAG_MOVING;
@@ -761,7 +746,7 @@ static void gfx_widgets_font_init(
    /* Free existing font */
    if (font_data->font)
    {
-      gfx_display_font_free(font_data->font);
+      font_driver_free(font_data->font);
       font_data->font = NULL;
    }
 
@@ -1185,7 +1170,7 @@ static void gfx_widgets_draw_task_msg(
 
    if (msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
    {
-      if (msg->flags & DISPWIDG_FLAG_TASK_ERROR)
+      if (msg->flags & DISPWIDG_FLAG_TASK_ERROR) /* TODO/FIXME - localize */
          strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
       else
       {
@@ -1266,11 +1251,7 @@ static void gfx_widgets_draw_task_msg(
       float cosine  = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine    = 0.0f; /* sine(rad) = sine(0) = 0.0f */
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
-      {
          radians    = msg->hourglass_rotation;
-         cosine     = cosf(radians);
-         sine       = sinf(radians);
-      }
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
@@ -1499,6 +1480,7 @@ void gfx_widgets_frame(void *data)
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
    gfx_display_t            *p_disp = (gfx_display_t*)video_info->disp_userdata;
    gfx_display_ctx_driver_t *dispctx= p_disp->dispctx;
+   video_driver_state_t *video_st   = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)video_info->widgets_userdata;
    bool fps_show                    = video_info->fps_show;
    bool framecount_show             = video_info->framecount_show;
@@ -1522,7 +1504,9 @@ void gfx_widgets_frame(void *data)
    if (menu_screensaver_active || notifications_hidden)
       return;
 
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Font setup */
    gfx_widgets_font_bind(&p_dispwidget->gfx_widget_fonts.regular);
@@ -1796,7 +1780,9 @@ void gfx_widgets_frame(void *data)
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.bold);
    gfx_widgets_font_unbind(&p_dispwidget->gfx_widget_fonts.msg_queue);
 
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }
 
 static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)

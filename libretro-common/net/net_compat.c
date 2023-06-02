@@ -189,7 +189,7 @@ struct hostent *gethostbyname(const char *name)
       return NULL;
 
    rid = sceNetResolverCreate("resolver", NULL, 0);
-   if(rid < 0)
+   if (rid < 0)
       return NULL;
 
    if (sceNetResolverStartNtoa(rid, name, &addr, 0, 0, 0) < 0)

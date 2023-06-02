@@ -28,6 +28,14 @@
 
 RETRO_BEGIN_DECLS
 
+enum state_manager_rewind_st_flags
+{
+   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED     = (1 << 0),
+   STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED        = (1 << 1),
+   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED    = (1 << 2),
+   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED    = (1 << 3)
+};
+
 struct state_manager
 {
    uint8_t *data;
@@ -56,14 +64,6 @@ struct state_manager
 };
 
 typedef struct state_manager state_manager_t;
-
-enum state_manager_rewind_st_flags
-{
-   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED     = (1 << 0),
-   STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED        = (1 << 1),
-   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED    = (1 << 2),
-   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED    = (1 << 3)
-};
 
 struct state_manager_rewind_state
 {

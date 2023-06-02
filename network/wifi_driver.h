@@ -85,9 +85,6 @@ typedef struct
    bool active;
 } wifi_driver_state_t;
 
-extern wifi_driver_t wifi_connmanctl;
-extern wifi_driver_t wifi_nmcli;
-
 /**
  * config_get_wifi_driver_options:
  *
@@ -124,6 +121,9 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data);
 wifi_driver_state_t *wifi_state_get_ptr(void);
 
 extern const wifi_driver_t *wifi_drivers[];
+
+extern wifi_driver_t wifi_connmanctl;
+extern wifi_driver_t wifi_nmcli;
 
 RETRO_END_DECLS
 

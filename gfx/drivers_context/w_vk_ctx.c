@@ -56,30 +56,9 @@ typedef struct gfx_ctx_w_vk_data
 } gfx_ctx_w_vk_data_t;
 
 /* TODO/FIXME - static globals */
-static gfx_ctx_vulkan_data_t win32_vk;
-static void             *dinput_vk        = NULL;
-static int              win32_vk_interval = 0;
-
-void create_vk_context(HWND hwnd, bool *quit)
-{
-   RECT rect;
-   HINSTANCE instance;
-   unsigned width  = 0;
-   unsigned height = 0;
-
-   GetClientRect(hwnd, &rect);
-
-   instance = GetModuleHandle(NULL);
-   width    = rect.right - rect.left;
-   height   = rect.bottom - rect.top;
-
-   if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
-            &instance, &hwnd,
-            width, height, win32_vk_interval))
-      *quit = true;
-
-   g_win32_flags |= WIN32_CMN_FLAG_INITED;
-}
+gfx_ctx_vulkan_data_t win32_vk;
+static void      *dinput_vk        = NULL;
+int              win32_vk_interval = 0;
 
 static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 {
@@ -100,7 +79,7 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
    win32_check_window(NULL, quit, resize, width, height);
 
    if (win32_vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN)
-      *resize = true;
+      *resize               = true;
 
    /* Trigger video driver init when changing refresh rate
     * in fullscreen while dimensions stay the same.
@@ -174,24 +153,24 @@ static void gfx_ctx_w_vk_update_title(void *data)
 static void gfx_ctx_w_vk_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   HWND         window  = win32_get_window();
+   HWND         window     = win32_get_window();
 
    if (!window)
    {
       RECT mon_rect;
       MONITORINFOEX current_mon;
-      unsigned mon_id           = 0;
-      HMONITOR hm_to_use        = NULL;
+      unsigned mon_id      = 0;
+      HMONITOR hm_to_use   = NULL;
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-      mon_rect = current_mon.rcMonitor;
-      *width  = mon_rect.right - mon_rect.left;
-      *height = mon_rect.bottom - mon_rect.top;
+      mon_rect             = current_mon.rcMonitor;
+      *width               = mon_rect.right - mon_rect.left;
+      *height              = mon_rect.bottom - mon_rect.top;
    }
    else
    {
-      *width  = g_win32_resize_width;
-      *height = g_win32_resize_height;
+      *width               = g_win32_resize_width;
+      *height              = g_win32_resize_height;
    }
 }
 
@@ -322,12 +301,7 @@ static void gfx_ctx_w_vk_input_driver(void *data,
 static enum gfx_ctx_api gfx_ctx_w_vk_get_api(void *data) { return GFX_CTX_VULKAN_API; }
 
 static bool gfx_ctx_w_vk_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   if (api == GFX_CTX_VULKAN_API)
-      return true;
-   return false;
-}
+      enum gfx_ctx_api api, unsigned major, unsigned minor) { return (api == GFX_CTX_VULKAN_API); }
 
 static void gfx_ctx_w_vk_bind_hw_render(void *data, bool enable) { }
 

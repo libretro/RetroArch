@@ -227,7 +227,7 @@ static void check_port0_active(uint8_t pad_count)
    settings_t *settings = config_get_ptr();
    int idx = settings->uints.input_joypad_index[0];
 
-   if(pad_count < 2 && idx != 0)
+   if (pad_count < 2 && idx != 0)
    {
 #ifdef HW_RVL
       pad_type[0] = WPAD_EXP_NONE;
@@ -588,7 +588,7 @@ static void gx_joypad_poll(void)
 #endif
 
       /* Count active controllers */
-      if(gx_joypad_query_pad(port))
+      if (gx_joypad_query_pad(port))
          pad_count++;
 
       /* Always enable 1 pad in port 0 if there's only 1 controller connected. 

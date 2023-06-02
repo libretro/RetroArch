@@ -139,7 +139,7 @@ static void gfx_ctx_x_vk_swap_interval(void *data, int interval)
 
    if (x->interval != interval)
    {
-      x->interval = interval;
+      x->interval     = interval;
       if (x->vk.swapchain)
          x->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
@@ -184,7 +184,8 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
     * X11 loses focus on monitor/resolution swap and exits fullscreen.
     * Set window on top again to maintain both fullscreen and resolution.
     */
-   if (x->is_fullscreen) {
+   if (x->is_fullscreen)
+   {
       XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[X/Vulkan]: Resized fullscreen resolution to %dx%d.\n", width, height);
    }
@@ -194,7 +195,7 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
    if (!vulkan_create_swapchain(&x->vk, width, height, x->interval))
    {
       RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
-      x->vk.swapchain = VK_NULL_HANDLE;
+      x->vk.swapchain              = VK_NULL_HANDLE;
       return false;
    }
 
@@ -210,7 +211,7 @@ static void *gfx_ctx_x_vk_init(void *data)
    int nelements           = 0;
    int major               = 0;
    int minor               = 0;
-   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)
+   gfx_ctx_x_vk_data_t *x  = (gfx_ctx_x_vk_data_t*)
       calloc(1, sizeof(gfx_ctx_x_vk_data_t));
 
    if (!x)
@@ -275,19 +276,23 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
       memset(&vi_template, 0, sizeof(vi_template));
       vi_template.screen = DefaultScreen(g_x11_dpy);
-      vi = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &vi_template, &nvisuals);
+      vi                 = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &vi_template, &nvisuals);
       if (!vi || nvisuals < 1)
          goto error;
    }
 
    swa.colormap = g_x11_cmap = XCreateColormap(g_x11_dpy,
          RootWindow(g_x11_dpy, vi->screen), vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
-      LeaveWindowMask | EnterWindowMask |
-      ButtonReleaseMask | ButtonPressMask;
-   swa.override_redirect = False;
+   swa.event_mask            = StructureNotifyMask 
+	                     | KeyPressMask 
+			     | KeyReleaseMask
+                             | LeaveWindowMask 
+			     | EnterWindowMask
+                             | ButtonReleaseMask 
+			     | ButtonPressMask;
+   swa.override_redirect     = False;
 
-   x->is_fullscreen = fullscreen;
+   x->is_fullscreen          = fullscreen;
 
 #ifdef HAVE_XF86VM
    if (fullscreen && !windowed_full)
@@ -519,26 +524,14 @@ static enum gfx_ctx_api gfx_ctx_x_vk_get_api(void *data)
 }
 
 static bool gfx_ctx_x_vk_bind_api(void *data, enum gfx_ctx_api api,
-      unsigned major, unsigned minor)
-{
-   if (api == GFX_CTX_VULKAN_API)
-         return true;
-
-   return false;
-}
+      unsigned major, unsigned minor) { return (api == GFX_CTX_VULKAN_API); }
 
 static void gfx_ctx_x_vk_show_mouse(void *data, bool state)
 {
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
-static void gfx_ctx_x_vk_bind_hw_render(void *data, bool enable)
-{
-   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
-
-   if (!x)
-      return;
-}
+static void gfx_ctx_x_vk_bind_hw_render(void *data, bool enable) { }
 
 static void *gfx_ctx_x_vk_get_context_data(void *data)
 {
@@ -548,7 +541,7 @@ static void *gfx_ctx_x_vk_get_context_data(void *data)
 
 static uint32_t gfx_ctx_x_vk_get_flags(void *data)
 {
-   uint32_t      flags = 0;
+   uint32_t         flags = 0;
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)

@@ -39,27 +39,27 @@ int rc_api_process_fetch_achievement_info_response(rc_api_fetch_achievement_info
   int result;
 
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"AchievementID"},
-    {"Response"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("AchievementID"),
+    RC_JSON_NEW_FIELD("Response")
     /* unused fields
-    {"Offset"},
-    {"Count"},
-    {"FriendsOnly"},
+    RC_JSON_NEW_FIELD("Offset"),
+    RC_JSON_NEW_FIELD("Count"),
+    RC_JSON_NEW_FIELD("FriendsOnly")
      * unused fields */
   };
 
   rc_json_field_t response_fields[] = {
-    {"NumEarned"},
-    {"TotalPlayers"},
-    {"GameID"},
-    {"RecentWinner"} /* array */
+    RC_JSON_NEW_FIELD("NumEarned"),
+    RC_JSON_NEW_FIELD("TotalPlayers"),
+    RC_JSON_NEW_FIELD("GameID"),
+    RC_JSON_NEW_FIELD("RecentWinner") /* array */
   };
 
   rc_json_field_t entry_fields[] = {
-    {"User"},
-    {"DateAwarded"}
+    RC_JSON_NEW_FIELD("User"),
+    RC_JSON_NEW_FIELD("DateAwarded")
   };
 
   memset(response, 0, sizeof(*response));
@@ -143,38 +143,38 @@ int rc_api_process_fetch_leaderboard_info_response(rc_api_fetch_leaderboard_info
   char format[16];
 
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"LeaderboardData"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("LeaderboardData")
   };
 
   rc_json_field_t leaderboarddata_fields[] = {
-    {"LBID"},
-    {"LBFormat"},
-    {"LowerIsBetter"},
-    {"LBTitle"},
-    {"LBDesc"},
-    {"LBMem"},
-    {"GameID"},
-    {"LBAuthor"},
-    {"LBCreated"},
-    {"LBUpdated"},
-    {"Entries"} /* array */
+    RC_JSON_NEW_FIELD("LBID"),
+    RC_JSON_NEW_FIELD("LBFormat"),
+    RC_JSON_NEW_FIELD("LowerIsBetter"),
+    RC_JSON_NEW_FIELD("LBTitle"),
+    RC_JSON_NEW_FIELD("LBDesc"),
+    RC_JSON_NEW_FIELD("LBMem"),
+    RC_JSON_NEW_FIELD("GameID"),
+    RC_JSON_NEW_FIELD("LBAuthor"),
+    RC_JSON_NEW_FIELD("LBCreated"),
+    RC_JSON_NEW_FIELD("LBUpdated"),
+    RC_JSON_NEW_FIELD("Entries") /* array */
     /* unused fields
-    {"GameTitle"},
-    {"ConsoleID"},
-    {"ConsoleName"},
-    {"ForumTopicID"},
-    {"GameIcon"},
+    RC_JSON_NEW_FIELD("GameTitle"),
+    RC_JSON_NEW_FIELD("ConsoleID"),
+    RC_JSON_NEW_FIELD("ConsoleName"),
+    RC_JSON_NEW_FIELD("ForumTopicID"),
+    RC_JSON_NEW_FIELD("GameIcon")
      * unused fields */
   };
 
   rc_json_field_t entry_fields[] = {
-    {"User"},
-    {"Rank"},
-    {"Index"},
-    {"Score"},
-    {"DateSubmitted"}
+    RC_JSON_NEW_FIELD("User"),
+    RC_JSON_NEW_FIELD("Rank"),
+    RC_JSON_NEW_FIELD("Index"),
+    RC_JSON_NEW_FIELD("Score"),
+    RC_JSON_NEW_FIELD("DateSubmitted")
   };
 
   memset(response, 0, sizeof(*response));
@@ -281,9 +281,9 @@ int rc_api_process_fetch_games_list_response(rc_api_fetch_games_list_response_t*
   char* end;
 
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"Response"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("Response")
   };
 
   memset(response, 0, sizeof(*response));

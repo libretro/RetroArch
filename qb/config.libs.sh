@@ -244,13 +244,10 @@ check_platform Darwin METAL 'Metal is' true
 if [ "$OS" = 'Darwin' ]; then
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
+   add_opt CRTSWITCHRES no
 
    if [ "$HAVE_METAL" = yes ]; then
       check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
-      add_opt OPENGL no
-      add_opt OPENGL1 no
-      add_opt OPENGL_CORE no
-      die : 'Notice: Metal cannot coexist with OpenGL (yet), so disabling OpenGL.'
    else
       check_lib '' COCOA "-framework AppKit" NSApplicationMain
    fi

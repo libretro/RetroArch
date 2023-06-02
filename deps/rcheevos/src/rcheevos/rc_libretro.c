@@ -288,7 +288,7 @@ int rc_libretro_is_system_allowed(const char* library_name, int console_id) {
   return 1;
 }
 
-unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, unsigned address) {
+unsigned char* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t* regions, unsigned address, unsigned* avail) {
   unsigned i;
 
   for (i = 0; i < regions->count; ++i) {
@@ -297,13 +297,23 @@ unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regio
       if (regions->data[i] == NULL)
         break;
 
+      if (avail)
+        *avail = (unsigned)(size - address);
+
       return &regions->data[i][address];
     }
 
     address -= (unsigned)size;
   }
 
+  if (avail)
+    *avail = 0;
+
   return NULL;
+}
+
+unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, unsigned address) {
+  return rc_libretro_memory_find_avail(regions, address, NULL);
 }
 
 void rc_libretro_init_verbose_message_callback(rc_libretro_message_callback callback) {

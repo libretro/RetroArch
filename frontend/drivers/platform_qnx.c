@@ -99,11 +99,6 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
          "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], data_path,
          "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], data_path,
-         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
-
    /* user data */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));

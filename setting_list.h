@@ -38,7 +38,6 @@ enum setting_type
    ST_DIR,
    ST_STRING,
    ST_STRING_OPTIONS,
-   ST_HEX,
    ST_BIND,
    ST_GROUP,
    ST_SUB_GROUP,
@@ -183,8 +182,6 @@ struct rarch_setting
       bool           boolean;
    } original_value;
 
-   uint32_t             flags;
-   uint32_t             free_flags;
    uint32_t             index_offset;
    uint32_t             size;
    unsigned             bind_type;
@@ -197,7 +194,10 @@ struct rarch_setting
    enum msg_hash_enums  enum_value_idx;
    enum setting_type    type;
 
+   uint16_t             flags;
+
    int16_t              offset_by;
+   uint8_t              free_flags;
    uint8_t              index;
 };
 

@@ -96,7 +96,7 @@ static void gfx_ctx_go2_drm_input_driver(void *data,
 {
 #ifdef HAVE_UDEV
    /* Try to set it to udev instead */
-   void *udev = input_driver_init_wrap(&input_udev, joypad_name);
+   void *udev      = input_driver_init_wrap(&input_udev, joypad_name);
    if (udev)
    {
       *input       = &input_udev;
@@ -104,9 +104,8 @@ static void gfx_ctx_go2_drm_input_driver(void *data,
       return;
    }
 #endif
-
-   *input      = NULL;
-   *input_data = NULL;
+   *input          = NULL;
+   *input_data     = NULL;
 }
 
 static void *gfx_ctx_go2_drm_init(void *video_driver)
@@ -160,8 +159,6 @@ static enum gfx_ctx_api gfx_ctx_go2_drm_get_api(void *data) { return drm_api; }
 static bool gfx_ctx_go2_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   (void)video_driver;
-
    drm_api     = api;
 #ifdef HAVE_EGL
    g_egl_major = major;
@@ -206,24 +203,22 @@ static bool gfx_ctx_go2_drm_bind_api(void *video_driver,
 
 static void gfx_ctx_go2_drm_swap_interval(void *data, int interval)
 {
-   (void)data;
-   (void)interval;
-
+#ifndef NDEBUG
    if (interval > 1)
       RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+#endif
 }
 
 static bool gfx_ctx_go2_drm_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   struct retro_system_av_info *av_info = NULL;
+   video_driver_state_t *video_st       = video_state_get_ptr();
+   struct retro_system_av_info *av_info = &video_st->av_info;
    gfx_ctx_go2_drm_data_t *drm          = (gfx_ctx_go2_drm_data_t*)data;
 
    if (!drm)
       return false;
-
-   av_info  = video_viewport_get_system_av_info();
 
    frontend_driver_install_signal_handler();
 
@@ -231,14 +226,14 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
    if (      config_get_ptr()->bools.video_ctx_scaling 
          && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
-       drm->fb_width  = av_info->geometry.base_width;
-       drm->fb_height = av_info->geometry.base_height;
+       drm->fb_width    = av_info->geometry.base_width;
+       drm->fb_height   = av_info->geometry.base_height;
    }
    else
 #endif
    {
-       drm->fb_width  = drm->native_width;
-       drm->fb_height = drm->native_height;
+       drm->fb_width    = drm->native_width;
+       drm->fb_height   = drm->native_height;
    }
 
    if (!drm->context)
@@ -282,8 +277,7 @@ unsigned *width, unsigned *height)
 static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   unsigned w;
-   unsigned h;
+   unsigned w, h;
    gfx_ctx_go2_drm_data_t 
       *drm              = (gfx_ctx_go2_drm_data_t*)data;
 #ifdef HAVE_MENU
@@ -293,26 +287,25 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    if (      use_ctx_scaling 
          && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
-      struct retro_system_av_info* 
-         av_info  = video_viewport_get_system_av_info();
-       w          = av_info->geometry.base_width;
-       h          = av_info->geometry.base_height;
+      video_driver_state_t *video_st       = video_state_get_ptr();
+      struct retro_system_av_info *av_info = &video_st->av_info;
+       w                = av_info->geometry.base_width;
+       h                = av_info->geometry.base_height;
    }
    else
 #endif
    {
-       w          = drm->native_width;
-       h          = drm->native_height;
+       w                = drm->native_width;
+       h                = drm->native_height;
    }
 
    if (*width != w || *height != h)
    {
-       *width     = drm->fb_width = w;
-       *height    = drm->fb_height = h;
-       *resize    = false;
+       *width           = drm->fb_width = w;
+       *height          = drm->fb_height = h;
+       *resize          = false;
    }
-
-   *quit = (bool)frontend_driver_get_signal_handler_state();
+   *quit                = (bool)frontend_driver_get_signal_handler_state();
 }
 
 static bool gfx_ctx_go2_drm_has_focus(void *data) { return true; }
@@ -320,6 +313,10 @@ static bool gfx_ctx_go2_drm_suppress_screensaver(void *data, bool enable) { retu
 
 static void gfx_ctx_go2_drm_swap_buffers(void *data)
 {
+#ifdef HAVE_EGL
+   go2_surface_t* 
+      surf   = NULL;
+#endif
    gfx_ctx_go2_drm_data_t 
       *drm   = (gfx_ctx_go2_drm_data_t*)data;
 
@@ -344,14 +341,13 @@ static void gfx_ctx_go2_drm_swap_buffers(void *data)
 
 #ifdef HAVE_EGL
    go2_context_swap_buffers(drm->context);
-
-   go2_surface_t* surface = go2_context_surface_lock(drm->context);
+   surf     = go2_context_surface_lock(drm->context);
    go2_presenter_post(drm->presenter,
-         surface,
+         surf,
          src_x, src_y, src_w, src_h,
          out_y, out_x, out_h, out_w,
          GO2_ROTATION_DEGREES_270, 2);
-   go2_context_surface_unlock(drm->context, surface);
+   go2_context_surface_unlock(drm->context, surf);
 #endif
 }
 
@@ -386,9 +382,8 @@ static void gfx_ctx_go2_drm_set_flags(void *data, uint32_t flags)
 
 static void gfx_ctx_go2_drm_bind_hw_render(void *data, bool enable)
 {
-   gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;
-
 #ifdef HAVE_EGL
+   gfx_ctx_go2_drm_data_t *drm = (gfx_ctx_go2_drm_data_t*)data;
    egl_bind_hw_render(&drm->egl, enable);
 #endif
 }

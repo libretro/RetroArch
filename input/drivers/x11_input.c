@@ -149,282 +149,283 @@ static int16_t x_input_state(
       unsigned idx,
       unsigned id)
 {
-   x11_input_t *x11     = (x11_input_t*)data;
-   settings_t *settings = config_get_ptr();
 
-   if (port >= MAX_USERS)
-      return 0;
-
-   switch (device)
+   if (port < MAX_USERS)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
+      x11_input_t *x11     = (x11_input_t*)data;
+      settings_t *settings = config_get_ptr();
 
-            if (settings->uints.input_mouse_index[port] == 0)
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
             {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               unsigned i;
+               int16_t ret = 0;
+
+               if (settings->uints.input_mouse_index[port] == 0)
                {
-                  if (binds[port][i].valid)
+                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (x_mouse_button_pressed(x11, port,
-                              binds[port][i].mbutton))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (binds[port][i].valid)
-                  {
-                     if ((binds[port][i].key < RETROK_LAST) &&
-                           x_keyboard_pressed(x11, binds[port][i].key))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (binds[port][id].valid)
-            {
-               if (
-                     ((binds[port][id].key < RETROK_LAST) && 
-                      x_keyboard_pressed(x11, binds[port][id].key)) 
-                     && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                        || !keyboard_mapping_blocked)
-                     )
-                  return 1;
-               else if (settings->uints.input_mouse_index[port] == 0)
-               {
-                  if (x_mouse_button_pressed(x11, port,
-                           binds[port][id].mbutton))
-                     return 1;
-               }
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-         {
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            int16_t pressed_minus = 0;
-            int16_t pressed_plus  = 0;
-            int16_t ret           = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = binds[port][id_minus].valid;
-            id_plus_valid         = binds[port][id_plus].valid;
-            id_minus_key          = binds[port][id_minus].key;
-            id_plus_key           = binds[port][id_plus].key;
-
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
-            {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-               if (x11->state[sym >> 3] & (1 << (sym & 7)))
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
-            {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-               if (x11->state[sym >> 3] & (1 << (sym & 7)))
-                  ret += -0x7fff;
-            }
-
-            return ret;
-         }
-         break;
-      case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         switch (id)
-         {
-            case RETRO_DEVICE_ID_MOUSE_X:
-               if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                  return x11->mouse_x;
-               return x11->mouse_delta_x;
-            case RETRO_DEVICE_ID_MOUSE_Y:
-               if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                  return x11->mouse_y;
-               return x11->mouse_delta_y;
-            case RETRO_DEVICE_ID_MOUSE_LEFT:
-               return x11->mouse_l;
-            case RETRO_DEVICE_ID_MOUSE_RIGHT:
-               return x11->mouse_r;
-            case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-            case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-            case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-            case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-               return x_mouse_state_wheel(id);
-            case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-               return x11->mouse_m;
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx == 0)
-         {
-            struct video_viewport vp;
-            bool screen                 = device == RARCH_DEVICE_POINTER_SCREEN;
-            bool inside                 = false;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
-
-            vp.x                        = 0;
-            vp.y                        = 0;
-            vp.width                    = 0;
-            vp.height                   = 0;
-            vp.full_width               = 0;
-            vp.full_height              = 0;
-
-            if (video_driver_translate_coord_viewport_wrap(
-                     &vp, x11->mouse_x, x11->mouse_y,
-                     &res_x, &res_y, &res_screen_x, &res_screen_y))
-            {
-               if (screen)
-               {
-                  res_x = res_screen_x;
-                  res_y = res_screen_y;
-               }
-
-               inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-               if (!inside)
-                  return 0;
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return res_x;
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return res_y;
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return x11->mouse_l;
-               }
-            }
-         }
-         break;
-      case RETRO_DEVICE_LIGHTGUN:
-         switch ( id )
-         {
-            /*aiming*/
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               {
-                  struct video_viewport vp;
-                  const int edge_detect       = 32700;
-                  bool inside                 = false;
-                  int16_t res_x               = 0;
-                  int16_t res_y               = 0;
-                  int16_t res_screen_x        = 0;
-                  int16_t res_screen_y        = 0;
-
-                  vp.x                        = 0;
-                  vp.y                        = 0;
-                  vp.width                    = 0;
-                  vp.height                   = 0;
-                  vp.full_width               = 0;
-                  vp.full_height              = 0;
-
-                  if (video_driver_translate_coord_viewport_wrap(&vp,
-                           x11->mouse_x, x11->mouse_y,
-                           &res_x, &res_y, &res_screen_x, &res_screen_y))
-                  {
-                     inside =    (res_x >= -edge_detect) 
-                        && (res_y >= -edge_detect)
-                        && (res_x <= edge_detect)
-                        && (res_y <= edge_detect);
-
-                     switch ( id )
-                     {
-                        case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                           if (inside)
-                              return res_x;
-                           break;
-                        case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                           if (inside)
-                              return res_y;
-                           break;
-                        case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                           return !inside;
-                        default:
-                           break;
-                     }
-                  }
-               }
-               break;
-            /*buttons*/
-            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-            case RETRO_DEVICE_ID_LIGHTGUN_START:
-            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
-               {
-                  unsigned new_id                = x_retro_id_to_rarch(id);
-                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
-                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
-                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
-                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                  uint16_t port                  = joypad_info->joy_idx;
-                  float axis_threshold           = joypad_info->axis_threshold;
-                  const uint64_t joykey          = (bind_joykey != NO_BTN)
-                     ? bind_joykey  : autobind_joykey;
-                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-                     ? bind_joyaxis : autobind_joyaxis;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST) 
-                           && x_keyboard_pressed(x11, binds[port]
-                              [new_id].key) )
-                        return 1;
-                  if (binds[port][new_id].valid)
-                  {
-                     if ((uint16_t)joykey != NO_BTN && joypad->button(
-                              port, (uint16_t)joykey))
-                        return 1;
-                     if (joyaxis != AXIS_NONE &&
-                           ((float)abs(joypad->axis(port, joyaxis)) 
-                            / 0x8000) > axis_threshold)
-                        return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
+                     if (binds[port][i].valid)
                      {
                         if (x_mouse_button_pressed(x11, port,
-                                 binds[port][new_id].mbutton))
-                           return 1;
+                                 binds[port][i].mbutton))
+                           ret |= (1 << i);
                      }
                   }
                }
-               break;
-            /*deprecated*/
-            case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return x11->mouse_delta_x;
-            case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return x11->mouse_delta_y;
-         }
-         break;
+               if (!keyboard_mapping_blocked)
+               {
+                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+                  {
+                     if (binds[port][i].valid)
+                     {
+                        if ((binds[port][i].key < RETROK_LAST) &&
+                              x_keyboard_pressed(x11, binds[port][i].key))
+                           ret |= (1 << i);
+                     }
+                  }
+               }
+
+               return ret;
+            }
+
+            if (id < RARCH_BIND_LIST_END)
+            {
+               if (binds[port][id].valid)
+               {
+                  if (
+                        ((binds[port][id].key < RETROK_LAST) && 
+                         x_keyboard_pressed(x11, binds[port][id].key)) 
+                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
+                           || !keyboard_mapping_blocked)
+                     )
+                     return 1;
+                  else if (settings->uints.input_mouse_index[port] == 0)
+                  {
+                     if (x_mouse_button_pressed(x11, port,
+                              binds[port][id].mbutton))
+                        return 1;
+                  }
+               }
+            }
+            break;
+         case RETRO_DEVICE_ANALOG:
+            if (binds[port])
+            {
+               int id_minus_key      = 0;
+               int id_plus_key       = 0;
+               unsigned id_minus     = 0;
+               unsigned id_plus      = 0;
+               int16_t pressed_minus = 0;
+               int16_t pressed_plus  = 0;
+               int16_t ret           = 0;
+               bool id_plus_valid    = false;
+               bool id_minus_valid   = false;
+
+               input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+               id_minus_valid        = binds[port][id_minus].valid;
+               id_plus_valid         = binds[port][id_plus].valid;
+               id_minus_key          = binds[port][id_minus].key;
+               id_plus_key           = binds[port][id_plus].key;
+
+               if (id_plus_valid && id_plus_key < RETROK_LAST)
+               {
+                  unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
+                  if (x11->state[sym >> 3] & (1 << (sym & 7)))
+                     ret = 0x7fff;
+               }
+               if (id_minus_valid && id_minus_key < RETROK_LAST)
+               {
+                  unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
+                  if (x11->state[sym >> 3] & (1 << (sym & 7)))
+                     ret += -0x7fff;
+               }
+
+               return ret;
+            }
+            break;
+         case RETRO_DEVICE_KEYBOARD:
+            return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
+         case RETRO_DEVICE_MOUSE:
+         case RARCH_DEVICE_MOUSE_SCREEN:
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                     return x11->mouse_x;
+                  return x11->mouse_delta_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                     return x11->mouse_y;
+                  return x11->mouse_delta_y;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return x11->mouse_l;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return x11->mouse_r;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  return x_mouse_state_wheel(id);
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return x11->mouse_m;
+            }
+            break;
+         case RETRO_DEVICE_POINTER:
+         case RARCH_DEVICE_POINTER_SCREEN:
+            if (idx == 0)
+            {
+               struct video_viewport vp;
+               bool screen                 = device == RARCH_DEVICE_POINTER_SCREEN;
+               bool inside                 = false;
+               int16_t res_x               = 0;
+               int16_t res_y               = 0;
+               int16_t res_screen_x        = 0;
+               int16_t res_screen_y        = 0;
+
+               vp.x                        = 0;
+               vp.y                        = 0;
+               vp.width                    = 0;
+               vp.height                   = 0;
+               vp.full_width               = 0;
+               vp.full_height              = 0;
+
+               if (video_driver_translate_coord_viewport_wrap(
+                        &vp, x11->mouse_x, x11->mouse_y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+               {
+                  if (screen)
+                  {
+                     res_x = res_screen_x;
+                     res_y = res_screen_y;
+                  }
+
+                  inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+
+                  if (!inside)
+                     return 0;
+
+                  switch (id)
+                  {
+                     case RETRO_DEVICE_ID_POINTER_X:
+                        return res_x;
+                     case RETRO_DEVICE_ID_POINTER_Y:
+                        return res_y;
+                     case RETRO_DEVICE_ID_POINTER_PRESSED:
+                        return x11->mouse_l;
+                  }
+               }
+            }
+            break;
+         case RETRO_DEVICE_LIGHTGUN:
+            switch ( id )
+            {
+               /*aiming*/
+               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                  {
+                     struct video_viewport vp;
+                     const int edge_detect       = 32700;
+                     bool inside                 = false;
+                     int16_t res_x               = 0;
+                     int16_t res_y               = 0;
+                     int16_t res_screen_x        = 0;
+                     int16_t res_screen_y        = 0;
+
+                     vp.x                        = 0;
+                     vp.y                        = 0;
+                     vp.width                    = 0;
+                     vp.height                   = 0;
+                     vp.full_width               = 0;
+                     vp.full_height              = 0;
+
+                     if (video_driver_translate_coord_viewport_wrap(&vp,
+                              x11->mouse_x, x11->mouse_y,
+                              &res_x, &res_y, &res_screen_x, &res_screen_y))
+                     {
+                        inside =    (res_x >= -edge_detect) 
+                           && (res_y >= -edge_detect)
+                           && (res_x <= edge_detect)
+                           && (res_y <= edge_detect);
+
+                        switch ( id )
+                        {
+                           case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+                              if (inside)
+                                 return res_x;
+                              break;
+                           case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+                              if (inside)
+                                 return res_y;
+                              break;
+                           case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                              return !inside;
+                           default:
+                              break;
+                        }
+                     }
+                  }
+                  break;
+                  /*buttons*/
+               case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+               case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+               case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+               case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+               case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+               case RETRO_DEVICE_ID_LIGHTGUN_START:
+               case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+               case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
+                  {
+                     unsigned new_id                = x_retro_id_to_rarch(id);
+                     const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                     const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                     const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                     const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                     uint16_t joyport               = joypad_info->joy_idx;
+                     float axis_threshold           = joypad_info->axis_threshold;
+                     const uint64_t joykey          = (bind_joykey != NO_BTN)
+                        ? bind_joykey  : autobind_joykey;
+                     const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
+                        ? bind_joyaxis : autobind_joyaxis;
+                     if (!keyboard_mapping_blocked)
+                        if ((binds[port][new_id].key < RETROK_LAST) 
+                              && x_keyboard_pressed(x11, binds[port]
+                                 [new_id].key) )
+                           return 1;
+                     if (binds[port][new_id].valid)
+                     {
+                        if ((uint16_t)joykey != NO_BTN && joypad->button(
+                                 joyport, (uint16_t)joykey))
+                           return 1;
+                        if (joyaxis != AXIS_NONE &&
+                              ((float)abs(joypad->axis(joyport, joyaxis)) 
+                               / 0x8000) > axis_threshold)
+                           return 1;
+                        else if (settings->uints.input_mouse_index[port] == 0)
+                        {
+                           if (x_mouse_button_pressed(x11, port,
+                                    binds[port][new_id].mbutton))
+                              return 1;
+                        }
+                     }
+                  }
+                  break;
+                  /*deprecated*/
+               case RETRO_DEVICE_ID_LIGHTGUN_X:
+                  return x11->mouse_delta_x;
+               case RETRO_DEVICE_ID_LIGHTGUN_Y:
+                  return x11->mouse_delta_y;
+            }
+            break;
+      }
    }
 
    return 0;

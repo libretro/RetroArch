@@ -23,8 +23,6 @@ ifeq ($(HAVE_SAPI), 1)
    LIBS += sapi.dll
 endif
 
-
-
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -448,17 +446,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
    DEFINES += -DHAVE_LANGEXTRA
    DEF_FLAGS += -finput-charset=UTF-8
 
-   OBJ += intl/msg_hash_ca.o \
-          intl/msg_hash_chs.o \
-          intl/msg_hash_el.o \
-          intl/msg_hash_ja.o \
-          intl/msg_hash_ko.o \
-          intl/msg_hash_pt_br.o \
-          intl/msg_hash_pt_pt.o \
-          intl/msg_hash_ru.o \
-          intl/msg_hash_tr.o \
-          intl/msg_hash_val.o \
-          intl/msg_hash_vn.o
+   OBJ += intl/msg_hash_chs.o \
+          intl/msg_hash_pt_br.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -813,18 +802,6 @@ ifeq ($(HAVE_CORETEXT), 1)
    OBJ += gfx/drivers_font_renderer/coretext.o
 endif
 
-ifeq ($(TARGET), retroarch_3ds)
-   OBJ += gfx/drivers_font/ctr_font.o
-endif
-
-ifeq ($(TARGET), retroarch_ps2)
-   OBJ += gfx/drivers_font/ps2_font.o
-endif
-
-ifeq ($(HAVE_LIBNX), 1)
-   OBJ += gfx/drivers_font/switch_font.o
-endif
-
 ifeq ($(HAVE_AUDIOIO), 1)
    OBJ += audio/drivers/audioio.o
 endif
@@ -1107,18 +1084,6 @@ ifeq ($(HAVE_OVERLAY), 1)
           led/drivers/led_overlay.o
 endif
 
-ifeq ($(HAVE_VIDEO_LAYOUT), 1)
-   DEFINES += -DHAVE_VIDEO_LAYOUT
-   OBJ += \
-	  gfx/video_layout.o \
-	  gfx/video_layout/view.o \
-	  gfx/video_layout/element.o \
-	  gfx/video_layout/component.o \
-	  gfx/video_layout/internal.o \
-	  gfx/video_layout/scope.o \
-	  gfx/video_layout/load.o
-endif
-
 ifeq ($(HAVE_STB_FONT), 1)
    OBJ += gfx/drivers_font_renderer/stb.o
    OBJ += gfx/drivers_font_renderer/stb_unicode.o
@@ -1164,17 +1129,13 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-   OBJ += gfx/drivers_display/gfx_display_vita2d.o
-
-   OBJ += gfx/drivers/vita2d_gfx.o \
-          gfx/drivers_font/vita2d_font.o
+   OBJ += gfx/drivers/vita2d_gfx.o
 
    INCLUDE_DIRS += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += gfx/drivers/ctr_gfx.o \
-          gfx/drivers_display/gfx_display_ctr.o \
           input/drivers/ctr_input.o \
           input/drivers_joypad/ctr_joypad.o
 endif
@@ -1201,15 +1162,13 @@ endif
 
 ifeq ($(TARGET), retroarch_wiiu)
    OBJ +=  gfx/drivers/gx2_gfx.o \
-			  gfx/drivers_font/wiiu_font.o \
-			  gfx/drivers_display/gfx_display_wiiu.o \
-			  input/drivers/wiiu_input.o \
-			  input/drivers_joypad/wiiu_joypad.o \
-			  input/drivers_joypad/wiiu/wpad_driver.o \
-			  input/drivers_joypad/wiiu/kpad_driver.o \
-			  input/drivers_joypad/wiiu/pad_functions.o \
-			  audio/drivers/wiiu_audio.o \
-			  frontend/drivers/platform_wiiu.o
+	   input/drivers/wiiu_input.o \
+	   input/drivers_joypad/wiiu_joypad.o \
+	   input/drivers_joypad/wiiu/wpad_driver.o \
+	   input/drivers_joypad/wiiu/kpad_driver.o \
+	   input/drivers_joypad/wiiu/pad_functions.o \
+	   audio/drivers/wiiu_audio.o \
+	   frontend/drivers/platform_wiiu.o
 
       ifeq ($(WIIU_HID),1)
          DEFINES += -DWIIU_HID
@@ -1221,15 +1180,12 @@ endif
 
 ifeq ($(TARGET), retroarch_switch)
    ifeq ($(HAVE_LIBNX), 1)
-      OBJ += gfx/drivers_display/gfx_display_switch.o \
-             gfx/drivers/switch_nx_gfx.o \
+      OBJ += gfx/drivers/switch_nx_gfx.o \
              audio/drivers/switch_libnx_audren_audio.o \
              audio/drivers/switch_libnx_audren_thread_audio.o
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
       endif
-   else
-      OBJ += gfx/drivers/switch_gfx.o
    endif
    OBJ += audio/drivers/switch_audio.o \
           audio/drivers/switch_thread_audio.o \
@@ -1252,9 +1208,12 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
+        gfx/common/wayland/viewporter.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
-        gfx/common/wayland/xdg-decoration-unstable-v1.o
+        gfx/common/wayland/xdg-decoration-unstable-v1.o \
+        gfx/common/wayland/pointer-constraints-unstable-v1.o \
+        gfx/common/wayland/relative-pointer-unstable-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
@@ -1352,11 +1311,10 @@ ifeq ($(HAVE_LIBUSB), 1)
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
-   ifeq ($(HAVE_HID), 1)
-      DEFINES += -DHAVE_IOHIDMANAGER
-      OBJ += input/drivers_hid/iohidmanager_hid.o
-      LIBS += -framework IOKit
-   endif
+   HAVE_HID=1
+   DEFINES += -DHAVE_IOHIDMANAGER
+   OBJ += input/drivers_hid/iohidmanager_hid.o
+   LIBS += -framework IOKit
 endif
 
 ifeq ($(HAVE_HID), 1)
@@ -1373,8 +1331,8 @@ ifeq ($(HAVE_HID), 1)
           input/connect/connect_nesusb.o \
           input/connect/connect_snesusb.o \
           input/connect/connect_wiiupro.o \
-		  input/connect/connect_kade.o \
-		  input/connect/connect_zerodelay_dragonrise.o \
+	  input/connect/connect_kade.o \
+	  input/connect/connect_zerodelay_dragonrise.o \
           input/connect/connect_wiiugca.o
 endif
 
@@ -1419,7 +1377,8 @@ OBJ += gfx/drivers_context/gfx_null_ctx.o
 
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
-   OBJ += gfx/drivers_context/drm_ctx.o
+   OBJ += gfx/drivers_context/drm_ctx.o \
+		  gfx/display_servers/dispserv_kms.o
 
 ifeq ($(HAVE_ODROIDGO2), 1)
    OBJ += gfx/drivers_context/drm_go2_ctx.o
@@ -1430,7 +1389,7 @@ endif
 
 ifeq ($(HAVE_CACA), 1)
    DEFINES += -DHAVE_CACA
-   OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
+   OBJ += gfx/drivers/caca_gfx.o
    LIBS += $(CACA_LIBS)
    DEF_FLAGS += $(CACA_CFLAGS)
 endif
@@ -1438,8 +1397,7 @@ endif
 ifeq ($(HAVE_SIXEL), 1)
    DEFINES += -DHAVE_SIXEL
    INCLUDE_DIRS += -I/usr/include/sixel
-   OBJ += gfx/drivers/sixel_gfx.o \
-			 gfx/drivers_font/sixel_font.o
+   OBJ += gfx/drivers/sixel_gfx.o
    LIBS += $(SIXEL_LIBS)
    DEF_FLAGS += $(SIXEL_CFLAGS)
 endif
@@ -1472,9 +1430,7 @@ endif
 ifeq ($(HAVE_VITAGL), 1)
    DEFINES += -DHAVE_OPENGL1 -DHAVE_VITAGL
    OBJ += gfx/drivers/gl1.o \
-          gfx/drivers_font/gl1_raster_font.o \
-          gfx/drivers_context/vita_ctx.o \
-          gfx/drivers_display/gfx_display_gl1.o
+          gfx/drivers_context/vita_ctx.o
 endif
 
 ifeq ($(HAVE_VITAGLES), 1)
@@ -1486,18 +1442,14 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
       OBJ += gfx/drivers/gl2.o \
-             $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl2_raster_font.o \
-	     gfx/drivers_display/gfx_display_gl2.o
+             $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o
    endif
 
    OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
 
    ifeq ($(HAVE_OPENGL1), 1)
       DEFINES += -DHAVE_OPENGL1
-      OBJ += gfx/drivers/gl1.o \
-             gfx/drivers_font/gl1_raster_font.o \
-	     gfx/drivers_display/gfx_display_gl1.o
+      OBJ += gfx/drivers/gl1.o
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1575,9 +1527,7 @@ ifeq ($(HAVE_METAL), 1)
    DEF_FLAGS += -fobjc-arc
    OBJ += \
 	  gfx/common/metal/metal_renderer.o \
-	  gfx/drivers/metal.o \
-	  gfx/drivers_font/metal_raster_font.o \
-	  gfx/drivers_display/gfx_display_metal.o
+	  gfx/drivers/metal.o
 endif
 
 ifeq ($(HAVE_EGL), 1)
@@ -1651,9 +1601,7 @@ ifeq ($(HAVE_VULKAN), 1)
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
-          $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o \
-          gfx/drivers_font/vulkan_raster_font.o \
-			 gfx/drivers_display/gfx_display_vulkan.o
+          $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o
 
    ifeq ($(HAVE_SLANG), 1)
       OBJ += gfx/drivers_shader/shader_vulkan.o
@@ -1669,9 +1617,7 @@ endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
    OBJ += gfx/drivers/gl3.o \
-          gfx/drivers_font/gl3_raster_font.o \
-	  gfx/drivers_shader/shader_gl3.o \
-	  gfx/drivers_display/gfx_display_gl3.o
+	  gfx/drivers_shader/shader_gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
    NEED_CXX_LINKER  = 1
@@ -1727,38 +1673,31 @@ ifeq ($(HAVE_D3D9), 1)
       endif
    endif
    HAVE_DX_COMMON  = 1
-   OBJ  += gfx/drivers_font/d3d_w32_font.o
+   OBJ  += gfx/drivers_font/d3d9x_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers/d3d9cg.o
-      OBJ  += gfx/drivers_display/gfx_display_d3d9cg.o
    endif
 endif
 
 ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d10.o \
-          gfx/common/d3d10_common.o \
-          gfx/drivers_font/d3d10_font.o \
-			 gfx/drivers_display/gfx_display_d3d10.o
+          gfx/common/d3d10_common.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d11.o \
-          gfx/common/d3d11_common.o \
-          gfx/drivers_font/d3d11_font.o \
-			 gfx/drivers_display/gfx_display_d3d11.o
+          gfx/common/d3d11_common.o
    DEFINES += -DHAVE_D3D11
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o \
-          gfx/common/d3d12_common.o \
-          gfx/drivers_font/d3d12_font.o \
-			 gfx/drivers_display/gfx_display_d3d12.o
+          gfx/common/d3d12_common.o
    DEFINES += -DHAVE_D3D12
 endif
 
@@ -1795,8 +1734,6 @@ endif
 ifeq ($(HAVE_D3D8), 1)
    DEFINES += -DHAVE_D3D8
    OBJ += gfx/drivers/d3d8.o
-   OBJ += gfx/common/d3d8_common.o
-	OBJ += gfx/drivers_display/gfx_display_d3d8.o
 endif
 
 ifeq ($(HAVE_D3D9), 1)
@@ -1823,7 +1760,6 @@ endif
 ifeq ($(HAVE_HLSL),1)
    DEFINES += -DHAVE_HLSL
    OBJ += gfx/drivers/d3d9hlsl.o
-   OBJ += gfx/drivers_display/gfx_display_d3d9hlsl.o
 endif
 
 ifeq ($(HAVE_SLANG),1)
@@ -2266,10 +2202,8 @@ ifneq ($(findstring Win32,$(OS)),)
           gfx/display_servers/dispserv_win32.o
 
    ifeq ($(HAVE_GDI), 1)
-      OBJ += gfx/drivers/gdi_gfx.o \
-				 gfx/drivers_font/gdi_font.o \
-				 gfx/drivers_display/gfx_display_gdi.o
-		LIBS += -lmsimg32
+      OBJ += gfx/drivers/gdi_gfx.o
+      LIBS += -lmsimg32
    endif
    LIBS += -lhid -lsetupapi
 endif
@@ -2357,7 +2291,6 @@ endif
 
 ifneq ($(findstring DOS,$(OS)),)
    OBJ += gfx/drivers/vga_gfx.o \
-          gfx/drivers_font/vga_font.o \
           input/drivers/dos_input.o \
           input/drivers_joypad/dos_joypad.o \
           frontend/drivers/platform_dos.o

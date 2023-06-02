@@ -166,22 +166,23 @@ static void *psp_audio_init(const char *device,
 static void psp_audio_free(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
-   if(!psp)
+   if (!psp)
       return;
 
-   if(psp->running){
+   if (psp->running)
+   {
       if (psp->worker_thread)
       {
-            psp->running = false;
-            sthread_join(psp->worker_thread);
+         psp->running = false;
+         sthread_join(psp->worker_thread);
       }
 
       if (psp->cond)
-            scond_free(psp->cond);
+         scond_free(psp->cond);
       if (psp->fifo_lock)
-            slock_free(psp->fifo_lock);
+         slock_free(psp->fifo_lock);
       if (psp->cond_lock)
-            slock_free(psp->cond_lock);
+         slock_free(psp->cond_lock);
    }
    free(psp->buffer);
    psp->worker_thread = NULL;
@@ -222,7 +223,7 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    slock_unlock(psp->cond_lock);
 
    slock_lock(psp->fifo_lock);
-   if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
+   if ((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
    {
       memcpy(psp->buffer + write_pos, buf,
             (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
@@ -274,13 +275,13 @@ static bool psp_audio_start(void *data, bool is_shutdown)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if(psp && psp->running)
-      return true;
-
-   if (!psp->worker_thread)
+   if (psp && !psp->running)
    {
-      psp->running = true;
-      psp->worker_thread = sthread_create(audioMainLoop, psp);
+      if (!psp->worker_thread)
+      {
+         psp->running       = true;
+         psp->worker_thread = sthread_create(audioMainLoop, psp);
+      }
    }
 
    return true;
@@ -295,7 +296,6 @@ static void psp_audio_set_nonblock_state(void *data, bool toggle)
 
 static bool psp_audio_use_float(void *data)
 {
-   (void)data;
    return false;
 }
 
@@ -315,7 +315,7 @@ static size_t psp_write_avail(void *data)
 
 static size_t psp_buffer_size(void *data)
 {
-   /* TODO */
+   /* TODO/FIXME - implement? */
    return AUDIO_BUFFER_SIZE /** sizeof(uint32_t)*/;
 }
 

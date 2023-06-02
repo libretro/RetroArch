@@ -294,6 +294,10 @@ MSG_HASH(
    "audio_fastforward_mute"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "audio_fastforward_speedup"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
    "audio_output_rate"
    )
@@ -380,6 +384,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
    "autosave_interval"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "replay_checkpoint_interval"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
@@ -564,10 +572,6 @@ MSG_HASH(
    "cheevos_hardcore_mode_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "cheevos_leaderboards_enable"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    "cheevos_richpresence_enable"
    )
@@ -650,6 +654,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    "cheevos_visibility_account"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "cheevos_visibility_lboard_start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "cheevos_visibility_lboard_submit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "cheevos_visibility_lboard_cancel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "cheevos_visibility_lboard_trackers"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "cheevos_visibility_progress_tracker"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
@@ -1821,6 +1845,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TOUCH_SCALE,
    "input_touch_scale"
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "input_touch_vmouse_pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "input_touch_vmouse_mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "input_touch_vmouse_touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "input_touch_vmouse_trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "input_touch_vmouse_gesture"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_MODE,
    "input_bind_mode"
@@ -3318,6 +3364,10 @@ MSG_HASH(
    "savestate_max_keep"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
+   "replay_max_keep"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
    "savestate_directory"
    )
@@ -3364,6 +3414,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_STATE,
    "savestate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RECORD_REPLAY,
+   "record_replay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_SLOT,
+   "replay_slot"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAY_REPLAY,
+   "play_replay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HALT_REPLAY,
+   "halt_replay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
@@ -4908,6 +4974,10 @@ MSG_HASH(
    "quick_menu_show_save_load_state"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_REPLAY,
+   "quick_menu_show_replay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "quick_menu_show_undo_save_load_state"
    )
@@ -4958,6 +5028,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "quick_menu_show_save_core_overrides"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "quick_menu_show_save_content_dir_overrides"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,

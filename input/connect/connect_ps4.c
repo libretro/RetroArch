@@ -136,10 +136,13 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
       calloc(1, sizeof(struct hidpad_ps4_data));
 
    if (!device)
-      goto error;
+      return NULL;
 
    if (!connection)
-      goto error;
+   {
+      free(device);
+      return NULL;
+   }
 
    device->connection = connection;
    device->driver     = driver;
@@ -156,11 +159,6 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
    hidpad_ps4_send_control(device);
 
    return device;
-
-error:
-   if (device)
-      free(device);
-   return NULL;
 }
 
 static void hidpad_ps4_deinit(void *data)
@@ -244,7 +242,8 @@ static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
       struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
       int val         = rpt ? rpt->hatvalue[axis] : 0;
       val             = (val << 8) - 0x8000;
-      return (abs(val) > 0x1000) ? val : 0;
+      if (abs(val) > 0x1000)
+         return val;
    }
 
    return 0;

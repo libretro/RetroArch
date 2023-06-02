@@ -27,6 +27,10 @@
 #include "../msg_hash.h"
 #include "../setting_list.h"
 
+#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
+
+#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
+
 RETRO_BEGIN_DECLS
 
 /* NOTE: Order matters - only add new entries at
@@ -45,7 +49,6 @@ enum menu_displaylist_parse_type
    PARSE_ONLY_STRING,
    PARSE_ONLY_PATH,
    PARSE_ONLY_STRING_OPTIONS,
-   PARSE_ONLY_HEX,
    PARSE_ONLY_DIR,
    PARSE_SUB_GROUP,
    PARSE_ONLY_SIZE
@@ -152,9 +155,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_EJECT_DISC,
 #endif
    DISPLAYLIST_OVERLAYS,
-#ifdef HAVE_VIDEO_LAYOUT
-   DISPLAYLIST_VIDEO_LAYOUT_PATH,
-#endif
    DISPLAYLIST_SHADER_PARAMETERS,
    DISPLAYLIST_SHADER_PARAMETERS_PRESET,
    DISPLAYLIST_SHADER_PRESET_SAVE,
@@ -202,9 +202,6 @@ enum menu_displaylist_ctl_state
 #endif
    DISPLAYLIST_AI_SERVICE_SETTINGS_LIST,
    DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST,
-#ifdef HAVE_VIDEO_LAYOUT
-   DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
-#endif
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
@@ -330,22 +327,16 @@ typedef struct menu_displaylist_info
    char *exts;
    char *label;
    file_list_t *list;
-   file_list_t *menu_list;
    rarch_setting_t *setting;
 
    size_t directory_ptr;
 
    uint32_t flags;
-   unsigned count;
 
    unsigned type;
    unsigned type_default;
    enum msg_hash_enums enum_idx;
 } menu_displaylist_info_t;
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
 
 bool menu_displaylist_process(menu_displaylist_info_t *info);
 
@@ -360,10 +351,6 @@ unsigned menu_displaylist_build_list(
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info, settings_t *settings);
-
-#ifdef HAVE_NETWORKING
-unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
-#endif
 
 bool menu_displaylist_has_subsystems(void);
 

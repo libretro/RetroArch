@@ -43,6 +43,7 @@
 
 #ifdef HAVE_EGL
 #include <wayland-egl.h>
+#include <poll.h>
 #include "../common/egl_common.h"
 #endif
 
@@ -65,11 +66,14 @@ static void xdg_toplevel_handle_configure(void *data,
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
+      wl_egl_window_resize(wl->win,
+            wl->buffer_width,
+            wl->buffer_height,
+            0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
-            wl->width * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
+            wl->buffer_width,
+            wl->buffer_height);
 #endif
 
    wl->configured = false;
@@ -113,11 +117,13 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   wl->last_buffer_scale = wl->buffer_scale;
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);
 #endif
 
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
    return true;
 }
 
@@ -144,12 +150,15 @@ libdecor_frame_handle_configure(struct libdecor_frame *frame,
 
 #ifdef HAVE_EGL
    if (wl->win)
-      wl_egl_window_resize(wl->win, wl->width, wl->height, 0, 0);
+      wl_egl_window_resize(wl->win,
+            wl->buffer_width,
+            wl->buffer_height,
+            0, 0);
    else
       wl->win         = wl_egl_window_create(
             wl->surface,
-            wl->width  * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
+            wl->buffer_width,
+            wl->buffer_height);
 #endif
 
    wl->configured = false;
@@ -259,15 +268,11 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
             egl_default_accept_config_cb))
    {
       egl_report_error();
-      goto error;
+      return false;
    }
-
-   if (n == 0 || !egl_has_config(&wl->egl))
-      goto error;
+   if (n == 0 || !&wl->egl.config)
+      return false;
    return true;
-
-error:
-   return false;
 }
 #endif
 
@@ -275,23 +280,17 @@ static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
-
    if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
       goto error;
-
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
 #endif
-
    return wl;
-
 error:
    gfx_ctx_wl_destroy_resources(wl);
-
    if (wl)
       free(wl);
-
    return NULL;
 }
 
@@ -397,7 +396,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
 
-   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height))
+   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
 #ifdef HAVE_EGL
@@ -406,8 +405,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          (gfx_ctx_wayland_data_t*)data, egl_attribs);
 
    wl->win = wl_egl_window_create(wl->surface,
-      wl->width  * wl->buffer_scale,
-      wl->height * wl->buffer_scale);
+      wl->buffer_width,
+      wl->buffer_height);
 
    if (!egl_create_context(&wl->egl, (attr != egl_attribs)
             ? egl_attribs : NULL))
@@ -511,11 +510,74 @@ static bool gfx_ctx_wl_bind_api(void *data,
    return false;
 }
 
+static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t time)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   wl->swap_complete = true;
+
+   /* Destroy this callback */
+   wl_callback_destroy(cb);
+}
+
+static const struct wl_callback_listener wl_surface_frame_listener = { 
+   .done = wl_surface_frame_done,
+};
+
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   settings_t *settings           = config_get_ptr();
+   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   struct wl_callback *cb; 
+
+   if (max_swapchain_images <= 2)
+   {
+      /* Set Wayland frame callback. */
+      cb = wl_surface_frame(wl->surface);
+      wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
+   }
+
    egl_swap_buffers(&wl->egl);
+
+   if (max_swapchain_images <= 2)
+   {
+      /* Wait for the frame callback we set earlier. */
+      struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};
+      uint64_t deadline = cpu_features_get_time_usec() + 50000;
+      wl->swap_complete = false;
+
+      while (!wl->swap_complete)
+      {
+         uint64_t current_time = cpu_features_get_time_usec();
+         if (current_time >= deadline)
+         {
+            /* Deadline met. */
+            wl_callback_destroy(cb);
+            return;
+         }
+         uint64_t remaining_time = deadline - current_time;
+         int ret = (wl_display_dispatch_pending(wl->input.dpy));
+         if (ret == 0)
+         {
+            ret = wl_display_prepare_read(wl->input.dpy);
+            if (ret == -1)
+               continue; /* Retry dispatch_pending. */
+
+            ret = poll(&pollfd, 1, remaining_time / 1000);
+            if (ret <= 0)
+            {
+               /* Timeout met, or polling error. */
+               wl_display_cancel_read(wl->input.dpy);
+               wl_callback_destroy(cb);
+               return;
+            }
+            wl_display_read_events(wl->input.dpy);
+         }
+      }
+   }
 #endif
 }
 

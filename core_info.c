@@ -1599,6 +1599,8 @@ static void core_info_resolve_firmware(
       core_info_t *info, config_file_t *conf)
 {
    unsigned i;
+   size_t _len;
+   char prefix[12];
    unsigned firmware_count        = 0;
    core_info_firmware_t *firmware = NULL;
 
@@ -1611,18 +1613,17 @@ static void core_info_resolve_firmware(
    if (!firmware)
       return;
 
+   _len = strlcpy(prefix, "firmware", sizeof(prefix));
+
    for (i = 0; i < firmware_count; i++)
    {
-      char prefix[12];
       char path_key[64];
       char desc_key[64];
       char opt_key[64];
       struct config_entry_list *entry = NULL;
       bool tmp_bool                   = false;
 
-      prefix[0]   = '\0';
-
-      snprintf(prefix,   sizeof(prefix),   "firmware%u_", i);
+      snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
       strlcpy(path_key,  prefix,           sizeof(path_key));
       strlcat(path_key,  "path",           sizeof(path_key));
       strlcpy(desc_key,  prefix,           sizeof(desc_key));

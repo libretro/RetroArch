@@ -130,7 +130,7 @@ static void wl_keyboard_handle_key(void *data,
       return;
 #endif
    input_keyboard_event(value,
-			input_keymaps_translate_keysym_to_rk(keysym),
+         input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
@@ -421,6 +421,34 @@ static void wl_touch_handle_motion(void *data,
    }
 }
 
+static void handle_relative_motion(void *data,
+   struct zwp_relative_pointer_v1 *zwp_relative_pointer_v1,
+   uint32_t utime_hi, uint32_t utime_lo,
+   wl_fixed_t dx, wl_fixed_t dy,
+   wl_fixed_t dx_unaccel, wl_fixed_t dy_unaccel)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   wl->input.mouse.delta_x = wl_fixed_to_int(dx);
+   wl->input.mouse.delta_y = wl_fixed_to_int(dy);
+
+   if (wl->locked_pointer)
+   {
+      wl->input.mouse.x += wl->input.mouse.delta_x;
+      wl->input.mouse.y += wl->input.mouse.delta_y;
+   }
+}
+
+static void
+locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
+{
+}
+
+static void
+locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
+{
+}
+
 static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 
 static void wl_touch_handle_cancel(void *data, struct wl_touch *wl_touch)
@@ -460,6 +488,11 @@ static void wl_seat_handle_capabilities(void *data,
    {
       wl->wl_pointer = wl_seat_get_pointer(seat);
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
+      wl->wl_relative_pointer =
+         zwp_relative_pointer_manager_v1_get_relative_pointer(
+            wl->relative_pointer_manager, wl->wl_pointer);
+      zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
+         &relative_pointer_listener, wl);
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
@@ -483,29 +516,100 @@ static void wl_seat_handle_name(void *data,
 
 /* Surface callbacks. */
 
+static bool wl_update_scale(gfx_ctx_wayland_data_t *wl)
+{
+   surface_output_t *os;
+   output_info_t *new_output = NULL;
+   unsigned largest_scale = 0;
+
+   wl_list_for_each(os, &wl->current_outputs, link)
+   {
+      if (os->output->scale > largest_scale) {
+         largest_scale = os->output->scale;
+         new_output    = os->output;
+      }
+   };
+
+   if (new_output && wl->current_output != new_output) {
+      wl->current_output       = new_output;
+      wl->pending_buffer_scale = new_output->scale;
+      return true;
+   }
+
+   return false;
+}
+
+static bool wl_current_outputs_add(gfx_ctx_wayland_data_t *wl,
+      struct wl_output *output)
+{
+   display_output_t *od;
+   surface_output_t *os;
+   output_info_t *oi_found = NULL;
+
+   wl_list_for_each(od, &wl->all_outputs, link)
+   {
+      if (od->output->output == output)
+      {
+         oi_found = od->output;
+         break;
+      }
+   };
+
+   if (oi_found)
+   {
+      surface_output_t *os = (surface_output_t*)
+         calloc(1, sizeof(surface_output_t));
+      os->output = oi_found;
+      wl_list_insert(&wl->current_outputs, &os->link);
+      return true;
+   }
+   return false;
+}
+
+static bool wl_current_outputs_remove(gfx_ctx_wayland_data_t *wl,
+      struct wl_output *output)
+{
+   surface_output_t *os;
+   surface_output_t *os_found = NULL;
+
+   wl_list_for_each(os, &wl->current_outputs, link)
+   {
+      if (os->output->output == output)
+      {
+         os_found = os;
+         break;
+      }
+   };
+
+   if (os_found)
+   {
+      wl_list_remove(&os_found->link);
+      free(os_found);
+      return true;
+   }
+   return false;
+}
+
 static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
       struct wl_output *output)
 {
-    output_info_t *oi;
-    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *oi;
 
-    wl->input.mouse.surface    = wl_surface;
+   wl->input.mouse.surface = wl_surface;
 
-    /* TODO: track all outputs the surface is on, pick highest scale */
-
-    wl_list_for_each(oi, &wl->all_outputs, link)
-    {
-       if (oi->output == output)
-       {
-          wl->current_output    = oi;
-          wl->last_buffer_scale = wl->buffer_scale;
-          wl->buffer_scale      = oi->scale;
-          break;
-       }
-    };
+   if (wl_current_outputs_add(wl, output))
+      wl_update_scale(wl);
 }
 
-static void wl_nop(void *a, struct wl_surface *b, struct wl_output *c) { }
+static void wl_surface_leave(void *data, struct wl_surface *wl_surface, struct wl_output *output)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   output_info_t *oi;
+
+   if (wl_current_outputs_remove(wl, output))
+      wl_update_scale(wl);
+}
 
 /* Shell surface callbacks. */
 static void xdg_shell_ping(
@@ -521,7 +625,7 @@ static void xdg_surface_handle_configure(
     xdg_surface_ack_configure(surface, serial);
 }
 
-static void wl_display_handle_geometry(void *data,
+static void wl_output_handle_geometry(void *data,
       struct wl_output *output,
       int x, int y,
       int physical_width, int physical_height,
@@ -530,29 +634,29 @@ static void wl_display_handle_geometry(void *data,
       const char *model,
       int transform)
 {
-   output_info_t *oi          = (output_info_t*)data;
-   oi->physical_width         = physical_width;
-   oi->physical_height        = physical_height;
-   oi->make                   = strdup(make);
-   oi->model                  = strdup(model);
+   output_info_t *oi   = (output_info_t*)data;
+   oi->physical_width  = physical_width;
+   oi->physical_height = physical_height;
+   oi->make            = strdup(make);
+   oi->model           = strdup(model);
 }
 
-static void wl_display_handle_mode(void *data,
+static void wl_output_handle_mode(void *data,
       struct wl_output *output,
       uint32_t flags,
       int width,
       int height,
       int refresh)
 {
-   output_info_t *oi          = (output_info_t*)data;
-   oi->width                  = width;
-   oi->height                 = height;
-   oi->refresh_rate           = refresh;
+   output_info_t *oi = (output_info_t*)data;
+   oi->width         = width;
+   oi->height        = height;
+   oi->refresh_rate  = refresh;
 }
 
-static void wl_display_handle_done(void *data, struct wl_output *output) { }
+static void wl_output_handle_done(void *data, struct wl_output *output) { }
 
-static void wl_display_handle_scale(void *data,
+static void wl_output_handle_scale(void *data,
       struct wl_output *output,
       int32_t factor)
 {
@@ -588,16 +692,22 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    if (string_is_equal(interface, wl_compositor_interface.name))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, MIN(version, 4));
+   else if (string_is_equal(interface, wp_viewporter_interface.name))
+      wl->viewporter = (struct wp_viewporter*)wl_registry_bind(reg,
+            id, &wp_viewporter_interface, MIN(version, 1));
    else if (string_is_equal(interface, wl_output_interface.name))
    {
+      display_output_t *od = (display_output_t*)
+         calloc(1, sizeof(display_output_t));
       output_info_t *oi = (output_info_t*)
          calloc(1, sizeof(output_info_t));
 
-      oi->global_id     = id;
-      oi->output        = (struct wl_output*)wl_registry_bind(reg,
+      od->output    = oi;
+      oi->global_id = id;
+      oi->output    = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, MIN(version, 2));
       wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &oi->link);
+      wl_list_insert(&wl->all_outputs, &od->link);
       wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name))
@@ -626,23 +736,41 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
             interface, zxdg_decoration_manager_v1_interface.name))
       wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
             reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, zwp_pointer_constraints_v1_interface.name))
+   {
+      wl->pointer_constraints = (struct zwp_pointer_constraints_v1*)
+         wl_registry_bind(
+            reg, id, &zwp_pointer_constraints_v1_interface, MIN(version, 1));
+      wl->locked_pointer = NULL;
+   }
+   else if (string_is_equal(interface, zwp_relative_pointer_manager_v1_interface.name))
+      wl->relative_pointer_manager = (struct zwp_relative_pointer_manager_v1*)
+         wl_registry_bind(
+            reg, id, &zwp_relative_pointer_manager_v1_interface, MIN(version, 1));
 }
 
 static void wl_registry_handle_global_remove(void *data,
       struct wl_registry *registry, uint32_t id)
 {
-   output_info_t *oi, *tmp;
+   display_output_t *od, *tmp;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   bool surface_output_removed = false;
 
-   wl_list_for_each_safe(oi, tmp, &wl->all_outputs, link)
+   wl_list_for_each_safe(od, tmp, &wl->all_outputs, link)
    {
-      if (oi->global_id == id)
+      if (od->output->global_id == id)
       {
-         wl_list_remove(&oi->link);
-         free(oi);
+         if (wl_current_outputs_remove(wl, od->output->output))
+            surface_output_removed = true;
+         wl_list_remove(&od->link);
+         free(od->output);
+         free(od);
          break;
       }
    }
+
+   if (surface_output_removed)
+      wl_update_scale(wl);
 }
 
 static int wl_ioready(int fd, int flags, int timeoutMS)
@@ -680,31 +808,31 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
       bytes_read = -1;
    else
    {
-	   if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
-	   {
-		   pos                   = *total_length;
-		   *total_length        += bytes_read;
+      if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
+      {
+         pos                   = *total_length;
+         *total_length        += bytes_read;
 
-		   if (null_terminate)
-			   new_buffer_length  = *total_length + 1;
-		   else
-			   new_buffer_length = *total_length;
+         if (null_terminate)
+            new_buffer_length  = *total_length + 1;
+         else
+            new_buffer_length = *total_length;
 
-		   if (*buffer == NULL)
-			   output_buffer      = malloc(new_buffer_length);
-		   else
-			   output_buffer      = realloc(*buffer, new_buffer_length);
+         if (*buffer == NULL)
+            output_buffer      = malloc(new_buffer_length);
+         else
+            output_buffer      = realloc(*buffer, new_buffer_length);
 
-		   if (output_buffer)
-		   {
-			   memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
+         if (output_buffer)
+         {
+            memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
-			   if (null_terminate)
-				   memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+            if (null_terminate)
+               memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
 
-			   *buffer = output_buffer;
-		   }
-	   }
+            *buffer = output_buffer;
+         }
+      }
    }
 
    return bytes_read;
@@ -887,10 +1015,10 @@ const struct wl_registry_listener registry_listener = {
 };
 
 const struct wl_output_listener output_listener = {
-   wl_display_handle_geometry,
-   wl_display_handle_mode,
-   wl_display_handle_done,
-   wl_display_handle_scale,
+   wl_output_handle_geometry,
+   wl_output_handle_mode,
+   wl_output_handle_done,
+   wl_output_handle_scale,
 };
 
 const struct xdg_wm_base_listener xdg_shell_listener = {
@@ -903,7 +1031,7 @@ const struct xdg_surface_listener xdg_surface_listener = {
 
 const struct wl_surface_listener wl_surface_listener = {
     wl_surface_enter,
-    wl_nop,
+    wl_surface_leave,
 };
 
 const struct wl_seat_listener seat_listener = {
@@ -949,6 +1077,15 @@ const struct wl_data_offer_listener data_offer_listener = {
    wl_data_offer_handle_offer,
    wl_data_offer_handle_source_actions,
    wl_data_offer_handle_action
+};
+
+const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
+   .relative_motion = handle_relative_motion,
+};
+
+const struct zwp_locked_pointer_v1_listener locked_pointer_listener = {
+   .locked = locked_pointer_locked,
+   .unlocked = locked_pointer_unlocked,
 };
 
 void flush_wayland_fd(void *data)

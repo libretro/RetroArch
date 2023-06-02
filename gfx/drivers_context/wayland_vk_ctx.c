@@ -93,6 +93,9 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   wl->last_buffer_scale = wl->buffer_scale;
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
    if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
    {
       wl->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
@@ -100,8 +103,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          vulkan_acquire_next_image(&wl->vk);
 
       wl->vk.flags         &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
-
-      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
       return true;
    }
@@ -114,13 +115,6 @@ static void gfx_ctx_wl_update_title(void *data)
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
    gfx_ctx_wl_update_title_common(wl);
-}
-
-static bool gfx_ctx_wl_get_metrics(void *data,
-      enum display_metric_types type, float *value)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   return gfx_ctx_wl_get_metrics_common(wl, type, value);
 }
 
 #ifdef HAVE_LIBDECOR_H
@@ -206,13 +200,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
 
-   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height))
+   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
    if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
          wl->input.dpy, wl->surface,
-         wl->width  * wl->buffer_scale,
-         wl->height * wl->buffer_scale,
+         wl->buffer_width,
+         wl->buffer_height,
          wl->swap_interval))
       goto error;
 
@@ -258,9 +252,7 @@ static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
 static bool gfx_ctx_wl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   if (api == GFX_CTX_VULKAN_API)
-         return true;
-   return false;
+   return (api == GFX_CTX_VULKAN_API);
 }
 
 static void *gfx_ctx_wl_get_context_data(void *data)
@@ -287,11 +279,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
    flush_wayland_fd(&wl->input);
 }
 
-static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
-{
-   return NULL;
-}
-
+static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol) { return NULL; }
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable) { }
 
 static uint32_t gfx_ctx_wl_get_flags(void *data)
@@ -320,7 +308,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_wl_get_metrics,
+   gfx_ctx_wl_get_metrics_common,
    NULL,
    gfx_ctx_wl_update_title,
    gfx_ctx_wl_check_window,

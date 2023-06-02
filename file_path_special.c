@@ -29,6 +29,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef OSX
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 #ifdef __QNX__
 #include <libgen.h>
 #endif
@@ -98,6 +102,21 @@ bool fill_pathname_application_data(char *s, size_t len)
 #endif
 
 #elif defined(OSX)
+#if HAVE_STEAM
+   CFStringRef parent_path;
+   CFURLRef bundle_url, parent_url;
+   CFBundleRef bundle = CFBundleGetMainBundle();
+   if (!bundle)
+      return false;
+   bundle_url  = CFBundleCopyBundleURL(bundle);
+   parent_url  = CFURLCreateCopyDeletingLastPathComponent(NULL, bundle_url);
+   parent_path = CFURLCopyFileSystemPath(parent_url, kCFURLPOSIXPathStyle);
+   CFStringGetCString(parent_path, s, len, kCFStringEncodingUTF8);
+   CFRelease(parent_path);
+   CFRelease(parent_url);
+   CFRelease(bundle_url);
+   return true;
+#else
    const char *appdata = getenv("HOME");
 
    if (appdata)
@@ -106,6 +125,7 @@ bool fill_pathname_application_data(char *s, size_t len)
             "Library/Application Support/RetroArch", len);
       return true;
    }
+#endif
 #elif defined(RARCH_UNIX_CWD_ENV)
    getcwd(s, len);
    return true;
@@ -202,7 +222,9 @@ void fill_pathname_application_special(char *s,
          {
 #ifdef HAVE_MENU
             settings_t *settings   = config_get_ptr();
+#if defined(HAVE_XMB) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE)
             const char *menu_ident = settings->arrays.menu_driver;
+#endif
             const char *dir_assets = settings->paths.directory_assets;
 
 #ifdef HAVE_XMB
@@ -210,27 +232,18 @@ void fill_pathname_application_special(char *s,
             {
                char s8[PATH_MAX_LENGTH];
                char s4[PATH_MAX_LENGTH];
-               fill_pathname_join_special(s8, dir_assets, "xmb", sizeof(s8));
+               fill_pathname_join_special(s8, dir_assets, menu_ident, sizeof(s8));
                fill_pathname_join_special(s4, s8, xmb_theme_ident(), sizeof(s4));
                fill_pathname_join_special(s, s4, "sounds", len);
             }
             else
 #endif
-#ifdef HAVE_MATERIALUI
-            if (string_is_equal(menu_ident, "glui"))
+#if defined(HAVE_MATERIALUI) || defined(HAVE_OZONE)
+            if (     string_is_equal(menu_ident, "glui") 
+                  || string_is_equal(menu_ident, "ozone"))
             {
                char s4[PATH_MAX_LENGTH];
-               fill_pathname_join_special(s4, dir_assets, "glui", sizeof(s4));
-               fill_pathname_join_special(s, s4, "sounds", len);
-            }
-            else
-#endif
-#ifdef HAVE_OZONE
-            if (string_is_equal(menu_ident, "ozone"))
-            {
-               char s4[PATH_MAX_LENGTH];
-               fill_pathname_join_special(s4, dir_assets, "ozone",
-                     sizeof(s4));
+               fill_pathname_join_special(s4, dir_assets, menu_ident, sizeof(s4));
                fill_pathname_join_special(s, s4, "sounds", len);
             }
             else
@@ -247,7 +260,9 @@ void fill_pathname_application_special(char *s,
          {
 #ifdef HAVE_MENU
             settings_t *settings   = config_get_ptr();
+#if defined(HAVE_XMB) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE)
             const char *menu_ident = settings->arrays.menu_driver;
+#endif
 
 #ifdef HAVE_XMB
             if (string_is_equal(menu_ident, "xmb"))
@@ -255,12 +270,13 @@ void fill_pathname_application_special(char *s,
                char s1[PATH_MAX_LENGTH];
                char s8[PATH_MAX_LENGTH];
                const char *dir_assets   = settings->paths.directory_assets;
-               fill_pathname_join_special(s8, dir_assets, "xmb", sizeof(s8));
+               fill_pathname_join_special(s8, dir_assets, menu_ident, sizeof(s8));
                fill_pathname_join_special(s1, s8, xmb_theme_ident(), sizeof(s1));
                fill_pathname_join_special(s, s1, "png", len);
             }
             else
 #endif
+#if defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
 		    if (    string_is_equal(menu_ident, "ozone")
                || string_is_equal(menu_ident, "glui"))
             {
@@ -279,7 +295,9 @@ void fill_pathname_application_special(char *s,
 #endif
                fill_pathname_join_special(s, s5, s6, len);
             }
-            else if (len)
+            else
+#endif
+               if (len)
                s[0] = '\0';
 #endif
          }
@@ -292,7 +310,6 @@ void fill_pathname_application_special(char *s,
             char s6[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-
 #if defined(WIIU) || defined(VITA)
             /* Smaller 46x46 icons look better on low-DPI devices */
             fill_pathname_join_special(s5, dir_assets, "ozone", sizeof(s5));

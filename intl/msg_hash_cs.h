@@ -591,6 +591,10 @@ MSG_HASH(
    "Datum Vytvoření"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Verze RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Verze Gitu"
    )
@@ -1860,7 +1864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Použití nabídky s vysokým rozlišením"
+   "Použití vysokého rozlišení Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -2416,6 +2420,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automatické ztlumení zvuku při použití rychlého převíjení vpřed."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Zrychlení při rychlém přeposílání"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Zrychlení zvuku při rychlém převíjení vpřed. Zabraňuje praskání, ale mění výšku tónu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3318,14 +3330,45 @@ MSG_HASH(
    "Spustí/zastaví streamování aktuální relace na online video platformu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Přehrávání Vstupního Záznamu (Přepínání)"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Přehrát Záznam"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Zapnutí/vypnutí záznamu herních vstupů ve formátu .bsv."
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "Přehrát soubor záznamu z aktuálně vybraného slotu."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Nahrát Záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Nahrávání souboru záznamu do aktuálně vybraného slotu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Zastavit Nahrávání/Záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Zastaví nahrávání/přehrávání aktuálního záznamu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Další Záznamový Slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Zvýší index aktuálně vybraného slotu pro záznam."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Předchozí Slot Záznamu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Sníží index aktuálně vybraného slotu pro záznam."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Podržení Myši (Přepínání)"
@@ -3996,6 +4039,18 @@ MSG_HASH(
    "Automaticky ukládá nevolatilní paměť SRAM v pravidelných intervalech. Ve výchozím nastavení je tato funkce vypnuta, pokud není nastaveno jinak. Interval se měří v sekundách. Hodnota 0 automatické ukládání vypne."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Interval kontrolního bodu záznamu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatická záložka pozice hry během nahrávání záznamu v pravidelném intervalu (v sekundách)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatické ukládání pozice hry během nahrávání záznamu v pravidelných intervalech. Ve výchozím nastavení je tato funkce vypnuta, pokud není nastaveno jinak. Interval se měří v sekundách. Hodnota 0 vypne nahrávání kontrolních bodů."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Automatické Zvyšování Indexu Uložení Pozic"
    )
@@ -4004,12 +4059,28 @@ MSG_HASH(
    "Před vytvořením uložené pozice se automaticky zvýší index uložené pozice. Při načítání obsahu se index nastaví na nejvyšší existující index."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Automatické zvyšování indexu záznamu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Před provedením záznamu se automaticky zvýší index záznamu. Při načítání obsahu se index nastaví na nejvyšší existující index."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Maximální Auto-Navýšení Zachová Uložené Pozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Omezí počet uložených pozic, které budou vytvořeny, když je povolena možnost 'Automaticky zvyšovat index uložených pozic'. Pokud je limit při ukládání nové pozice překročen, stávající pozice s nejnižším indexem bude odstraněna. Hodnota '0' znamená, že bude zaznamenáno neomezené množství pozic."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Maximální počet záznamu s automatickým navýšením pro zachování"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Omezit počet záznamu, které budou vytvořeny, když je povolena možnost \"Automaticky zvyšovat index záznamu\". Pokud je limit při nahrávání nového záznamu překročen, stávající záznam s nejnižším indexem bude odstraněn. Hodnota \"0\" znamená, že bude zaznamenáno neomezené množství záznamu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5578,10 +5649,6 @@ MSG_HASH(
    "Zobrazit možnost 'Zavřít obsah'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Zobrazit Podmenu Uložení Pozice"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    "Zobrazení možností uložení pozice v podnabídce."
    )
@@ -5592,6 +5659,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "Zobrazení možností pro uložení/načtení pozice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Zobrazit 'Ovládání záznamu'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Zobrazení možností pro nahrávání/přehrávání souborů záznamů."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -5676,10 +5751,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
    "Zobrazit 'Přetáčení'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Zobrazit možnosti 'Přetáčení'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -5970,11 +6041,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Neprůhlednost Framebuffer"
+   "Neprůhlednost menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Úprava neprůhlednosti framebufferu."
+   "Úprava neprůhlednosti výchozího pozadí menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -6030,7 +6101,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Při přepnutí na jinou kartu si zapamatuje polohu kurzoru v menu."
+   "Zapamatování předchozí pozice kurzoru na kartách. RGUI nemá záložky, ale seznamy skladeb a nastavení se tak chovají."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6134,10 +6205,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Žebříčky"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Žebříčky specifické pro danou hru. Nemá žádný vliv, pokud je vypnut režim Hardcore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6304,6 +6371,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Během získávání určitých úspěchů se na obrazovce zobrazují indikátory."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Ukazatel postupu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Při dosažení určitých úspěchů se na obrazovce zobrazí indikátor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Úvodní zprávy žebříčku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Zobrazí popis žebříčku, když se stane aktivním."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Žebříček Odesílání zpráv"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Po dokončení pokusu o sestavení žebříčku se zobrazí zpráva s odeslanou hodnotou."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Neúspěšné zprávy v žebříčku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Zobrazí zprávu, když se pokus o sestavení žebříčku nezdaří."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Sledování žebříčku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Zobrazí na obrazovce trackery s aktuální hodnotou aktivních žebříčků."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6842,6 +6949,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Pokud je tato funkce povolena a je vybrán také adresář 'Prohlížeč souborů', uloží se aktuální hodnota parametru 'Prohlížeč souborů' do playlistu. Při načtení seznamu skladeb v jiném systému, kde je povolena stejná volba, se hodnota parametru 'File Browser' porovná s hodnotou playlistu; pokud se liší, cesty k položkám playlistu se automaticky opraví."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Správa"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -7259,7 +7370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Do tohoto adresáře uložte všechny ukládací soubory (*.srm). Patří sem i související soubory jako .bsv, .rt, .psrm atd... Toto bude potlačeno explicitními volbami příkazového řádku."
+   "Do tohoto adresáře uložte všechny ukládací soubory (*.srm). Patří sem i související soubory jako .rt, .psrm atd... Toto bude potlačeno explicitními volbami příkazového řádku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -7267,7 +7378,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "V tomto adresáři jsou uloženy pozice. Pokud není nastaven, pokusí se je uložit do adresáře, kde je umístěn obsah."
+   "Do tohoto adresáře se ukládají uložené pozice a záznamy. Pokud není nastaveno, pokusí se je uložit do adresáře, kde je umístěn obsah."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -7945,6 +8056,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Pokud byl stav přepsán, vrátí se do předchozího stavu uložené pozice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Slot pro záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Změna aktuálně vybraného slotu pozice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Přehrát Záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "Přehrát soubor záznamu z aktuálně vybraného slotu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Nahrát Záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Nahrávání souboru záznamu do aktuálně vybraného slotu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Zastavit Nahrávání/Záznam"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Zastaví nahrávání/přehrávání aktuálního záznamu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -9747,7 +9890,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Povolení zobrazení zmenšených miniatur na řádku při prohlížení seznamů skladeb. Pokud je tato funkce vypnuta, lze funkci 'Top Thumbnail' stále přepínat na celou obrazovku stisknutím tlačítka RetroPad Y."
+   "Povolení zobrazení zmenšených miniatur na řádku při prohlížení seznamů skladeb. Přepínatelné pomocí tlačítka RetroPad -Výběr-. Pokud je tato funkce vypnuta, lze miniatury stále přepínat na celou obrazovku pomocí RetroPad -Start-."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -9755,7 +9898,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Typ miniatury, která se má zobrazovat v pravém horním rohu seznamů skladeb. Tuto miniaturu lze přepnout na celou obrazovku stisknutím tlačítka RetroPad Y."
+   "Typ miniatury, která se má zobrazovat v pravém horním rohu seznamů skladeb. Tento typ miniatur lze cyklicky přepínat stisknutím tlačítka RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -12559,6 +12702,18 @@ MSG_HASH(
    "Nalezen poslední slot pozice"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Nalezen poslední slot pro záznam"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Ne z aktuálního záznamu"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Není kompatibilní se záznamem"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Nalezen Shader"
    )
@@ -12687,8 +12842,8 @@ MSG_HASH(
    "Paměť"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Vstupní soubor videa pro přehrávání videa není platným BSV1 souborem."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Vstupní soubor přehrávaného filmu není platný soubor ZÁZNAMU."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -12931,6 +13086,10 @@ MSG_HASH(
    "Slot pozice"
    )
 MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Přehrát slot"
+   )
+MSG_HASH(
    MSG_TAKING_SCREENSHOT,
    "Pořízení snímku obrazovky."
    )
@@ -12941,6 +13100,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Úspěch odemknut"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Pokus o sestavení žebříčku zahájen"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Pokus o sestavení žebříčku selhal"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Odesláno %s pro %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -13562,6 +13733,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Synchronizace s přesnou snímkovou frekvencí obsahu zakázána."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Obnovovací frekvence videa změněna na %s Hz."
+   )
 
 /* Lakka */
 
@@ -13638,7 +13813,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Vyberte režim zobrazení."
+   "Výběr režimu zobrazení (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -14033,6 +14208,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Upravte stupnici x/y souřadnic dotykové obrazovky tak, aby odpovídalo měřítku displeje na úrovni operačního systému."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,

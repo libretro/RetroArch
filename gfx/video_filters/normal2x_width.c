@@ -41,8 +41,8 @@ struct softfilter_thread_data
 
 struct filter_data
 {
-   unsigned threads;
    struct softfilter_thread_data *workers;
+   unsigned threads;
    unsigned in_fmt;
 };
 
@@ -68,22 +68,17 @@ static void *normal2x_width_generic_create(const struct softfilter_config *confi
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
-   (void)simd;
-   (void)config;
-   (void)userdata;
-
-   if (!filt) {
+   if (!filt)
+      return NULL;
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
+   {
+      free(filt);
       return NULL;
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
    filt->threads = 1;
    filt->in_fmt  = in_fmt;
-   if (!filt->workers) {
-      free(filt);
-      return NULL;
-   }
    return filt;
 }
 
@@ -91,16 +86,15 @@ static void normal2x_width_generic_output(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   *out_width = width << 1;
+   *out_width  = width << 1;
    *out_height = height;
 }
 
 static void normal2x_width_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if (!filt) {
+   if (!filt)
       return;
-   }
    free(filt->workers);
    free(filt);
 }
@@ -173,22 +167,21 @@ static void normal2x_width_generic_packets(void *data,
     * over threads and can cull some code. This only
     * makes the tiniest performance difference, but
     * every little helps when running on an o3DS... */
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt           = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data = (uint8_t*)output;
-   thr->in_data = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch = input_stride;
-   thr->width = width;
-   thr->height = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
-   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888) {
-      packets[0].work = normal2x_width_work_cb_xrgb8888;
-   } else if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
-      packets[0].work = normal2x_width_work_cb_rgb565;
-   }
-   packets[0].thread_data = thr;
+   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+      packets[0].work                 = normal2x_width_work_cb_xrgb8888;
+   else if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+      packets[0].work                 = normal2x_width_work_cb_rgb565;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation normal2x_width_generic = {
@@ -210,7 +203,6 @@ static const struct softfilter_implementation normal2x_width_generic = {
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &normal2x_width_generic;
 }
 

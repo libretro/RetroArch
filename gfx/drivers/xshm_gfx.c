@@ -32,24 +32,23 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../../configuration.h"
 #include "../font_driver.h"
 #include "../common/x11_common.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct xshm
 {
+   XShmSegmentInfo shmInfo;
+   XImage* image;
+   uint8_t *fbptr;
+   GC gc;
    int width;
    int height;
    bool use_shm;
-   uint8_t *fbptr;
-
-   XShmSegmentInfo shmInfo;
-   XImage* image;
-   GC gc;
 } xshm_t;
 
-static void *xshm_gfx_init(const video_info_t *video,
+static void *xshm_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));
@@ -58,23 +57,23 @@ static void *xshm_gfx_init(const video_info_t *video,
 
    XInitThreads();
 
-   g_x11_dpy = XOpenDisplay(NULL);
+   g_x11_dpy     = XOpenDisplay(NULL);
 
    xshm->use_shm = true;
 
    if (!XShmQueryExtension(g_x11_dpy))
    {
       RARCH_LOG("[X11]: XShm extension not found.\n");
-      xshm->use_shm = false;
+      xshm->use_shm        = false;
    }
 
 #ifdef RARCH_INTERNAL
-   parent = DefaultRootWindow(g_x11_dpy);
+   parent                  = DefaultRootWindow(g_x11_dpy);
 #else
-   parent = video->parent;
+   parent                  = video->parent;
 #endif
-   attributes.border_pixel=0;
-   g_x11_win = XCreateWindow(g_x11_dpy, parent,
+   attributes.border_pixel = 0;
+   g_x11_win               = XCreateWindow(g_x11_dpy, parent,
 			     0, 0, video->width, video->height,
 			     0, 24, CopyFromParent, NULL, CWBorderPixel, &attributes);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
@@ -83,30 +82,34 @@ static void *xshm_gfx_init(const video_info_t *video,
    if (xshm->use_shm)
    {
       xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * video->width * video->height,
-				   IPC_CREAT|0600);
-      if (xshm->shmInfo.shmid<0) abort();/* seems like an out of memory situation... let's just blow up. */
+				   IPC_CREAT | 0600);
+      if (xshm->shmInfo.shmid < 0)
+         abort();/* seems like an OOM situation... let's just blow up. */
 
-      xshm->shmInfo.shmaddr = (char*)shmat(xshm->shmInfo.shmid, 0, 0);
+      xshm->shmInfo.shmaddr  = (char*)shmat(xshm->shmInfo.shmid, 0, 0);
       xshm->shmInfo.readOnly = False;
       XShmAttach(g_x11_dpy, &xshm->shmInfo);
       XSync(g_x11_dpy, False);/* no idea why this is required, but I get weird errors without it. */
       xshm->image = XShmCreateImage(g_x11_dpy, NULL, 24, ZPixmap,
 				    xshm->shmInfo.shmaddr, &xshm->shmInfo, video->width, video->height);
       xshm->fbptr = (uint8_t*)xshm->shmInfo.shmaddr;
-   } else {
+   }
+   else
+   {
       size_t pitch = video->width * 4;
-      void *data = malloc (pitch * video->height);
-      if (!data) abort();/* seems like an out of memory situation... let's just blow up. */
-      xshm->image = XCreateImage(g_x11_dpy, NULL, 24, ZPixmap, 0,
+      void *data   = malloc (pitch * video->height);
+      if (!data)
+         abort(); /* seems like an OOM situation... let's just blow up. */
+      xshm->image  = XCreateImage(g_x11_dpy, NULL, 24, ZPixmap, 0,
 				 (char *) data, video->width,
 				 video->height, 8, pitch);
-      xshm->fbptr = (uint8_t*)data;
+      xshm->fbptr  = (uint8_t*)data;
       XSync(g_x11_dpy, False);
    }
 
-   xshm->gc = XCreateGC(g_x11_dpy, g_x11_win, 0, NULL);
+   xshm->gc     = XCreateGC(g_x11_dpy, g_x11_win, 0, NULL);
 
-   xshm->width = video->width;
+   xshm->width  = video->width;
    xshm->height = video->height;
 
    if (!x11_input_ctx_new(true))
@@ -132,7 +135,7 @@ static void *xshm_gfx_init(const video_info_t *video,
    return NULL;
 }
 
-static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
+static bool xshm_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
@@ -161,11 +164,11 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void xshm_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
-static bool xshm_gfx_alive(void *data) { return true; }
-static bool xshm_gfx_focus(void *data) { return true; }
-static bool xshm_gfx_suppress_screensaver(void *data, bool enable) { return false; }
-static void xshm_gfx_free(void *data) { }
+static void xshm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool xshm_alive(void *data) { return true; }
+static bool xshm_focus(void *data) { return true; }
+static bool xshm_suppress_screensaver(void *data, bool enable) { return false; }
+static void xshm_free(void *data) { }
 static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling) { }
 static void xshm_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx) { }
 static void xshm_poke_apply_state_changes(void *data) { }
@@ -176,7 +179,7 @@ static void xshm_poke_texture_enable(void *data,
       bool enable, bool full_screen) { }
 static void xshm_poke_set_osd_msg(void *data,
       const char *msg,
-      const void *params, void *font) { }
+      const struct font_params *params, void *font) { }
 static void xshm_show_mouse(void *data, bool state) { }
 static void xshm_grab_mouse_toggle(void *data) { }
 
@@ -208,20 +211,20 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL                    /* get_hw_render_interface */
 };
 
-static void xshm_gfx_poke_interface(void *data, const video_poke_interface_t **iface) { *iface = &xshm_video_poke_interface; }
-static bool xshm_gfx_set_shader(void *data,
+static void xshm_poke_interface(void *data, const video_poke_interface_t **iface) { *iface = &xshm_video_poke_interface; }
+static bool xshm_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
 video_driver_t video_xshm = {
-   xshm_gfx_init,
-   xshm_gfx_frame,
-   xshm_gfx_set_nonblock_state,
-   xshm_gfx_alive,
-   xshm_gfx_focus,
-   xshm_gfx_suppress_screensaver,
+   xshm_init,
+   xshm_frame,
+   xshm_set_nonblock_state,
+   xshm_alive,
+   xshm_focus,
+   xshm_suppress_screensaver,
    NULL, /* has_windowed */
-   xshm_gfx_set_shader,
-   xshm_gfx_free,
+   xshm_set_shader,
+   xshm_free,
    "x11",
 
    NULL,
@@ -232,8 +235,5 @@ video_driver_t video_xshm = {
 #ifdef HAVE_OVERLAY
     NULL,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
-    xshm_gfx_poke_interface
+    xshm_poke_interface
 };

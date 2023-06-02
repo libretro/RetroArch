@@ -56,6 +56,12 @@ enum ui_msg_window_type
     UI_MSG_WINDOW_TYPE_WARNING
 };
 
+enum uico_driver_state_flags
+{
+   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
+   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
+};
+
 typedef struct ui_msg_window_state
 {
    enum ui_msg_window_buttons buttons;
@@ -118,8 +124,6 @@ typedef struct ui_companion_driver
    void (*deinit)(void *data);
    void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
-   void (*notify_content_loaded)(void *data);
-   void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
@@ -133,12 +137,6 @@ typedef struct ui_companion_driver
    const char        *ident;
 } ui_companion_driver_t;
 
-enum uico_driver_state_flags
-{
-   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
-   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
-};
-
 typedef struct
 {
    const ui_companion_driver_t *drv;
@@ -149,22 +147,11 @@ typedef struct
    uint8_t flags;
 } uico_driver_state_t;
 
-extern ui_companion_driver_t ui_companion_cocoa;
-extern ui_companion_driver_t ui_companion_cocoatouch;
-extern ui_companion_driver_t ui_companion_qt;
-extern ui_companion_driver_t ui_companion_win32;
-
-extern ui_msg_window_t ui_msg_window_win32;
-
 uint8_t ui_companion_get_flags(void);
 
 void ui_companion_event_command(enum event_command action);
 
 void ui_companion_driver_notify_refresh(void);
-
-void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list);
-
-void ui_companion_driver_notify_content_loaded(void);
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void);
 
@@ -192,6 +179,13 @@ void ui_companion_driver_toggle(
       bool force);
 
 uico_driver_state_t *uico_state_get_ptr(void);
+
+extern ui_companion_driver_t ui_companion_cocoa;
+extern ui_companion_driver_t ui_companion_qt;
+extern ui_companion_driver_t ui_companion_win32;
+
+extern ui_msg_window_t ui_msg_window_win32;
+
 
 RETRO_END_DECLS
 

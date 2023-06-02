@@ -167,87 +167,6 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
-/**
- * Bit flags that describe the current state of the audio driver.
- */
-enum audio_driver_state_flags
-{
-   /**
-    * Indicates that the driver was successfully created
-    * and is currently valid.
-    * You may submit samples for output at any time.
-    *
-    * This flag does \em not mean that the player will hear anything;
-    * the driver might be suspended.
-    *
-    * @see AUDIO_FLAG_SUSPENDED
-    */
-   AUDIO_FLAG_ACTIVE       = (1 << 0),
-
-   /**
-    * Indicates that the audio driver outputs floating-point samples,
-    * as opposed to integer samples.
-    *
-    * All audio is sent through the resampler,
-    * which operates on floating-point samples.
-    *
-    * If this flag is set, then the resampled output doesn't need
-    * to be converted back to \c int16_t format.
-    *
-    * This won't affect the audio that the core writes;
-    * either way, it's supposed to output \c int16_t samples.
-    *
-    * This flag won't be set if the selected audio driver
-    * doesn't support (or is configured to not use) \c float samples.
-    *
-    * @see audio_driver_t::use_float
-    */
-   AUDIO_FLAG_USE_FLOAT    = (1 << 1),
-
-   /**
-    * Indicates that the audio driver is not currently rendering samples,
-    * although it's valid and can be resumed.
-    *
-    * Usually set when RetroArch needs to simulate audio output
-    * without actually rendering samples (e.g. runahead),
-    * or when reinitializing the driver.
-    *
-    * Samples will still be accepted, but they will be silently dropped.
-    */
-   AUDIO_FLAG_SUSPENDED    = (1 << 2),
-
-   /**
-    * Indicates that the audio mixer is available
-    * and can mix one or more audio streams.
-    *
-    * Will not be set if RetroArch was built without \c HAVE_AUDIOMIXER.
-    */
-   AUDIO_FLAG_MIXER_ACTIVE = (1 << 3),
-
-   /**
-    * Indicates that the frontend will never need audio from the core,
-    * usually when runahead is active.
-    *
-    * When set, any audio received by the core will not be processed.
-    *
-    * Will not be set if RetroArch was built without \c HAVE_RUNAHEAD.
-    *
-    * @see RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE
-    */
-   AUDIO_FLAG_HARD_DISABLE = (1 << 4),
-
-   /**
-    * Indicates that audio rate control is enabled.
-    * This means that the audio system will adjust the rate at which
-    * it sends samples to the driver,
-    * minimizing the occurrences of buffer overrun or underrun.
-    *
-    * @see audio_driver_t::write_avail
-    * @see audio_driver_t::buffer_size
-    */
-   AUDIO_FLAG_CONTROL      = (1 << 5)
-};
-
 typedef struct
 {
    double source_ratio_original;
@@ -331,6 +250,12 @@ typedef struct
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
 #endif
+
+   /* Sample the flush delta-time when fast forwarding to find the correct
+   ressample ratio. */
+   retro_time_t last_flush_time;
+   /* Exponential moving average */
+   retro_time_t avg_flush_delta;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -414,44 +339,6 @@ unsigned audio_driver_get_sample_size(void);
 bool audio_driver_is_ai_service_speech_running(void);
 #endif
 
-extern audio_driver_t audio_rsound;
-extern audio_driver_t audio_audioio;
-extern audio_driver_t audio_oss;
-extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
-extern audio_driver_t audio_tinyalsa;
-extern audio_driver_t audio_roar;
-extern audio_driver_t audio_openal;
-extern audio_driver_t audio_opensl;
-extern audio_driver_t audio_jack;
-extern audio_driver_t audio_sdl;
-extern audio_driver_t audio_xa;
-extern audio_driver_t audio_pulse;
-extern audio_driver_t audio_dsound;
-extern audio_driver_t audio_wasapi;
-extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_coreaudio3;
-extern audio_driver_t audio_xenon360;
-extern audio_driver_t audio_ps3;
-extern audio_driver_t audio_gx;
-extern audio_driver_t audio_ax;
-extern audio_driver_t audio_psp;
-extern audio_driver_t audio_ps2;
-extern audio_driver_t audio_ctr_csnd;
-extern audio_driver_t audio_ctr_dsp;
-#ifdef HAVE_THREADS
-extern audio_driver_t audio_ctr_dsp_thread;
-#endif
-extern audio_driver_t audio_switch;
-extern audio_driver_t audio_switch_thread;
-extern audio_driver_t audio_switch_libnx_audren;
-extern audio_driver_t audio_switch_libnx_audren_thread;
-extern audio_driver_t audio_rwebaudio;
-
-audio_driver_state_t *audio_state_get_ptr(void);
-
-extern audio_driver_t *audio_drivers[];
-
 /**
  * audio_compute_buffer_statistics:
  *
@@ -459,13 +346,6 @@ extern audio_driver_t *audio_drivers[];
  *
  **/
 bool audio_compute_buffer_statistics(audio_statistics_t *stats);
-
-float audio_driver_monitor_adjust_system_rates(
-      double input_sample_rate,
-      double input_fps,
-      float video_refresh_rate,
-      unsigned video_swap_interval,
-      float audio_max_timing_skew);
 
 bool audio_driver_init_internal(
       void *settings_data,
@@ -529,6 +409,44 @@ size_t audio_driver_sample_batch_rewind(
 #ifdef HAVE_MENU
 void audio_driver_menu_sample(void);
 #endif
+
+extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
+extern audio_driver_t audio_oss;
+extern audio_driver_t audio_alsa;
+extern audio_driver_t audio_alsathread;
+extern audio_driver_t audio_tinyalsa;
+extern audio_driver_t audio_roar;
+extern audio_driver_t audio_openal;
+extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_jack;
+extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_xa;
+extern audio_driver_t audio_pulse;
+extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_wasapi;
+extern audio_driver_t audio_coreaudio;
+extern audio_driver_t audio_coreaudio3;
+extern audio_driver_t audio_xenon360;
+extern audio_driver_t audio_ps3;
+extern audio_driver_t audio_gx;
+extern audio_driver_t audio_ax;
+extern audio_driver_t audio_psp;
+extern audio_driver_t audio_ps2;
+extern audio_driver_t audio_ctr_csnd;
+extern audio_driver_t audio_ctr_dsp;
+#ifdef HAVE_THREADS
+extern audio_driver_t audio_ctr_dsp_thread;
+#endif
+extern audio_driver_t audio_switch;
+extern audio_driver_t audio_switch_thread;
+extern audio_driver_t audio_switch_libnx_audren;
+extern audio_driver_t audio_switch_libnx_audren_thread;
+extern audio_driver_t audio_rwebaudio;
+
+audio_driver_state_t *audio_state_get_ptr(void);
+
+extern audio_driver_t *audio_drivers[];
 
 RETRO_END_DECLS
 

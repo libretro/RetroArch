@@ -99,7 +99,6 @@ OBJ              :=
 LIBS             := -lm
 DEFINES			  :=
 DEFINES          += -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_OVERLAY
-#DEFINES			  += -DHAVE_VIDEO_LAYOUT
 LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common

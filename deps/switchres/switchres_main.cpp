@@ -23,6 +23,10 @@ using namespace std;
 int show_version();
 int show_usage();
 
+enum
+ {
+	OPT_MODELINE = 128
+ };
 
 //============================================================
 //  main
@@ -32,6 +36,7 @@ int main(int argc, char **argv)
 {
 
 	switchres_manager switchres;
+	display_manager* df = switchres.display_factory();
 
 	switchres.parse_config("switchres.ini");
 
@@ -50,8 +55,11 @@ int main(int argc, char **argv)
 	bool launch_flag = false;
 	bool force_flag = false;
 	bool interlaced_flag = false;
+	bool rotated_flag = false;
 	bool user_ini_flag = false;
 	bool keep_changes_flag = false;
+	bool geometry_flag = false;
+	int status_code = 0;
 
 	string ini_file;
 	string launch_command;
@@ -75,11 +83,13 @@ int main(int argc, char **argv)
 			{"verbose",     no_argument,       0, 'v'},
 			{"backend",     required_argument, 0, 'b'},
 			{"keep",        no_argument,       0, 'k'},
+			{"geometry",    required_argument, 0, 'g'},
+			{"modeline",    required_argument, 0, OPT_MODELINE},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		int c = getopt_long(argc, argv, "vhcsl:m:a:erd:f:i:b:k", long_options, &option_index);
+		int c = getopt_long(argc, argv, "vhcsl:m:a:erd:f:i:b:kg:", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -92,6 +102,10 @@ int main(int argc, char **argv)
 
 		switch (c)
 		{
+			case OPT_MODELINE:
+				df->set_modeline(optarg);
+				break;
+
 			case 'v':
 				switchres.set_log_level(3);
 				switchres.set_log_error_fn((void*)printf);
@@ -117,22 +131,22 @@ int main(int argc, char **argv)
 				break;
 
 			case 'm':
-				switchres.set_monitor(optarg);
+				df->set_monitor(optarg);
 				break;
 
 			case 'r':
-				switchres.set_rotation(true);
+				rotated_flag = true;
 				break;
 
 			case 'd':
 				// Add new display in multi-monitor case
 				if (index > 0) switchres.add_display();
 				index ++;
-				switchres.set_screen(optarg);
+				df->set_screen(optarg);
 				break;
 
 			case 'a':
-				switchres.set_monitor_aspect(optarg);
+				df->set_monitor_aspect(optarg);
 				break;
 
 			case 'e':
@@ -151,12 +165,22 @@ int main(int argc, char **argv)
 				break;
 
 			case 'b':
-				switchres.set_api(optarg);
+				df->set_api(optarg);
 				break;
 
 			case 'k':
 				keep_changes_flag = true;
-				switchres.set_keep_changes(true);
+				df->set_keep_changes(true);
+				break;
+
+			case 'g':
+				double h_size; int h_shift, v_shift;
+				if (sscanf(optarg, "%lf:%d:%d", &h_size, &h_shift, &v_shift) < 3)
+					log_error("Error: use format --geometry <h_size>:<h_shift>:<v_shift>\n");
+				geometry_flag = true;
+				df->set_h_size(h_size);
+				df->set_h_shift(h_shift);
+				df->set_v_shift(v_shift);
 				break;
 
 			default:
@@ -185,6 +209,12 @@ int main(int argc, char **argv)
 		height = atoi(argv[optind + 1]);
 		refresh = atof(argv[optind + 2]);
 
+		if (width <= 0 || height <= 0 || refresh <= 0.0f)
+		{
+			log_error("Error: wrong video mode request: %sx%s@%s\n", argv[optind], argv[optind + 1], argv[optind + 2]);
+			goto usage;
+		}
+
 		char scan_mode = argv[optind + 2][strlen(argv[optind + 2]) -1];
 		if (scan_mode == 'i')
 			interlaced_flag = true;
@@ -192,6 +222,9 @@ int main(int argc, char **argv)
 
 	if (user_ini_flag)
 		switchres.parse_config(ini_file.c_str());
+
+	if (calculate_flag)
+		switchres.display()->set_screen("dummy");
 
 	switchres.add_display();
 
@@ -208,21 +241,32 @@ int main(int argc, char **argv)
 	{
 		for (auto &display : switchres.displays)
 		{
-			modeline *mode = display->get_mode(width, height, refresh, interlaced_flag);
+			int flags = (interlaced_flag? SR_MODE_INTERLACED : 0) | (rotated_flag? SR_MODE_ROTATED : 0);
+			modeline *mode = display->get_mode(width, height, refresh, flags);
 			if (mode) display->flush_modes();
+
+			if (mode && geometry_flag)
+			{
+				monitor_range range = {};
+				modeline_to_monitor_range(&range, mode);
+				log_info("Adjusted geometry (%.3f:%d:%d) H: %.3f, %.3f, %.3f V: %.3f, %.3f, %.3f\n",
+						display->h_size(), display->h_shift(), display->v_shift(),
+						range.hfront_porch, range.hsync_pulse, range.hback_porch,
+						range.vfront_porch * 1000, range.vsync_pulse * 1000, range.vback_porch * 1000);
+			}
 		}
 
 		if (edid_flag)
 		{
 			edid_block edid = {};
-			modeline *mode = switchres.display()->best_mode();
+			modeline *mode = switchres.display()->selected_mode();
 			if (mode)
 			{
 				monitor_range *range = &switchres.display()->range[mode->range];
-				edid_from_modeline(mode, range, switchres.ds.monitor, &edid);
+				edid_from_modeline(mode, range, switchres.display()->monitor(), &edid);
 
-				char file_name[sizeof(switchres.ds.monitor) + 4];
-				sprintf(file_name, "%s.bin", switchres.ds.monitor);
+				char file_name[strlen(switchres.display()->monitor()) + 4];
+				sprintf(file_name, "%s.bin", switchres.display()->monitor());
 
 				FILE *file = fopen(file_name, "wb");
 				if (file)
@@ -234,7 +278,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->best_mode());
+		if (switch_flag) for (auto &display : switchres.displays) display->set_mode(display->selected_mode());
 
 		if (switch_flag && !launch_flag && !keep_changes_flag)
 		{
@@ -244,12 +288,15 @@ int main(int argc, char **argv)
 
 		if (launch_flag)
 		{
-			int status_code = system(launch_command.c_str());
+			status_code = system(launch_command.c_str());
+			#ifdef __linux__
+			status_code = WEXITSTATUS(status_code);
+			#endif
 			log_info("Process exited with value %d\n", status_code);
 		}
 	}
 
-	return (0);
+	return (status_code);
 
 usage:
 	show_usage();
@@ -290,14 +337,16 @@ int show_usage()
 		"  -s, --switch                      Switch to video mode\n"
 		"  -l, --launch <command>            Launch <command>\n"
 		"  -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)\n"
-		"  -a  --aspect <num:den>            Monitor aspect ratio\n"
-		"  -r  --rotated                     Original mode's native orientation is rotated\n"
+		"  -a, --aspect <num:den>            Monitor aspect ratio\n"
+		"  -r, --rotated                     Original mode's native orientation is rotated\n"
 		"  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)\n"
 		"  -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list\n"
 		"  -i, --ini <file.ini>              Specify an ini file\n"
 		"  -b, --backend <api_name>          Specify the api name\n"
 		"  -e, --edid                        Create an EDID binary with calculated video modes\n"
 		"  -k, --keep                        Keep changes on exit (warning: this disables cleanup)\n"
+		"  -g, --geometry <h_size>:<h_shift>:<v_shift>  Adjust geometry of generated modeline\n"
+		"  --modeline <\"pclk hdisp hsst hsend htot vdisp vsst vsend vtot flags\">  Force an XFree86 modeline\n"
 	};
 
 	log_info("%s", usage);

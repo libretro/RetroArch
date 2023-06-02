@@ -47,6 +47,7 @@
 #include <mmsystem.h>
 #endif
 #elif defined(GEKKO)
+#include <ogc/lwp_watchdog.h>
 #include "gx_pthread.h"
 #elif defined(_3DS)
 #include "ctr_pthread.h"
@@ -55,7 +56,7 @@
 #include <time.h>
 #endif
 
-#if defined(VITA) || defined(BSD) || defined(ORBIS)
+#if defined(VITA) || defined(BSD) || defined(ORBIS) || defined(__mips__) || defined(_3DS)
 #include <sys/time.h>
 #endif
 
@@ -202,14 +203,12 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    data->func               = thread_func;
    data->userdata           = userdata;
 
-#ifdef USE_WIN32_THREADS
    thread->id               = 0;
+#ifdef USE_WIN32_THREADS
    thread->thread           = CreateThread(NULL, 0, thread_wrap,
          data, 0, &thread->id);
    thread_created           = !!thread->thread;
 #else
-   thread->id               = 0;
-
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
@@ -223,23 +222,27 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
       thread_attr_needed = true;
    }
-#endif
 
 #if defined(VITA)
    pthread_attr_setstacksize(&thread_attr , 0x10000 );
    thread_attr_needed = true;
+#elif defined(__APPLE__)
+   /* Default stack size on Apple is 512Kb; 
+    * for PS2 disc scanning and other reasons, we'd like 2MB. */
+   pthread_attr_setstacksize(&thread_attr , 0x200000 );
+   thread_attr_needed = true;
 #endif
 
-#ifdef HAVE_THREAD_ATTR
    if (thread_attr_needed)
       thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
    else
-#endif
       thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 
-#ifdef HAVE_THREAD_ATTR
    pthread_attr_destroy(&thread_attr);
+#else
+   thread_created    = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 #endif
+
 #endif
 
    if (thread_created)
@@ -824,14 +827,12 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
     * accidentally get 2ms. */
    return _scond_wait_win32(cond, lock, timeout_us / 1000);
 #else
-   int ret;
    int64_t seconds, remainder;
    struct timespec now;
 #ifdef __MACH__
    /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;
    mach_timespec_t mts;
-
    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
    clock_get_time(cclock, &mts);
    mach_port_deallocate(mach_task_self(), cclock);
@@ -840,41 +841,42 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
    sys_time_sec_t s;
    sys_time_nsec_t n;
-
    sys_time_get_current_time(&s, &n);
-   now.tv_sec  = s;
-   now.tv_nsec = n;
+   now.tv_sec            = s;
+   now.tv_nsec           = n;
 #elif defined(PS2)
-   int tickms = ps2_clock();
-   now.tv_sec = tickms/1000;
-   now.tv_nsec = tickms * 1000;
+   int tickms            = ps2_clock();
+   now.tv_sec            = tickms / 1000;
+   now.tv_nsec           = tickms * 1000;
 #elif !defined(DINGUX_BETA) && (defined(__mips__) || defined(VITA) || defined(_3DS))
    struct timeval tm;
-
    gettimeofday(&tm, NULL);
-   now.tv_sec = tm.tv_sec;
-   now.tv_nsec = tm.tv_usec * 1000;
+   now.tv_sec            = tm.tv_sec;
+   now.tv_nsec           = tm.tv_usec * 1000;
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
-#elif !defined(GEKKO)
-   /* timeout on libogc is duration, not end time. */
+#elif defined(GEKKO)
+   /* Avoid gettimeofday due to it being reported to be broken */
+   const uint64_t tickms = gettime() / TB_TIMER_CLOCK;
+   now.tv_sec            = tickms / 1000;
+   now.tv_nsec           = tickms * 1000;
+#else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-   seconds      = timeout_us / INT64_C(1000000);
-   remainder    = timeout_us % INT64_C(1000000);
+   seconds              = timeout_us / INT64_C(1000000);
+   remainder            = timeout_us % INT64_C(1000000);
 
-   now.tv_sec  += seconds;
-   now.tv_nsec += remainder * INT64_C(1000);
+   now.tv_sec          += seconds;
+   now.tv_nsec         += remainder * INT64_C(1000);
 
    if (now.tv_nsec > 1000000000)
    {
-      now.tv_nsec -= 1000000000;
-      now.tv_sec += 1;
+      now.tv_nsec      -= 1000000000;
+      now.tv_sec       += 1;
    }
 
-   ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
-   return (ret == 0);
+   return (pthread_cond_timedwait(&cond->cond, &lock->lock, &now) == 0);
 #endif
 }
 

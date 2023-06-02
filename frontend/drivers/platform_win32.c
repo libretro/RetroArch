@@ -469,7 +469,8 @@ static void init_nvda(void)
    /* The above code is executed on each accessibility speak event, so
     * we should only revert to powershell if nvda_lib wasn't loaded previously,
     * and we weren't able to load it on this call, or we don't HAVE_DYLIB */
-   if ((g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) && !nvda_lib) {
+   if ((g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) && !nvda_lib)
+   {
       g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
       g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
    }
@@ -596,10 +597,6 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       ":\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-      ":\\layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
    if (!string_is_empty(libretro_directory))
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -752,6 +749,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
    char executable_path[PATH_MAX_LENGTH] = {0};
+   char executable_args[PATH_MAX_LENGTH] = {0};
 
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
@@ -760,15 +758,16 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
 
+   /* Remove executable path from arguments given to CreateProcess */
+   snprintf(executable_args, sizeof(executable_args), "%s", strstr(args, ".exe") + 4);
+
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&pi, 0, sizeof(pi));
 
-   if (!CreateProcess( executable_path, args,
-      NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-   {
+   if (!CreateProcess(executable_path, executable_args,
+         NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
       RARCH_ERR("Failed to restart RetroArch\n");
-   }
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)

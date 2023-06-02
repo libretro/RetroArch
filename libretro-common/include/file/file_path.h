@@ -664,6 +664,11 @@ bool path_mkdir(const char *dir);
  */
 bool path_is_directory(const char *path);
 
+/* Time format strings with AM-PM designation require special
+ * handling due to platform dependence */
+void strftime_am_pm(char *s, size_t len, const char* format,
+      const void* timeptr);
+
 bool path_is_character_special(const char *path);
 
 int path_stat(const char *path);

@@ -641,15 +641,17 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    /* Adjust mouse speed based on ratio
     * between core resolution and system resolution */
    float x = 0, y = 0;
-   float                        x_scale = 1;
-   float                        y_scale = 1;
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   float                        x_scale      = 1;
+   float                        y_scale      = 1;
+   settings_t *settings                      = config_get_ptr();
+   video_driver_state_t *video_st            = video_state_get_ptr();
+   struct retro_system_av_info *av_info      = &video_st->av_info;
 
    if (av_info)
    {
-      video_viewport_t          *custom_vp   = video_viewport_get_custom();
+      video_viewport_t *custom_vp            = &settings->video_viewport_custom;
       const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
-      x_scale = 2 * (float)geom->base_width / (float)custom_vp->width;
+      x_scale = 2 * (float)geom->base_width  / (float)custom_vp->width;
       y_scale = 2 * (float)geom->base_height / (float)custom_vp->height;
    }
 
@@ -740,7 +742,12 @@ static INLINE void android_input_poll_event_type_motion(
          /* If touchscreen was pressed for less than 200ms
           * then register time stamp of a quick tap */
          if ((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
-            android->quick_tap_time = AMotionEvent_getEventTime(event);
+         {
+            /* Prevent the quick tap if a button on the overlay is down */
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (!(input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT))
+               android->quick_tap_time = AMotionEvent_getEventTime(event);
+         }
          android->mouse_l = 0;
       }
 
@@ -949,18 +956,19 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
 
     if (is_keyboard)
     {
+       int i;
         /*
          * Check that there is not already a similar physical keyboard attached
          * attached to the system
          */
-        for (int i = 0; i < kbd_num; i++)
+        for (i = 0; i < kbd_num; i++)
         {
             char kbd_device_name[256] = { 0 };
-            int kbd_vendor_id                 = 0;
-            int kbd_product_id                = 0;
+            int kbd_vendor_id         = 0;
+            int kbd_product_id        = 0;
 
             if (!engine_lookup_name(kbd_device_name, &kbd_vendor_id,
-                                    &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
+                     &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
                 return false;
 
             if (compare_by_id && vendor_id == kbd_vendor_id && product_id == kbd_product_id)
@@ -1132,7 +1140,7 @@ static void handle_hotplug(android_input_t *android,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(
+   else if (
             (
                string_starts_with_size(device_model, "R800", STRLEN_CONST("R800")) ||
                strstr(device_model, "Xperia Play") ||
@@ -1326,17 +1334,17 @@ static void engine_handle_touchpad(
       int action     =   AMOTION_EVENT_ACTION_MASK 
                        & AMotionEvent_getAction(event);
       int raw_action	=   AMotionEvent_getAction(event);
-      if(      action  == AMOTION_EVENT_ACTION_POINTER_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN 
             || action  == AMOTION_EVENT_ACTION_POINTER_UP )
       {
          int pointer_index = (AMotionEvent_getAction( event ) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
          pointer_id        = AMotionEvent_getPointerId( event, pointer_index);
       }
 
-      if(      action  == AMOTION_EVENT_ACTION_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_DOWN 
             || action  == AMOTION_EVENT_ACTION_POINTER_DOWN )
          touchstate[pointer_id].down = 1;
-      else if( action  == AMOTION_EVENT_ACTION_UP 
+      else if (action  == AMOTION_EVENT_ACTION_UP 
             || action  == AMOTION_EVENT_ACTION_POINTER_UP 
             || action  == AMOTION_EVENT_ACTION_CANCEL )
          touchstate[pointer_id].down = 0;
@@ -1669,8 +1677,9 @@ static int16_t android_input_state(
       case RETRO_DEVICE_MOUSE:
          {
             int val = 0;
-            if(port > 0)
+            if (port > 0)
                break; /* TODO: implement mouse for additional ports/players */
+
             switch (id)
             {
                case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -1703,7 +1712,7 @@ static int16_t android_input_state(
       case RETRO_DEVICE_LIGHTGUN:
          {
             int val = 0;
-            if(port > 0)
+            if (port > 0)
                break; /* TODO: implement lightgun for additional ports/players */
             switch (id)
             {

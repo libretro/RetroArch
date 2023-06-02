@@ -529,7 +529,6 @@ MSG_HASH(
 
 
 
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard input is passed to the running core) and mouse is grabbed."
@@ -977,14 +976,6 @@ MSG_HASH(
    "Select an image to set as the menu background."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Frame-buffer Opacity"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modify the opacity of the frame-buffer."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "Use Preferred System Colour Theme"
    )
@@ -1010,10 +1001,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Leader-boards"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Game specific leader-boards. Has no effect if 'Hardcore Mode' is disabled."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -1573,14 +1560,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    "Enable background display of running content while Quick Menu is active. Disabling transparency may alter theme colours."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled full-screen by pressing RetroPad Y."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled full-screen by pressing RetroPad Y."
-   )
 
 /* RGUI: Settings Options */
 
@@ -2007,10 +1986,6 @@ MSG_HASH(
    "Loading favourites file"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Input replay film file is not a valid BSV1 file."
-   )
-MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    "Input replay film format seems to have a different serialiser version. It will most likely fail."
    )
@@ -2196,6 +2171,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
    "Adjust x/y scale for Wii-mote light gun speed."
    )
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(

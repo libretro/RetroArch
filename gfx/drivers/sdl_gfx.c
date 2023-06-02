@@ -44,24 +44,23 @@
 
 typedef struct sdl_menu_frame
 {
-   bool active;
    struct scaler_ctx scaler;
    SDL_Surface *frame;
+   bool active;
 } sdl_menu_frame_t;
 
 typedef struct sdl_video
 {
-   bool quitting;
-   uint8_t font_r;
-   uint8_t font_g;
-   uint8_t font_b;
-
    struct scaler_ctx scaler;
    sdl_menu_frame_t menu;
    SDL_Surface *screen;
 
    void *font;
    const font_renderer_driver_t *font_driver;
+   uint8_t font_r;
+   uint8_t font_g;
+   uint8_t font_b;
+   bool quitting;
 } sdl_video_t;
 
 static void sdl_gfx_free(void *data)
@@ -403,6 +402,12 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 
       if (SDL_MUSTLOCK(vid->screen))
          SDL_UnlockSurface(vid->screen);
+      
+      if (msg)
+         sdl_render_msg(vid, vid->screen,
+         msg, vid->screen->w, vid->screen->h, vid->screen->format,
+         video_info->font_msg_pos_x,
+         video_info->font_msg_pos_y);
    }
 
    if (title[0])
@@ -583,9 +588,6 @@ video_driver_t video_sdl = {
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL,
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
 #endif
    sdl_get_poke_interface
 };

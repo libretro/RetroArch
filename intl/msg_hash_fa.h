@@ -1347,10 +1347,6 @@ MSG_HASH(
    "مرکز کردن محور X"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "استفاده از گزینگان با تفکیک‌پذیری بالا"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "نرخ تازه‌سازی سفارشی"
    )
@@ -1785,7 +1781,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
    "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را کاهش دهید."
    )
-
 
 
 
@@ -2672,6 +2667,8 @@ MSG_HASH(
    )
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

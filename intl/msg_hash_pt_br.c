@@ -223,10 +223,6 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                    " \n"
                    "Rebobinar precisa estar habilitado.");
              break;
-          case RARCH_BSV_RECORD_TOGGLE:
-             snprintf(s, len,
-                   "Alternar entre gravando ou não.");
-             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
@@ -1603,7 +1599,7 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Salvar todos os dados da memória do jogo (*.srm) \n"
                              "neste diretório. Isso inclui arquivos \n"
-                             "relacionados, como .bsv, .rt, .psrm, etc... \n"
+                             "relacionados, como .rt, .psrm, etc... \n"
                              " \n"
                              "Será substituído por opções definidas \n"
                              "explicitamente na linha de comando.");
@@ -2210,10 +2206,6 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Avanço de quadro quando o conteúdo \n"
                      "estiver pausado.");
             break;
-        case MENU_ENUM_LABEL_BSV_RECORD_TOGGLE:
-            snprintf(s, len,
-                     "Alternar entre gravando ou não.");
-            break;
         case MENU_ENUM_LABEL_L_X_PLUS:
         case MENU_ENUM_LABEL_L_X_MINUS:
         case MENU_ENUM_LABEL_L_Y_PLUS:
@@ -2373,7 +2365,8 @@ static const char *menu_hash_to_str_pt_br_label_enum(enum msg_hash_enums msg)
 }
 #endif
 
-const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg) {
+const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
+{
 #ifdef HAVE_MENU
     const char *ret = menu_hash_to_str_pt_br_label_enum(msg);
 
@@ -2381,7 +2374,8 @@ const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg) {
        return ret;
 #endif
 
-    switch (msg) {
+    switch (msg)
+    {
 #include "msg_hash_pt_br.h"
         default:
 #if 0

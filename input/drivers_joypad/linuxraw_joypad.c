@@ -194,10 +194,8 @@ retry:
                else if (event->mask & (IN_CREATE | IN_ATTRIB))
                {
                   char path[PATH_MAX_LENGTH];
-
-                  path[0] = '\0';
-
-                  snprintf(path, sizeof(path), "/dev/input/%s", event->name);
+                  strlcpy(path, "/dev/input/", sizeof(path));
+                  strlcat(path, event->name,   sizeof(path));
 
                   if (     !string_is_empty(linuxraw_pads[idx].ident)
                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
@@ -219,33 +217,27 @@ retry:
 
 static void *linuxraw_joypad_init(void *data)
 {
-   unsigned i;
-   int fd = epoll_create(32);
+   size_t i, _len;
+   char path[PATH_MAX_LENGTH];
+   int fd      = epoll_create(32);
 
    if (fd < 0)
       return NULL;
 
    linuxraw_epoll = fd;
+   _len           = strlcpy(path, "/dev/input/js", sizeof(path));
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH];
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
-
-      path[0]                     = '\0';
 
       pad->fd                     = -1;
       pad->ident                  = input_config_get_device_name_ptr(i);
 
-      snprintf(path, sizeof(path), "/dev/input/js%u", i);
+      snprintf(path + _len, sizeof(path) - _len, "%u", (uint32_t)i);
 
-      input_autoconfigure_connect(
-            pad->ident,
-            NULL,
-            "linuxraw",
-            i,
-            0,
-            0);
+      input_autoconfigure_connect(pad->ident, NULL, "linuxraw",
+            i, 0, 0);
 
       if (linuxraw_joypad_init_pad(path, pad))
          linuxraw_poll_pad(pad);
@@ -374,12 +366,12 @@ static int16_t linuxraw_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if ((uint16_t)joykey != NO_BTN && 
+      if ((uint16_t)joykey != NO_BTN &&
             (joykey < NUM_BUTTONS)   &&
             (BIT32_GET(pad->buttons, joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

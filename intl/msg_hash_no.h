@@ -1519,10 +1519,6 @@ MSG_HASH(
    "Bla gjennom disse valgene for å justere \"porch\" innstillingene for å endre bildestørrelsen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Bruk høyoppløsings meny"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Bytt til modeline med høy oppløsning for bruk med høyoppløselige menyer når ikke noe innhold er lastet inn."
    )
@@ -1987,7 +1983,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Avslutt"
    )
-
 
 
 
@@ -2476,6 +2471,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

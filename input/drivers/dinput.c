@@ -562,7 +562,6 @@ static int16_t dinput_input_state(
       unsigned id)
 {
    settings_t *settings;
-   int16_t ret                = 0;
    struct dinput_input *di    = (struct dinput_input*)data;
 
 	if (port < MAX_USERS)
@@ -571,7 +570,8 @@ static int16_t dinput_input_state(
       {
          case RETRO_DEVICE_JOYPAD:
             {
-               settings                   = config_get_ptr();
+               int16_t ret = 0;
+               settings    = config_get_ptr();
 
                if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
                {
@@ -633,6 +633,7 @@ static int16_t dinput_input_state(
                di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
          case RETRO_DEVICE_ANALOG:
             {
+               int16_t ret           = 0;
                int id_minus_key      = 0;
                int id_plus_key       = 0;
                unsigned id_minus     = 0;
@@ -659,8 +660,9 @@ static int16_t dinput_input_state(
                   if (di->state[sym] & 0x80)
                      ret += -0x7fff;
                }
+               return ret;
             }
-            return ret;
+            break;
          case RARCH_DEVICE_MOUSE_SCREEN:
             settings                   = config_get_ptr();
             if (settings->uints.input_mouse_index[ port ] != 0)
@@ -680,8 +682,6 @@ static int16_t dinput_input_state(
             settings                   = config_get_ptr();
             if (settings->uints.input_mouse_index[port] == 0)
             {
-               int16_t        state = 0;
-
                switch (id)
                {
                   case RETRO_DEVICE_ID_MOUSE_X:
@@ -694,24 +694,36 @@ static int16_t dinput_input_state(
                      return (di->flags & DINP_FLAG_MOUSE_R_BTN);
                   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                      if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
-                        state = 1;
+                     {
+                        di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
+                        return 1;
+                     }
                      di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
-                     return state;
+                     break;
                   case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                      if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
-                        state = 1;
+                     {
+                        di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
+                        return 1;
+                     }
                      di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
-                     return state;
+                     break;
                   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
                      if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
-                        state = 1;
+                     {
+                        di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
+                        return 1;
+                     }
                      di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
-                     return state;
+                     break;
                   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
                      if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
-                        state = 1;
+                     {
+                        di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
+                        return 1;
+                     }
                      di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
-                     return state;
+                     break;
                   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                      return (di->flags & DINP_FLAG_MOUSE_M_BTN);
                   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
@@ -778,7 +790,7 @@ static int16_t dinput_input_state(
                         case RETRO_DEVICE_ID_POINTER_Y:
                            return res_y;
                         case RETRO_DEVICE_ID_POINTER_PRESSED:
-                           return check_pos ? true : (di->flags & DINP_FLAG_MOUSE_L_BTN); 
+                           return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN); 
                         default:
                            break;
                      }
@@ -814,7 +826,7 @@ static int16_t dinput_input_state(
                      const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                      const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
                      const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                     uint16_t port                  = joypad_info->joy_idx;
+                     uint16_t joyport               = joypad_info->joy_idx;
                      float axis_threshold           = joypad_info->axis_threshold;
                      const uint64_t joykey          = (bind_joykey != NO_BTN)
                         ? bind_joykey  : autobind_joykey;
@@ -823,10 +835,10 @@ static int16_t dinput_input_state(
                      if (binds[port][new_id].valid)
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
-                                 port, (uint16_t)joykey))
+                                 joyport, (uint16_t)joykey))
                            return 1;
                         if (joyaxis != AXIS_NONE &&
-                              ((float)abs(joypad->axis(port, joyaxis)) 
+                              ((float)abs(joypad->axis(joyport, joyaxis)) 
                                / 0x8000) > axis_threshold)
                            return 1;
                         else if (
@@ -1004,17 +1016,10 @@ bool dinput_handle_message(void *data,
                wParam == DBT_DEVICEREMOVECOMPLETE)
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
-            if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-            {
-#if 0
-               PDEV_BROADCAST_DEVICEINTERFACE pDevInf = 
-                  (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
-#endif
-
-               /* TODO/FIXME: Don't destroy everything, let's just 
-                * handle new devices gracefully */
+            /* TODO/FIXME: Don't destroy everything, let's just 
+             * handle new devices gracefully */
+            if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
                joypad_driver_reinit(di, di->joypad_drv_name);
-            }
          }
 #endif
          break;

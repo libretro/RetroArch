@@ -47,7 +47,7 @@ static void* hidpad_kade_init(void* data, uint32_t slot, hid_driver_t* driver)
    }
 
    device->connection = connection;
-   device->slot = slot;
+   device->slot       = slot;
 
    return device;
 }
@@ -73,10 +73,7 @@ static void hidpad_kade_get_buttons(void* data, input_bits_t* state)
 
 /*This is being implemented for use with an arcade stick, so there are no axis values on this control, only a hat values .
 If your device with kade firmware uses analog controls this function must be implemented.*/
-static int16_t hidpad_kade_get_axis(void* data, unsigned axis)
-{
-   return 0;
-}
+static int16_t hidpad_kade_get_axis(void* data, unsigned axis) { return 0; }
 
 #define KADE_H_GET(a)   (a & 0x0F) /*HAT MASK = 0x0F */
 #define KADE_H_LEFT(a)  (a == 0x05) || (a == 0x06) || (a == 0x07)
@@ -130,17 +127,11 @@ static void hidpad_kade_packet_handler(void* data, uint8_t* packet, uint16_t siz
 }
 
 static void hidpad_kade_set_rumble(void* data,
-   enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)effect;
-   (void)strength;
-}
+   enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char* hidpad_kade_get_name(void* data)
 {
-   (void)data;
-   /* For now we return a single static name */
    return "KADE: Kick Ass Dynamic Encoder";
 }
 

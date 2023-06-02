@@ -270,50 +270,47 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
     * gfx_thumbnail_is_enabled() will go out of sync */
    if (playlist)
    {
-      const char *playlist_path = playlist_get_conf_path(playlist);
-      const char *playlist_file = NULL;
-      bool playlist_valid       = false;
+      const char *playlist_path    = playlist_get_conf_path(playlist);
       
       /* Note: This is not considered an error
        * (just means that input playlist is ignored) */
-      if (string_is_empty(playlist_path))
-         return true;
-      
-      playlist_file = path_basename_nocompression(playlist_path);
-      
-      /* Note: This is not considered an error
-       * (just means that input playlist is ignored) */
-      if (string_is_empty(playlist_file))
-         return true;
-      
-      /* Check for history/favourites playlists */
-      playlist_valid =
-            (string_is_equal(system, "history") &&
-             string_is_equal(playlist_file,
-                FILE_PATH_CONTENT_HISTORY)) ||
-            (string_is_equal(system, "favorites") &&
-             string_is_equal(playlist_file,
-                FILE_PATH_CONTENT_FAVORITES));
-      
-      if (!playlist_valid)
+      if (!string_is_empty(playlist_path))
       {
-         /* This means we have to work a little harder
-          * i.e. check whether the cached playlist file
-          * matches the database name */
-         char *playlist_name = NULL;
-         char tmp[PATH_MAX_LENGTH];
-         strlcpy(tmp, playlist_file, sizeof(tmp));
-         playlist_name  = path_remove_extension(tmp);
-         playlist_valid = string_is_equal(playlist_name, system);
-      }
-      
-      /* If we have a valid playlist, extract thumbnail modes */
-      if (playlist_valid)
-      {
-         path_data->playlist_right_mode =
-               playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT);
-         path_data->playlist_left_mode =
-               playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT);
+         const char *playlist_file = path_basename_nocompression(playlist_path);
+         /* Note: This is not considered an error
+          * (just means that input playlist is ignored) */
+         if (!string_is_empty(playlist_file))
+         {
+            /* Check for history/favourites playlists */
+            bool playlist_valid =
+               (string_is_equal(system, "history") &&
+                string_is_equal(playlist_file,
+                   FILE_PATH_CONTENT_HISTORY)) ||
+               (string_is_equal(system, "favorites") &&
+                string_is_equal(playlist_file,
+                   FILE_PATH_CONTENT_FAVORITES));
+
+            if (!playlist_valid)
+            {
+               /* This means we have to work a little harder
+                * i.e. check whether the cached playlist file
+                * matches the database name */
+               char *playlist_name = NULL;
+               char tmp[PATH_MAX_LENGTH];
+               strlcpy(tmp, playlist_file, sizeof(tmp));
+               playlist_name  = path_remove_extension(tmp);
+               playlist_valid = string_is_equal(playlist_name, system);
+            }
+
+            /* If we have a valid playlist, extract thumbnail modes */
+            if (playlist_valid)
+            {
+               path_data->playlist_right_mode =
+                  playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT);
+               path_data->playlist_left_mode =
+                  playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT);
+            }
+         }
       }
    }
    

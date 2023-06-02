@@ -160,29 +160,22 @@ static void hidpad_ps4_hori_mini_packet_handler(void *data,
          break;
    }
 
-   pressed_keys        = ((device->data[5] & 0xF0) >> 4) |
-                          (device->data[6] << 4) |
-                          (device->data[7] << 12);
+   pressed_keys           = (
+                          (device->data[5] & 0xF0) >> 4)
+                        | (device->data[6] << 4)
+                        | (device->data[7] << 12);
 
    for (i = 0; i < 15; i++)
-   {
       device->buttons |= (pressed_keys & (1 << i)) ?
          (1 << button_mapping[i]) : 0;
-   }
 }
 
 static void hidpad_ps4_hori_mini_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_ps4_hori_mini_get_name(void *data)
 {
-   (void)data;
-   /* For now we return a single static name */
    return "HORI mini wired PS4";
 }
 

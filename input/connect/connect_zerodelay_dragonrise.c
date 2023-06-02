@@ -151,17 +151,11 @@ static void hidpad_dragonrise_packet_handler(void* data,
 }
 
 static void hidpad_dragonrise_set_rumble(void* data,
-   enum retro_rumble_effect effect, uint16_t strength)
-{
-   (void)data;
-   (void)effect;
-   (void)strength;
-}
+   enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char* hidpad_dragonrise_get_name(void* data)
 {
-   (void)data;
-   /* For now we return a single static name */
    return "DRAGONRISE Zero Delay Encoder";
 }
 

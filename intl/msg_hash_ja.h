@@ -1611,10 +1611,6 @@ MSG_HASH(
    "これらのオプションを循環させて, ポーチの設定を調整し, 画像サイズを変更します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "高解像度メニューを使用"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "コンテンツが読み込まれていない場合は、高解像度メニューで使用するための高解像度モデルに切り替えます。"
    )
@@ -2717,15 +2713,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "オンライン動画プラットフォームへの配信を開始/停止します."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "入力リプレイを録画 (切り替え)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "ゲームプレイ入力記録(.bsv形式)のオン/オフを切り替えます."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "マウスを占有 (切り替え)"
@@ -4630,10 +4617,6 @@ MSG_HASH(
    "'巻き戻し'を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "'巻き戻し'オプションを表示します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    "'チート'を表示"
    )
@@ -4885,14 +4868,6 @@ MSG_HASH(
    "背景画像の透明度を変更します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "フレームバッファの不透明度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "フレームバッファの不透明度を変更します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "システムの優先色テーマを使用"
    )
@@ -5038,10 +5013,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "ランキング"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "ゲーム固有のリーダーボードです. ハードコアモードが無効のときには効果ありません."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -5858,10 +5829,6 @@ MSG_HASH(
    "ステートセーブファイル"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "ステートセーブはこのディレクトリに保存されます. 設定されていない場合は, コンテンツのあるディレクトリに保存されます."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "キャッシュ"
    )
@@ -6349,6 +6316,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "ステートが上書きされていた場合, 以前のステートセーブに戻します。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "現在選択中のステートスロットを変更します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -7856,10 +7827,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "上のサムネイル"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "プレイリストの右上に表示するサムネイルの種類です. このサムネイルは, レトロパッドのYボタンでフルスクリーンに切り替えることができます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -10251,10 +10218,6 @@ MSG_HASH(
    "メモリ"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "入力リプレイムービーファイルは有効なBSV1ファイルではありません. "
-   )
-MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    "入力リプレイ動画フォーマットはシリアライザのバージョンが異なるようです. ほとんどの場合失敗します. "
    )
@@ -11269,6 +11232,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "タッチスクリーン座標のx/yスケールを調整し, OSレベルの表示スケールに対応します."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

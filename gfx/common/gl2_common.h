@@ -36,6 +36,13 @@
 
 RETRO_BEGIN_DECLS
 
+#define GL2_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \
+   glBindTexture(GL_TEXTURE_2D, id); \
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode); \
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode); \
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter); \
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter)
+
 #if defined(HAVE_PSGL)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
@@ -158,29 +165,28 @@ typedef struct gl2 gl2_t;
 
 enum gl2_flags
 {
-   GL2_FLAG_VIDEO_LAYOUT_RESIZE    = (1 <<  0),
-   GL2_FLAG_TEXTURE_MIPMAP         = (1 <<  1),
-   GL2_FLAG_SHOULD_RESIZE          = (1 <<  2),
-   GL2_FLAG_HAVE_MIPMAP            = (1 <<  3),
-   GL2_FLAG_QUITTING               = (1 <<  4),
-   GL2_FLAG_FULLSCREEN             = (1 <<  5),
-   GL2_FLAG_KEEP_ASPECT            = (1 <<  6),
-   GL2_FLAG_HAVE_FBO               = (1 <<  7),
-   GL2_FLAG_HW_RENDER_USE          = (1 <<  8),
-   GL2_FLAG_FBO_INITED             = (1 <<  9),
-   GL2_FLAG_FBO_FEEDBACK_ENABLE    = (1 << 10),
-   GL2_FLAG_HW_RENDER_FBO_INIT     = (1 << 11),
-   GL2_FLAG_SHARED_CONTEXT_USE     = (1 << 12),
-   GL2_FLAG_CORE_CONTEXT_IN_USE    = (1 << 13),
-   GL2_FLAG_HAVE_SYNC              = (1 << 14),
-   GL2_FLAG_HAVE_UNPACK_ROW_LENGTH = (1 << 15),
-   GL2_FLAG_HAVE_ES2_COMPAT        = (1 << 16),
-   GL2_FLAG_PBO_READBACK_ENABLE    = (1 << 17),
-   GL2_FLAG_OVERLAY_ENABLE         = (1 << 18),
-   GL2_FLAG_OVERLAY_FULLSCREEN     = (1 << 19),
-   GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 20),
-   GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 21),
-   GL2_FLAG_NONE                   = (1 << 22)
+   GL2_FLAG_TEXTURE_MIPMAP         = (1 <<  0),
+   GL2_FLAG_SHOULD_RESIZE          = (1 <<  1),
+   GL2_FLAG_HAVE_MIPMAP            = (1 <<  2),
+   GL2_FLAG_QUITTING               = (1 <<  3),
+   GL2_FLAG_FULLSCREEN             = (1 <<  4),
+   GL2_FLAG_KEEP_ASPECT            = (1 <<  5),
+   GL2_FLAG_HAVE_FBO               = (1 <<  6),
+   GL2_FLAG_HW_RENDER_USE          = (1 <<  7),
+   GL2_FLAG_FBO_INITED             = (1 <<  8),
+   GL2_FLAG_FBO_FEEDBACK_ENABLE    = (1 <<  9),
+   GL2_FLAG_HW_RENDER_FBO_INIT     = (1 << 10),
+   GL2_FLAG_SHARED_CONTEXT_USE     = (1 << 11),
+   GL2_FLAG_CORE_CONTEXT_IN_USE    = (1 << 12),
+   GL2_FLAG_HAVE_SYNC              = (1 << 13),
+   GL2_FLAG_HAVE_UNPACK_ROW_LENGTH = (1 << 14),
+   GL2_FLAG_HAVE_ES2_COMPAT        = (1 << 15),
+   GL2_FLAG_PBO_READBACK_ENABLE    = (1 << 16),
+   GL2_FLAG_OVERLAY_ENABLE         = (1 << 17),
+   GL2_FLAG_OVERLAY_FULLSCREEN     = (1 << 18),
+   GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 19),
+   GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
+   GL2_FLAG_NONE                   = (1 << 21)
 };
 
 struct gl2
@@ -212,12 +218,6 @@ struct gl2
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-
-#ifdef HAVE_VIDEO_LAYOUT
-   GLuint video_layout_fbo;
-   GLuint video_layout_fbo_texture;
-   GLuint video_layout_white_texture;
-#endif
 
    uint32_t flags;
 
@@ -257,13 +257,6 @@ struct gl2
 
    bool pbo_readback_valid[4];
 };
-
-#define GL2_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \
-   glBindTexture(GL_TEXTURE_2D, id); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter)
 
 bool gl2_load_luts(
       const void *shader_data,

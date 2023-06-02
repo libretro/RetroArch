@@ -45,6 +45,10 @@ MSG_HASH(
    "Explora"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Nuclis sense continguts"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importa contingut"
    )
@@ -68,12 +72,20 @@ MSG_HASH(
    "Selecciona quin nucli utilitzar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Cerca una implementació per a un nucli de libretro. El cercador començarà a buscar en la carpeta que hagis triat per al teu directori de nuclis. En cas de trobar-se en blanc, començarà al directori rael.\nSi el directori de nuclis és un directori, el menú usarà aquest com a carpeta inicial. Pel contrari, si és un directori complet, aquest s'iniciarà a la carpeta on es trobi l'arxiu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Carregar Contingut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Selecciona quin contingut iniciar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Cerca continguts. Per a carregar continguts necessites un 'nucli' i un arxiu de contingut.\nPer a configurar a on comença el menú a cercar-ne, configura el directori de l'explorador d'arxius. Si no està configurat, aquest començará a la rael.\nEl navegador filtrarà extensions per a l'últim nucli triat en 'Carregar nucli', i emprarà aquell nucli quan el contingut sigui carregat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -197,6 +209,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Surt del programa."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Tanca RetroArch. Si tanques el programa d'una manera forçada (SIGKILL, etc.) RetroArch no desarà les configuracions, etc. En sistemes Unix, SIGNIT/SIGTERM permet un tancament net."
+   )
 
 /* Main Menu > Load Core */
 
@@ -285,6 +301,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Explora tots els continguts que coincideixin amb la base de dades mitjançant una interfície de cerca categoritzada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Nuclis sense continguts"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -520,6 +540,14 @@ MSG_HASH(
    "Evita la modificació del nucli instal·lat actualment. Es pot utilitzar per evitar actualitzacions no desitjades quan el contingut requereix una versió del nucli específica (per exemple, conjunts de ROM d'arcade)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Exclou del menú 'Nuclis sense continguts'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Prevín que el nucli sigui mostrat a la secció 'Nuclis sense continguts'. Només s'aplica quan el mode de vídeo estigui configurat com a 'Personalitzat'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Eliminar nucli"
    )
@@ -557,6 +585,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Data de compilació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Versió de RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1137,6 +1169,22 @@ MSG_HASH(
    "Canvia les opcions del navegador d'arxius."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "Arxiu de configuració."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Arxiu comprimit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "Arxiu de configuració."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Arxiu d'imatge."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "Ajustos dels Fotogrames"
    )
@@ -1299,6 +1347,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Controlador de vídeo que es farà servir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "Controlador actual de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1557,10 +1609,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Roteu entre aquestes opcions per ajustar la configuració de pòrtic per canviar la mida de la imatge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Usa menú d'alta resolució"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -2110,6 +2158,14 @@ MSG_HASH(
    "Silencia automàticament el so quan s’usa l’avançament ràpid."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelerar a l'usar l'avançament ràpid"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelera l'àudio a l'emprar l'avançament ràpid. Defugirá sorolls en l'àudio però canviant la seva tonalitat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Guany de volum (dB)"
    )
@@ -2515,6 +2571,10 @@ MSG_HASH(
    "Selecciona el comportament general del mode turbo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "Clàssic"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Botó per defecte del turbo"
    )
@@ -2849,15 +2909,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Inicia/Atura la transmissió de la sessió actual a una plataforma de vídeo en línia."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Enregistra la repetició d'entrades (commuta)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Canvia a activat/desactivat l'enregistrament d'entrades del joc en format .bsv."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Agafa el Ratolí (commuta)"
@@ -4079,6 +4130,14 @@ MSG_HASH(
    "Mostra l’opció de l’explorador de contingut. (Cal reiniciar a Ozone/XMB)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Mostra 'Nuclis sense continguts'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Especifica el tipus de nucli (en cas que haguessin) a mostrar al menú 'Nuclis sense continguts'. Quan s'estableix en 'Personalitzat', es pot canviar la disponibilitat de cada nucli individual mitjançant el menú 'Gestiona els nuclis' (Cal reiniciar en Ozone/XMB)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Tots"
    )
@@ -4172,10 +4231,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Mostra l’opció “Tanca el contingut”."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Mostra el submenú de desat ràpid"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -4272,10 +4327,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
    "Mostra «Rebobina»"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Mostra les opcions de «Rebobina»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -4530,10 +4581,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Taules de classificació"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Taules de classificació específiques del joc. No té efecte si el «mode expert» està desactivat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -7318,6 +7365,10 @@ MSG_HASH(
    "S’ha rebut una connexió de: «%s (%s)»"
    )
 MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Esperant al client..."
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Jugant"
    )
@@ -7990,6 +8041,14 @@ MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Ha fallat la instal·lació del nucli: "
    )
+MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Error al treure el nucli de la llista 'Nuclis sense continguts': "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Error a l'afegir el nucli a la llista 'Nuclis sense continguts': "
+   )
 
 /* Lakka */
 
@@ -8253,6 +8312,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Ajusta l’escala x/y de les coordenades de la pantalla tàctil per adaptar-les a l’escala de visualització del sistema operatiu."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
 #endif

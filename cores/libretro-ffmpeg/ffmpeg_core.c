@@ -1060,7 +1060,6 @@ exit:
 static enum AVPixelFormat auto_hw_decoder(AVCodecContext *ctx,
                                     const enum AVPixelFormat *pix_fmts)
 {
-   int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
    enum AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
 
@@ -1675,7 +1674,7 @@ static void decode_thread_seek(double time)
 
    decode_last_audio_time = time;
 
-   if(avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
+   if (avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] av_seek_frame() failed.\n");
 
    if (video_stream_index >= 0)

@@ -1107,7 +1107,6 @@ MSG_HASH(
 
 
 
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Gwasanaeth AI"
@@ -1732,6 +1731,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

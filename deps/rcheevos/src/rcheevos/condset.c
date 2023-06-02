@@ -210,8 +210,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
 
       case RC_CONDITION_SUB_SOURCE:
         rc_evaluate_condition_value(&value, condition, eval_state);
-        rc_typed_value_convert(&value, RC_VALUE_TYPE_SIGNED);
-        value.value.i32 = -value.value.i32;
+        rc_typed_value_negate(&value);
         rc_typed_value_add(&eval_state->add_value, &value);
         eval_state->add_address = 0;
         continue;

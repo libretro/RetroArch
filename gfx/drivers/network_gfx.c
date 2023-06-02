@@ -52,13 +52,13 @@ enum
 
 typedef struct network
 {
+   int fd;
    unsigned video_width;
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
-   char address[256];
    uint16_t port;
-   int fd;
+   char address[256];
 } network_video_t;
 
 static unsigned char *network_menu_frame = NULL;
@@ -181,9 +181,9 @@ static bool network_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  network_video_width  != frame_width  || 
-         network_video_height != frame_height || 
-         network_video_pitch  != pitch)
+   if (     (network_video_width  != frame_width)
+         || (network_video_height != frame_height)
+         || (network_video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -211,9 +211,9 @@ static bool network_gfx_frame(void *data, const void *frame,
       height        = network_video_height;
       pitch         = network_video_pitch;
 
-      if (  frame_width  == 4 && 
-            frame_height == 4 && 
-            (frame_width < width && frame_height < height))
+      if (     (frame_width  == 4)
+            && (frame_height == 4)
+            && (frame_width < width && frame_height < height))
          draw = false;
 
 #ifdef HAVE_MENU
@@ -222,8 +222,8 @@ static bool network_gfx_frame(void *data, const void *frame,
 #endif
    }
 
-   if (     network->video_width != width 
-         || network->video_height != height)
+   if (     (network->video_width  != width)
+         || (network->video_height != height))
    {
       network->video_width  = width;
       network->video_height = height;
@@ -402,10 +402,10 @@ static void network_set_texture_frame(void *data,
       network_menu_frame = NULL;
    }
 
-   if (  !network_menu_frame           || 
-         network_menu_width  != width  || 
-         network_menu_height != height ||
-         network_menu_pitch  != pitch)
+   if (     !network_menu_frame
+         || (network_menu_width  != width)
+         || (network_menu_height != height)
+         || (network_menu_pitch  != pitch))
       if (pitch && height)
          network_menu_frame = (unsigned char*)malloc(pitch * height);
 
@@ -461,14 +461,11 @@ static const video_poke_interface_t network_poke_interface = {
 static void network_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &network_poke_interface;
 }
 
 static void network_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+      unsigned viewport_height, bool force_full, bool allow_rotate) { }
 
 bool network_has_menu_frame(void)
 {
@@ -493,9 +490,6 @@ video_driver_t video_network = {
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
 #endif
    network_gfx_get_poke_interface,
    NULL /* wrap_type_to_enum */

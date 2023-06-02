@@ -107,13 +107,13 @@ EGL_DEPTH_SIZE,      0
 static void *gfx_ctx_xegl_init(void *video_driver)
 {
 #ifdef HAVE_EGL
-   static const EGLint egl_attribs_gl[] = {
+   static const EGLint egl_attribs_gl[]    = {
       XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
       EGL_NONE,
    };
 
-   static const EGLint egl_attribs_gles[] = {
+   static const EGLint egl_attribs_gles[]  = {
       XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_NONE,
@@ -127,25 +127,24 @@ static void *gfx_ctx_xegl_init(void *video_driver)
    };
 #endif
 #ifdef HAVE_VG
-   static const EGLint egl_attribs_vg[] = {
+   static const EGLint egl_attribs_vg[]    = {
       XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
 #endif
-   const EGLint *attrib_ptr = NULL;
-   EGLint major, minor;
    EGLint n;
+   EGLint major, minor;
+   const EGLint *attrib_ptr                = NULL;
 #endif
-   xegl_ctx_data_t *xegl;
+   xegl_ctx_data_t *xegl                   = NULL;
 
    if (g_egl_inited)
       return NULL;
 
    XInitThreads();
 
-   xegl = (xegl_ctx_data_t*)calloc(1, sizeof(xegl_ctx_data_t));
-   if (!xegl)
+   if (!(xegl = (xegl_ctx_data_t*)calloc(1, sizeof(xegl_ctx_data_t))))
       return NULL;
 
    switch (xegl_api)
@@ -175,13 +174,14 @@ static void *gfx_ctx_xegl_init(void *video_driver)
 
 #ifdef HAVE_EGL
    if (!egl_init_context(&xegl->egl, EGL_PLATFORM_X11_KHR,
-            (EGLNativeDisplayType)g_x11_dpy, &major, &minor, &n, attrib_ptr, egl_default_accept_config_cb))
+       (EGLNativeDisplayType)g_x11_dpy, &major, &minor, &n,
+	    attrib_ptr, egl_default_accept_config_cb))
    {
       egl_report_error();
       goto error;
    }
 
-   if (n == 0 || !egl_has_config(&xegl->egl))
+   if (n == 0 || !&xegl->egl.config)
       goto error;
 #endif
 
@@ -199,21 +199,23 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
-            unsigned version = xegl->egl.major * 1000 + xegl->egl.minor;
-            bool core        = version >= 3001;
+            unsigned 
+		  version = xegl->egl.major * 1000 + xegl->egl.minor;
+            bool core     = version >= 3001;
 #ifdef GL_DEBUG
-            bool debug       = true;
+            bool debug    = true;
 #else
-            struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-            bool debug       = hwr->debug_context;
+            struct retro_hw_render_callback 
+		    *hwr  = video_driver_get_hw_context();
+            bool debug    = hwr->debug_context;
 #endif
 
             if (core)
             {
-               *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
-               *attr++ = xegl->egl.major;
-               *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-               *attr++ = xegl->egl.minor;
+               *attr++    = EGL_CONTEXT_MAJOR_VERSION_KHR;
+               *attr++    = xegl->egl.major;
+               *attr++    = EGL_CONTEXT_MINOR_VERSION_KHR;
+               *attr++    = xegl->egl.minor;
 
                /* Technically, we don't have core/compat until 3.2.
                 * Version 3.1 is either compat or not depending
@@ -228,8 +230,8 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 
             if (debug)
             {
-               *attr++ = EGL_CONTEXT_FLAGS_KHR;
-               *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
+               *attr++    = EGL_CONTEXT_FLAGS_KHR;
+               *attr++    = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
             }
 
             break;
@@ -238,13 +240,13 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 
       case GFX_CTX_OPENGL_ES_API:
          /* Same as EGL_CONTEXT_MAJOR_VERSION. */
-         *attr++ = EGL_CONTEXT_CLIENT_VERSION;
-         *attr++ = xegl->egl.major ? (EGLint)xegl->egl.major : 2;
+         *attr++          = EGL_CONTEXT_CLIENT_VERSION;
+         *attr++          = xegl->egl.major ? (EGLint)xegl->egl.major : 2;
 #ifdef EGL_KHR_create_context
          if (xegl->egl.minor > 0)
          {
-            *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
-            *attr++ = xegl->egl.minor;
+            *attr++       = EGL_CONTEXT_MINOR_VERSION_KHR;
+            *attr++       = xegl->egl.minor;
          }
 #endif
          break;
@@ -253,7 +255,7 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
          break;
    }
 
-   *attr = EGL_NONE;
+   *attr                  = EGL_NONE;
    return attr;
 }
 
@@ -267,55 +269,58 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XEvent event;
    EGLint egl_attribs[16];
    EGLint vid, num_visuals;
-   EGLint *attr                   = NULL;
+   EGLint *attr                      = NULL;
 #ifdef HAVE_XF86VM
-   bool true_full                 = false;
+   bool true_full                    = false;
 #endif
-   int x_off                      = 0;
-   int y_off                      = 0;
-   XVisualInfo temp               = {0};
-   XSetWindowAttributes swa       = {0};
-   XVisualInfo *vi                = NULL;
-   xegl_ctx_data_t *xegl          = (xegl_ctx_data_t*)data;
-   settings_t *settings           = config_get_ptr();
-   bool video_disable_composition = settings->bools.video_disable_composition;
-   bool windowed_fullscreen       = settings->bools.video_windowed_fullscreen;
-   unsigned video_monitor_index   = settings->uints.video_monitor_index;
+   int x_off                         = 0;
+   int y_off                         = 0;
+   XVisualInfo temp                  = {0};
+   XSetWindowAttributes swa          = {0};
+   XVisualInfo *vi                   = NULL;
+   xegl_ctx_data_t *xegl             = (xegl_ctx_data_t*)data;
+   settings_t *settings              = config_get_ptr();
+   bool video_disable_composition    = settings->bools.video_disable_composition;
+   bool windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+   unsigned video_monitor_index      = settings->uints.video_monitor_index;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
    frontend_driver_install_signal_handler();
 
-   attr = egl_attribs;
-   attr = xegl_fill_attribs(xegl, attr);
+   attr                              = egl_attribs;
+   attr                              = xegl_fill_attribs(xegl, attr);
 
 #ifdef HAVE_EGL
    if (!egl_get_native_visual_id(&xegl->egl, &vid))
       goto error;
 #endif
 
-   temp.visualid = vid;
+   temp.visualid                     = vid;
 
-   vi = XGetVisualInfo(g_x11_dpy, VisualIDMask, &temp, &num_visuals);
-   if (!vi)
+   if (!(vi = XGetVisualInfo(g_x11_dpy, VisualIDMask, &temp, &num_visuals)))
       goto error;
 
-   swa.colormap = g_x11_cmap = XCreateColormap(
-         g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
-         vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask | KeyPressMask |
-      ButtonPressMask | ButtonReleaseMask | KeyReleaseMask |
-      EnterWindowMask | LeaveWindowMask;
-   swa.override_redirect = False;
+   swa.colormap                      = g_x11_cmap = XCreateColormap(
+		   g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
+		   vi->visual, AllocNone);
+   swa.event_mask                    = StructureNotifyMask 
+	                             | KeyPressMask
+                                     | ButtonPressMask 
+				     | ButtonReleaseMask 
+				     | KeyReleaseMask
+                                     | EnterWindowMask
+				     | LeaveWindowMask;
+   swa.override_redirect             = False;
 
 #ifdef HAVE_XF86VM
    if (fullscreen && !windowed_fullscreen)
    {
       if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
-         char *wm_name           = x11_get_wm_name(g_x11_dpy);
-         xegl->should_reset_mode = true;
-         true_full               = true;
+         char *wm_name               = x11_get_wm_name(g_x11_dpy);
+         xegl->should_reset_mode     = true;
+         true_full                   = true;
 
          if (wm_name)
          {
@@ -329,7 +334,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
             free(wm_name);
          }
          if (!x11_has_net_wm_fullscreen(g_x11_dpy))
-            swa.override_redirect = True;
+            swa.override_redirect    = True;
       }
       else
          RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
@@ -338,13 +343,13 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
 
    if (video_monitor_index)
-      g_x11_screen = video_monitor_index - 1;
+      g_x11_screen                   = video_monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
    {
-      unsigned new_width  = width;
-      unsigned new_height = height;
+      unsigned new_width             = width;
+      unsigned new_height            = height;
 
       if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
@@ -354,8 +359,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
       if (fullscreen)
       {
-         width  = new_width;
-         height = new_height;
+         width                       = new_width;
+         height                      = new_height;
       }
    }
 #endif
@@ -372,9 +377,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    if (fullscreen && video_disable_composition)
    {
-      uint32_t value                = 1;
-      Atom cardinal                 = XInternAtom(g_x11_dpy, "CARDINAL", False);
-      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
+      uint32_t value                 = 1;
+      Atom cardinal                  = XInternAtom(g_x11_dpy, "CARDINAL", False);
+      Atom net_wm_bypass_compositor  = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
       RARCH_LOG("[X/EGL]: Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
@@ -538,18 +543,16 @@ static void gfx_ctx_xegl_swap_buffers(void *data)
 
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
-   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
    egl_bind_hw_render(&xegl->egl, enable);
 #endif
 }
 
 static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval)
 {
-   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
    egl_set_swap_interval(&xegl->egl, swap_interval);
 #endif
 }

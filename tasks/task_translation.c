@@ -295,7 +295,10 @@ static void handle_translation_cb(
    if (raw_image_file_data)
    {
       /* Get the video frame dimensions reference */
-      video_driver_cached_frame_get(&dummy_data, &width, &height, &pitch);
+      dummy_data = video_st->frame_cache_data;
+      width      = video_st->frame_cache_width;
+      height     = video_st->frame_cache_height;
+      pitch      = video_st->frame_cache_pitch;
 
       /* try two different modes for text display *
        * In the first mode, we use display widget overlays, but they require
@@ -842,7 +845,7 @@ bool run_translation_service(settings_t *settings, bool paused)
       label_len    = strlen(label);
       system_label = (char*)malloc(label_len + system_id_len + 3);
       memcpy(system_label, system_id, system_id_len);
-      memcpy(system_label + system_id_len, "__", 2);
+      memcpy(system_label     + system_id_len, "__", 2);
       memcpy(system_label + 2 + system_id_len, label, label_len);
       system_label[system_id_len + 2 + label_len] = '\0';
    }
@@ -850,7 +853,10 @@ bool run_translation_service(settings_t *settings, bool paused)
    if (!scaler)
       goto finish;
 
-   video_driver_cached_frame_get(&data, &width, &height, &pitch);
+   data       = video_st->frame_cache_data;
+   width      = video_st->frame_cache_width;
+   height     = video_st->frame_cache_height;
+   pitch      = video_st->frame_cache_pitch;
 
    if (!data)
       goto finish;
@@ -882,7 +888,9 @@ bool run_translation_service(settings_t *settings, bool paused)
       if (!bit24_image_prev || !bit24_image)
          goto finish;
 
-      if (!video_driver_read_viewport(bit24_image_prev, false))
+      if (!(      video_st->current_video->read_viewport
+               && video_st->current_video->read_viewport(
+                  video_st->data, bit24_image_prev, false)))
       {
          RARCH_LOG("Could not read viewport for translation service...\n");
          goto finish;

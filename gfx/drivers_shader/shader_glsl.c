@@ -37,6 +37,7 @@
 #include "../../state_manager.h"
 #endif
 #include "../../core.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if defined(ORBIS)
@@ -96,6 +97,7 @@ struct shader_uniforms
 
    int frame_count;
    int frame_direction;
+   unsigned rotation;
 
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
@@ -297,11 +299,11 @@ static bool gl_glsl_load_binary_shader(GLuint shader, char *save_path)
    GLint status;
    FILE *shader_binary = fopen(save_path, "rb" );
 
-   if(shader_binary)
+   if (shader_binary)
    {
       char *shader_data = NULL;
 
-      fseek (shader_binary, 0, SEEK_END);
+      fseek(shader_binary, 0, SEEK_END);
       shader_size=ftell (shader_binary);
       fseek(shader_binary, 0, SEEK_SET);
 
@@ -411,7 +413,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
          gl_glsl_hash_shader(source, ARRAY_SIZE(source));
       snprintf(save_path, sizeof(save_path),
             "/data/retroarch/temp/%lx.sb", hash);
-      if(gl_glsl_load_binary_shader(shader, save_path))
+      if (gl_glsl_load_binary_shader(shader, save_path))
          return true;
    }
 #endif
@@ -424,7 +426,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
 
 #if 0
 #if defined(ORBIS)
-   if(status == GL_TRUE)
+   if (status == GL_TRUE)
       gl_glsl_dump_shader(shader, save_path);
 #endif
 #endif
@@ -730,6 +732,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
 
    uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
+   uni->rotation        = gl_glsl_get_uniform(glsl, prog, "Rotation");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -1327,6 +1330,9 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
          glUniform1i(uni->frame_direction, 1);
    }
 
+  if (uni->rotation >= 0)
+      glUniform1i(uni->rotation, retroarch_get_rotation());
+
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
    {
@@ -1586,7 +1592,8 @@ static bool gl_glsl_set_coords(void *shader_data,
    }
 
 #if defined(VITA)
-   if (uni->time >= 0) {
+   if (uni->time >= 0)
+   {
       float t = (sceKernelGetSystemTimeWide()) / (scePowerGetArmClockFrequency() * 1000.0);
       glUniform1f(uni->time, t);
    }

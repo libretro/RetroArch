@@ -13,7 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef _WAYLAND_COMMON_H
+#define _WAYLAND_COMMON_H
 
 #include <stdint.h>
 #include <boolean.h>
@@ -32,14 +33,13 @@
 #include "../../gfx/common/vulkan_common.h"
 #endif
 
-/* Generated from idle-inhibit-unstable-v1.xml */
+/* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
-
-/* Generated from xdg-shell.xml */
 #include "../../gfx/common/wayland/xdg-shell.h"
-
-/* Generated from xdg-decoration-unstable-v1.h */
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
+#include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
+#include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 
 #define UDEV_KEY_MAX			     0x2ff
 #define UDEV_MAX_KEYS           (UDEV_KEY_MAX + 7) / 8
@@ -82,8 +82,19 @@ typedef struct output_info
    unsigned scale;
    char *make;
    char *model;
-   struct wl_list link; /* wl->all_outputs */
 } output_info_t;
+
+typedef struct display_output
+{
+   output_info_t *output;
+   struct wl_list link;
+} display_output_t;
+
+typedef struct surface_output
+{
+   output_info_t *output;
+   struct wl_list link;
+} surface_output_t;
 
 typedef struct gfx_ctx_wayland_data gfx_ctx_wayland_data_t;
 
@@ -132,12 +143,16 @@ typedef struct gfx_ctx_wayland_data
 #endif
    struct wl_registry *registry;
    struct wl_compositor *compositor;
+   struct wp_viewporter *viewporter;
    struct wl_surface *surface;
    struct xdg_surface *xdg_surface;
+   struct wp_viewport *viewport;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
+   struct zwp_relative_pointer_v1 *wl_relative_pointer;
+   struct zwp_locked_pointer_v1 *locked_pointer;
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
@@ -157,12 +172,15 @@ typedef struct gfx_ctx_wayland_data
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
+   struct zwp_pointer_constraints_v1 *pointer_constraints;
+   struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
    output_info_t *current_output;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
 #endif
    input_ctx_wayland_data_t input; /* ptr alignment */
    struct wl_list all_outputs;
+   struct wl_list current_outputs;
 
    struct
    {
@@ -178,9 +196,12 @@ typedef struct gfx_ctx_wayland_data
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
    unsigned width;
    unsigned height;
+   unsigned buffer_width;
+   unsigned buffer_height;
    unsigned floating_width;
    unsigned floating_height;
    unsigned last_buffer_scale;
+   unsigned pending_buffer_scale;
    unsigned buffer_scale;
 
    bool core_hw_context_enable;
@@ -190,6 +211,7 @@ typedef struct gfx_ctx_wayland_data
    bool configured;
    bool activated;
    bool reported_display_size;
+   bool swap_complete;
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON
@@ -208,6 +230,10 @@ void flush_wayland_fd(void *data);
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
+
+extern const struct zwp_relative_pointer_v1_listener relative_pointer_listener;
+
+extern const struct zwp_locked_pointer_v1_listener locked_pointer_listener;
 
 extern const struct wl_touch_listener touch_listener;
 
@@ -228,3 +254,5 @@ extern const struct wl_buffer_listener shm_buffer_listener;
 extern const struct wl_data_device_listener data_device_listener;
 
 extern const struct wl_data_offer_listener data_offer_listener;
+
+#endif

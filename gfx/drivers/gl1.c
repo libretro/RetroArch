@@ -25,6 +25,9 @@
  * enabled if they are detected at runtime. */
 
 #include <stddef.h>
+#include <stdlib.h>
+
+#include <encodings/utf.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
@@ -49,7 +52,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/gl1_common.h"
+#include "../common/gl1_defines.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
@@ -61,39 +64,768 @@
 
 #ifdef VITA
 #include <defines/psp_defines.h>
-static bool vgl_inited = false;
 #endif
 
-static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
+/* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
-/* Used for the last pass when rendering to the back buffer. */
-static const GLfloat gl1_vertexes_flipped[] = {
+#define GL1_RASTER_FONT_EMIT(c, vx, vy) \
+   font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
+   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
+   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
+   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
+   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+
+#define IS_POT(x) (((x) & (x - 1)) == 0)
+
+#define GET_POT(x) (IS_POT((x)) ? (x) : next_pow2((x)))
+
+#define MAX_MSG_LEN_CHUNK 64
+
+typedef struct
+{
+   gl1_t *gl;
+   GLuint tex;
+   unsigned tex_width, tex_height;
+
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   struct font_atlas *atlas;
+
+   video_font_raster_block_t *block;
+} gl1_raster_t;
+
+static const GLfloat gl1_menu_vertexes[8]    = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const GLfloat gl1_menu_tex_coords[8]  = {
    0, 1,
    1, 1,
    0, 0,
    1, 0
 };
 
-static const GLfloat gl1_vertexes[] = {
+static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
+
+/* Used for the last pass when rendering to the back buffer. */
+static const GLfloat gl1_vertexes_flipped[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static const GLfloat gl1_vertexes[8]         = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl1_tex_coords[] = {
+static const GLfloat gl1_tex_coords[8]       = {
    0, 0,
    1, 0,
    0, 1,
    1, 1
 };
 
-static const GLfloat gl1_white_color[] = {
+static const GLfloat gl1_white_color[16]     = {
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
    1, 1, 1, 1,
 };
+
+/**
+ * FORWARD DECLARATIONS
+ */
+static void gl1_set_viewport(gl1_t *gl1,
+      unsigned viewport_width,
+      unsigned viewport_height,
+      bool force_full, bool allow_rotate);
+
+/**
+ * DISPLAY DRIVER
+ */
+
+static const float *gfx_display_gl1_get_default_vertices(void)
+{
+   return &gl1_menu_vertexes[0];
+}
+
+static const float *gfx_display_gl1_get_default_tex_coords(void)
+{
+   return &gl1_menu_tex_coords[0];
+}
+
+static void *gfx_display_gl1_get_default_mvp(void *data)
+{
+   gl1_t *gl1 = (gl1_t*)data;
+
+   if (!gl1)
+      return NULL;
+
+   return &gl1->mvp_no_rot;
+}
+
+static GLenum gfx_display_prim_to_gl1_enum(
+      enum gfx_display_prim_type type)
+{
+   switch (type)
+   {
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
+         return GL_TRIANGLE_STRIP;
+      case GFX_DISPLAY_PRIM_TRIANGLES:
+         return GL_TRIANGLES;
+      case GFX_DISPLAY_PRIM_NONE:
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+static void gfx_display_gl1_blend_begin(void *data)
+{
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+static void gfx_display_gl1_blend_end(void *data)
+{
+   glDisable(GL_BLEND);
+}
+
+static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
+{
+   const GLfloat *mvp_matrix;
+   gl1_t             *gl1          = (gl1_t*)data;
+
+   if (!gl1 || !draw)
+      return;
+
+   if (!draw->coords->vertex)
+      draw->coords->vertex         = &gl1_menu_vertexes[0];
+   if (!draw->coords->tex_coord)
+      draw->coords->tex_coord      = &gl1_menu_tex_coords[0];
+   if (!draw->coords->lut_tex_coord)
+      draw->coords->lut_tex_coord  = &gl1_menu_tex_coords[0];
+   if (!draw->texture)
+      return;
+
+   glViewport(draw->x, draw->y, draw->width, draw->height);
+
+   glEnable(GL_TEXTURE_2D);
+
+   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+
+   mvp_matrix = draw->matrix_data ? (const GLfloat*)draw->matrix_data
+      : (const GLfloat*)&gl1->mvp_no_rot;
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadMatrixf(mvp_matrix);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity();
+
+   glEnableClientState(GL_COLOR_ARRAY);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+#ifdef VITA
+   {
+      unsigned i;
+      static float *vertices3 = NULL;
+
+      if (vertices3)
+         free(vertices3);
+      vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
+      for (i = 0; i < draw->coords->vertices; i++)
+      {
+         memcpy(&vertices3[i * 3],
+               &draw->coords->vertex[i * 2],
+               sizeof(float) * 2);
+         vertices3[i * 3 + 2]  = 0.0f;
+      }
+      glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+   }
+#else
+   glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
+#endif
+
+   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
+   glTexCoordPointer(2, GL_FLOAT, 0, draw->coords->tex_coord);
+
+   glDrawArrays(gfx_display_prim_to_gl1_enum(
+            draw->prim_type), 0, draw->coords->vertices);
+
+   glDisableClientState(GL_COLOR_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
+
+   gl1->coords.color = gl1->white_color_ptr;
+}
+
+static void gfx_display_gl1_scissor_begin(void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y,
+      unsigned width, unsigned height)
+{
+   glScissor(x, video_height - y - height, width, height);
+   glEnable(GL_SCISSOR_TEST);
+}
+
+static void gfx_display_gl1_scissor_end(
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
+{
+   glScissor(0, 0, video_width, video_height);
+   glDisable(GL_SCISSOR_TEST);
+}
+
+gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
+   gfx_display_gl1_draw,
+   NULL, /* draw_pipeline */
+   gfx_display_gl1_blend_begin,
+   gfx_display_gl1_blend_end,
+   gfx_display_gl1_get_default_mvp,
+   gfx_display_gl1_get_default_vertices,
+   gfx_display_gl1_get_default_tex_coords,
+   FONT_DRIVER_RENDER_OPENGL1_API,
+   GFX_VIDEO_DRIVER_OPENGL1,
+   "gl1",
+   false,
+   gfx_display_gl1_scissor_begin,
+   gfx_display_gl1_scissor_end
+};
+
+/**
+ * FONT DRIVER
+ */
+
+static void gl1_raster_font_free(void *data,
+      bool is_threaded)
+{
+   gl1_raster_t *font = (gl1_raster_t*)data;
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+
+   if (is_threaded)
+      if (
+               font->gl
+            && font->gl->ctx_driver
+            && font->gl->ctx_driver->make_current)
+         font->gl->ctx_driver->make_current(true);
+
+   glDeleteTextures(1, &font->tex);
+
+   free(font);
+}
+
+static void gl1_raster_font_upload_atlas(gl1_raster_t *font)
+{
+   unsigned i, j;
+   GLint  gl_internal = GL_LUMINANCE_ALPHA;
+   GLenum gl_format   = GL_LUMINANCE_ALPHA;
+   size_t ncomponents = 2;
+   uint8_t *tmp       = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
+
+   switch (ncomponents)
+   {
+      case 1:
+         for (i = 0; i < font->atlas->height; ++i)
+         {
+            const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
+            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+
+            memcpy(dst, src, font->atlas->width);
+         }
+         break;
+      case 2:
+         for (i = 0; i < font->atlas->height; ++i)
+         {
+            const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
+            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+
+            for (j = 0; j < font->atlas->width; ++j)
+            {
+               *dst++ = 0xff;
+               *dst++ = *src++;
+            }
+         }
+         break;
+   }
+
+   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, font->tex_width, font->tex_height,
+         0, gl_format, GL_UNSIGNED_BYTE, tmp);
+
+   free(tmp);
+}
+
+static void *gl1_raster_font_init(void *data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   gl1_raster_t   *font  = (gl1_raster_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   font->gl = (gl1_t*)data;
+
+   if (!font_renderer_create_default(
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
+   {
+      free(font);
+      return NULL;
+   }
+
+   if (is_threaded)
+      if (
+               font->gl
+            && font->gl->ctx_driver
+            && font->gl->ctx_driver->make_current)
+         font->gl->ctx_driver->make_current(false);
+
+   glGenTextures(1, &font->tex);
+   glBindTexture(GL_TEXTURE_2D, font->tex);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+   font->atlas      = font->font_driver->get_atlas(font->font_data);
+   font->tex_width  = next_pow2(font->atlas->width);
+   font->tex_height = next_pow2(font->atlas->height);
+
+   gl1_raster_font_upload_atlas(font);
+
+   font->atlas->dirty = false;
+
+   glEnable(GL_TEXTURE_2D);
+   glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
+   return font;
+}
+
+static int gl1_raster_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale)
+{
+   const struct font_glyph* glyph_q = NULL;
+   gl1_raster_t *font  = (gl1_raster_t*)data;
+   const char* msg_end = msg + msg_len;
+   int delta_x         = 0;
+
+   if (     !font
+         || !font->font_driver
+         || !font->font_driver->get_glyph
+         || !font->font_data )
+      return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   while (msg < msg_end)
+   {
+      const struct font_glyph *glyph;
+      unsigned code                  = utf8_walk(&msg);
+
+      /* Do something smarter here ... */
+      if (!(glyph = font->font_driver->get_glyph(
+            font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      delta_x += glyph->advance_x;
+   }
+
+   return delta_x * scale;
+}
+
+static void gl1_raster_font_draw_vertices(gl1_raster_t *font,
+      const video_coords_t *coords)
+{
+#ifdef VITA
+   static float *vertices3 = NULL;
+#endif
+
+   if (font->atlas->dirty)
+   {
+      gl1_raster_font_upload_atlas(font);
+      font->atlas->dirty   = false;
+   }
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadMatrixf(font->gl->mvp.data);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity();
+
+   glEnableClientState(GL_COLOR_ARRAY);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+#ifdef VITA
+   if (vertices3)
+      free(vertices3);
+   vertices3 = (float*)malloc(sizeof(float) * 3 * coords->vertices);
+   {
+      int i;
+      for (i = 0; i < coords->vertices; i++)
+      {
+         memcpy(&vertices3[i*3], &coords->vertex[i*2], sizeof(float) * 2);
+         vertices3[i*3+2] = 0.0f;
+      }
+   }
+   glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+#else
+   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+#endif
+
+   glColorPointer(4, GL_FLOAT, 0, coords->color);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+
+   glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
+
+   glDisableClientState(GL_COLOR_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
+}
+
+static void gl1_raster_font_render_line(gl1_t *gl,
+      gl1_raster_t *font, const char *msg, size_t msg_len,
+      GLfloat scale, const GLfloat color[4], GLfloat pos_x,
+      GLfloat pos_y, unsigned text_align)
+{
+   int i;
+   struct video_coords coords;
+   const struct font_glyph* glyph_q = NULL;
+   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
+   const char* msg_end  = msg + msg_len;
+   int x                = roundf(pos_x * gl->vp.width);
+   int y                = roundf(pos_y * gl->vp.height);
+   int delta_x          = 0;
+   int delta_y          = 0;
+   float inv_tex_size_x = 1.0f / font->tex_width;
+   float inv_tex_size_y = 1.0f / font->tex_height;
+   float inv_win_width  = 1.0f / gl->vp.width;
+   float inv_win_height = 1.0f / gl->vp.height;
+
+   switch (text_align)
+   {
+      case TEXT_ALIGN_RIGHT:
+         x -= gl1_raster_font_get_message_width(font, msg, msg_len, scale);
+         break;
+      case TEXT_ALIGN_CENTER:
+         x -= gl1_raster_font_get_message_width(font, msg, msg_len, scale) / 2.0;
+         break;
+   }
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   while (msg < msg_end)
+   {
+      i = 0;
+      while ((i < MAX_MSG_LEN_CHUNK) && (msg < msg_end))
+      {
+         const struct font_glyph *glyph;
+         int off_x, off_y, tex_x, tex_y, width, height;
+         unsigned                  code = utf8_walk(&msg);
+
+         /* Do something smarter here ... */
+         if (!(glyph = font->font_driver->get_glyph(
+               font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+
+         off_x  = glyph->draw_offset_x;
+         off_y  = glyph->draw_offset_y;
+         tex_x  = glyph->atlas_offset_x;
+         tex_y  = glyph->atlas_offset_y;
+         width  = glyph->width;
+         height = glyph->height;
+
+         GL1_RASTER_FONT_EMIT(0, 0, 1); /* Bottom-left */
+         GL1_RASTER_FONT_EMIT(1, 1, 1); /* Bottom-right */
+         GL1_RASTER_FONT_EMIT(2, 0, 0); /* Top-left */
+
+         GL1_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
+         GL1_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
+         GL1_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         i++;
+
+         delta_x += glyph->advance_x;
+         delta_y -= glyph->advance_y;
+      }
+
+      coords.tex_coord     = font_tex_coords;
+      coords.vertex        = font_vertex;
+      coords.color         = font_color;
+      coords.vertices      = i * 6;
+      coords.lut_tex_coord = font_lut_tex_coord;
+
+      if (font->block)
+         video_coord_array_append(&font->block->carr, &coords, coords.vertices);
+      else
+         gl1_raster_font_draw_vertices(font, &coords);
+   }
+}
+
+static void gl1_raster_font_render_message(
+      gl1_raster_t *font, const char *msg, GLfloat scale,
+      const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
+      unsigned text_align)
+{
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
+   float line_height;
+
+   /* If font line metrics are not supported just draw as usual */
+   if (!font->font_driver->get_line_metrics ||
+       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   {
+      gl1_raster_font_render_line(font->gl, font,
+            msg, strlen(msg), scale, color, pos_x,
+            pos_y, text_align);
+      return;
+   }
+
+   line_height = line_metrics->height * scale / font->gl->vp.height;
+
+   for (;;)
+   {
+      const char *delim = strchr(msg, '\n');
+      size_t msg_len    = delim
+         ? (delim - msg) : strlen(msg);
+
+      /* Draw the line */
+      gl1_raster_font_render_line(font->gl, font,
+            msg, msg_len, scale, color, pos_x,
+            pos_y - (float)lines*line_height, text_align);
+
+      if (!delim)
+         break;
+
+      msg += msg_len + 1;
+      lines++;
+   }
+}
+
+static void gl1_raster_font_setup_viewport(
+      unsigned width, unsigned height,
+      gl1_raster_t *font, bool full_screen)
+{
+   gl1_set_viewport(font->gl, width, height, full_screen, false);
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   glEnable(GL_TEXTURE_2D);
+   glBindTexture(GL_TEXTURE_2D, font->tex);
+}
+
+static void gl1_raster_font_render_msg(
+      void *userdata,
+      void *data,
+      const char *msg,
+      const struct font_params *params)
+{
+   GLfloat color[4];
+   int drop_x, drop_y;
+   GLfloat x, y, scale, drop_mod, drop_alpha;
+   enum text_alignment text_align   = TEXT_ALIGN_LEFT;
+   bool full_screen                 = false;
+   gl1_raster_t               *font = (gl1_raster_t*)data;
+   unsigned width                   = font->gl->video_width;
+   unsigned height                  = font->gl->video_height;
+
+   if (!font || string_is_empty(msg))
+      return;
+
+   if (params)
+   {
+      x           = params->x;
+      y           = params->y;
+      scale       = params->scale;
+      full_screen = params->full_screen;
+      text_align  = params->text_align;
+      drop_x      = params->drop_x;
+      drop_y      = params->drop_y;
+      drop_mod    = params->drop_mod;
+      drop_alpha  = params->drop_alpha;
+
+      color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
+      color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+      color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
+      color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
+
+      /* If alpha is 0.0f, turn it into default 1.0f */
+      if (color[3] <= 0.0f)
+         color[3] = 1.0f;
+   }
+   else
+   {
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+      x                       = video_msg_pos_x;
+      y                       = video_msg_pos_y;
+      scale                   = 1.0f;
+      full_screen             = true;
+      text_align              = TEXT_ALIGN_LEFT;
+
+      color[0]                = video_msg_color_r;
+      color[1]                = video_msg_color_g;
+      color[2]                = video_msg_color_b;
+      color[3]                = 1.0f;
+
+      drop_x                  = -2;
+      drop_y                  = -2;
+      drop_mod                = 0.3f;
+      drop_alpha              = 1.0f;
+   }
+
+   if (font->block)
+      font->block->fullscreen = full_screen;
+   else
+      gl1_raster_font_setup_viewport(width, height, font, full_screen);
+
+   if (font->gl)
+   {
+      if (!string_is_empty(msg)
+            && font->font_data  && font->font_driver)
+      {
+         if (drop_x || drop_y)
+         {
+            GLfloat color_dark[4];
+
+            color_dark[0] = color[0] * drop_mod;
+            color_dark[1] = color[1] * drop_mod;
+            color_dark[2] = color[2] * drop_mod;
+            color_dark[3] = color[3] * drop_alpha;
+
+            gl1_raster_font_render_message(font, msg, scale, color_dark,
+                  x + scale * drop_x / font->gl->vp.width, y +
+                      scale * drop_y / font->gl->vp.height, text_align);
+         }
+
+         gl1_raster_font_render_message(font, msg, scale, color,
+               x, y, text_align);
+      }
+
+      if (!font->block)
+      {
+         /* Restore viewport */
+         glEnable(GL_TEXTURE_2D);
+         glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
+         glDisable(GL_BLEND);
+         gl1_set_viewport(font->gl, width, height, false, true);
+      }
+   }
+}
+
+static const struct font_glyph *gl1_raster_font_get_glyph(
+      void *data, uint32_t code)
+{
+   gl1_raster_t *font = (gl1_raster_t*)data;
+   if (font && font->font_driver && font->font_driver->ident)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
+}
+
+static void gl1_raster_font_flush_block(unsigned width, unsigned height,
+      void *data)
+{
+   gl1_raster_t          *font       = (gl1_raster_t*)data;
+   video_font_raster_block_t *block  = font ? font->block : NULL;
+
+   if (!font || !block || !block->carr.coords.vertices)
+      return;
+
+   gl1_raster_font_setup_viewport(width, height, font, block->fullscreen);
+   gl1_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
+
+   if (font->gl)
+   {
+      /* Restore viewport */
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+
+      glDisable(GL_BLEND);
+      gl1_set_viewport(font->gl, width, height, block->fullscreen, true);
+   }
+}
+
+static void gl1_raster_font_bind_block(void *data, void *userdata)
+{
+   gl1_raster_t                *font = (gl1_raster_t*)data;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
+
+   if (font)
+      font->block = block;
+}
+
+static bool gl1_raster_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
+{
+   gl1_raster_t *font = (gl1_raster_t*)data;
+   if (font && font->font_driver && font->font_data)
+      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   return false;
+}
+
+font_renderer_t gl1_raster_font = {
+   gl1_raster_font_init,
+   gl1_raster_font_free,
+   gl1_raster_font_render_msg,
+   "gl1",
+   gl1_raster_font_get_glyph,
+   gl1_raster_font_bind_block,
+   gl1_raster_font_flush_block,
+   gl1_raster_font_get_message_width,
+   gl1_raster_font_get_line_metrics
+};
+
+/*
+ * VIDEO DRIVER
+ */
 
 #ifdef HAVE_OVERLAY
 static void gl1_render_overlay(gl1_t *gl,
@@ -201,17 +933,15 @@ static void gl1_overlay_tex_geom(void *data,
    tex[6]       = x + w;
    tex[7]       = y + h;
 }
-
 #endif
 
-#define IS_POT(x) (((x) & (x - 1)) == 0)
-
-#define GET_POT(x) (IS_POT((x)) ? (x) : next_pow2((x)))
-
-static void *gl1_gfx_init(const video_info_t *video,
+static void *gl1_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
+#ifdef VITA
+   static bool vgl_inited               = false;
+#endif
    void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    unsigned mode_width                  = 0;
@@ -474,7 +1204,7 @@ static void gl1_set_projection(gl1_t *gl1,
    matrix_4x4_multiply(gl1->mvp, rot, gl1->mvp_no_rot);
 }
 
-void gl1_gfx_set_viewport(gl1_t *gl1,
+static void gl1_set_viewport(gl1_t *gl1,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
@@ -505,12 +1235,12 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const struct video_viewport *custom = video_viewport_get_custom();
-         /* GL has bottom-left origin viewport. */
-         x      = custom->x;
-         y      = height - custom->y - custom->height;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         /* OpenGL has bottom-left origin viewport. */
+         x                           = custom_vp->x;
+         y                           = height - custom_vp->y - custom_vp->height;
+         viewport_width              = custom_vp->width;
+         viewport_height             = custom_vp->height;
       }
       else
 #endif
@@ -534,6 +1264,11 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
          {
             delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
             y      = (int)roundf(viewport_height * (0.5f - delta));
+#if defined(RARCH_MOBILE)
+            /* In portrait mode, we want viewport to gravitate to top of screen. */
+            if (device_aspect < 1.0f)
+                y *= 2;
+#endif
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
@@ -550,12 +1285,6 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
       gl1->vp.height = viewport_height;
    }
 
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl1->vp.y *= 2;
-#endif
-
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
 
@@ -565,13 +1294,9 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
       gl1->vp_out_width  = viewport_width;
       gl1->vp_out_height = viewport_height;
    }
-
-#if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
-#endif
 }
 
-static void gl1_gfx_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
+static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy)
 {
    uint8_t *frame         = NULL;
    uint8_t *frame_rgba    = NULL;
@@ -735,7 +1460,7 @@ static void gl1_readback(gl1_t *gl1,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
-static bool gl1_gfx_frame(void *data, const void *frame,
+static bool gl1_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
@@ -780,7 +1505,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          gl1->ctx_driver->set_resize(gl1->ctx_data,
                mode.width, mode.height);
 
-      gl1_gfx_set_viewport(gl1,
+      gl1_set_viewport(gl1,
             video_width, video_height, false, true);
    }
 
@@ -861,7 +1586,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    
       if (frame_to_copy)
-         gl1_gfx_draw_tex(gl1, pot_width, pot_height,
+         gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy);
    }
 
@@ -903,12 +1628,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          if (gl1->flags & GL1_FLAG_MENU_TEXTURE_FULLSCREEN)
          {
             glViewport(0, 0, video_width, video_height);
-            gl1_gfx_draw_tex(gl1, pot_width, pot_height,
+            gl1_draw_tex(gl1, pot_width, pot_height,
                   width, height, gl1->menu_tex, frame_to_copy);
             glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
          }
          else
-            gl1_gfx_draw_tex(gl1, pot_width, pot_height,
+            gl1_draw_tex(gl1, pot_width, pot_height,
                   width, height, gl1->menu_tex, frame_to_copy);
       }
    }
@@ -924,12 +1649,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #ifdef VITA
       glUseProgram(0);
       bool enabled = glIsEnabled(GL_DEPTH_TEST);
-      if(enabled)
+      if (enabled)
          glDisable(GL_DEPTH_TEST);
 #endif
       menu_driver_frame(menu_is_alive, video_info);
 #ifdef VITA
-      if(enabled)
+      if (enabled)
          glEnable(GL_DEPTH_TEST);
 #endif
    }
@@ -938,16 +1663,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       if (video_info->statistics_show)
       {
          if (osd_params)
-         {
             font_driver_render_msg(gl1, video_info->stat_text,
                   osd_params, NULL);
-#if 0
-            osd_params->y               = 0.350f;
-            osd_params->scale           = 0.75f;
-            font_driver_render_msg(gl1, video_info->chat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
-#endif
-         }
       }
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1025,7 +1742,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void gl1_gfx_set_nonblock_state(void *data, bool state,
+static void gl1_set_nonblock_state(void *data, bool state,
       bool adaptive_vsync_enabled,
       unsigned swap_interval)
 {
@@ -1046,7 +1763,7 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state,
    }
 }
 
-static bool gl1_gfx_alive(void *data)
+static bool gl1_alive(void *data)
 {
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
@@ -1072,7 +1789,7 @@ static bool gl1_gfx_alive(void *data)
    return ret;
 }
 
-static bool gl1_gfx_focus(void *data)
+static bool gl1_focus(void *data)
 {
    gl1_t *gl        = (gl1_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
@@ -1080,9 +1797,9 @@ static bool gl1_gfx_focus(void *data)
    return true;
 }
 
-static bool gl1_gfx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool gl1_suppress_screensaver(void *data, bool enable) { return false; }
 
-static void gl1_gfx_free(void *data)
+static void gl1_free(void *data)
 {
    gl1_t *gl1 = (gl1_t*)data;
 
@@ -1128,10 +1845,10 @@ static void gl1_gfx_free(void *data)
    free(gl1);
 }
 
-static bool gl1_gfx_set_shader(void *data,
+static bool gl1_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
-static void gl1_gfx_set_rotation(void *data,
+static void gl1_set_rotation(void *data,
       unsigned rotation)
 {
    gl1_t *gl1 = (gl1_t*)data;
@@ -1143,8 +1860,7 @@ static void gl1_gfx_set_rotation(void *data,
    gl1_set_projection(gl1, &gl1_default_ortho, true);
 }
 
-static void gl1_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
+static void gl1_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned width, height;
    unsigned top_y, top_dist;
@@ -1162,10 +1878,10 @@ static void gl1_gfx_viewport_info(void *data,
    vp->y           = top_dist;
 }
 
-static bool gl1_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    unsigned num_pixels = 0;
-   gl1_t *gl1 = (gl1_t*)data;
+   gl1_t *gl1          = (gl1_t*)data;
 
    if (!gl1)
       return false;
@@ -1502,17 +2218,17 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL                          /* set_hdr_expand_gamut */
 };
 
-static void gl1_gfx_get_poke_interface(void *data,
+static void gl1_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &gl1_poke_interface; }
 #ifdef HAVE_GFX_WIDGETS
-static bool gl1_gfx_widgets_enabled(void *data) { return true; }
+static bool gl1_widgets_enabled(void *data) { return true; }
 #endif
 
-static void gl1_gfx_set_viewport_wrapper(void *data, unsigned viewport_width,
+static void gl1_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    gl1_t               *gl1 = (gl1_t*)data;
-   gl1_gfx_set_viewport(gl1,
+   gl1_set_viewport(gl1,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
@@ -1654,31 +2370,28 @@ static bool gl1_has_windowed(void *data)
 }
 
 video_driver_t video_gl1 = {
-   gl1_gfx_init,
-   gl1_gfx_frame,
-   gl1_gfx_set_nonblock_state,
-   gl1_gfx_alive,
-   gl1_gfx_focus,
-   gl1_gfx_suppress_screensaver,
+   gl1_init,
+   gl1_frame,
+   gl1_set_nonblock_state,
+   gl1_alive,
+   gl1_focus,
+   gl1_suppress_screensaver,
    gl1_has_windowed,
-   gl1_gfx_set_shader,
-   gl1_gfx_free,
+   gl1_set_shader,
+   gl1_free,
    "gl1",
-   gl1_gfx_set_viewport_wrapper,
-   gl1_gfx_set_rotation,
-   gl1_gfx_viewport_info,
-   gl1_gfx_read_viewport,
+   gl1_set_viewport_wrapper,
+   gl1_set_rotation,
+   gl1_viewport_info,
+   gl1_read_viewport,
    NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
    gl1_get_overlay_interface,
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
-#endif
-  gl1_gfx_get_poke_interface,
+  gl1_get_poke_interface,
   gl1_wrap_type_to_enum,
 #ifdef HAVE_GFX_WIDGETS
-  gl1_gfx_widgets_enabled
+  gl1_widgets_enabled
 #endif
 };

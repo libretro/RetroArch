@@ -32,6 +32,7 @@ typedef struct
    int swap_interval;
    unsigned width;
    unsigned height;
+   unsigned refresh_rate_x1000;
 } khr_display_ctx_data_t;
 
 static void gfx_ctx_khr_display_destroy(void *data)
@@ -52,10 +53,23 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-
-   *width  = khr->width;
-   *height = khr->height;
+   *width                      = khr->width;
+   *height                     = khr->height;
 }
+
+static float gfx_ctx_khr_display_get_refresh_rate(void *data)
+{
+   float refresh_rate = 0.0f;
+   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
+
+   if (khr)
+   {
+      refresh_rate = khr->refresh_rate_x1000 / 1000.0f;
+   }
+
+   return refresh_rate;
+}
+
 
 static void *gfx_ctx_khr_display_init(void *video_driver)
 {
@@ -83,18 +97,17 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-
-   *resize = khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *resize                     = khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    if (khr->width != *width || khr->height != *height)
    {
-      *width  = khr->width;
-      *height = khr->height;
-      *resize = true;
+      *width                   = khr->width;
+      *height                  = khr->height;
+      *resize                  = true;
    }
 
    if ((bool)frontend_driver_get_signal_handler_state())
-      *quit = true;
+      *quit                    = true;
 }
 
 static bool gfx_ctx_khr_display_set_resize(void *data,
@@ -115,8 +128,8 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
    if (khr->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       vulkan_acquire_next_image(&khr->vk);
 
-   khr->vk.context.flags |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
-   khr->vk.flags         &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   khr->vk.context.flags      |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   khr->vk.flags              &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }
 
@@ -128,6 +141,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
    khr_display_ctx_data_t *khr    = (khr_display_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned video_monitor_index   = settings->uints.video_monitor_index;
+   unsigned refresh_rate_x1000    = settings->floats.video_refresh_rate * 1000;
 
    if (!fullscreen)
    {
@@ -138,22 +152,21 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
    info.width                     = width;
    info.height                    = height;
    info.monitor_index             = video_monitor_index;
+   info.refresh_rate_x1000        = refresh_rate_x1000;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
    {
       RARCH_ERR("[Vulkan]: Failed to create KHR_display surface.\n");
-      goto error;
+      gfx_ctx_khr_display_destroy(data);
+      return false;
    }
 
    khr->width                     = khr->vk.context.swapchain_width;
    khr->height                    = khr->vk.context.swapchain_height;
+   khr->refresh_rate_x1000        = info.refresh_rate_x1000;
 
    return true;
-
-error:
-   gfx_ctx_khr_display_destroy(data);
-   return false;
 }
 
 static void gfx_ctx_khr_display_input_driver(void *data,
@@ -205,9 +218,7 @@ static enum gfx_ctx_api gfx_ctx_khr_display_get_api(void *data)
 static bool gfx_ctx_khr_display_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   if (api == GFX_CTX_VULKAN_API)
-      return true;
-   return false;
+   return (api == GFX_CTX_VULKAN_API);
 }
 
 static void gfx_ctx_khr_display_set_flags(void *data, uint32_t flags) { }
@@ -269,7 +280,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_swap_interval,
    gfx_ctx_khr_display_set_video_mode,
    gfx_ctx_khr_display_get_video_size,
-   NULL,                                        /* get_refresh_rate */
+   gfx_ctx_khr_display_get_refresh_rate,
    NULL,                                        /* get_video_output_size */
    NULL,                                        /* get_video_output_prev */
    NULL,                                        /* get_video_output_next */

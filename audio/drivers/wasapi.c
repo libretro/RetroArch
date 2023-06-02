@@ -27,6 +27,9 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+/* Get automatic buffer size from client buffer instead of device period */
+#define USE_CLIENT_BUFFER
+
 typedef struct
 {
    HANDLE write_event;
@@ -89,11 +92,16 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    {
       if (sh_buffer_length < 0)
       {
+#ifdef USE_CLIENT_BUFFER
+         sh_buffer_length = frame_count;
+#else
          hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
+
          if (FAILED(hr))
             goto error;
 
          sh_buffer_length = dev_period * rate / 10000000;
+#endif
       }
 
       w->buffer = fifo_new(sh_buffer_length * w->frame_size);
@@ -134,6 +142,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    hr = _IAudioClient_Start(w->client);
    if (FAILED(hr))
       goto error;
+
    w->running  = true;
    w->nonblock = !settings->bools.audio_sync;
 
@@ -161,13 +170,13 @@ static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
    UINT32 frame_count = size / w->frame_size;
 
    if (FAILED(_IAudioRenderClient_GetBuffer(
-               w->renderer, frame_count, &dest)))
+         w->renderer, frame_count, &dest)))
       return false;
 
    memcpy(dest, data, size);
+
    if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-               w->renderer, frame_count,
-               0)))
+         w->renderer, frame_count, 0)))
       return false;
 
    return true;
@@ -177,14 +186,15 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
 {
    BYTE *dest         = NULL;
    UINT32 frame_count = size / w->frame_size;
+
    if (FAILED(_IAudioRenderClient_GetBuffer(
          w->renderer, frame_count, &dest)))
       return false;
 
    fifo_read(w->buffer, dest, size);
+
    if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-         w->renderer, frame_count,
-         0)))
+         w->renderer, frame_count, 0)))
       return false;
 
    return true;
@@ -193,8 +203,8 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
 static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t size)
 {
    ssize_t written    = -1;
-   UINT32 padding     = 0;
    size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
+   UINT32 padding     = 0;
 
    if (!write_avail)
    {
@@ -223,8 +233,8 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t siz
 
 static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 {
-   size_t write_avail = 0;
    ssize_t written    = -1;
+   size_t write_avail = 0;
    UINT32 padding     = 0;
 
    if (!(WaitForSingleObject(w->write_event, INFINITE) == WAIT_OBJECT_0))
@@ -247,16 +257,16 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t size)
 {
-   size_t write_avail       = 0;
    ssize_t written          = -1;
+   size_t write_avail       = 0;
    UINT32 padding           = 0;
 
    if (w->buffer)
    {
-      write_avail           = FIFO_WRITE_AVAIL(w->buffer);
+      write_avail = FIFO_WRITE_AVAIL(w->buffer);
       if (!write_avail)
       {
-         size_t read_avail  = 0;
+         size_t read_avail = 0;
          if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
             return -1;
 
@@ -363,6 +373,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
 static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
+
    if (FAILED(_IAudioClient_Stop(w->client)))
       return !w->running;
 
@@ -399,7 +410,7 @@ static void wasapi_set_nonblock_state(void *wh, bool nonblock)
    wasapi_t *w = (wasapi_t*)wh;
 
    if (w->nonblock != nonblock)
-      RARCH_LOG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
+      RARCH_DBG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
 
    w->nonblock = nonblock;
 }
@@ -421,9 +432,7 @@ static void wasapi_free(void *wh)
 
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
-   {
       RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
-   }
 
    /* If event isn't signaled log and leak */
    if (!(ir == WAIT_OBJECT_0))

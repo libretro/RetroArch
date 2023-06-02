@@ -603,6 +603,10 @@ MSG_HASH(
    "Build Date"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch Version"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git Version"
    )
@@ -1960,7 +1964,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Use high resolution menu"
+   "Use High Resolution Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -2564,6 +2568,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automatically mute audio when using fast-forward."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Speedup When Fast-Forwarding"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Speed up audio when fast-forwarding. Prevents crackling but shifts pitch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3552,14 +3564,45 @@ MSG_HASH(
    "Starts/stops streaming of the current session to an online video platform."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Record Input Replay (Toggle)"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Play Replay"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Switches recording of gameplay inputs in .bsv format on/off."
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "Play replay file from the currently selected slot."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Record Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Record replay file to the currently selected slot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Halt Record/Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Stops recording/playback of current replay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Next Replay Slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Increments the currently selected replay slot index."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Previous Replay Slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Decrements the currently selected replay slot index."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Grab Mouse (Toggle)"
@@ -4234,6 +4277,18 @@ MSG_HASH(
    "Autosaves the non-volatile SRAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Replay Checkpoint Interval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatically bookmark the game state during replay recording at a regular interval (in seconds)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Autosaves the game state during replay recording at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables checkpoint recording."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Increment Save State Index Automatically"
    )
@@ -4242,12 +4297,28 @@ MSG_HASH(
    "Before making a save state, the save state index is automatically increased. When loading content, the index will be set to the highest existing index."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Increment Replay Index Automatically"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Before making a replay, the replay index is automatically increased. When loading content, the index will be set to the highest existing index."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Maximum Auto-Increment Save States to Keep"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Limit the number of save states that will be created when 'Increment Save State Index Automatically' is enabled. If limit is exceeded when saving a new state, the existing state with the lowest index will be deleted. A value of '0' means unlimited states will be recorded."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Maximum Auto-Increment Replays to Keep"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limit the number of replays that will be created when 'Increment Replay Index Automatically' is enabled. If limit is exceeded when recording a new replay, the existing replay with the lowest index will be deleted. A value of '0' means unlimited replays will be recorded."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5841,7 +5912,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Show Save State Submenu"
+   "Show 'Save States' Submenu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5854,6 +5925,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
    "Show the options for saving/loading a state."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Show 'Replay Controls'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Show the options for recording/playing back replay files."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -5941,7 +6020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Show the 'Rewind' options."
+   "Show the 'Rewind' option."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -5950,6 +6029,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Show the 'Save Core Overrides' option in the 'Overrides' menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Show 'Save Content Directory Overrides'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Show the 'Save Content Directory Overrides' option in the 'Overrides' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6232,11 +6319,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Framebuffer Opacity"
+   "Menu Opacity"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modify the opacity of the framebuffer."
+   "Modify the opacity of the default menu background."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -6292,7 +6379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Remember the position of the cursor in the menu when switching to a different tab."
+   "Remember previous cursor position in tabs. RGUI does not have tabs, but Playlists and Settings behave as such."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6400,10 +6487,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Leaderboards"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Game specific leaderboards. Has no effect if 'Hardcore Mode' is disabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6570,6 +6653,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Shows on-screen indicators while certain achievements can be earned."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Progress Indicator"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Shows an on-screen indicator when progress is made towards certain achievements."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Leaderboard Start Messages"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Shows a description of a leaderboard when it becomes active."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Leaderboard Submit Messages"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Shows a message with the value being submitted when a leaderboard attempt is completed."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Leaderboard Failed Messages"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Shows a message when a leaderboard attempt fails."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Leaderboard Trackers"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Shows trackers on the screen with the current value of active leaderboards."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -7116,6 +7239,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "When enabled, and 'File Browser' directory is also selected, the current value of parameter 'File Browser' is saved in the playlist. When the playlist is loaded on another system where the same option is enabled, the value of parameter 'File Browser' is compared with the playlist value; if different, the playlist entries' paths are automatically fixed."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Manage"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -7545,7 +7672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Save all save files (*.srm) to this directory. This includes related files like .bsv, .rt, .psrm, etc... This will be overridden by explicit command line options."
+   "Save all save files (*.srm) to this directory. This includes related files like .rt, .psrm, etc... This will be overridden by explicit command line options."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -7553,7 +7680,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Save states are stored in this directory. If not set, will attempt to save them to the directory where the content is located."
+   "Save states and replays are stored in this directory. If not set, will attempt to save them to the directory where the content is located."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -8239,6 +8366,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "If a state was overwritten, it will roll back to the previous save state."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Replay Slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Change the currently selected state slot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Play Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "Play replay file from the currently selected slot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Record Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Record replay file to the currently selected slot."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Halt Record/Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Stops recording/playback of current replay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -10553,7 +10712,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled fullscreen by pressing RetroPad Y."
+   "Enable display of inline downscaled thumbnails while viewing playlists. Toggleable with RetroPad Select. When disabled, thumbnails can still be toggled fullscreen with RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -10561,7 +10720,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled fullscreen by pressing RetroPad Y."
+   "Type of thumbnail to display at the top right of playlists. This thumbnail type can be cycled by pressing RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -13617,6 +13776,18 @@ MSG_HASH(
    "Found last state slot"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Found last replay slot"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Not from current recording"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Not compatible with replay"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Found shader"
    )
@@ -13745,8 +13916,8 @@ MSG_HASH(
    "Memory"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Input replay movie file is not a valid BSV1 file."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Input replay movie file is not a valid REPLAY file."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -13997,6 +14168,10 @@ MSG_HASH(
    "State slot"
    )
 MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Replay slot"
+   )
+MSG_HASH(
    MSG_TAKING_SCREENSHOT,
    "Taking screenshot."
    )
@@ -14007,6 +14182,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Achievement Unlocked"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Leaderboard attempt started"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Leaderboard attempt failed"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Submitted %s for %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -14628,6 +14815,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sync to exact content framerate disabled."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Video refresh rate changed to %s Hz."
+   )
 
 /* Lakka */
 
@@ -14712,7 +14903,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Select display mode."
+   "Select display mode (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -15139,6 +15330,48 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Adjust x/y scale of touchscreen coordinates to accommodate OS-level display scaling."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "Touch VMouse as Pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Enable to pass touch events from the input touchscreen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Touch VMouse as Mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Enable virtual mouse emulation using input touch events."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Touch VMouse Touchpad Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Enable along with Mouse to utilize use the touch screen as a touchpad."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Touch VMouse Trackball Mode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Enable along with Mouse to utilize use the touch screen as a trackball, adding inertia to the pointer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Touch VMouse Gestures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Enable touchscreen gestures, including tapping, tap-dragging, and finger swiping."
+   )
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

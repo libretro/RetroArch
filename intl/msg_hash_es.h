@@ -595,6 +595,10 @@ MSG_HASH(
    "Fecha de compilación"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Versión de RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Versión de Git"
    )
@@ -2482,6 +2486,14 @@ MSG_HASH(
    "Silencia automáticamente el audio al utilizar la función de avance rápido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Acelerar al usar el avance rápido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Acelera el audio al usar el avance rápido. Evitará los chasquidos en el audio, pero cambiará su tono."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Ganancia de volumen (dB)"
    )
@@ -3394,14 +3406,45 @@ MSG_HASH(
    "Inicia o detiene la transmisión por streaming de la sesión actual a una plataforma de vídeo online."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Grabar repetición de entrada (alternar)"
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Reproducir repetición"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Activa o desactiva el uso del formato .bsv para guardar las grabaciones de entrada de las partidas."
+   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   "Reproduce el archivo de repetición de la posición seleccionada."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Grabar repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   "Graba un archivo de repetición en la posición seleccionada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Detener grabación/repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Detiene la grabación/reproducción de la repetición actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Siguiente posición de repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Aumenta el índice de la posición de repetición seleccionada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Posición anterior de repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Disminuye el índice de la posición de repetición seleccionada."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Capturar ratón (alternar)"
@@ -4072,6 +4115,18 @@ MSG_HASH(
    "Guarda automáticamente la memoria no volátil SRAM a intervalos regulares (en segundos). Esta función se desactiva seleccionando 0."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Intervalo de puntos de control de repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Marca automáticamente y a intervalos regulares (en segundos) el estado del juego mientras se grabe una repetición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Guarda automáticamente y a intervalos regulares el estado del juego durante la grabación de una repetición. Esta opción está desactivada por defecto a menos que se especifique lo contrario. Esta función se desactiva seleccionando 0."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Aumentar automáticamente el índice de guardados rápidos"
    )
@@ -4080,12 +4135,28 @@ MSG_HASH(
    "Antes de hacer un guardado rápido, se incrementará automáticamente el valor del índice de guardados rápidos. Al cargar un contenido se asignará el número más alto que exista en el índice."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Aumentar automáticamente el índice de repeticiones"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Antes de grabar una repetición, se incrementará automáticamente el valor del índice de repeticiones. Al cargar un contenido se asignará el número más alto que exista en el índice."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Máximo de guardados rápidos automáticos a conservar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Limita el número de guardados rápidos que se crearán al activar la opción «Aumentar automáticamente el índice de guardados rápidos». Si se crea un nuevo guardado rápido y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de guardados rápidos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Máximo de repeticiones automáticas a conservar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limita el número de repeticiones que se crearán al activar la opción «Aumentar automáticamente el índice de repeticiones». Si se crea una nueva repetición y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de repeticiones."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5666,6 +5737,14 @@ MSG_HASH(
    "Muestra las opciones que permiten almacenar y cargar guardados rápidos."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Mostrar Controles de repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Muestra las opciones para grabar o reproducir archivos de repetición."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
    "Mostrar opciones para deshacer guardados rápidos"
    )
@@ -5751,7 +5830,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Muestra las opciones de rebobinado."
+   "Muestra la opción «Rebobinar»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -5760,6 +5839,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Muestra la opción «Guardar personalizaciones del núcleo» dentro del menú Personalizaciones."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Mostrar «Guardar personalización de directorios de contenidos»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Muestra la opción «Guardar personalización de directorios de contenidos» dentro del menú Personalizaciones."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6042,11 +6129,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacidad del framebuffer"
+   "Opacidad del menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Modifica la opacidad del framebuffer."
+   "Modifica la opacidad del fondo predeterminado del menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -6102,7 +6189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Recuerda la posición del cursor dentro del menú al cambiar a otra sección."
+   "Recuerda la última posición del cursor en cada sección. En RGUI, las listas de reproducción y los ajustes tendrán el mismo comportamiento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6210,10 +6297,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Tablas de clasificación"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Utiliza tablas de clasificación específicas para cada juego. Esta opción no surtirá efecto si se ha desactivado el modo Hardcore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6380,6 +6463,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Muestra indicadores en pantalla cuando se puedan desbloquear ciertos logros."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Indicador de progreso"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Muestra un indicador en pantalla cuando se hagan progresos para conseguir ciertos logros."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Mensajes de inicio de tabla de clasificación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Muestra una descripción de una tabla de clasificación cuando se active."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Mensajes de envío a tabla de clasificación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Muestra un mensaje con el valor enviado al completar un intento de entrar en una tabla de clasificación."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Mensajes de fallo en tabla de clasificación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Muestra un mensaje cuando falle un intento de entrar en una tabla de clasificación."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Seguimiento de tabla de clasificación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Muestra información de seguimiento en pantalla con el valor actual de las tablas de clasificación activas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6926,6 +7049,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Si se activa esta opción teniendo seleccionado un directorio en el explorador de archivos, se guardará el parámetro actual del explorador en la lista de reproducción. Cuando se cargue esta en otro sistema que tenga activada la misma opción, se comparará el valor del parámetro del explorador de archivos con el de la lista de reproducción; si son distintos, se corregirán las rutas de las entradas de la lista de reproducción de forma automática."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Administrar"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -7335,7 +7462,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Almacena todas las partidas guardadas (*.srm) en este directorio. Incluye los archivos relacionados, como .bsv, .rt, .psrm, etcétera. Este directorio será ignorado si se utilizan explícitamente opciones por línea de comandos."
+   "Almacena todas las partidas guardadas (*.srm) en este directorio. Incluye los archivos relacionados, como .rt, .psrm, etcétera. Este directorio será ignorado si se utilizan explícitamente opciones por línea de comandos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -7343,7 +7470,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "En este directorio se guardarán los guardados rápidos. Si no hay un directorio asignado, se intentarán guardar en el directorio donde se encuentre el contenido."
+   "En este directorio se guardarán los guardados rápidos y las repeticiones. Si no hay un directorio asignado, se intentarán guardar en el directorio donde se encuentre el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -8029,6 +8156,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Si se sobrescribió un guardado rápido, volverá a tener los datos previos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Posición de repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Cambia la posición actual de guardado rápido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Reproducir repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   "Reproduce el archivo de repetición de la posición seleccionada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Grabar repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   "Graba un archivo de repetición en la posición seleccionada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Detener grabación/repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Detiene la grabación/reproducción de la repetición actual"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -9843,7 +10002,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Muestra las miniaturas de forma secuencial en las listas de reproducción. Si se desactiva esta opción, la miniatura superior se podrá mostrar a pantalla completa pulsando el botón RetroPad Y."
+   "Muestra las miniaturas de forma secuencial en las listas de reproducción. Pulsa RetroPad Select para activar o desactivar esta opción. Al desactivar esta opción, todavía se pueden mostrar las miniaturas a pantalla completa pulsando el botón RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -9851,7 +10010,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Indica el tipo de miniatura que se mostrará en la parte superior derecha de las listas de reproducción. Podrán mostrarse a pantalla completa pulsando el botón RetroPad Y."
+   "Indica el tipo de miniatura que se mostrará en la parte superior derecha de las listas de reproducción. El tipo seleccionado puede alternarse pulsando el botón RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -12747,6 +12906,18 @@ MSG_HASH(
    "Se ha localizado la última posición de guardado rápido"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Se ha localizado la última posición de repetición"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "No viene de la grabación actual"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "No es compatible con las repeticiones"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Se ha localizado un shader"
    )
@@ -12875,8 +13046,8 @@ MSG_HASH(
    "Memoria"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "El archivo de la repetición de entrada no es un archivo BSV1 válido."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "El archivo de la repetición de entrada no es un archivo REPLAY válido."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -13119,6 +13290,10 @@ MSG_HASH(
    "Posición de guardado rápido"
    )
 MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Posición de repetición"
+   )
+MSG_HASH(
    MSG_TAKING_SCREENSHOT,
    "Capturando pantalla."
    )
@@ -13129,6 +13304,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Logro desbloqueado"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Intento de entrar en tabla de clasificación iniciado"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Intento de entrar en tabla de clasificación fallido"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Intento enviado: %s para %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -13746,6 +13933,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sincronización de FPS según el contenido desactivada."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Frecuencia de actualización de vídeo cambiada a %s Hz."
+   )
 
 /* Lakka */
 
@@ -13830,7 +14021,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Selecciona el modo de vídeo."
+   "Selecciona el modo de vídeo (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -14233,6 +14424,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Ajusta la escala X/Y de las coordenadas de la pantalla táctil para adaptarlas al escalado de la pantalla del SO."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Activa esta opción para enviar las pulsaciones de la pantalla táctil."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Activa la emulación de un ratón virtual mediante el uso de acciones táctiles como entrada."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Activa esta opción junto con «como ratón» para utilizar la pantalla táctil como un panel táctil/«touchpad»."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Activa esta opción junto con «como ratón» para utilizar la pantalla táctil como si fuese un trackball, añadiendo inercia al cursor."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Activa los gestos de la pantalla táctil, como pueden ser tocar, arrastrar y deslizar los dedos."
+   )
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

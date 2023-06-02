@@ -52,7 +52,6 @@ else
 	HAVE_ZLIB							:= 1
 	HAVE_BUILTINZLIB			:= 1
 	HAVE_OVERLAY					:= 1
-	HAVE_VIDEO_LAYOUT 		:= 1
 	HAVE_7ZIP							:= 1
 	HAVE_EGL 							:= 1
 	HAVE_GFX_WIDGETS 			:= 1
@@ -79,7 +78,7 @@ else
 	HAVE_THREAD_ATTR			:= 1
 	HAVE_LIBRETRODB				:= 1
 	HAVE_CC_RESAMPLER			:= 1
-	HAVE_CHEEVOS					:= 1
+	HAVE_CHEEVOS					:= 0
 	HAVE_RUNAHEAD					:= 1
 	RARCH_CONSOLE					:= 1
 	HAVE_MAIN 						:= 1

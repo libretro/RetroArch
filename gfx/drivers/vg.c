@@ -45,37 +45,35 @@
 
 typedef struct
 {
-   bool should_resize;
-   bool keep_aspect;
-   bool mEglImageBuf;
-   bool mFontsOn;
+   void *mFontRenderer;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   const font_renderer_driver_t *font_driver;
+   char *mLastMsg;
 
-   float mScreenAspect;
+   VGint scissor[4];
+   VGImageFormat mTexType;
+   VGImage mImage;
+   EGLImageKHR last_egl_image;
 
+   VGFont mFont;
+   VGuint mMsgLength;
+   VGuint mGlyphIndices[1024];
+   VGPaint mPaintFg;
+   VGPaint mPaintBg;
    unsigned mTextureWidth;
    unsigned mTextureHeight;
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
    uint32_t mFontHeight;
+   float mScreenAspect;
+   math_matrix_3x3 mTransformMatrix; /* float alignment */
 
-   char *mLastMsg;
-
-   VGint scissor[4];
-   VGImageFormat mTexType;
-   VGImage mImage;
-   math_matrix_3x3 mTransformMatrix;
-   EGLImageKHR last_egl_image;
-
-   VGFont mFont;
-   void *mFontRenderer;
-   const font_renderer_driver_t *font_driver;
-   VGuint mMsgLength;
-   VGuint mGlyphIndices[1024];
-   VGPaint mPaintFg;
-   VGPaint mPaintBg;
-   void *ctx_data;
-   const gfx_ctx_driver_t *ctx_driver;
+   bool should_resize;
+   bool keep_aspect;
+   bool mEglImageBuf;
+   bool mFontsOn;
 } vg_t;
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
@@ -525,9 +523,6 @@ video_driver_t video_vg = {
    NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
   NULL,                       /* overlay_interface */
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
 #endif
   vg_get_poke_interface
 };

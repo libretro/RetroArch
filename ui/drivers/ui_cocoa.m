@@ -48,6 +48,10 @@
 
 #include "ui_cocoa.h"
 
+#ifdef HAVE_MIST
+#include "steam/steam.h"
+#endif
+
 typedef struct ui_application_cocoa
 {
    void *empty;
@@ -701,6 +705,10 @@ static ui_application_t ui_application_cocoa = {
       [self updateWindowedMode];
    }
 
+   /* HACK(sgc): ensure MTKView posts a drawable resize event */
+   if (mode.width > 0)
+       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
+   [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
    [self.window displayIfNeeded];
 }
 
@@ -787,6 +795,10 @@ static ui_application_t ui_application_cocoa = {
        ret = runloop_iterate();
 
        task_queue_check();
+
+#ifdef HAVE_MIST
+       steam_poll();
+#endif
 
        while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) 
              == kCFRunLoopRunHandledSource);
@@ -1061,7 +1073,6 @@ static void ui_companion_cocoa_deinit(void *data)
 }
 
 static void *ui_companion_cocoa_init(void) { return (void*)-1; }
-static void ui_companion_cocoa_notify_content_loaded(void *data) { }
 static void ui_companion_cocoa_toggle(void *data, bool force) { }
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
@@ -1078,8 +1089,6 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
       break;
    }
 }
-static void ui_companion_cocoa_notify_list_pushed(void *data, file_list_t *a, file_list_t *b) { }
-
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
     return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
@@ -1090,8 +1099,6 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
-   ui_companion_cocoa_notify_content_loaded,
-   ui_companion_cocoa_notify_list_pushed,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */

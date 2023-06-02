@@ -16,7 +16,6 @@ ifeq ($(DEBUG), 1)
 	DEFINES += -DDEBUG
 else
    OPTIMIZE_LV	:= -O3
-	# LDFLAGS :=  -s
 endif
 
 ifeq ($(MUTE_WARNINGS), 1)

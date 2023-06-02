@@ -43,6 +43,10 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+/*
+ * FORWARD DECLARATIONS
+ */
+
 static void sdl2_gfx_free(void *data);
 
 static INLINE void sdl_tex_zero(sdl2_tex_t *t)
@@ -242,13 +246,11 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
             vid->video.force_aspect);
    else if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom =
-         (const struct video_viewport*)video_viewport_get_custom();
-
-      vid->vp.x = custom->x;
-      vid->vp.y = custom->y;
-      vid->vp.width  = custom->width;
-      vid->vp.height = custom->height;
+      video_viewport_t *custom_vp = &settings->video_viewport_custom;
+      vid->vp.x                   = custom_vp->x;
+      vid->vp.y                   = custom_vp->y;
+      vid->vp.width               = custom_vp->width;
+      vid->vp.height              = custom_vp->height;
    }
    else if (vid->video.force_aspect)
    {
@@ -659,9 +661,8 @@ static void sdl2_poke_texture_enable(void *data,
    vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data,
-      const char *msg,
-      const void *params, void *font)
+static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);
@@ -734,9 +735,6 @@ video_driver_t video_sdl2 = {
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
     NULL,
-#endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
 #endif
     sdl2_gfx_poke_interface
 };

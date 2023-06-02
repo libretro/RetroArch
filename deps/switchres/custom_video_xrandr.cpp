@@ -132,21 +132,21 @@ xrandr_timing::xrandr_timing(char *device_name, custom_video_settings *vs)
 		if (p_XOpenDisplay == NULL)
 		{
 			log_error("XRANDR: <%d> (xrandr_timing) [ERROR] missing func %s in %s\n", m_id, "XOpenDisplay", "X11_LIBRARY");
-			throw new std::exception();
+			throw std::exception();
 		}
 		else
 		{
 			if (!XOpenDisplay(NULL))
 			{
 				log_verbose("XRANDR: <%d> (xrandr_timing) X server not found\n", m_id);
-				throw new std::exception();
+				throw std::exception();
 			}
 		}
 	}
 	else
 	{
 		log_error("XRANDR: <%d> (xrandr_timing) [ERROR] missing %s library\n", m_id, "X11_LIBRARY");
-		throw new std::exception();
+		throw std::exception();
 	}
 
 	s_total_managed_screen++;
@@ -161,6 +161,8 @@ xrandr_timing::~xrandr_timing()
 	s_total_managed_screen--;
 	if (s_total_managed_screen == 0)
 	{
+		s_id = 0;
+
 		if (sp_desktop_crtc)
 			delete[]sp_desktop_crtc;
 

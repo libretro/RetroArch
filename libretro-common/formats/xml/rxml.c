@@ -118,7 +118,7 @@ rxml_document_t *rxml_load_document(const char *path)
 
 error:
    free(memory_buffer);
-   if(file)
+   if (file)
       filestream_close(file);
    return NULL;
 }

@@ -89,18 +89,14 @@ void upscale_mix_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
 
       for (block_x = 0; block_x < 80; block_x++)
       {
-         const uint16_t *block_src_ptr = block_src;
-         uint16_t *block_dst_ptr       = block_dst;
-
-         uint16_t _1, _2, _3,
-                  _4, _5, _6;
-
+         uint16_t _4, _5, _6;
          uint16_t _1_2_weight_1_3;
          uint16_t _2_3_weight_1_1;
          uint16_t _4_5_weight_1_3;
          uint16_t _5_6_weight_1_1;
-
          uint16_t tmp;
+         const uint16_t *block_src_ptr = block_src;
+         uint16_t *block_dst_ptr       = block_dst;
 
          /* Horizontally:
           * Before(3):
@@ -116,9 +112,9 @@ void upscale_mix_240x160_to_320x240(uint16_t *dst, const uint16_t *src,
           */
 
          /* -- Row 1 -- */
-         _1 = *(block_src_ptr    );
-         _2 = *(block_src_ptr + 1);
-         _3 = *(block_src_ptr + 2);
+         uint16_t _1 = *(block_src_ptr    );
+         uint16_t _2 = *(block_src_ptr + 1);
+         uint16_t _3 = *(block_src_ptr + 2);
 
          *(block_dst_ptr    ) = _1;
          UPSCALE_240__WEIGHT_1_3(_1, _2, block_dst_ptr + 1, tmp);
@@ -277,11 +273,9 @@ void upscale_mix_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
 
    for (block_x = 0; block_x < 80; block_x++)
    {
+      uint16_t tmp;
       const uint16_t *block_src_ptr = block_src;
       uint16_t *block_dst_ptr       = block_dst;
-
-      uint16_t _1, _2, _3;
-      uint16_t tmp;
 
       /* Horizontally:
        * Before(3):
@@ -291,17 +285,17 @@ void upscale_mix_240x160_to_320x240_aspect(uint16_t *dst, const uint16_t *src,
        */
 
       /* -- Row 1 -- */
-      _1 = *(block_src_ptr    );
-      _2 = *(block_src_ptr + 1);
-      _3 = *(block_src_ptr + 2);
+      uint16_t _1          = *(block_src_ptr    );
+      uint16_t _2          = *(block_src_ptr + 1);
+      uint16_t _3          = *(block_src_ptr + 2);
 
       *(block_dst_ptr    ) = _1;
       UPSCALE_240__WEIGHT_1_3(_1, _2, block_dst_ptr + 1, tmp);
       UPSCALE_240__WEIGHT_1_1(_2, _3, block_dst_ptr + 2, tmp);
       *(block_dst_ptr + 3) = _3;
 
-      block_src += 3;
-      block_dst += 4;
+      block_src           += 3;
+      block_dst           += 4;
    }
 
    /* Letterboxing - zero out last 14 rows */
@@ -337,8 +331,7 @@ static void upscale_mix_240x160_320x240_initialize(struct filter_data *filt,
    filt->function.upscale_mix_240x160_320x240 = upscale_mix_240x160_to_320x240_aspect;
 
    /* Read aspect ratio correction setting */
-   if (config->get_int(userdata, "keep_aspect", &keep_aspect, 1) &&
-       !keep_aspect)
+   if (config->get_int(userdata, "keep_aspect", &keep_aspect, 1) && !keep_aspect)
       filt->function.upscale_mix_240x160_320x240 = upscale_mix_240x160_to_320x240;
 }
 
@@ -348,23 +341,17 @@ static void *upscale_mix_240x160_320x240_generic_create(const struct softfilter_
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
-   (void)simd;
-   (void)config;
-   (void)userdata;
-
-   if (!filt) {
+   if (!filt)
+      return NULL;
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
+   {
+      free(filt);
       return NULL;
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
    filt->threads = 1;
    filt->in_fmt  = in_fmt;
-   if (!filt->workers) {
-      free(filt);
-      return NULL;
-   }
-
    /* Assign scaling functions */
    upscale_mix_240x160_320x240_initialize(filt, config, userdata);
 
@@ -390,9 +377,8 @@ static void upscale_mix_240x160_320x240_generic_output(void *data,
 static void upscale_mix_240x160_320x240_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if (!filt) {
+   if (!filt)
       return;
-   }
    free(filt->workers);
    free(filt);
 }
@@ -444,20 +430,20 @@ static void upscale_mix_240x160_320x240_generic_packets(void *data,
     * over threads and can cull some code. This only
     * makes the tiniest performance difference, but
     * every little helps when running on an o3DS... */
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt           = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data = (uint8_t*)output;
-   thr->in_data = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch = input_stride;
-   thr->width = width;
-   thr->height = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
-   if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
-      packets[0].work = upscale_mix_240x160_320x240_work_cb_rgb565;
-   }
-   packets[0].thread_data = thr;
+   /* TODO/FIXME - no XRGB8888 codepath? */
+   if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+      packets[0].work                 = upscale_mix_240x160_320x240_work_cb_rgb565;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation upscale_mix_240x160_320x240_generic = {
@@ -479,7 +465,6 @@ static const struct softfilter_implementation upscale_mix_240x160_320x240_generi
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &upscale_mix_240x160_320x240_generic;
 }
 

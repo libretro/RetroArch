@@ -377,7 +377,7 @@ u8* gfxBottomFramebuffers[2];
 
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
 {
-   if(screen==GFX_TOP)
+   if (screen==GFX_TOP)
    {
       u8 enable3d = 0;
       u8 bit5=(enable3d != 0);
@@ -387,7 +387,9 @@ void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
                        enable3d ? (u32*)gfxTopRightFramebuffers[id] : (u32*)gfxTopLeftFramebuffers[id],
                        240 * 3,
                        ((1)<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES);
-   } else {
+   }
+   else
+   {
       gspPresentBuffer(GFX_BOTTOM,
                        id,
                        (u32*)gfxBottomFramebuffers[id],

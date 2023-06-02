@@ -25,7 +25,6 @@
 #include <string.h>
 
 #include <retro_inline.h>
-#include <boolean.h>
 #include <libretro_dspfilter.h>
 
 struct comb
@@ -51,6 +50,7 @@ static INLINE float comb_process(struct comb *c, float input)
 {
    float output         = c->buffer[c->bufidx];
    c->filterstore       = (output * c->damp2) + (c->filterstore * c->damp1);
+
    c->buffer[c->bufidx] = input + (c->filterstore * c->feedback);
 
    c->bufidx++;
@@ -64,7 +64,7 @@ static INLINE float allpass_process(struct allpass *a, float input)
 {
    float bufout         = a->buffer[a->bufidx];
    float output         = -input + bufout;
-   a->buffer[a->bufidx] =  input + bufout * a->feedback;
+   a->buffer[a->bufidx] = input + bufout * a->feedback;
 
    a->bufidx++;
    if (a->bufidx >= a->bufsize)
@@ -73,31 +73,30 @@ static INLINE float allpass_process(struct allpass *a, float input)
    return output;
 }
 
-#define NUMCOMBS 8
-#define NUMALLPASSES 4
-
-static const float muted        = 0.0f;
-static const float fixedgain    = 0.015f;
-static const float scalewet     = 3.0f;
-static const float scaledry     = 2.0f;
-static const float scaledamp    = 0.4f;
-static const float scaleroom    = 0.28f;
-static const float offsetroom   = 0.7f;
-static const float initialroom  = 0.5f;
-static const float initialdamp  = 0.5f;
-static const float initialwet   = 1.0f / 3.0f;
-static const float initialdry   = 0.0f;
-static const float initialwidth = 1.0f;
-static const float initialmode  = 0.0f;
-static const float freezemode   = 0.5f;
+#define numcombs 8
+#define numallpasses 4
+static const float muted = 0;
+static const float fixedgain = 0.015f;
+static const float scalewet = 3;
+static const float scaledry = 2;
+static const float scaledamp = 0.4f;
+static const float scaleroom = 0.28f;
+static const float offsetroom = 0.7f;
+static const float initialroom = 0.5f;
+static const float initialdamp = 0.5f;
+static const float initialwet = 1.0f / 3.0f;
+static const float initialdry = 0;
+static const float initialwidth = 1;
+static const float initialmode = 0;
+static const float freezemode = 0.5f;
 
 struct revmodel
 {
-   struct comb combL[NUMCOMBS];
-   struct allpass allpassL[NUMALLPASSES];
+   struct comb combL[numcombs];
+   struct allpass allpassL[numallpasses];
 
-   float *bufcomb[NUMCOMBS];
-   float *bufallpass[NUMALLPASSES];
+   float *bufcomb[numcombs];
+   float *bufallpass[numallpasses];
 
    float gain;
    float roomsize, roomsize1;
@@ -115,10 +114,10 @@ static float revmodel_process(struct revmodel *rev, float in)
    float mono_in  = in;
    float input    = mono_in * rev->gain;
 
-   for (i = 0; i < NUMCOMBS; i++)
+   for (i = 0; i < numcombs; i++)
       mono_out += comb_process(&rev->combL[i], input);
 
-   for (i = 0; i < NUMALLPASSES; i++)
+   for (i = 0; i < numallpasses; i++)
       mono_out = allpass_process(&rev->allpassL[i], mono_out);
 
    return mono_in * rev->dry + mono_out * rev->wet1;
@@ -132,8 +131,8 @@ static void revmodel_update(struct revmodel *rev)
    if (rev->mode >= freezemode)
    {
       rev->roomsize1 = 1.0f;
-      rev->damp1     = 0.0f;
-      rev->gain      = muted;
+      rev->damp1 = 0.0f;
+      rev->gain = muted;
    }
    else
    {
@@ -142,7 +141,7 @@ static void revmodel_update(struct revmodel *rev)
       rev->gain = fixedgain;
    }
 
-   for (i = 0; i < NUMCOMBS; i++)
+   for (i = 0; i < numcombs; i++)
    {
       rev->combL[i].feedback = rev->roomsize1;
       rev->combL[i].damp1 = rev->damp1;
@@ -186,30 +185,30 @@ static void revmodel_setmode(struct revmodel *rev, float value)
    revmodel_update(rev);
 }
 
-static void revmodel_init(struct revmodel *rev,int srate, bool right)
+static void revmodel_init(struct revmodel *rev,int srate)
 {
-   unsigned c;
-   static const int comb_lengths[8]    = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
-   static const int allpass_lengths[4] = { 225, 341, 441, 556 };
-   double r                            = srate * (1 / 44100.0);
-   int stereosep                       = right ? 23 : 0;
 
-   for (c = 0; c < NUMCOMBS; ++c)
-   {
-      rev->bufcomb[c] = malloc(r*comb_lengths[c]+stereosep*sizeof(float));
-      rev->combL[c].buffer  =  rev->bufcomb[c];
-      memset(rev->combL[c].buffer,0,r*comb_lengths[c]+stereosep*sizeof(float));
-      rev->combL[c].bufsize=r*comb_lengths[c]+stereosep;
-   }
+  static const int comb_lengths[8] = { 1116,1188,1277,1356,1422,1491,1557,1617 };
+  static const int allpass_lengths[4] = { 225,341,441,556 };
+  double r = srate * (1 / 44100.0);
+  unsigned c;
 
-   for (c = 0; c < NUMALLPASSES; ++c)
+   for (c = 0; c < numcombs; ++c)
    {
-      rev->bufallpass[c] = malloc(r*allpass_lengths[c]+stereosep*sizeof(float));
-      rev->allpassL[c].buffer  =  rev->bufallpass[c];
-      memset(rev->allpassL[c].buffer,0,r*allpass_lengths[c]+stereosep*sizeof(float));
-      rev->allpassL[c].bufsize=r*allpass_lengths[c]+stereosep;
-      rev->allpassL[c].feedback = 0.5f;
-   }
+	   rev->bufcomb[c] = malloc(r*comb_lengths[c]*sizeof(float));
+	   rev->combL[c].buffer  =  rev->bufcomb[c];
+         memset(rev->combL[c].buffer,0,r*comb_lengths[c]*sizeof(float));
+         rev->combL[c].bufsize=r*comb_lengths[c];
+  }
+
+   for (c = 0; c < numallpasses; ++c)
+   {
+	   rev->bufallpass[c] = malloc(r*allpass_lengths[c]*sizeof(float));
+	   rev->allpassL[c].buffer  =  rev->bufallpass[c];
+         memset(rev->allpassL[c].buffer,0,r*allpass_lengths[c]*sizeof(float));
+         rev->allpassL[c].bufsize=r*allpass_lengths[c];
+         rev->allpassL[c].feedback = 0.5f;
+  }
 
    revmodel_setwet(rev, initialwet);
    revmodel_setroomsize(rev, initialroom);
@@ -229,16 +228,14 @@ static void reverb_free(void *data)
    struct reverb_data *rev = (struct reverb_data*)data;
    unsigned i;
 
-   for (i = 0; i < NUMCOMBS; i++)
-   {
-      free(rev->left.bufcomb[i]);
-      free(rev->right.bufcomb[i]);
+   for (i = 0; i < numcombs; i++) {
+   free(rev->left.bufcomb[i]);
+   free(rev->right.bufcomb[i]);
    }
 
-   for (i = 0; i < NUMALLPASSES; i++)
-   {
-      free(rev->left.bufallpass[i]);
-      free(rev->right.bufallpass[i]);
+   for (i = 0; i < numallpasses; i++) {
+   free(rev->left.bufallpass[i]);
+   free(rev->right.bufallpass[i]);
    }
    free(data);
 }
@@ -257,8 +254,9 @@ static void reverb_process(void *data, struct dspfilter_output *output,
    for (i = 0; i < input->frames; i++, out += 2)
    {
       float in[2] = { out[0], out[1] };
-      out[0]      = revmodel_process(&rev->left, in[0]);
-      out[1]      = revmodel_process(&rev->right, in[1]);
+
+      out[0] = revmodel_process(&rev->left, in[0]);
+      out[1] = revmodel_process(&rev->right, in[1]);
    }
 }
 
@@ -271,14 +269,14 @@ static void *reverb_init(const struct dspfilter_info *info,
    if (!rev)
       return NULL;
 
-   config->get_float(userdata, "drytime",   &drytime,   0.43f);
-   config->get_float(userdata, "wettime",   &wettime,   0.4f);
-   config->get_float(userdata, "damping",   &damping,   0.8f);
+   config->get_float(userdata, "drytime", &drytime, 0.43f);
+   config->get_float(userdata, "wettime", &wettime, 0.4f);
+   config->get_float(userdata, "damping", &damping, 0.8f);
    config->get_float(userdata, "roomwidth", &roomwidth, 0.56f);
-   config->get_float(userdata, "roomsize",  &roomsize,  0.56f);
+   config->get_float(userdata, "roomsize", &roomsize, 0.56f);
 
-   revmodel_init(&rev->left,info->input_rate, false);
-   revmodel_init(&rev->right,info->input_rate, true);
+   revmodel_init(&rev->left,info->input_rate);
+   revmodel_init(&rev->right,info->input_rate);
 
    revmodel_setdamp(&rev->left, damping);
    revmodel_setdry(&rev->left, drytime);

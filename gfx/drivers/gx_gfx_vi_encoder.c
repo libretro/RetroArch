@@ -118,13 +118,13 @@ static u32 __VISendI2CData(u8 addr,void *val,u32 len)
    s32 i,j;
    u32 level,ret;
 
-   if(i2cIdentFirst==0)
+   if (i2cIdentFirst==0)
    {
       __viOpenI2C(0);
       udelay(4);
 
       i2cIdentFlag = 0;
-      if(__viGetSDA()!=0)
+      if (__viGetSDA()!=0)
          i2cIdentFlag = 1;
       i2cIdentFirst = 1;
    }
@@ -137,9 +137,7 @@ static u32 __VISendI2CData(u8 addr,void *val,u32 len)
    __viSetSDA(i2cIdentFlag);
    udelay(4);
 
-   ret = __sendSlaveAddress(addr);
-
-   if(ret == 0)
+   if ((ret = __sendSlaveAddress(addr)) == 0)
    {
       _CPU_ISR_Restore(level);
       return 0;
@@ -151,7 +149,7 @@ static u32 __VISendI2CData(u8 addr,void *val,u32 len)
       c = ((u8*)val)[i];
       for(j=0;j<8;j++)
       {
-         if(c&0x80)
+         if (c&0x80)
             __viSetSDA(i2cIdentFlag);
          else
             __viSetSDA(i2cIdentFlag^1);
@@ -168,7 +166,7 @@ static u32 __VISendI2CData(u8 addr,void *val,u32 len)
       __viSetSCL(1);
       udelay(2);
 
-      if(i2cIdentFlag == 1 && __viGetSDA()!=0)
+      if (i2cIdentFlag == 1 && __viGetSDA()!=0)
       {
          _CPU_ISR_Restore(level);
          return 0;
@@ -407,7 +405,8 @@ static const u8 gamma_coeffs[][33] =
 
 void VIDEO_SetGamma(int gamma)
 {
-   gamma = MAX(0,MIN(30,gamma));
-   u8 *data = (u8 *)&gamma_coeffs[gamma][0];
+   u8 *data;
+   gamma    = MAX(0,MIN(30,gamma));
+   data     = (u8 *)&gamma_coeffs[gamma][0];
    __VIWriteI2CRegisterBuf(0x10, 0x21, data);
 }

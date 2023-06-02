@@ -72,12 +72,20 @@ MSG_HASH(
    "Wybierz, którego rdzenia użyć."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Przeglądaj podstawowe implementacje libretro. Gdy przeglądarka zaczyna się w zależności od ścieżki głównego katalogu. Jeśli puste, zacznie się w rootu.\nJeśli główny katalog jest katalogiem, menu będzie używać go jako górnego folderu. Jeśli główny katalog jest pełną ścieżką, rozpocznie się w folderze, w którym znajduje się plik."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Załaduj zawartość"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Wybierz zawartość do rozpoczęcia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Przeglądaj zawartość. Aby załadować zawartość, potrzebujesz 'Rdze' do użycia, oraz pliku zawartości.\nAby kontrolować, gdzie menu zaczyna przeglądać zawartość, ustaw 'Katalog przeglądarki plików'. Jeśli nie jest ustawione, rozpocznie się w root.\nPrzeglądarka będzie filtrować rozszerzenia dla ostatniego rdzenia ustawionego w \"Załaduj Core\" i użyj tego rdzenia po załadowaniu treści."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -200,6 +208,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Zamknij program."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Wyjdź z RetroArch. Zabijanie programu w jakikolwiek trudny sposób (SIGKILL, itp.) zakończy RetroArch bez zapisywania konfiguracji, itp. Na Unix-likach, SIGINT/SIGTERM pozwala na czyste deinicjalizację."
    )
 
 /* Main Menu > Load Core */
@@ -340,6 +352,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Pobieranie zawartości"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Pobierz bezpłatną zawartość dla wybranego rdzenia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -569,6 +585,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Data kompilacji"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Wersja RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1195,6 +1215,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
    "Plik czcionki TrueType."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Plik obrazu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -2878,15 +2902,6 @@ MSG_HASH(
    "Uruchamia / zatrzymuje przesyłanie strumieniowe bieżącej sesji na platformę wideo online."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
-   "Nagrywanie powtórki wejścia (przełącznik)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_BSV_RECORD_TOGGLE,
-   "Włącza/wyłącza nagrywanie danych wejściowych rozgrywki w formacie .bsv."
-   )
-
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Przechwyć myszkę (przełącznik)"
    )
@@ -3442,6 +3457,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    "Automatycznie zapisz niezmienny Zapis Ram w regularnym odstępie (w sekundach)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Odstęp czasu powtórzenia punktu kontrolnego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatycznie zakładaj stan gry podczas nagrywania w regularnych odstępach czasu (w sekundach)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Automatycznie opuszcza stan gry podczas nagrywania w regularnych odstępach czasu. Jest to domyślnie wyłączone, chyba że ustawiono inaczej. Interwał jest mierzony w sekundach. Wartość 0 wyłącza nagrywanie punktu kontrolnego."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -4943,7 +4970,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Pokaż podmenu Stanu Zapisu"
+   "Pokaż podmenu 'Zapis Stanu'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5306,11 +5333,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Nieprzezroczysty bufor klatki"
+   "Przezroczystość menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Zmodyfikuj krycie bufora klatki."
+   "Modyfikuj przezroczystość tła menu domyślnego."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -5363,6 +5390,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
    "Zapamiętaj zaznaczenie podczas zmiany kart"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "Zapamiętaj poprzednią pozycję kursora w zakładkach. RGUI nie ma zakładek, ale playlisty i Ustawienia zachowują się jako takie."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -5468,10 +5499,6 @@ MSG_HASH(
    "Tabele wyników"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Tablice wyników dla gry. Nie ma efektu, jeśli 'Tryb Hardcore jest wyłączony."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
    "Tryb Rich Presence"
    )
@@ -5556,6 +5583,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Pokazuje wskaźniki na ekranie, podczas gdy niektóre osiągnięcia mogą być zdobyte."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Wskaźnik postępu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Wiadomości startowe tablicy wyników"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Pokazuje opis tablicy wyników, gdy staje się aktywny."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6050,6 +6089,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Gdy jest włączone i wybrany został katalog „Przeglądarki plików” to bieżąca wartość parametru „Przeglądarki plików” jest zapisywana na playliście. Gdy playlista jest ładowana w innym systemie, w którym ta sama opcja jest włączona, wartość parametru „Przeglądarka plików” jest porównywana z wartością playlisty, jeśli są różne to ścieżki wpisów listy odtwarzania są automatycznie ustalane."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Zarządzaj"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -6460,10 +6503,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Zapisz stany"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Zapisywanie stanów jest przechowywane w tym katalogu. Jeśli nie jest ustawione, spróbuje zapisać je do katalogu, w którym znajduje się zawartość."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
@@ -7029,6 +7068,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
    "Jeśli stan został nadpisany, zostanie przywrócony do poprzedniego stanu zapisu."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Zmień aktualnie wybrany obszar stanu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -8750,16 +8793,8 @@ MSG_HASH(
    "Pokaż miniatury playlisty"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Włącz wyświetlanie miniatur przeskalowanych w dół podczas przeglądania list odtwarzania. Gdy wyłączone, 'Wierzchnia miniatura' może nadal być przełączona na pełny ekran przez naciśnięcie RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Wierzchnia miniatura"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Typ miniatury wyświetlanej w prawym górnym rogu playlisty. Ta miniaturka może być przełączona na pełny ekran, naciskając RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11547,6 +11582,14 @@ MSG_HASH(
    "Znaleziono ostatni stan automatu"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Nie z bieżącego nagrania"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Niekompatybilne z powtórką"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Znaleziono shader"
    )
@@ -11675,8 +11718,8 @@ MSG_HASH(
    "Pamięć"
    )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Plik filmu nie jest prawidłowym plikiem BSV1."
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "Wprowadzany plik filmu nie jest prawidłowym plikiem powtórki."
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
@@ -11901,6 +11944,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Osiągnięcie odblokowane"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Przesłano %s dla %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -12402,6 +12449,10 @@ MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    "Nie udało się wejść do GameMode — sprawdź, czy daemon GameMode jest zainstalowany i uruchomiony"
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Prędkość odświeżania wideo zmieniona na %s Hz."
+   )
 
 /* Lakka */
 
@@ -12478,7 +12529,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Wybierz tryb wyświetlania."
+   "Wybierz tryb wyświetlania (wymagany restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -12857,6 +12908,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Dostosuj skalę x/y współrzędnych ekranu dotykowego, aby dostosować skalowanie poziomu OS."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

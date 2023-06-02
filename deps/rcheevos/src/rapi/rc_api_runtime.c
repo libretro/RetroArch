@@ -31,9 +31,9 @@ int rc_api_init_resolve_hash_request(rc_api_request_t* request, const rc_api_res
 int rc_api_process_resolve_hash_response(rc_api_resolve_hash_response_t* response, const char* server_response) {
   int result;
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"GameID"},
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("GameID")
   };
 
   memset(response, 0, sizeof(*response));
@@ -76,6 +76,7 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
   rc_json_field_t iterator;
   const char* str;
   const char* last_author = "";
+  const char* last_author_field = "";
   size_t last_author_len = 0;
   size_t len;
   unsigned timet;
@@ -83,46 +84,46 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
   char format[16];
 
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"PatchData"} /* nested object */
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("PatchData") /* nested object */
   };
 
   rc_json_field_t patchdata_fields[] = {
-    {"ID"},
-    {"Title"},
-    {"ConsoleID"},
-    {"ImageIcon"},
-    {"RichPresencePatch"},
-    {"Achievements"}, /* array */
-    {"Leaderboards"} /* array */
+    RC_JSON_NEW_FIELD("ID"),
+    RC_JSON_NEW_FIELD("Title"),
+    RC_JSON_NEW_FIELD("ConsoleID"),
+    RC_JSON_NEW_FIELD("ImageIcon"),
+    RC_JSON_NEW_FIELD("RichPresencePatch"),
+    RC_JSON_NEW_FIELD("Achievements"), /* array */
+    RC_JSON_NEW_FIELD("Leaderboards") /* array */
     /* unused fields
-    {"ForumTopicID"},
-    {"Flags"},
+    RC_JSON_NEW_FIELD("ForumTopicID"),
+    RC_JSON_NEW_FIELD("Flags")
      * unused fields */
   };
 
   rc_json_field_t achievement_fields[] = {
-    {"ID"},
-    {"Title"},
-    {"Description"},
-    {"Flags"},
-    {"Points"},
-    {"MemAddr"},
-    {"Author"},
-    {"BadgeName"},
-    {"Created"},
-    {"Modified"}
+    RC_JSON_NEW_FIELD("ID"),
+    RC_JSON_NEW_FIELD("Title"),
+    RC_JSON_NEW_FIELD("Description"),
+    RC_JSON_NEW_FIELD("Flags"),
+    RC_JSON_NEW_FIELD("Points"),
+    RC_JSON_NEW_FIELD("MemAddr"),
+    RC_JSON_NEW_FIELD("Author"),
+    RC_JSON_NEW_FIELD("BadgeName"),
+    RC_JSON_NEW_FIELD("Created"),
+    RC_JSON_NEW_FIELD("Modified")
   };
 
   rc_json_field_t leaderboard_fields[] = {
-    {"ID"},
-    {"Title"},
-    {"Description"},
-    {"Mem"},
-    {"Format"},
-    {"LowerIsBetter"},
-    {"Hidden"}
+    RC_JSON_NEW_FIELD("ID"),
+    RC_JSON_NEW_FIELD("Title"),
+    RC_JSON_NEW_FIELD("Description"),
+    RC_JSON_NEW_FIELD("Mem"),
+    RC_JSON_NEW_FIELD("Format"),
+    RC_JSON_NEW_FIELD("LowerIsBetter"),
+    RC_JSON_NEW_FIELD("Hidden")
   };
 
   memset(response, 0, sizeof(*response));
@@ -199,8 +200,8 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
       if (!rc_json_get_required_string(&achievement->badge_name, &response->response, &achievement_fields[7], "BadgeName"))
         return RC_MISSING_VALUE;
 
-      len = achievement_fields[7].value_end - achievement_fields[7].value_start;
-      if (len == last_author_len && memcmp(achievement_fields[7].value_start, last_author, len) == 0) {
+      len = achievement_fields[6].value_end - achievement_fields[6].value_start;
+      if (len == last_author_len && memcmp(achievement_fields[6].value_start, last_author_field, len) == 0) {
         achievement->author = last_author;
       }
       else {
@@ -208,6 +209,7 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
           return RC_MISSING_VALUE;
 
         last_author = achievement->author;
+        last_author_field = achievement_fields[6].value_start;
         last_author_len = len;
       }
 
@@ -291,8 +293,8 @@ int rc_api_init_ping_request(rc_api_request_t* request, const rc_api_ping_reques
 
 int rc_api_process_ping_response(rc_api_ping_response_t* response, const char* server_response) {
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error")
   };
 
   memset(response, 0, sizeof(*response));
@@ -345,11 +347,11 @@ int rc_api_init_award_achievement_request(rc_api_request_t* request, const rc_ap
 int rc_api_process_award_achievement_response(rc_api_award_achievement_response_t* response, const char* server_response) {
   int result;
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"Score"},
-    {"AchievementID"},
-    {"AchievementsRemaining"}
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("Score"),
+    RC_JSON_NEW_FIELD("AchievementID"),
+    RC_JSON_NEW_FIELD("AchievementsRemaining")
   };
 
   memset(response, 0, sizeof(*response));
@@ -428,48 +430,48 @@ int rc_api_process_submit_lboard_entry_response(rc_api_submit_lboard_entry_respo
   int result;
 
   rc_json_field_t fields[] = {
-    {"Success"},
-    {"Error"},
-    {"Response"} /* nested object */
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("Response") /* nested object */
   };
 
   rc_json_field_t response_fields[] = {
-    {"Score"},
-    {"BestScore"},
-    {"RankInfo"}, /* nested object */
-    {"TopEntries"} /* array */
+    RC_JSON_NEW_FIELD("Score"),
+    RC_JSON_NEW_FIELD("BestScore"),
+    RC_JSON_NEW_FIELD("RankInfo"), /* nested object */
+    RC_JSON_NEW_FIELD("TopEntries") /* array */
     /* unused fields
-    {"LBData"}, / * array * /
-    {"ScoreFormatted"},
-    {"TopEntriesFriends"}, / * array * /
+    RC_JSON_NEW_FIELD("LBData"), / * array * /
+    RC_JSON_NEW_FIELD("ScoreFormatted"),
+    RC_JSON_NEW_FIELD("TopEntriesFriends") / * array * /
       * unused fields */
   };
 
   /* unused fields
   rc_json_field_t lbdata_fields[] = {
-    {"Format"},
-    {"LeaderboardID"},
-    {"GameID"},
-    {"Title"},
-    {"LowerIsBetter"}
+    RC_JSON_NEW_FIELD("Format"),
+    RC_JSON_NEW_FIELD("LeaderboardID"),
+    RC_JSON_NEW_FIELD("GameID"),
+    RC_JSON_NEW_FIELD("Title"),
+    RC_JSON_NEW_FIELD("LowerIsBetter")
   };
     * unused fields */
 
   rc_json_field_t entry_fields[] = {
-    {"User"},
-    {"Rank"},
-    {"Score"}
+    RC_JSON_NEW_FIELD("User"),
+    RC_JSON_NEW_FIELD("Rank"),
+    RC_JSON_NEW_FIELD("Score")
     /* unused fields
-    {"DateSubmitted"},
+    RC_JSON_NEW_FIELD("DateSubmitted")
      * unused fields */
   };
 
   rc_json_field_t rank_info_fields[] = {
-    {"Rank"},
-    {"NumEntries"}
+    RC_JSON_NEW_FIELD("Rank"),
+    RC_JSON_NEW_FIELD("NumEntries")
     /* unused fields
-    {"LowerIsBetter"},
-    {"UserRank"},
+    RC_JSON_NEW_FIELD("LowerIsBetter"),
+    RC_JSON_NEW_FIELD("UserRank")
       * unused fields */
   };
 

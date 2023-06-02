@@ -174,17 +174,11 @@ static void hidpad_psxadapter_packet_handler(void *data,
 }
 
 static void hidpad_psxadapter_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_psxadapter_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
 	return "PSX to PS3 Controller Adapter";
 }
 

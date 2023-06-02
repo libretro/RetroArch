@@ -40,7 +40,7 @@
 #include "win32_common.h"
 
 #ifdef HAVE_GDI
-#include "gdi_common.h"
+#include "gdi_defines.h"
 #endif
 
 #include "../../frontend/frontend_driver.h"
@@ -272,6 +272,9 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define MAX_MONITORS 9
 #endif
 
+#define MIN_WIDTH  320
+#define MIN_HEIGHT 240
+
 #if defined(_MSC_VER) && _MSC_VER <= 1200
 #define INT_PTR_COMPAT int
 #else
@@ -478,84 +481,93 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 bool win32_load_content_from_gui(const char *szFilename)
 {
    /* poll list of current cores */
-   size_t list_size;
-   content_ctx_info_t content_info  = { 0 };
    core_info_list_t *core_info_list = NULL;
-   const core_info_t *core_info     = NULL;
 
    core_info_get_list(&core_info_list);
 
-   if (!core_info_list)
-      return false;
-
-   core_info_list_get_supported_cores(core_info_list,
-      (const char*)szFilename, &core_info, &list_size);
-
-   if (!list_size)
-      return false;
-
-   path_set(RARCH_PATH_CONTENT, szFilename);
-
-   if (!path_is_empty(RARCH_PATH_CONTENT))
+   if (core_info_list)
    {
-      unsigned i;
-      core_info_t *current_core = NULL;
-      core_info_get_current_core(&current_core);
+      size_t list_size;
+      content_ctx_info_t content_info  = { 0 };
+      const core_info_t *core_info     = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+            (const char*)szFilename, &core_info, &list_size);
 
-      /*we already have path for libretro core */
-      for (i = 0; i < list_size; i++)
+      if (list_size)
       {
-         const core_info_t *info = (const core_info_t*)&core_info[i];
+         path_set(RARCH_PATH_CONTENT, szFilename);
 
-         if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+         if (!path_is_empty(RARCH_PATH_CONTENT))
          {
-            /* Our previous core supports the current rom */
-            task_push_load_content_with_current_core_from_companion_ui(
-               NULL,
-               &content_info,
-               CORE_TYPE_PLAIN,
-               NULL, NULL);
-            return true;
+            unsigned i;
+            core_info_t *current_core = NULL;
+            core_info_get_current_core(&current_core);
+
+            /*we already have path for libretro core */
+            for (i = 0; i < list_size; i++)
+            {
+               const core_info_t *info = (const core_info_t*)&core_info[i];
+
+               if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+               {
+                  /* Our previous core supports the current rom */
+                  task_push_load_content_with_current_core_from_companion_ui(
+                        NULL,
+                        &content_info,
+                        CORE_TYPE_PLAIN,
+                        NULL, NULL);
+                  return true;
+               }
+            }
+         }
+
+         /* Poll for cores for current rom since none exist. */
+         if (list_size == 1)
+         {
+            /*pick core that only exists and is bound to work. Ish. */
+            const core_info_t *info = (const core_info_t*)&core_info[0];
+
+            if (info)
+            {
+               task_push_load_content_with_new_core_from_companion_ui(
+                     info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
+               return true;
+            }
+         }
+         else
+         {
+            bool            okay              = false;
+            settings_t *settings              = config_get_ptr();
+            bool video_is_fs                  = settings->bools.video_fullscreen;
+            video_driver_state_t *video_st    = video_state_get_ptr();
+
+            /* Fullscreen: Show mouse cursor for dialog */
+            if (video_is_fs)
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, true);
+            }
+
+            /* Pick one core that could be compatible, ew */
+            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+                     main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
+            {
+               task_push_load_content_with_current_core_from_companion_ui(
+                     NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+               okay = true;
+            }
+
+            /* Fullscreen: Hide mouse cursor after dialog */
+            if (video_is_fs)
+            {
+               if (     video_st->poke
+                     && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
+            }
+            return okay;
          }
       }
-   }
-
-   /* Poll for cores for current rom since none exist. */
-   if (list_size == 1)
-   {
-      /*pick core that only exists and is bound to work. Ish. */
-      const core_info_t *info = (const core_info_t*)&core_info[0];
-
-      if (info)
-      {
-         task_push_load_content_with_new_core_from_companion_ui(
-            info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
-         return true;
-      }
-   }
-   else
-   {
-      bool            okay = false;
-      settings_t *settings = config_get_ptr();
-      bool video_is_fs     = settings->bools.video_fullscreen;
-
-      /* Fullscreen: Show mouse cursor for dialog */
-      if (video_is_fs)
-         video_driver_show_mouse();
-
-      /* Pick one core that could be compatible, ew */
-      if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-         main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
-      {
-         task_push_load_content_with_current_core_from_companion_ui(
-            NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-         okay = true;
-      }
-
-      /* Fullscreen: Hide mouse cursor after dialog */
-      if (video_is_fs)
-         video_driver_hide_mouse();
-      return okay;
    }
    return false;
 }
@@ -848,7 +860,8 @@ static void win32_save_position(void)
 
    if (window_save_positions)
    {
-      uint32_t video_st_flags        = video_driver_get_st_flags();
+      video_driver_state_t *video_st = video_state_get_ptr();
+      uint32_t video_st_flags        = video_st->flags;
       bool video_fullscreen          = settings->bools.video_fullscreen;
 
       if (     !video_fullscreen
@@ -878,6 +891,25 @@ static void win32_save_position(void)
    }
 }
 
+/* Get minimum window size for running core. */
+static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+
+   /* Don't bother while fast-forwarding. */
+   if (!video_st || runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
+      return;
+
+   if (video_st->av_info.geometry.aspect_ratio)
+      *width                      = roundf(
+              video_st->av_info.geometry.base_height
+            * video_st->av_info.geometry.aspect_ratio);
+   else
+      *width                      = video_st->av_info.geometry.base_width;
+
+   *height                        = video_st->av_info.geometry.base_height;
+}
 
 static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
@@ -947,6 +979,43 @@ static LRESULT CALLBACK wnd_proc_common(
             }
          }
          *quit = true;
+         break;
+      case WM_GETMINMAXINFO:
+         {
+            MINMAXINFO FAR *lpMinMaxInfo   = (MINMAXINFO FAR *)lparam;
+            settings_t *settings           = config_get_ptr();
+            unsigned min_width             = MIN_WIDTH;
+            unsigned min_height            = MIN_HEIGHT;
+            bool window_show_decor         = settings ? settings->bools.video_window_show_decorations : true;
+            bool ui_menubar_enable         = settings ? settings->bools.ui_menubar_enable : true;
+
+            if (settings && settings->bools.video_window_save_positions)
+               break;
+
+            win32_get_av_info_geometry(&min_width, &min_height);
+
+            if (window_show_decor)
+            {
+               int border_thickness        = GetSystemMetrics(SM_CXSIZEFRAME);
+               int title_bar_height        = GetSystemMetrics(SM_CYCAPTION);
+
+               min_width                  += border_thickness * 2;
+               min_height                 += border_thickness * 2 + title_bar_height;
+            }
+
+            if (ui_menubar_enable)
+            {
+               int menu_bar_height         = GetSystemMetrics(SM_CYMENU);
+
+               min_height                 += menu_bar_height;
+            }
+
+            lpMinMaxInfo->ptMinTrackSize.x = min_width;
+            lpMinMaxInfo->ptMinTrackSize.y = min_height;
+
+            lpMinMaxInfo->ptMaxTrackSize.x = min_width  * 20;
+            lpMinMaxInfo->ptMaxTrackSize.y = min_height * 20;
+         }
          break;
       case WM_COMMAND:
          {
@@ -1036,6 +1105,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+      case WM_GETMINMAXINFO:
       case WM_COMMAND:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
@@ -1115,6 +1185,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+      case WM_GETMINMAXINFO:
       case WM_COMMAND:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
@@ -1295,6 +1366,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+      case WM_GETMINMAXINFO:
       case WM_COMMAND:
          ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
@@ -1380,24 +1452,45 @@ LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+extern void create_gl_context(HWND hwnd, bool *quit);
+extern void create_gles_context(HWND hwnd, bool *quit);
+
+static LRESULT wnd_proc_wgl_wm_create(HWND hwnd)
+{
+   extern enum gfx_ctx_api win32_api;
+   bool is_quit = false;
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         create_gl_context(hwnd, &is_quit);
+#endif
+         break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#if defined (HAVE_OPENGLES)
+         create_gles_context(hwnd, &is_quit);
+#endif
+         break;
+
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+   if (is_quit)
+      g_win32_flags |= WIN32_CMN_FLAG_QUIT;
+   if (DragAcceptFiles_func)
+      DragAcceptFiles_func(hwnd, true);
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
+   return 0;
+}
+
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_wgl_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      g_win32_flags |= WIN32_CMN_FLAG_INITED;
-      return 0;
-   }
-
+      return wnd_proc_wgl_wm_create(hwnd);
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1406,20 +1499,8 @@ LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_wgl_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      g_win32_flags |= WIN32_CMN_FLAG_INITED;
-      return 0;
-   }
-
+      return wnd_proc_wgl_wm_create(hwnd);
    return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1427,42 +1508,48 @@ LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_wgl_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wgl_wm_create(hwnd);
    return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
 #ifdef HAVE_VULKAN
+#include "vulkan_common.h"
+
+static LRESULT wnd_proc_wm_vk_create(HWND hwnd)
+{
+   extern int win32_vk_interval;
+   extern gfx_ctx_vulkan_data_t win32_vk;
+   RECT rect;
+   HINSTANCE instance;
+   unsigned width  = 0;
+   unsigned height = 0;
+
+   GetClientRect(hwnd, &rect);
+
+   instance = GetModuleHandle(NULL);
+   width    = rect.right - rect.left;
+   height   = rect.bottom - rect.top;
+
+   if (!vulkan_surface_create(&win32_vk,
+            VULKAN_WSI_WIN32,
+            &instance, &hwnd,
+            width, height, win32_vk_interval))
+      g_win32_flags |= WIN32_CMN_FLAG_QUIT;
+   g_win32_flags    |= WIN32_CMN_FLAG_INITED;
+   if (DragAcceptFiles_func)
+      DragAcceptFiles_func(hwnd, true);
+   return 0;
+}
 
 #ifdef HAVE_DINPUT
+
 LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_vk_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wm_vk_create(hwnd);
    return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1471,19 +1558,8 @@ LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_vk_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wm_vk_create(hwnd);
    return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
@@ -1491,44 +1567,34 @@ LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_vk_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
-
+      return wnd_proc_wm_vk_create(hwnd);
    return wnd_proc_common_internal(hwnd, message, wparam, lparam);
 }
 #endif
 
 #ifdef HAVE_GDI
+static LRESULT wnd_proc_wm_gdi_create(HWND hwnd)
+{
+   extern HDC win32_gdi_hdc;
+   win32_gdi_hdc = GetDC(hwnd);
+   win32_setup_pixel_format(win32_gdi_hdc, false);
+   g_win32_flags |= WIN32_CMN_FLAG_INITED;
+   if (DragAcceptFiles_func)
+      DragAcceptFiles_func(hwnd, true);
+   return 0;
+}
 
 #ifdef HAVE_DINPUT
 LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_gdi_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
+      return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1566,21 +1632,12 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_gdi_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
+      return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1617,21 +1674,12 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   
    if (message == WM_CREATE)
-   {
-      bool is_quit = false;
-      create_gdi_context(hwnd, &is_quit);
-      if (is_quit)
-         g_win32_flags |= WIN32_CMN_FLAG_QUIT;
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-      return 0;
-   }
+      return wnd_proc_wm_gdi_create(hwnd);
    else if (message == WM_PAINT)
    {
-      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+      gdi_t *gdi                    = (gdi_t*)video_driver_get_ptr();
 
       if (gdi && gdi->memDC)
       {
@@ -1801,10 +1849,9 @@ bool win32_get_metrics(void *data,
 
 void win32_monitor_init(void)
 {
+#if !defined(_XBOX)
    win32_common_state_t 
       *g_win32            = (win32_common_state_t*)&win32_st;
-
-#if !defined(_XBOX)
    g_win32->monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
          win32_monitor_enum_proc, 0);
@@ -1825,8 +1872,6 @@ void win32_check_window(void *data,
       bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
-   win32_common_state_t 
-      *g_win32            = (win32_common_state_t*)&win32_st;
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
@@ -2096,6 +2141,46 @@ HWND win32_get_window(void) { return NULL; }
 #else
 bool win32_has_focus(void *data)
 {
+   settings_t *settings           = config_get_ptr();
+
+   /* Ensure window size is big enough for core geometry. */
+   if (      settings
+         && !settings->bools.video_fullscreen
+         && !settings->bools.video_window_save_positions)
+   {
+      unsigned video_scale        = settings->uints.video_scale;
+      unsigned extra_width        = 0;
+      unsigned extra_height       = 0;
+      unsigned min_width          = 0;
+      unsigned min_height         = 0;
+
+      win32_get_av_info_geometry(&min_width, &min_height);
+
+      min_width                  *= video_scale;
+      min_height                 *= video_scale;
+
+      if (settings->bools.video_window_show_decorations)
+      {
+         int border_thickness     = GetSystemMetrics(SM_CXSIZEFRAME);
+         int title_bar_height     = GetSystemMetrics(SM_CYCAPTION);
+
+         extra_width             += border_thickness * 2;
+         extra_height            += border_thickness * 2 + title_bar_height;
+      }
+
+      if (settings->bools.ui_menubar_enable)
+         extra_height            += GetSystemMetrics(SM_CYMENU);
+
+      if (     (     g_win32_resize_width  < min_width
+                  || g_win32_resize_height < min_height)
+            && min_width  - g_win32_resize_width  < MIN_WIDTH  / 2
+            && min_height - g_win32_resize_height < MIN_HEIGHT / 2)
+         SetWindowPos(main_window.hwnd, NULL, 0, 0,
+               min_width  + extra_width,
+               min_height + extra_height,
+               SWP_NOMOVE);
+   }
+
    if (g_win32_flags & WIN32_CMN_FLAG_INITED)
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
@@ -2241,7 +2326,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       win32_common_state_t *g_win32    = (win32_common_state_t*)&win32_st;
       bool position_set_from_config    = false;
       bool video_window_save_positions = settings->bools.video_window_save_positions;
-      bool window_show_decor = settings->bools.video_window_show_decorations;
+      bool window_show_decor           = settings->bools.video_window_show_decorations;
 
       *style          = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
       rect->right     = *width;

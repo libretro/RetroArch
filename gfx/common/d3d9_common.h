@@ -41,7 +41,6 @@
 #define D3D9_XRGB8888_FORMAT D3DFMT_X8R8G8B8
 #endif
 
-
 RETRO_BEGIN_DECLS
 
 typedef struct d3d9_video d3d9_video_t;
@@ -176,13 +175,6 @@ void d3d9_deinitialize_symbols(void);
 bool d3d9x_create_font_indirect(void *dev,
       void *desc, void **font_data);
 
-void d3d9x_font_draw_text(void *data, void *sprite_data, void *string_data,
-      unsigned count, void *rect_data, unsigned format, unsigned color);
-
-void d3d9x_font_get_text_metrics(void *data, void *metrics);
-
-void d3d9x_font_release(void *data);
-
 bool d3d9x_compile_shader(
       const char *src,
       unsigned src_data_len,
@@ -262,7 +254,7 @@ uintptr_t d3d9_load_texture(void *video_data, void *data,
 
 void d3d9_set_osd_msg(void *data,
       const char *msg,
-      const void *params, void *font);
+      const struct font_params *params, void *font);
 
 void d3d9_unload_texture(void *data, 
       bool threaded, uintptr_t id);

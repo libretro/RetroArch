@@ -16,8 +16,8 @@ floating-point and AltiVec save/restore */
 #define LIBCO_MPROTECT (__unix__ && !LIBCO_PPC_ASM)
 
 #if LIBCO_MPROTECT
-	#include <unistd.h>
-	#include <sys/mman.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #endif
 
 /* State format (offsets in 32-bit words)
@@ -58,8 +58,8 @@ or are directly to function */
 	#endif
 
 	/* Swap code is in ppc.S */
-	void co_swap_asm( cothread_t, cothread_t );
-	#define CO_SWAP_ASM( x, y ) co_swap_asm( x, y )
+	void co_swap_asm(cothread_t, cothread_t);
+	#define CO_SWAP_ASM(x, y) co_swap_asm(x, y)
 
 #else
 
@@ -272,122 +272,118 @@ static const uint32_t libco_ppc_code [] = {
 
 	#if LIBCO_PPCDESC
 		/* Function call goes through indirect descriptor */
-		#define CO_SWAP_ASM( x, y ) \
-			((void (*)( cothread_t, cothread_t )) (uintptr_t) x)( x, y )
+		#define CO_SWAP_ASM(x, y) \
+			((void (*)(cothread_t, cothread_t)) (uintptr_t) x)(x, y)
 	#else
 		/* Function call goes directly to code */
-		#define CO_SWAP_ASM( x, y ) \
-			((void (*)( cothread_t, cothread_t )) (uintptr_t) libco_ppc_code)( x, y )
+		#define CO_SWAP_ASM(x, y) \
+			((void (*)(cothread_t, cothread_t)) (uintptr_t) libco_ppc_code)(x, y)
 	#endif
 
 #endif
 
-static uint32_t* co_create_( unsigned size, uintptr_t entry )
+static uint32_t* co_create_( unsigned size, uintptr_t entry)
 {
-	uint32_t* t = (uint32_t*) malloc( size );
+	uint32_t *t = (uint32_t*)malloc(size);
 
-	(void) entry;
+#if LIBCO_PPCDESC
+   if (t)
+   {
+      /* Copy entry's descriptor */
+      memcpy(t, (void*)entry, sizeof(void*) * 3);
 
-	#if LIBCO_PPCDESC
-		if ( t )
-		{
-			/* Copy entry's descriptor */
-			memcpy( t, (void*) entry, sizeof (void*) * 3 );
-
-			/* Set function pointer to swap routine */
-			#ifdef LIBCO_PPC_ASM
-				*(const void**) t = *(void**) &co_swap_asm;
-			#else
-				*(const void**) t = libco_ppc_code;
-			#endif
-		}
+      /* Set function pointer to swap routine */
+#ifdef LIBCO_PPC_ASM
+      *(const void**) t = *(void**) &co_swap_asm;
+#else
+      *(const void**) t = libco_ppc_code;
+#endif
+   }
 	#endif
 
 	return t;
 }
 
-cothread_t co_create( unsigned int size, void (*entry_)( void ) )
+cothread_t co_create(unsigned int size, void (*entry_)(void))
 {
 	uintptr_t entry = (uintptr_t) entry_;
-	uint32_t* t = NULL;
+	uint32_t *t     = NULL;
 
 	/* Be sure main thread was successfully allocated */
-	if ( co_active() )
+	if (co_active())
 	{
 		size += state_size + above_stack + stack_align;
-		t = co_create_( size, entry );
+		t     = co_create_(size, entry);
 	}
 
-	if ( t )
-	{
-		uintptr_t sp;
-		int shift;
+	if (t)
+   {
+      uintptr_t sp;
+#if LIBCO_PPC64
+      int shift = 16;
+#else
+      int shift = 0;
+#endif
+      /* Save current registers into new thread, so that any special ones will
+         have proper values when thread is begun */
+      CO_SWAP_ASM(t, t);
 
-		/* Save current registers into new thread, so that any special ones will
-		have proper values when thread is begun */
-		CO_SWAP_ASM( t, t );
+#if LIBCO_PPCDESC
+      /* Get real address */
+      entry     = (uintptr_t) *(void**)entry;
+#endif
 
-		#if LIBCO_PPCDESC
-			/* Get real address */
-			entry = (uintptr_t) *(void**) entry;
-		#endif
+      /* Put stack near end of block, and align */
+      sp        = (uintptr_t) t + size - above_stack;
+      sp       -= sp % stack_align;
 
-		/* Put stack near end of block, and align */
-		sp = (uintptr_t) t + size - above_stack;
-		sp -= sp % stack_align;
+      /* On PPC32, we save and restore GPRs as 32 bits. For PPC64, we
+         save and restore them as 64 bits, regardless of the size the ABI
+         uses. So, we manually write pointers at the proper size. We always
+         save and restore at the same address, and since PPC is big-endian,
+         we must put the low byte first on PPC32. */
 
-		/* On PPC32, we save and restore GPRs as 32 bits. For PPC64, we
-		save and restore them as 64 bits, regardless of the size the ABI
-		uses. So, we manually write pointers at the proper size. We always
-		save and restore at the same address, and since PPC is big-endian,
-		we must put the low byte first on PPC32. */
+      /* If uintptr_t is 32 bits, >>32 is undefined behavior, so we do two shifts
+         and don't have to care how many bits uintptr_t is. */
 
-		/* If uintptr_t is 32 bits, >>32 is undefined behavior, so we do two shifts
-		and don't have to care how many bits uintptr_t is. */
-		#if LIBCO_PPC64
-			shift = 16;
-		#else
-			shift = 0;
-		#endif
+      /* Set up so entry will be called on next swap */
+      t [8]  = (uint32_t) (entry >> shift >> shift);
+      t [9]  = (uint32_t) entry;
 
-		/* Set up so entry will be called on next swap */
-		t [8] = (uint32_t) (entry >> shift >> shift);
-		t [9] = (uint32_t) entry;
-
-		t [10] = (uint32_t) (sp >> shift >> shift);
-		t [11] = (uint32_t) sp;
-	}
+      t [10] = (uint32_t) (sp    >> shift >> shift);
+      t [11] = (uint32_t) sp;
+   }
 
 	return t;
 }
 
-void co_delete( cothread_t t )
+void co_delete(cothread_t t)
 {
    free(t);
 }
 
-static void co_init_( void )
+static void co_init_(void)
 {
 #if LIBCO_MPROTECT
    /* TODO: pre- and post-pad PPC code so that this doesn't make other
       data executable and writable */
-   long page_size = sysconf( _SC_PAGESIZE );
-   if ( page_size > 0 )
+   long page_size = sysconf(_SC_PAGESIZE);
+   if (page_size > 0)
    {
       uintptr_t align = page_size;
       uintptr_t begin = (uintptr_t) libco_ppc_code;
       uintptr_t end   = begin + sizeof libco_ppc_code;
 
       /* Align beginning and end */
-      end   += align - 1;
-      end   -= end   % align;
-      begin -= begin % align;
+      end            += align - 1;
+      end            -= end   % align;
+      begin          -= begin % align;
 
-      mprotect( (void*) begin, end - begin, PROT_READ | PROT_WRITE | PROT_EXEC );
+      mprotect((void*)begin, end - begin, PROT_READ | PROT_WRITE | PROT_EXEC);
    }
 #endif
 
-   co_active_handle = co_create_( state_size, (uintptr_t) &co_switch );
+   co_active_handle = co_create_(state_size, (uintptr_t) &co_switch);
 }
 
 cothread_t co_active(void)
@@ -400,8 +396,7 @@ cothread_t co_active(void)
 
 void co_switch(cothread_t t)
 {
-   cothread_t old = co_active_handle;
+   cothread_t old   = co_active_handle;
    co_active_handle = t;
-
-   CO_SWAP_ASM( t, old );
+   CO_SWAP_ASM(t, old);
 }

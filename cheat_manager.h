@@ -234,7 +234,7 @@ bool cheat_manager_get_code_state(unsigned i);
 
 void cheat_manager_state_free(void);
 
-bool cheat_manager_alloc_if_empty(void);
+void cheat_manager_alloc_if_empty(void);
 
 bool cheat_manager_copy_idx_to_working(unsigned idx);
 

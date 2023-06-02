@@ -1555,10 +1555,6 @@ MSG_HASH(
    "Prodji kroz ove opcije da podesiš trem da bi promenio veličinu slike."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Koristi visoko-rezolucioni meni"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Uključi visoko-rezolucioni mod za upotrebu sa visoko-rezolucionim menijem ako sadržaj nije učitan."
    )
@@ -1963,7 +1959,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Zatvori"
    )
-
 
 
 
@@ -2432,6 +2427,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

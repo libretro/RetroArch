@@ -561,7 +561,7 @@ int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len)
 
       /* Copy as much cached data as possible into
        * the read buffer */
-      memcpy(data_ptr, stream->out_buf + stream->out_buf_ptr, read_size);
+      memcpy(data_ptr, stream->out_buf + stream->out_buf_ptr, (size_t)read_size);
 
       /* Increment pointers and remaining length */
       stream->out_buf_ptr += read_size;
@@ -808,7 +808,7 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
 
       /* Copy as much data as possible into
        * the input buffer */
-      memcpy(stream->in_buf + stream->in_buf_ptr, data_ptr, cache_size);
+      memcpy(stream->in_buf + stream->in_buf_ptr, data_ptr, (size_t)cache_size);
 
       /* Increment pointers and remaining length */
       stream->in_buf_ptr  += cache_size;

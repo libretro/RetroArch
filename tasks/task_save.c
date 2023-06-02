@@ -71,6 +71,7 @@
 #define RASTATE_VERSION 1
 #define RASTATE_MEM_BLOCK "MEM "
 #define RASTATE_CHEEVOS_BLOCK "ACHV"
+#define RASTATE_REPLAY_BLOCK "RPLY"
 #define RASTATE_END_BLOCK "END "
 
 struct ram_type
@@ -183,6 +184,9 @@ typedef struct rastate_size_info
    size_t coremem_size;
 #ifdef HAVE_CHEEVOS
    size_t cheevos_size;
+#endif
+#ifdef HAVE_BSV_MOVIE
+   size_t replay_size;
 #endif
 } rastate_size_info_t;
 
@@ -616,7 +620,7 @@ static void task_save_handler_finished(retro_task_t *task,
 /* Align to 8-byte boundary */
 #define CONTENT_ALIGN_SIZE(size) ((((size) + 7) & ~7))
 
-static size_t content_get_rastate_size(rastate_size_info_t* size)
+static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
    retro_ctx_size_info_t info;
    core_serialize_size(&info);
@@ -628,7 +632,18 @@ static size_t content_get_rastate_size(rastate_size_info_t* size)
 #ifdef HAVE_CHEEVOS
    /* 8-byte block header + content */
    if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
-      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size); 
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size);
+#endif
+#ifdef HAVE_BSV_MOVIE
+   /* 8-byte block header + content */
+   if(!rewind)
+   {
+      size->replay_size = replay_get_serialize_size();
+      if(size->replay_size > 0)
+         size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
+   }
+   else
+      size->replay_size = 0;
 #endif
    return size->total_size;
 }
@@ -636,7 +651,12 @@ static size_t content_get_rastate_size(rastate_size_info_t* size)
 size_t content_get_serialized_size(void)
 {
    rastate_size_info_t size;
-   return content_get_rastate_size(&size);
+   return content_get_rastate_size(&size, false);
+}
+size_t content_get_serialized_size_rewind(void)
+{
+   rastate_size_info_t size;
+   return content_get_rastate_size(&size, true);
 }
 
 static void content_write_block_header(unsigned char* output, const char* header, size_t size)
@@ -649,7 +669,8 @@ static void content_write_block_header(unsigned char* output, const char* header
 }
 
 static bool content_write_serialized_state(void* buffer,
-      rastate_size_info_t* size)
+                                           rastate_size_info_t* size,
+                                           bool rewind)
 {
    retro_ctx_serialize_info_t serial_info;
    unsigned char* output = (unsigned char*)buffer;
@@ -658,6 +679,26 @@ static bool content_write_serialized_state(void* buffer,
    memcpy(output, "RASTATE", 7);
    output[7] = RASTATE_VERSION;
    output   += 8;
+  /* Replay block---this has to come before the mem block since its
+     contents may prevent the state from loading (e.g., if it's
+     incompatible with the current recording). */
+#ifdef HAVE_BSV_MOVIE
+    {
+       input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_REWIND
+       bool frame_is_reversed         = state_manager_frame_is_reversed();
+#else
+       bool frame_is_reversed         = false;
+#endif
+       if (!rewind && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK) && !frame_is_reversed)
+       {
+          content_write_block_header(output,
+             RASTATE_REPLAY_BLOCK, size->replay_size);
+          if (replay_get_serialized_data(output + 8))
+            output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
+       }
+    }
+#endif
 
    /* important - write the unaligned size - some cores fail if they aren't passed the exact right size. */
    content_write_block_header(output, RASTATE_MEM_BLOCK, size->coremem_size);
@@ -686,13 +727,13 @@ static bool content_write_serialized_state(void* buffer,
    return true;
 }
 
-bool content_serialize_state(void* buffer, size_t buffer_size)
+bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
 {
    rastate_size_info_t size;
-   size_t len = content_get_rastate_size(&size);
+   size_t len = content_get_rastate_size(&size, true);
    if (len == 0 || len > buffer_size)
       return false;
-   return content_write_serialized_state(buffer, &size);
+   return content_write_serialized_state(buffer, &size, true);
 }
 
 static void *content_get_serialized_data(size_t* serial_size)
@@ -700,7 +741,7 @@ static void *content_get_serialized_data(size_t* serial_size)
    size_t len;
    void* data;
    rastate_size_info_t size;
-   if ((len = content_get_rastate_size(&size)) == 0)
+   if ((len = content_get_rastate_size(&size, false)) == 0)
       return NULL;
 
    /* Ensure buffer is initialised to zero
@@ -711,7 +752,7 @@ static void *content_get_serialized_data(size_t* serial_size)
    if (!(data = calloc(len, 1)))
       return NULL;
 
-   if (!content_write_serialized_state(data, &size))
+   if (!content_write_serialized_state(data, &size, false))
    {
       free(data);
       return NULL;
@@ -841,6 +882,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
    settings_t     *settings;
    retro_task_t       *task      = task_init();
+   video_driver_state_t *video_st= video_state_get_ptr();
    save_task_state_t *state      = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -854,7 +896,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    state->size                   = size;
    state->flags                 |= SAVE_TASK_FLAG_UNDO_SAVE;
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1070,6 +1112,9 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 #ifdef HAVE_CHEEVOS
    bool seen_cheevos   = false;
 #endif
+#ifdef HAVE_BSV_MOVIE
+   bool seen_replay = false;
+#endif
 
    input += 8;
 
@@ -1086,6 +1131,29 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
          retro_ctx_serialize_info_t serial_info;
          serial_info.data_const = (void*)input;
          serial_info.size       = block_size;
+#ifdef HAVE_BSV_MOVIE
+         {
+            input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_REWIND
+            bool frame_is_reversed         = state_manager_frame_is_reversed();
+#else
+            bool frame_is_reversed         = false;
+#endif
+
+            if (BSV_MOVIE_IS_RECORDING() && !seen_replay && !frame_is_reversed)
+            {
+               /* TODO OSD message */
+               RARCH_ERR("[Replay] Can't load state without replay data during recording.\n");
+               return false;
+            }
+            if (BSV_MOVIE_IS_PLAYBACK_ON() && !seen_replay && !frame_is_reversed)
+            {
+               /* TODO OSD message */
+               RARCH_WARN("[Replay] Loading state without replay data during replay will cancel replay.\n");
+               movie_stop(input_st);
+            }
+         }
+#endif
          if (!core_unserialize(&serial_info))
             return false;
 
@@ -1098,18 +1166,45 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
             seen_cheevos = true;
       }
 #endif
+#ifdef HAVE_BSV_MOVIE
+      else if (memcmp(marker, RASTATE_REPLAY_BLOCK, 4) == 0)
+      {
+#ifdef HAVE_REWIND
+         bool frame_is_reversed         = state_manager_frame_is_reversed();
+#else
+         bool frame_is_reversed         = false;
+#endif
+         if (frame_is_reversed || replay_set_serialized_data((void*)input))
+            seen_replay = true;
+         else
+            return false;
+      }
+#endif
       else if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
          break;
 
       input += CONTENT_ALIGN_SIZE(block_size);
    }
 
-   if (!seen_core)
+   if (!seen_core) {
+      RARCH_LOG("[State] no core\n");
       return false;
+    }
 
 #ifdef HAVE_CHEEVOS
    if (!seen_cheevos)
       rcheevos_set_serialized_data(NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+   {
+#ifdef HAVE_REWIND
+      bool frame_is_reversed = state_manager_frame_is_reversed();
+#else
+      bool frame_is_reversed = false;
+#endif
+      if (!seen_replay && !frame_is_reversed)
+         replay_set_serialized_data(NULL);
+   }
 #endif
 
    return true;
@@ -1129,6 +1224,17 @@ bool content_deserialize_state(
 
 #ifdef HAVE_CHEEVOS
       rcheevos_set_serialized_data(NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+      {
+#ifdef HAVE_REWIND
+         bool frame_is_reversed = state_manager_frame_is_reversed();
+#else
+         bool frame_is_reversed = false;
+#endif
+         if (!frame_is_reversed)
+            replay_set_serialized_data(NULL);
+      }
 #endif
    }
    else
@@ -1332,6 +1438,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
+   video_driver_state_t *video_st  = video_state_get_ptr();
    save_task_state_t *state        = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
@@ -1353,7 +1460,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
       state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
    }
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1429,9 +1536,10 @@ static void content_load_and_save_state_cb(retro_task_t *task,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t      *task     = NULL;
-   settings_t        *settings = config_get_ptr();
-   save_task_state_t *state    = (save_task_state_t*)
+   retro_task_t      *task         = NULL;
+   settings_t        *settings     = config_get_ptr();
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   save_task_state_t *state        = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
    if (!state)
@@ -1456,7 +1564,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (load_to_backup_buffer)
       state->flags              |= SAVE_TASK_FLAG_MUTE;
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
@@ -1535,7 +1643,6 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-
          task_push_load_and_save_state(path, data, serial_size, true, autosave);
       }
       else
@@ -1601,7 +1708,7 @@ static bool content_save_state_in_progress(void* data)
    task_finder_data_t find_data;
 
    find_data.func     = task_save_state_finder;
-   find_data.userdata = NULL;
+   find_data.userdata = data;
 
    return task_queue_find(&find_data);
 }
@@ -1623,7 +1730,7 @@ bool content_load_state_in_progress(void* data)
    task_finder_data_t find_data;
 
    find_data.func     = task_load_state_finder;
-   find_data.userdata = NULL;
+   find_data.userdata = data;
 
    return task_queue_find(&find_data);
 }
@@ -1644,9 +1751,10 @@ void content_wait_for_load_state_task(void)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t       *task     = NULL;
-   save_task_state_t *state     = NULL;
-   settings_t *settings         = config_get_ptr();
+   retro_task_t       *task        = NULL;
+   save_task_state_t *state        = NULL;
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   settings_t *settings            = config_get_ptr();
 
    if (!core_info_current_supports_savestate())
    {
@@ -1667,7 +1775,7 @@ bool content_load_state(const char *path,
    if (autoload)
       state->flags             |= SAVE_TASK_FLAG_AUTOLOAD;
    state->state_slot            = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)

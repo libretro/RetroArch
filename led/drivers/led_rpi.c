@@ -106,16 +106,16 @@ static void rpi_set(int led, int state)
    int gpio = 0;
 
    /* Invalid LED? */
-   if((led < 0) || (led >= MAX_LEDS))
+   if ((led < 0) || (led >= MAX_LEDS))
       return;
 
    gpio = rpi_cur->map[led];
-   if(gpio <= 0)
+   if (gpio <= 0)
       return;
 
-   if(rpi_cur->setup[led] == 0)
+   if (rpi_cur->setup[led] == 0)
       rpi_cur->setup[led] = setup_gpio(gpio);
-   if(rpi_cur->setup[led] > 0)
+   if (rpi_cur->setup[led] > 0)
       set_gpio(gpio, state);
 }
 

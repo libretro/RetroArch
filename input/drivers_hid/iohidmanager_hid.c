@@ -340,7 +340,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            if (range == 3)
                               val *= 2;
 
-                           if(min == 1)
+                           if (min == 1)
                               val--;
 
                            switch(val)
@@ -544,6 +544,7 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
           free(tmp);
       }
       free(adapter);
+      adapter = NULL;
    }
    RARCH_LOG("Device removed from port %d\n", slot);
 }
@@ -702,6 +703,10 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
 
    /* scan for buttons, axis, hats */
    elements_raw = IOHIDDeviceCopyMatchingElements(device, NULL, kIOHIDOptionsTypeNone);
+
+   if (!elements_raw)
+      goto error;
+
    count        = (int)CFArrayGetCount(elements_raw);
    elements     = CFArrayCreateMutableCopy(
          kCFAllocatorDefault,(CFIndex)count,elements_raw);
@@ -940,6 +945,7 @@ error:
          free(tmp);
       }
       free(adapter);
+      adapter = NULL;
    }
 }
 

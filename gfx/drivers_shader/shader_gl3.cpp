@@ -32,7 +32,7 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
-#include "../common/gl3_common.h"
+#include "../common/gl3_defines.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -920,6 +920,11 @@ public:
       frame_direction = direction;
    }
 
+   void set_rotation(uint32_t rot)
+   {
+      rotation = rot;
+   }
+
    void set_name(const char *name)
    {
       pass_name = name;
@@ -1017,6 +1022,7 @@ private:
    uint64_t frame_count = 0;
    unsigned frame_count_period = 0;
    int32_t frame_direction = 1;
+   uint32_t rotation = 0;
    unsigned pass_number = 0;
 
    size_t ubo_offset = 0;
@@ -1214,6 +1220,7 @@ bool Pass::init_pipeline()
    reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
+   reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1644,6 +1651,9 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
+                      rotation);
+
    /* Standard inputs */
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -1838,6 +1848,7 @@ public:
    void set_frame_count(uint64_t count);
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
+   void set_rotation(uint32_t rot);
    void set_pass_name(unsigned pass, const char *name);
 
    void add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture);
@@ -2320,6 +2331,13 @@ void gl3_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void gl3_filter_chain::set_rotation(uint32_t rot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_rotation(rot);
+}
+
 void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
@@ -2731,6 +2749,13 @@ void gl3_filter_chain_set_frame_direction(
       int32_t direction)
 {
    chain->set_frame_direction(direction);
+}
+
+void gl3_filter_chain_set_rotation(
+      gl3_filter_chain_t *chain,
+      uint32_t rot)
+{
+   chain->set_rotation(rot);
 }
 
 void gl3_filter_chain_set_frame_count_period(

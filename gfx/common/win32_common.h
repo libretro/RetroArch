@@ -89,16 +89,6 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
 int win32_change_display_settings(const char *str, void *devmode_data,
       unsigned flags);
 
-void create_wgl_context(HWND hwnd, bool *quit);
-
-#if defined(HAVE_VULKAN)
-void create_vk_context(HWND hwnd, bool *quit);
-#endif
-
-#if defined(HAVE_GDI)
-void create_gdi_context(HWND hwnd, bool *quit);
-#endif
-
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 
 #if !defined(__WINRT__)
@@ -170,15 +160,6 @@ LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
 LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-#endif
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 

@@ -104,7 +104,8 @@ static void menu_action_setting_audio_mixer_stream_volume(
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
-   snprintf(s, len, "%.2f dB", audio_driver_mixer_get_stream_volume(offset));
+   snprintf(s, len, "%.2f", audio_driver_mixer_get_stream_volume(offset));
+   strlcat(s, " dB", len);
 }
 #endif
 
@@ -653,9 +654,9 @@ static void menu_action_setting_disp_set_label_cpu_policy(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned policyid = atoi(path);
+   unsigned policyid              = atoi(path);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
-   cpu_scaling_driver_t *d = drivers[policyid];
+   cpu_scaling_driver_t *d        = drivers[policyid];
 
    *s = '\0';
    *w = 0;
@@ -970,6 +971,7 @@ static void menu_action_setting_disp_set_label_cheat_match(
    unsigned int curr_val     = 0;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val);
 
+   /* TODO/FIXME - localize */
    snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
    *w = 19;
    strlcpy(s2, path, len2);
@@ -986,6 +988,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
    if (!counters[offset]->call_cnt)
       return;
 
+   /* TODO/FIXME - localize */
    snprintf(s, len,
          "%" PRIu64 " ticks, %" PRIu64 " runs.",
          ((uint64_t)counters[offset]->total /
@@ -1338,20 +1341,6 @@ static void menu_action_setting_disp_set_label_menu_file_overlay(
    MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
          path, "(OVERLAY)", STRLEN_CONST("(OVERLAY)"), s2, len2);
 }
-
-#ifdef HAVE_VIDEO_LAYOUT
-static void menu_action_setting_disp_set_label_menu_file_video_layout(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
-{
-   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
-         path, "(LAYOUT)", STRLEN_CONST("(LAYOUT)"), s2, len2);
-}
-#endif
 
 static void menu_action_setting_disp_set_label_menu_file_config(
       file_list_t* list,
@@ -2187,12 +2176,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_overlay);
          break;
-#ifdef HAVE_VIDEO_LAYOUT
-      case FILE_TYPE_VIDEO_LAYOUT:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_menu_file_video_layout);
-         break;
-#endif
       case FILE_TYPE_FONT:
       case FILE_TYPE_VIDEO_FONT:
          BIND_ACTION_GET_VALUE(cbs,
@@ -2277,9 +2260,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry);
          break;
       default:
-#if 0
-         RARCH_LOG("type: %d\n", type);
-#endif
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
          break;
    }

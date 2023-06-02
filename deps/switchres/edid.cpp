@@ -22,7 +22,7 @@
 //  edid_from_modeline
 //============================================================
 
-int edid_from_modeline(modeline *mode, monitor_range *range, char *name, edid_block *edid)
+int edid_from_modeline(modeline *mode, monitor_range *range, const char *name, edid_block *edid)
 {
 	if (!edid) return 0;
 
