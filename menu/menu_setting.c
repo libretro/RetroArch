@@ -13914,7 +13914,7 @@ static bool setting_append_list(
                   &settings->uints.microphone_wasapi_sh_buffer_length,
                   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
                   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-                  DEFAULT_WASAPI_SH_BUFFER_LENGTH,
+                  DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH,
                   &group_info,
                   &subgroup_info,
                   parent_group,
