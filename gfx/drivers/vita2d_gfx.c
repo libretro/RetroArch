@@ -392,8 +392,7 @@ static void vita2d_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       vita2d_font_render_line(font, msg, strlen(msg),
             scale, color, pos_x, pos_y, width, height, text_align);
@@ -506,7 +505,7 @@ static const struct font_glyph *vita2d_font_get_glyph(
       void *data, uint32_t code)
 {
    vita_font_t *font = (vita_font_t*)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void*)font->font_driver, code);
    return NULL;
 }

@@ -261,8 +261,7 @@ static void switch_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       size_t msg_len = strlen(msg);
       if (msg_len <= AVG_GLPYH_LIMIT)
@@ -349,7 +348,7 @@ static const struct font_glyph *switch_font_get_glyph(
     void *data, uint32_t code)
 {
    switch_font_t *font = (switch_font_t *)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void *)font->font_driver, code);
    return NULL;
 }

@@ -46,6 +46,8 @@ typedef struct font_renderer
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
 
+/* NOTE: All functions are required to be implemented for font_renderer_driver */
+
 typedef struct font_renderer_driver
 {
    void *(*init)(const char *font_path, float font_size);

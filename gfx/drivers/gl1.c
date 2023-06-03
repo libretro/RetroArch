@@ -442,7 +442,6 @@ static int gl1_raster_font_get_message_width(void *data, const char *msg,
 
    if (     !font
          || !font->font_driver
-         || !font->font_driver->get_glyph
          || !font->font_data )
       return 0;
 
@@ -615,8 +614,7 @@ static void gl1_raster_font_render_message(
    float line_height;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       gl1_raster_font_render_line(font->gl, font,
             msg, strlen(msg), scale, color, pos_x,
@@ -766,7 +764,7 @@ static const struct font_glyph *gl1_raster_font_get_glyph(
       void *data, uint32_t code)
 {
    gl1_raster_t *font = (gl1_raster_t*)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void*)font->font_driver, code);
    return NULL;
 }

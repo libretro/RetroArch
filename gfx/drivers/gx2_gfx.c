@@ -441,8 +441,7 @@ static void gx2_font_free(void* data, bool is_threaded)
    if (!font)
       return;
 
-   if (font->font_driver && font->font_data &&
-         font->font_driver->free)
+   if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
    if (font->texture.surface.image)
@@ -597,8 +596,7 @@ static void gx2_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       size_t msg_len = strlen(msg);
       if (wiiu->vertex_cache.current + (msg_len * 4) <= wiiu->vertex_cache.size) 
@@ -709,7 +707,7 @@ static void gx2_font_render_msg(
 static const struct font_glyph* gx2_font_get_glyph(void* data, uint32_t code)
 {
    gx2_font_t* font = (gx2_font_t*)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void*)font->font_driver, code);
    return NULL;
 }

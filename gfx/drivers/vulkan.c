@@ -1373,7 +1373,6 @@ static int vulkan_get_message_width(void *data, const char *msg,
 
    if (     !font
          || !font->font_driver
-         || !font->font_driver->get_glyph
          || !font->font_data )
       return 0;
 
@@ -1499,8 +1498,7 @@ static void vulkan_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       vulkan_font_render_line(font->vk, font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
@@ -1709,7 +1707,7 @@ static const struct font_glyph *vulkan_font_get_glyph(
    const struct font_glyph* glyph;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
 
-   if (!font || !font->font_driver || !font->font_driver->ident)
+   if (!font || !font->font_driver)
       return NULL;
 
    glyph = font->font_driver->get_glyph((void*)font->font_driver, code);

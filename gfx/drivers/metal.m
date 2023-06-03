@@ -378,9 +378,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
 - (const struct font_glyph *)getGlyph:(uint32_t)code
 {
-   if (!_font_driver->ident)
-      return NULL;
-
    const struct font_glyph *glyph = _font_driver->get_glyph((void *)_font_driver, code);
    if (glyph)
       [self updateGlyph:glyph];
@@ -526,8 +523,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    struct font_line_metrics *line_metrics = NULL;
 
    /* If font line metrics are not supported just draw as usual */
-   if (   !_font_driver->get_line_metrics
-         || !_font_driver->get_line_metrics(_font_data, &line_metrics))
+   if (!_font_driver->get_line_metrics(_font_data, &line_metrics))   
    {
       [self _renderLine:msg length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
       return;

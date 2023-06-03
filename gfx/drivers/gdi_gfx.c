@@ -198,7 +198,7 @@ static void gdi_font_free(void *data, bool is_threaded)
   if (!font)
      return;
 
-  if (font->font_driver && font->font_data && font->font_driver->free)
+  if (font->font_driver && font->font_data)
      font->font_driver->free(font->font_data);
 
   free(font);

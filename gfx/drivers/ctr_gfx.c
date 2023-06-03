@@ -503,8 +503,7 @@ static void ctr_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       size_t msg_len = strlen(msg);
       ctr_font_render_line(ctr, font, msg, msg_len,
@@ -618,7 +617,7 @@ static const struct font_glyph* ctr_font_get_glyph(
    void* data, uint32_t code)
 {
    ctr_font_t* font = (ctr_font_t*)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void*)font->font_driver, code);
    return NULL;
 }
@@ -1307,7 +1306,8 @@ static void ctr_render_bottom_screen(void *data)
                   msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
                   &params);
 
-            sprintf(str_path, "%s\n/bottom_menu.png", dir_assets);
+	    strlcpy(str_path, dir_assets, sizeof(str_path));
+            strlcat(str_path, "\n/bottom_menu.png", sizeof(str_path));
 
             params.scale = 1.10f;
             params.y    -= 0.10f;

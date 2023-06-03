@@ -511,8 +511,6 @@ struct sunxi_page
 struct sunxi_video
 {
    void *font;
-   const font_renderer_driver_t *font_driver;
-
    uint8_t font_rgb[4];
 
    /* Sunxi framebuffer information struct */

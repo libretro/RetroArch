@@ -667,7 +667,7 @@ static void d3d11_font_free(void* data, bool is_threaded)
    if (!font)
       return;
 
-   if (font->font_driver && font->font_data && font->font_driver->free)
+   if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
    Release(font->texture.handle);
@@ -844,8 +844,7 @@ static void d3d11_font_render_message(
       return;
 
    /* If font line metrics are not supported just draw as usual */
-   if (   !font->font_driver->get_line_metrics
-       || !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       size_t msg_len = strlen(msg);
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
@@ -961,7 +960,7 @@ static void d3d11_font_render_msg(
 static const struct font_glyph* d3d11_font_get_glyph(void *data, uint32_t code)
 {
    d3d11_font_t* font = (d3d11_font_t*)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void*)font->font_driver, code);
    return NULL;
 }

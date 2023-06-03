@@ -32,8 +32,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../font_driver.h"
-
 #include <defines/psp_defines.h>
 
 #ifndef SCEGU_SCR_WIDTH

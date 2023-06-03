@@ -26,8 +26,6 @@
 #include "../../config.h"
 #endif
 
-#include "../font_driver.h"
-
 #include "../../driver.h"
 
 #define XE_W 512

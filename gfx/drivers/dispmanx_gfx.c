@@ -28,7 +28,6 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
-#include "../font_driver.h"
 
 struct dispmanx_page
 {

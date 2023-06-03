@@ -403,7 +403,7 @@ static void *oga_init(const video_info_t *video,
    if (settings->bools.video_font_enable)
    {
       vid->font_driver = &bitmap_font_renderer;
-      vid->font = vid->font_driver->init("", settings->floats.video_font_size);
+      vid->font        = vid->font_driver->init("", settings->floats.video_font_size);
    }
 
    for (i = 0; i < NUM_PAGES; ++i)

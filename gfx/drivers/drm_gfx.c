@@ -35,7 +35,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../common/drm_common.h"

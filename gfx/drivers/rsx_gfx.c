@@ -484,7 +484,6 @@ static int rsx_font_get_message_width(void *data, const char *msg,
 
    if (     !font
          || !font->font_driver
-         || !font->font_driver->get_glyph
          || !font->font_data )
       return 0;
 
@@ -661,8 +660,7 @@ static void rsx_font_render_message(
    float line_height;
 
    /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics ||
-         !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
+   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       rsx_font_render_line(font,
             msg, strlen(msg), scale, color, pos_x,
@@ -818,7 +816,7 @@ static const struct font_glyph *rsx_font_get_glyph(
       void *data, uint32_t code)
 {
    rsx_font_t *font = (rsx_font_t*)data;
-   if (font && font->font_driver && font->font_driver->ident)
+   if (font && font->font_driver)
       return font->font_driver->get_glyph((void*)font->font_driver, code);
    return NULL;
 }
