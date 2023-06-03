@@ -63,7 +63,7 @@ typedef struct font_renderer_driver
 
    const char *ident;
 
-   bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
+   void (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_driver_t;
 
 typedef struct

@@ -521,21 +521,13 @@ static INLINE void write_quad6(SpriteVertex *pv,
    int lines = 0;
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-
-   /* If font line metrics are not supported just draw as usual */
-   if (!_font_driver->get_line_metrics(_font_data, &line_metrics))   
-   {
-      [self _renderLine:msg length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
-      return;
-   }
-
+   _font_driver->get_line_metrics(_font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
 
    for (;;)
    {
       const char *delim  = strchr(msg, '\n');
-      NSUInteger msg_len = delim ?
-         (unsigned)(delim - msg) : strlen(msg);
+      NSUInteger msg_len = delim ? (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
       [self _renderLine:msg

@@ -962,33 +962,16 @@ static void d3d12_font_render_message(
       unsigned            height,
       unsigned            text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
-
-   if (!msg || !*msg)
-      return;
-   if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
-      return;
-
-   /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
-   {
-      size_t msg_len = strlen(msg);
-      if (msg_len <= d3d12->sprites.capacity)
-         d3d12_font_render_line(d3d12,
-               font, msg, msg_len,
-               scale, color, pos_x, pos_y, width, height, text_align);
-      return;
-   }
-
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
 
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ?
-         (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       if (msg_len <= d3d12->sprites.capacity)
@@ -1020,6 +1003,8 @@ static void d3d12_font_render_msg(
    unsigned                  height = d3d12->vp.full_height;
 
    if (!font || !msg || !*msg)
+      return;
+   if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
 
    if (params)
@@ -1097,7 +1082,10 @@ static bool d3d12_font_get_line_metrics(void* data, struct font_line_metrics **m
 {
    d3d12_font_t* font = (d3d12_font_t*)data;
    if (font && font->font_driver && font->font_data)
-      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
    return false;
 }
 

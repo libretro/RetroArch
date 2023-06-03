@@ -498,27 +498,13 @@ static void ctr_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-
-   if (!msg || !*msg)
-      return;
-
-   /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
-   {
-      size_t msg_len = strlen(msg);
-      ctr_font_render_line(ctr, font, msg, msg_len,
-                           scale, color, pos_x, pos_y,
-                           width, height, text_align);
-      return;
-   }
-
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
 
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ?
-         (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       ctr_font_render_line(ctr, font, msg, msg_len,
@@ -626,7 +612,10 @@ static bool ctr_font_get_line_metrics(void* data, struct font_line_metrics **met
 {
    ctr_font_t* font = (ctr_font_t*)data;
    if (font && font->font_driver && font->font_data)
-      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
    return false;
 }
 

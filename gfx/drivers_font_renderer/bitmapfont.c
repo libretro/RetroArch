@@ -229,16 +229,11 @@ static const char *font_renderer_bmp_get_default_font(void)
    return "";
 }
 
-static bool font_renderer_bmp_get_line_metrics(
+static void font_renderer_bmp_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
-
-   if (!handle)
-      return false;
-
    *metrics = &handle->line_metrics;
-   return true;
 }
 
 font_renderer_driver_t bitmap_font_renderer = {

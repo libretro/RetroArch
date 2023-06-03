@@ -1490,28 +1490,16 @@ static void vulkan_font_render_message(
       const float color[4], float pos_x, float pos_y,
       unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
-
-   if (!msg || !*msg || !font->vk)
-      return;
-
-   /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
-   {
-      vulkan_font_render_line(font->vk, font, msg, strlen(msg),
-            scale, color, pos_x, pos_y, text_align);
-      return;
-   }
-
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / font->vk->vp.height;
 
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim
-         ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       vulkan_font_render_line(font->vk, font, msg, msg_len,
@@ -1623,7 +1611,7 @@ static void vulkan_font_render_msg(
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-   if (!font || !msg || !*msg)
+   if (!font || !msg || !*msg || !font->vk)
       return;
 
    vk             = font->vk;
@@ -1726,7 +1714,10 @@ static bool vulkan_get_line_metrics(void* data,
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    if (font && font->font_driver && font->font_data)
-      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
    return false;
 }
 

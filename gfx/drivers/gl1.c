@@ -609,26 +609,16 @@ static void gl1_raster_font_render_message(
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
-
-   /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
-   {
-      gl1_raster_font_render_line(font->gl, font,
-            msg, strlen(msg), scale, color, pos_x,
-            pos_y, text_align);
-      return;
-   }
-
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / font->gl->vp.height;
 
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim
-         ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       gl1_raster_font_render_line(font->gl, font,
@@ -805,7 +795,10 @@ static bool gl1_raster_font_get_line_metrics(void* data, struct font_line_metric
 {
    gl1_raster_t *font = (gl1_raster_t*)data;
    if (font && font->font_driver && font->font_data)
-      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
    return false;
 }
 

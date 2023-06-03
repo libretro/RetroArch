@@ -232,14 +232,11 @@ static const char *font_renderer_stb_get_default_font(void)
    return NULL;
 }
 
-static bool font_renderer_stb_get_line_metrics(
+static void font_renderer_stb_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    stb_font_renderer_t *handle = (stb_font_renderer_t*)data;
-   if (!handle)
-      return false;
    *metrics = &handle->line_metrics;
-   return true;
 }
 
 font_renderer_driver_t stb_font_renderer = {

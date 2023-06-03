@@ -251,32 +251,16 @@ static void switch_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned text_align)
 {
+   float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   float line_height;
-
-   if (!msg || !*msg || !sw)
-      return;
-   if (!sw || !sw->out_buffer)
-      return;
-
-   /* If font line metrics are not supported just draw as usual */
-   if (!font->font_driver->get_line_metrics(font->font_data, &line_metrics))
-   {
-      size_t msg_len = strlen(msg);
-      if (msg_len <= AVG_GLPYH_LIMIT)
-         switch_font_render_line(sw, font, msg, msg_len,
-               scale, color, pos_x, pos_y, text_align);
-      return;
-   }
-
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = scale / line_metrics->height;
 
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ?
-         (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
       if (msg_len <= AVG_GLPYH_LIMIT)
@@ -309,6 +293,8 @@ static void switch_font_render_msg(
    float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || (msg && !*msg))
+      return;
+   if (!sw || !sw->out_buffer)
       return;
 
    if (params)
@@ -357,7 +343,10 @@ static bool switch_font_get_line_metrics(void* data, struct font_line_metrics **
 {
    switch_font_t *font = (switch_font_t *)data;
    if (font && font->font_driver && font->font_data)
-      return font->font_driver->get_line_metrics(font->font_data, metrics);
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
    return false;
 }
 
