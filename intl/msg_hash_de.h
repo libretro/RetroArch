@@ -5610,7 +5610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Untermenü \"Savestates\" anzeigen"
+   "Untermenü „Savestates“ anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5718,7 +5718,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Die Option \"Zurückspulen\" anzeigen."
+   "Die Option „Zurückspulen“ anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -5730,11 +5730,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "\"Inhaltsverzeichnis-Überschreibungen speichern\" anzeigen"
+   "„Inhaltsverzeichnisüberschreibungen speichern“ anzeigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "Die Option \"Inhaltsverzeichnis-Überschreibungen speichern\" im Menü \"Überschreibungen\" anzeigen."
+   "Die Option „Inhaltsverzeichnisüberschreibungen speichern“ im Menü „Überschreibungen“ anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -14105,6 +14105,46 @@ MSG_HASH(
    "Die x/y-Skalierung der Touchscreen-Koordinaten an die Anzeigenskalierung des Betriebssystems anpassen."
    )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "VMouse als Zeigegerät"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Aktivieren, um Berührungsereignisse vom Eingabe-Touchscreen weiterzuleiten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "VMouse als Maus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Virtuelle Mausemulation unter Verwendung von Berührungsereignissen aktivieren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "VMouse im Touchpad-Modus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Die Option Zusammen mit der Maus aktivieren, um den Touchscreen als Touchpad zu verwenden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "VMouse im Trackball-Modus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Diese Option zusammen mit der Maus aktivieren, um den Touchscreen als Trackball zu verwenden und dem Mauszeiger Trägheit zu verleihen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "VMouse-Gesten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Touchscreen-Gesten wie Tippen, Ziehen mit dem Finger und Wischen mit dem Finger aktivieren."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
