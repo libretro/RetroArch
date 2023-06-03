@@ -526,7 +526,8 @@ static int gl3_raster_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void gl3_raster_font_draw_vertices(gl3_raster_t *font,
+static void gl3_raster_font_draw_vertices(gl3_t *gl,
+      gl3_raster_t *font,
       const video_coords_t *coords)
 {
    if (font->atlas->dirty)
@@ -538,26 +539,28 @@ static void gl3_raster_font_draw_vertices(gl3_raster_t *font,
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   if (  font->gl &&
-         font->gl->pipelines.font_loc.flat_ubo_vertex >= 0)
-      glUniform4fv(font->gl->pipelines.font_loc.flat_ubo_vertex,
-                   4, font->gl->mvp_no_rot.data);
+   if (gl->pipelines.font_loc.flat_ubo_vertex >= 0)
+      glUniform4fv(gl->pipelines.font_loc.flat_ubo_vertex,
+                   4, gl->mvp_no_rot.data);
 
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
 
-   gl3_bind_scratch_vbo(font->gl, coords->vertex, 2 * sizeof(float) * coords->vertices);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-
-   gl3_bind_scratch_vbo(font->gl, coords->tex_coord, 2 * sizeof(float) * coords->vertices);
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-
-   gl3_bind_scratch_vbo(font->gl, coords->color, 4 * sizeof(float) * coords->vertices);
-   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, coords->vertex,
+         2 * sizeof(float)  * coords->vertices);
+   glVertexAttribPointer(0, 2,
+         GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, coords->tex_coord,
+         2 * sizeof(float)  * coords->vertices);
+   glVertexAttribPointer(1, 2,
+         GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, coords->color,
+         4 * sizeof(float) * coords->vertices);
+   glVertexAttribPointer(2, 4,
+         GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(uintptr_t)0);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
-
    glDisableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
    glDisableVertexAttribArray(2);
@@ -565,25 +568,29 @@ static void gl3_raster_font_draw_vertices(gl3_raster_t *font,
 }
 
 static void gl3_raster_font_render_line(gl3_t *gl,
-      gl3_raster_t *font, const char *msg, size_t msg_len,
-      GLfloat scale, const GLfloat color[4], GLfloat pos_x,
-      GLfloat pos_y, unsigned text_align)
+      gl3_raster_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg, size_t msg_len,
+      GLfloat scale, const GLfloat color[4],
+      GLfloat pos_x,
+      GLfloat pos_y,
+      int pre_x,
+      float inv_tex_size_x,
+      float inv_tex_size_y,
+      float inv_win_width,
+      float inv_win_height,
+      unsigned text_align)
 {
    int i;
    struct video_coords coords;
-   const struct font_glyph* glyph_q = NULL;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
    const char* msg_end  = msg + msg_len;
-   int x                = roundf(pos_x * gl->vp.width);
+   int x                = pre_x;
    int y                = roundf(pos_y * gl->vp.height);
    int delta_x          = 0;
    int delta_y          = 0;
-   float inv_tex_size_x = 1.0f / font->atlas->width;
-   float inv_tex_size_y = 1.0f / font->atlas->height;
-   float inv_win_width  = 1.0f / gl->vp.width;
-   float inv_win_height = 1.0f / gl->vp.height;
 
    switch (text_align)
    {
@@ -595,8 +602,6 @@ static void gl3_raster_font_render_line(gl3_t *gl,
          break;
    }
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
-
    while (msg < msg_end)
    {
       i = 0;
@@ -604,7 +609,7 @@ static void gl3_raster_font_render_line(gl3_t *gl,
       {
          const struct font_glyph *glyph;
          int off_x, off_y, tex_x, tex_y, width, height;
-         unsigned                  code = utf8_walk(&msg);
+         unsigned code = utf8_walk(&msg);
 
          /* Do something smarter here ... */
          if (!(glyph = font->font_driver->get_glyph(
@@ -640,13 +645,15 @@ static void gl3_raster_font_render_line(gl3_t *gl,
       coords.lut_tex_coord = font_tex_coords;
 
       if (font->block)
-         video_coord_array_append(&font->block->carr, &coords, coords.vertices);
+         video_coord_array_append(&font->block->carr,
+               &coords, coords.vertices);
       else
-         gl3_raster_font_draw_vertices(font, &coords);
+         gl3_raster_font_draw_vertices(gl, font, &coords);
    }
 }
 
 static void gl3_raster_font_render_message(
+      gl3_t *gl,
       gl3_raster_t *font, const char *msg, GLfloat scale,
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
@@ -654,8 +661,14 @@ static void gl3_raster_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
+   float inv_tex_size_x = 1.0f / font->atlas->width;
+   float inv_tex_size_y = 1.0f / font->atlas->height;
+   float inv_win_width  = 1.0f / gl->vp.width;
+   float inv_win_height = 1.0f / gl->vp.height;
+   int x                = roundf(pos_x * gl->vp.width);
+   const struct font_glyph* glyph_q = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / font->gl->vp.height;
+   line_height = line_metrics->height * scale / gl->vp.height;
 
    for (;;)
    {
@@ -663,9 +676,17 @@ static void gl3_raster_font_render_message(
       size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      gl3_raster_font_render_line(font->gl, font,
-            msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines*line_height, text_align);
+      gl3_raster_font_render_line(gl, font,
+            glyph_q,
+            msg, msg_len, scale, color,
+            pos_x,
+            pos_y - (float)lines * line_height,
+            x,
+            inv_tex_size_x,
+            inv_tex_size_y,
+            inv_win_width,
+            inv_win_height,
+            text_align);
 
       if (!delim)
          break;
@@ -676,16 +697,16 @@ static void gl3_raster_font_render_message(
 }
 
 static void gl3_raster_font_setup_viewport(
+      gl3_t *gl,
       unsigned width, unsigned height,
       gl3_raster_t *font, bool full_screen)
 {
-   gl3_set_viewport(font->gl, width, height, full_screen, false);
+   gl3_set_viewport(gl, width, height, full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
-   if (font->gl)
-      glUseProgram(font->gl->pipelines.font);
+   glUseProgram(gl->pipelines.font);
 }
 
 static void gl3_raster_font_render_msg(
@@ -698,10 +719,11 @@ static void gl3_raster_font_render_msg(
    int drop_x, drop_y;
    GLfloat x, y, scale, drop_mod, drop_alpha;
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
-   bool full_screen                 = false ;
+   bool full_screen                 = false;
    gl3_raster_t           *font     = (gl3_raster_t*)data;
-   unsigned width                   = font->gl->video_width;
-   unsigned height                  = font->gl->video_height;
+   gl3_t *gl                        = (gl3_t*)userdata;
+   unsigned width                   = gl->video_width;
+   unsigned height                  = gl->video_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -709,7 +731,7 @@ static void gl3_raster_font_render_msg(
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-   if (!font || string_is_empty(msg))
+   if (!font || string_is_empty(msg) || !gl)
       return;
 
    if (params)
@@ -755,36 +777,33 @@ static void gl3_raster_font_render_msg(
    if (font->block)
       font->block->fullscreen = full_screen;
    else
-      gl3_raster_font_setup_viewport(width, height, font, full_screen);
+      gl3_raster_font_setup_viewport(gl, width, height, font, full_screen);
 
-   if (font->gl)
+   if (!string_is_empty(msg)
+         && font->font_data  && font->font_driver)
    {
-      if (!string_is_empty(msg)
-            && font->font_data  && font->font_driver)
+      if (drop_x || drop_y)
       {
-         if (drop_x || drop_y)
-         {
-            GLfloat color_dark[4];
+         GLfloat color_dark[4];
 
-            color_dark[0] = color[0] * drop_mod;
-            color_dark[1] = color[1] * drop_mod;
-            color_dark[2] = color[2] * drop_mod;
-            color_dark[3] = color[3] * drop_alpha;
+         color_dark[0] = color[0] * drop_mod;
+         color_dark[1] = color[1] * drop_mod;
+         color_dark[2] = color[2] * drop_mod;
+         color_dark[3] = color[3] * drop_alpha;
 
-            gl3_raster_font_render_message(font, msg, scale, color_dark,
-                  x + scale * drop_x / font->gl->vp.width, y +
-                      scale * drop_y / font->gl->vp.height, text_align);
-         }
-
-         gl3_raster_font_render_message(font, msg, scale, color,
-               x, y, text_align);
+         gl3_raster_font_render_message(gl, font, msg, scale, color_dark,
+               x + scale * drop_x / gl->vp.width,
+               y + scale * drop_y / gl->vp.height, text_align);
       }
 
-      if (!font->block)
-      {
-         glDisable(GL_BLEND);
-         gl3_set_viewport(font->gl, width, height, false, true);
-      }
+      gl3_raster_font_render_message(gl, font, msg, scale, color,
+            x, y, text_align);
+   }
+
+   if (!font->block)
+   {
+      glDisable(GL_BLEND);
+      gl3_set_viewport(gl, width, height, false, true);
    }
 }
 
@@ -802,18 +821,16 @@ static void gl3_raster_font_flush_block(unsigned width, unsigned height,
 {
    gl3_raster_t          *font       = (gl3_raster_t*)data;
    video_font_raster_block_t *block  = font ? font->block : NULL;
+   gl3_t *gl                         = font ? font->gl    : NULL;
 
-   if (!font || !block || !block->carr.coords.vertices)
+   if (!font || !block || !block->carr.coords.vertices || !gl)
       return;
 
-   gl3_raster_font_setup_viewport(width, height, font, block->fullscreen);
-   gl3_raster_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
+   gl3_raster_font_setup_viewport(gl, width, height, font, block->fullscreen);
+   gl3_raster_font_draw_vertices(gl, font, (video_coords_t*)&block->carr.coords);
 
-   if (font->gl)
-   {
-      glDisable(GL_BLEND);
-      gl3_set_viewport(font->gl, width, height, block->fullscreen, true);
-   }
+   glDisable(GL_BLEND);
+   gl3_set_viewport(gl, width, height, block->fullscreen, true);
 }
 
 static void gl3_raster_font_bind_block(void *data, void *userdata)
@@ -1061,12 +1078,18 @@ static void gl3_render_overlay(gl3_t *gl,
    glEnableVertexAttribArray(1);
    glEnableVertexAttribArray(2);
 
-   gl3_bind_scratch_vbo(gl, gl->overlay_vertex_coord, 8 * sizeof(float) * gl->overlays);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl3_bind_scratch_vbo(gl, gl->overlay_tex_coord, 8 * sizeof(float) * gl->overlays);
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)(uintptr_t)0);
-   gl3_bind_scratch_vbo(gl, gl->overlay_color_coord, 16 * sizeof(float) * gl->overlays);
-   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, gl->overlay_vertex_coord,
+         8 * sizeof(float) * gl->overlays);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, gl->overlay_tex_coord,
+         8 * sizeof(float) * gl->overlays);
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, gl->overlay_color_coord,
+         16 * sizeof(float) * gl->overlays);
+   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
+         4 * sizeof(float), (void *)(uintptr_t)0);
 
    for (i = 0; i < gl->overlays; i++)
    {

@@ -712,12 +712,14 @@ static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_
 static void d3d11_font_render_line(
       d3d11_video_t* d3d11,
       d3d11_font_t*       font,
+      const struct font_glyph* glyph_q,
       const char*         msg,
       size_t              msg_len,
       float               scale,
       const unsigned int  color,
       float               pos_x,
       float               pos_y,
+      int                 pre_x,
       unsigned            width,
       unsigned            height,
       unsigned            text_align)
@@ -726,8 +728,7 @@ static void d3d11_font_render_line(
    unsigned count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    d3d11_sprite_t *v                = NULL;
-   const struct font_glyph* glyph_q = NULL;
-   int x                            = roundf(pos_x * width);
+   int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
 
    if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
@@ -747,7 +748,6 @@ static void d3d11_font_render_line(
    d3d11->context->lpVtbl->Map(
          d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
    v       = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -837,6 +837,8 @@ static void d3d11_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
+   int x                                  = roundf(pos_x * width);
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
 
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
@@ -849,8 +851,9 @@ static void d3d11_font_render_message(
       /* Draw the line */
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
          d3d11_font_render_line(d3d11,
-               font, msg, msg_len, scale, color, pos_x,
+               font, glyph_q, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines * line_height,
+	       x,
                width, height, text_align);
 
       if (!delim)

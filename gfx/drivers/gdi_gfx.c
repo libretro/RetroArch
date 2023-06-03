@@ -225,7 +225,7 @@ static void gdi_font_render_msg(
    SIZE text_size                   = {0};
    struct string_list msg_list      = {0};
 
-   if (!font || string_is_empty(msg) || !font->gdi)
+   if (!font || string_is_empty(msg) || !gdi)
       return;
 
    if (params)
@@ -267,7 +267,7 @@ static void gdi_font_render_msg(
    msg_local                  = utf8_to_local_string_alloc(msg);
    msg_len                    = strlen(msg_local);
 
-   GetTextExtentPoint32(font->gdi->memDC, msg_local, (int)msg_len, &text_size);
+   GetTextExtentPoint32(gdi->memDC, msg_local, (int)msg_len, &text_size);
 
    switch (align)
    {
@@ -289,12 +289,12 @@ static void gdi_font_render_msg(
          break;
    }
 
-   new_y              = height - (y * height * scale)      - text_size.cy;
-   new_drop_y         = height - (drop_y * height * scale) - text_size.cy;
+   new_y        = height - (y * height * scale)      - text_size.cy;
+   new_drop_y   = height - (drop_y * height * scale) - text_size.cy;
 
-   font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
+   gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
-   SetBkMode(font->gdi->memDC, TRANSPARENT);
+   SetBkMode(gdi->memDC, TRANSPARENT);
 
    string_list_initialize(&msg_list);
    string_split_noalloc(&msg_list, msg_local, "\n");
@@ -306,26 +306,26 @@ static void gdi_font_render_msg(
       unsigned drop_green = green * drop_mod * dark_alpha;
       unsigned drop_blue  = blue * drop_mod * dark_alpha;
 
-      SetTextColor(font->gdi->memDC, RGB(drop_red, drop_green, drop_blue));
+      SetTextColor(gdi->memDC, RGB(drop_red, drop_green, drop_blue));
 
       for (i = 0; i < msg_list.size; i++)
-         TextOut(font->gdi->memDC, new_drop_x,
+         TextOut(gdi->memDC, new_drop_x,
                new_drop_y + (text_size.cy * i),
                msg_list.elems[i].data,
                strlen(msg_list.elems[i].data));
    }
 
-   SetTextColor(font->gdi->memDC, RGB(red, green, blue));
+   SetTextColor(gdi->memDC, RGB(red, green, blue));
 
    for (i = 0; i < msg_list.size; i++)
-      TextOut(font->gdi->memDC, new_x, new_y + (text_size.cy * i),
+      TextOut(gdi->memDC, new_x, new_y + (text_size.cy * i),
             msg_list.elems[i].data,
             strlen(msg_list.elems[i].data));
 
    string_list_deinitialize(&msg_list);
    free(msg_local);
 
-   SelectObject(font->gdi->memDC, font->gdi->bmp_old);
+   SelectObject(gdi->memDC, gdi->bmp_old);
 }
 
 font_renderer_t gdi_font = {

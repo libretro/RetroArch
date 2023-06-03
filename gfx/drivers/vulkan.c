@@ -1402,21 +1402,26 @@ static int vulkan_get_message_width(void *data, const char *msg,
 }
 
 static void vulkan_font_render_line(vk_t *vk,
-      vulkan_raster_t *font, const char *msg, size_t msg_len,
-      float scale, const float color[4], float pos_x,
-      float pos_y, unsigned text_align)
+      vulkan_raster_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg, size_t msg_len,
+      float scale,
+      const float color[4],
+      float pos_x,
+      float pos_y,
+      int pre_x,
+      float inv_tex_size_x,
+      float inv_tex_size_y,
+      float inv_win_width,
+      float inv_win_height,
+      unsigned text_align)
 {
    struct vk_color vk_color;
-   const struct font_glyph* glyph_q = NULL;
    const char* msg_end              = msg + msg_len;
-   int x                            = roundf(pos_x * vk->vp.width);
+   int x                            = pre_x;
    int y                            = roundf((1.0f - pos_y) * vk->vp.height);
    int delta_x                      = 0;
    int delta_y                      = 0;
-   float inv_tex_size_x             = 1.0f / font->texture.width;
-   float inv_tex_size_y             = 1.0f / font->texture.height;
-   float inv_win_width              = 1.0f / font->vk->vp.width;
-   float inv_win_height             = 1.0f / font->vk->vp.height;
 
    vk_color.r                       = color[0];
    vk_color.g                       = color[1];
@@ -1432,8 +1437,6 @@ static void vulkan_font_render_line(vk_t *vk,
          x -= vulkan_get_message_width(font, msg, msg_len, scale) / 2;
          break;
    }
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    while (msg < msg_end)
    {
@@ -1475,7 +1478,8 @@ static void vulkan_font_render_line(vk_t *vk,
          float _tex_height             = height * inv_tex_size_y;
          const struct vk_color *_color = &vk_color;
 
-         VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, _color);
+         VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height,
+               _tex_x, _tex_y, _tex_width, _tex_height, _color);
       }
 
       font->vertices += 6;
@@ -1485,16 +1489,22 @@ static void vulkan_font_render_line(vk_t *vk,
    }
 }
 
-static void vulkan_font_render_message(
+static void vulkan_font_render_message(vk_t *vk,
       vulkan_raster_t *font, const char *msg, float scale,
       const float color[4], float pos_x, float pos_y,
       unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   int x                                  = roundf(pos_x * vk->vp.width);
    int lines                              = 0;
+   float inv_tex_size_x                   = 1.0f / font->texture.width;
+   float inv_tex_size_y                   = 1.0f / font->texture.height;
+   float inv_win_width                    = 1.0f / vk->vp.width;
+   float inv_win_height                   = 1.0f / vk->vp.height;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / font->vk->vp.height;
+   line_height = line_metrics->height * scale / vk->vp.height;
 
    for (;;)
    {
@@ -1502,8 +1512,15 @@ static void vulkan_font_render_message(
       size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      vulkan_font_render_line(font->vk, font, msg, msg_len,
-            scale, color, pos_x, pos_y - (float)lines * line_height,
+      vulkan_font_render_line(vk, font, glyph_q, msg, msg_len,
+            scale, color,
+            pos_x,
+            pos_y - (float)lines * line_height,
+            x,
+            inv_tex_size_x,
+            inv_tex_size_y,
+            inv_win_width,
+            inv_win_height,
             text_align);
 
       if (!delim)
@@ -1514,15 +1531,15 @@ static void vulkan_font_render_message(
    }
 }
 
-static void vulkan_font_flush(vulkan_raster_t *font)
+static void vulkan_font_flush(vk_t *vk, vulkan_raster_t *font)
 {
    struct vk_draw_triangles call;
 
-   call.pipeline     = font->vk->pipelines.font;
+   call.pipeline     = vk->pipelines.font;
    call.texture      = &font->texture_optimal;
-   call.sampler      = font->vk->samplers.mipmap_linear;
-   call.uniform      = &font->vk->mvp;
-   call.uniform_size = sizeof(font->vk->mvp);
+   call.sampler      = vk->samplers.mipmap_linear;
+   call.uniform      = &vk->mvp;
+   call.uniform_size = sizeof(vk->mvp);
    call.vbo          = &font->range;
    call.vertices     = font->vertices;
 
@@ -1537,10 +1554,10 @@ static void vulkan_font_flush(vulkan_raster_t *font)
 
       cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
       cmd_info.pNext              = NULL;
-      cmd_info.commandPool        = font->vk->staging_pool;
+      cmd_info.commandPool        = vk->staging_pool;
       cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       cmd_info.commandBufferCount = 1;
-      vkAllocateCommandBuffers(font->vk->context->device, &cmd_info, &staging);
+      vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
 
       begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
       begin_info.pNext            = NULL;
@@ -1548,18 +1565,18 @@ static void vulkan_font_flush(vulkan_raster_t *font)
       begin_info.pInheritanceInfo = NULL;
       vkBeginCommandBuffer(staging, &begin_info);
 
-      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(font->vk, font->texture);
+      VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, font->texture);
 
       dynamic_tex                 = &font->texture_optimal;
       staging_tex                 = &font->texture;
 
-      vulkan_copy_staging_to_dynamic(font->vk, staging,
+      vulkan_copy_staging_to_dynamic(vk, staging,
             dynamic_tex, staging_tex);
 
       vkEndCommandBuffer(staging);
 
 #ifdef HAVE_THREADS
-      slock_lock(font->vk->context->queue_lock);
+      slock_lock(vk->context->queue_lock);
 #endif
 
       submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1571,22 +1588,22 @@ static void vulkan_font_flush(vulkan_raster_t *font)
       submit_info.pCommandBuffers      = &staging;
       submit_info.signalSemaphoreCount = 0;
       submit_info.pSignalSemaphores    = NULL;
-      vkQueueSubmit(font->vk->context->queue,
+      vkQueueSubmit(vk->context->queue,
             1, &submit_info, VK_NULL_HANDLE);
 
-      vkQueueWaitIdle(font->vk->context->queue);
+      vkQueueWaitIdle(vk->context->queue);
 
 #ifdef HAVE_THREADS
-      slock_unlock(font->vk->context->queue_lock);
+      slock_unlock(vk->context->queue_lock);
 #endif
 
-      vkFreeCommandBuffers(font->vk->context->device,
-            font->vk->staging_pool, 1, &staging);
+      vkFreeCommandBuffers(vk->context->device,
+            vk->staging_pool, 1, &staging);
 
       font->needs_update = false;
    }
 
-   vulkan_draw_triangles(font->vk, &call);
+   vulkan_draw_triangles(vk, &call);
 }
 
 static void vulkan_font_render_msg(
@@ -1602,7 +1619,6 @@ static void vulkan_font_render_msg(
    unsigned width, height;
    enum text_alignment text_align;
    float x, y, scale, drop_mod, drop_alpha;
-   vk_t *vk                         = NULL;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
@@ -1610,11 +1626,10 @@ static void vulkan_font_render_msg(
    float video_msg_color_r          = settings->floats.video_msg_color_r;
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
+   vk_t *vk                         = (vk_t*)userdata;
 
-   if (!font || !msg || !*msg || !font->vk)
+   if (!font || !msg || !*msg || !vk)
       return;
-
-   vk             = font->vk;
 
    width          = vk->video_width;
    height         = vk->video_height;
@@ -1658,13 +1673,13 @@ static void vulkan_font_render_msg(
       color[3]    = 1.0f;
    }
 
-   vulkan_set_viewport(font->vk, width, height, full_screen, false);
+   vulkan_set_viewport(vk, width, height, full_screen, false);
 
    max_glyphs = strlen(msg);
    if (drop_x || drop_y)
       max_glyphs *= 2;
 
-   if (!vulkan_buffer_chain_alloc(font->vk->context, &font->vk->chain->vbo,
+   if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
          6 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
       return;
 
@@ -1679,14 +1694,14 @@ static void vulkan_font_render_msg(
       color_dark[2] = color[2] * drop_mod;
       color_dark[3] = color[3] * drop_alpha;
 
-      vulkan_font_render_message(font, msg, scale, color_dark,
+      vulkan_font_render_message(vk, font, msg, scale, color_dark,
             x + scale * drop_x / vk->vp.width, y +
             scale * drop_y / vk->vp.height, text_align);
    }
 
-   vulkan_font_render_message(font, msg, scale,
+   vulkan_font_render_message(vk, font, msg, scale,
          color, x, y, text_align);
-   vulkan_font_flush(font);
+   vulkan_font_flush(vk, font);
 }
 
 static const struct font_glyph *vulkan_font_get_glyph(

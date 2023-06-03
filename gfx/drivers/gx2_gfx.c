@@ -488,16 +488,19 @@ static int gx2_font_get_message_width(void* data, const char* msg,
 
 static void gx2_font_render_line(
       wiiu_video_t *wiiu,
-      gx2_font_t* font, const char* msg, size_t msg_len,
+      gx2_font_t* font,
+      const struct font_glyph* glyph_q,
+      const char* msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width, unsigned height,
+      int pre_x,
+      unsigned text_align)
 {
    int i;
    int count;
    sprite_vertex_t *v;
-   const struct font_glyph* glyph_q = NULL;
-   int x                            = roundf(pos_x * width);
+   int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
 
    switch (text_align)
@@ -512,7 +515,6 @@ static void gx2_font_render_line(
    }
 
    v       = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -558,8 +560,10 @@ static void gx2_font_render_line(
    if (font->atlas->dirty)
    {
       for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-         memcpy(font->texture.surface.image + (i * font->texture.surface.pitch),
-                font->atlas->buffer + (i * font->atlas->width), font->atlas->width);
+         memcpy(font->texture.surface.image 
+               + (i * font->texture.surface.pitch),
+                font->atlas->buffer + (i * font->atlas->width),
+                font->atlas->width);
 
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
             font->texture.surface.image,
@@ -575,7 +579,9 @@ static void gx2_font_render_line(
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, count, wiiu->vertex_cache.current, 1);
 
-   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, wiiu->ubo_tex);
+   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
+         sprite_shader.vs.uniformBlocks[1].size,
+         wiiu->ubo_tex);
 
    wiiu->vertex_cache.current = v - wiiu->vertex_cache.v;
 }
@@ -589,6 +595,8 @@ static void gx2_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / wiiu->vp.height;
 
@@ -598,10 +606,19 @@ static void gx2_font_render_message(
       size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (wiiu->vertex_cache.current + (msg_len * 4) <= wiiu->vertex_cache.size) 
-         gx2_font_render_line(wiiu, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               width, height, text_align);
+      if ((wiiu->vertex_cache.current + (msg_len * 4) 
+		      <= wiiu->vertex_cache.size))
+         gx2_font_render_line(wiiu,
+               font,
+               glyph_q,
+               msg, msg_len,
+               scale, color,
+               pos_x,
+               pos_y - (float)lines * line_height,
+               width,
+               height,
+               x,
+               text_align);
 
       if (!delim)
          break;

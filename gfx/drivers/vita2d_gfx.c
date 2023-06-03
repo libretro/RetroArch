@@ -304,14 +304,19 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
 }
 
 static void vita2d_font_render_line(
-      vita_font_t *font, const char *msg, size_t msg_len,
+      vita_video_t *vita,
+      vita_font_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg, size_t msg_len,
       float scale, const unsigned int color, float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width,
+      unsigned height,
+      int pre_x,
+      unsigned text_align)
 {
    int i;
-   const struct font_glyph* glyph_q = NULL;
-   int x           = roundf(pos_x * width);
+   int x           = pre_x;
    int y           = roundf((1.0f - pos_y) * height);
    int delta_x     = 0;
    int delta_y     = 0;
@@ -325,8 +330,6 @@ static void vita2d_font_render_line(
          x -= vita2d_font_get_message_width(font, msg, msg_len, scale) / 2;
          break;
    }
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -380,6 +383,7 @@ static void vita2d_font_render_line(
 }
 
 static void vita2d_font_render_message(
+      vita_video_t *vita,
       vita_font_t *font, const char *msg, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
@@ -387,8 +391,10 @@ static void vita2d_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
+   int x                                  = roundf(pos_x * width);
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / font->vita->vp.height;
+   line_height = line_metrics->height * scale / vita->vp.height;
 
    for (;;)
    {
@@ -396,9 +402,9 @@ static void vita2d_font_render_message(
       size_t msg_len    = (delim) ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      vita2d_font_render_line(font, msg, msg_len,
+      vita2d_font_render_line(vita, font, glyph_q, msg, msg_len,
             scale, color, pos_x, pos_y - (float)lines * line_height,
-            width, height, text_align);
+            width, height, x, text_align);
 
       if (!delim)
          break;
@@ -470,7 +476,7 @@ static void vita2d_font_render_msg(
       drop_alpha              = 1.0f;
    }
 
-   vita2d_set_viewport_wrapper(font->vita, width, height, full_screen, false);
+   vita2d_set_viewport_wrapper(vita, width, height, full_screen, false);
 
    if (drop_x || drop_y)
    {
@@ -480,12 +486,12 @@ static void vita2d_font_render_msg(
       unsigned alpha_dark     = alpha * drop_alpha;
       unsigned color_dark     = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
 
-      vita2d_font_render_message(font, msg, scale, color_dark,
+      vita2d_font_render_message(vita, font, msg, scale, color_dark,
             x + scale * drop_x / width, y +
             scale * drop_y / height, width, height, text_align);
    }
 
-   vita2d_font_render_message(font, msg, scale,
+   vita2d_font_render_message(vita, font, msg, scale,
          color, x, y, width, height, text_align);
 }
 

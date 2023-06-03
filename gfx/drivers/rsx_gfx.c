@@ -364,7 +364,7 @@ static void rsx_font_free(void *data,
    free(font);
 }
 
-static bool rsx_font_upload_atlas(rsx_font_t *font)
+static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
 {
    u8 *texbuffer               = (u8 *)font->texture.data;
    const u8 *atlas_data        = (u8 *)font->atlas->buffer;
@@ -394,14 +394,14 @@ static bool rsx_font_upload_atlas(rsx_font_t *font)
    font->texture.min_filter    = GCM_TEXTURE_LINEAR;
    font->texture.mag_filter    = GCM_TEXTURE_LINEAR;
 
-   rsxInvalidateTextureCache(font->rsx->context, GCM_INVALIDATE_TEXTURE);
-   rsxLoadTexture(font->rsx->context, font->tex_unit->index, &font->texture.tex);
-   rsxTextureControl(font->rsx->context, font->tex_unit->index,
+   rsxInvalidateTextureCache(rsx->context, GCM_INVALIDATE_TEXTURE);
+   rsxLoadTexture(rsx->context, font->tex_unit->index, &font->texture.tex);
+   rsxTextureControl(rsx->context, font->tex_unit->index,
          GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
-   rsxTextureFilter(font->rsx->context, font->tex_unit->index,
+   rsxTextureFilter(rsx->context, font->tex_unit->index,
          0, font->texture.min_filter,
          font->texture.mag_filter, GCM_TEXTURE_CONVOLUTION_QUINCUNX);
-   rsxTextureWrapMode(font->rsx->context, font->tex_unit->index,
+   rsxTextureWrapMode(rsx->context, font->tex_unit->index,
          font->texture.wrap_s, font->texture.wrap_t,
          GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
 
@@ -460,7 +460,7 @@ static void *rsx_font_init(void *data,
    if (!font->texture.data)
       goto error;
 
-   if (!rsx_font_upload_atlas(font))
+   if (!rsx_font_upload_atlas(font->rsx, font))
       goto error;
 
    font->atlas->dirty = false;
@@ -506,7 +506,9 @@ static int rsx_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void rsx_font_draw_vertices(rsx_font_t *font,
+static void rsx_font_draw_vertices(
+      rsx_t *rsx,
+      rsx_font_t *font,
       const video_coords_t *coords)
 {
    int i, end_vert_idx;
@@ -517,20 +519,20 @@ static void rsx_font_draw_vertices(rsx_font_t *font,
 
    if (font->atlas->dirty)
    {
-      rsx_font_upload_atlas(font);
+      rsx_font_upload_atlas(rsx, font);
       font->atlas->dirty            = false;
    }
 
-   end_vert_idx                     = font->rsx->font_vert_idx + coords->vertices;
+   end_vert_idx                     = rsx->font_vert_idx + coords->vertices;
    if (end_vert_idx > RSX_MAX_FONT_VERTICES)
    {
-      font->rsx->font_vert_idx      = 0;
-      end_vert_idx                  = font->rsx->font_vert_idx + coords->vertices;
+      rsx->font_vert_idx      = 0;
+      end_vert_idx                  = rsx->font_vert_idx + coords->vertices;
    }
 
-   vertices = &font->vertices[font->rsx->font_vert_idx];
+   vertices = &font->vertices[rsx->font_vert_idx];
 
-   for (i = font->rsx->font_vert_idx; i < end_vert_idx; i++)
+   for (i = rsx->font_vert_idx; i < end_vert_idx; i++)
    {
       vertices[i].x = *vertex++;
       vertices[i].y = *vertex++;
@@ -542,52 +544,57 @@ static void rsx_font_draw_vertices(rsx_font_t *font,
       vertices[i].a = *color++;
    }
 
-   rsxAddressToOffset(&vertices[font->rsx->font_vert_idx].x, &font->pos_offset);
-   rsxAddressToOffset(&vertices[font->rsx->font_vert_idx].u, &font->uv_offset);
-   rsxAddressToOffset(&vertices[font->rsx->font_vert_idx].r, &font->col_offset);
-   font->rsx->font_vert_idx = end_vert_idx;
+   rsxAddressToOffset(&vertices[rsx->font_vert_idx].x, &font->pos_offset);
+   rsxAddressToOffset(&vertices[rsx->font_vert_idx].u, &font->uv_offset);
+   rsxAddressToOffset(&vertices[rsx->font_vert_idx].r, &font->col_offset);
+   rsx->font_vert_idx = end_vert_idx;
 
-   rsxBindVertexArrayAttrib(font->rsx->context, font->pos_index->index, 0,
+   rsxBindVertexArrayAttrib(rsx->context, font->pos_index->index, 0,
          font->pos_offset, sizeof(rsx_vertex_t), 2,
          GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(font->rsx->context, font->uv_index->index, 0,
+   rsxBindVertexArrayAttrib(rsx->context, font->uv_index->index, 0,
          font->uv_offset, sizeof(rsx_vertex_t), 2,
          GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
-   rsxBindVertexArrayAttrib(font->rsx->context, font->col_index->index, 0,
+   rsxBindVertexArrayAttrib(rsx->context, font->col_index->index, 0,
          font->col_offset, sizeof(rsx_vertex_t), 4,
          GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
-   rsxLoadVertexProgram(font->rsx->context, font->vpo, font->vp_ucode);
-   rsxSetVertexProgramParameter(font->rsx->context, font->vpo,
-         font->proj_matrix, (float *)&font->rsx->mvp_no_rot);
-   rsxLoadFragmentProgramLocation(font->rsx->context, font->fpo,
+   rsxLoadVertexProgram(rsx->context, font->vpo, font->vp_ucode);
+   rsxSetVertexProgramParameter(rsx->context, font->vpo,
+         font->proj_matrix, (float *)&rsx->mvp_no_rot);
+   rsxLoadFragmentProgramLocation(rsx->context, font->fpo,
          font->fp_offset, GCM_LOCATION_RSX);
 
-   rsxClearSurface(font->rsx->context, GCM_CLEAR_Z);
-   rsxDrawVertexArray(font->rsx->context, GCM_TYPE_TRIANGLES, 0, coords->vertices);
+   rsxClearSurface(rsx->context, GCM_CLEAR_Z);
+   rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLES, 0, coords->vertices);
 }
 
-static void rsx_font_render_line(
-      rsx_font_t *font, const char *msg, size_t msg_len,
-      float scale, const float color[4], float pos_x,
-      float pos_y,unsigned text_align)
+static void rsx_font_render_line(rsx_t *rsx,
+      rsx_font_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg,
+      size_t msg_len,
+      float scale,
+      const float color[4],
+      float pos_x,
+      float pos_y,
+      int pre_x,
+      float inv_tex_size_x,
+      float inv_tex_size_y,
+      float inv_win_width,
+      float inv_win_height,
+      unsigned text_align)
 {
    int i;
    struct video_coords coords;
-   const struct font_glyph* glyph_q = NULL;
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
-   rsx_t      *rsx      = font->rsx;
    const char* msg_end  = msg + msg_len;
-   int x                = roundf(pos_x * rsx->vp.width);
+   int x                = pre_x;
    int y                = roundf(pos_y * rsx->vp.height);
    int delta_x          = 0;
    int delta_y          = 0;
-   float inv_tex_size_x = 1.0f / font->tex_width;
-   float inv_tex_size_y = 1.0f / font->tex_height;
-   float inv_win_width  = 1.0f / font->rsx->vp.width;
-   float inv_win_height = 1.0f / font->rsx->vp.height;
 
    switch (text_align)
    {
@@ -598,8 +605,6 @@ static void rsx_font_render_line(
          x             -= rsx_font_get_message_width(font, msg, msg_len, scale) / 2.0;
          break;
    }
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    while (msg < msg_end)
    {
@@ -644,22 +649,29 @@ static void rsx_font_render_line(
       coords.lut_tex_coord = font_tex_coords;
 
       if (font->block)
-         video_coord_array_append(&font->block->carr, &coords, coords.vertices);
+         video_coord_array_append(
+               &font->block->carr, &coords, coords.vertices);
       else
-         rsx_font_draw_vertices(font, &coords);
+         rsx_font_draw_vertices(rsx, font, &coords);
    }
 }
 
-static void rsx_font_render_message(
+static void rsx_font_render_message(rsx_t *rsx,
       rsx_font_t *font, const char *msg, float scale,
       const float color[4], float pos_x, float pos_y,
       unsigned text_align)
 {
-   struct font_line_metrics *line_metrics = NULL;
-   int lines                              = 0;
    float line_height;
+   struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   int lines                              = 0;
+   int x                                  = roundf(pos_x * rsx->vp.width);
+   float inv_tex_size_x                   = 1.0f / font->tex_width;
+   float inv_tex_size_y                   = 1.0f / font->tex_height;
+   float inv_win_width                    = 1.0f / rsx->vp.width;
+   float inv_win_height                   = 1.0f / rsx->vp.height;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / font->rsx->vp.height;
+   line_height = line_metrics->height * scale / rsx->vp.height;
 
    for (;;)
    {
@@ -667,9 +679,15 @@ static void rsx_font_render_message(
       size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      rsx_font_render_line(font,
+      rsx_font_render_line(rsx, font, glyph_q,
             msg, msg_len, scale, color, pos_x,
-            pos_y - (float)lines*line_height, text_align);
+            pos_y - (float)lines*line_height,
+            x,
+            inv_tex_size_x,
+            inv_tex_size_y,
+            inv_win_width,
+            inv_win_height,
+            text_align);
 
       if (!delim)
          break;
@@ -680,22 +698,20 @@ static void rsx_font_render_message(
 }
 
 static void rsx_font_setup_viewport(
+      rsx_t *rsx,
       unsigned width, unsigned height,
       rsx_font_t *font, bool full_screen)
 {
-   rsx_set_viewport(font->rsx, width, height, full_screen, false);
+   rsx_set_viewport(rsx, width, height, full_screen, false);
 
-   if (font->rsx)
-   {
-      rsxSetBlendEnable(font->rsx->context, GCM_TRUE);
-      rsxSetBlendFunc(font->rsx->context, GCM_SRC_ALPHA,
-            GCM_ONE_MINUS_SRC_ALPHA, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA);
-      rsxSetBlendEquation(font->rsx->context, GCM_FUNC_ADD, GCM_FUNC_ADD);
+   rsxSetBlendEnable(rsx->context, GCM_TRUE);
+   rsxSetBlendFunc(rsx->context, GCM_SRC_ALPHA,
+         GCM_ONE_MINUS_SRC_ALPHA, GCM_SRC_ALPHA, GCM_ONE_MINUS_SRC_ALPHA);
+   rsxSetBlendEquation(rsx->context, GCM_FUNC_ADD, GCM_FUNC_ADD);
 
-      rsxLoadTexture(font->rsx->context, font->tex_unit->index, &font->texture.tex);
-      rsxTextureControl(font->rsx->context, font->tex_unit->index,
-            GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
-   }
+   rsxLoadTexture(rsx->context, font->tex_unit->index, &font->texture.tex);
+   rsxTextureControl(rsx->context, font->tex_unit->index,
+         GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
 }
 
 static void rsx_font_render_msg(
@@ -706,21 +722,24 @@ static void rsx_font_render_msg(
 {
    float color[4];
    int drop_x, drop_y;
+   unsigned width, height;
    float x, y, scale, drop_mod, drop_alpha;
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
-   bool full_screen                 = false ;
+   bool full_screen                 = false;
    rsx_font_t *font                 = (rsx_font_t*)data;
-   unsigned width                   = font->rsx->width;
-   unsigned height                  = font->rsx->height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
    float video_msg_color_r          = settings->floats.video_msg_color_r;
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
+   rsx_t *rsx                       = (rsx_t*)userdata;
 
-   if (!font || string_is_empty(msg))
+   if (!font || string_is_empty(msg) || !rsx)
       return;
+
+   width                            = rsx->width;
+   height                           = rsx->height;
 
    if (params)
    {
@@ -767,39 +786,37 @@ static void rsx_font_render_msg(
    else
       rsx_font_setup_viewport(width, height, font, full_screen);
 
-   if (font->rsx)
+   if (    !string_is_empty(msg)
+         && font->font_data  
+         && font->font_driver)
    {
-      if (!string_is_empty(msg)
-            && font->font_data  && font->font_driver)
+      if (drop_x || drop_y)
       {
-         if (drop_x || drop_y)
-         {
-            float color_dark[4];
+         float color_dark[4];
 
-            color_dark[0] = color[0] * drop_mod;
-            color_dark[1] = color[1] * drop_mod;
-            color_dark[2] = color[2] * drop_mod;
-            color_dark[3] = color[3] * drop_alpha;
+         color_dark[0] = color[0] * drop_mod;
+         color_dark[1] = color[1] * drop_mod;
+         color_dark[2] = color[2] * drop_mod;
+         color_dark[3] = color[3] * drop_alpha;
 
-            rsx_font_render_message(font, msg, scale, color_dark,
-                  x + scale * drop_x / font->rsx->vp.width, y +
-                  scale * drop_y / font->rsx->vp.height, text_align);
-         }
-
-         rsx_font_render_message(font, msg, scale, color,
-               x, y, text_align);
+         rsx_font_render_message(rsx, font, msg, scale, color_dark,
+               x + scale * drop_x / rsx->vp.width, y +
+               scale * drop_y / rsx->vp.height, text_align);
       }
 
-      if (!font->block)
-      {
-         /* Restore viewport */
-         rsxTextureControl(font->rsx->context, font->tex_unit->index,
-               GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
-         rsxSetBlendEnable(font->rsx->context, GCM_FALSE);
-         rsx_set_viewport(font->rsx, width, height, false, true);
-      }
-      font->rsx->font_vert_idx = 0;
+      rsx_font_render_message(rsx, font, msg, scale, color,
+            x, y, text_align);
    }
+
+   if (!font->block)
+   {
+      /* Restore viewport */
+      rsxTextureControl(rsx->context, font->tex_unit->index,
+            GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
+      rsxSetBlendEnable(rsx->context, GCM_FALSE);
+      rsx_set_viewport(rsx, width, height, false, true);
+   }
+   rsx->font_vert_idx = 0;
 }
 
 static const struct font_glyph *rsx_font_get_glyph(
@@ -816,21 +833,19 @@ static void rsx_font_flush_block(unsigned width, unsigned height,
 {
    rsx_font_t          *font        = (rsx_font_t*)data;
    video_font_raster_block_t *block = font ? font->block : NULL;
+   rsx_t *rsx                       = font ? font->rsx   : NULL;
 
-   if (!font || !block || !block->carr.coords.vertices)
+   if (!font || !block || !block->carr.coords.vertices || !rsx)
       return;
 
-   rsx_font_setup_viewport(width, height, font, block->fullscreen);
-   rsx_font_draw_vertices(font, (video_coords_t*)&block->carr.coords);
+   rsx_font_setup_viewport(rsx, width, height, font, block->fullscreen);
+   rsx_font_draw_vertices(rsx, font, (video_coords_t*)&block->carr.coords);
 
-   if (font->rsx)
-   {
-      /* Restore viewport */
-      rsxTextureControl(font->rsx->context, font->tex_unit->index,
-            GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
-      rsxSetBlendEnable(font->rsx->context, GCM_FALSE);
-      rsx_set_viewport(font->rsx, width, height, block->fullscreen, true);
-   }
+   /* Restore viewport */
+   rsxTextureControl(rsx->context, font->tex_unit->index,
+         GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
+   rsxSetBlendEnable(rsx->context, GCM_FALSE);
+   rsx_set_viewport(rsx, width, height, block->fullscreen, true);
    font->rsx->font_vert_idx = 0;
 }
 
@@ -1078,7 +1093,7 @@ static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
    bool video_shared_context            = settings->bools.video_shared_context;
    enum gfx_ctx_api api                 = GFX_CTX_RSX_API;
 
-   rsx->shared_context_use              = video_shared_context && hwr->context_type != RETRO_HW_CONTEXT_NONE;
+   rsx->shared_context_use              = (video_shared_context && (hwr->context_type != RETRO_HW_CONTEXT_NONE));
    
    if ((runloop_get_flags() & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT)
       && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
@@ -2176,11 +2191,15 @@ static bool rsx_frame(void* data, const void* frame,
 
    if (frame && width && height)
    {
-      gcm->tex_index                = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
-      rsx_load_texture_data(gcm, &gcm->texture[gcm->tex_index], frame, width, height, pitch, gcm->rgb32, false,
-                            gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
-      /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU, shouldn't
-       * this be RSX_SHADER_STOCK_BLEND instead? */
+      gcm->tex_index  = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
+      rsx_load_texture_data(gcm,
+            &gcm->texture[gcm->tex_index],
+            frame, width, height, pitch, gcm->rgb32, false,
+            gcm->smooth 
+            ? TEXTURE_FILTER_LINEAR 
+            : TEXTURE_FILTER_NEAREST);
+      /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU, 
+       * shouldn't this be RSX_SHADER_STOCK_BLEND instead? */
       rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
       rsx_draw_vertices(gcm);
       draw = true;
@@ -2192,7 +2211,8 @@ static bool rsx_frame(void* data, const void* frame,
       menu_driver_frame(menu_is_alive, video_info);
       if (gcm->menu_texture.data)
       {
-         /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_STOCK_BLEND, shouldn't
+         /* TODO/FIXME - pipeline ID being used here 
+          * is RSX_SHADER_STOCK_BLEND, shouldn't
           * this be RSX_SHADER_MENU instead? */
          rsx_set_menu_texture(gcm, &gcm->menu_texture);
          rsx_draw_menu_vertices(gcm);
