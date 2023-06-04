@@ -745,6 +745,23 @@ static void cocoa_input_keypress_vibrate()
 }
 #endif
 
+static void cocoa_input_grab_mouse(void *data, bool state)
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+
+   if (state) {
+      NSWindow *window = (BRIDGE NSWindow*)ui_companion_cocoa.get_main_window(nil);
+      CGPoint window_pos = window.frame.origin;
+      CGSize window_size = window.frame.size;
+      CGPoint window_center = CGPointMake(window_pos.x + window_size.width / 2.0f, window_pos.y + window_size.height / 2.0f);
+      CGWarpMouseCursorPosition(window_center);
+   }
+
+   CGAssociateMouseAndMouseCursorPosition(!state);
+   cocoa_show_mouse(nil, !state);
+   apple->mouse_grabbed = state;
+}
+
 input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
@@ -754,7 +771,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-   NULL,                         /* grab_mouse */
+   cocoa_input_grab_mouse,
    NULL,                         /* grab_stdin */
 #if TARGET_OS_IOS
    cocoa_input_keypress_vibrate
