@@ -742,7 +742,9 @@ static void cocoa_input_keypress_vibrate(void)
    [feedbackGenerator selectionChanged];
    [feedbackGenerator prepare];
 }
-#else
+#endif
+
+#if defined(HAVE_COCOA)
 static void cocoa_input_grab_mouse(void *data, bool state)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
@@ -771,13 +773,15 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#if TARGET_OS_IOS
+#if defined(HAVE_COCOA)
+   cocoa_input_grab_mouse,
+#else
    NULL,                         /* grab_mouse */
+#endif
    NULL,                         /* grab_stdin */
+#if TARGET_OS_IOS
    cocoa_input_keypress_vibrate
 #else
-   cocoa_input_grab_mouse,
-   NULL,                         /* grab_stdin */
    NULL                          /* vibrate */
 #endif
 };
