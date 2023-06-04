@@ -570,21 +570,12 @@ static int16_t cocoa_input_state(
 
                if (touch)
                {
-                  int16_t x, y;
-                  const bool want_full         = (device == RARCH_DEVICE_POINTER_SCREEN);
-
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
-                        x = touch->fixed_x;
-                        y = touch->fixed_y;
-
-                        if (want_full)
-                        {
-                           x = touch->full_x;
-                           y = touch->full_y;
-                        }
-                        return (x != -0x8000) && (y != -0x8000); /* Inside? */
+                        if (device == RARCH_DEVICE_POINTER_SCREEN)
+                           return (touch->full_x != -0x8000) && (touch->full_y != -0x8000); /* Inside? */
+                        return (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
                      case RETRO_DEVICE_ID_POINTER_X:
                         return want_full ? touch->full_x : touch->fixed_x;
                      case RETRO_DEVICE_ID_POINTER_Y:
@@ -635,7 +626,8 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
       return false;
 
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, *)) {
+   if (@available(iOS 14.0, macOS 11.0, *))
+   {
       for (GCController *controller in [GCController controllers])
       {
          if (!controller || controller.playerIndex != port)
@@ -684,7 +676,8 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, *)) {
+   if (@available(iOS 14.0, *))
+   {
       for (GCController *controller in [GCController controllers])
       {
          if (!controller || controller.playerIndex != port)
@@ -738,21 +731,21 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 }
 
 #if TARGET_OS_IOS
-static void cocoa_input_keypress_vibrate()
+static void cocoa_input_keypress_vibrate(void)
 {
    [feedbackGenerator selectionChanged];
    [feedbackGenerator prepare];
 }
-#endif
-
+#else
 static void cocoa_input_grab_mouse(void *data, bool state)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
-   if (state) {
-      NSWindow *window = (BRIDGE NSWindow*)ui_companion_cocoa.get_main_window(nil);
-      CGPoint window_pos = window.frame.origin;
-      CGSize window_size = window.frame.size;
+   if (state)
+   {
+      NSWindow *window      = (BRIDGE NSWindow*)ui_companion_cocoa.get_main_window(nil);
+      CGPoint window_pos    = window.frame.origin;
+      CGSize window_size    = window.frame.size;
       CGPoint window_center = CGPointMake(window_pos.x + window_size.width / 2.0f, window_pos.y + window_size.height / 2.0f);
       CGWarpMouseCursorPosition(window_center);
    }
@@ -761,6 +754,7 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    cocoa_show_mouse(nil, !state);
    apple->mouse_grabbed = state;
 }
+#endif
 
 input_driver_t input_cocoa = {
    cocoa_input_init,
@@ -771,11 +765,13 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-   cocoa_input_grab_mouse,
-   NULL,                         /* grab_stdin */
 #if TARGET_OS_IOS
+   NULL,                         /* grab_mouse */
+   NULL,                         /* grab_stdin */
    cocoa_input_keypress_vibrate
 #else
-   NULL
+   cocoa_input_grab_mouse,
+   NULL,                         /* grab_stdin */
+   NULL                          /* vibrate */
 #endif
 };
