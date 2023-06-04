@@ -698,9 +698,9 @@ static void rsx_font_render_message(rsx_t *rsx,
 }
 
 static void rsx_font_setup_viewport(
-      rsx_t *rsx,
+      rsx_t *rsx, rsx_font_t *font, 
       unsigned width, unsigned height,
-      rsx_font_t *font, bool full_screen)
+      bool full_screen)
 {
    rsx_set_viewport(rsx, width, height, full_screen, false);
 
@@ -784,7 +784,7 @@ static void rsx_font_render_msg(
    if (font->block)
       font->block->fullscreen = full_screen;
    else
-      rsx_font_setup_viewport(width, height, font, full_screen);
+      rsx_font_setup_viewport(rsx, font, width, height, full_screen);
 
    if (    !string_is_empty(msg)
          && font->font_data  
@@ -838,8 +838,8 @@ static void rsx_font_flush_block(unsigned width, unsigned height,
    if (!font || !block || !block->carr.coords.vertices || !rsx)
       return;
 
-   rsx_font_setup_viewport(rsx, width, height, font, block->fullscreen);
-   rsx_font_draw_vertices(rsx, font, (video_coords_t*)&block->carr.coords);
+   rsx_font_setup_viewport(rsx, font, width, height, block->fullscreen);
+   rsx_font_draw_vertices (rsx, font, (video_coords_t*)&block->carr.coords);
 
    /* Restore viewport */
    rsxTextureControl(rsx->context, font->tex_unit->index,
