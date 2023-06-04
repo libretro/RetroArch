@@ -40,12 +40,38 @@ static CMMotionManager *motionManager;
 #import <GameController/GameController.h>
 #endif
 
+#if TARGET_OS_IPHONE
+#define HIDKEY(X) X
+#else
+#define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
+#endif
+
+#define MAX_ICADE_PROFILES 4
+#define MAX_ICADE_KEYS     0x100
+
+typedef struct icade_map
+{
+   bool up;
+   enum retro_key key;
+} icade_map_t;
+
 /* TODO/FIXME -
  * fix game focus toggle */
 
+/*
+ * FORWARD DECLARATIONS
+ */
 #ifdef OSX
-/* Forward declaration */
 float cocoa_screen_get_backing_scale_factor(void);
+#endif
+
+#if TARGET_OS_IPHONE
+/* TODO/FIXME - static globals */
+static bool small_keyboard_active = false;
+static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
+#if TARGET_OS_IOS
+static UISelectionFeedbackGenerator *feedbackGenerator;
+#endif
 #endif
 
 static bool apple_key_state[MAX_KEYS];
@@ -62,27 +88,8 @@ void apple_direct_input_keyboard_event(bool down,
           character, (enum retro_mod)mod, device);
 }
 
-
 #if TARGET_OS_IPHONE
-/* TODO/FIXME - static globals */
-static bool small_keyboard_active = false;
-#if TARGET_OS_IOS
-static UISelectionFeedbackGenerator *feedbackGenerator;
-#endif
-
-#define HIDKEY(X) X
-#define MAX_ICADE_PROFILES 4
-#define MAX_ICADE_KEYS     0x100
-
-typedef struct icade_map
-{
-   bool up;
-   enum retro_key key;
-} icade_map_t;
-
-static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
-
-static bool handle_small_keyboard(unsigned* code, bool down)
+static bool apple_input_handle_small_keyboard(unsigned* code, bool down)
 {
    static uint8_t mapping[128];
    static bool map_initialized;
@@ -137,12 +144,10 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    return false;
 }
 
-static bool handle_icade_event(unsigned *code, bool *keydown)
+static bool apple_input_handle_icade_event(unsigned kb_type_idx, unsigned *code, bool *keydown)
 {
    static bool initialized = false;
    bool ret                = false;
-   settings_t *settings    = config_get_ptr();
-   unsigned kb_type_idx    = settings->uints.input_keyboard_gamepad_mapping_type;
 
    if (!initialized)
    {
@@ -294,18 +299,19 @@ void apple_input_keyboard_event(bool down,
    settings_t *settings         = config_get_ptr();
    bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
    bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
-   code                         = HIDKEY(code);
 
    if (keyboard_gamepad_enable)
    {
-      if (handle_icade_event(&code, &down))
+      if (apple_input_handle_icade_event(
+               settings->uints.input_keyboard_gamepad_mapping_type,
+               &code, &down))
          character = 0;
       else
          code      = 0;
    }
    else if (small_keyboard_enable)
    {
-      if (handle_small_keyboard(&code, down))
+      if (apple_input_handle_small_keyboard(&code, down))
          character = 0;
    }
 
@@ -319,24 +325,21 @@ void apple_input_keyboard_event(bool down,
          character, (enum retro_mod)mod, device);
 }
 #else
-/* Taken from https://github.com/depp/keycode,
- * check keycode.h for license. */
-static const unsigned char MAC_NATIVE_TO_HID[128] = {
-   4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
-   28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
-   24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
-   43, 44, 53, 42,255, 41,231,227,225, 57,226,224,229,230,228,255,
-   108, 99,255, 85,255, 87,255, 83,255,255,255, 84, 88,255, 86,109,
-   110,103, 98, 89, 90, 91, 92, 93, 94, 95,111, 96, 97,255,255,255,
-   62, 63, 64, 60, 65, 66,255, 68,255,104,107,105,255, 67,255, 69,
-   255,106,117, 74, 75, 76, 61, 77, 59, 78, 58, 80, 79, 81, 82,255
-};
-
-#define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
-
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
+   /* Taken from https://github.com/depp/keycode,
+    * check keycode.h for license. */
+   static const unsigned char MAC_NATIVE_TO_HID[128] = {
+      4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
+      28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
+      24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
+      43, 44, 53, 42,255, 41,231,227,225, 57,226,224,229,230,228,255,
+      108, 99,255, 85,255, 87,255, 83,255,255,255, 84, 88,255, 86,109,
+      110,103, 98, 89, 90, 91, 92, 93, 94, 95,111, 96, 97,255,255,255,
+      62, 63, 64, 60, 65, 66,255, 68,255,104,107,105,255, 67,255, 69,
+      255,106,117, 74, 75, 76, 61, 77, 59, 78, 58, 80, 79, 81, 82,255
+   };
    code                  = HIDKEY(code);
    if (code == 0 || code >= MAX_KEYS)
       return;
@@ -351,6 +354,7 @@ void apple_input_keyboard_event(bool down,
 
 static void *cocoa_input_init(const char *joypad_driver)
 {
+   cocoa_input_data_t *apple = NULL;
 #ifdef HAVE_COREMOTION
    if (@available(macOS 10.15, *))
       if (!motionManager)
@@ -363,8 +367,9 @@ static void *cocoa_input_init(const char *joypad_driver)
    [feedbackGenerator prepare];
 #endif
 
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)calloc(1, sizeof(*apple));
-   if (!apple)
+   /* TODO/FIXME - shouldn't we free the above in case this fails for
+    * TARGET_OS_IOS / HAVE_COREMOTION? */
+   if (!(apple = (cocoa_input_data_t*)calloc(1, sizeof(*apple))))
       return NULL;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_apple_hid);
@@ -437,7 +442,8 @@ static int16_t cocoa_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if ((binds[port][i].key < RETROK_LAST) && apple_key_state[rarch_keysym_lut[binds[port][i].key]])
+                  if ((binds[port][i].key < RETROK_LAST) 
+                        && apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                      ret |= (1 << i);
                }
             }
@@ -574,12 +580,12 @@ static int16_t cocoa_input_state(
                   {
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
                         if (device == RARCH_DEVICE_POINTER_SCREEN)
-                           return (touch->full_x != -0x8000) && (touch->full_y != -0x8000); /* Inside? */
-                        return (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
+                           return (touch->full_x  != -0x8000) && (touch->full_y  != -0x8000); /* Inside? */
+                        return    (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return want_full ? touch->full_x : touch->fixed_x;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_x : touch->fixed_x;
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return want_full ? touch->full_y : touch->fixed_y;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_y : touch->fixed_y;
                      case RETRO_DEVICE_ID_POINTER_COUNT:
                         return apple->touch_count;
                   }
@@ -617,12 +623,12 @@ static uint64_t cocoa_input_get_capabilities(void *data)
 }
 
 static bool cocoa_input_set_sensor_state(void *data, unsigned port,
-                                         enum retro_sensor_action action, unsigned rate)
+      enum retro_sensor_action action, unsigned rate)
 {
-   if (action != RETRO_SENSOR_ACCELEROMETER_ENABLE &&
-       action != RETRO_SENSOR_ACCELEROMETER_DISABLE &&
-       action != RETRO_SENSOR_GYROSCOPE_ENABLE &&
-       action != RETRO_SENSOR_GYROSCOPE_DISABLE)
+   if (   (action != RETRO_SENSOR_ACCELEROMETER_ENABLE)
+       && (action != RETRO_SENSOR_ACCELEROMETER_DISABLE)
+       && (action != RETRO_SENSOR_GYROSCOPE_ENABLE)
+       && (action != RETRO_SENSOR_GYROSCOPE_DISABLE))
       return false;
 
 #ifdef HAVE_MFI
@@ -636,13 +642,15 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
             break;
          if (controller.motion.sensorsRequireManualActivation)
          {
-            // this is a bug, we assume if you turn on/off either you want both on/off
-            if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE || action == RETRO_SENSOR_GYROSCOPE_ENABLE)
+            /* This is a bug, we assume if you turn on/off either 
+             * you want both on/off */
+            if (     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
+                  || (action == RETRO_SENSOR_GYROSCOPE_ENABLE))
                controller.motion.sensorsActive = YES;
             else
                controller.motion.sensorsActive = NO;
          }
-         // no such thing as update interval for GCController?
+         /* no such thing as update interval for GCController? */
          return true;
       }
    }
@@ -655,7 +663,8 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
    if (!motionManager || !motionManager.deviceMotionAvailable)
       return false;
 
-   if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE || action == RETRO_SENSOR_GYROSCOPE_ENABLE)
+   if (     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
+         || (action == RETRO_SENSOR_GYROSCOPE_ENABLE))
    {
       if (!motionManager.deviceMotionActive)
          [motionManager startDeviceMotionUpdates];
@@ -704,26 +713,23 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 #endif
 
 #ifdef HAVE_COREMOTION
-   if (port != 0)
-      return 0.0f;
-
-   if (!motionManager || !motionManager.deviceMotionActive)
-      return 0.0f;
-
-   switch (id)
+   if (port == 0 && motionManager && motionManager.deviceMotionActive)
    {
-      case RETRO_SENSOR_ACCELEROMETER_X:
-         return motionManager.deviceMotion.userAcceleration.x;
-      case RETRO_SENSOR_ACCELEROMETER_Y:
-         return motionManager.deviceMotion.userAcceleration.y;
-      case RETRO_SENSOR_ACCELEROMETER_Z:
-         return motionManager.deviceMotion.userAcceleration.z;
-      case RETRO_SENSOR_GYROSCOPE_X:
-         return motionManager.deviceMotion.rotationRate.x;
-      case RETRO_SENSOR_GYROSCOPE_Y:
-         return motionManager.deviceMotion.rotationRate.y;
-      case RETRO_SENSOR_GYROSCOPE_Z:
-         return motionManager.deviceMotion.rotationRate.z;
+      switch (id)
+      {
+         case RETRO_SENSOR_ACCELEROMETER_X:
+            return motionManager.deviceMotion.userAcceleration.x;
+         case RETRO_SENSOR_ACCELEROMETER_Y:
+            return motionManager.deviceMotion.userAcceleration.y;
+         case RETRO_SENSOR_ACCELEROMETER_Z:
+            return motionManager.deviceMotion.userAcceleration.z;
+         case RETRO_SENSOR_GYROSCOPE_X:
+            return motionManager.deviceMotion.rotationRate.x;
+         case RETRO_SENSOR_GYROSCOPE_Y:
+            return motionManager.deviceMotion.rotationRate.y;
+         case RETRO_SENSOR_GYROSCOPE_Z:
+            return motionManager.deviceMotion.rotationRate.z;
+      }
    }
 #endif
 
