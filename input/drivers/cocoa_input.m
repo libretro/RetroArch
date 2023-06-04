@@ -744,7 +744,7 @@ static void cocoa_input_keypress_vibrate(void)
 }
 #endif
 
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 static void cocoa_input_grab_mouse(void *data, bool state)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
@@ -773,7 +773,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#if defined(HAVE_COCOA)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    cocoa_input_grab_mouse,
 #else
    NULL,                         /* grab_mouse */
