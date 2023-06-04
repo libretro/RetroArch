@@ -454,6 +454,7 @@
 		05C5D53320E3DD0900654EE4 /* input_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_types.h; sourceTree = "<group>"; };
 		05C5D53820E3DD0900654EE4 /* cocoa_input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		05C5D54120E3DD0900654EE4 /* sdl_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_input.c; sourceTree = "<group>"; };
+		05C5D54220E3DD0900654EE4 /* cocoa_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cocoa_input.c; sourceTree = "<group>"; };
 		05C5D54C20E3DD0900654EE4 /* input_keymaps.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_keymaps.h; sourceTree = "<group>"; };
 		05C5D54E20E3DD0900654EE4 /* blissbox.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = blissbox.h; sourceTree = "<group>"; };
 		05C5D55420E3DD0900654EE4 /* GCExtendedGamepadSnapshot.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GCExtendedGamepadSnapshot.h; sourceTree = "<group>"; };
@@ -553,7 +554,6 @@
 		A9020FA64527ED74C836B41D /* cocoa_gl_ctx_metal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_gl_ctx_metal.m; sourceTree = "<group>"; };
 		D27C50872228360000113BC0 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		D27C50892228360D00113BC0 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
-		E8EE1E942A2C6A26003C73F6 /* cocoa_input.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoa_input.m; sourceTree = "<group>"; };
 		F0B1238F270D73A90006E60F /* connect */ = {isa = PBXFileReference; lastKnownFileType = folder; path = connect; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -838,6 +838,7 @@
 			isa = PBXGroup;
 			children = (
 				05A8C55E20DB72F000FF7857 /* menu_osk_utf8_pages.h */,
+				05A8C55F20DB72F000FF7857 /* menu_osk.h */,
 			);
 			path = widgets;
 			sourceTree = "<group>";
@@ -1239,7 +1240,7 @@
 		05C5D53520E3DD0900654EE4 /* drivers */ = {
 			isa = PBXGroup;
 			children = (
-				E8EE1E942A2C6A26003C73F6 /* cocoa_input.m */,
+				05C5D54220E3DD0900654EE4 /* cocoa_input.c */,
 				05C5D53820E3DD0900654EE4 /* cocoa_input.h */,
 				05C5D54120E3DD0900654EE4 /* sdl_input.c */,
 			);
