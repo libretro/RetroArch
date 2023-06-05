@@ -6194,10 +6194,8 @@ void menu_driver_toggle(
       { /* If the menu pauses the game... */
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 
-         if (!audio_enable_menu)
-         { /* If the menu shouldn't have audio... */
+         if (!audio_enable_menu) /* If the menu shouldn't have audio... */
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
-         }
       }
 
       /* Override keyboard callback to redirect to menu instead.
@@ -6226,12 +6224,9 @@ void menu_driver_toggle(
       if (pause_libretro)
       { /* If the menu pauses the game... */
 
-         if (!audio_enable_menu)
-         { /* ...and the menu doesn't have audio... */
-
+         if (!audio_enable_menu) /* ...and the menu doesn't have audio... */
             command_event(CMD_EVENT_AUDIO_START, NULL);
             /* ...then re-enable the audio driver (which we shut off earlier) */
-         }
 
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
          /* Start the microphone, if it was paused beforehand */

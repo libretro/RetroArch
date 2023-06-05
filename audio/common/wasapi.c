@@ -139,8 +139,10 @@ static const char* wasapi_data_flow_name(EDataFlow data_flow)
       case eAll:
          return "eAll";
       default:
-         return "<unknown>";
+         break;
    }
+
+   return "<unknown>";
 }
 
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,

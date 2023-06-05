@@ -26,7 +26,8 @@
  * Used for info that's common to all pcm devices
  * that's relevant for our purposes.
  */
-typedef struct alsa_stream_info {
+typedef struct alsa_stream_info
+{
    size_t buffer_size;
    size_t period_size;
    snd_pcm_uframes_t period_frames;

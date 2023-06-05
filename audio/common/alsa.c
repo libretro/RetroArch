@@ -339,17 +339,15 @@ bool alsa_start_pcm(snd_pcm_t *pcm)
    switch (pcm_state)
    {
       case SND_PCM_STATE_PAUSED: /* If we're unpausing a valid (but paused) stream... */
-         if ((errnum = snd_pcm_pause(pcm, false)) < 0)
-         { /* ...but we failed... */
+         if ((errnum = snd_pcm_pause(pcm, false)) < 0) /* ...but we failed... */
             goto error;
-         }
+
          break;
       case SND_PCM_STATE_PREPARED:
          /* If we're starting this stream for the first time... */
-         if ((errnum = snd_pcm_start(pcm)) < 0)
-         { /* ..but we failed... */
+         if ((errnum = snd_pcm_start(pcm)) < 0) /* ..but we failed... */
             goto error;
-         }
+
          break;
       case SND_PCM_STATE_RUNNING:
          RARCH_DBG("[ALSA]: %s stream \"%s\" is already running, no action needed.\n",
@@ -405,10 +403,9 @@ bool alsa_stop_pcm(snd_pcm_t *pcm)
          return true;
       case SND_PCM_STATE_RUNNING:
          /* If we're pausing an active stream... */
-         if ((errnum = snd_pcm_pause(pcm, true)) < 0)
-         { /* ...but we failed... */
+         if ((errnum = snd_pcm_pause(pcm, true)) < 0) /* ...but we failed... */
             goto error;
-         }
+
          break;
       default:
          RARCH_ERR("[ALSA]: Failed to stop %s stream \"%s\" in unexpected state %s\n",
