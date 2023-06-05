@@ -1632,6 +1632,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack Audio Connection Kit driver."
    )
+#ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    "Microphone"
@@ -1641,20 +1642,17 @@ MSG_HASH(
    "Microphone driver to use."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Microphone Resampler"
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Audio Resampler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Audio resampler driver to use."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
-   "Microphone Resampler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
-   "Microphone resampler driver to use."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
@@ -2497,6 +2495,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Change audio output settings."
    )
+#ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
    "Microphone"
@@ -2505,6 +2504,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
    "Change audio input settings."
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Resampler"
@@ -2685,6 +2685,7 @@ MSG_HASH(
    "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency."
    )
 
+#ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
@@ -2754,6 +2755,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
    "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
    )
+#endif
 
 /* Settings > Audio > Resampler */
 

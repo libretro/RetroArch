@@ -10863,7 +10863,9 @@ static void materialui_list_insert(
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS))
+#ifdef HAVE_MICROPHONE
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MICROPHONE_SETTINGS))
+#endif
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS))

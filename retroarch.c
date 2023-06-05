@@ -121,7 +121,10 @@
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
+
+#ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -430,6 +433,7 @@ static const void *find_driver_nonempty(
          return audio_drivers[i];
       }
    }
+#ifdef HAVE_MICROPHONE
    else if (string_is_equal(label, "microphone_driver"))
    {
       if (microphone_drivers[i])
@@ -440,6 +444,7 @@ static const void *find_driver_nonempty(
          return microphone_drivers[i];
       }
    }
+#endif
    else if (string_is_equal(label, "record_driver"))
    {
       if (record_drivers[i])
@@ -785,7 +790,9 @@ void drivers_init(
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    input_driver_state_t *input_st    = input_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
+#ifdef HAVE_MICROPHONE
    microphone_driver_state_t *mic_st = microphone_state_get_ptr();
+#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st     = menu_state_get_ptr();
 #endif
@@ -855,12 +862,14 @@ void drivers_init(
                   audio_st->context_audio_data);
    }
 
+#ifdef HAVE_MICROPHONE
    if (flags & DRIVER_MICROPHONE_MASK)
    {
       microphone_driver_init_internal(settings);
       if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
          mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
    }
+#endif
 
    /* Regular display refresh rate startup autoswitch based on content av_info */
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
@@ -1129,8 +1138,10 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
    if ((flags & DRIVER_AUDIO_MASK))
       audio_state_get_ptr()->context_audio_data = NULL;
 
+#ifdef HAVE_MICROPHONE
    if (flags & DRIVER_MICROPHONE_MASK)
       microphone_driver_deinit(lifetime_flags & DRIVER_LIFETIME_RESET);
+#endif
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free();
@@ -1507,6 +1518,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
+#ifdef HAVE_MICROPHONE
       case STRING_LIST_MICROPHONE_DRIVERS:
          for (i = 0; microphone_drivers[i]; i++)
          {
@@ -1516,6 +1528,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
+#endif
       case STRING_LIST_AUDIO_RESAMPLER_DRIVERS:
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {
@@ -2953,6 +2966,7 @@ bool command_event(enum event_command cmd, void *data)
                   RUNLOOP_FLAG_SHUTDOWN_INITIATED))
             return false;
          break;
+#ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_STOP:
          if (!microphone_driver_stop())
             return false;
@@ -2961,6 +2975,7 @@ bool command_event(enum event_command cmd, void *data)
          if (!microphone_driver_start())
             return false;
          break;
+#endif
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             audio_driver_state_t
@@ -3354,10 +3369,12 @@ bool command_event(enum event_command cmd, void *data)
          audio_driver_load_system_sounds();
 #endif
          break;
+#ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_REINIT:
          driver_uninit(DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
          break;
+#endif
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
@@ -3622,12 +3639,16 @@ bool command_event(enum event_command cmd, void *data)
             if (menu_pause_libretro)
             { /* If entering the menu pauses the game... */
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
+#ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
+#endif
             }
             else
             {
                command_event(CMD_EVENT_AUDIO_START, NULL);
+#ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
+#endif
             }
          }
          else

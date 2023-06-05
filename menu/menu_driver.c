@@ -6192,7 +6192,9 @@ void menu_driver_toggle(
 
       if (pause_libretro)
       { /* If the menu pauses the game... */
+#ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
+#endif
 
          if (!audio_enable_menu) /* If the menu shouldn't have audio... */
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
@@ -6228,8 +6230,10 @@ void menu_driver_toggle(
             command_event(CMD_EVENT_AUDIO_START, NULL);
             /* ...then re-enable the audio driver (which we shut off earlier) */
 
+#ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
          /* Start the microphone, if it was paused beforehand */
+#endif
       }
 
       /* Restore libretro keyboard callback. */

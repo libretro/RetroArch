@@ -276,8 +276,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
+#ifdef HAVE_MICROPHONE
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE;
+#endif
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
@@ -452,8 +454,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST;
+#ifdef HAVE_MICROPHONE
       case ACTION_OK_DL_MICROPHONE_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST;
+#endif
       case ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
@@ -874,6 +878,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+#ifdef HAVE_MICROPHONE
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE:
          info.type          = type;
          info.directory_ptr = idx;
@@ -883,6 +888,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+#endif
 #ifdef HAVE_NETWORKING
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER:
          info.type          = type;
@@ -1691,7 +1697,9 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST:
+#ifdef HAVE_MICROPHONE
       case ACTION_OK_DL_MICROPHONE_SETTINGS_LIST:
+#endif
       case ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
@@ -5950,7 +5958,9 @@ DEFAULT_ACTION_OK_FUNC(action_ok_push_core_restore_backup_list, ACTION_OK_DL_COR
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_delete_backup_list, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_output_settings_list, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST)
+#ifdef HAVE_MICROPHONE
 DEFAULT_ACTION_OK_FUNC(action_ok_push_microphone_settings_list, ACTION_OK_DL_MICROPHONE_SETTINGS_LIST)
+#endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_resampler_settings_list, ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_synchronization_settings_list, ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
 #ifdef HAVE_AUDIOMIXER
@@ -6812,6 +6822,7 @@ static int action_ok_push_dropdown_item_audio_device(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+#ifdef HAVE_MICROPHONE
 static int action_ok_push_dropdown_item_microphone_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6831,6 +6842,7 @@ static int action_ok_push_dropdown_item_microphone_device(const char *path,
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
+#endif
 
 static int action_ok_push_dropdown_item_input_device_type(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -8376,7 +8388,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,           action_ok_close_submenu },
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,            action_ok_push_manual_content_scan_list},
          {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,               action_ok_push_audio_output_settings_list},
+#ifdef HAVE_MICROPHONE
          {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,                 action_ok_push_microphone_settings_list},
+#endif
          {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,            action_ok_push_audio_resampler_settings_list},
          {MENU_ENUM_LABEL_LATENCY_SETTINGS,                    action_ok_push_latency_settings_list},
          {MENU_ENUM_LABEL_CORE_SETTINGS,                       action_ok_push_core_settings_list},
@@ -8771,9 +8785,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_AUDIO_DEVICE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_audio_device);
             break;
+#ifdef HAVE_MICROPHONE
          case MENU_SETTING_DROPDOWN_ITEM_MICROPHONE_DEVICE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_microphone_device);
             break;
+#endif
 #ifdef HAVE_NETWORKING
          case MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_netplay_mitm_server);

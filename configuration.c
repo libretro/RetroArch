@@ -543,6 +543,7 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
+#if defined(HAVE_MICROPHONE)
 #if defined(HAVE_WASAPI)
 /* The default mic driver on Windows is WASAPI if it's available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
@@ -556,6 +557,7 @@ static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
 #else
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_NULL;
+#endif
 #endif
 
 #if defined(RS90) || defined(MIYOO)
@@ -943,6 +945,7 @@ const char *config_get_default_audio(void)
    return "null";
 }
 
+#if defined(HAVE_MICROPHONE)
 /**
  * config_get_default_microphone:
  *
@@ -970,6 +973,7 @@ const char *config_get_default_microphone(void)
 
    return "null";
 }
+#endif
 
 
 const char *config_get_default_record(void)
@@ -1486,7 +1490,6 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("menu_driver",              settings->arrays.menu_driver,    false, NULL, true);
 #endif
    SETTING_ARRAY("audio_device",             settings->arrays.audio_device,   false, NULL, true);
-   SETTING_ARRAY("microphone_device",        settings->arrays.microphone_device, false, NULL, true);
    SETTING_ARRAY("camera_device",            settings->arrays.camera_device,  false, NULL, true);
 #ifdef HAVE_CHEEVOS
    SETTING_ARRAY("cheevos_custom_host",      settings->arrays.cheevos_custom_host, false, NULL, true);
@@ -1497,9 +1500,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
-   SETTING_ARRAY("microphone_driver",        settings->arrays.microphone_driver,      false, NULL, true);
    SETTING_ARRAY("audio_resampler",          settings->arrays.audio_resampler,        false, NULL, true);
-   SETTING_ARRAY("microphone_resampler",     settings->arrays.microphone_resampler,   false, NULL, true);
    SETTING_ARRAY("input_driver",             settings->arrays.input_driver,           false, NULL, true);
    SETTING_ARRAY("input_joypad_driver",      settings->arrays.input_joypad_driver,    false, NULL, true);
    SETTING_ARRAY("input_keyboard_layout",    settings->arrays.input_keyboard_layout,  false, NULL, true);
@@ -1517,6 +1518,11 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
    SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
    SETTING_ARRAY("crt_switch_timings",       settings->arrays.crt_switch_timings, false, NULL, true);
+#ifdef HAVE_MICROPHONE
+   SETTING_ARRAY("microphone_device",        settings->arrays.microphone_device,    false, NULL, true);
+   SETTING_ARRAY("microphone_driver",        settings->arrays.microphone_driver,    false, NULL, true);
+   SETTING_ARRAY("microphone_resampler",     settings->arrays.microphone_resampler, false, NULL, true);
+#endif
 #ifdef HAVE_LAKKA
    SETTING_ARRAY("cpu_main_gov",             settings->arrays.cpu_main_gov, false, NULL, true);
    SETTING_ARRAY("cpu_menu_gov",             settings->arrays.cpu_menu_gov, false, NULL, true);
@@ -1795,7 +1801,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->bools.set_supports_no_game_enable, true, true, false);
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
-   SETTING_BOOL("microphone_enable",             &settings->bools.microphone_enable, true, DEFAULT_MICROPHONE_ENABLE, false);
    SETTING_BOOL("menu_enable_widgets",           &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
    SETTING_BOOL("menu_show_load_content_animation", &settings->bools.menu_show_load_content_animation, true, DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, false);
    SETTING_BOOL("notification_show_autoconfig",  &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
@@ -2088,9 +2093,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("audio_rate_control",           &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
 #ifdef HAVE_WASAPI
    SETTING_BOOL("audio_wasapi_exclusive_mode",  &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
-   SETTING_BOOL("microphone_wasapi_exclusive_mode",  &settings->bools.microphone_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
    SETTING_BOOL("audio_wasapi_float_format",    &settings->bools.audio_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
-   SETTING_BOOL("microphone_wasapi_float_format",    &settings->bools.microphone_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
 #endif
 
    SETTING_BOOL("savestates_in_content_dir",     &settings->bools.savestates_in_content_dir, true, DEFAULT_SAVESTATES_IN_CONTENT_DIR, false);
@@ -2151,6 +2154,15 @@ static struct config_bool_setting *populate_settings_bool(
 
 #if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
    SETTING_BOOL("gcdwebserver_alert",    &settings->bools.gcdwebserver_alert, true, true, false);
+#endif
+
+#ifdef HAVE_MICROPHONE
+   SETTING_BOOL("microphone_enable",             &settings->bools.microphone_enable, true, DEFAULT_MICROPHONE_ENABLE, false);
+
+#ifdef HAVE_WASAPI
+   SETTING_BOOL("microphone_wasapi_exclusive_mode",  &settings->bools.microphone_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
+   SETTING_BOOL("microphone_wasapi_float_format",    &settings->bools.microphone_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
+#endif
 #endif
 
    *size = count;
@@ -2269,14 +2281,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_rumble_gain",            &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",        &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
-   SETTING_UINT("microphone_latency",           &settings->uints.microphone_latency, false, 0 /* TODO */, false);
    SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
-   SETTING_UINT("microphone_resampler_quality", &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
-   SETTING_UINT("microphone_block_frames",      &settings->uints.microphone_block_frames, true, 0, false);
-#ifdef HAVE_WASAPI
-   SETTING_UINT("microphone_wasapi_sh_buffer_length", &settings->uints.microphone_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH, false);
-#endif
 #ifdef ANDROID
    SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, 0, false);
 #endif
@@ -2377,7 +2383,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("cheevos_visibility_summary",   &settings->uints.cheevos_visibility_summary, true, DEFAULT_CHEEVOS_VISIBILITY_SUMMARY, false);
 #endif
    SETTING_UINT("audio_out_rate",               &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
-   SETTING_UINT("microphone_rate",              &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
    SETTING_UINT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */, false);
    SETTING_UINT("crt_switch_resolution_super",  &settings->uints.crt_switch_resolution_super,      true, DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, false);
    SETTING_UINT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */, false);
@@ -2483,6 +2488,16 @@ static struct config_uint_setting *populate_settings_uint(
 
 #ifdef HAVE_MIST
    SETTING_UINT("steam_rich_presence_format",   &settings->uints.steam_rich_presence_format, true, DEFAULT_STEAM_RICH_PRESENCE_FORMAT, false);
+#endif
+
+#ifdef HAVE_MICROPHONE
+   SETTING_UINT("microphone_latency",           &settings->uints.microphone_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("microphone_resampler_quality", &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
+   SETTING_UINT("microphone_block_frames",      &settings->uints.microphone_block_frames, true, 0, false);
+   SETTING_UINT("microphone_rate",              &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
+#ifdef HAVE_WASAPI
+   SETTING_UINT("microphone_wasapi_sh_buffer_length", &settings->uints.microphone_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH, false);
+#endif
 #endif
 
    *size = count;
@@ -2591,7 +2606,9 @@ void config_set_defaults(void *data)
    int size_settings_size           = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
    const char *def_video            = config_get_default_video();
    const char *def_audio            = config_get_default_audio();
+#ifdef HAVE_MICROPHONE
    const char *def_microphone       = config_get_default_microphone();
+#endif
    const char *def_audio_resampler  = config_get_default_audio_resampler();
    const char *def_input            = config_get_default_input();
    const char *def_joypad           = config_get_default_joypad();
@@ -2696,17 +2713,19 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.audio_driver,
             def_audio);
+#ifdef HAVE_MICROPHONE
    if (def_microphone)
       configuration_set_string(settings,
             settings->arrays.microphone_driver,
             def_microphone);
+   if (def_audio_resampler)  /* not a typo, microphone's default sampler is the same as audio's */
+      configuration_set_string(settings,
+            settings->arrays.microphone_resampler,
+            def_audio_resampler);
+#endif
    if (def_audio_resampler)
       configuration_set_string(settings,
             settings->arrays.audio_resampler,
-            def_audio_resampler);
-   if (def_audio_resampler)
-      configuration_set_string(settings,
-            settings->arrays.microphone_resampler,
             def_audio_resampler);
    if (def_input)
       configuration_set_string(settings,
@@ -2768,11 +2787,6 @@ void config_set_defaults(void *data)
             settings->arrays.audio_device,
             DEFAULT_AUDIO_DEVICE);
 
-   if (DEFAULT_MICROPHONE_DEVICE)
-      configuration_set_string(settings,
-                               settings->arrays.microphone_device,
-                               DEFAULT_MICROPHONE_DEVICE);
-
    if (!g_defaults.settings_out_latency)
       g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;
 
@@ -2781,11 +2795,19 @@ void config_set_defaults(void *data)
    if (!g_defaults.settings_in_latency)
       g_defaults.settings_in_latency          = DEFAULT_IN_LATENCY;
 
-   settings->uints.microphone_latency         = g_defaults.settings_in_latency;
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
+#endif
+
+#ifdef HAVE_MICROPHONE
+   if (DEFAULT_MICROPHONE_DEVICE)
+      configuration_set_string(settings,
+            settings->arrays.microphone_device,
+            DEFAULT_MICROPHONE_DEVICE);
+
+   settings->uints.microphone_latency         = g_defaults.settings_in_latency;
 #endif
 
 #ifdef HAVE_LAKKA

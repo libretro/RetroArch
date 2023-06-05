@@ -157,12 +157,16 @@ typedef struct settings
       unsigned led_map[MAX_LEDS];
 
       unsigned audio_output_sample_rate;
-      unsigned microphone_sample_rate;
       unsigned audio_block_frames;
-      unsigned microphone_block_frames;
       unsigned audio_latency;
+
+#ifdef HAVE_MICROPHONE
+      unsigned microphone_sample_rate;
+      unsigned microphone_block_frames;
       unsigned microphone_latency;
       unsigned microphone_wasapi_sh_buffer_length;
+      unsigned microphone_resampler_quality;
+#endif
 
       unsigned fps_update_interval;
       unsigned memory_update_interval;
@@ -170,7 +174,6 @@ typedef struct settings
       unsigned input_block_timeout;
 
       unsigned audio_resampler_quality;
-      unsigned microphone_resampler_quality;
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
@@ -431,9 +434,7 @@ typedef struct settings
       char cheevos_custom_host[64];
       char video_context_driver[32];
       char audio_driver[32];
-      char microphone_driver[32];
       char audio_resampler[32];
-      char microphone_resampler[32];
       char input_driver[32];
       char input_joypad_driver[32];
       char midi_driver[32];
@@ -442,12 +443,17 @@ typedef struct settings
 
       char input_keyboard_layout[64];
 
+#ifdef HAVE_MICROPHONE
+      char microphone_driver[32];
+      char microphone_resampler[32];
+      char microphone_device[255];
+#endif
+
 #ifdef ANDROID
       char input_android_physical_keyboard[255];
 #endif
 
       char audio_device[255];
-      char microphone_device[255];
       char camera_device[255];
       char netplay_mitm_server[255];
 
@@ -608,10 +614,14 @@ typedef struct settings
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
 
+#ifdef HAVE_MICROPHONE
       /* Microphone */
       bool microphone_enable;
+#ifdef HAVE_WASAPI
       bool microphone_wasapi_exclusive_mode;
       bool microphone_wasapi_float_format;
+#endif
+#endif
 
       /* Input */
       bool input_remap_binds_enable;
@@ -1054,6 +1064,7 @@ const char *config_get_default_video(void);
  **/
 const char *config_get_default_audio(void);
 
+#if defined(HAVE_MICROPHONE)
 /**
  * config_get_default_microphone:
  *
@@ -1062,6 +1073,7 @@ const char *config_get_default_audio(void);
  * Returns: Default microphone driver.
  **/
 const char *config_get_default_microphone(void);
+#endif
 
 /**
  * config_get_default_audio_resampler:

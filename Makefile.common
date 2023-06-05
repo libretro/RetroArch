@@ -313,7 +313,6 @@ OBJ += \
        file_path_special.o \
        $(LIBRETRO_COMM_DIR)/hash/lrc_hash.o \
        audio/audio_driver.o \
-       audio/microphone_driver.o \
        input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
@@ -327,6 +326,11 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o
+
+ifeq ($(HAVE_MICROPHONE), 1)
+   DEFINES += -DHAVE_MICROPHONE
+   OBJ += audio/microphone_driver.o
+endif
 
 ifeq ($(HAVE_REWIND), 1)
 DEFINES += -DHAVE_REWIND
@@ -822,8 +826,11 @@ endif
 
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o \
-          audio/drivers_microphone/alsa.o \
           audio/common/alsa.o
+
+   ifeq ($(HAVE_MICROPHONE), 1)
+      OBJ += audio/drivers_microphone/alsa.o
+   endif
 
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
@@ -836,8 +843,11 @@ ifeq ($(HAVE_ALSA), 1)
    ifneq ($(MIYOO), 1)
       ifeq ($(HAVE_THREADS), 1)
          OBJ += audio/drivers/alsathread.o \
-                audio/drivers_microphone/alsathread.o \
                 audio/common/alsathread.o
+
+         ifeq ($(HAVE_MICROPHONE), 1)
+            OBJ += audio/drivers_microphone/alsathread.o
+         endif
       endif
    endif
 
@@ -901,10 +911,13 @@ endif
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
    OBJ += audio/drivers/wasapi.o \
-          audio/common/wasapi.o \
-          audio/drivers_microphone/wasapi.o
+          audio/common/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
+
+   ifeq ($(HAVE_MICROPHONE), 1)
+      OBJ += audio/drivers_microphone/wasapi.o
+      endif
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
@@ -1546,11 +1559,14 @@ endif
 ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-			 gfx/common/sdl2_common.o \
-			 audio/drivers_microphone/sdl_microphone.o
-   # Microphones are not supported by SDL 1.x
+			 gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    LIBS += $(SDL2_LIBS)
+
+   ifeq ($(HAVE_MICROPHONE), 1)
+      OBJ += audio/drivers_microphone/sdl_microphone.o
+      # Microphones are not supported by SDL 1.x
+   endif
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o

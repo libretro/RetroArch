@@ -85,7 +85,9 @@
 #include "../dynamic.h"
 #include "../list_special.h"
 #include "../audio/audio_driver.h"
+#ifdef HAVE_MICROPHONE
 #include "../audio/microphone_driver.h"
+#endif
 #ifdef HAVE_BLUETOOTH
 #include "../bluetooth/bluetooth_driver.h"
 #endif
@@ -280,7 +282,9 @@ enum settings_list_type
    SETTINGS_LIST_VIDEO,
    SETTINGS_LIST_CRT_SWITCHRES,
    SETTINGS_LIST_AUDIO,
+#ifdef HAVE_MICROPHONE
    SETTINGS_LIST_MICROPHONE,
+#endif
    SETTINGS_LIST_INPUT,
    SETTINGS_LIST_INPUT_TURBO_FIRE,
    SETTINGS_LIST_INPUT_HOTKEY,
@@ -2704,6 +2708,7 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    return 0;
 }
 
+#ifdef HAVE_MICROPHONE
 static int setting_string_action_start_microphone_device(rarch_setting_t *setting)
 {
    if (!setting)
@@ -2730,6 +2735,7 @@ static int setting_string_action_ok_microphone_device(
          ACTION_OK_DL_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE);
    return 0;
 }
+#endif
 #endif
 
 static void setting_get_string_representation_streaming_mode(
@@ -4850,6 +4856,7 @@ static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(
       strlcpy(s, "Auto", len);
 }
 
+#ifdef HAVE_MICROPHONE
 static void setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -4861,6 +4868,7 @@ static void setting_get_string_representation_uint_microphone_wasapi_sh_buffer_l
    else
       strlcpy(s, "Auto", len);
 }
+#endif
 #endif
 
 #if !defined(RARCH_CONSOLE)
@@ -5650,6 +5658,7 @@ static int setting_string_action_left_audio_device(
    return 0;
 }
 
+#ifdef HAVE_MICROPHONE
 static int setting_string_action_left_microphone_device(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -5681,6 +5690,7 @@ static int setting_string_action_left_microphone_device(
    command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
    return 0;
 }
+#endif
 #endif
 
 static int setting_string_action_left_driver(
@@ -5972,6 +5982,7 @@ static int setting_string_action_right_audio_device(
    return 0;
 }
 
+#ifdef HAVE_MICROPHONE
 static int setting_string_action_right_microphone_device(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -6002,6 +6013,7 @@ static int setting_string_action_right_microphone_device(
    command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
    return 0;
 }
+#endif
 #endif
 
 static int setting_string_action_right_driver(
@@ -8201,10 +8213,12 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
+#ifdef HAVE_MICROPHONE
       case MENU_ENUM_LABEL_MICROPHONE_LATENCY:
       case MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE:
          rarch_cmd = CMD_EVENT_MICROPHONE_REINIT;
          break;
+#endif
       case MENU_ENUM_LABEL_PAL60_ENABLE:
          if (*setting->value.target.boolean && global_get_ptr()->console.screen.pal_enable)
             rarch_cmd = CMD_EVENT_REINIT;
@@ -10202,6 +10216,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+#ifdef HAVE_MICROPHONE
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_MICROPHONE_SETTINGS,
@@ -10209,6 +10224,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -10298,6 +10314,7 @@ static bool setting_append_list(
 
             j++;
 
+#ifdef HAVE_MICROPHONE
             string_options_entries[j].target         = settings->arrays.microphone_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.microphone_driver);
             string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_MICROPHONE_DRIVER;
@@ -10306,6 +10323,7 @@ static bool setting_append_list(
             string_options_entries[j].values         = config_get_microphone_driver_options();
 
             j++;
+#endif
 
             string_options_entries[j].target         = settings->arrays.audio_resampler;
             string_options_entries[j].len            = sizeof(settings->arrays.audio_resampler);
@@ -10316,6 +10334,7 @@ static bool setting_append_list(
 
             j++;
 
+#ifdef HAVE_MICROPHONE
             string_options_entries[j].target         = settings->arrays.microphone_resampler;
             string_options_entries[j].len            = sizeof(settings->arrays.microphone_resampler);
             string_options_entries[j].name_enum_idx  = MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER;
@@ -10324,6 +10343,7 @@ static bool setting_append_list(
             string_options_entries[j].values         = config_get_audio_resampler_driver_options();
 
             j++;
+#endif
 
             string_options_entries[j].target         = settings->arrays.camera_driver;
             string_options_entries[j].len            = sizeof(settings->arrays.camera_driver);
@@ -13485,6 +13505,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_MICROPHONE
          CONFIG_UINT(
                list, list_info,
                &settings->uints.microphone_latency,
@@ -13500,6 +13521,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
          CONFIG_UINT(
                list, list_info,
@@ -13623,6 +13645,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_string_audio_device;
 
+#ifdef HAVE_MICROPHONE
          CONFIG_STRING(
                list, list_info,
                settings->arrays.microphone_device,
@@ -13644,6 +13667,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_string_audio_device;
 #endif
+#endif
 
          CONFIG_UINT(
                list, list_info,
@@ -13660,6 +13684,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
+#ifdef HAVE_MICROPHONE
          CONFIG_UINT(
                list, list_info,
                &settings->uints.microphone_sample_rate,
@@ -13674,6 +13699,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint_special;
          menu_settings_list_current_add_range(list, list_info, 1000, 192000, 100.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+#endif
 
          CONFIG_PATH(
                list, list_info,
@@ -13747,6 +13773,7 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+#ifdef HAVE_MICROPHONE
       case SETTINGS_LIST_MICROPHONE:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS), parent_group);
@@ -13930,6 +13957,7 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+#endif
       case SETTINGS_LIST_INPUT:
          {
             unsigned user;
@@ -22720,7 +22748,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_VIDEO,
       SETTINGS_LIST_CRT_SWITCHRES,
       SETTINGS_LIST_AUDIO,
+#ifdef HAVE_MICROPHONE
       SETTINGS_LIST_MICROPHONE,
+#endif
       SETTINGS_LIST_INPUT,
       SETTINGS_LIST_INPUT_TURBO_FIRE,
       SETTINGS_LIST_INPUT_HOTKEY,

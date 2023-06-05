@@ -16,8 +16,11 @@
 
 #include "wasapi.h"
 #include <stdio.h>
+#ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
+#endif
 #include "queues/fifo_queue.h"
+#include "lists/string_list.h"
 #include "configuration.h"
 #include "verbosity.h"
 #include "string/stdstring.h"

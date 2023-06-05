@@ -161,7 +161,10 @@
 
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+
+#ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
+#endif
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
@@ -3389,6 +3392,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
       case RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE:
+#ifdef HAVE_MICROPHONE
          {
             struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
             microphone_driver_state_t *mic_st             = microphone_state_get_ptr();
@@ -3440,6 +3444,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             microphone->get_mic_state = microphone_driver_get_mic_state;
             microphone->read_mic      = microphone_driver_read;
          }
+#else
+         {
+            struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
+
+            if (microphone)
+               microphone->interface_version = 0;
+
+            RARCH_ERR("[Environ]: Core requested microphone interface, but this build does not include support\n");
+
+            return false;
+         }
+#endif
          break;
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
          {
@@ -3863,7 +3880,10 @@ static bool core_unload_game(void)
    }
 
    audio_driver_stop();
+
+#ifdef HAVE_MICROPHONE
    microphone_driver_stop();
+#endif
 
    return true;
 }

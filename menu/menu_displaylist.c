@@ -123,7 +123,10 @@
 #include "../core_backup.h"
 #include "../misc/cpufreq/cpufreq.h"
 #include "../input/input_remapping.h"
+
+#ifdef HAVE_MICROPHONE
 #include "../audio/microphone_driver.h"
+#endif
 
 #ifdef HAVE_MIST
 #include "../steam/steam.h"
@@ -5146,6 +5149,7 @@ static int menu_displaylist_parse_audio_device_list(
    return count;
 }
 
+#ifdef HAVE_MICROPHONE
 static int menu_displaylist_parse_microphone_device_list(
       file_list_t *info_list, const char *info_path,
       settings_t *settings)
@@ -5234,6 +5238,7 @@ static int menu_displaylist_parse_microphone_device_list(
 
    return count;
 }
+#endif
 
 static int menu_displaylist_parse_input_device_type_list(
       file_list_t *info_list, const char *info_path, settings_t *settings)
@@ -7171,6 +7176,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#ifdef HAVE_MICROPHONE
       case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_ENABLE,
@@ -7220,6 +7226,7 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
+#endif
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -7250,7 +7257,9 @@ unsigned menu_displaylist_build_list(
 #endif
          menu_displaylist_build_info_selective_t build_list[] = {
             {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
+#ifdef HAVE_MICROPHONE
             {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true  },
+#endif
             {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
@@ -9742,7 +9751,9 @@ unsigned menu_displaylist_build_list(
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
+#ifdef HAVE_MICROPHONE
                {MENU_ENUM_LABEL_MICROPHONE_LATENCY,                    PARSE_ONLY_UINT, true },
+#endif
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
@@ -10667,7 +10678,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_VIDEO_DRIVER,          PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_AUDIO_DRIVER,          PARSE_ONLY_STRING_OPTIONS},
+#ifdef HAVE_MICROPHONE
                {MENU_ENUM_LABEL_MICROPHONE_DRIVER,     PARSE_ONLY_STRING_OPTIONS},
+#endif
 #if 0
                /* This is better suited under audio options only */
                {MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,PARSE_ONLY_STRING_OPTIONS},
@@ -13553,6 +13566,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
+#ifdef HAVE_MICROPHONE
          case DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE:
             menu_entries_clear(info->list);
             count              = menu_displaylist_parse_microphone_device_list(info->list, info->path, settings);
@@ -13567,6 +13581,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags       |= MD_FLAG_NEED_REFRESH
                                  | MD_FLAG_NEED_PUSH;
             break;
+#endif
 #ifdef HAVE_NETWORKING
          case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
             menu_entries_clear(info->list);
@@ -13670,7 +13685,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
+#ifdef HAVE_MICROPHONE
          case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
+#endif
          case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_HELP_SCREEN_LIST:
          case DISPLAYLIST_INFORMATION_LIST:

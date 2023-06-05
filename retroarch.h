@@ -162,6 +162,7 @@ void retroarch_favorites_deinit(void);
  **/
 const char* config_get_audio_driver_options(void);
 
+#ifdef HAVE_MICROPHONE
 /**
  * config_get_microphone_driver_options:
  *
@@ -170,6 +171,7 @@ const char* config_get_audio_driver_options(void);
  * Returns: string listing of all microphone driver names, separated by '|'.
  **/
 const char* config_get_microphone_driver_options(void);
+#endif
 
 /* Camera */
 

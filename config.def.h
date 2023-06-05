@@ -998,7 +998,6 @@
 
 /* Will enable audio or not. */
 #define DEFAULT_AUDIO_ENABLE true
-#define DEFAULT_MICROPHONE_ENABLE true
 
 /* Enable menu audio sounds. */
 #define DEFAULT_AUDIO_ENABLE_MENU false
@@ -1096,7 +1095,6 @@
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
 #define DEFAULT_AUDIO_DEVICE NULL
-#define DEFAULT_MICROPHONE_DEVICE NULL
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
@@ -1139,7 +1137,6 @@
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
 /* Automatic shared mode buffer */
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
-#define DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH 0
 #endif
 
 /* Automatically mute audio when fast forward
@@ -1148,6 +1145,16 @@
 /* Speed up audio to match fast-forward speed up.
  * Avoids crackling */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+
+#ifdef HAVE_MICROPHONE
+/* Microphone support */
+#define DEFAULT_MICROPHONE_ENABLE true
+#define DEFAULT_MICROPHONE_DEVICE NULL
+
+#ifdef HAVE_WASAPI
+#define DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH 0
+#endif
+#endif
 
 /* MISC */
 

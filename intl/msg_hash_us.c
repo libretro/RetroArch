@@ -244,6 +244,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              }
              break;
+#ifdef HAVE_MICROPHONE
           case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
              {
                 const char *lbl = settings ? settings->arrays.microphone_resampler : NULL;
@@ -258,6 +259,7 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              }
              break;
+#endif
           case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET), len);
              break;

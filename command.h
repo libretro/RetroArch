@@ -98,10 +98,6 @@ enum event_command
    CMD_EVENT_AUDIO_START,
    /* Mutes audio. */
    CMD_EVENT_AUDIO_MUTE_TOGGLE,
-   /* Stops all enabled microphones. */
-   CMD_EVENT_MICROPHONE_STOP,
-   /* Starts all enabled microphones */
-   CMD_EVENT_MICROPHONE_START,
    /* Volume adjustments. */
    CMD_EVENT_VOLUME_UP,
    CMD_EVENT_VOLUME_DOWN,
@@ -216,8 +212,6 @@ enum event_command
    CMD_EVENT_NETPLAY_HOST_TOGGLE,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
-   /* Reinitializes microphone driver. */
-   CMD_EVENT_MICROPHONE_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
    CMD_EVENT_RESIZE_WINDOWED_SCALE,
    /* Toggles disk eject. */
@@ -264,7 +258,14 @@ enum event_command
    CMD_EVENT_PRESENCE_UPDATE,
    CMD_EVENT_OVERLAY_NEXT,
    CMD_EVENT_OSK_TOGGLE,
-
+#ifdef HAVE_MICROPHONE
+   /* Stops all enabled microphones. */
+   CMD_EVENT_MICROPHONE_STOP,
+   /* Starts all enabled microphones */
+   CMD_EVENT_MICROPHONE_START,
+   /* Reinitializes microphone driver. */
+   CMD_EVENT_MICROPHONE_REINIT,
+#endif
    /* Deprecated */
    CMD_EVENT_SEND_DEBUG_INFO
 };
