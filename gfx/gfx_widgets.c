@@ -1156,7 +1156,7 @@ static void gfx_widgets_draw_task_msg(
    float *msg_queue_current_background;
    float *msg_queue_current_bar;
 
-   char task_percentage[256];
+   char task_percentage[256]         = "";
    bool draw_msg_new                 = false;
    unsigned task_percentage_offset   = 0;
 
@@ -1172,18 +1172,10 @@ static void gfx_widgets_draw_task_msg(
    {
       if (msg->flags & DISPWIDG_FLAG_TASK_ERROR) /* TODO/FIXME - localize */
          strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
-      else
-      {
-         task_percentage[0] = ' ';
-         task_percentage[1] = '\0';
-      }
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
-   {
-      task_percentage[0] = '\0';
       snprintf(task_percentage, sizeof(task_percentage),
             "%i%%", msg->task_progress);
-   }
 
    rect_width = p_dispwidget->simple_widget_padding 
       + msg->width 
