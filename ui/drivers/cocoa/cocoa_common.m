@@ -145,13 +145,21 @@ void *glkitview_init(void);
         if (controller.extendedGamepad)
         {
             if (type == UIPressTypeUpArrow)
-                extendedPress |= controller.extendedGamepad.dpad.up.pressed;
+                extendedPress |= controller.extendedGamepad.dpad.up.pressed
+                              || controller.extendedGamepad.leftThumbstick.up.pressed
+                              || controller.extendedGamepad.rightThumbstick.up.pressed;
             else if (type == UIPressTypeDownArrow)
-                extendedPress |= controller.extendedGamepad.dpad.down.pressed;
+                extendedPress |= controller.extendedGamepad.dpad.down.pressed
+                              || controller.extendedGamepad.leftThumbstick.down.pressed
+                              || controller.extendedGamepad.rightThumbstick.down.pressed;
             else if (type == UIPressTypeLeftArrow)
-                extendedPress |= controller.extendedGamepad.dpad.left.pressed;
+                extendedPress |= controller.extendedGamepad.dpad.left.pressed
+                              || controller.extendedGamepad.leftThumbstick.left.pressed
+                              || controller.extendedGamepad.rightThumbstick.left.pressed;
             else if (type == UIPressTypeRightArrow)
-                extendedPress |= controller.extendedGamepad.dpad.right.pressed;
+                extendedPress |= controller.extendedGamepad.dpad.right.pressed
+                              || controller.extendedGamepad.leftThumbstick.right.pressed
+                              || controller.extendedGamepad.rightThumbstick.right.pressed;
             else if (type == UIPressTypeSelect)
                 extendedPress |= controller.extendedGamepad.buttonA.pressed;
             else if (type == UIPressTypeMenu)
