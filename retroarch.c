@@ -121,7 +121,7 @@
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
-#include "microphone/microphone_driver.h"
+#include "audio/microphone_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

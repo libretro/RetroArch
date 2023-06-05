@@ -19,7 +19,7 @@
 
 #include "audio/common/alsa.h"
 #include "audio/common/alsathread.h"
-#include "microphone/microphone_driver.h"
+#include "audio/microphone_driver.h"
 #include "verbosity.h"
 #include "retro_assert.h"
 

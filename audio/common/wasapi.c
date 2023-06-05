@@ -16,7 +16,7 @@
 
 #include "wasapi.h"
 #include <stdio.h>
-#include "microphone/microphone_driver.h"
+#include "audio/microphone_driver.h"
 #include "queues/fifo_queue.h"
 #include "configuration.h"
 #include "verbosity.h"

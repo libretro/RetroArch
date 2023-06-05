@@ -85,7 +85,7 @@
 #include "../dynamic.h"
 #include "../list_special.h"
 #include "../audio/audio_driver.h"
-#include "../microphone/microphone_driver.h"
+#include "../audio/microphone_driver.h"
 #ifdef HAVE_BLUETOOTH
 #include "../bluetooth/bluetooth_driver.h"
 #endif

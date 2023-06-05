@@ -123,7 +123,7 @@
 #include "../core_backup.h"
 #include "../misc/cpufreq/cpufreq.h"
 #include "../input/input_remapping.h"
-#include "../microphone/microphone_driver.h"
+#include "../audio/microphone_driver.h"
 
 #ifdef HAVE_MIST
 #include "../steam/steam.h"

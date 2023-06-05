@@ -18,7 +18,7 @@
 #include "verbosity.h"
 #include "retro_assert.h"
 #include "retro_math.h"
-#include "microphone/microphone_driver.h"
+#include "audio/microphone_driver.h"
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 

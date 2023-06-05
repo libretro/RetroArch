@@ -161,7 +161,7 @@
 
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
-#include "microphone/microphone_driver.h"
+#include "audio/microphone_driver.h"
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
