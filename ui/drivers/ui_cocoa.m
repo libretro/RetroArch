@@ -467,8 +467,14 @@ static ui_application_t ui_application_cocoa = {
             /* Absolute */
             apple->touches[0].screen_x  = (int16_t)pos.x;
             apple->touches[0].screen_y  = (int16_t)pos.y;
-            apple->window_pos_x         = (int16_t)pos.x;
-            apple->window_pos_y         = (int16_t)pos.y;
+
+            if (apple->mouse_grabbed) {
+               apple->window_pos_x      += (int16_t)delta_x;
+               apple->window_pos_y      += (int16_t)delta_y;
+            } else {
+               apple->window_pos_x       = (int16_t)pos.x;
+               apple->window_pos_y       = (int16_t)pos.y;
+            }
          }
          break;
 #if defined(HAVE_COCOA_METAL)
