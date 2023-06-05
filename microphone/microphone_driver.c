@@ -63,10 +63,8 @@ microphone_driver_state_t *microphone_state_get_ptr(void)
    return &mic_driver_st;
 }
 
-unsigned mic_driver_get_sample_size(const retro_microphone_t *microphone)
-{
-   return (microphone->flags & MICROPHONE_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t);
-}
+#define mic_driver_get_sample_size(microphone) \
+   (((microphone)->flags & MICROPHONE_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t))
 
 static bool mic_driver_open_mic_internal(retro_microphone_t* microphone);
 bool microphone_driver_start(void)
