@@ -14369,6 +14369,46 @@ MSG_HASH(
    "Ajuster l'échelle x/y des coordonnées de l'écran tactile pour s'adapter à la mise à l'échelle de l'écran au niveau du système d'exploitation."
    )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "VMouse tactile en mode pointeur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Activez cette option pour utiliser les événements de toucher de l'écran tactile."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Utiliser la VMouse tactile en mode souris"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Activer l'émulation virtuelle de la souris à partir des événements d'entrées tactiles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Utiliser la VMouse tactile en mode trackpad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Activez cette option avec l'option souris pour utiliser l'écran tactile en tant que pavé tactile."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Utiliser la VMouse tactile en mode trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Activez cette option avec l'option souris pour utiliser l'écran tactile en tant que trackball, ajoutant de l'inertie au pointeur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Utiliser la VMouse tactile en mode gestes tactiles"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Active les gestes de l'écran tactile, y compris le tap, le taper-glisser et le glissement avec les doigts."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
