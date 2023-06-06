@@ -122,6 +122,10 @@
 #include "location_driver.h"
 #include "record/record_driver.h"
 
+#ifdef HAVE_MICROPHONE
+#include "audio/microphone_driver.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -429,6 +433,18 @@ static const void *find_driver_nonempty(
          return audio_drivers[i];
       }
    }
+#ifdef HAVE_MICROPHONE
+   else if (string_is_equal(label, "microphone_driver"))
+   {
+      if (microphone_drivers[i])
+      {
+         const char *ident = microphone_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return microphone_drivers[i];
+      }
+   }
+#endif
    else if (string_is_equal(label, "record_driver"))
    {
       if (record_drivers[i])
@@ -767,12 +783,16 @@ void driver_set_nonblock_state(void)
 void drivers_init(
       settings_t *settings,
       int flags,
+      enum driver_lifetime_flags lifetime_flags,
       bool verbosity_enabled)
 {
-   runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   audio_driver_state_t *audio_st = audio_state_get_ptr();
-   input_driver_state_t *input_st = input_state_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   audio_driver_state_t *audio_st    = audio_state_get_ptr();
+   input_driver_state_t *input_st    = input_state_get_ptr();
+   video_driver_state_t *video_st    = video_state_get_ptr();
+#ifdef HAVE_MICROPHONE
+   microphone_driver_state_t *mic_st = microphone_state_get_ptr();
+#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st     = menu_state_get_ptr();
 #endif
@@ -841,6 +861,15 @@ void drivers_init(
             audio_st->current_audio->device_list_new(
                   audio_st->context_audio_data);
    }
+
+#ifdef HAVE_MICROPHONE
+   if (flags & DRIVER_MICROPHONE_MASK)
+   {
+      microphone_driver_init_internal(settings);
+      if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
+         mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
+   }
+#endif
 
    /* Regular display refresh rate startup autoswitch based on content av_info */
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
@@ -1021,7 +1050,7 @@ void drivers_init(
 #endif /* #ifndef HAVE_LAKKA_SWITCH */
 }
 
-void driver_uninit(int flags)
+void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 {
    runloop_state_t *runloop_st      = runloop_state_get_ptr();
    video_driver_state_t *video_st   = video_state_get_ptr();
@@ -1108,6 +1137,11 @@ void driver_uninit(int flags)
 
    if ((flags & DRIVER_AUDIO_MASK))
       audio_state_get_ptr()->context_audio_data = NULL;
+
+#ifdef HAVE_MICROPHONE
+   if (flags & DRIVER_MICROPHONE_MASK)
+      microphone_driver_deinit(lifetime_flags & DRIVER_LIFETIME_RESET);
+#endif
 
    if (flags & DRIVER_MIDI_MASK)
       midi_driver_free();
@@ -1484,6 +1518,17 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
+#ifdef HAVE_MICROPHONE
+      case STRING_LIST_MICROPHONE_DRIVERS:
+         for (i = 0; microphone_drivers[i]; i++)
+         {
+            const char *opt  = microphone_drivers[i]->ident;
+            *len            += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+#endif
       case STRING_LIST_AUDIO_RESAMPLER_DRIVERS:
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {
@@ -2921,6 +2966,16 @@ bool command_event(enum event_command cmd, void *data)
                   RUNLOOP_FLAG_SHUTDOWN_INITIATED))
             return false;
          break;
+#ifdef HAVE_MICROPHONE
+      case CMD_EVENT_MICROPHONE_STOP:
+         if (!microphone_driver_stop())
+            return false;
+         break;
+      case CMD_EVENT_MICROPHONE_START:
+         if (!microphone_driver_start())
+            return false;
+         break;
+#endif
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
          {
             audio_driver_state_t
@@ -3308,12 +3363,18 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
-         driver_uninit(DRIVER_AUDIO_MASK);
-         drivers_init(settings, DRIVER_AUDIO_MASK, verbosity_is_enabled());
+         driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
+         drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
 #if defined(HAVE_AUDIOMIXER)
          audio_driver_load_system_sounds();
 #endif
          break;
+#ifdef HAVE_MICROPHONE
+      case CMD_EVENT_MICROPHONE_REINIT:
+         driver_uninit(DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET);
+         drivers_init(settings, DRIVER_MICROPHONE_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         break;
+#endif
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
@@ -3576,9 +3637,19 @@ bool command_event(enum event_command cmd, void *data)
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
 #endif
             if (menu_pause_libretro)
+            { /* If entering the menu pauses the game... */
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
+#ifdef HAVE_MICROPHONE
+               command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
+#endif
+            }
             else
+            {
                command_event(CMD_EVENT_AUDIO_START, NULL);
+#ifdef HAVE_MICROPHONE
+               command_event(CMD_EVENT_MICROPHONE_START, NULL);
+#endif
+            }
          }
          else
          {
@@ -4618,7 +4689,7 @@ void main_exit(void *args)
 #endif
 
    runloop_msg_queue_deinit();
-   driver_uninit(DRIVERS_CMD_ALL);
+   driver_uninit(DRIVERS_CMD_ALL, 0);
 
    retro_main_log_file_deinit();
 
@@ -4712,7 +4783,7 @@ int rarch_main(int argc, char *argv[], void *data)
    frontend_driver_init_first(data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
-      driver_uninit(DRIVERS_CMD_ALL);
+      driver_uninit(DRIVERS_CMD_ALL, 0);
 
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_create(&p_rarch->rarch_tls);
@@ -6052,7 +6123,7 @@ static bool retroarch_parse_input_and_config(
                   int reinit_flags               = DRIVERS_CMD_ALL &
                         ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
 
-                  drivers_init(settings, reinit_flags, false);
+                  drivers_init(settings, reinit_flags, 0, false);
                   retroarch_init_task_queue();
 
                   if (explicit_menu)
@@ -6068,7 +6139,7 @@ static bool retroarch_parse_input_and_config(
                   if (!explicit_menu)
                   {
                      task_queue_wait(NULL, NULL);
-                     driver_uninit(DRIVERS_CMD_ALL);
+                     driver_uninit(DRIVERS_CMD_ALL, 0);
                      exit(0);
                   }
                }
@@ -6483,7 +6554,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
          );
 #endif
-   drivers_init(settings, DRIVERS_CMD_ALL, verbosity_enabled);
+   drivers_init(settings, DRIVERS_CMD_ALL, 0, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(input_st);
    input_driver_init_command(input_st, settings);

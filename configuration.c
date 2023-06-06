@@ -143,9 +143,18 @@ enum audio_driver_enum
    AUDIO_NULL
 };
 
+enum microphone_driver_enum
+{
+   MICROPHONE_ALSA = AUDIO_NULL + 1,
+   MICROPHONE_ALSATHREAD,
+   MICROPHONE_SDL2,
+   MICROPHONE_WASAPI,
+   MICROPHONE_NULL
+};
+
 enum audio_resampler_driver_enum
 {
-   AUDIO_RESAMPLER_CC       = AUDIO_NULL + 1,
+   AUDIO_RESAMPLER_CC       = MICROPHONE_NULL + 1,
    AUDIO_RESAMPLER_SINC,
    AUDIO_RESAMPLER_NEAREST,
    AUDIO_RESAMPLER_NULL
@@ -534,6 +543,23 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
+#if defined(HAVE_MICROPHONE)
+#if defined(HAVE_WASAPI)
+/* The default mic driver on Windows is WASAPI if it's available. */
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
+#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
+/* The default mic driver on Linux is the threaded ALSA driver, if available. */
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSATHREAD;
+#elif defined(HAVE_ALSA)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSA;
+#elif defined(HAVE_SDL2)
+/* The default fallback driver is SDL2, if available. */
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
+#else
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_NULL;
+#endif
+#endif
+
 #if defined(RS90) || defined(MIYOO)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_NEAREST;
 #elif defined(PSP) || defined(EMSCRIPTEN)
@@ -918,6 +944,37 @@ const char *config_get_default_audio(void)
 
    return "null";
 }
+
+#if defined(HAVE_MICROPHONE)
+/**
+ * config_get_default_microphone:
+ *
+ * Gets default microphone driver.
+ *
+ * Returns: Default microphone driver.
+ **/
+const char *config_get_default_microphone(void)
+{
+   enum microphone_driver_enum default_driver = MICROPHONE_DEFAULT_DRIVER;
+
+   switch (default_driver)
+   {
+      case MICROPHONE_ALSA:
+         return "alsa";
+      case MICROPHONE_ALSATHREAD:
+         return "alsathread";
+      case MICROPHONE_WASAPI:
+         return "wasapi";
+      case MICROPHONE_SDL2:
+         return "sdl2";
+      case MICROPHONE_NULL:
+         break;
+   }
+
+   return "null";
+}
+#endif
+
 
 const char *config_get_default_record(void)
 {
@@ -1461,6 +1518,11 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
    SETTING_ARRAY("ai_service_url",           settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
    SETTING_ARRAY("crt_switch_timings",       settings->arrays.crt_switch_timings, false, NULL, true);
+#ifdef HAVE_MICROPHONE
+   SETTING_ARRAY("microphone_device",        settings->arrays.microphone_device,    false, NULL, true);
+   SETTING_ARRAY("microphone_driver",        settings->arrays.microphone_driver,    false, NULL, true);
+   SETTING_ARRAY("microphone_resampler",     settings->arrays.microphone_resampler, false, NULL, true);
+#endif
 #ifdef HAVE_LAKKA
    SETTING_ARRAY("cpu_main_gov",             settings->arrays.cpu_main_gov, false, NULL, true);
    SETTING_ARRAY("cpu_menu_gov",             settings->arrays.cpu_menu_gov, false, NULL, true);
@@ -2094,6 +2156,15 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("gcdwebserver_alert",    &settings->bools.gcdwebserver_alert, true, true, false);
 #endif
 
+#ifdef HAVE_MICROPHONE
+   SETTING_BOOL("microphone_enable",             &settings->bools.microphone_enable, true, DEFAULT_MICROPHONE_ENABLE, false);
+
+#ifdef HAVE_WASAPI
+   SETTING_BOOL("microphone_wasapi_exclusive_mode",  &settings->bools.microphone_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
+   SETTING_BOOL("microphone_wasapi_float_format",    &settings->bools.microphone_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
+#endif
+#endif
+
    *size = count;
 
    return tmp;
@@ -2419,6 +2490,16 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("steam_rich_presence_format",   &settings->uints.steam_rich_presence_format, true, DEFAULT_STEAM_RICH_PRESENCE_FORMAT, false);
 #endif
 
+#ifdef HAVE_MICROPHONE
+   SETTING_UINT("microphone_latency",           &settings->uints.microphone_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("microphone_resampler_quality", &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
+   SETTING_UINT("microphone_block_frames",      &settings->uints.microphone_block_frames, true, 0, false);
+   SETTING_UINT("microphone_rate",              &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
+#ifdef HAVE_WASAPI
+   SETTING_UINT("microphone_wasapi_sh_buffer_length", &settings->uints.microphone_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH, false);
+#endif
+#endif
+
    *size = count;
 
    return tmp;
@@ -2525,6 +2606,9 @@ void config_set_defaults(void *data)
    int size_settings_size           = sizeof(settings->sizes)   / sizeof(settings->sizes.placeholder);
    const char *def_video            = config_get_default_video();
    const char *def_audio            = config_get_default_audio();
+#ifdef HAVE_MICROPHONE
+   const char *def_microphone       = config_get_default_microphone();
+#endif
    const char *def_audio_resampler  = config_get_default_audio_resampler();
    const char *def_input            = config_get_default_input();
    const char *def_joypad           = config_get_default_joypad();
@@ -2629,6 +2713,16 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.audio_driver,
             def_audio);
+#ifdef HAVE_MICROPHONE
+   if (def_microphone)
+      configuration_set_string(settings,
+            settings->arrays.microphone_driver,
+            def_microphone);
+   if (def_audio_resampler)  /* not a typo, microphone's default sampler is the same as audio's */
+      configuration_set_string(settings,
+            settings->arrays.microphone_resampler,
+            def_audio_resampler);
+#endif
    if (def_audio_resampler)
       configuration_set_string(settings,
             settings->arrays.audio_resampler,
@@ -2698,9 +2792,22 @@ void config_set_defaults(void *data)
 
    settings->uints.audio_latency               = g_defaults.settings_out_latency;
 
+   if (!g_defaults.settings_in_latency)
+      g_defaults.settings_in_latency          = DEFAULT_IN_LATENCY;
+
+
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
+#endif
+
+#ifdef HAVE_MICROPHONE
+   if (DEFAULT_MICROPHONE_DEVICE)
+      configuration_set_string(settings,
+            settings->arrays.microphone_device,
+            DEFAULT_MICROPHONE_DEVICE);
+
+   settings->uints.microphone_latency         = g_defaults.settings_in_latency;
 #endif
 
 #ifdef HAVE_LAKKA

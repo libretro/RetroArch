@@ -6190,8 +6190,15 @@ void menu_driver_toggle(
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro && !audio_enable_menu)
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
+      if (pause_libretro)
+      { /* If the menu pauses the game... */
+#ifdef HAVE_MICROPHONE
+         command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
+#endif
+
+         if (!audio_enable_menu) /* If the menu shouldn't have audio... */
+            command_event(CMD_EVENT_AUDIO_STOP, NULL);
+      }
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -6216,8 +6223,18 @@ void menu_driver_toggle(
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (pause_libretro && !audio_enable_menu)
-         command_event(CMD_EVENT_AUDIO_START, NULL);
+      if (pause_libretro)
+      { /* If the menu pauses the game... */
+
+         if (!audio_enable_menu) /* ...and the menu doesn't have audio... */
+            command_event(CMD_EVENT_AUDIO_START, NULL);
+            /* ...then re-enable the audio driver (which we shut off earlier) */
+
+#ifdef HAVE_MICROPHONE
+         command_event(CMD_EVENT_MICROPHONE_START, NULL);
+         /* Start the microphone, if it was paused beforehand */
+#endif
+      }
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)

@@ -60,6 +60,10 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->GetBufferSize(pNumBufferFrames) )
 #define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->GetStreamLatency(phnsLatency) )
 #define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->GetDevicePeriod(phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
+#define _IAudioClient_Initialize(This,ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid) \
+   ( (This)->Initialize(ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid))
+#define _IAudioClient_IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch) \
+   ( (This)->IsFormatSupported(ShareMode,pFormat,ppClosestMatch))
 #define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->Activate(iid,(dwClsCtx),pActivationParams,ppv))
 #define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices)
 #define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint)
@@ -67,6 +71,12 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IMMDevice_GetId(This,ppstrId) ((This)->GetId(ppstrId))
 #define _IPropertyStore_GetValue(This,key,pv) ( (This)->GetValue(key,pv) )
 #define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->GetCount(cProps) )
+#define _IAudioCaptureClient_GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition)	\
+    ( (This) -> GetBuffer(ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
+#define _IAudioCaptureClient_ReleaseBuffer(This,NumFramesRead)	\
+    ( (This) -> ReleaseBuffer(NumFramesRead) )
+#define _IAudioCaptureClient_GetNextPacketSize(This,pNumFramesInNextPacket)	\
+   ( (This) -> GetNextPacketSize(pNumFramesInNextPacket) )
 #else
 #define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->lpVtbl->Item(This,nDevice,ppdevice)
 #define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) )
@@ -82,6 +92,10 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->lpVtbl -> GetBufferSize(This,pNumBufferFrames) )
 #define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->lpVtbl -> GetStreamLatency(This,phnsLatency) )
 #define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->lpVtbl -> GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
+#define _IAudioClient_Initialize(This,ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid) \
+   ( (This)->lpVtbl->Initialize(This,ShareMode,StreamFlags,hnsBufferDuration,hnsPeriodicity,pFormat,AudioSessionGuid))
+#define _IAudioClient_IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch) \
+   ( (This)->lpVtbl->IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch))
 #define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->lpVtbl->Activate(This,&(iid),dwClsCtx,pActivationParams,ppv))
 #define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->lpVtbl->EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices)
 #define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->lpVtbl->GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint)
@@ -89,6 +103,12 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IMMDevice_GetId(This,ppstrId) (This)->lpVtbl->GetId(This,ppstrId)
 #define _IPropertyStore_GetValue(This,key,pv) ( (This)->lpVtbl -> GetValue(This,&(key),pv) )
 #define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->lpVtbl -> GetCount(This,cProps) )
+#define _IAudioCaptureClient_GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition)	\
+    ( (This)->lpVtbl -> GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
+#define _IAudioCaptureClient_ReleaseBuffer(This,NumFramesRead)	\
+    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesRead) )
+#define _IAudioCaptureClient_GetNextPacketSize(This,pNumFramesInNextPacket)	\
+   ( (This)-> lpVtbl -> GetNextPacketSize(This,pNumFramesInNextPacket) )
 #endif
 
 #ifdef __cplusplus

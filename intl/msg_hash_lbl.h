@@ -337,6 +337,56 @@ MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    "audio_wasapi_sh_buffer_length"
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_ENABLE,
+   "microphone_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "microphone_resampler_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_DEVICE,
+   "microphone_device"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_SETTINGS,
+   "microphone_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_DRIVER,
+   "microphone_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+   "microphone_input_rate"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_LATENCY,
+   "microphone_latency"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
+   "microphone_block_frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "microphone_wasapi_exclusive_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "microphone_wasapi_float_format"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "microphone_wasapi_sh_buffer_length"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "microphone_resampler_quality"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
    "autosave_interval"
@@ -979,6 +1029,16 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
    "deferred_dropdown_box_list_audio_device"
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE,
+   "deferred_dropdown_box_list_microphone_device"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST,
+   "deferred_microphone_settings_list"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
    "deferred_configurations_list"

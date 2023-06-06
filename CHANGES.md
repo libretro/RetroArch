@@ -1,4 +1,9 @@
 # Future
+- LIBRETRO/MICROPHONE: Add new API for microphone support.
+- MICROPHONE: Add support for microphones.
+- MICROPHONE/ALSA: Add `alsa` and `alsathread` microphone drivers.
+- MICROPHONE/SDL: Add `sdl2` microphone driver.
+- MICROPHONE/WASAPI: Add `wasapi` microphone driver.
 
 # 1.15.0
 - AI SERVICE: Fix NVDA switching to Powershell on speak
@@ -116,8 +121,9 @@ as well. Without this, sound files can not be opened from file browser with core
 - MENU/CHEATS: Fixed label capitalization in cheats (Add New After/Before This)
 - MENU/SOUNDS: Add scrolling sounds for RGUI, XMB, MaterialUI and Ozone.
 - MENU/SOUNDS: Better scrolling sound implementation, add new 'notice back' sound
-- MENU/SOUNDS: Scroll sound fixes. Correctly get list size in xmb.c for playing scrolling sound when switching categories, play the scrolling sound when pressing cancel in ozone, play the sound when scrolling with ZL and ZR, play the correct sound when scrolling with L- MIYOO: L3/R3 support for Dingux Gamepad controller device.
+- MENU/SOUNDS: Scroll sound fixes. Correctly get list size in xmb.c for playing scrolling sound when switching categories, play the scrolling sound when pressing cancel in ozone, play the sound when scrolling with ZL and ZR, play the correct sound when scrolling with L
 - MENU/WIDGETS: Show square sized widget on volume mute. Volume widget is currently fixed size always, and thus showing a lot of empty space when muting, therefore shorten the box to icon size only when muting.
+- MIYOO: L3/R3 support for Dingux Gamepad controller device.
 - NETWORKING: Call ssl_socket_close for SSL sockets
 - NETWORKING/CHEEVOS: net_http - Temporary fix for cheevos crash. Don't use new timeout/poll code for cheevos HTTP requests.
 - NETWORKING/MENU: Network information cleanup:

@@ -8467,14 +8467,14 @@ static void materialui_populate_nav_bar(
       settings_t *settings)
 {
    size_t menu_tab_index                   = 0;
-   bool menu_content_show_playlists        = 
+   bool menu_content_show_playlists        =
       settings->bools.menu_content_show_playlists;
    /* Cache last active menu tab index */
    mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
 
    /* Back tab */
-   mui->nav_bar.back_tab.enabled           = menu_st->entries.list 
-      ? (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1) 
+   mui->nav_bar.back_tab.enabled           = menu_st->entries.list
+      ? (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1)
       : false;
 
    /* Resume tab
@@ -10863,6 +10863,9 @@ static void materialui_list_insert(
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS))
+#ifdef HAVE_MICROPHONE
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MICROPHONE_SETTINGS))
+#endif
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS))

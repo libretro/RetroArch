@@ -1084,10 +1084,13 @@
 /* Output samplerate. */
 #if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
+#define DEFAULT_INPUT_RATE  32000
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
+#define DEFAULT_INPUT_RATE  32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
+#define DEFAULT_INPUT_RATE  48000
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
@@ -1098,8 +1101,10 @@
 #if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
+#define DEFAULT_IN_LATENCY 128
 #else
 #define DEFAULT_OUT_LATENCY 64
+#define DEFAULT_IN_LATENCY 64
 #endif
 
 /* Will sync audio. (recommended) */
@@ -1140,6 +1145,16 @@
 /* Speed up audio to match fast-forward speed up.
  * Avoids crackling */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+
+#ifdef HAVE_MICROPHONE
+/* Microphone support */
+#define DEFAULT_MICROPHONE_ENABLE true
+#define DEFAULT_MICROPHONE_DEVICE NULL
+
+#ifdef HAVE_WASAPI
+#define DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH 0
+#endif
+#endif
 
 /* MISC */
 

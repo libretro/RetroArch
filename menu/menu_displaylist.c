@@ -124,6 +124,10 @@
 #include "../misc/cpufreq/cpufreq.h"
 #include "../input/input_remapping.h"
 
+#ifdef HAVE_MICROPHONE
+#include "../audio/microphone_driver.h"
+#endif
+
 #ifdef HAVE_MIST
 #include "../steam/steam.h"
 #endif
@@ -222,7 +226,7 @@ static int filebrowser_parse(
    }
    else if (!string_is_empty(path))
    {
-      if (   type_default == FILE_TYPE_SHADER_PRESET 
+      if (   type_default == FILE_TYPE_SHADER_PRESET
           || type_default == FILE_TYPE_SHADER)
          filter_ext = true;
 
@@ -245,7 +249,7 @@ static int filebrowser_parse(
          else
             subsystem = runloop_st->subsystem_data + content_get_subsystem();
 
-         if (     subsystem 
+         if (     subsystem
                && (runloop_st->subsystem_current_count > 0)
                && (content_get_subsystem_rom_id() < subsystem->num_roms))
             ret = dir_list_initialize(&str_list,
@@ -919,7 +923,7 @@ static unsigned menu_displaylist_parse_core_backup_list(
 
          /* Ensure entry is valid */
          if (   core_backup_list_get_index(backup_list, i, &entry)
-             && entry 
+             && entry
              && !string_is_empty(entry->backup_path))
          {
             char timestamp[128];
@@ -2196,7 +2200,7 @@ static int menu_displaylist_parse_playlist(file_list_t *info_list,
    if (   !string_is_equal(menu_driver, "ozone")
        && !pl_show_sublabels
        && ((pl_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS)
-       ||  (!is_collection 
+       ||  (!is_collection
        && !(pl_show_inline_core_name == PLAYLIST_INLINE_CORE_DISPLAY_NEVER))))
    {
       show_inline_core_name = true;
@@ -2303,7 +2307,7 @@ static int menu_displaylist_parse_playlist(file_list_t *info_list,
             /* Both core name and core path must be valid */
             if (   !string_is_empty(entry->core_name)
                 && !string_is_equal(entry->core_name, "DETECT")
-                && !string_is_empty(entry->core_path) 
+                && !string_is_empty(entry->core_path)
                 && !string_is_equal(entry->core_path, "DETECT"))
             {
                strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
@@ -2498,7 +2502,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    playlist_config_set_base_content_directory(&playlist_config,
            settings->bools.playlist_portable_paths
-         ? settings->paths.directory_menu_content 
+         ? settings->paths.directory_menu_content
          : NULL);
 
    database_info_build_query_enum(query, sizeof(query),
@@ -3967,7 +3971,7 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          &&  !string_is_equal(system->library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
-         && core_info 
+         && core_info
          && core_info->has_info
       )
       if (menu_entries_append(info_list,
@@ -4811,7 +4815,7 @@ static unsigned menu_displaylist_parse_content_information(
 
 #ifdef HAVE_LIBRETRODB
    /* Database entry */
-   if (     !string_is_empty(content_label) 
+   if (     !string_is_empty(content_label)
          && !string_is_empty(db_name))
    {
       char db_path[PATH_MAX_LENGTH];
@@ -4863,7 +4867,7 @@ static unsigned menu_displaylist_parse_content_information(
 
    /* If content path is empty and core supports
     * contentless operation, skip label/path entries */
-   if (      !(core_supports_no_game 
+   if (      !(core_supports_no_game
             && string_is_empty(content_path)))
    {
       size_t _len;
@@ -4969,7 +4973,7 @@ static unsigned menu_displaylist_parse_content_information(
 
 #ifdef HAVE_CHEEVOS
    /* RetroAchievements Hash */
-   if (     settings->bools.cheevos_enable 
+   if (     settings->bools.cheevos_enable
          && settings->arrays.cheevos_token[0]
          && !string_is_empty(loaded_content_path))
    {
@@ -5144,6 +5148,97 @@ static int menu_displaylist_parse_audio_device_list(
 
    return count;
 }
+
+#ifdef HAVE_MICROPHONE
+static int menu_displaylist_parse_microphone_device_list(
+      file_list_t *info_list, const char *info_path,
+      settings_t *settings)
+{
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   size_t menu_index            = 0;
+   unsigned count               = 0;
+   int i                        = -1;
+   int mic_device_index         = -1;
+   struct string_list *ptr      = NULL;
+
+   if (!settings || !setting)
+      return 0;
+
+   if (!microphone_driver_get_devices_list((void**)&ptr))
+      return 0;
+
+   if (!ptr)
+      return 0;
+
+   /* Get index in the string list */
+   mic_device_index = string_list_find_elem(ptr, setting->value.target.string) - 1;
+
+   /* Add "Default" */
+   if (i == -1)
+   {
+      bool add = false;
+
+      if (menu_entries_append(info_list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+            "",
+            MENU_ENUM_LABEL_MICROPHONE_DEVICE_LIST,
+            MENU_SETTING_DROPDOWN_ITEM_MICROPHONE_DEVICE,
+            0, i, NULL))
+         add = true;
+
+      if (add)
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (mic_device_index == i)
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked = true;
+            menu_st->selection_ptr = menu_index;
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+   for (i = 0; i < ptr->size; i++)
+   {
+      bool add = false;
+
+      /* Add menu entry */
+      if (menu_entries_append(info_list,
+            ptr->elems[i].data,
+            ptr->elems[i].data,
+            MENU_ENUM_LABEL_MICROPHONE_DEVICE_LIST,
+            MENU_SETTING_DROPDOWN_ITEM_MICROPHONE_DEVICE,
+            0, i, NULL))
+         add = true;
+
+      if (add)
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (mic_device_index == i)
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked            = true;
+            menu_st->selection_ptr     = menu_index;
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+   return count;
+}
+#endif
 
 static int menu_displaylist_parse_input_device_type_list(
       file_list_t *info_list, const char *info_path, settings_t *settings)
@@ -5749,7 +5844,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
       file_list_sort_on_alt(info_list);
 
 #ifdef HAVE_NETWORKING
-   if (      settings->bools.menu_show_core_updater 
+   if (      settings->bools.menu_show_core_updater
          && !settings->bools.kiosk_mode_enable)
    {
       if (info_flags & MD_FLAG_DOWNLOAD_CORE)
@@ -7059,6 +7154,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_AUDIO_ENABLE,                    PARSE_ONLY_BOOL,            true  },
                {MENU_ENUM_LABEL_AUDIO_DRIVER,                    PARSE_ONLY_STRING_OPTIONS,  true  },
                {MENU_ENUM_LABEL_AUDIO_DEVICE,                    PARSE_ONLY_STRING,          true  },
+               {MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,               PARSE_ONLY_UINT,            true  },
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                   PARSE_ONLY_UINT,            true  },
 #ifdef _WIN32
                {MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,     PARSE_ONLY_BOOL,            true  },
@@ -7080,6 +7176,57 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#ifdef HAVE_MICROPHONE
+      case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_DEVICE,
+                  PARSE_ONLY_STRING, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (string_is_not_equal(settings->arrays.microphone_resampler, "null"))
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_LATENCY,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         break;
+#endif
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -7110,6 +7257,9 @@ unsigned menu_displaylist_build_list(
 #endif
          menu_displaylist_build_info_selective_t build_list[] = {
             {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
+#ifdef HAVE_MICROPHONE
+            {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true  },
+#endif
             {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
@@ -9601,6 +9751,9 @@ unsigned menu_displaylist_build_list(
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
+#ifdef HAVE_MICROPHONE
+               {MENU_ENUM_LABEL_MICROPHONE_LATENCY,                    PARSE_ONLY_UINT, true },
+#endif
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
@@ -10525,6 +10678,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_VIDEO_DRIVER,          PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_AUDIO_DRIVER,          PARSE_ONLY_STRING_OPTIONS},
+#ifdef HAVE_MICROPHONE
+               {MENU_ENUM_LABEL_MICROPHONE_DRIVER,     PARSE_ONLY_STRING_OPTIONS},
+#endif
 #if 0
                /* This is better suited under audio options only */
                {MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,PARSE_ONLY_STRING_OPTIONS},
@@ -11404,7 +11560,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               && (max_users > 1)
                               && !settings->bools.menu_show_sublabels)
                         {
-                           snprintf(desc_label, sizeof(desc_label), "%s [%s %u]", 
+                           snprintf(desc_label, sizeof(desc_label), "%s [%s %u]",
                                  descriptor, msg_val_port, port + 1);
                            strlcpy(descriptor, desc_label, sizeof(descriptor));
                         }
@@ -11552,7 +11708,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (!string_is_empty(cd_info.serial))
                         {
                            char serial[256];
-                           strlcpy(serial, 
+                           strlcpy(serial,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                                  sizeof(serial));
                            strlcat(serial, "#: ", sizeof(serial));
@@ -11912,7 +12068,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   char* speed                 = SWITCH_CPU_SPEEDS[i];
                   size_t _len                 = strlcpy(title, profile, sizeof(title));
                   snprintf(title + _len, sizeof(title) - _len, " (%s)", speed);
-                  if (menu_entries_append(info->list, title, "", 0, 
+                  if (menu_entries_append(info->list, title, "", 0,
                            MENU_SET_SWITCH_CPU_PROFILE, 0, i, NULL))
                      count++;
                }
@@ -13410,6 +13566,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
+#ifdef HAVE_MICROPHONE
+         case DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE:
+            menu_entries_clear(info->list);
+            count              = menu_displaylist_parse_microphone_device_list(info->list, info->path, settings);
+
+            if (count == 0)
+               if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                        FILE_TYPE_NONE, 0, 0, NULL))
+                  count++;
+            info->flags       |= MD_FLAG_NEED_REFRESH
+                                 | MD_FLAG_NEED_PUSH;
+            break;
+#endif
 #ifdef HAVE_NETWORKING
          case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
             menu_entries_clear(info->list);
@@ -13513,6 +13685,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
+#ifdef HAVE_MICROPHONE
+         case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
+#endif
          case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_HELP_SCREEN_LIST:
          case DISPLAYLIST_INFORMATION_LIST:

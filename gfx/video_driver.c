@@ -3843,12 +3843,12 @@ static void video_driver_reinit_context(settings_t *settings, int flags)
       video_st->hw_render_context_negotiation;
    memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
-   driver_uninit(flags);
+   driver_uninit(flags, DRIVER_LIFETIME_RESET);
 
    memcpy(hwr, &hwr_copy, sizeof(*hwr));
    video_st->hw_render_context_negotiation = iface;
 
-   drivers_init(settings, flags, verbosity_is_enabled());
+   drivers_init(settings, flags, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
 }
 
 void video_driver_reinit(int flags)

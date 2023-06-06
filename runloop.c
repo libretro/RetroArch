@@ -162,6 +162,10 @@
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 
+#ifdef HAVE_MICROPHONE
+#include "audio/microphone_driver.h"
+#endif
+
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #include "cheevos/cheevos_menu.h"
@@ -329,12 +333,14 @@ runloop_state_t *runloop_state_get_ptr(void)
    return &runloop_state;
 }
 
-#ifdef HAVE_REWIND
 bool state_manager_frame_is_reversed(void)
 {
+#ifdef HAVE_REWIND
    return (runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED) > 0;
-}
+#else
+   return false;
 #endif
+}
 
 content_state_t *content_state_get_ptr(void)
 {
@@ -704,6 +710,7 @@ void runloop_runtime_log_deinit(
 static bool runloop_clear_all_thread_waits(
       unsigned clear_threads, void *data)
 {
+   /* Does this need to treat the microphone driver the same way? */
    if (clear_threads > 0)
       audio_driver_start(false);
    else
@@ -3384,7 +3391,73 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+      case RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE:
+#ifdef HAVE_MICROPHONE
+         {
+            struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
+            microphone_driver_state_t *mic_st             = microphone_state_get_ptr();
+            const microphone_driver_t *driver             = mic_st->driver;
 
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
+
+            if (!microphone)
+               return false;
+            /* User didn't provide a pointer for a response, what can we do? */
+
+            if (microphone->interface_version != RETRO_MICROPHONE_INTERFACE_VERSION)
+            {
+               RARCH_ERR("[Environ]: Core requested unexpected microphone interface version %u, only %u is available\n",
+                  microphone->interface_version,
+                  RETRO_MICROPHONE_INTERFACE_VERSION);
+
+               return false;
+            }
+
+            /* Initialize the interface... */
+            memset(microphone, 0, sizeof(*microphone));
+
+            if (driver == &microphone_null)
+            { /* If the null driver is active... */
+               RARCH_ERR("[Environ]: Cannot initialize microphone interface, active driver is null\n");
+               return false;
+            }
+
+            if (!settings->bools.microphone_enable)
+            { /* If mic support is off... */
+               RARCH_WARN("[Environ]: Will not initialize microphone interface, support is turned off\n");
+               return false;
+            }
+
+            /* The core might request a mic before the mic driver is initialized,
+             * so we still have to see if the frontend intends to init a mic driver. */
+            if (!driver && string_is_equal(settings->arrays.microphone_driver, "null"))
+            { /* If we're going to load the null driver... */
+               RARCH_ERR("[Environ]: Cannot initialize microphone interface, configured driver is null\n");
+               return false;
+            }
+
+            microphone->interface_version = RETRO_MICROPHONE_INTERFACE_VERSION;
+            microphone->open_mic      = microphone_driver_open_mic;
+            microphone->close_mic     = microphone_driver_close_mic;
+            microphone->get_params    = microphone_driver_get_effective_params;
+            microphone->set_mic_state = microphone_driver_set_mic_state;
+            microphone->get_mic_state = microphone_driver_get_mic_state;
+            microphone->read_mic      = microphone_driver_read;
+         }
+#else
+         {
+            struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
+
+            if (microphone)
+               microphone->interface_version = 0;
+
+            RARCH_ERR("[Environ]: Core requested microphone interface, but this build does not include support\n");
+
+            return false;
+         }
+#endif
+         break;
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
          {
             struct retro_hw_render_context_negotiation_interface *iface =
@@ -3808,6 +3881,10 @@ static bool core_unload_game(void)
 
    audio_driver_stop();
 
+#ifdef HAVE_MICROPHONE
+   microphone_driver_stop();
+#endif
+
    return true;
 }
 
@@ -3943,7 +4020,7 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   driver_uninit(DRIVERS_CMD_ALL);
+   driver_uninit(DRIVERS_CMD_ALL, 0);
 
 #ifdef HAVE_CONFIGFILE
    if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)

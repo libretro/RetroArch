@@ -160,6 +160,14 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
 
+#ifdef HAVE_MICROPHONE
+      unsigned microphone_sample_rate;
+      unsigned microphone_block_frames;
+      unsigned microphone_latency;
+      unsigned microphone_wasapi_sh_buffer_length;
+      unsigned microphone_resampler_quality;
+#endif
+
       unsigned fps_update_interval;
       unsigned memory_update_interval;
 
@@ -435,6 +443,12 @@ typedef struct settings
 
       char input_keyboard_layout[64];
 
+#ifdef HAVE_MICROPHONE
+      char microphone_driver[32];
+      char microphone_resampler[32];
+      char microphone_device[255];
+#endif
+
 #ifdef ANDROID
       char input_android_physical_keyboard[255];
 #endif
@@ -599,6 +613,15 @@ typedef struct settings
       bool audio_wasapi_float_format;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+
+#ifdef HAVE_MICROPHONE
+      /* Microphone */
+      bool microphone_enable;
+#ifdef HAVE_WASAPI
+      bool microphone_wasapi_exclusive_mode;
+      bool microphone_wasapi_float_format;
+#endif
+#endif
 
       /* Input */
       bool input_remap_binds_enable;
@@ -1040,6 +1063,17 @@ const char *config_get_default_video(void);
  * Returns: Default audio driver.
  **/
 const char *config_get_default_audio(void);
+
+#if defined(HAVE_MICROPHONE)
+/**
+ * config_get_default_microphone:
+ *
+ * Gets default microphone driver.
+ *
+ * Returns: Default microphone driver.
+ **/
+const char *config_get_default_microphone(void);
+#endif
 
 /**
  * config_get_default_audio_resampler:

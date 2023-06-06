@@ -836,6 +836,9 @@ RSOUND
 AUDIO
 ============================================================ */
 #include "../audio/audio_driver.c"
+#ifdef HAVE_MICROPHONE
+#include "../audio/microphone_driver.c"
+#endif
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
@@ -864,6 +867,9 @@ AUDIO
 
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
+#ifdef HAVE_MICROPHONE
+#include "../audio/drivers_microphone/sdl_microphone.c"
+#endif
 #endif
 
 #ifdef HAVE_DSOUND
@@ -872,6 +878,11 @@ AUDIO
 
 #ifdef HAVE_WASAPI
 #include "../audio/drivers/wasapi.c"
+#include "../audio/common/wasapi.c"
+
+#ifdef HAVE_MICROPHONE
+#include "../audio/drivers_microphone/wasapi.c"
+#endif
 #endif
 
 #ifdef HAVE_SL
@@ -883,7 +894,14 @@ AUDIO
 #include "../audio/drivers/alsa_qsa.c"
 #else
 #include "../audio/drivers/alsa.c"
+#include "../audio/common/alsa.c"
 #include "../audio/drivers/alsathread.c"
+#include "../audio/common/alsathread.c"
+
+#ifdef HAVE_MICROPHONE
+#include "../audio/drivers_microphone/alsa.c"
+#include "../audio/drivers_microphone/alsathread.c"
+#endif
 #endif
 #endif
 
@@ -1459,6 +1477,8 @@ XML
 ============================================================ */
 #include "../libretro-common/audio/conversion/s16_to_float.c"
 #include "../libretro-common/audio/conversion/float_to_s16.c"
+#include "../libretro-common/audio/conversion/stereo_to_mono_float.c"
+#include "../libretro-common/audio/conversion/mono_to_stereo_float.c"
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mix.c"
 #endif

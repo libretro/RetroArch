@@ -345,6 +345,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_menubar,     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS)
+#ifdef HAVE_MICROPHONE
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_settings_list,           MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_synchronization_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS)
 #ifdef HAVE_AUDIOMIXER
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_mixer_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS)
@@ -788,6 +791,19 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_dsp_plugin_remove,       MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_float_format,     MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH)
+
+#ifdef HAVE_MICROPHONE
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_driver,                  MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_resampler_driver,        MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_resampler_quality,       MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_enable,                  MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_device,                  MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_rate,                    MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_latency,                 MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_wasapi_exclusive_mode,   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_wasapi_float_format,     MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_wasapi_sh_buffer_length, MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH)
+#endif
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_opacity,                 MENU_ENUM_SUBLABEL_OVERLAY_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_scale_landscape,         MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE)
@@ -2397,6 +2413,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_resampler_quality);
             break;
+#ifdef HAVE_MICROPHONE
+         case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_resampler_quality);
+            break;
+#endif
          case MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE:
 #ifdef HAVE_MATERIALUI
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_icons_enable);
@@ -3601,6 +3622,35 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_wasapi_sh_buffer_length);
             break;
+#ifdef HAVE_MICROPHONE
+         case MENU_ENUM_LABEL_MICROPHONE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_enable);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_rate);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_DEVICE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_device);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_LATENCY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_latency);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_wasapi_exclusive_mode);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_WASAPI_FLOAT_FORMAT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_wasapi_float_format);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_wasapi_sh_buffer_length);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_resampler_driver);
+            break;
+         case MENU_ENUM_LABEL_MICROPHONE_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_driver);
+            break;
+#endif
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wallpaper);
             break;
@@ -4693,6 +4743,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_output_settings_list);
             break;
+#ifdef HAVE_MICROPHONE
+         case MENU_ENUM_LABEL_MICROPHONE_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_microphone_settings_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
 #ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_mixer_settings_list);

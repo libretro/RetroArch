@@ -1854,6 +1854,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       {
          case MENU_ENUM_LABEL_VIDEO_DRIVER:
          case MENU_ENUM_LABEL_AUDIO_DRIVER:
+#ifdef HAVE_MICROPHONE
+         case MENU_ENUM_LABEL_MICROPHONE_DRIVER:
+         case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+#endif
          case MENU_ENUM_LABEL_INPUT_DRIVER:
          case MENU_ENUM_LABEL_JOYPAD_DRIVER:
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
