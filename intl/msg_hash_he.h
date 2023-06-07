@@ -336,6 +336,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "בחר התקן שמע."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    "מצלמה"
@@ -425,6 +427,8 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "דגימה מחודשת"
@@ -468,6 +472,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "התקן"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "התקן"
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

@@ -1077,10 +1077,6 @@ MSG_HASH(
    "Lyd"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Endre innstillinger for lydutgang."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Inndata"
    )
@@ -1280,6 +1276,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Lyddriveren som brukes."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Lyd samplingsfrekvens-konverterer"
@@ -1925,6 +1923,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Endre innstillinger for lydutgang."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Synkronisering"
@@ -1936,6 +1936,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "Lyd"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 

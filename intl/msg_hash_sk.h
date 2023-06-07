@@ -1077,10 +1077,6 @@ MSG_HASH(
    "Zvuk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Zmena nastavení audio výstupu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Vstup"
    )
@@ -1368,6 +1364,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
    "OpenSL ovládač."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Vzorkovač zvuku"
@@ -1905,6 +1903,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Zmena nastavení audio výstupu."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Prevzorkovač"
@@ -2032,6 +2032,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Požadované oneskorenie zvuku v milisekundách. Nemusí byť dodržaná, ak zvukový ovládač nedokáže danú latenciu dosiahnuť."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Zariadenie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Kvalita prevzorkovania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Znížením tejto hodnoty uprednostníte výkon/nižšiu latenciu pred kvalitou zvuku, zvýšením získate lepšiu kvalitu zvuku na úkor výkonu/nižšej latencie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI exkluzívny mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Formát WASAPI s pohyblivou desatinnou čiarkou"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Dĺžka zdieľanej vyrovnávacej pamäte WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Veľkosť medzipamäte (v rámcoch) pri použití ovládača WASAPI v zdieľanom režime."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

@@ -352,6 +352,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "ଅଡ଼ିଓ"
    )
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Video */
 
@@ -389,6 +391,8 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
@@ -396,6 +400,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "ଅଡ଼ିଓ"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 

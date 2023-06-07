@@ -1081,10 +1081,6 @@ MSG_HASH(
    "Zvuk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Izmeni podešavanja zvuka."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Ulaz"
    )
@@ -1308,6 +1304,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Drajver za zvuk."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Reuzorkovanje zvuka"
@@ -1869,6 +1867,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Izmeni podešavanja zvuka."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Sinhronizacija"
@@ -1912,6 +1912,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Traženo kašnjenje zvuka u milisekundama. Neće biti uzeto u obzir ako audio drajver ne može postići traženo kašnjenje."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Uređaj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Dužina WASAPI deljenog bafera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Srednja dužina bafera (u frejmovima) kada se koristi WASAPI drajver u deljenom režimu."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

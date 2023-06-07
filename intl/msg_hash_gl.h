@@ -1097,10 +1097,6 @@ MSG_HASH(
    "Son"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Cambia os axustes da saída de son."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Entrada"
    )
@@ -1300,6 +1296,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Controlador de Audio a usar."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Remostreador de audio"
@@ -1641,6 +1639,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Cambia os axustes da saída de son."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Sincronización"
@@ -1652,6 +1652,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "Son"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 

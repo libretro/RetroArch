@@ -1138,7 +1138,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Cambia los ajustes de salida de audio."
+   "Cambia los ajustes de entrada y salida de audio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1600,6 +1600,20 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Controlador para Jack Audio Connection Kit (JACK, por sus siglas en inglés)."
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Micrófono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Selecciona el controlador de micrófono que se utilizará."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Remuestreador del micrófono"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Remuestreo de audio"
@@ -2425,6 +2439,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Cambia los ajustes de la salida de audio."
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Micrófono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Cambia los ajustes de entrada de audio."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Remuestreo"
@@ -2594,8 +2618,80 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Selecciona la latencia de audio deseada en milisegundos. Este valor puede ser ignorado si el controlador no puede generar dicha latencia."
+   "Selecciona la latencia deseada para el audio en milisegundos. Este valor podría ignorarse si el controlador no puede generar dicha latencia."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Micrófono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Activa la entrada de audio en aquellos núcleos compatibles. Si el núcleo no utiliza el micrófono, no aumentará la carga de la CPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Dispositivo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Fuerza el dispositivo de entrada que utilizará el controlador del micrófono. Este ajuste depende del controlador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Fuerza el dispositivo de entrada que utilizará el controlador del micrófono. Este ajuste depende del controlador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Calidad de remuestreo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Reduce este valor para favorecer el rendimiento y la latencia a costa de perder calidad del audio o auméntalo para mejorarla a costa de perder rendimiento y latencia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Frecuencia predeterminada de entrada (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Indica la frecuencia de muestreo de la entrada de audio. Se utilizará si los núcleos no solicitan un valor concreto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Latencia de entrada de audio (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Selecciona la latencia deseada para la entrada de audio en milisegundos. Este valor podría ignorarse si el controlador del micrófono no puede generar dicha latencia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Modo WASAPI exclusivo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Permite que RetroArch tome el control exclusivo del dispositivo de micrófono cuando se utilice el controlador de micrófonos WASAPI. Si se desactiva esta opción, se usará el modo compartido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Formato WASAPI de coma flotante"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Usa el formato de coma flotante para el controlador WASAPI, si es compatible con tu dispositivo de audio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Tamaño del búfer compartido de WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Asigna el tamaño del búfer intermedio (en fotogramas) al usar el controlador WASAPI en modo compartido."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -14426,20 +14522,40 @@ MSG_HASH(
    )
 #ifdef UDEV_TOUCH_SUPPORT
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "Utilizar ratón virtual (VMouse) como puntero"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
    "Activa esta opción para enviar las pulsaciones de la pantalla táctil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Utilizar ratón virtual (VMouse) como ratón"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
-   "Activa la emulación de un ratón virtual mediante el uso de acciones táctiles como entrada."
+   "Activa la emulación de un ratón virtual mediante el uso de acciones táctiles como acciones de entrada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Modo «touchpad» para el ratón virtual (VMouse)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
    "Activa esta opción junto con «como ratón» para utilizar la pantalla táctil como un panel táctil/«touchpad»."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Modo «trackball» para el ratón virtual (VMouse)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    "Activa esta opción junto con «como ratón» para utilizar la pantalla táctil como si fuese un trackball, añadiendo inercia al cursor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Gestos para el ratón virtual (VMouse)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,

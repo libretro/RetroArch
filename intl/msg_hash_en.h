@@ -132,6 +132,8 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Audio Re-sampler"
@@ -365,6 +367,8 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Re-sampler"
@@ -404,6 +408,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Desired audio latency in milliseconds. Might not be honoured if the audio driver cannot provide the given latency."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Re-sampler Quality"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Lower this value to favour performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

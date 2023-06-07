@@ -532,6 +532,8 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Izbornik"
@@ -593,6 +595,8 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Sinkronizacija"
@@ -600,6 +604,10 @@ MSG_HASH(
 
 /* Settings > Audio > Output */
 
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 

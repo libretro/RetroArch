@@ -124,6 +124,8 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Video */
 
@@ -161,9 +163,15 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 

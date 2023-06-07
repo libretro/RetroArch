@@ -1133,10 +1133,6 @@ MSG_HASH(
    "Ses"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Ses çıkışı ayarlarını değiştir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Giriş"
    )
@@ -1596,6 +1592,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jak Ses Bağlantı Kiti sürücüsü."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Ses Yeniden Örnekleyici"
@@ -2421,6 +2419,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Ses çıkışı ayarlarını değiştirin."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Yeniden Örnekleyici"
@@ -2596,6 +2596,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Mili saniye cinsinden istenen ses gecikmesi. Ses sürücüsü verilen gecikmeyi sağlayamıyorsa ses duyulmayabilir."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Aygıt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Örnekleyici Kalitesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Performans/düşük gecikme süresi için düşük gecikme süresi için bu değeri düşürün, düşük performans/düşük gecikme pahasına daha iyi ses kalitesi istiyorsanız, artırın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI Ayrıcalıklı Kip"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "WASAPI Float Biçimi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI Paylaşılan Arabellek Uzunluğu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI sürücüsünü paylaşılan kipte kullanırken ara arabellek uzunluğu (kare cinsinden)."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

@@ -60,6 +60,8 @@
 
 /* Settings > Drivers */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Video */
 
@@ -97,9 +99,15 @@
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 

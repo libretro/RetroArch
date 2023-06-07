@@ -965,10 +965,6 @@ MSG_HASH(
    "صدا"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "تنظیمات خروجی صدا را تغییر دهید."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "ورودی"
    )
@@ -1180,6 +1176,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "درایور صدا برای استفاده."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "بازنمونه‌گیر صدا"
@@ -1501,6 +1499,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "تنظیمات خروجی صدا را تغییر دهید."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "بازنمونه‌گیر"
@@ -1568,6 +1568,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "دستگاه"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "دستگاه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "کیفیت بازنمونه‌گیر"
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

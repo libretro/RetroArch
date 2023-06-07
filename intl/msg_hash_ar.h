@@ -1061,10 +1061,6 @@ MSG_HASH(
    "الصوت"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "تغيير إعدادات إخراج الصوت."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "أجهزة الادخال"
    )
@@ -1264,6 +1260,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "مشغل الصوت لاستخدامه."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "إعادة تشغيل الصوت"
@@ -1789,6 +1787,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "تغيير إعدادات إخراج الصوت."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
    "تغيير إعدادات إعادة تشغيل الصوت."
@@ -1928,6 +1928,34 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "تأخير الصوت المطلوب بالمللي ثانية. قد لا يتم تكريمه إذا لم يتمكن مشغل الصوت من توفير وقت زمني معين."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "الجهاز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "جودة Resampler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "وضع WASAPI الحصري"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "تنسيق عوامة WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "طول مخزن الWASAPI المشترك"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "طول المخزن المؤقت الوسيط (بالأطر) عند استخدام سائق WASAPI في الوضع المشترك."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

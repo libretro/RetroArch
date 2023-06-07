@@ -1113,10 +1113,6 @@ MSG_HASH(
    "Cambia le impostazioni per l'uscita video."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Modifica le impostazioni per l'uscita audio."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "Cambia controller, tastiera e impostazioni del mouse."
    )
@@ -1556,6 +1552,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Driver Jack Audio Connection Kit."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Driver per il Riamplificatore Audio"
@@ -2377,6 +2375,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Modifica le impostazioni per l'uscita audio."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Riamplificatore"
@@ -2556,6 +2556,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Latenza audio desiderata in millisecondi. Il valore potrebbe non essere rispettato se il driver audio non è in grado di osservare la latenza scelta."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Dispositivo audio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Qualità del Resampler Audio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Abbassare questo valore per favorire prestazioni / latenza inferiore rispetto alla qualità audio, aumentare per una migliore qualità audio a scapito delle prestazioni / latenza inferiore."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Modalità Esclusiva WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Formato Float WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI ha condiviso la lunghezza del Buffer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "La lunghezza del buffer intermedio (in fotogrammi) quando si utilizza il driver WASAPI in modalità condivisa."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

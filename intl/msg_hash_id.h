@@ -1053,10 +1053,6 @@ MSG_HASH(
    "Suara"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Ubah pengaturan keluaran audio."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Masukan"
    )
@@ -1284,6 +1280,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Driver Audio yang digunakan."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Audio resampler yang digunakan."
@@ -1913,6 +1911,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Ubah pengaturan keluaran audio."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
    "Ubah pengaturan resampler audio."
@@ -2044,6 +2044,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Latensi audio yang diinginkan dalam milidetik. Mungkin tidak dihormati jika driver audio tidak dapat memberikan latensi yang diberikan."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Perangkat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Kualitas Sampel Ulang"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Turunkan nilai ini untuk mendukung kinerja/latensi yang lebih rendah daripada kualitas audio, tingkatkan kualitas audio yang lebih baik dengan mengorbankan kinerja/latensi yang lebih rendah."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Mode Eksklusif WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Format Apung WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Panjang Penyangga Bersama WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Panjang penyangga data menengah (berjumlah bingkai) saat menggunakan pengandar WASAPI di 'mode bersama'."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

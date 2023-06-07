@@ -1149,10 +1149,6 @@ MSG_HASH(
    "오디오"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "오디오 출력 설정을 변경합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "입력"
    )
@@ -1616,6 +1612,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack Audio Connection Kit 드라이버입니다."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "오디오 리샘플러 드라이버"
@@ -2449,6 +2447,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "오디오 출력 설정을 변경합니다."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "리샘플러"
@@ -2628,6 +2628,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "오디오 지연(밀리초)을 설정합니다. 오디오 드라이버가 해당 지연시간을 지원하지 못할 경우 무시될 수 있습니다."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "오디오 장치"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "오디오 리샘플러 품질"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "값을 낮춰서 오디오 품질 대신 성능 및 반응 속도에 비중을 두거나, 반대로 값을 높여서 성능이나 반응 속도 대신 더 나은 음질에 비중을 둘 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI 단독 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "WASAPI 부동소수점 형식"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI 공유 버퍼 길이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI 드라이버를 공유 모드로 사용할 경우 사용할 중간 버퍼의 길이(프레임)입니다."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 

@@ -996,6 +996,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Mewnbwn"
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Dewislen"
@@ -1037,6 +1039,8 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    "Distawi"
@@ -1044,6 +1048,10 @@ MSG_HASH(
 
 /* Settings > Audio > Output */
 
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 
