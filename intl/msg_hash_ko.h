@@ -1149,6 +1149,10 @@ MSG_HASH(
    "오디오"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "오디오 입/출력 설정을 변경합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "입력"
    )
@@ -1613,6 +1617,18 @@ MSG_HASH(
    "Jack Audio Connection Kit 드라이버입니다."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "마이크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "사용할 마이크 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "마이크 리샘플러"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -2448,6 +2464,14 @@ MSG_HASH(
    "오디오 출력 설정을 변경합니다."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "마이크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "오디오 입력 설정을 변경합니다."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2571,7 +2595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "오디오 드라이버에서 지원할 경우 WASAPI 드라이버에 부동소수점 형식을 사용합니다."
+   "오디오 장치가 지원할 경우, WASAPI 드라이버가 부동소수점 형식을 사용하도록 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
@@ -2632,8 +2656,24 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "마이크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "지원되는 코어에서 오디오 입력을 활성화합니다. 코어가 마이크를 사용하지 않을 경우 이 옵션은 아무 영향도 끼치지 않습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "오디오 장치"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "마이크 드라이버가 사용할 기본 입력 장치를 설정합니다. 이 옵션은 드라이버 종속적입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "마이크 드라이버가 사용할 기본 입력 장치를 설정합니다. 이 옵션은 드라이버 종속적입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2644,12 +2684,36 @@ MSG_HASH(
    "값을 낮춰서 오디오 품질 대신 성능 및 반응 속도에 비중을 두거나, 반대로 값을 높여서 성능이나 반응 속도 대신 더 나은 음질에 비중을 둘 수 있습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "기본 입력 레이트 (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "오디오 입력의 샘플 레이트입니다. 코어가 특정한 값을 요구하지 않을 경우 사용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "오디오 입력 지연 (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "오디오 입력 지연(밀리초)을 설정합니다. 마이크 드라이버가 해당 지연시간을 지원하지 못할 경우 무시될 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "WASAPI 단독 모드"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI 드라이버를 사용할 때 RetroArch가 마이크 장치에 대한 독점 권한을 갖도록 허용합니다. 비활성 시 공유 모드를 사용하게 됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "WASAPI 부동소수점 형식"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "오디오 장치가 지원할 경우, WASAPI 드라이버가 부동소수점 형식을 사용하도록 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -5797,6 +5861,10 @@ MSG_HASH(
    "'콘텐츠 종료' 옵션을 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "'상태저장' 하위메뉴 표시"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    "상태저장 옵션을 하위 메뉴로 표시합니다."
    )
@@ -5901,12 +5969,24 @@ MSG_HASH(
    "'뒤로 감기' 표시"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "'뒤로 감기' 옵션을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "'코어 우선 설정 저장' 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "'기존 설정 덮어쓰기' 메뉴에 '코어 우선 설정 저장' 옵션을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "'콘텐츠 디렉터리 재정의 저장하기' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "'기존 설정 덮어쓰기' 메뉴에 '콘텐츠 디렉터리 재정의 저장하기' 옵션을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -14569,6 +14649,46 @@ MSG_HASH(
    "운영체제 단의 화면 크기 배율에 맞게 터치 입력의 X/Y 좌표 배율을 조정합니다."
    )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "가상 터치 마우스를 포인터로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "터치스크린 입력을 터치 이벤트로 전달할 수 있게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "가상 터치 마우스를 마우스로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "터치 이벤트 입력으로 가상 마우스를 구현합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "가상 터치 마우스를 터치패드로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "마우스로 사용 옵션과 함께 활성화하면 터치스크린을 터치패드처럼 사용할 수 있게 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "가상 터치 마우스를 트랙볼로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "마우스로 사용 옵션과 함께 활성화하면 터치스크린을 트랙볼처럼 활용할 수 있게 되며, 포인터에 관성이 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "가상 터치 마우스를 제스처로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "탭, 탭 후 드래그, 손가락 스와이프 등의 터치스크린 제스처를 활성화합니다."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(

@@ -1133,6 +1133,10 @@ MSG_HASH(
    "Ses"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Ses giriş/çıkış ayarlarını değiştir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Giriş"
    )
@@ -1593,6 +1597,18 @@ MSG_HASH(
    "Jak Ses Bağlantı Kiti sürücüsü."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Mikrofon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Kullanılacak mikrofon sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Mikrofon Yeniden Örnekleyici"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -2420,6 +2436,14 @@ MSG_HASH(
    "Ses çıkışı ayarlarını değiştirin."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Mikrofon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Ses giriş ayarlarını değiştir."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2600,8 +2624,24 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Mikrofon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Desteklenen çekirdeklerde ses girişini etkinleştirin. Çekirdek bir mikrofon kullanmıyorsa ek yükü yoktur."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Aygıt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Mikrofon sürücüsünün kullandığı varsayılan giriş aygıtını geçersiz kılın. Bu, sürücüye bağlıdır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Mikrofon sürücüsünün kullandığı varsayılan giriş aygıtını geçersiz kılın. Bu, sürücüye bağlıdır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2612,12 +2652,36 @@ MSG_HASH(
    "Performans/düşük gecikme süresi için düşük gecikme süresi için bu değeri düşürün, düşük performans/düşük gecikme pahasına daha iyi ses kalitesi istiyorsanız, artırın."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Varsayılan Giriş Hızı (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Bir çekirdek belirli bir sayı istemiyorsa kullanılan ses girişi örnekleme hızı."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Ses Girişi Gecikmesi (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Milisaniye cinsinden istenen ses girişi gecikmesi. Mikrofon sürücüsü verilen gecikmeyi sağlayamazsa dikkate alınmayabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "WASAPI Ayrıcalıklı Kip"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI mikrofon sürücüsünü kullanırken RetroArch tarafından mikrofon cihazının özel kontrolü almasına izin verin. Devre dışı bırakılırsa, RetroArch bunun yerine paylaşımlı kipi kullanır."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "WASAPI Float Biçimi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Ses cihazınız destekliyorsa, WASAPI sürücüsü için kayan nokta biçimini kullanın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -2625,7 +2689,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "WASAPI sürücüsünü paylaşılan kipte kullanırken ara arabellek uzunluğu (kare cinsinden)."
+   "WASAPI sürücüsünü paylaşılan kipte kullanırken ara önbellek uzunluğu (kare cinsinden)."
    )
 #endif
 
