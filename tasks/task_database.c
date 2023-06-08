@@ -106,6 +106,52 @@ static const char *database_info_get_current_element_name(
    return handle->list->elems[handle->list_ptr].data;
 }
 
+static void task_database_scan_console_output(const char *label, const char *db_name, bool add)
+{
+   const char *prefix   = (add) ? "++" : (db_name) ? "==" : "??";
+   const char *no_color = getenv("NO_COLOR");
+   char string[32];
+   bool color           = (no_color && no_color[0] != '0') ? false : true;
+
+   /* Colorize prefix (add = green, dupe = yellow, not found = red) */
+#ifdef _WIN32
+   HANDLE con      = GetStdHandle(STD_OUTPUT_HANDLE);
+   if (color && con != INVALID_HANDLE_VALUE)
+   {
+      unsigned red    = FOREGROUND_RED;
+      unsigned green  = FOREGROUND_GREEN;
+      unsigned yellow = FOREGROUND_RED | FOREGROUND_GREEN;
+      unsigned reset  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+
+      snprintf(string, sizeof(string), " %s ", prefix);
+      SetConsoleTextAttribute(con, (add) ? green : (db_name) ? yellow : red);
+      WriteConsole(con, string, strlen(string), NULL, NULL);
+      SetConsoleTextAttribute(con, reset);
+   }
+#else
+   if (color)
+   {
+      const char *red    = "\x1B[31m";
+      const char *green  = "\x1B[32m";
+      const char *yellow = "\x1B[33m";
+      const char *reset  = "\x1B[0m";
+
+      snprintf(string, sizeof(string), "%s %s %s", (add) ? green : (db_name) ? yellow : red, prefix, reset);
+      fputs(string, stdout);
+   }
+#endif
+   else
+   {
+      snprintf(string, sizeof(string), " %s ", prefix);
+      fputs(string, stdout);
+   }
+
+   if (!db_name)
+      printf("\"%s\"\n", label);
+   else
+      printf("\"%s / %s\"\n", db_name, label);
+}
+
 static int task_database_iterate_start(retro_task_t *task,
       database_info_handle_t *db,
       const char *name)
@@ -617,6 +663,8 @@ static int database_info_list_iterate_end_no_match(
 {
    /* Reached end of database list,
     * CRC match probably didn't succeed. */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      task_database_scan_console_output(path, NULL, false);
 
    /* If this was a compressed file and no match in the database
     * list was found then expand the search list to include the
@@ -806,29 +854,10 @@ static int database_info_list_iterate_found_match(
       playlist_push(playlist, &entry);
       RARCH_LOG("[Scanner]: Add \"%s\" to \"%s\"\n", entry_label, entry.db_name);
       if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-      {
-         const char* no_color = getenv("NO_COLOR");
-         bool color           = (no_color && no_color[0] != '0') ? false : true;
-
-         /* Colorize " Add " prefix with green. */
-#ifdef _WIN32
-         HANDLE con = GetStdHandle(STD_OUTPUT_HANDLE);
-         if (color && con != INVALID_HANDLE_VALUE)
-         {
-            SetConsoleTextAttribute(con, 2);
-            WriteConsole(con, " Add ", 5, NULL, NULL);
-            SetConsoleTextAttribute(con, 7);
-         }
-#else
-         if (color)
-            fputs("\x1B[32m Add \x1B[0m", stdout);
-#endif
-         else
-            fputs(" Add ", stdout);
-
-         printf("\"%s\" to \"%s\"\n", entry.label, entry.db_name);
-      }
+         task_database_scan_console_output(entry_label, path_remove_extension(db_playlist_base_str), true);
    }
+   else if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      task_database_scan_console_output(entry_label, path_remove_extension(db_playlist_base_str), false);
 
    playlist_write_file(playlist);
    playlist_free(playlist);
