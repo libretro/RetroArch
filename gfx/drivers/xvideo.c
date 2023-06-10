@@ -67,7 +67,9 @@ typedef struct xv
    void *font;
    const font_renderer_driver_t *font_driver;
 
-   void (*render_func)(struct xv*, const void *frame,
+   void (*render_func16)(struct xv*, const void *frame,
+         unsigned width, unsigned height, unsigned pitch);
+   void (*render_func32)(struct xv*, const void *frame,
          unsigned width, unsigned height, unsigned pitch);
 
    void (*render_glyph)(struct xv*, int base_x, int base_y,
@@ -85,6 +87,12 @@ typedef struct xv
    uint8_t font_u;
    uint8_t font_v;
    bool keep_aspect;
+
+   void *tex_frame;
+   unsigned tex_width;
+   unsigned tex_height;
+   unsigned tex_pitch;
+   unsigned tex_rgb32;
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
@@ -353,7 +361,7 @@ static void render16_yuv12(xv_t *xv, const void *input_,
    {
       for (x = 0; x < width; x++)
       {
-	 uint16_t p         = *input++;
+         uint16_t p         = *input++;
          uint8_t y0         = xv->ytable[p];
          uint8_t u          = xv->utable[p];
          uint8_t v          = xv->vtable[p];
@@ -562,9 +570,9 @@ static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
                   format[i].component_order[3] == formats[j].components[3])
             {
                xv->fourcc         = format[i].id;
-               xv->render_func    = video->rgb32
-                  ? formats[j].render_32 : formats[j].render_16;
-               xv->render_glyph    = formats[j].render_glyph;
+               xv->render_func16  = formats[j].render_16;
+               xv->render_func32  = formats[j].render_32;
+               xv->render_glyph   = formats[j].render_glyph;
 
                xv->luma_index[0]  = formats[j].luma_index[0];
                xv->luma_index[1]  = formats[j].luma_index[1];
@@ -1008,8 +1016,21 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
+   bool rgb32                = video_info->use_rgba;
+
 #ifdef HAVE_MENU
    bool menu_is_alive        = video_info->menu_is_alive;
+
+   menu_driver_frame(menu_is_alive, video_info);
+
+   if (menu_is_alive && xv->tex_frame)
+   {
+      frame = xv->tex_frame;
+      width = xv->tex_width;
+      height = xv->tex_height;
+      pitch = xv->tex_pitch;
+      rgb32 = xv->tex_rgb32;
+   }
 #endif
 
    if (!frame)
@@ -1019,15 +1040,15 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
       return false;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-   xv->render_func(xv, frame, width, height, pitch);
+
+   if (rgb32)
+      xv->render_func32(xv, frame, width, height, pitch);
+   else
+      xv->render_func16(xv, frame, width, height, pitch);
 
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width  = target.width;
    xv->vp.full_height = target.height;
-
-#ifdef HAVE_MENU
-   menu_driver_frame(menu_is_alive, video_info);
-#endif
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);
@@ -1089,34 +1110,49 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
    *vp = xv->vp;
 }
 
-static uint32_t xv_get_flags(void *data) { return 0; }
+static uint32_t xv_poke_get_flags(void *data)
+{
+   return 0;
+}
+
+static void xv_poke_set_texture_frame(void *data,
+      const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
+{
+   xv_t *xv  = (xv_t*)data;
+   xv->tex_frame = (void*)frame;
+   xv->tex_rgb32 = rgb32;
+   xv->tex_width = width;
+   xv->tex_height = height;
+   xv->tex_pitch = width * (rgb32 ? 4 : 2);
+}
 
 static video_poke_interface_t xv_video_poke_interface = {
-   xv_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   xv_poke_get_flags,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
 #ifdef HAVE_XF86VM
    x11_get_refresh_rate,
 #else
-   NULL,
+   NULL, /* get_refresh_rate */
 #endif
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
+   xv_poke_set_texture_frame,
+   NULL, /* set_texture_enable */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL  /* get_hw_render_interface */
 };
 
 static void xv_get_poke_interface(void *data,
