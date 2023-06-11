@@ -66,7 +66,7 @@ static void *wasapi_microphone_init(void)
    }
 
    wasapi->nonblock = !settings->bools.audio_sync;
-   RARCH_DBG("[WASAPI mic]: Initialized microphone driver context\n");
+   RARCH_DBG("[WASAPI mic]: Initialized microphone driver context.\n");
 
    return wasapi;
 }
@@ -277,7 +277,7 @@ static void wasapi_microphone_set_nonblock_state(void *driver_context, bool nonb
 {
    wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
 
-   RARCH_LOG("[WASAPI mic]: Sync %s.\n", nonblock ? "off" : "on");
+   RARCH_DBG("[WASAPI mic]: Sync %s.\n", nonblock ? "off" : "on");
 
    wasapi->nonblock = nonblock;
 }
@@ -509,7 +509,7 @@ static bool wasapi_microphone_stop_mic(void *driver_context, void *microphone_co
       return false;
    }
 
-   RARCH_LOG("[WASAPI mic]: Stopped capture device \"%s\"\n", microphone->device_name);
+   RARCH_LOG("[WASAPI mic]: Stopped capture device \"%s\".\n", microphone->device_name);
 
    microphone->running = false;
 
