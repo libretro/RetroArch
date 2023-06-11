@@ -301,7 +301,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565;
 
       SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY,
-                              (vid->video.smooth || menu) ? "linear" : "nearest",
+                              (menu ? "nearest" : (vid->video.smooth ? "linear" : "nearest")),
                               SDL_HINT_OVERRIDE);
 
       target->tex = SDL_CreateTexture(vid->renderer, format,
