@@ -2646,17 +2646,19 @@ static int action_ok_playlist_entry_collection(const char *path,
          return ret;
       }
 
-      /* Cache core path */
-      strlcpy(core_path, core_info->path, sizeof(core_path));
-
       /* Update playlist entry */
-      update_entry.core_path = core_info->path;
+      strlcpy(core_path, core_info->path, sizeof(core_path));
+      playlist_resolve_path(PLAYLIST_SAVE, true, core_path, sizeof(core_path));
+      update_entry.core_path = core_path;
       update_entry.core_name = core_info->display_name;
 
       command_playlist_update_write(
             playlist,
             selection_ptr,
             &update_entry);
+
+      /* Cache core path */
+      strlcpy(core_path, core_info->path, sizeof(core_path));
    }
    else
    {
