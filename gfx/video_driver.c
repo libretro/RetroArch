@@ -664,7 +664,7 @@ void video_monitor_set_refresh_rate(float hz)
    /* Avoid message spamming if there is no change. */
    if (settings->floats.video_refresh_rate == hz)
       return;
-   
+
    snprintf(rate, sizeof(rate), "%.3f", hz);
    snprintf(msg, sizeof(msg),
       msg_hash_to_str(MSG_VIDEO_REFRESH_RATE_CHANGED), rate);
@@ -3817,7 +3817,7 @@ void video_driver_frame(const void *data, unsigned width,
             native_width, width,
             height,
             video_st->core_hz,
-            video_st->av_info.geometry.aspect_ratio < 1.0 ? true : false,
+            retroarch_get_rotation() & 1,
             video_info.crt_switch_resolution,
             video_info.crt_switch_center_adjust,
             video_info.crt_switch_porch_adjust,
