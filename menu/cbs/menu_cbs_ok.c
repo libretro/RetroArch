@@ -1287,7 +1287,7 @@ int generic_action_ok_displaylist_push(const char *path,
                strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
             path_basedir(tmp);
 
-            if (content_get_subsystem() != type - MENU_SETTINGS_SUBSYSTEM_ADD)
+            if (content_get_subsystem() != (int)type - MENU_SETTINGS_SUBSYSTEM_ADD)
                content_clear_subsystem();
             content_set_subsystem(type - MENU_SETTINGS_SUBSYSTEM_ADD);
             filebrowser_set_type(FILEBROWSER_SELECT_FILE_SUBSYSTEM);

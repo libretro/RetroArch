@@ -2668,7 +2668,7 @@ static void materialui_render_messagebox(
     * are too large to fit on screen */
 
    /* Find the longest line width */
-   for (i = 0; i < list.size; i++)
+   for (i = 0; i < (int)list.size; i++)
    {
       const char *line = list.elems[i].data;
 
@@ -2700,7 +2700,7 @@ static void materialui_render_messagebox(
          NULL);
 
    /* Print each line of the message */
-   for (i = 0; i < list.size; i++)
+   for (i = 0; i < (int)list.size; i++)
    {
       const char *line = list.elems[i].data;
 
@@ -3806,10 +3806,10 @@ static void materialui_render(void *data,
          /* Check if pointer is within the 'list' region of
           * the window (i.e. exclude header, navigation bar,
           * landscape borders) */
-         if ((pointer_x >  mui->landscape_optimization.border_width) &&
-             (pointer_x <  width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width) &&
-             (pointer_y >= header_height) &&
-             (pointer_y <= height - mui->nav_bar_layout_height - mui->status_bar.height))
+         if (((unsigned)pointer_x >  mui->landscape_optimization.border_width) &&
+             ((unsigned)pointer_x <  width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width) &&
+             ((unsigned)pointer_y >= header_height) &&
+             ((unsigned)pointer_y <= height - mui->nav_bar_layout_height - mui->status_bar.height))
          {
             /* Check if pointer is within the bounds of the
              * current entry */
@@ -5583,11 +5583,12 @@ static void materialui_render_entry_touch_feedback(
     * or pointer may no longer be held above the entry
     * currently selected for feedback animations */
    if (pointer_active)
-      pointer_active =    (mui->touch_feedback_selection == menu_input->ptr)
-                       && (mui->pointer.x >  mui->landscape_optimization.border_width)
-                       && (mui->pointer.x <  video_width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width)
-                       && (mui->pointer.y >= header_height)
-                       && (mui->pointer.y <= video_height - mui->nav_bar_layout_height - mui->status_bar.height);
+      pointer_active =
+         (mui->touch_feedback_selection == menu_input->ptr)
+         && ((unsigned)mui->pointer.x >  mui->landscape_optimization.border_width)
+         && ((unsigned)mui->pointer.x <  video_width - mui->landscape_optimization.border_width - mui->nav_bar_layout_width)
+         && ((unsigned)mui->pointer.y >= header_height)
+         && ((unsigned)mui->pointer.y <= video_height - mui->nav_bar_layout_height - mui->status_bar.height);
 
    /* Touch feedback highlight fades in when pointer
     * is held stationary on a menu entry */
@@ -6079,8 +6080,8 @@ static void materialui_render_header(
             /* Even more trickery required for proper centring
              * if both search and switch view icons are shown... */
             if (show_search_icon && show_switch_view_icon)
-               if (str_width < usable_title_bar_width - mui->icon_size)
-                  title_x += (int)(mui->icon_size >> 1);
+               if (str_width < (int)usable_title_bar_width - (int)mui->icon_size)
+                  title_x += (int)(mui->icon_size / 2);
          }
       }
    }
@@ -8299,7 +8300,7 @@ static void materialui_reset_thumbnails(void)
       return;
 
    /* Free node thumbnails */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < (int)list->size; i++)
    {
       materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 
@@ -9019,7 +9020,7 @@ static int materialui_switch_tabs(
             {
                target_tab_index = (int)mui->nav_bar.active_menu_tab_index + 1;
 
-               if (target_tab_index >= mui->nav_bar.num_menu_tabs)
+               if (target_tab_index >= (int)mui->nav_bar.num_menu_tabs)
                {
                   target_tab_index = 0;
                   mui->nav_bar.menu_navigation_wrapped = true;
@@ -10158,10 +10159,10 @@ static int materialui_pointer_up(void *userdata,
 
                /* Check if pointer location is within the
                 * bounds of the pointer item */
-               if (   (x < entry_x)
-                   || (x > (entry_x + node->entry_width))
-                   || (y < entry_y)
-                   || (y > (entry_y + node->entry_height)))
+               if (   ((int)x < entry_x)
+                   || ((int)x > (entry_x + node->entry_width))
+                   || ((int)y < entry_y)
+                   || ((int)y > (entry_y + node->entry_height)))
                   break;
 
                /* Pointer input is valid - perform action */

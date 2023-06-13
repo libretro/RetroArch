@@ -543,7 +543,7 @@ void video_driver_set_gpu_api_devices(
 {
    int i;
 
-   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(gpu_map); i++)
    {
       if (api == gpu_map[i].api)
       {
@@ -557,7 +557,7 @@ struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
 {
    int i;
 
-   for (i = 0; i < ARRAY_SIZE(gpu_map); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(gpu_map); i++)
    {
       if (api == gpu_map[i].api)
          return gpu_map[i].list;

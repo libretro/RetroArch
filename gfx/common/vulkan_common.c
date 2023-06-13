@@ -961,7 +961,7 @@ static bool vulkan_update_display_mode(
       /* For particular resolutions, find the closest. */
       int delta_x     = (int)info->width - (int)visible_width;
       int delta_y     = (int)info->height - (int)visible_height;
-      int delta_rate  = abs(info->refresh_rate_x1000 - visible_rate);
+      int delta_rate  = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
       int old_delta_x = (int)info->width - (int)*width;
       int old_delta_y = (int)info->height - (int)*height;
 
@@ -2096,7 +2096,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          format = formats[0];
    }
 
-   if (surface_properties.currentExtent.width == -1)
+   if (surface_properties.currentExtent.width == UINT32_MAX)
    {
       swapchain_size.width     = width;
       swapchain_size.height    = height;

@@ -379,7 +379,7 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
          {
             char buffer[2] = "0";
             int j = 0;
-            for (j = 0; j < ARRAY_SIZE(state->char_width); ++j)
+            for (j = 0; j < (int)ARRAY_SIZE(state->char_width); ++j)
             {
                buffer[0] = (char)(j + CHEEVO_LBOARD_FIRST_FIXED_CHAR);
                state->char_width[j] = (uint16_t)font_driver_get_message_width(

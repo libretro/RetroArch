@@ -2212,7 +2212,7 @@ static void input_poll_overlay(
                polled_data.buttons.data,
                ARRAY_SIZE(polled_data.buttons.data));
 
-         for (j = 0; j < ARRAY_SIZE(ol_state->keys); j++)
+         for (j = 0; j < (int)ARRAY_SIZE(ol_state->keys); j++)
             ol_state->keys[j] |= polled_data.keys[j];
 
          /* Fingers pressed later take priority and matched up
@@ -2242,7 +2242,7 @@ static void input_poll_overlay(
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
-   for (i = 0; i < ARRAY_SIZE(ol_state->keys); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(ol_state->keys); i++)
    {
       if (ol_state->keys[i] != old_ol_state.keys[i])
       {
@@ -3756,7 +3756,7 @@ void input_driver_init_command(input_driver_state_t *input_st,
 void input_driver_deinit_command(input_driver_state_t *input_st)
 {
    int i;
-   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(input_st->command); i++)
    {
       if (input_st->command[i])
          input_st->command[i]->destroy(
@@ -4030,7 +4030,7 @@ static bool input_keys_pressed_other_sources(
 {
 #ifdef HAVE_COMMAND
    int j;
-   for (j = 0; j < ARRAY_SIZE(input_st->command); j++)
+   for (j = 0; j < (int)ARRAY_SIZE(input_st->command); j++)
       if ((i < RARCH_BIND_LIST_END) && input_st->command[j]
          && input_st->command[j]->state[i])
          return true;
@@ -4914,7 +4914,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 
            size = swap_if_big64(size);
            st   = (uint8_t*)malloc(size);
-           if (intfstream_read(handle->file, st, size) != size)
+           if (intfstream_read(handle->file, st, size) != (int64_t)size)
            {
               RARCH_ERR("[Replay] Replay checkpoint truncated\n");
               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
@@ -6142,7 +6142,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          int i;
          /* Update compound 'current_bits' record
           * Note: Only digital inputs are considered */
-         for (i = 0; i < sizeof(current_bits->data) / sizeof(current_bits->data[0]); i++)
+         for (i = 0; i < (int)ARRAY_SIZE(current_bits->data); i++)
             current_bits->data[i] |= loop_bits->data[i];
       }
       else if (!all_users_control_menu)

@@ -1195,7 +1195,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    val_off_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 
    /* Loop over all option values */
-   for (j = 0; j < option->vals->size; j++)
+   for (j = 0; j < (int)option->vals->size; j++)
    {
       const char *val_str       = option->vals->elems[j].data;
       const char *val_label_str = option->val_labels->elems[j].data;
@@ -5115,7 +5115,7 @@ static int menu_displaylist_parse_audio_device_list(
       }
    }
 
-   for (i = 0; i < ptr->size; i++)
+   for (i = 0; i < (int)ptr->size; i++)
    {
       bool add = false;
 
@@ -5205,7 +5205,7 @@ static int menu_displaylist_parse_microphone_device_list(
       }
    }
 
-   for (i = 0; i < ptr->size; i++)
+   for (i = 0; i < (int)ptr->size; i++)
    {
       bool add = false;
 
@@ -6173,7 +6173,7 @@ static unsigned menu_displaylist_populate_subsystem(
     * UCN equivalent: "\u2605" */
    static const char utf8_star_char[] = "\xE2\x98\x85";
 #endif
-   unsigned   i = 0;
+   int  i       = 0;
    bool is_rgui = string_is_equal(menu_driver, "rgui");
 
    /* Select appropriate 'star' marker for subsystem menu entries
@@ -6191,7 +6191,7 @@ static unsigned menu_displaylist_populate_subsystem(
    {
       runloop_state_t *runloop_st = runloop_state_get_ptr();
 
-      for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
+      for (i = 0; i < (int)runloop_st->subsystem_current_count; i++, subsystem++)
       {
          char s[PATH_MAX_LENGTH];
          if (content_get_subsystem() == i)
@@ -14942,7 +14942,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                              setting_type, val, 0, NULL))
                                        count++;
 
-                                    if (!checked_found && val == orig_value)
+                                    if (!checked_found && val == (int)orig_value)
                                     {
                                        checked       = entry_index;
                                        checked_found = true;
@@ -14967,7 +14967,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                              setting_type, val, 0, NULL))
                                        count++;
 
-                                    if (!checked_found && val == orig_value)
+                                    if (!checked_found && val == (int)orig_value)
                                     {
                                        checked       = entry_index;
                                        checked_found = true;
@@ -15278,7 +15278,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                           setting_type, val, 0, NULL))
                                     count++;
 
-                                 if (!checked_found && val == orig_value)
+                                 if (!checked_found && val == (int)orig_value)
                                  {
                                     checked       = entry_index;
                                     checked_found = true;
@@ -15303,7 +15303,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                           setting_type, val, 0, NULL))
                                     count++;
 
-                                 if (!checked_found && val == orig_value)
+                                 if (!checked_found && val == (int)orig_value)
                                  {
                                     checked       = entry_index;
                                     checked_found = true;

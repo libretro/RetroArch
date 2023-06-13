@@ -2685,7 +2685,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
    {
       i = 0;
 
-      while (i < length && i < sizeof(buffer))
+      while (i < length && i < (int)sizeof(buffer))
       {
          struct inotify_event *event = (struct inotify_event *)&buffer[i];
 
@@ -2702,7 +2702,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
              * to disk, to make sure that the new data is
              * immediately available when the file is re-read.
              */
-            for (j = 0; j < inotify_data->wd_list->count; j++)
+            for (j = 0; j < (int)inotify_data->wd_list->count; j++)
             {
                if (inotify_data->wd_list->data[j] == event->wd)
                {

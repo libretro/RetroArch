@@ -218,7 +218,7 @@ static void handle_translation_cb(
          int i;
          json_current_key = -1;
 
-         for (i = 0; i < ARRAY_SIZE(keys); i++)
+         for (i = 0; i < (int)ARRAY_SIZE(keys); i++)
          {
             if (string_is_equal(str, keys[i]))
             {
@@ -517,12 +517,12 @@ static void handle_translation_cb(
    if (key_string)
    {
       char key[8];
-      size_t length = strlen(key_string);
+      int length = (int)strlen(key_string);
       int i         = 0;
       int start     = 0;
       char t        = ' ';
 
-      for (i = 1; i < (int)length; i++)
+      for (i = 1; i < length; i++)
       {
          t = key_string[i];
          if (i == length-1 || t == ' ' || t == ',')
@@ -1001,7 +1001,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    {
       static const char* state_labels[] = { "b", "y", "select", "start", "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3" };
       int i;
-      for (i = 0; i < ARRAY_SIZE(state_labels); i++)
+      for (i = 0; i < (int)ARRAY_SIZE(state_labels); i++)
       {
          rjsonwriter_raw(jsonwriter, ",", 1);
          rjsonwriter_raw(jsonwriter, " ", 1);

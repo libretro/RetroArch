@@ -850,7 +850,7 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       {
          wl_list_for_each(od, &wl->all_outputs, link)
          {
-            if (++output_i == video_monitor_index)
+            if (++output_i == (int)video_monitor_index)
             {
                oi = od->output;
                output = oi->output;

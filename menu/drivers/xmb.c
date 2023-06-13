@@ -3542,7 +3542,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   index < ARRAY_SIZE(input_config_bind_order);
                   index++)
             {
-               if (input_config_bind_order[index] == input_num)
+               if (input_num == (int)input_config_bind_order[index])
                {
                   type = input_id + index;
                   break;
@@ -8232,14 +8232,14 @@ static int xmb_pointer_up(void *userdata,
           * - A touch in the right margin triggers a 'select' action
           *   for the current item
           * - Between the left/right margins input is handled normally */
-         if (x < margin_left)
+         if ((int)x < margin_left)
          {
-            if (y >= margin_top)
+            if ((int)y >= margin_top)
                return xmb_menu_entry_action(xmb,
                      entry, selection, MENU_ACTION_CANCEL);
             return menu_input_dialog_start_search() ? 0 : -1;
          }
-         else if (x > margin_right)
+         else if ((int)x > margin_right)
             return xmb_menu_entry_action(xmb,
                   entry, selection, MENU_ACTION_SELECT);
          else if (ptr <= (end - 1))
@@ -8265,7 +8265,7 @@ static int xmb_pointer_up(void *userdata,
           * Note: At the top level, navigating left
           * means switching to the 'next' horizontal list,
           * which is actually a movement to the *right* */
-         if (y > margin_top)
+         if ((int)y > margin_top)
             xmb_menu_entry_action(xmb,
                   entry, selection,
                   (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
@@ -8275,17 +8275,17 @@ static int xmb_pointer_up(void *userdata,
           * Note: At the top level, navigating right
           * means switching to the 'previous' horizontal list,
           * which is actually a movement to the *left* */
-         if (y > margin_top)
+         if ((int)y > margin_top)
             xmb_menu_entry_action(xmb,
                   entry, selection,
                   (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_UP:
          /* Swipe up in left margin: ascend alphabet */
-         if (x < margin_left)
+         if ((int)x < margin_left)
             xmb_menu_entry_action(xmb,
                   entry, selection, MENU_ACTION_SCROLL_DOWN);
-         else if (x < margin_right)
+         else if ((int)x < margin_right)
          {
             /* Swipe up between left and right margins:
              * move selection pointer down by 1 'page' */
@@ -8315,10 +8315,10 @@ static int xmb_pointer_up(void *userdata,
          break;
       case MENU_INPUT_GESTURE_SWIPE_DOWN:
          /* Swipe down in left margin: descend alphabet */
-         if (x < margin_left)
+         if ((int)x < margin_left)
             xmb_menu_entry_action(xmb,
                   entry, selection, MENU_ACTION_SCROLL_UP);
-         else if (x < margin_right)
+         else if ((int)x < margin_right)
          {
             /* Swipe down between left and right margins:
              * move selection pointer up by 1 'page' */

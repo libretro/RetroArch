@@ -2782,7 +2782,7 @@ static bool video_shader_load_shader_preset_internal(
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
    };
 
-   for (i = 0; i < ARRAY_SIZE(types); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(types); i++)
    {
       if (!video_shader_is_supported(types[i]))
          continue;

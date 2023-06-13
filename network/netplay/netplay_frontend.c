@@ -3443,7 +3443,7 @@ static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
             netplay->mitm_handler->id_recvd = 0;
 
             if (socket_send_all_nonblocking(netplay->listen_fd,
-                  ping, len, true) != len)
+                  ping, len, true) != (ssize_t)len)
             {
                /* We couldn't send our ping reply in one call. Assume error. */
                RARCH_ERR("[Netplay] Tunnel ping reply failed.\n");

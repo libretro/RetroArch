@@ -95,7 +95,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
 
 const void *midi_driver_find_handle(int index)
 {
-   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
+   if (index < 0 || index >= (int)ARRAY_SIZE(midi_drivers))
       return NULL;
 
    return midi_drivers[index];
@@ -425,7 +425,7 @@ bool midi_driver_output_enabled(void)
 
 bool midi_driver_read(uint8_t *byte)
 {
-   static int i;
+   static int i = 0;
 
    if (!rarch_midi_drv_data || !rarch_midi_drv_input_enabled || !byte)
    {
@@ -440,7 +440,7 @@ bool midi_driver_read(uint8_t *byte)
       return false;
    }
 
-   if (i == rarch_midi_drv_input_event.data_size)
+   if (i == (int)rarch_midi_drv_input_event.data_size)
    {
       rarch_midi_drv_input_event.data_size = MIDI_DRIVER_BUF_SIZE;
       if (!midi_drv->read(rarch_midi_drv_data, &rarch_midi_drv_input_event))
@@ -558,7 +558,7 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
       return false;
    }
 
-   if (rarch_midi_drv_output_event.data_size == event_size)
+   if (event_size == (int)rarch_midi_drv_output_event.data_size)
    {
       if (!midi_drv->write(rarch_midi_drv_data, &rarch_midi_drv_output_event))
          return false;
