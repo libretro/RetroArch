@@ -13598,7 +13598,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-#endif
 #ifdef HAVE_MICROPHONE
          CONFIG_UINT(
                list, list_info,
@@ -13612,6 +13611,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+#endif
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -13820,6 +13820,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef RARCH_MOBILE
          CONFIG_UINT(
                list, list_info,
                &settings->uints.microphone_block_frames,
@@ -13832,6 +13833,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 
