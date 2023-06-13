@@ -12360,7 +12360,7 @@ static int ozone_pointer_up(void *userdata,
       menu_entry_t *entry,
       unsigned action)
 {
-   int width, height;
+   unsigned int width, height;
    ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
    struct menu_state *menu_st        = menu_state_get_ptr();
    menu_input_t *menu_input          = &menu_st->input_state;
@@ -12398,12 +12398,12 @@ static int ozone_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          /* Tap/press header or footer: Menu back/cancel */
          if (((int)y < ozone->dimensions.header_height) ||
-             ((int)y > height - ozone->dimensions.footer_height))
+             ((int)y > (int)height - ozone->dimensions.footer_height))
             return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_CANCEL);
          /* Tap/press entries: Activate and/or select item */
          else if ((ptr < entries_end)
-               && (x > ozone->dimensions_sidebar_width + ozone->sidebar_offset)
-               && (x < width - ozone->animations.thumbnail_bar_position))
+               && ((int)x > (int)(ozone->dimensions_sidebar_width + ozone->sidebar_offset))
+               && ((int)x < (int)((float)width - ozone->animations.thumbnail_bar_position)))
          {
             if (gesture == MENU_INPUT_GESTURE_TAP)
             {
