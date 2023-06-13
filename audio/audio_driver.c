@@ -667,7 +667,7 @@ bool audio_driver_init_internal(
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
-      RARCH_LOG("[Audio]: Starting threaded audio driver ...\n");
+      RARCH_LOG("[Audio]: Starting threaded audio driver..\n");
       if (!audio_init_thread(
                &audio_driver_st.current_audio,
                &audio_driver_st.context_audio_data,
@@ -678,7 +678,7 @@ bool audio_driver_init_internal(
                settings->uints.audio_block_frames,
                audio_driver_st.current_audio))
       {
-         RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
+         RARCH_ERR("Cannot open threaded audio driver.. Exiting..\n");
          return false;
       }
    }
@@ -692,7 +692,7 @@ bool audio_driver_init_internal(
                audio_latency,
                settings->uints.audio_block_frames,
                &new_rate);
-      RARCH_LOG("[Audio]: Started synchronous audio driver\n");
+      RARCH_LOG("[Audio]: Started synchronous audio driver.\n");
    }
 
    if (new_rate != 0)
