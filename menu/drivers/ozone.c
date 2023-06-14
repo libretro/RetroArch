@@ -8025,7 +8025,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            if (tab_selection < ozone->system_tab_end + 1)
+            if (tab_selection < (size_t)(ozone->system_tab_end + 1))
                break;
 
             new_selection = tab_selection - ozone->system_tab_end - 1;
@@ -8126,7 +8126,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_selection      = (int)(selection + 1);
 
             if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
-               new_selection = 0;
+               new_selection   = 0;
 
             ozone_sidebar_goto(ozone, new_selection);
             new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
@@ -8368,7 +8368,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection              = tab_selection;
+            new_selection              = (int)tab_selection;
 
             if (menu_st->scroll.mode == MENU_SCROLL_PAGE)
                new_selection           = (int)(tab_selection - 10);
@@ -8385,7 +8385,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                   new_selection        = ozone->sidebar_index_list[l - 1];
             }
 
-            if (tab_selection < ozone->system_tab_end + 1)
+            if (tab_selection < (size_t)(ozone->system_tab_end + 1))
                new_selection           = 0;
             else if ((int)tab_selection > (int)ozone->system_tab_end - new_selection
                   || new_selection < 0)
@@ -8429,7 +8429,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection              = tab_selection;
+            new_selection              = (int)tab_selection;
 
             if (menu_st->scroll.mode == MENU_SCROLL_PAGE)
                new_selection           = (int)(tab_selection + 10);
@@ -8438,16 +8438,16 @@ static enum menu_action ozone_parse_menu_entry_action(
                /* Alphabetical scroll */
                size_t l                = 0;
 
-               while (l < ozone->sidebar_index_size - 1
-                     && ozone->sidebar_index_list[l + 1] <= tab_selection)
+               while (  (l < (size_t)(ozone->sidebar_index_size - 1))
+                     && (ozone->sidebar_index_list[l + 1] <= tab_selection))
                   l++;
 
-               if (l < ozone->sidebar_index_size - 1)
+               if (l < (size_t)(ozone->sidebar_index_size - 1))
                   new_selection        = ozone->sidebar_index_list[l + 1];
-               else if (l == ozone->sidebar_index_size - 1)
+               else if (l == (size_t)(ozone->sidebar_index_size - 1))
                   new_selection        = ozone->system_tab_end + horizontal_list_size;
 
-               if (tab_selection < ozone->system_tab_end + 1)
+               if (tab_selection < (size_t)(ozone->system_tab_end + 1))
                   new_selection        = ozone->system_tab_end + 1;
             }
 
@@ -12493,7 +12493,7 @@ static int ozone_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
          if (     ((int)y > ozone->dimensions.header_height)
-               && ((int)y < height - ozone->dimensions.footer_height)
+               && ((int)y < (int)(height - ozone->dimensions.footer_height))
                && (ptr < entries_end)
                && (ptr == selection)
                && ((int)x > ozone->dimensions_sidebar_width + ozone->sidebar_offset)

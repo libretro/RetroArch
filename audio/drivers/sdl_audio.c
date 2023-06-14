@@ -82,7 +82,7 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
    size_t      avail = FIFO_READ_AVAIL(sdl->speaker_buffer);
-   size_t write_size = len > (int)avail ? avail : len;
+   size_t write_size = (len > (int)avail) ? avail : (size_t)len;
 
    fifo_read(sdl->speaker_buffer, stream, write_size);
 #ifdef HAVE_THREADS

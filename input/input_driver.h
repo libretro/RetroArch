@@ -963,9 +963,6 @@ void input_config_get_bind_string_joykey(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size);
 
-int16_t input_state_internal(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
 bool input_key_pressed(int key, bool keyboard_pressed);
 
 bool input_set_rumble_state(unsigned port,

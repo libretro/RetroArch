@@ -930,7 +930,7 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
 
       /* Draw the line */
       gl2_raster_font_render_line(gl, font,

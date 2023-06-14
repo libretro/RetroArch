@@ -1853,12 +1853,12 @@ static bool INLINE rgui_draw_particle(
    /* This great convoluted mess just saves us
     * having to perform comparisons on every
     * iteration of the for loops... */
-   int x_start_i = (x > 0) ? x : 0;
-   int y_start_i = (y > 0) ? y : 0;
-   int x_end     = x + width;
-   int y_end     = y + height;
-   int x_start   = (x_start_i <= (int)fb_width)  ? x_start_i : fb_width;
-   int y_start   = (y_start_i <= (int)fb_height) ? y_start_i : fb_height;
+   unsigned x_start_i = (x > 0) ? x : 0;
+   unsigned y_start_i = (y > 0) ? y : 0;
+   int x_end          = x + width;
+   int y_end          = y + height;
+   int x_start        = (x_start_i <= fb_width)  ? x_start_i : fb_width;
+   int y_start        = (y_start_i <= fb_height) ? y_start_i : fb_height;
    
    if (x_end <= 0)
       x_end      = 0;
@@ -5246,7 +5246,9 @@ static void rgui_render(
             title_width     = (unsigned)(utf8len(thumbnail_title_buf) * rgui->font_width_stride);
          }
 
-         title_x = rgui->term_layout.start_x + ((rgui->term_layout.width * rgui->font_width_stride) - title_width) / 2;
+         title_x            = (unsigned)(rgui->term_layout.start_x 
+                            +          ((rgui->term_layout.width * rgui->font_width_stride) 
+                            -            title_width) / 2);
 
          /* Draw thumbnail title background */
          rgui_fill_rect(rgui->frame_buf.data, fb_width, fb_height,
@@ -5387,7 +5389,7 @@ static void rgui_render(
       if (use_smooth_ticker)
       {
          ticker_smooth.selected    = true;
-         ticker_smooth.field_width = title_max_len * rgui->font_width_stride;
+         ticker_smooth.field_width = (unsigned)(title_max_len * rgui->font_width_stride);
          ticker_smooth.src_str     = rgui->menu_title;
          ticker_smooth.dst_str     = title_buf;
          ticker_smooth.dst_str_len = sizeof(title_buf);
@@ -5395,9 +5397,9 @@ static void rgui_render(
 
          /* If title is scrolling, then title_len == title_max_len */
          if (gfx_animation_ticker_smooth(&ticker_smooth))
-            title_len = title_max_len;
+            title_len              = title_max_len;
          else
-            title_len = utf8len(title_buf);
+            title_len              = utf8len(title_buf);
       }
       else
       {
@@ -5413,8 +5415,10 @@ static void rgui_render(
 
       string_to_upper(title_buf);
 
-      title_x = ticker_x_offset + rgui->term_layout.start_x +
-                (rgui->term_layout.width - title_len) * rgui->font_width_stride / 2;
+      title_x = (unsigned)(ticker_x_offset 
+               +  rgui->term_layout.start_x
+               + (rgui->term_layout.width - title_len) 
+               *  rgui->font_width_stride / 2);
 
       /* Title is always centred, unless it is long enough
        * to infringe upon the battery indicator, in which case
@@ -5470,7 +5474,7 @@ static void rgui_render(
          {
             unsigned term_offset     = rgui_swap_thumbnails
                   ? (unsigned)(rgui->term_layout.height - (i - new_start) - 1)
-                  : (i - new_start);
+                  : (unsigned)(i - new_start);
             unsigned thumbnail_width = 0;
 
             /* Note:
@@ -5551,7 +5555,7 @@ static void rgui_render(
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = entry_selected;
-            ticker_smooth.field_width = entry_title_max_len * rgui->font_width_stride;
+            ticker_smooth.field_width = (unsigned)(entry_title_max_len * rgui->font_width_stride);
             if (!string_is_empty(entry.rich_label))
                ticker_smooth.src_str  = entry.rich_label;
             else
@@ -7861,11 +7865,11 @@ static void rgui_thumbnail_cycle_dupe(rgui_t *rgui)
 
    if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
    {
+      unsigned tmp = (rgui->gfx_thumbnails_prev > 0)
+                  ? (unsigned)rgui->gfx_thumbnails_prev
+                  : settings->uints.gfx_thumbnails + 1;
       configuration_set_uint(settings,
-            settings->uints.gfx_thumbnails,
-            (rgui->gfx_thumbnails_prev > 0)
-                  ? rgui->gfx_thumbnails_prev
-                  : settings->uints.gfx_thumbnails + 1);
+            settings->uints.gfx_thumbnails, tmp);
 
       if (settings->uints.gfx_thumbnails > 3)
          configuration_set_uint(settings,

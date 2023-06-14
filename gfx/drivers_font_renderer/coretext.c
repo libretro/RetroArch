@@ -353,14 +353,11 @@ static const char *font_renderer_ct_get_default_font(void)
    return default_font;
 }
 
-static bool font_renderer_ct_get_line_metrics(
+static void font_renderer_ct_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    ct_font_renderer_t *handle   = (ct_font_renderer_t*)data;
-   if (!handle)
-      return false;
    *metrics = &handle->line_metrics;
-   return true;
 }
 
 font_renderer_driver_t coretext_font_renderer = {

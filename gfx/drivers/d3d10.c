@@ -644,7 +644,7 @@ static void d3d10_font_free(void* data, bool is_threaded)
 static int d3d10_font_get_message_width(void* data,
       const char* msg, size_t msg_len, float scale)
 {
-   int i;
+   size_t i;
    int      delta_x                 = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d10_font_t* font               = (d3d10_font_t*)data;
@@ -806,7 +806,7 @@ static void d3d10_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (size_t)((delim - msg)) : strlen(msg);
 
       /* Draw the line */
       if (msg_len <= (unsigned)d3d10->sprites.capacity)

@@ -238,7 +238,7 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          * and Windows was unable to suggest another.
          * Usually happens with exclusive mode.
          * RetroArch will try selecting a format. */
-         int i, j;
+         size_t i, j;
          WAVEFORMATEXTENSIBLE possible_format;
          HRESULT format_check_hr;
          RARCH_WARN("[WASAPI]: Requested format not supported, and Windows could not suggest one. RetroArch will do so.\n");
@@ -591,7 +591,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
             goto error;
          }
 
-         if (i == idx_found)
+         if (i == (UINT32)idx_found)
             break;
 
          IFACE_RELEASE(device);

@@ -1646,7 +1646,7 @@ void MainWindow::onFileBrowserTableDirLoaded(const QString &path)
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
 {
-   int i;
+   size_t i;
    QVector<QPair<QString, QString> > playlists;
    size_t size  = m_listWidget->count();
 
@@ -2243,7 +2243,7 @@ void MainWindow::onThumbnailDropped(const QImage &image,
 
 QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
-   int i;
+   size_t i;
    QVector<QHash<QString, QString> > infoList;
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    QHash<QString, QString> currentCore = getSelectedCore();
@@ -2753,7 +2753,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
             {
                if (list->size > 0)
                {
-                  int i;
+                  size_t i;
                   for (i = 0; i < list->size; i++)
                   {
                      const char *filePath = list->elems[i].data;
@@ -3724,10 +3724,10 @@ void MainWindow::initContentTableWidget()
 
    if (path == ALL_PLAYLISTS_TOKEN)
    {
-      int i;
+      size_t i;
+      QStringList playlists;
       settings_t *settings = config_get_ptr();
       QDir playlistDir(settings->paths.directory_playlist);
-      QStringList playlists;
       size_t list_size = (size_t)m_playlistFiles.count();
 
       for (i = 0; i < list_size; i++)
@@ -3910,7 +3910,7 @@ void MainWindow::onShowInfoMessage(QString msg)
 
 int MainWindow::onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb)
 {
-   int i;
+   size_t i;
    file_archive_transfer_t state;
    struct archive_extract_userdata userdata;
    QByteArray pathArray          = path.toUtf8();

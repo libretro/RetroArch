@@ -18,9 +18,9 @@
 
 /* Win32/WGL context. */
 
-/* necessary for mingw32 multimon defines: */
+/* Necessary for mingw32 multimon defines: */
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
 #endif
 
 #include <tchar.h>
@@ -323,8 +323,8 @@ void create_gl_context(HWND hwnd, bool *quit)
                break;
             }
             else if (
-                  versions[i][0] == win32_major && 
-                  versions[i][1] == win32_minor)
+                     (versions[i][0] == (int)win32_major)
+                  && (versions[i][1] == (int)win32_minor))
             {
                /* The requested version was tried and 
                 * is not supported, go ahead and fail 

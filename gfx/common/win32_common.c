@@ -2010,7 +2010,7 @@ static const char *meta_key_to_name(unsigned int meta_key)
       const struct input_key_map* entry = &input_config_key_map[i];
       if (!entry->str)
          break;
-      if (entry->key == key_code)
+      if (entry->key == (enum retro_key)key_code)
          return entry->str;
       i++;
    }

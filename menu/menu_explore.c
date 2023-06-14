@@ -595,7 +595,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             RHMAP_SET(rdb_indices, rdb_hash, rdb_num);
          }
 
-         if (rdb_num == (uintptr_t)-1)
+         if ((uintptr_t)rdb_num == (uintptr_t)-1)
             continue;
 
          rdb = &rdbs[rdb_num - 1];

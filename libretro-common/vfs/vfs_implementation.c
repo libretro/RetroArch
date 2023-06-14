@@ -699,8 +699,8 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
 {
-   int64_t pos   = 0;
-   size_t result = -1;
+   int64_t pos    = 0;
+   ssize_t result = -1;
 
    if (!stream)
       return -1;

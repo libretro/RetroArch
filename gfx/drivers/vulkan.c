@@ -1509,7 +1509,7 @@ static void vulkan_font_render_message(vk_t *vk,
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
 
       /* Draw the line */
       vulkan_font_render_line(vk, font, glyph_q, msg, msg_len,

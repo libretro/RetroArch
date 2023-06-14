@@ -673,7 +673,7 @@ static void gl3_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
 
       /* Draw the line */
       gl3_raster_font_render_line(gl, font,
