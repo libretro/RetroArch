@@ -678,7 +678,7 @@ static void d3d11_font_free(void* data, bool is_threaded)
 
 static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_len, float scale)
 {
-   int i;
+   size_t i;
    int delta_x                      = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d11_font_t* font               = (d3d11_font_t*)data;
@@ -724,7 +724,7 @@ static void d3d11_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
-   int i;
+   size_t i;
    unsigned count;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    d3d11_sprite_t *v                = NULL;
@@ -846,7 +846,7 @@ static void d3d11_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
 
       /* Draw the line */
       if (msg_len <= (unsigned)d3d11->sprites.capacity)
@@ -2668,9 +2668,9 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
-   int i;
+   size_t i;
 
-   for (i = 0; i < (int)d3d11->shader_preset->passes; i++)
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
       struct video_shader_pass* pass = &d3d11->shader_preset->pass[i];
 

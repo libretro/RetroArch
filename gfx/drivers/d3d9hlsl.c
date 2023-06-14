@@ -1451,10 +1451,12 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 
    windowed_full         = settings->bools.video_windowed_fullscreen;
 
-   full_x                = (windowed_full || info->width  == 0) ?
-      (mon_rect.right  - mon_rect.left) : info->width;
-   full_y                = (windowed_full || info->height == 0) ?
-      (mon_rect.bottom - mon_rect.top)  : info->height;
+   full_x                = (windowed_full || info->width  == 0)
+      ? (unsigned)(mon_rect.right  - mon_rect.left) 
+      : info->width;
+   full_y                = (windowed_full || info->height == 0)
+      ? (unsigned)(mon_rect.bottom - mon_rect.top)  
+      : info->height;
 #else
    d3d9_get_video_size(d3d, &full_x, &full_y);
 #endif

@@ -802,7 +802,8 @@ static void d3d12_font_free(void* data, bool is_threaded)
 static int d3d12_font_get_message_width(void* data,
       const char* msg, size_t msg_len, float scale)
 {
-   int i, delta_x                   = 0;
+   size_t i;
+   int delta_x                      = 0;
    const struct font_glyph* glyph_q = NULL;
    d3d12_font_t* font               = (d3d12_font_t*)data;
 
@@ -848,7 +849,7 @@ static void d3d12_font_render_line(
       unsigned            height,
       unsigned            text_align)
 {
-   int i;
+   size_t i;
    D3D12_RANGE     range;
    unsigned        count;
    void*           mapped_vbo       = NULL;
@@ -974,10 +975,10 @@ static void d3d12_font_render_message(
    for (;;)
    {
       const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if (msg_len <= d3d12->sprites.capacity)
+      if (msg_len <= (size_t)d3d12->sprites.capacity)
          d3d12_font_render_line(d3d12, cmd,
                font, glyph_q, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines * line_height,
@@ -2563,7 +2564,8 @@ static bool d3d12_create_root_signature(
 
 static void d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
-   int                       i, j;
+   size_t i;
+   int j;
    D3D12_ROOT_SIGNATURE_DESC desc;
    D3D12_ROOT_PARAMETER      root_params[ROOT_ID_MAX];
    D3D12_ROOT_PARAMETER      cs_root_params[CS_ROOT_ID_MAX];
