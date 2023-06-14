@@ -404,7 +404,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    uint8_t footer_buf[1024];
    uint8_t *footer = footer_buf;
    int64_t read_pos = state->archive_size;
-   int64_t read_block = MIN(read_pos, sizeof(footer_buf));
+   int64_t read_block = MIN(read_pos, (ssize_t)sizeof(footer_buf));
    int64_t directory_size, directory_offset;
    zip_context_t *zip_context = NULL;
 

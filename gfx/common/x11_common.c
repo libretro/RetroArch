@@ -857,7 +857,7 @@ static bool x11_check_atom_supported(Display *dpy, Atom atom)
    if (!prop || type != XA_ATOM)
       return false;
 
-   for (i = 0; i < nitems; i++)
+   for (i = 0; i < (int)nitems; i++)
    {
       if (prop[i] == atom)
       {

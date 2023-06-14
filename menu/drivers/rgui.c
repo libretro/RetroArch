@@ -4588,8 +4588,8 @@ static int rgui_osk_ptr_at_pos(
          unsigned osk_ptr_x       = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
          unsigned osk_ptr_y       = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
 
-         if (  x > osk_ptr_x && x < osk_ptr_x + ptr_width &&
-               y > osk_ptr_y && y < osk_ptr_y + ptr_height)
+         if ((unsigned)x > osk_ptr_x && (unsigned)x < osk_ptr_x + ptr_width &&
+             (unsigned)y > osk_ptr_y && (unsigned)y < osk_ptr_y + ptr_height)
             return (int)key_index;
       }
    }
@@ -4606,7 +4606,7 @@ static void rgui_render_osk(
       unsigned fb_width,
       unsigned fb_height)
 {
-   size_t key_index;
+   int key_index;
    
    unsigned input_label_max_length;
    unsigned input_str_max_length;
@@ -5099,7 +5099,7 @@ static void rgui_render(
        rgui->pointer.active && !show_fs_thumbnail)
    {
       /* Update currently 'highlighted' item */
-      if (rgui->pointer.y > rgui->term_layout.start_y)
+      if (rgui->pointer.y > (int)rgui->term_layout.start_y)
       {
          old_start       = menu_st->entries.begin;
          /* NOTE: It's okay for this to go out of range

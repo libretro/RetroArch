@@ -1404,7 +1404,7 @@ static int action_bind_sublabel_subsystem_add(
       if (content_get_subsystem_rom_id() < subsystem->num_roms)
          snprintf(s, len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
-               (content_get_subsystem() == type - MENU_SETTINGS_SUBSYSTEM_ADD)
+               (content_get_subsystem() == (int)type - MENU_SETTINGS_SUBSYSTEM_ADD)
              ? subsystem->roms[content_get_subsystem_rom_id()].desc
              : subsystem->roms[0].desc);
    }
@@ -1718,7 +1718,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
          msg_hash_to_str(MSG_NETPLAY_CLIENT_DEVICES));
 
       /* Ensure that at least one device can be written. */
-      if (written > 0 && written < (sizeof(buf) - STRLEN_CONST(" 16\n")))
+      if (written > 0 && written < (int)sizeof(buf) - (int)STRLEN_CONST(" 16\n"))
       {
          uint32_t device;
          char *buf_written = buf + written;
@@ -1738,7 +1738,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
                }
 
                written += tmp_written;
-               if (written >= (sizeof(buf) - 1))
+               if (written >= (int)sizeof(buf) - 1)
                   break;
 
                buf_written += tmp_written;

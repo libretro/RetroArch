@@ -1404,7 +1404,7 @@ struct string_list* cdrom_get_available_drives(void)
          
          if (string_split_noalloc(&mods, buf, "\n"))
          {
-            for (i = 0; i < mods.size; i++)
+            for (i = 0; i < (int)mods.size; i++)
             {
                if (strcasestr(mods.elems[i].data, "sg "))
                {

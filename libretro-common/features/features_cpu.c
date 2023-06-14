@@ -837,7 +837,7 @@ void cpu_features_get_model_name(char *name, int len)
       unsigned char s[16];
    } flags;
    int i, j;
-   size_t pos = 0;
+   int pos = 0;
    bool start = false;
 
    if (!name)
@@ -853,7 +853,7 @@ void cpu_features_get_model_name(char *name, int len)
       memset(flags.i, 0, sizeof(flags.i));
       x86_cpuid(0x80000002 + i, flags.i);
 
-      for (j = 0; j < sizeof(flags.s); j++)
+      for (j = 0; j < (int)sizeof(flags.s); j++)
       {
          if (!start && flags.s[j] == ' ')
             continue;
@@ -872,7 +872,7 @@ void cpu_features_get_model_name(char *name, int len)
    }
 end:
    /* terminate our string */
-   if (pos < (size_t)len)
+   if (pos < len)
       name[pos] = '\0';
 #elif defined(__MACH__)
    if (!name)

@@ -142,7 +142,7 @@ chdstream_find_track_number(chd_file *fd, int32_t track, metadata_t *meta)
       if (!chdstream_get_meta(fd, i, meta))
          return false;
 
-      if (track == meta->track)
+      if (track == (int)meta->track)
       {
          meta->frame_offset = frame_offset;
          return true;
@@ -294,7 +294,7 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
 {
    uint16_t *array;
 
-   if (hunknum == stream->hunknum)
+   if ((int)hunknum == stream->hunknum)
       return true;
 
    if (chd_read(stream->chd, hunknum, stream->hunkmem) != CHDERR_NONE)
@@ -416,7 +416,7 @@ int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence)
    if (new_offset < 0)
       return -1;
 
-   if (new_offset > stream->track_end)
+   if ((size_t)new_offset > stream->track_end)
       new_offset = stream->track_end;
 
    stream->offset = new_offset;

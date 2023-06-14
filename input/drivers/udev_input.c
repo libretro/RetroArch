@@ -712,7 +712,7 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 
          if (mouse->x_abs < vp.x)
             mouse->x_abs = vp.x;
-         else if (mouse->x_abs >= vp.x + vp.full_width)
+         else if (mouse->x_abs >= (vp.x + (int)vp.full_width))
             mouse->x_abs = vp.x + vp.full_width - 1;
       }
    }
@@ -755,7 +755,7 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 
          if (mouse->y_abs < vp.y)
             mouse->y_abs = vp.y;
-         else if (mouse->y_abs >= vp.y + vp.full_height)
+         else if (mouse->y_abs >= (vp.y + (int)vp.full_height))
             mouse->y_abs = vp.y + vp.full_height - 1;
       }
    }
@@ -3435,7 +3435,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    }
  
    /* Add what devices we have now */
-   for (i = 0; i < udev->num_devices; ++i)
+   for (i = 0; i < (int)udev->num_devices; i++)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       { /* Pointers */
@@ -3532,7 +3532,7 @@ static void udev_input_poll(void *data)
    udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
 #endif
 
-   for (i = 0; i < udev->num_devices; ++i)
+   for (i = 0; i < (int)udev->num_devices; i++)
    {
       if (udev->devices[i]->type == UDEV_INPUT_KEYBOARD)
          continue;
@@ -3603,9 +3603,9 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 
    if (r)
       r = udev->pointer_x < 0 ||
-          udev->pointer_x >= view.full_width ||
+          udev->pointer_x >= (int)view.full_width ||
           udev->pointer_y < 0 ||
-          udev->pointer_y >= view.full_height;
+          udev->pointer_y >= (int)view.full_height;
    return r;
 #else
    return false;
@@ -4163,7 +4163,7 @@ static void *udev_input_init(const char *joypad_driver)
       udev->keyboards[i] = -1;
    }
 
-   for (i = 0; i < udev->num_devices; ++i)
+   for (i = 0; i < (int)udev->num_devices; ++i)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {

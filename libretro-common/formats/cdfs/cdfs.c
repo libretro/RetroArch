@@ -28,7 +28,7 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
 
    /* The boot record or primary volume descriptor is always at sector 16 and will contain a "CD001" marker */
    intfstream_seek(track->stream, toc_sector * 2352 + track->first_sector_offset, SEEK_SET);
-   if (intfstream_read(track->stream, buffer, sizeof(buffer)) < sizeof(buffer))
+   if (intfstream_read(track->stream, &buffer, sizeof(buffer)) != (int64_t)sizeof(buffer))
       return;
 
    /* if this is a CDROM-XA data source, the "CD001" tag will be 25 bytes into the sector */
@@ -99,13 +99,13 @@ void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
    /* only allowed if open_file was called with a NULL path */
    if (file->first_sector == 0)
    {
-      if (sector != file->current_sector)
+      if (file->current_sector != (int)sector)
       {
-         file->current_sector      = sector;
+         file->current_sector      = (int)sector;
          file->sector_buffer_valid = 0;
       }
 
-      file->pos                    = file->current_sector * 2048;
+      file->pos                    = sector * 2048;
       file->current_sector_offset  = 0;
    }
 }

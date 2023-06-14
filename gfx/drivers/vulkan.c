@@ -2327,7 +2327,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
 
    /* Other menu pipelines. */
-   for (i = 0; i < ARRAY_SIZE(vk->display.pipelines) - 6; i++)
+   for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines) - 6; i++)
    {
       switch (i >> 1)
       {
@@ -2612,7 +2612,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
          vk->pipelines.hdr, NULL);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-   for (i = 0; i < ARRAY_SIZE(vk->display.pipelines); i++)
+   for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines); i++)
       vkDestroyPipeline(vk->context->device,
             vk->display.pipelines[i], NULL);
 }

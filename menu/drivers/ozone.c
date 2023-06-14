@@ -2397,7 +2397,7 @@ static uintptr_t ozone_entries_icon_get_texture(
                int input_num  = type - input_id;
                for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
                {
-                  if (input_config_bind_order[index] == input_num)
+                  if ((int)input_config_bind_order[index] == input_num)
                   {
                      type = input_id + index;
                      break;
@@ -8133,7 +8133,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != selection)
+            if (new_selection != (int)selection)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             break;
@@ -8170,7 +8170,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != selection)
+            if (new_selection != (int)selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8387,18 +8387,18 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             if (tab_selection < ozone->system_tab_end + 1)
                new_selection           = 0;
-            else if (tab_selection > ozone->system_tab_end - new_selection
+            else if ((int)tab_selection > (int)ozone->system_tab_end - new_selection
                   || new_selection < 0)
                new_selection           = (int)(ozone->system_tab_end + 1);
 
-            if (new_selection != tab_selection)
+            if (new_selection != (int)tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != selection)
+            if (new_selection != (int)selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8454,14 +8454,14 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (new_selection > (int)(ozone->system_tab_end + horizontal_list_size))
                new_selection           = (int)(ozone->system_tab_end + horizontal_list_size);
 
-            if (new_selection != tab_selection)
+            if (new_selection != (int)tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != selection)
+            if (new_selection != (int)selection)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             break;
@@ -8493,14 +8493,14 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (tab_selection > ozone->system_tab_end)
                new_selection           = (int)(ozone->system_tab_end + 1);
 
-            if (new_selection != tab_selection)
+            if (new_selection != (int)tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != selection)
+            if (new_selection != (int)selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8517,14 +8517,14 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             new_selection              = ozone->system_tab_end + horizontal_list_size;
 
-            if (new_selection != tab_selection)
+            if (new_selection != (int)tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != selection)
+            if (new_selection != (int)selection)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             break;
@@ -12360,7 +12360,7 @@ static int ozone_pointer_up(void *userdata,
       menu_entry_t *entry,
       unsigned action)
 {
-   unsigned width, height;
+   unsigned int width, height;
    ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
    struct menu_state *menu_st        = menu_state_get_ptr();
    menu_input_t *menu_input          = &menu_st->input_state;
@@ -12397,13 +12397,13 @@ static int ozone_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          /* Tap/press header or footer: Menu back/cancel */
-         if ((y < ozone->dimensions.header_height) ||
-             (y > height - ozone->dimensions.footer_height))
+         if (((int)y < ozone->dimensions.header_height) ||
+             ((int)y > (int)height - ozone->dimensions.footer_height))
             return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_CANCEL);
          /* Tap/press entries: Activate and/or select item */
          else if ((ptr < entries_end)
-               && (x > ozone->dimensions_sidebar_width + ozone->sidebar_offset)
-               && (x < width - ozone->animations.thumbnail_bar_position))
+               && ((int)x > (int)(ozone->dimensions_sidebar_width + ozone->sidebar_offset))
+               && ((int)x < (int)((float)width - ozone->animations.thumbnail_bar_position)))
          {
             if (gesture == MENU_INPUT_GESTURE_TAP)
             {
@@ -12492,12 +12492,12 @@ static int ozone_pointer_up(void *userdata,
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
-         if (     (y > ozone->dimensions.header_height)
-               && (y < height - ozone->dimensions.footer_height)
+         if (     ((int)y > ozone->dimensions.header_height)
+               && ((int)y < height - ozone->dimensions.footer_height)
                && (ptr < entries_end)
                && (ptr == selection)
-               && (x > ozone->dimensions_sidebar_width + ozone->sidebar_offset)
-               && (x < width - ozone->animations.thumbnail_bar_position))
+               && ((int)x > ozone->dimensions_sidebar_width + ozone->sidebar_offset)
+               && ((int)x < width - ozone->animations.thumbnail_bar_position))
             return ozone_menu_entry_action(ozone,
                   entry, selection, MENU_ACTION_START);
          break;

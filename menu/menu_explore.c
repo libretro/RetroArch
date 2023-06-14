@@ -1658,7 +1658,7 @@ SKIP_ENTRY:;
       strlcpy(state->title,
             pl_entry->label, sizeof(state->title));
 
-      for (pl_idx = 0; pl_idx != RBUF_LEN(state->playlists); pl_idx++)
+      for (pl_idx = 0; pl_idx != (int)RBUF_LEN(state->playlists); pl_idx++)
       {
          menu_displaylist_info_t          info;
          const struct playlist_entry* pl_first = NULL;
@@ -1726,7 +1726,7 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
          || !entry->playlist_entry)
       return -1;
 
-   for (pl_idx = 0; pl_idx != RBUF_LEN(explore_state->playlists); pl_idx++)
+   for (pl_idx = 0; pl_idx != (int)RBUF_LEN(explore_state->playlists); pl_idx++)
    {
       const struct playlist_entry* pl_first = NULL;
       playlist_t *pl  = explore_state->playlists[pl_idx];
