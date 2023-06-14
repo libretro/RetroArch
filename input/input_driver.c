@@ -1798,16 +1798,18 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
          if (ol_state)
          {
             unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-            desc->updated        |= (ol_state->analog[index_offset] |
-                  ol_state->analog[index_offset + 1]);
+            desc->updated        |= (
+                   ol_state->analog[index_offset]
+                 | ol_state->analog[index_offset + 1]);
          }
          else
          {
-            unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
-               RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
-            float analog_x        = input_state_internal(port, RETRO_DEVICE_ANALOG,
+            unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
+               ? RETRO_DEVICE_INDEX_ANALOG_RIGHT 
+               : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+            int16_t analog_x      = input_state_internal(port, RETRO_DEVICE_ANALOG,
                   index, RETRO_DEVICE_ID_ANALOG_X);
-            float analog_y        = input_state_internal(port, RETRO_DEVICE_ANALOG,
+            int16_t analog_y      = input_state_internal(port, RETRO_DEVICE_ANALOG,
                   index, RETRO_DEVICE_ID_ANALOG_Y);
 
             /* Only modify overlay delta_x/delta_y values
@@ -1817,15 +1819,16 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
             desc->delta_y         = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
          }
 
-         return (desc->updated != 0);
+         /* fall-through */
 
       case OVERLAY_TYPE_DPAD_AREA:
       case OVERLAY_TYPE_ABXY_AREA:
          return (desc->updated != 0);
 
       case OVERLAY_TYPE_KEYBOARD:
+         bool tmp = OVERLAY_GET_KEY(ol_state, desc->retro_key_idx) ? true : false;
          if (    ol_state
-               ? OVERLAY_GET_KEY(ol_state, desc->retro_key_idx)
+               ? tmp
                : input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
          {
             desc->updated = 1;
@@ -1864,7 +1867,7 @@ static void input_overlay_get_eightway_slope_limits(
    /* Sensitivity setting is the relative size of diagonal zones to
     * cardinal zones. Convert to fraction of 45 deg span (max diagonal).
     */
-   float f = 2.0f * diagonal_sensitivity
+   float f =  2.0f * diagonal_sensitivity
          / (100.0f + diagonal_sensitivity);
 
    float high_angle  /* 67.5 deg max */
@@ -1907,10 +1910,11 @@ void input_overlay_set_eightway_diagonal_sensitivity(void)
  * Gets the eightway area's current input state based on (@x_dist, @y_dist).
  **/
 static INLINE void input_overlay_get_eightway_state(
-      const struct overlay_desc *desc, input_bits_t *out,
+      const struct overlay_desc *desc,
+      overlay_eightway_config_t *eightway,
+      input_bits_t *out,
       float x_dist, float y_dist)
 {
-   overlay_eightway_config_t *eightway = desc->eightway_config;
    uint32_t *data;
    float abs_slope;
 
@@ -1972,7 +1976,7 @@ static INLINE void input_overlay_get_eightway_state(
 }
 
 /**
- * inside_hitbox:
+ * input_overlay_coords_inside_hitbox:
  * @desc                  : Overlay descriptor handle.
  * @x                     : X coordinate value.
  * @y                     : Y coordinate value.
@@ -1983,7 +1987,7 @@ static INLINE void input_overlay_get_eightway_state(
  * Returns: true (1) if X, Y coordinates are inside a hitbox,
  * otherwise false (0).
  **/
-static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
+static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc, float x, float y)
 {
    switch (desc->hitbox)
    {
@@ -1997,8 +2001,8 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
       }
       case OVERLAY_HITBOX_RECT:
          return
-            (fabs(x - desc->x_hitbox) <= desc->range_x_mod) &&
-            (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
+               (fabs(x - desc->x_hitbox) <= desc->range_x_mod)
+            && (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
       case OVERLAY_HITBOX_NONE:
          break;
    }
@@ -2046,7 +2050,7 @@ static void input_overlay_poll(
       unsigned int desc_prio    = 0;
       struct overlay_desc *desc = &descs[i];
 
-      if (!desc || !inside_hitbox(desc, x, y))
+      if (!desc || !input_overlay_coords_inside_hitbox(desc, x, y))
          continue;
 
       /* Check for exclusive hitbox, which blocks other input.
@@ -2089,7 +2093,8 @@ static void input_overlay_poll(
          case OVERLAY_TYPE_DPAD_AREA:
          case OVERLAY_TYPE_ABXY_AREA:
             input_overlay_get_eightway_state(
-                  desc, &out->buttons, x_dist, y_dist);
+                  desc, desc->eightway_config,
+                  &out->buttons, x_dist, y_dist);
             break;
          case OVERLAY_TYPE_ANALOG_RIGHT:
             base = 2;
@@ -2189,11 +2194,11 @@ static void input_overlay_post_poll(
 
 static void input_overlay_desc_init_hitbox(struct overlay_desc *desc)
 {
-   desc->x_hitbox =
+   desc->x_hitbox       =
          ((desc->x_shift + desc->range_x * desc->reach_right) +
           (desc->x_shift - desc->range_x * desc->reach_left)) / 2.0f;
 
-   desc->y_hitbox =
+   desc->y_hitbox       =
          ((desc->y_shift + desc->range_y * desc->reach_down) +
           (desc->y_shift - desc->range_y * desc->reach_up)) / 2.0f;
 
@@ -2205,8 +2210,8 @@ static void input_overlay_desc_init_hitbox(struct overlay_desc *desc)
          (desc->range_y * desc->reach_down +
           desc->range_y * desc->reach_up) / 2.0f;
 
-   desc->range_x_mod = desc->range_x_hitbox;
-   desc->range_y_mod = desc->range_y_hitbox;
+   desc->range_x_mod    = desc->range_x_hitbox;
+   desc->range_y_mod    = desc->range_y_hitbox;
 }
 
 /**
