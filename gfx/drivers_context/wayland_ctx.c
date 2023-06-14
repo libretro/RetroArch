@@ -270,7 +270,7 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
       egl_report_error();
       return false;
    }
-   if (n == 0 || !&wl->egl.config)
+   if (n == 0 || !wl->egl.config)
       return false;
    return true;
 }
