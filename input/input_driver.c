@@ -1826,13 +1826,21 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
          return (desc->updated != 0);
 
       case OVERLAY_TYPE_KEYBOARD:
-         bool tmp = OVERLAY_GET_KEY(ol_state, desc->retro_key_idx) ? true : false;
-         if (    ol_state
-               ? tmp
-               : input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx))
          {
-            desc->updated = 1;
-            return true;
+            bool tmp    = false;
+            if (ol_state)
+            {
+               if (OVERLAY_GET_KEY(ol_state, desc->retro_key_idx))
+                  tmp   = true;
+            }
+            else
+               tmp      = input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx);
+
+            if (tmp)
+            {
+               desc->updated = 1;
+               return true;
+            }
          }
          break;
 
