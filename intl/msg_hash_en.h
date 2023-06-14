@@ -423,6 +423,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
    "Lower this value to favour performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Desired audio input latency in milliseconds. Might not be honoured if the microphone driver can't provide given latency."
+   )
 #endif
 
 /* Settings > Audio > Resampler */
@@ -2163,6 +2167,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
    "Use the lowest frequency available to save power. Useful on battery powered devices, but performance will be significantly reduced."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   "Enabling Linux GameMode can improve latency, fix audio crackling issues and maximise overall performance by automatically configuring your CPU and GPU for best performance.\nThe GameMode software needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for information on how to install GameMode."
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
@@ -2185,6 +2193,10 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Displays a list of available time zones. After selecting a time zone, time and date is adjusted to the selected time zone. It assumes, that system/hardware clock is set to UTC."
+   )
 #endif
 #ifdef GEKKO
 MSG_HASH(
@@ -2193,6 +2205,10 @@ MSG_HASH(
    )
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Enable along with Mouse to utilise the touch screen as a trackball, adding inertia to the pointer."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
