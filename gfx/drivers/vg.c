@@ -516,13 +516,17 @@ video_driver_t video_vg = {
    vg_set_shader,
    vg_free,
    "vg",
-   NULL,                      /* set_viewport */
-   NULL,                      /* set_rotation */
-   NULL,                      /* viewport_info */
-   NULL,                      /* read_viewport */
-   NULL,                      /* read_frame_raw */
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL,                       /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  vg_get_poke_interface
+   vg_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

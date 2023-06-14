@@ -2195,12 +2195,12 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_unload_texture,
    d3d9_set_video_mode,
 #if defined(__WINRT__)
-   NULL,
+   NULL, /* get_refresh_rate */
 #else
    /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
-   NULL,
+   NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
@@ -2211,16 +2211,15 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_set_menu_texture_frame,
    d3d9_set_menu_texture_enable,
    d3d9_set_osd_msg,
-
    win32_show_cursor,
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d9_cg_get_poke_interface(void *data,
@@ -2301,7 +2300,7 @@ video_driver_t video_d3d9_cg = {
    d3d9_cg_frame,
    d3d9_cg_set_nonblock_state,
    d3d9_cg_alive,
-   NULL,                      /* focus */
+   NULL, /* focus */
    win32_suppress_screensaver,
    d3d9_has_windowed,
    d3d9_cg_set_shader,
@@ -2311,7 +2310,7 @@ video_driver_t video_d3d9_cg = {
    d3d9_set_rotation,
    d3d9_viewport_info,
    d3d9_read_viewport,
-   NULL,                      /* read_frame_raw */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif

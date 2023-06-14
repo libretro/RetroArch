@@ -2391,28 +2391,28 @@ static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
    rsx_load_texture,
    rsx_unload_texture,
-   NULL,                                  /* set_video_mode   */
-   NULL,                                  /* get_refresh_rate */
+   NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    rsx_set_filtering,
-   NULL,                                  /* get_video_output_size */
-   NULL,                                  /* get_video_output_prev */
-   NULL,                                  /* get_video_output_next */
-   NULL,                                  /* get_current_framebuffer */
-   NULL,                                  /* get_proc_address */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    rsx_set_aspect_ratio,
    rsx_apply_state_changes,
    rsx_set_texture_frame,
    rsx_set_texture_enable,
    font_driver_render_msg,
-   NULL,                                  /* show_mouse */
-   NULL,                                  /* grab_mouse_toggle */
-   NULL,                                  /* get_current_shader */
-   NULL,                                  /* get_current_software_framebuffer */
-   NULL,                                  /* get_hw_render_interface */
-   NULL,                                  /* set_hdr_max_nits */
-   NULL,                                  /* set_hdr_paper_white_nits */
-   NULL,                                  /* set_hdr_contrast */
-   NULL                                   /* set_hdr_expand_gamut */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void rsx_get_poke_interface(void* data,
@@ -2440,7 +2440,7 @@ video_driver_t video_gcm =
    rsx_set_viewport,
    rsx_set_rotation,
    rsx_viewport_info,
-   NULL, /* read_viewport  */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    rsx_get_overlay_interface,

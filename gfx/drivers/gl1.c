@@ -2217,26 +2217,26 @@ static const video_poke_interface_t gl1_poke_interface = {
    gl1_unload_texture,
    gl1_set_video_mode,
    gl1_get_refresh_rate,
-   NULL,
+   NULL, /* set_filtering */
    gl1_get_video_output_size,
    gl1_get_video_output_prev,
    gl1_get_video_output_next,
-   NULL,
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    gl1_set_aspect_ratio,
-   NULL,
+   NULL, /* apply_state_changes */
    gl1_set_texture_frame,
    gl1_set_texture_enable,
    font_driver_render_msg,
-   NULL,
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void gl1_get_poke_interface(void *data,
@@ -2406,13 +2406,12 @@ video_driver_t video_gl1 = {
    gl1_viewport_info,
    gl1_read_viewport,
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
    gl1_get_overlay_interface,
 #endif
-  gl1_get_poke_interface,
-  gl1_wrap_type_to_enum,
+   gl1_get_poke_interface,
+   gl1_wrap_type_to_enum,
 #ifdef HAVE_GFX_WIDGETS
-  gl1_widgets_enabled
+   gl1_widgets_enabled
 #endif
 };

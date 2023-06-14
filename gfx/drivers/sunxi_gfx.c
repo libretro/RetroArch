@@ -904,8 +904,8 @@ static float sunxi_get_refresh_rate (void *data)
 
 static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* get_flags */
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
@@ -918,16 +918,16 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* sunxi_apply_state_changes */
    sunxi_set_texture_frame,
    sunxi_set_texture_enable,
-   NULL,                         /* set_osd_msg */
-   NULL,                         /* show_mouse */
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void sunxi_get_poke_interface(void *data,
@@ -937,24 +937,27 @@ static void sunxi_get_poke_interface(void *data,
 }
 
 video_driver_t video_sunxi = {
-  sunxi_init,
-  sunxi_frame,
-  sunxi_set_nonblock_state,
-  sunxi_alive,
-  sunxi_focus,
-  sunxi_suppress_screensaver,
-  NULL, /* has_windowed */
-  sunxi_set_shader,
-  sunxi_free,
-  "sunxi",
-  NULL, /* set_viewport */
-  NULL, /* set_rotation */
-  sunxi_viewport_info,
-  NULL, /* read_viewport */
-  NULL, /* read_frame_raw */
-
+   sunxi_init,
+   sunxi_frame,
+   sunxi_set_nonblock_state,
+   sunxi_alive,
+   sunxi_focus,
+   sunxi_suppress_screensaver,
+   NULL, /* has_windowed */
+   sunxi_set_shader,
+   sunxi_free,
+   "sunxi",
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   sunxi_viewport_info,
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  sunxi_get_poke_interface
+   sunxi_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

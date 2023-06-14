@@ -2466,7 +2466,7 @@ video_driver_t video_wiiu =
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   gx2_get_overlay_interface, /* overlay_interface */
+   gx2_get_overlay_interface,
 #endif
    gx2_get_poke_interface,
    NULL, /* wrap_type_to_enum */

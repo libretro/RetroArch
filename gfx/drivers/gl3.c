@@ -2953,8 +2953,8 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_load_texture,
    gl3_unload_texture,
    gl3_set_video_mode,
-   gl3_get_refresh_rate, /* get_refresh_rate */
-   NULL,
+   gl3_get_refresh_rate,
+   NULL, /* set_filtering */
    gl3_get_video_output_size,
    gl3_get_video_output_prev,
    gl3_get_video_output_next,
@@ -2966,10 +2966,10 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_set_texture_enable,
    font_driver_render_msg,
    gl3_show_mouse,
-   NULL,                               /* grab_mouse_toggle */
+   NULL, /* grab_mouse_toggle */
    gl3_get_current_shader,
-   NULL,
-   NULL,
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
@@ -3036,24 +3036,18 @@ video_driver_t video_gl3 = {
    gl3_focus,
    gl3_suppress_screensaver,
    gl3_has_windowed,
-
    gl3_set_shader,
-
    gl3_free,
    "glcore",
-
    gl3_set_viewport_wrapper,
    gl3_set_rotation,
-
    gl3_viewport_info,
-
    gl3_read_viewport,
 #if defined(READ_RAW_GL_FRAME_TEST)
    gl3_read_frame_raw,
 #else
-   NULL,
+   NULL, /* read_frame_raw */
 #endif
-
 #ifdef HAVE_OVERLAY
    gl3_get_overlay_interface,
 #endif

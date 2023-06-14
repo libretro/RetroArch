@@ -5177,20 +5177,20 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_load_texture,
    vulkan_unload_texture,
    vulkan_set_video_mode,
-   vulkan_get_refresh_rate,            /* get_refresh_rate */
-   NULL,                               /* set_filtering */
+   vulkan_get_refresh_rate,
+   NULL, /* set_filtering */
    vulkan_get_video_output_size,
    vulkan_get_video_output_prev,
    vulkan_get_video_output_next,
-   NULL,                               /* get_current_framebuffer */
-   NULL,                               /* get_proc_address */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    vulkan_set_aspect_ratio,
    vulkan_apply_state_changes,
    vulkan_set_texture_frame,
    vulkan_set_texture_enable,
    font_driver_render_msg,
    vulkan_show_mouse,
-   NULL,                               /* grab_mouse_toggle */
+   NULL, /* grab_mouse_toggle */
    vulkan_get_current_shader,
    vulkan_get_current_sw_framebuffer,
    vulkan_get_hw_render_interface,
@@ -5621,13 +5621,12 @@ video_driver_t video_vulkan = {
    vulkan_set_rotation,
    vulkan_viewport_info,
    vulkan_read_viewport,
-   NULL,                         /* vulkan_read_frame_raw */
-
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    vulkan_get_overlay_interface,
 #endif
    vulkan_get_poke_interface,
-   NULL,                         /* vulkan_wrap_type_to_enum */
+   NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS
    vulkan_gfx_widgets_enabled
 #endif

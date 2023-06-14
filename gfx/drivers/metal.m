@@ -2523,25 +2523,25 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_set_video_mode,
    metal_get_refresh_rate,
    metal_set_filtering,
-   NULL,                      /* get_video_output_size */
-   NULL,                      /* get_video_output_prev */
-   NULL,                      /* get_video_output_next */
-   NULL,                      /* get_current_framebuffer */
-   NULL,                      /* get_proc_address */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    metal_set_aspect_ratio,
    metal_apply_state_changes,
    metal_set_texture_frame,
    metal_set_texture_enable,
    font_driver_render_msg,
    metal_show_mouse,
-   NULL,                      /* grab_mouse_toggle */
+   NULL, /* grab_mouse_toggle */
    metal_get_current_shader,
-   NULL,                      /* get_current_software_framebuffer */
-   NULL,                      /* get_hw_render_interface */
-   NULL,                      /* set_hdr_max_nits */
-   NULL,                      /* set_hdr_paper_white_nits */
-   NULL,                      /* set_hdr_contrast */
-   NULL                       /* set_hdr_expand_gamut */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void metal_get_poke_interface(void *data,
@@ -2640,7 +2640,7 @@ video_driver_t video_metal = {
    metal_get_overlay_interface,
 #endif
    metal_get_poke_interface,
-   NULL, /* metal_wrap_type_to_enum */
+   NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS
    metal_widgets_enabled
 #endif

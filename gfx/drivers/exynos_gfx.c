@@ -1452,8 +1452,8 @@ static void exynos_show_mouse(void *data, bool state) { }
 
 static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_flags */
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    drm_get_refresh_rate,
    NULL, /* set_filtering */
@@ -1468,14 +1468,14 @@ static const video_poke_interface_t exynos_poke_interface = {
    exynos_set_texture_enable,
    exynos_set_osd_msg,
    exynos_show_mouse,
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void exynos_get_poke_interface(void *data,
@@ -1491,24 +1491,27 @@ static bool exynos_set_shader(void *data,
 }
 
 video_driver_t video_exynos = {
-  exynos_init,
-  exynos_frame,
-  exynos_set_nonblock_state,
-  exynos_alive,
-  exynos_focus,
-  exynos_suppress_screensaver,
-  NULL, /* has_windowed */
-  exynos_set_shader,
-  exynos_free,
-  "exynos",
-  NULL, /* set_viewport */
-  exynos_set_rotation,
-  exynos_viewport_info,
-  NULL, /* read_viewport */
-  NULL, /* read_frame_raw */
-
+   exynos_init,
+   exynos_frame,
+   exynos_set_nonblock_state,
+   exynos_alive,
+   exynos_focus,
+   exynos_suppress_screensaver,
+   NULL, /* has_windowed */
+   exynos_set_shader,
+   exynos_free,
+   "exynos",
+   NULL, /* set_viewport */
+   exynos_set_rotation,
+   exynos_viewport_info,
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  exynos_get_poke_interface
+   exynos_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

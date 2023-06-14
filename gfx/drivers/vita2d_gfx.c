@@ -1247,7 +1247,7 @@ static const video_poke_interface_t vita_poke_interface = {
    vita2d_get_flags,
    vita2d_load_texture,
    vita2d_unload_texture,
-   NULL,
+   NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    vita2d_set_filtering,
    NULL, /* get_video_output_size */
@@ -1260,11 +1260,11 @@ static const video_poke_interface_t vita_poke_interface = {
    vita2d_set_texture_frame,
    vita2d_set_texture_enable,
    font_driver_render_msg,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
    vita2d_get_current_sw_framebuffer,
-   NULL,
+   NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
@@ -1440,7 +1440,7 @@ video_driver_t video_vita2d = {
    vita2d_get_overlay_interface,
 #endif
    vita2d_get_poke_interface,
-   NULL,
+   NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS
    vita2d_widgets_enabled
 #endif
