@@ -298,7 +298,7 @@ static int32_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
-   if (port >= DEFAULT_MAX_PADS)
+   if (port >= MAX_USERS)
       return 0;
    if (joykey < NUM_BUTTONS)
       return (BIT32_GET(pad->buttons, joykey));
@@ -356,7 +356,7 @@ static int16_t linuxraw_joypad_state(
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port_idx];
 
-   if (port_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= MAX_USERS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

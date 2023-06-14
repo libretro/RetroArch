@@ -374,7 +374,7 @@ static int32_t sdl_joypad_button(unsigned port, uint16_t joykey)
    sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad || !pad->joypad)
       return 0;
-   if (port >= DEFAULT_MAX_PADS)
+   if (port >= MAX_USERS)
       return 0;
    return sdl_joypad_button_state(pad, port, joykey);
 }
@@ -424,7 +424,7 @@ static int16_t sdl_joypad_state(
 
    if (!pad || !pad->joypad)
       return 0;
-   if (port_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= MAX_USERS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

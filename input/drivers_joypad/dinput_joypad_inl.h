@@ -273,7 +273,7 @@ static int16_t dinput_joypad_state(
 
    if (!pad || !pad->joypad)
       return 0;
-   if (port_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= MAX_USERS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
