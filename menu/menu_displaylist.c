@@ -7130,50 +7130,55 @@ unsigned menu_displaylist_build_list(
                   0, 0, 0, NULL))
             count++;
          break;
-      case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
-                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
-            count++;
-
-         if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
-         {
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-         }
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         break;
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_AUDIO_ENABLE,                    PARSE_ONLY_BOOL,            true  },
-               {MENU_ENUM_LABEL_AUDIO_DRIVER,                    PARSE_ONLY_STRING_OPTIONS,  true  },
-               {MENU_ENUM_LABEL_AUDIO_DEVICE,                    PARSE_ONLY_STRING,          true  },
-               {MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,               PARSE_ONLY_UINT,            true  },
-               {MENU_ENUM_LABEL_AUDIO_LATENCY,                   PARSE_ONLY_UINT,            true  },
-#ifdef _WIN32
-               {MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,     PARSE_ONLY_BOOL,            true  },
-               {MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,       PARSE_ONLY_BOOL,            true  },
-               {MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,   PARSE_ONLY_INT,             true  },
-#endif
-               {MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,              PARSE_ONLY_UINT,            true  },
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_DRIVER,
+                     PARSE_ONLY_STRING_OPTIONS, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_DEVICE,
+                     PARSE_ONLY_STRING, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_LATENCY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
+                     PARSE_ONLY_STRING_OPTIONS, false) == 0)
+               count++;
+            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
             {
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
+                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+                        PARSE_ONLY_UINT, false) == 0)
                   count++;
             }
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
          }
          break;
 #ifdef HAVE_MICROPHONE
@@ -7191,6 +7196,14 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_STRING, false) == 0)
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MICROPHONE_LATENCY,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER,
                   PARSE_ONLY_STRING_OPTIONS, false) == 0)
             count++;
@@ -7201,14 +7214,6 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_UINT, false) == 0)
                count++;
          }
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_INPUT_RATE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_MICROPHONE_LATENCY,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
                   PARSE_ONLY_UINT, false) == 0)
@@ -7223,7 +7228,7 @@ unsigned menu_displaylist_build_list(
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-                  PARSE_ONLY_UINT, false) == 0)
+                  PARSE_ONLY_INT, false) == 0)
             count++;
          break;
 #endif
@@ -7260,7 +7265,6 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_MICROPHONE
             {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true  },
 #endif
-            {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,        PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
             {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     false },
@@ -13683,7 +13687,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_OPTIONS_REMAPPINGS:
          case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:
-         case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
 #ifdef HAVE_MICROPHONE
          case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:

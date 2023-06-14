@@ -676,7 +676,6 @@ DEFAULT_TITLE_MACRO(action_get_midi_settings_list,              MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_updater_settings_list,           MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS)
 
 DEFAULT_TITLE_MACRO(action_get_audio_settings_list,                 MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)
-DEFAULT_TITLE_MACRO(action_get_audio_resampler_settings_list,       MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_audio_output_settings_list,          MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS)
 #ifdef HAVE_MICROPHONE
 DEFAULT_TITLE_MACRO(action_get_microphone_settings_list,            MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS)
@@ -1045,7 +1044,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST,               action_get_title_deferred_contentless_cores_list},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,                 action_get_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,                  action_get_audio_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST,        action_get_audio_resampler_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,           action_get_audio_output_settings_list},
 #ifdef HAVE_MICROPHONE
       {MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST,             action_get_microphone_settings_list},

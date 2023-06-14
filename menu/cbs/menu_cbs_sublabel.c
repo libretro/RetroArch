@@ -343,7 +343,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_opacity,          MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_decorations, MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_window_show_menubar,     MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_output_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS)
 #ifdef HAVE_MICROPHONE
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_settings_list,           MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS)
@@ -4733,9 +4732,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_resampler_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_synchronization_settings_list);

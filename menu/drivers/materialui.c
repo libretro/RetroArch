@@ -10867,7 +10867,6 @@ static void materialui_list_insert(
 #ifdef HAVE_MICROPHONE
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MICROPHONE_SETTINGS))
 #endif
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SOUNDS))
