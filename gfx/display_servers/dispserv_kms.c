@@ -52,7 +52,6 @@ static bool kms_display_server_set_resolution(void *data,
 {
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
-   unsigned curr_bpp                 = 0;
    float curr_refreshrate            = 0;
    bool retval = false;
    int reinit_flags                  = DRIVERS_CMD_ALL;
@@ -66,7 +65,6 @@ static bool kms_display_server_set_resolution(void *data,
       curr_refreshrate = drm_calc_refresh_rate(g_drm_mode);
       curr_width       = g_drm_mode->hdisplay;
       curr_height      = g_drm_mode->vdisplay;
-      curr_bpp         = 32;
    }
    RARCH_DBG("[DRM]: Display server set resolution - incoming: %d x %d, %f Hz\n",width, height, hz);
 
@@ -74,8 +72,6 @@ static bool kms_display_server_set_resolution(void *data,
       width = curr_width;
    if (height == 0)
       height = curr_height;
-   if (curr_bpp == 0)
-      curr_bpp = curr_bpp;
    if (hz == 0)
       hz = curr_refreshrate;
    

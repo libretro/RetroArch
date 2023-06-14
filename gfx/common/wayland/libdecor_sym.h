@@ -16,11 +16,12 @@
 #ifdef HAVE_LIBDECOR_H
 RA_WAYLAND_MODULE(WAYLAND_LIBDECOR)
 RA_WAYLAND_SYM(void, libdecor_unref, (struct libdecor *))
-RA_WAYLAND_SYM(struct libdecor *, libdecor_new, (struct wl_display *, struct libdecor_interface *))
+RA_WAYLAND_SYM(struct libdecor *, libdecor_new, (struct wl_display *,\
+                                                  const struct libdecor_interface *))
 RA_WAYLAND_SYM(int, libdecor_dispatch, (struct libdecor *, int timeout))
 RA_WAYLAND_SYM(struct libdecor_frame *, libdecor_decorate, (struct libdecor *,\
                                                              struct wl_surface *,\
-                                                             struct libdecor_frame_interface *,\
+                                                             const struct libdecor_frame_interface *,\
                                                              void *))
 RA_WAYLAND_SYM(void, libdecor_frame_unref, (struct libdecor_frame *))
 RA_WAYLAND_SYM(void, libdecor_frame_set_title, (struct libdecor_frame *, const char *))
