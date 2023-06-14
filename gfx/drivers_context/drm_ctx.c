@@ -122,7 +122,7 @@ static float mode_vrefresh(drmModeModeInfo *mode)
 
 static void dump_mode(drmModeModeInfo *mode, int index)
 {
-   RARCH_LOG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
+   RARCH_DBG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
       index,
       mode->name,
       mode_vrefresh(mode),

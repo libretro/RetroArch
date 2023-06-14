@@ -68,6 +68,7 @@ typedef struct videocrt_switch
    bool rotated;
    bool tmp_rotated;
    bool kms_ctx;
+   bool khr_ctx;
 } videocrt_switch_t;
 
 void crt_switch_res_core(
