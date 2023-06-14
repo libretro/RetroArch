@@ -128,7 +128,7 @@ static void crt_switch_set_aspect(
    sr_state state;
    sr_get_state(&state);
 
-   if (srm_width >= state.super_width && !srm_isstretched)
+   if ((int)srm_width >= state.super_width && !srm_isstretched)
       RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
    else if (srm_isstretched && srm_width > 0 )
       RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);

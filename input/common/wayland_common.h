@@ -96,13 +96,13 @@ typedef struct surface_output
    struct wl_list link;
 } surface_output_t;
 
-typedef struct gfx_ctx_wayland_data gfx_ctx_wayland_data_t;
+struct gfx_ctx_wayland_data;
 
 typedef struct input_ctx_wayland_data
 {
    struct wl_display *dpy;
    const input_device_driver_t *joypad;
-   gfx_ctx_wayland_data_t *gfx;
+   struct gfx_ctx_wayland_data *gfx;
 
    int fd;
 

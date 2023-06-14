@@ -421,6 +421,7 @@ static INLINE UINT32 get_bigendian_uint32(const UINT8 *base)
     the data stream in bigendian order
 -------------------------------------------------*/
 
+#if 0
 static INLINE void put_bigendian_uint32(UINT8 *base, UINT32 value)
 {
    base[0] = value >> 24;
@@ -428,6 +429,7 @@ static INLINE void put_bigendian_uint32(UINT8 *base, UINT32 value)
 	base[2] = value >> 8;
 	base[3] = value;
 }
+#endif
 
 /*-------------------------------------------------
     put_bigendian_uint24 - write a UINT24 to
@@ -491,6 +493,7 @@ static INLINE void map_extract(const UINT8 *base, map_entry *entry)
     entry to the datastream
 -------------------------------------------------*/
 
+#if 0
 static INLINE void map_assemble(UINT8 *base, map_entry *entry)
 {
 	put_bigendian_uint64(&base[0], entry->offset);
@@ -499,6 +502,7 @@ static INLINE void map_assemble(UINT8 *base, map_entry *entry)
 	base[14] = entry->length >> 16;
 	base[15] = entry->flags;
 }
+#endif
 
 /*-------------------------------------------------
     map_size_v5 - calculate CHDv5 map size

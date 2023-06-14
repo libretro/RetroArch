@@ -833,8 +833,9 @@ void cpu_features_get_model_name(char *name, int len)
 {
 #if defined(CPU_X86) && !defined(__MACH__)
    union {
-      int i[4];
-      unsigned char s[16];
+      int32_t i[4];
+      uint32_t u[4];
+      uint8_t s[16];
    } flags;
    int i, j;
    int pos = 0;
@@ -845,7 +846,8 @@ void cpu_features_get_model_name(char *name, int len)
 
    x86_cpuid(0x80000000, flags.i);
 
-   if (flags.i[0] < 0x80000004)
+   /* Check for additional cpuid attributes availability */
+   if (flags.u[0] < 0x80000004)
       return;
 
    for (i = 0; i < 3; i++)
