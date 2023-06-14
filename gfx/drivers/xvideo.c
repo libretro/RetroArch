@@ -1152,7 +1152,11 @@ static video_poke_interface_t xv_video_poke_interface = {
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
-   NULL  /* get_hw_render_interface */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void xv_get_poke_interface(void *data,
@@ -1189,7 +1193,11 @@ video_driver_t video_xvideo = {
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  xv_get_poke_interface
+   xv_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

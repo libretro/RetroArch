@@ -968,7 +968,7 @@ static const video_overlay_interface_t switch_overlay = {
     switch_overlay_set_alpha,
 };
 
-void switch_overlay_interface(void *data, const video_overlay_interface_t **iface)
+static void switch_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
 {
     switch_video_t *swa = (switch_video_t *)data;
     if (!swa)
@@ -979,31 +979,31 @@ void switch_overlay_interface(void *data, const video_overlay_interface_t **ifac
 #endif
 
 static const video_poke_interface_t switch_poke_interface = {
-    NULL,                       /* get_flags */
-    NULL,                       /* load_texture */
-    NULL,                       /* unload_texture */
-    NULL,                       /* set_video_mode */
-    NULL,                       /* get_refresh_rate */
-    NULL,                       /* set_filtering */
-    NULL,                       /* get_video_output_size */
-    NULL,                       /* get_video_output_prev */
-    NULL,                       /* get_video_output_next */
-    NULL,                       /* get_current_framebuffer */
-    NULL,                       /* get_proc_address */
-    switch_set_aspect_ratio,    /* set_aspect_ratio */
-    switch_apply_state_changes, /* apply_state_changes */
-    switch_set_texture_frame,
-    switch_set_texture_enable,
-    font_driver_render_msg,
-    NULL, /* show_mouse */
-    NULL, /* grab_mouse_toggle */
-    NULL, /* get_current_shader */
-    NULL, /* get_current_software_framebuffer */
-    NULL, /* get_hw_render_interface */
-    NULL, /* set_hdr_max_nits */
-    NULL, /* set_hdr_paper_white_nits */
-    NULL, /* set_hdr_contrast */
-    NULL  /* set_hdr_expand_gamut */
+   NULL, /* get_flags */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   switch_set_aspect_ratio,
+   switch_apply_state_changes,
+   switch_set_texture_frame,
+   switch_set_texture_enable,
+   font_driver_render_msg,
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void switch_get_poke_interface(void *data,
@@ -1014,25 +1014,29 @@ static void switch_get_poke_interface(void *data,
 }
 
 video_driver_t video_switch = {
-    switch_init,
-    switch_frame,
-    switch_set_nonblock_state,
-    switch_alive,
-    switch_focus,
-    switch_suppress_screensaver,
-    switch_has_windowed,
-    switch_set_shader,
-    switch_free,
-    "switch",
-    NULL, /* set_viewport */
-    switch_set_rotation,
-    switch_viewport_info,
-    NULL, /* read_viewport  */
-    NULL, /* read_frame_raw */
+   switch_init,
+   switch_frame,
+   switch_set_nonblock_state,
+   switch_alive,
+   switch_focus,
+   switch_suppress_screensaver,
+   switch_has_windowed,
+   switch_set_shader,
+   switch_free,
+   "switch",
+   NULL, /* set_viewport */
+   switch_set_rotation,
+   switch_viewport_info,
+   NULL, /* read_viewport  */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-    switch_overlay_interface, /* switch_overlay_interface */
+   switch_get_overlay_interface,
 #endif
-    switch_get_poke_interface,
+   switch_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };
 
 /* vim: set ts=3 sw=3 */

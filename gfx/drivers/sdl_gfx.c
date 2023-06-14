@@ -527,9 +527,9 @@ static uint32_t sdl_get_flags(void *data)
 
 static const video_poke_interface_t sdl_poke_interface = {
    sdl_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    sdl_set_filtering,
    NULL, /* get_video_output_size */
@@ -537,20 +537,20 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL,
+   NULL, /* set_aspect_ratio */
    sdl_apply_state_changes,
    sdl_set_texture_frame,
    sdl_set_texture_enable,
-   NULL,
+   NULL, /* set_osd_msg */
    sdl_show_mouse,
    sdl_grab_mouse_toggle,
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void sdl_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -581,13 +581,17 @@ video_driver_t video_sdl = {
    sdl_gfx_set_shader,
    sdl_gfx_free,
    "sdl",
-   NULL,
+   NULL, /* set_viewport */
    NULL, /* set_rotation */
    sdl_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   NULL, /* get_overlay_interface */
 #endif
-   sdl_get_poke_interface
+   sdl_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

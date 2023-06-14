@@ -1387,9 +1387,9 @@ static uint32_t sdl_rs90_get_flags(void *data)
 
 static const video_poke_interface_t sdl_rs90_poke_interface = {
    sdl_rs90_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    sdl_rs90_get_refresh_rate,
    sdl_rs90_set_filtering,
    NULL, /* get_video_output_size */
@@ -1397,13 +1397,13 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL,
+   NULL, /* set_aspect_ratio */
    sdl_rs90_apply_state_changes,
    sdl_rs90_set_texture_frame,
    sdl_rs90_set_texture_enable,
-   NULL,
-   NULL, /* sdl_show_mouse */
-   NULL, /* sdl_grab_mouse_toggle */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
@@ -1435,13 +1435,17 @@ video_driver_t video_sdl_rs90 = {
    sdl_rs90_gfx_set_shader,
    sdl_rs90_gfx_free,
    "sdl_rs90",
-   NULL,
+   NULL, /* set_viewport */
    NULL, /* set_rotation */
    sdl_rs90_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   NULL, /* get_overlay_interface */
 #endif
-   sdl_rs90_get_poke_interface
+   sdl_rs90_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

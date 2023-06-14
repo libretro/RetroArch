@@ -2187,12 +2187,12 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_unload_texture,
    d3d8_set_video_mode,
 #if defined(_XBOX) || defined(__WINRT__)
-   NULL,
+   NULL, /* get_refresh_rate */
 #else
    /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
-   NULL,
+   NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
@@ -2203,16 +2203,15 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_set_menu_texture_frame,
    d3d8_set_menu_texture_enable,
    d3d8_set_osd_msg,
-
    win32_show_cursor,
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d8_get_poke_interface(void *data,
@@ -2232,7 +2231,7 @@ video_driver_t video_d3d8 = {
    d3d8_frame,
    d3d8_set_nonblock_state,
    d3d8_alive,
-   NULL,                      /* focus */
+   NULL, /* focus */
 #ifdef _XBOX
    d3d8_suppress_screensaver,
 #else
@@ -2245,10 +2244,14 @@ video_driver_t video_d3d8 = {
    d3d8_set_viewport,
    d3d8_set_rotation,
    d3d8_viewport_info,
-   NULL,                      /* read_viewport  */
-   NULL,                      /* read_frame_raw */
+   NULL, /* read_viewport  */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d8_get_overlay_interface,
 #endif
-   d3d8_get_poke_interface
+   d3d8_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

@@ -1090,9 +1090,9 @@ static float omap_get_refresh_rate(void *data)
 
 static const video_poke_interface_t omap_poke_interface = {
    NULL, /* get_flags  */
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    omap_get_refresh_rate,
    NULL, /* set_filtering */
    NULL, /* get_video_output_size */
@@ -1104,16 +1104,16 @@ static const video_poke_interface_t omap_poke_interface = {
    NULL, /* apply_state_changes */
    omap_set_texture_frame,
    omap_set_texture_enable,
-   NULL,
-   NULL,                         /* show_mouse */
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void omap_get_poke_interface(void *data,
@@ -1138,9 +1138,12 @@ video_driver_t video_omap = {
    omap_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-   NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-   omap_get_poke_interface
+   omap_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

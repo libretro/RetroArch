@@ -5228,7 +5228,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_unload_texture,
    gl2_set_video_mode,
    gl2_get_refresh_rate,
-   NULL,
+   NULL, /* set_filtering */
    gl2_get_video_output_size,
    gl2_get_video_output_prev,
    gl2_get_video_output_next,
@@ -5240,14 +5240,14 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_set_texture_enable,
    font_driver_render_msg,
    gl2_show_mouse,
-   NULL,
+   NULL, /* grab_mouse_toggle */
    gl2_get_current_shader,
-   NULL,                      /* get_current_software_framebuffer */
-   NULL,                      /* get_hw_render_interface */
-   NULL,                      /* set_hdr_max_nits */
-   NULL,                      /* set_hdr_paper_white_nits */
-   NULL,                      /* set_hdr_contrast */
-   NULL                       /* set_hdr_expand_gamut */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void gl2_get_poke_interface(void *data,
@@ -5280,24 +5280,18 @@ video_driver_t video_gl2 = {
    gl2_focus,
    gl2_suppress_screensaver,
    gl2_has_windowed,
-
    gl2_set_shader,
-
    gl2_free,
    "gl",
-
    gl2_set_viewport_wrapper,
    gl2_set_rotation,
-
    gl2_viewport_info,
-
    gl2_read_viewport,
 #if defined(READ_RAW_GL_FRAME_TEST)
    gl2_read_frame_raw,
 #else
    NULL,
 #endif
-
 #ifdef HAVE_OVERLAY
    gl2_get_overlay_interface,
 #endif

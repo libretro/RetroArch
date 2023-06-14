@@ -1063,31 +1063,31 @@ static bool ps2_get_hw_render_interface(void *data,
 }
 
 static const video_poke_interface_t ps2_poke_interface = {
-    NULL, /* get_flags  */
-    NULL, /* load_texture */
-    NULL, /* unload_texture */
-    ps2_set_video_mode,
-    NULL, /* get_refresh_rate */
-    ps2_set_filtering,
-    ps2_get_video_output_size,
-    ps2_get_video_output_prev,
-    ps2_get_video_output_next,
-    NULL, /* get_current_framebuffer */
-    NULL, /* get_proc_address */
-    NULL, /* set_aspect_ratio */
-    NULL, /* apply_state_changes */
-    ps2_set_texture_frame,
-    ps2_set_texture_enable,
-    ps2_set_osd_msg,
-    NULL, /* show_mouse  */
-    NULL, /* grab_mouse_toggle */
-    NULL, /* get_current_shader */
-    NULL, /* get_current_software_framebuffer */
-    ps2_get_hw_render_interface,
-    NULL, /* set_hdr_max_nits */
-    NULL, /* set_hdr_paper_white_nits */
-    NULL, /* set_hdr_contrast */
-    NULL  /* set_hdr_expand_gamut */
+   NULL, /* get_flags  */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   ps2_set_video_mode,
+   NULL, /* get_refresh_rate */
+   ps2_set_filtering,
+   ps2_get_video_output_size,
+   ps2_get_video_output_prev,
+   ps2_get_video_output_next,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
+   ps2_set_texture_frame,
+   ps2_set_texture_enable,
+   ps2_set_osd_msg,
+   NULL, /* show_mouse  */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   ps2_get_hw_render_interface,
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void ps2_get_poke_interface(void *data,
@@ -1097,24 +1097,27 @@ static void ps2_get_poke_interface(void *data,
 }
 
 video_driver_t video_ps2 = {
-    ps2_init,
-    ps2_frame,
-    ps2_set_nonblock_state,
-    ps2_alive,
-    ps2_focus,
-    ps2_suppress_screensaver,
-    ps2_has_windowed,
-    ps2_set_shader,
-    ps2_free,
-    "ps2",
-    NULL, /* set_viewport */
-    NULL, /* set_rotation */
-    NULL, /* viewport_info */
-    NULL, /* read_viewport  */
-    NULL, /* read_frame_raw */
-
+   ps2_init,
+   ps2_frame,
+   ps2_set_nonblock_state,
+   ps2_alive,
+   ps2_focus,
+   ps2_suppress_screensaver,
+   ps2_has_windowed,
+   ps2_set_shader,
+   ps2_free,
+   "ps2",
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport  */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-    NULL, /* overlay_interface */
+   NULL, /* overlay_interface */
 #endif
-    ps2_get_poke_interface,
+   ps2_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

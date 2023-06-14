@@ -441,30 +441,30 @@ static uint32_t vga_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t vga_poke_interface = {
    vga_get_flags,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
    vga_set_texture_frame,
-   NULL,
+   NULL, /* set_texture_enable */
    font_driver_render_msg,
-   NULL,                   /* show_mouse */
-   NULL,                   /* grab_mouse_toggle */
-   NULL,                   /* get_current_shader */
-   NULL,                   /* get_current_software_framebuffer */
-   NULL,                   /* get_hw_render_interface */
-   NULL,                   /* set_hdr_max_nits */
-   NULL,                   /* set_hdr_paper_white_nits */
-   NULL,                   /* set_hdr_contrast */
-   NULL                    /* set_hdr_expand_gamut */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void vga_gfx_get_poke_interface(void *data,
@@ -488,9 +488,12 @@ video_driver_t video_vga = {
    NULL, /* viewport_info */
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  vga_gfx_get_poke_interface,
+   vga_gfx_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

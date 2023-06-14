@@ -3613,17 +3613,17 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_gfx_load_texture,
    d3d11_gfx_unload_texture,
    NULL, /* set_video_mode */
-#ifndef __WINRT__
-   win32_get_refresh_rate,
-#else
+#ifdef __WINRT__
    /* UWP does not expose this information easily */
-   NULL,
+   NULL, /* get_refresh_rate */
+#else
+   win32_get_refresh_rate,
 #endif
    d3d11_set_filtering,
 #ifdef __WINRT__
-   NULL,                               /* get_video_output_size */
-   NULL,                               /* get_video_output_prev */
-   NULL,                               /* get_video_output_next */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
 #else
    d3d11_get_video_output_size,
    d3d11_get_video_output_prev,
@@ -3680,12 +3680,11 @@ video_driver_t video_d3d11 = {
    d3d11_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
    d3d11_get_overlay_interface,
 #endif
    d3d11_gfx_get_poke_interface,
-   NULL, /* d3d11_wrap_type_to_enum */
+   NULL, /* wrap_type_to_enum */
 #if defined(HAVE_GFX_WIDGETS)
    d3d11_gfx_widgets_enabled
 #endif

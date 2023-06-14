@@ -373,27 +373,27 @@ static void caca_set_texture_frame(void *data,
 }
 
 static const video_poke_interface_t caca_poke_interface = {
-   NULL,                   /* get_flags */
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* get_flags */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
    caca_set_texture_frame,
-   NULL,
+   NULL, /* set_texture_enable */
    font_driver_render_msg,
-   NULL,                   /* show_mouse */
-   NULL,                   /* grab_mouse_toggle */
-   NULL,                   /* get_current_shader */
-   NULL,                   /* get_current_software_framebuffer */
-   NULL,                   /* get_hw_render_interface */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
@@ -418,13 +418,15 @@ video_driver_t video_caca = {
    "caca",
    caca_set_viewport,
    caca_set_rotation,
-   NULL, /* viewport_info  */
-   NULL, /* read_viewport  */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* overlay_interface */
 #endif
-  caca_get_poke_interface,
-  NULL /* wrap_type_to_enum */
+   caca_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

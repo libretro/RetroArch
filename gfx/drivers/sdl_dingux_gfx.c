@@ -1085,9 +1085,9 @@ static uint32_t sdl_dingux_get_flags(void *data)
 
 static const video_poke_interface_t sdl_dingux_poke_interface = {
    sdl_dingux_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    sdl_dingux_get_refresh_rate,
    sdl_dingux_set_filtering,
    NULL, /* get_video_output_size */
@@ -1095,11 +1095,11 @@ static const video_poke_interface_t sdl_dingux_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL,
+   NULL, /* set_aspect_ratio */
    sdl_dingux_apply_state_changes,
    sdl_dingux_set_texture_frame,
    sdl_dingux_set_texture_enable,
-   NULL,
+   NULL, /* set_osd_msg */
    NULL, /* sdl_show_mouse */
    NULL, /* sdl_grab_mouse_toggle */
    NULL, /* get_current_shader */
@@ -1133,13 +1133,17 @@ video_driver_t video_sdl_dingux = {
    sdl_dingux_gfx_set_shader,
    sdl_dingux_gfx_free,
    "sdl_dingux",
-   NULL,
+   NULL, /* set_viewport */
    NULL, /* set_rotation */
    sdl_dingux_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   NULL, /* get_overlay_interface */
 #endif
-   sdl_dingux_get_poke_interface
+   sdl_dingux_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

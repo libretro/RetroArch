@@ -428,34 +428,38 @@ static void network_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen) { }
 
 static const video_poke_interface_t network_poke_interface = {
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* get_flags */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    network_set_video_mode,
-   NULL,
-   NULL,
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
    network_get_video_output_size,
    network_get_video_output_prev,
    network_get_video_output_next,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
 #if defined(HAVE_MENU)
    network_set_texture_frame,
-   NULL,
+   NULL, /* set_texture_enable */
    font_driver_render_msg,
-   NULL,
+   NULL, /* show_mouse */
 #else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* set_texture_frame */
+   NULL, /* set_texture_enable */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
 #endif
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void network_gfx_get_poke_interface(void *data,
@@ -492,5 +496,8 @@ video_driver_t video_network = {
    NULL, /* overlay_interface */
 #endif
    network_gfx_get_poke_interface,
-   NULL /* wrap_type_to_enum */
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

@@ -351,33 +351,34 @@ static void fpga_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen) { }
 
 static const video_poke_interface_t fpga_poke_interface = {
-   NULL,
-   NULL,
+   NULL, /* get_flags */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    fpga_set_video_mode,
-   NULL,
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
    fpga_get_video_output_size,
    fpga_get_video_output_prev,
    fpga_get_video_output_next,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#if defined(HAVE_MENU)
-   fpga_set_texture_frame,
-   NULL,
-   fpga_set_osd_msg,
-   NULL,
-#else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif
-
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
 #ifdef HAVE_MENU
-   NULL,
+   fpga_set_texture_frame,
+   NULL, /* set_texture_enable */
+   fpga_set_osd_msg,
+   NULL, /* show_mouse */
+#else
+   NULL, /* set_texture_frame */
+   NULL, /* set_texture_enable */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
 #endif
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
@@ -408,12 +409,15 @@ video_driver_t video_fpga = {
    "fpga",
    fpga_set_viewport,
    fpga_set_rotation,
-   NULL, /* viewport_info  */
-   NULL, /* read_viewport  */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  fpga_get_poke_interface,
+   fpga_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };
