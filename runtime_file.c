@@ -404,66 +404,7 @@ static retro_time_t runtime_log_convert_hms2usec(unsigned hours,
            ((retro_time_t)seconds           * 1000000);
 }
 
-
 /* Setters */
-
-/* Set runtime to specified hours, minutes, seconds value */
-void runtime_log_set_runtime_hms(runtime_log_t *runtime_log,
-      unsigned hours, unsigned minutes, unsigned seconds)
-{
-   retro_time_t usec;
-
-   if (!runtime_log)
-      return;
-
-   /* Converting to usec and back again may be considered a
-    * waste of CPU cycles, but this allows us to handle any
-    * kind of broken input without issue - i.e. user can enter
-    * minutes and seconds values > 59, and everything still
-    * works correctly */
-   usec = runtime_log_convert_hms2usec(hours, minutes, seconds);
-
-   runtime_log_convert_usec2hms(usec,
-         &runtime_log->runtime.hours,
-         &runtime_log->runtime.minutes,
-         &runtime_log->runtime.seconds);
-}
-
-/* Set runtime to specified microseconds value */
-void runtime_log_set_runtime_usec(
-      runtime_log_t *runtime_log, retro_time_t usec)
-{
-   if (runtime_log)
-      runtime_log_convert_usec2hms(usec,
-            &runtime_log->runtime.hours,
-            &runtime_log->runtime.minutes,
-            &runtime_log->runtime.seconds);
-}
-
-/* Adds specified hours, minutes, seconds value to current runtime */
-void runtime_log_add_runtime_hms(
-      runtime_log_t *runtime_log,
-      unsigned hours,
-      unsigned minutes,
-      unsigned seconds)
-{
-   retro_time_t usec_old;
-   retro_time_t usec_new;
-
-   if (!runtime_log)
-      return;
-
-   usec_old = runtime_log_convert_hms2usec(
-         runtime_log->runtime.hours,
-         runtime_log->runtime.minutes,
-         runtime_log->runtime.seconds);
-   usec_new = runtime_log_convert_hms2usec(hours, minutes, seconds);
-
-   runtime_log_convert_usec2hms(usec_old + usec_new,
-         &runtime_log->runtime.hours,
-         &runtime_log->runtime.minutes,
-         &runtime_log->runtime.seconds);
-}
 
 /* Adds specified microseconds value to current runtime */
 void runtime_log_add_runtime_usec(
@@ -547,7 +488,7 @@ void runtime_log_reset(runtime_log_t *runtime_log)
 /* Getters */
 
 /* Gets runtime in hours, minutes, seconds */
-void runtime_log_get_runtime_hms(runtime_log_t *runtime_log,
+static void runtime_log_get_runtime_hms(runtime_log_t *runtime_log,
       unsigned *hours, unsigned *minutes, unsigned *seconds)
 {
    if (!runtime_log)
@@ -556,15 +497,6 @@ void runtime_log_get_runtime_hms(runtime_log_t *runtime_log,
    *hours   = runtime_log->runtime.hours;
    *minutes = runtime_log->runtime.minutes;
    *seconds = runtime_log->runtime.seconds;
-}
-
-/* Gets runtime in microseconds */
-void runtime_log_get_runtime_usec(
-      runtime_log_t *runtime_log, retro_time_t *usec)
-{
-   if (runtime_log)
-      *usec = runtime_log_convert_hms2usec( runtime_log->runtime.hours,
-            runtime_log->runtime.minutes, runtime_log->runtime.seconds);
 }
 
 /* Gets runtime as a pre-formatted string */
@@ -617,12 +549,9 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
 
 /* Gets last played entry values as a struct tm 'object'
  * (e.g. for printing with strftime()) */
-void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
+static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
       struct tm *time_info)
 {
-   if (!runtime_log || !time_info)
-      return;
-
    /* Set tm values */
    time_info->tm_year  = (int)runtime_log->last_played.year  - 1900;
    time_info->tm_mon   = (int)runtime_log->last_played.month - 1;
@@ -1144,23 +1073,9 @@ bool runtime_log_has_runtime(runtime_log_t *runtime_log)
 {
    if (runtime_log)
       return !(
-            (runtime_log->runtime.hours   == 0) &&
-            (runtime_log->runtime.minutes == 0) &&
-            (runtime_log->runtime.seconds == 0));
-   return false;
-}
-
-/* Returns true if log has a non-zero last played entry */
-bool runtime_log_has_last_played(runtime_log_t *runtime_log)
-{
-   if (runtime_log)
-      return !(
-            (runtime_log->last_played.year   == 0) &&
-            (runtime_log->last_played.month  == 0) &&
-            (runtime_log->last_played.day    == 0) &&
-            (runtime_log->last_played.hour   == 0) &&
-            (runtime_log->last_played.minute == 0) &&
-            (runtime_log->last_played.second == 0));
+               (runtime_log->runtime.hours   == 0)
+            && (runtime_log->runtime.minutes == 0)
+            && (runtime_log->runtime.seconds == 0));
    return false;
 }
 
@@ -1397,9 +1312,9 @@ void runtime_update_contentless_core(
 #endif
 
    /* Sanity check */
-   if (string_is_empty(core_path) ||
-       !core_info_find(core_path, &core_info) ||
-       !core_info->supports_no_game)
+   if (    string_is_empty(core_path)
+       || !core_info_find(core_path, &core_info)
+       || !core_info->supports_no_game)
       return;
 
    /* Set fallback runtime status
@@ -1447,8 +1362,8 @@ void runtime_update_contentless_core(
     * to be populated even when no runtime is recorded */
    if (runtime_info.status != CONTENTLESS_CORE_RUNTIME_VALID)
    {
-      if (string_is_equal(menu_ident, "ozone") ||
-          string_is_equal(menu_ident, "glui"))
+      if (   string_is_equal(menu_ident, "ozone")
+          || string_is_equal(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));
