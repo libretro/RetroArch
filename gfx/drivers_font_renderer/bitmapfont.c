@@ -55,8 +55,7 @@ bitmapfont_lut_t *bitmapfont_get_lut(void)
    size_t i, j;
 
    /* Initialise font struct */
-   font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t));
-   if (!font)
+   if (!(font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t))))
       goto error;
 
    font->glyph_min = 0;
@@ -109,8 +108,8 @@ void bitmapfont_free_lut(bitmapfont_lut_t *font)
 
    if (font->lut)
    {
-      size_t num_glyphs = (font->glyph_max - font->glyph_min) + 1;
       size_t i;
+      size_t num_glyphs = (font->glyph_max - font->glyph_min) + 1;
 
       for (i = 0; i < num_glyphs; i++)
       {
@@ -137,9 +136,9 @@ static const struct font_glyph *font_renderer_bmp_get_glyph(
       void *data, uint32_t code)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
-   if (!handle)
-      return NULL;
-   return code < BMP_ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+   if (handle && (code < BMP_ATLAS_SIZE))
+      return &handle->glyphs[code];
+   return NULL;
 }
 
 static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
@@ -174,26 +173,23 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
 static void *font_renderer_bmp_init(const char *font_path, float font_size)
 {
    unsigned i;
-   bm_renderer_t *handle = (bm_renderer_t*)calloc(1, sizeof(*handle));
+   bm_renderer_t *handle   = (bm_renderer_t*)calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;
 
-   (void)font_path;
-
-   handle->scale_factor    = (unsigned)roundf(font_size / FONT_HEIGHT);
-   if (!handle->scale_factor)
+   if (!(handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT)))
       handle->scale_factor = 1;
 
-   handle->atlas.width  = (BMP_ATLAS_PADDING + (FONT_WIDTH  * handle->scale_factor)) * BMP_ATLAS_COLS;
-   handle->atlas.height = (BMP_ATLAS_PADDING + (FONT_HEIGHT * handle->scale_factor)) * BMP_ATLAS_ROWS;
-   handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
+   handle->atlas.width     = (BMP_ATLAS_PADDING + (FONT_WIDTH  * handle->scale_factor)) * BMP_ATLAS_COLS;
+   handle->atlas.height    = (BMP_ATLAS_PADDING + (FONT_HEIGHT * handle->scale_factor)) * BMP_ATLAS_ROWS;
+   handle->atlas.buffer    = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
    for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
-      unsigned x                       = (i % BMP_ATLAS_COLS) *
+      unsigned x           = (i % BMP_ATLAS_COLS) *
          (BMP_ATLAS_PADDING + (handle->scale_factor * FONT_WIDTH));
-      unsigned y                       = (i / BMP_ATLAS_COLS) *
+      unsigned y           = (i / BMP_ATLAS_COLS) *
          (BMP_ATLAS_PADDING + (handle->scale_factor * FONT_HEIGHT));
 
       char_to_texture(handle, i, x, y);

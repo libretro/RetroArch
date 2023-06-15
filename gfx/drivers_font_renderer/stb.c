@@ -66,7 +66,7 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
       uint8_t *font_data, float font_size, unsigned width, unsigned height)
 {
    int i;
-   stbtt_packedchar   chardata[256];
+   stbtt_packedchar chardata[256];
    stbtt_pack_context pc = {NULL};
 
    if (width > 2048 || height > 2048)
@@ -128,11 +128,11 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
    return true;
 
 error:
-   self->atlas.width = self->atlas.height = 0;
-
    if (self->atlas.buffer)
       free(self->atlas.buffer);
 
+   self->atlas.width  = 0;
+   self->atlas.height = 0;
    self->atlas.buffer = NULL;
 
    return false;
@@ -140,17 +140,17 @@ error:
 
 static void *font_renderer_stb_init(const char *font_path, float font_size)
 {
-   int ascent, descent, line_gap;
    float scale_factor;
    stbtt_fontinfo info;
-   uint8_t *font_data = NULL;
+   int ascent, descent, line_gap;
+   uint8_t *font_data        = NULL;
    stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
 
    /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
    font_size = STBTT_POINT_SIZE(font_size);
 
    if (!self)
-      goto error;
+      return NULL;
 
    if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&font_data, NULL))
       goto error;
@@ -163,9 +163,9 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
 
    stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
 
-   scale_factor = (font_size < 0) ?
-         stbtt_ScaleForMappingEmToPixels(&info, -font_size) :
-         stbtt_ScaleForPixelHeight(&info, font_size);
+   scale_factor = (font_size < 0)
+         ? stbtt_ScaleForMappingEmToPixels(&info, -font_size)
+         : stbtt_ScaleForPixelHeight(&info, font_size);
 
    /* Ascender, descender and line_gap values always
     * end up ~0.5 pixels too small when scaled...
