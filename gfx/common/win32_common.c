@@ -2657,7 +2657,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    dm->dmSize  = len;
    if (WIN32_GET_VIDEO_OUTPUT((mode == -1) 
             ? ENUM_CURRENT_SETTINGS 
-            : mode,
+            : (DWORD)mode,
             dm) == 0)
       return false;
    return true;
