@@ -17,6 +17,8 @@
 #define _MMDEVICE_COMMON_H
 
 #include <stdlib.h>
+
+#include <retro_common_api.h>
 #include "mmdevice_common_inline.h"
 
 RETRO_BEGIN_DECLS
