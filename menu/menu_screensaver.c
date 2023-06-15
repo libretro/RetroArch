@@ -753,13 +753,14 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    unsigned video_height;
    video_driver_state_t *video_st = video_state_get_ptr();
    void *userdata                 = NULL;
-
+   font_data_t *font              = NULL;
    if (!screensaver)
       return;
 
-   video_width  = video_info->width;
-   video_height = video_info->height;
-   userdata     = video_info->userdata;
+   font                           = screensaver->font_data.font;
+   video_width                    = video_info->width;
+   video_height                   = video_info->height;
+   userdata                       = video_info->userdata;
 
    /* Set viewport */
    if (video_st->current_video && video_st->current_video->set_viewport)
@@ -779,11 +780,10 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
          NULL);
 
    /* Draw particle effect, if required */
-   if ((screensaver->effect != MENU_SCREENSAVER_BLANK) &&
-       screensaver->font_data.font &&
-       screensaver->particles)
+   if (  (screensaver->effect != MENU_SCREENSAVER_BLANK)
+       && font
+       && screensaver->particles)
    {
-      font_data_t *font     = screensaver->font_data.font;
       float y_centre_offset = screensaver->font_data.y_centre_offset;
       float particle_scale  = screensaver->particle_scale;
       size_t i;
@@ -812,7 +812,8 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       /* Flush text and unbind font */
       if (screensaver->font_data.raster_block.carr.coords.vertices != 0)
       {
-         font_driver_flush(video_width, video_height, font);
+         if (font->renderer && font->renderer->flush)
+            font->renderer->flush(video_width, video_height, font->renderer_data);
          screensaver->font_data.raster_block.carr.coords.vertices = 0;
       }
       font_driver_bind_block(font, NULL);

@@ -6336,8 +6336,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
 
-   font_driver_flush(video_width, video_height, xmb->font);
-   font_driver_flush(video_width, video_height, xmb->font2);
+   if (xmb->font && xmb->font->renderer && xmb->font->renderer->flush)
+      xmb->font->renderer->flush(video_width, video_height, xmb->font->renderer_data);
+   if (xmb->font2 && xmb->font2->renderer && xmb->font2->renderer->flush)
+      xmb->font2->renderer->flush(video_width, video_height, xmb->font2->renderer_data);
    font_driver_bind_block(xmb->font, NULL);
    font_driver_bind_block(xmb->font2, NULL);
 

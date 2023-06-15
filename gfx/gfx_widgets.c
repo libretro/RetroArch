@@ -668,7 +668,8 @@ void gfx_widgets_flush_text(
    if (!font_data || (font_data->usage_count == 0))
       return;
 
-   font_driver_flush(video_width, video_height, font_data->font);
+   if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
+      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
    font_data->usage_count                       = 0;
 }

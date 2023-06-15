@@ -339,8 +339,8 @@ typedef struct
 {
    font_data_t *font;
    video_font_raster_block_t raster_block; /* ptr alignment */
-   int glyph_width;
-   int wideglyph_width;
+   unsigned glyph_width;
+   unsigned wideglyph_width;
    int line_height;
    int line_ascender;
    int line_centre_offset;
@@ -2844,7 +2844,8 @@ static void ozone_font_flush(
 {
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
-   font_driver_flush(video_width, video_height, font_data->font);
+   if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
+      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
 }
 

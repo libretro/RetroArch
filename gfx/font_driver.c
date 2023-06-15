@@ -674,6 +674,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
                                    : buffer;
    unsigned char *dst              = (unsigned char*)dst_buffer;
 
+
    while (*src || reverse)
    {
       if (reverse)
@@ -696,7 +697,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
                   else if (replacement < 0x800)
                   {
                      *dst++ = 0xC0 | (replacement >> 6);
-                     *dst++ = 0x80 | (replacement & 0x3F);
+                     *dst++ = 0x80 | (replacement       & 0x3F);
                   }
                   else if (replacement < 0x10000)
                   {
@@ -705,14 +706,14 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
                         src -= 2;
 
                      *dst++ = 0xE0 | ( replacement >> 12);
-                     *dst++ = 0x80 | ((replacement >> 6) & 0x3F);
-                     *dst++ = 0x80 | ( replacement       & 0x3F);
+                     *dst++ = 0x80 | ((replacement >>  6) & 0x3F);
+                     *dst++ = 0x80 | ( replacement        & 0x3F);
                   }
                   else
                   {
                      *dst++ = 0xF0 |  (replacement >> 18);
                      *dst++ = 0x80 | ((replacement >> 12) & 0x3F);
-                     *dst++ = 0x80 | ((replacement >> 6)  & 0x3F);
+                     *dst++ = 0x80 | ((replacement >>  6) & 0x3F);
                      *dst++ = 0x80 | ( replacement        & 0x3F);
                   }
 
@@ -790,13 +791,6 @@ void font_driver_bind_block(void *font_data, void *block)
 
    if (font && font->renderer && font->renderer->bind_block)
       font->renderer->bind_block(font->renderer_data, block);
-}
-
-void font_driver_flush(unsigned width, unsigned height, void *font_data)
-{
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
-   if (font && font->renderer && font->renderer->flush)
-      font->renderer->flush(width, height, font->renderer_data);
 }
 
 int font_driver_get_message_width(void *font_data,

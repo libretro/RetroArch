@@ -2206,13 +2206,14 @@ static void INLINE materialui_font_unbind(materialui_font_data_t *font_data)
 
 /* Flushing is slow - only do it if font
  * has actually been used */
-void materialui_font_flush(
+static void materialui_font_flush(
       unsigned video_width, unsigned video_height,
       materialui_font_data_t *font_data)
 {
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
-   font_driver_flush(video_width, video_height, font_data->font);
+   if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
+      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
 }
 

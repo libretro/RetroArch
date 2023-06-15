@@ -86,8 +86,6 @@ void font_driver_bind_block(void *font_data, void *block);
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
-void font_driver_flush(unsigned width, unsigned height, void *font_data);
-
 void font_driver_free(font_data_t *font);
 
 font_data_t *font_driver_init_first(
