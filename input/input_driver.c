@@ -1533,13 +1533,14 @@ static int16_t input_state_device(
 }
 
 
-static int16_t input_state_internal(unsigned port, unsigned device,
+static int16_t input_state_internal(
+      input_driver_state_t *input_st,
+      settings_t *settings,
+      unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
    unsigned mapped_port;
-   input_driver_state_t *input_st          = &input_driver_st;
-   settings_t *settings                    = config_get_ptr();
    float input_analog_deadzone             = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
    unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
@@ -1552,8 +1553,8 @@ static int16_t input_state_internal(unsigned port, unsigned device,
 #endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
-   bool input_blocked                      = (menu_st->input_driver_flushing_input > 0) ||
-                                             (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
+   bool input_blocked                      =    (menu_st->input_driver_flushing_input > 0)
+                                             || (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #else
    bool input_blocked                      = (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #endif
@@ -1562,8 +1563,8 @@ static int16_t input_state_internal(unsigned port, unsigned device,
    int16_t result                          = 0;
 
    device                                 &= RETRO_DEVICE_MASK;
-   bitmask_enabled                         = (device == RETRO_DEVICE_JOYPAD) &&
-                                             (id == RETRO_DEVICE_ID_JOYPAD_MASK);
+   bitmask_enabled                         =    (device == RETRO_DEVICE_JOYPAD)
+                                             && (id == RETRO_DEVICE_ID_JOYPAD_MASK);
    joypad_info.axis_threshold              = settings->floats.input_axis_threshold;
 
    /* Loop over all 'physical' ports mapped to specified
@@ -1713,10 +1714,10 @@ static int16_t input_state_internal(unsigned port, unsigned device,
             result = port_result;
          else
          {
-            int16_t port_result_abs = (port_result >= 0) ?
-               port_result : -port_result;
-            int16_t result_abs      = (result >= 0) ?
-               result : -result;
+            int16_t port_result_abs = (port_result >= 0)
+               ? port_result : -port_result;
+            int16_t result_abs      = (result >= 0)
+               ? result      : -result;
 
             if (port_result_abs > result_abs)
                result = port_result;
@@ -1746,6 +1747,8 @@ static int16_t input_state_internal(unsigned port, unsigned device,
  * @return true if an input that is pressed will change the overlay
  */
 static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
+      input_driver_state_t *input_st,
+      settings_t *settings,
       input_overlay_state_t *ol_state, unsigned port)
 {
    switch(desc->type)
@@ -1772,9 +1775,9 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                         break;
 
                      /* Light up the button if pressed */
-                     if (ol_state ?
-                           !BIT256_GET(ol_state->buttons, id) :
-                           !input_state_internal(port, RETRO_DEVICE_JOYPAD, 0, id))
+                     if (     ol_state
+                           ? !BIT256_GET(ol_state->buttons, id)
+                           : !input_state_internal(input_st, settings, port, RETRO_DEVICE_JOYPAD, 0, id))
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
@@ -1807,9 +1810,9 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
             unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
                ? RETRO_DEVICE_INDEX_ANALOG_RIGHT 
                : RETRO_DEVICE_INDEX_ANALOG_LEFT;
-            int16_t analog_x      = input_state_internal(port, RETRO_DEVICE_ANALOG,
+            int16_t analog_x      = input_state_internal(input_st, settings, port, RETRO_DEVICE_ANALOG,
                   index, RETRO_DEVICE_ID_ANALOG_X);
-            int16_t analog_y      = input_state_internal(port, RETRO_DEVICE_ANALOG,
+            int16_t analog_y      = input_state_internal(input_st, settings, port, RETRO_DEVICE_ANALOG,
                   index, RETRO_DEVICE_ID_ANALOG_Y);
 
             /* Only modify overlay delta_x/delta_y values
@@ -1834,7 +1837,8 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                   tmp   = true;
             }
             else
-               tmp      = input_state_internal(port, RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx);
+               tmp      = input_state_internal(input_st, settings, port,
+                     RETRO_DEVICE_KEYBOARD, 0, desc->retro_key_idx);
 
             if (tmp)
             {
@@ -1853,6 +1857,8 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 
 static bool input_overlay_add_inputs(input_overlay_t *ol,
       input_overlay_state_t *ol_state,
+      input_driver_state_t *input_st,
+      settings_t *settings,
       bool show_touched, unsigned port)
 {
    size_t i;
@@ -1861,8 +1867,13 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
    for (i = 0; i < ol->active->size; i++)
    {
       overlay_desc_t *desc  = &(ol->active->descs[i]);
-      button_pressed       |= input_overlay_add_inputs_inner(desc,
-            show_touched ? ol_state : NULL, port);
+      button_pressed       |= input_overlay_add_inputs_inner(
+            desc, input_st,
+            settings,
+            show_touched 
+            ? ol_state 
+            : NULL,
+            port);
    }
 
    return button_pressed;
@@ -1875,8 +1886,8 @@ static void input_overlay_get_eightway_slope_limits(
    /* Sensitivity setting is the relative size of diagonal zones to
     * cardinal zones. Convert to fraction of 45 deg span (max diagonal).
     */
-   float f =  2.0f * diagonal_sensitivity
-         / (100.0f + diagonal_sensitivity);
+   float f     =  2.0f * diagonal_sensitivity
+             / (100.0f + diagonal_sensitivity);
 
    float high_angle  /* 67.5 deg max */
                = (f * (0.375 * M_PI) + (1.0f - f) * (0.25 * M_PI));
@@ -1895,7 +1906,7 @@ static void input_overlay_get_eightway_slope_limits(
 void input_overlay_set_eightway_diagonal_sensitivity(void)
 {
    settings_t           *settings = config_get_ptr();
-   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
 
    input_overlay_get_eightway_slope_limits(
          settings->uints.input_overlay_dpad_diagonal_sensitivity,
@@ -2857,7 +2868,8 @@ static void input_poll_overlay(
          break;
    }
 
-   button_pressed = input_overlay_add_inputs(ol, ol_state,
+   button_pressed = input_overlay_add_inputs(ol, ol_state, input_st,
+         settings,
          (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
          input_overlay_show_inputs_port);
 
@@ -5142,7 +5154,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 
 size_t replay_get_serialize_size(void)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
       return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
    return 0;
@@ -5150,8 +5162,9 @@ size_t replay_get_serialize_size(void)
 
 bool replay_get_serialized_data(void* buffer)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
-   bsv_movie_t *handle = input_st->bsv_movie_state_handle;
+   input_driver_state_t *input_st = &input_driver_st;
+   bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
+
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
    {
       long file_end           = intfstream_tell(handle->file);
@@ -5175,7 +5188,7 @@ bool replay_get_serialized_data(void* buffer)
 bool replay_set_serialized_data(void* buf)
 {
    uint8_t *buffer                = buf;
-   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
    bool playback                  = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK;
    bool recording                 = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
 
@@ -5755,6 +5768,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 {
    input_driver_state_t
       *input_st                = &input_driver_st;
+   settings_t *settings        = config_get_ptr();
    int16_t result              = 0;
 #ifdef HAVE_BSV_MOVIE
    /* Load input from BSV record, if enabled */
@@ -5776,13 +5790,13 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 #endif
 
    /* Read input state */
-   result = input_state_internal(port, device, idx, id);
+   result = input_state_internal(input_st, settings, port, device, idx, id);
 
    /* Register any analog stick input requests for
     * this 'virtual' (core) port */
-   if (     (device == RETRO_DEVICE_ANALOG) &&
-       (    (idx    == RETRO_DEVICE_INDEX_ANALOG_LEFT) ||
-            (idx    == RETRO_DEVICE_INDEX_ANALOG_RIGHT)))
+   if (     (device == RETRO_DEVICE_ANALOG)
+       && ( (idx    == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+       ||   (idx    == RETRO_DEVICE_INDEX_ANALOG_RIGHT)))
       input_st->analog_requested[port] = true;
 
 #ifdef HAVE_BSV_MOVIE
