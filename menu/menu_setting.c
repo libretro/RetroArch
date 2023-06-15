@@ -499,6 +499,16 @@ static int setting_generic_action_ok_linefeed(
    return 0;
 }
 
+static int setting_string_action_start_generic(rarch_setting_t *setting)
+{
+   if (!setting)
+      return -1;
+
+   setting->value.target.string[0] = '\0';
+
+   return 0;
+}
+
 static void setting_add_special_callbacks(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -618,7 +628,7 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    return 0;
 }
 
-void setting_get_string_representation_hex_and_uint(
+static void setting_get_string_representation_hex_and_uint(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
@@ -627,7 +637,7 @@ void setting_get_string_representation_hex_and_uint(
             *setting->value.target.unsigned_integer);
 }
 
-void setting_get_string_representation_uint(rarch_setting_t *setting,
+static void setting_get_string_representation_uint(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
@@ -635,7 +645,7 @@ void setting_get_string_representation_uint(rarch_setting_t *setting,
             *setting->value.target.unsigned_integer);
 }
 
-void setting_get_string_representation_color_rgb(rarch_setting_t *setting,
+static void setting_get_string_representation_color_rgb(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
@@ -643,20 +653,12 @@ void setting_get_string_representation_color_rgb(rarch_setting_t *setting,
          *setting->value.target.unsigned_integer & 0xFFFFFF);
 }
 
-void setting_get_string_representation_size(
+static void setting_get_string_representation_size_in_mb(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%" PRI_SIZET,
-            *setting->value.target.sizet);
-}
-
-void setting_get_string_representation_size_in_mb(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-      snprintf(s, len, "%" PRI_SIZET,
-            (*setting->value.target.sizet)/(1024*1024));
+            (*setting->value.target.sizet) / (1024 * 1024));
 }
 
 #ifdef HAVE_CHEATS
@@ -693,7 +695,7 @@ static float recalc_step_based_on_length_of_action(rarch_setting_t *setting)
    return step;
 }
 
-int setting_uint_action_left_default(
+static int setting_uint_action_left_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    bool                 overflowed = false;
@@ -731,7 +733,7 @@ int setting_uint_action_left_default(
    return 0;
 }
 
-int setting_uint_action_right_default(
+static int setting_uint_action_right_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    float                step = 0.0f;
@@ -763,7 +765,7 @@ int setting_uint_action_right_default(
    return 0;
 }
 
-int setting_bool_action_right_with_refresh(
+static int setting_bool_action_right_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -774,7 +776,7 @@ int setting_bool_action_right_with_refresh(
    return 0;
 }
 
-int setting_uint_action_right_with_refresh(
+static int setting_uint_action_right_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    int retval                 = setting_uint_action_right_default(setting, idx, wraparound);
@@ -869,7 +871,7 @@ static int setting_size_action_right_default(
    return 0;
 }
 
-int setting_generic_action_ok_default(
+static int setting_generic_action_ok_default(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    if (!setting)
@@ -1137,7 +1139,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
       setting->change_handler(setting);
 }
 
-int setting_generic_action_start_default(rarch_setting_t *setting)
+static int setting_generic_action_start_default(rarch_setting_t *setting)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    if (!setting)
@@ -1507,16 +1509,16 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.action_select             = setting_generic_action_ok_default;
    result.get_string_representation = &setting_get_string_representation_uint;
 
-   result.bind_type                 = 0;
-   result.browser_selection_type    = ST_NONE;
-   result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
+   result.bind_type                       = 0;
+   result.browser_selection_type          = ST_NONE;
+   result.step                            = 0.0f;
+   result.rounding_fraction               = NULL;
 
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
 
-   result.cmd_trigger_idx                  = CMD_EVENT_NONE;
+   result.cmd_trigger_idx                 = CMD_EVENT_NONE;
 
    if (dont_use_enum_idx)
       result.flags |= SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION;
@@ -1713,16 +1715,6 @@ static int setting_bool_action_ok_default(
           *setting->value.target.boolean 
          ? "false" 
          : "true");
-
-   return 0;
-}
-
-int setting_string_action_start_generic(rarch_setting_t *setting)
-{
-   if (!setting)
-      return -1;
-
-   setting->value.target.string[0] = '\0';
 
    return 0;
 }
@@ -11176,8 +11168,14 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-				  &setting_get_string_representation_size_in_mb);
-            menu_settings_list_current_add_range(list, list_info, 1024*1024, 1024*1024*1024, settings->uints.rewind_buffer_size_step*1024*1024, true, true);
+                  &setting_get_string_representation_size_in_mb);
+            menu_settings_list_current_add_range(list,
+			    list_info,
+			    1024 * 1024,
+			    1024 * 1024 * 1024,
+			    settings->uints.rewind_buffer_size_step * 1024 * 1024,
+			    true,
+			    true);
 
             CONFIG_UINT(
                   list, list_info,
@@ -11337,20 +11335,36 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
-                  setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,
-                  0,cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),1);
+                  setting_uint_action_left_default,
+                  setting_uint_action_right_default,
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),
+                  1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address, CHEAT_ADDRESS,
-                  setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
-                  0,&setting_get_string_representation_hex_and_uint,
-                  0,cheat_manager_state.total_memory_size==0?0:cheat_manager_state.total_memory_size-1,1);
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address,
+                  CHEAT_ADDRESS,
+                  setting_uint_action_left_with_refresh,
+                  setting_uint_action_right_with_refresh,
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  (cheat_manager_state.total_memory_size == 0)
+                  ? 0 
+                  : (cheat_manager_state.total_memory_size - 1),
+                  1);
 
-            max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 255 : 0;
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address_mask, CHEAT_ADDRESS_BIT_POSITION,
+            max_bit_position = (cheat_manager_state.working_cheat.memory_search_size < 3) ? 255 : 0;
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address_mask,
+                  CHEAT_ADDRESS_BIT_POSITION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,max_bit_position,1);
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  max_bit_position,
+                  1);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -11367,19 +11381,36 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.repeat_count, CHEAT_REPEAT_COUNT,
-                  setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,1,2048,1);
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.repeat_count,
+                  CHEAT_REPEAT_COUNT,
+                  setting_uint_action_left_default,
+                  setting_uint_action_right_default,
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  1,
+                  2048,
+                  1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.repeat_add_to_address, CHEAT_REPEAT_ADD_TO_ADDRESS,
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.repeat_add_to_address,
+                  CHEAT_REPEAT_ADD_TO_ADDRESS,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,1,2048,1);
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  1,
+                  2048,
+                  1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.repeat_add_to_value, CHEAT_REPEAT_ADD_TO_VALUE,
-                  setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,0xFFFF,1);
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.repeat_add_to_value,
+                  CHEAT_REPEAT_ADD_TO_VALUE,
+                  setting_uint_action_left_default,
+                  setting_uint_action_right_default,
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  0xFFFF,
+                  1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_type, CHEAT_RUMBLE_TYPE,
@@ -11389,10 +11420,15 @@ static bool setting_append_list(
                   RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_END_LIST-1,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_value, CHEAT_RUMBLE_VALUE,
-                  setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,
-                  0,cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),1);
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_value,
+                  CHEAT_RUMBLE_VALUE,
+                  setting_uint_action_left_default,
+                  setting_uint_action_right_default,
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),
+                  1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
@@ -11402,18 +11438,29 @@ static bool setting_append_list(
                   0,16,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_primary_strength, CHEAT_RUMBLE_PRIMARY_STRENGTH,
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_primary_strength,
+                  CHEAT_RUMBLE_PRIMARY_STRENGTH,
                   setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,65535,1);
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  65535,
+                  1);
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_primary_duration, CHEAT_RUMBLE_PRIMARY_DURATION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
                   0,&setting_get_string_representation_uint,0,5000,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_secondary_strength, CHEAT_RUMBLE_SECONDARY_STRENGTH,
-                  setting_uint_action_left_default,setting_uint_action_right_default,
-                  0,&setting_get_string_representation_hex_and_uint,0,65535,1);
+            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_secondary_strength,
+                  CHEAT_RUMBLE_SECONDARY_STRENGTH,
+                  setting_uint_action_left_default,
+                  setting_uint_action_right_default,
+                  0,
+                  &setting_get_string_representation_hex_and_uint,
+                  0,
+                  65535,
+                  1);
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_secondary_duration, CHEAT_RUMBLE_SECONDARY_DURATION,
                   setting_uint_action_left_default,setting_uint_action_right_default,
@@ -11436,8 +11483,10 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_UINT_CBS(cheat_manager_state.search_bit_size, CHEAT_START_OR_RESTART,
-               setting_uint_action_left_with_refresh,setting_uint_action_right_with_refresh,
+         CONFIG_UINT_CBS(cheat_manager_state.search_bit_size,
+               CHEAT_START_OR_RESTART,
+               setting_uint_action_left_with_refresh,
+               setting_uint_action_right_with_refresh,
                MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
                &setting_get_string_representation_uint_as_enum,
                0,5,1);
@@ -11602,9 +11651,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.num_matches-1, 1, true, true);
-         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_delete_match;
+         (*list)[list_info->index - 1].action_ok    = &cheat_manager_delete_match;
 
          CONFIG_UINT(
                list, list_info,
@@ -11618,9 +11667,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.num_matches-1, 1, true, true);
-         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
-         (*list)[list_info->index - 1].action_ok = &cheat_manager_copy_match;
+         (*list)[list_info->index - 1].action_ok    = &cheat_manager_copy_match;
 
          CONFIG_UINT(
                list, list_info,
@@ -11633,9 +11682,15 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, cheat_manager_state.total_memory_size>0?cheat_manager_state.total_memory_size-1:0, 1, true, true);
-         (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         menu_settings_list_current_add_range(list, list_info, 0,
+               (cheat_manager_state.total_memory_size > 0)
+               ? (cheat_manager_state.total_memory_size - 1)
+               : 0,
+               1,
+               true,
+               true);
+         (*list)[list_info->index - 1].action_left               = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right              = &setting_uint_action_right_with_refresh;
          (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_uint_cheat_browse_address;
 
          END_SUB_GROUP(list, list_info, parent_group);

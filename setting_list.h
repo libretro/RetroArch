@@ -214,23 +214,6 @@ int setting_set_with_string_representation(
 
 unsigned setting_get_bind_type(rarch_setting_t *setting);
 
-int setting_string_action_start_generic(rarch_setting_t *setting);
-
-int setting_generic_action_ok_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-
-int setting_generic_action_start_default(rarch_setting_t *setting);
-
-void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
-      char *s, size_t len);
-
-int setting_uint_action_left_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_right_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_left_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_right_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-
-void setting_get_string_representation_uint(rarch_setting_t *setting, char *s, size_t len);
-void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting, char *s, size_t len);
-
 RETRO_END_DECLS
 
 #endif
