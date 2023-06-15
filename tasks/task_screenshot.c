@@ -577,10 +577,14 @@ bool take_screenshot(
    ret       = take_screenshot_choice(
 		   video_st,
          screenshot_dir,
-         name_base, savestate, runloop_flags,
-         has_valid_framebuffer, fullpath, use_thread,
+         name_base,
+         savestate,
+         runloop_flags,
+         has_valid_framebuffer,
+         fullpath,
+         use_thread,
          prefer_viewport_read,
-         (video_st->current_video->read_frame_raw),
+         (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );
 
