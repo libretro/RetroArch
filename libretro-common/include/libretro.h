@@ -1809,6 +1809,22 @@ enum retro_mod
                                             * even before the microphone driver is ready.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_POWER_STATUS (76 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_device_power_status * --
+                                            * Returns the device's current power state as reported by the frontend.
+                                            * This is useful for cores that emulate battery levels in handheld consoles,
+                                            * such as the Game Boy or Nintendo DS.
+                                            *
+                                            * The return value indicates whether the frontend can provide this information,
+                                            * even if the parameter is NULL.
+                                            *
+                                            * If the frontend does not support this functionality,
+                                            * then the provided argument will remain unchanged.
+                                            *
+                                            * Note that this environment call describes the power state for the entire device,
+                                            * not for individual peripherals like controllers.
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -4033,6 +4049,85 @@ struct retro_microphone_interface
     * or there was an error.
     */
    retro_read_mic_t read_mic;
+};
+
+/**
+ * Describes how a device is being powered.
+ * @see RETRO_ENVIRONMENT_GET_POWER_STATUS
+ */
+enum retro_power_state
+{
+   /**
+    * Indicates that the frontend cannot report its power usage at this time,
+    * most likely due to a lack of support.
+    *
+    * \c RETRO_ENVIRONMENT_GET_CURRENT_POWER_STATE will not return this value;
+    * instead, the environment callback will return \c false.
+    */
+   RETRO_POWERSTATE_UNKNOWN = 0,
+
+   /**
+    * Indicates that the device is running on a battery that is not being charged.
+    * Usually applies to portable devices such as handhelds, laptops, and smartphones.
+    */
+   RETRO_POWERSTATE_DISCHARGING,
+
+   /**
+    * Indicates that the device's battery is currently charging.
+    */
+   RETRO_POWERSTATE_CHARGING,
+
+   /**
+    * Indicates that the device is connected to a power source
+    * and that its battery is fully charged.
+    */
+   RETRO_POWERSTATE_CHARGED,
+
+   /**
+    * Indicates that the device is connected to a power source
+    * and that it does not have a battery.
+    * This usually suggests a desktop computer or a non-portable game console.
+    */
+   RETRO_POWERSTATE_PLUGGED_IN,
+};
+
+/**
+ * Indicates that an estimate is not available for the current power status,
+ * even if the actual power state is known.
+ */
+#define RETRO_POWERSTATE_NO_ESTIMATE (-1)
+
+/**
+ * Describes the power state of the device running the frontend.
+ * @see RETRO_ENVIRONMENT_GET_POWER_STATUS
+ */
+struct retro_device_power_status
+{
+   /**
+    * The current state of the frontend's power usage.
+    */
+   enum retro_power_state state;
+
+   /**
+    * A rough estimate of the amount of time remaining (in seconds)
+    * before the device powers off.
+    * This value depends on a variety of factors,
+    * so it is not guaranteed to be accurate.
+    *
+    * Will be set to \c RETRO_POWERSTATE_NO_ESTIMATE if \c state does not equal \c RETRO_POWERSTATE_DISCHARGING.
+    * May still be set to \c RETRO_POWERSTATE_NO_ESTIMATE if the frontend is unable to provide an estimate.
+    */
+   int seconds_remaining;
+
+   /**
+    * The approximate percentage of battery life remaining,
+    * ranging from 0 to 100 (inclusive).
+    * The device may power off before this reaches 0.
+    *
+    * Will be set to 100 if \c state equals \c RETRO_POWERSTATE_PLUGGED_IN.
+    * Will be set to \c RETRO_POWERSTATE_NO_ESTIMATE if \c state equals \c RETRO_POWERSTATE_PLUGGED_IN.
+    */
+   int8_t percent;
 };
 
 /* Callbacks */
