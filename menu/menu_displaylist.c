@@ -7228,7 +7228,7 @@ unsigned menu_displaylist_build_list(
             count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-                  PARSE_ONLY_INT, false) == 0)
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
 #endif
