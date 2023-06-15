@@ -446,7 +446,10 @@ struct string_list *alsa_device_list_type_new(const char* type)
    attr.i = 0;
 
    if (snd_device_name_hint(-1, "pcm", &hints) != 0)
-      goto error;
+   {
+      string_list_free(s);
+      return NULL;
+   }
 
    n      = hints;
 
@@ -476,8 +479,4 @@ struct string_list *alsa_device_list_type_new(const char* type)
    snd_device_name_free_hint(hints);
 
    return s;
-
-   error:
-   string_list_free(s);
-   return NULL;
 }

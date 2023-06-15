@@ -36,9 +36,7 @@ void alsa_thread_free_info_members(alsa_thread_info_t *info)
       if (info->cond_lock)
          slock_free(info->cond_lock);
       if (info->pcm)
-      {
          alsa_free_pcm(info->pcm);
-      }
    }
    /* Do NOT free() info itself; it's embedded within another struct
     * that will be freed. */
