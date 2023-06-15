@@ -583,10 +583,6 @@ FONTS
 #include "../gfx/drivers_font_renderer/coretext.c"
 #endif
 
-#if defined(_XBOX1)
-#include "../gfx/drivers_font/xdk1_xfonts.c"
-#endif
-
 /*============================================================
 INPUT
 ============================================================ */

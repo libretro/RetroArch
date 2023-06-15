@@ -115,7 +115,6 @@ int font_driver_get_line_centre_offset(font_data_t *font, float scale);
 extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
 extern font_renderer_t gl1_raster_font;
-extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d9x_win32_font;
 extern font_renderer_t ps2_font;
 extern font_renderer_t vita2d_vita_font;
