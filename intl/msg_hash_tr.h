@@ -1609,6 +1609,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Mikrofon Yeniden Örnekleyici"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Kullanılacak mikrofon yeniden örnekleyici sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Mikrofon Kare Engeliyici"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,

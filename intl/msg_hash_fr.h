@@ -1585,6 +1585,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Rééchantillonneur du microphone"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Pilote de rééchantillonnage du microphone à utiliser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Images blocs du microphone"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,

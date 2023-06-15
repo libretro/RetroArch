@@ -1613,6 +1613,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Remuestreador del micrófono"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Selecciona el controlador de remuestreo del micrófono que se utilizará."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
