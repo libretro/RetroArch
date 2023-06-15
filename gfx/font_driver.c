@@ -916,12 +916,11 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(
       void *video_data,
-      const void *video_info_data,
+      const video_info_t *video_info,
       bool threading_hint,
       bool is_threaded,
       enum font_driver_render_api api)
 {
-   const video_info_t *video_info = (const video_info_t*)video_info_data;
    if (!video_font_driver && video_info)
       video_font_driver = font_driver_init_first(video_data,
             *video_info->path_font ? video_info->path_font : NULL,
