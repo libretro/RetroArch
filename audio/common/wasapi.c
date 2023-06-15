@@ -87,16 +87,16 @@ const char *hresult_name(HRESULT hr)
       /* Something else; probably from an API that we started using
        * after mic support was implemented */
       default:
-         return "<unknown>";
+         break;
    }
+
+   return "<unknown>";
 }
 
 const char *wave_subtype_name(const GUID *guid)
 {
    if (IsEqualGUID(guid, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT))
-   {
       return "KSDATAFORMAT_SUBTYPE_IEEE_FLOAT";
-   }
 
    return "<unknown sub-format>";
 }
@@ -110,8 +110,10 @@ const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
       case WAVE_FORMAT_EXTENSIBLE:
          return wave_subtype_name(&format->SubFormat);
       default:
-         return "<unknown>";
+         break;
    }
+
+   return "<unknown>";
 }
 
 const char* wasapi_error(DWORD error)
@@ -119,8 +121,8 @@ const char* wasapi_error(DWORD error)
    static char error_message[256];
 
    FormatMessage(
-         FORMAT_MESSAGE_IGNORE_INSERTS |
-         FORMAT_MESSAGE_FROM_SYSTEM,
+           FORMAT_MESSAGE_IGNORE_INSERTS
+         | FORMAT_MESSAGE_FROM_SYSTEM,
          NULL,
          error,
          MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
@@ -149,7 +151,7 @@ static const char* wasapi_data_flow_name(EDataFlow data_flow)
 }
 
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
-                              bool float_fmt, unsigned rate, unsigned channels);
+      bool float_fmt, unsigned rate, unsigned channels);
 
 /**
  * @param[in] format The format to check.
@@ -157,11 +159,8 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
  */
 static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
 {
-   if (!format)
-      return false;
-
-   if (format->Format.nChannels == 0 || format->Format.nChannels > 2)
-      /* RetroArch only supports mono mic input and stereo speaker output */
+   /* RetroArch only supports mono mic input and stereo speaker output */
+   if (!format || format->Format.nChannels == 0 || format->Format.nChannels > 2)
       return false;
 
    switch (format->Format.wFormatTag)
@@ -201,12 +200,14 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
 {
    static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
-   const bool preferred_formats[] = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
+   const bool preferred_formats[]          = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
    /* Try the requested sample format first, then try the other one */
-   WAVEFORMATEXTENSIBLE *suggested_format = NULL;
-   bool result = false;
-   HRESULT hr = _IAudioClient_IsFormatSupported(client, mode,
-      (const WAVEFORMATEX *) format, (WAVEFORMATEX **) &suggested_format);
+   WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
+   bool result                             = false;
+   HRESULT hr                              = _IAudioClient_IsFormatSupported(
+         client, mode,
+         (const WAVEFORMATEX *)format,
+         (WAVEFORMATEX **)&suggested_format);
    /* The Windows docs say that casting these arguments to WAVEFORMATEX* is okay. */
 
    switch (hr)
@@ -231,7 +232,6 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
             result = false;
             RARCH_ERR("[WASAPI]: Windows suggested a format, but RetroArch can't use it.\n");
          }
-
          break;
       case AUDCLNT_E_UNSUPPORTED_FORMAT:
       { /* The requested format is unsupported
@@ -269,10 +269,9 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          break;
    }
 done:
+   /* IAudioClient::IsFormatSupported allocates a format object */
    if (suggested_format)
-   { /* IAudioClient::IsFormatSupported allocates a format object */
       CoTaskMemFree(suggested_format);
-   }
 
    return result;
 }
@@ -280,9 +279,9 @@ done:
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
       bool float_fmt, unsigned rate, unsigned channels)
 {
-   WORD wBitsPerSample = float_fmt ? 32 : 16;
-   WORD nBlockAlign = (channels * wBitsPerSample) / 8;
-   DWORD nAvgBytesPerSec = rate * nBlockAlign;
+   WORD wBitsPerSample        = float_fmt ? 32 : 16;
+   WORD nBlockAlign           = (channels * wBitsPerSample) / 8;
+   DWORD nAvgBytesPerSec      = rate * nBlockAlign;
 
    wf->Format.nChannels       = channels;
    wf->Format.nSamplesPerSec  = rate;
@@ -317,8 +316,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    REFERENCE_TIME buffer_duration = 0;
    UINT32 buffer_length           = 0;
    HRESULT hr                     = _IMMDevice_Activate(device,
-         IID_IAudioClient,
-         CLSCTX_ALL, NULL, (void**)&client);
+         IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
 
    if (FAILED(hr))
    {
@@ -568,7 +566,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
          idx_found = 0;
 
       hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-                                                   data_flow, DEVICE_STATE_ACTIVE, &collection);
+            data_flow, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI]: Failed to enumerate audio endpoints: %s\n", hresult_name(hr));
