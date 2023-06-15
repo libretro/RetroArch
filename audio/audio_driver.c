@@ -1338,9 +1338,10 @@ static void audio_driver_mixer_play_stream_internal(
 static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
-   uint8_t flags = content_get_flags();
-   if (!(flags & CONTENT_ST_FLAG_IS_INITED))
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
 }
 
 void audio_driver_load_system_sounds(void)
@@ -1460,6 +1461,7 @@ void audio_driver_load_system_sounds(void)
       if (path_down)
          task_push_audio_mixer_load(path_down, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_DOWN);
    }
+
 end:
    if (list)
       string_list_free(list);
