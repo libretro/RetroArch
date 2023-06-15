@@ -769,8 +769,12 @@ static int setting_bool_action_right_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   setting_set_with_string_representation(setting,
-         *setting->value.target.boolean ? "false" : "true");
+   if (*setting->value.target.boolean)
+      *setting->value.target.boolean = false;
+   else
+      *setting->value.target.boolean = true;
+   if (setting->change_handler)
+      setting->change_handler(setting);
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
@@ -790,8 +794,12 @@ int setting_bool_action_left_with_refresh(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   setting_set_with_string_representation(setting,
-         *setting->value.target.boolean ? "false" : "true");
+   if (*setting->value.target.boolean)
+      *setting->value.target.boolean = false;
+   else
+      *setting->value.target.boolean = true;
+   if (setting->change_handler)
+      setting->change_handler(setting);
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
@@ -932,80 +940,96 @@ static void setting_get_string_representation_int(
 int setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
-   char *ptr;
-   float min, max;
-   uint32_t flags;
    if (!setting || !value)
       return -1;
-
-   min          = setting->min;
-   max          = setting->max;
-   flags        = setting->flags;
 
    switch (setting->type)
    {
       case ST_INT:
-         *setting->value.target.integer = (int)strtol(value, &ptr, 10);
-         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
-               *setting->value.target.integer = min;
-            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
+            char *ptr;
+            uint32_t flags = setting->flags;
+            *setting->value.target.integer = (int)strtol(value, &ptr, 10);
+            if (flags & SD_FLAG_HAS_RANGE)
             {
-               settings_t *settings = config_get_ptr();
-               if (settings && settings->bools.menu_navigation_wraparound_enable)
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
                   *setting->value.target.integer = min;
-               else
-                  *setting->value.target.integer = max;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.integer = min;
+                  else
+                     *setting->value.target.integer = max;
+               }
             }
          }
          break;
       case ST_UINT:
-         *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
-         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
-               *setting->value.target.unsigned_integer = min;
-            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
+            char *ptr;
+            uint32_t flags = setting->flags;
+            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
+            if (flags & SD_FLAG_HAS_RANGE)
             {
-               settings_t *settings = config_get_ptr();
-               if (settings && settings->bools.menu_navigation_wraparound_enable)
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
                   *setting->value.target.unsigned_integer = min;
-               else
-                  *setting->value.target.unsigned_integer = max;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.unsigned_integer = min;
+                  else
+                     *setting->value.target.unsigned_integer = max;
+               }
             }
          }
          break;
       case ST_SIZE:
-         sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
-         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
-               *setting->value.target.sizet = min;
-            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
+            uint32_t flags = setting->flags;
+            sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
+            if (flags & SD_FLAG_HAS_RANGE)
             {
-               settings_t *settings = config_get_ptr();
-               if (settings && settings->bools.menu_navigation_wraparound_enable)
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
                   *setting->value.target.sizet = min;
-               else
-                  *setting->value.target.sizet = max;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.sizet = min;
+                  else
+                     *setting->value.target.sizet = max;
+               }
             }
          }
          break;
       case ST_FLOAT:
-         /* strtof() is C99/POSIX. Just use the more portable kind. */
-         *setting->value.target.fraction = (float)strtod(value, &ptr);
-         if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
-               *setting->value.target.fraction = min;
-            if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
+            char *ptr;
+            uint32_t flags = setting->flags;
+            /* strtof() is C99/POSIX. Just use the more portable kind. */
+            *setting->value.target.fraction = (float)strtod(value, &ptr);
+            if (flags & SD_FLAG_HAS_RANGE)
             {
-               settings_t *settings = config_get_ptr();
-               if (settings && settings->bools.menu_navigation_wraparound_enable)
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
                   *setting->value.target.fraction = min;
-               else
-                  *setting->value.target.fraction = max;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.fraction = min;
+                  else
+                     *setting->value.target.fraction = max;
+               }
             }
          }
          break;
@@ -1125,7 +1149,14 @@ static void setting_reset_setting(rarch_setting_t* setting)
          if (setting->default_value.string)
          {
             if (setting->type == ST_STRING)
-               setting_set_with_string_representation(setting, setting->default_value.string);
+            {
+               if (setting->value.target.string)
+                  strlcpy(setting->value.target.string,
+                        setting->default_value.string,
+                        setting->size);
+               if (setting->change_handler)
+                  setting->change_handler(setting);
+            }
             else
                fill_pathname_expand_special(setting->value.target.string,
                      setting->default_value.string, setting->size);
@@ -1711,10 +1742,12 @@ static int setting_bool_action_ok_default(
    if (!setting)
       return -1;
 
-   setting_set_with_string_representation(setting,
-          *setting->value.target.boolean 
-         ? "false" 
-         : "true");
+   if (*setting->value.target.boolean)
+      *setting->value.target.boolean = false;
+   else
+      *setting->value.target.boolean = true;
+   if (setting->change_handler)
+      setting->change_handler(setting);
 
    return 0;
 }
@@ -7957,7 +7990,9 @@ static void general_write_handler(rarch_setting_t *setting)
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info, settings))
                menu_displaylist_process(&info);
             menu_displaylist_info_free(&info);
-            setting_set_with_string_representation(setting, "false");
+            *setting->value.target.boolean = false;
+            if (setting->change_handler)
+               setting->change_handler(setting);
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
@@ -8215,7 +8250,11 @@ static void general_write_handler(rarch_setting_t *setting)
          if (*setting->value.target.boolean && global_get_ptr()->console.screen.pal_enable)
             rarch_cmd = CMD_EVENT_REINIT;
          else
-            setting_set_with_string_representation(setting, "false");
+         {
+            *setting->value.target.boolean = false;
+            if (setting->change_handler)
+               setting->change_handler(setting);
+         }
          break;
       case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.target.boolean)
@@ -9304,8 +9343,12 @@ static int directory_action_start_generic(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   setting_set_with_string_representation(setting,
-         setting->default_value.string);
+   if (setting->value.target.string)
+      strlcpy(setting->value.target.string,
+            setting->default_value.string,
+            setting->size);
+   if (setting->change_handler)
+      setting->change_handler(setting);
 
    return 0;
 }
