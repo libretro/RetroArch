@@ -495,19 +495,6 @@ typedef struct
    bool dragged;
 } materialui_scrollbar_t;
 
-/* This structure holds all objects + metadata
- * corresponding to a particular font */
-typedef struct
-{
-   font_data_t *font;
-   video_font_raster_block_t raster_block;   /* ptr alignment */
-   unsigned glyph_width;
-   unsigned wideglyph_width;
-   int line_height;
-   int line_ascender;
-   int line_centre_offset;
-} materialui_font_data_t;
-
 /* This structure is used to cache system bar
  * string data (+ metadata) to improve rendering
  * performance */
@@ -597,9 +584,9 @@ typedef struct materialui_handle
    /* Font data */
    struct
    {
-      materialui_font_data_t title; /* ptr alignment */
-      materialui_font_data_t list;  /* ptr alignment */
-      materialui_font_data_t hint;  /* ptr alignment */
+      font_data_impl_t title; /* ptr alignment */
+      font_data_impl_t list;  /* ptr alignment */
+      font_data_impl_t hint;  /* ptr alignment */
    } font_data;
 
    void (*word_wrap)(
@@ -2193,30 +2180,6 @@ static const char *materialui_texture_path(unsigned id)
    return NULL;
 }
 
-static void INLINE materialui_font_bind(materialui_font_data_t *font_data)
-{
-   font_driver_bind_block(font_data->font, &font_data->raster_block);
-   font_data->raster_block.carr.coords.vertices = 0;
-}
-
-static void INLINE materialui_font_unbind(materialui_font_data_t *font_data)
-{
-   font_driver_bind_block(font_data->font, NULL);
-}
-
-/* Flushing is slow - only do it if font
- * has actually been used */
-static void materialui_font_flush(
-      unsigned video_width, unsigned video_height,
-      materialui_font_data_t *font_data)
-{
-   if (font_data->raster_block.carr.coords.vertices == 0)
-      return;
-   if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
-      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
-   font_data->raster_block.carr.coords.vertices = 0;
-}
-
 /* ==============================
  * Playlist icons START
  * ============================== */
@@ -3560,7 +3523,7 @@ static bool (*materialui_render_process_entry)(
 
 static void materialui_init_font(
    gfx_display_t *p_disp,
-   materialui_font_data_t *font_data,
+   font_data_impl_t *font_data,
    int font_size,
    bool video_is_threaded,
    const char *str_latin);
@@ -5119,7 +5082,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       /* Status bar overlaps list entries
        * > Must flush list font before attempting
        *   to draw it */
-      materialui_font_flush(video_width, video_height, &mui->font_data.list);
+      font_flush(video_width, video_height, &mui->font_data.list);
 
       /* Background
        * > Surface */
@@ -7070,9 +7033,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             video_st->data, video_width, video_height, true, false);
 
    /* Clear text */
-   materialui_font_bind(&mui->font_data.title);
-   materialui_font_bind(&mui->font_data.list);
-   materialui_font_bind(&mui->font_data.hint);
+   font_bind(&mui->font_data.title);
+   font_bind(&mui->font_data.list);
+   font_bind(&mui->font_data.hint);
 
    /* Update theme colours, if required */
    if (mui->color_theme != materialui_color_theme)
@@ -7163,8 +7126,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Flush first layer of text
     * > Menu list only uses list and hint fonts */
-   materialui_font_flush(video_width, video_height, &mui->font_data.list);
-   materialui_font_flush(video_width, video_height, &mui->font_data.hint);
+   font_flush(video_width, video_height, &mui->font_data.list);
+   font_flush(video_width, video_height, &mui->font_data.hint);
 
    /* Draw fullscreen thumbnails, if currently active
     * > Must be done *after* we flush the first layer
@@ -7183,10 +7146,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Flush second layer of text
     * > Title + system bar only use title and hint fonts */
-   materialui_font_flush(video_width,
-         video_height, &mui->font_data.title);
-   materialui_font_flush(video_width,
-         video_height, &mui->font_data.hint);
+   font_flush(video_width, video_height, &mui->font_data.title);
+   font_flush(video_width, video_height, &mui->font_data.hint);
 
    /* Handle onscreen keyboard */
    if (menu_input_dialog_get_display_kb())
@@ -7238,7 +7199,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Flush message box & osk text
        * > Message box & osk only use list font */
-      materialui_font_flush(video_width, video_height, &mui->font_data.list);
+      font_flush(video_width, video_height, &mui->font_data.list);
    }
 
    /* Draw message box */
@@ -7267,7 +7228,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Flush message box text
        * > Message box only uses list font */
-      materialui_font_flush(video_width, video_height, &mui->font_data.list);
+      font_flush(video_width, video_height, &mui->font_data.list);
    }
 
    /* Draw mouse cursor */
@@ -7304,9 +7265,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    materialui_colors_reset_transition_alpha(mui);
 
    /* Unbind fonts */
-   materialui_font_unbind(&mui->font_data.title);
-   materialui_font_unbind(&mui->font_data.list);
-   materialui_font_unbind(&mui->font_data.hint);
+   font_unbind(&mui->font_data.title);
+   font_unbind(&mui->font_data.list);
+   font_unbind(&mui->font_data.hint);
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
@@ -7886,7 +7847,7 @@ static void materialui_update_list_view(materialui_handle_t *mui, settings_t *se
 
 static void materialui_init_font(
    gfx_display_t *p_disp,
-   materialui_font_data_t *font_data,
+   font_data_impl_t *font_data,
    int font_size,
    bool video_is_threaded,
    const char *str_latin

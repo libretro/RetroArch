@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #include "../retroarch.h"
 
@@ -73,6 +74,32 @@ typedef struct
    float size;
 } font_data_t;
 
+/* This structure holds all objects + metadata
+ * corresponding to a particular font */
+typedef struct
+{
+   font_data_t *font;
+   video_font_raster_block_t raster_block; /* ptr alignment */
+   unsigned glyph_width;
+   unsigned wideglyph_width;
+   int line_height;
+   int line_ascender;
+   int line_centre_offset;
+} font_data_impl_t;
+
+void font_driver_bind_block(void *font_data, void *block);
+
+static void INLINE font_bind(font_data_impl_t *font_data)
+{
+   font_driver_bind_block(font_data->font, &font_data->raster_block);
+   font_data->raster_block.carr.coords.vertices = 0;
+}
+
+static void INLINE font_unbind(font_data_impl_t *font_data)
+{
+   font_driver_bind_block(font_data->font, NULL);
+}
+
 /* font_path can be NULL for default font. */
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
@@ -82,11 +109,14 @@ int font_renderer_create_default(
 void font_driver_render_msg(void *data,
       const char *msg, const struct font_params *params, void *font_data);
 
-void font_driver_bind_block(void *font_data, void *block);
-
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 void font_driver_free(font_data_t *font);
+
+void font_flush(
+      unsigned video_width,
+      unsigned video_height,
+      font_data_impl_t *font_data);
 
 font_data_t *font_driver_init_first(
       void *video_data,

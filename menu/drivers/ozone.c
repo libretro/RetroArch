@@ -333,19 +333,6 @@ enum ozone_pending_thumbnail_type
    OZONE_PENDING_THUMBNAIL_BOTH
 };
 
-/* This structure holds all objects + metadata
- * corresponding to a particular font */
-typedef struct
-{
-   font_data_t *font;
-   video_font_raster_block_t raster_block; /* ptr alignment */
-   unsigned glyph_width;
-   unsigned wideglyph_width;
-   int line_height;
-   int line_ascender;
-   int line_centre_offset;
-} ozone_font_data_t;
-
 /* Container for a footer text label */
 typedef struct
 {
@@ -474,12 +461,12 @@ struct ozone_handle
 
    struct
    {
-      ozone_font_data_t footer;
-      ozone_font_data_t title;
-      ozone_font_data_t time;
-      ozone_font_data_t entries_label;
-      ozone_font_data_t entries_sublabel;
-      ozone_font_data_t sidebar;
+      font_data_impl_t footer;
+      font_data_impl_t title;
+      font_data_impl_t time;
+      font_data_impl_t entries_label;
+      font_data_impl_t entries_sublabel;
+      font_data_impl_t sidebar;
    } fonts;
 
    void (*word_wrap)(
@@ -2836,19 +2823,6 @@ static float ozone_sidebar_get_scroll_y(
    return scroll_y;
 }
 
-/* Flushing is slow - only do it if font has actually been used */
-static void ozone_font_flush(
-      unsigned video_width,
-      unsigned video_height,
-      ozone_font_data_t *font_data)
-{
-   if (font_data->raster_block.carr.coords.vertices == 0)
-      return;
-   if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
-      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
-   font_data->raster_block.carr.coords.vertices = 0;
-}
-
 static void ozone_draw_icon(
       gfx_display_t *p_disp,
       void *userdata,
@@ -3573,7 +3547,7 @@ console_iterate:
          dispctx->blend_end(userdata);
    }
 
-   ozone_font_flush(video_width, video_height, &ozone->fonts.sidebar);
+   font_flush(video_width, video_height, &ozone->fonts.sidebar);
 
    if (dispctx && dispctx->scissor_end)
       dispctx->scissor_end(userdata, video_width, video_height);
@@ -6068,10 +6042,10 @@ border_iterate:
    }
 
    /* Text layer */
-   ozone_font_flush(video_width, video_height, &ozone->fonts.entries_label);
+   font_flush(video_width, video_height, &ozone->fonts.entries_label);
 
    if (menu_show_sublabels)
-      ozone_font_flush(video_width, video_height, &ozone->fonts.entries_sublabel);
+      font_flush(video_width, video_height, &ozone->fonts.entries_sublabel);
 }
 
 static void ozone_draw_thumbnail_bar(
@@ -8946,7 +8920,7 @@ static void ozone_refresh_thumbnail_image(void *data, unsigned i)
 }
 
 static bool ozone_init_font(
-      ozone_font_data_t *font_data,
+      font_data_impl_t *font_data,
       bool is_threaded,
       char *font_path,
       float font_size)
@@ -9365,7 +9339,7 @@ static void ozone_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 }
 
-static void INLINE ozone_font_free(ozone_font_data_t *font_data)
+static void INLINE ozone_font_free(font_data_impl_t *font_data)
 {
    if (font_data->font)
       font_driver_free(font_data->font);
@@ -11335,17 +11309,6 @@ static void ozone_messagebox_fadeout_cb(void *userdata)
    ozone->flags                 &= ~OZONE_FLAG_SHOULD_DRAW_MSGBOX;
 }
 
-static void INLINE ozone_font_bind(ozone_font_data_t *font_data)
-{
-   font_driver_bind_block(font_data->font, &font_data->raster_block);
-   font_data->raster_block.carr.coords.vertices = 0;
-}
-
-static void INLINE ozone_font_unbind(ozone_font_data_t *font_data)
-{
-   font_driver_bind_block(font_data->font, NULL);
-}
-
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
@@ -11484,12 +11447,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_st->data, video_width, video_height, true, false);
 
    /* Clear text */
-   ozone_font_bind(&ozone->fonts.footer);
-   ozone_font_bind(&ozone->fonts.title);
-   ozone_font_bind(&ozone->fonts.time);
-   ozone_font_bind(&ozone->fonts.entries_label);
-   ozone_font_bind(&ozone->fonts.entries_sublabel);
-   ozone_font_bind(&ozone->fonts.sidebar);
+   font_bind(&ozone->fonts.footer);
+   font_bind(&ozone->fonts.title);
+   font_bind(&ozone->fonts.time);
+   font_bind(&ozone->fonts.entries_label);
+   font_bind(&ozone->fonts.entries_sublabel);
+   font_bind(&ozone->fonts.sidebar);
 
    /* Background (Always use running background due to overlays) */
    if (menu_framebuffer_opacity < 1.0f)
@@ -11624,12 +11587,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       dispctx->scissor_end(userdata, video_width, video_height);
 
    /* Flush first layer of text */
-   ozone_font_flush(video_width, video_height, &ozone->fonts.footer);
-   ozone_font_flush(video_width, video_height, &ozone->fonts.title);
-   ozone_font_flush(video_width, video_height, &ozone->fonts.time);
-   ozone_font_flush(video_width, video_height, &ozone->fonts.entries_label);
-   ozone_font_flush(video_width, video_height, &ozone->fonts.entries_sublabel);
-   ozone_font_flush(video_width, video_height, &ozone->fonts.sidebar);
+   font_flush(video_width, video_height, &ozone->fonts.footer);
+   font_flush(video_width, video_height, &ozone->fonts.title);
+   font_flush(video_width, video_height, &ozone->fonts.time);
+   font_flush(video_width, video_height, &ozone->fonts.entries_label);
+   font_flush(video_width, video_height, &ozone->fonts.entries_sublabel);
+   font_flush(video_width, video_height, &ozone->fonts.sidebar);
 
    /* Draw fullscreen thumbnails, if required */
    ozone_draw_fullscreen_thumbnails(ozone,
@@ -11718,8 +11681,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                &mymat);
 
       /* Flush second layer of text */
-      ozone_font_flush(video_width, video_height, &ozone->fonts.footer);
-      ozone_font_flush(video_width, video_height, &ozone->fonts.entries_label);
+      font_flush(video_width, video_height, &ozone->fonts.footer);
+      font_flush(video_width, video_height, &ozone->fonts.entries_label);
    }
 
    /* Cursor */
@@ -11745,12 +11708,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Unbind fonts */
-   ozone_font_unbind(&ozone->fonts.footer);
-   ozone_font_unbind(&ozone->fonts.title);
-   ozone_font_unbind(&ozone->fonts.time);
-   ozone_font_unbind(&ozone->fonts.entries_label);
-   ozone_font_unbind(&ozone->fonts.entries_sublabel);
-   ozone_font_unbind(&ozone->fonts.sidebar);
+   font_unbind(&ozone->fonts.footer);
+   font_unbind(&ozone->fonts.title);
+   font_unbind(&ozone->fonts.time);
+   font_unbind(&ozone->fonts.entries_label);
+   font_unbind(&ozone->fonts.entries_sublabel);
+   font_unbind(&ozone->fonts.sidebar);
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
