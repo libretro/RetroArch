@@ -1640,463 +1640,366 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
 
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
-   int controller;
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-   gfx_ctx_ident_t ident_info;
-   const char *tmp_string                = NULL;
-#endif
-   char tmp[8192];
-#ifdef ANDROID
-   bool perms                            = false;
-#endif
-   unsigned count                        = 0;
-   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   const char *menu_driver               = menu_driver_ident();
-   size_t len                            = strlcpy(tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
-         sizeof(tmp));
-   tmp[len  ]                            = ':';
-   tmp[len+1]                            = ' ';
-   tmp[len+2]                            = '\0';
-   strlcat(tmp, PACKAGE_VERSION, sizeof(tmp));
+   char entry[512];
+   char tmp[512];
+   unsigned count = 0;
 
-   if (menu_entries_append(list, tmp, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+   /* RetroArch Version */
+   snprintf(entry, sizeof(entry), "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
+         PACKAGE_VERSION);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
       count++;
 
 #ifdef HAVE_GIT_VERSION
-   len                                   = strlcpy(tmp,
+   /* Git Version */
+   snprintf(entry, sizeof(entry), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
-         sizeof(tmp));
-   tmp[len  ]                            = ':';
-   tmp[len+1]                            = ' ';
-   tmp[len+2]                            = '\0';
-   strlcat(tmp, retroarch_git_version, sizeof(tmp));
-
-   if (menu_entries_append(list, tmp, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         retroarch_git_version);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
       count++;
 #endif
 
-   len                                   = strlcpy(tmp,
+   /* Build Date */
+   snprintf(entry, sizeof(entry), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
-         sizeof(tmp));
-   tmp[len  ]                            = ':';
-   tmp[len+1]                            = ' ';
-   tmp[len+2]                            = '\0';
-   strlcat(tmp, __DATE__, sizeof(tmp));
-
-   if (menu_entries_append(list, tmp, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         __DATE__);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
       count++;
 
-   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp), 0);
-   if (menu_entries_append(list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+   /* Compiler */
+   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, entry, sizeof(entry));
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
       count++;
 
 #ifdef ANDROID
-   perms = test_permissions(internal_storage_path);
-   strlcpy(tmp,
-         perms
-         ? msg_hash_to_str(MSG_READ_WRITE)
-         : msg_hash_to_str(MSG_READ_ONLY), sizeof(tmp));
-   if (menu_entries_append(list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+   /* Internal Storage Status */
+   {
+      bool perms = test_permissions(internal_storage_path);
+      strlcpy(entry,
+            perms
+            ? msg_hash_to_str(MSG_READ_WRITE)
+            : msg_hash_to_str(MSG_READ_ONLY),
+            sizeof(tmp));
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+#endif
+
+   /* CPU Model */
+   {
+      const char *cpu_model;
+      /* TODO: this API is prone to leaking memory! */
+      cpu_model = frontend_driver_get_cpu_model_name();
+      snprintf(entry, sizeof(entry), "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
+            string_is_empty(cpu_model) 
+               ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+               : cpu_model);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* CPU Features */
+   retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, tmp, sizeof(tmp));
+   snprintf(entry, sizeof(entry), "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
+         tmp);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
       count++;
 
-#endif
+   /* CPU Architecture */
+   frontend_driver_get_cpu_architecture_str(tmp, sizeof(tmp));
+   snprintf(entry, sizeof(entry), "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
+         tmp);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
+      count++;
+
+   /* CPU Cores */
    {
-      char cpu_str[NAME_MAX_LENGTH];
-      const char *model = frontend_driver_get_cpu_model_name();
-      len               = strlcpy(cpu_str,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
-            sizeof(cpu_str));
-      cpu_str[len  ]    = ':';
-      cpu_str[len+1]    = ' ';
-      cpu_str[len+2]    = '\0';
-
-      if (string_is_empty(model))
-         strlcat(cpu_str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(cpu_str));
-      else
-         strlcat(cpu_str, model, sizeof(cpu_str));
-
-      if (menu_entries_append(list, cpu_str, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-   }
-
-   {
-      char cpu_str[128];
-      len            = strlcpy(cpu_str,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
-            sizeof(cpu_str));
-      cpu_str[len++] = ':';
-      cpu_str[len++] = ' ';
-      cpu_str[len+1] = '\0';
-
-      retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
-            cpu_str, sizeof(cpu_str), len);
-      if (menu_entries_append(list, cpu_str, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-   }
-
-   {
-      char cpu_str[256];
-      char cpu_arch_str[64];
-      char cpu_text_str[128];
-      strlcpy(cpu_text_str,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
-            sizeof(cpu_text_str));
-
-      frontend_driver_get_cpu_architecture_str(cpu_arch_str,
-            sizeof(cpu_arch_str));
-
-      len            = strlcpy(cpu_str, cpu_text_str, sizeof(cpu_str));
-      cpu_str[len  ] = ':';
-      cpu_str[len+1] = ' ';
-      cpu_str[len+2] = '\0';
-      strlcat(cpu_str, cpu_arch_str, sizeof(cpu_str));
-
-      if (menu_entries_append(list, cpu_str,
-            msg_hash_to_str(MENU_ENUM_LABEL_CPU_ARCHITECTURE),
-            MENU_ENUM_LABEL_CPU_ARCHITECTURE,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-   }
-
-   {
-      char cpu_str[64];
-      unsigned amount_cores = cpu_features_get_core_amount();
-      len                   = strlcpy(cpu_str,
+      unsigned cores = cpu_features_get_core_amount();
+      snprintf(entry, sizeof(entry), "%s: %u",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES),
-            sizeof(cpu_str));
-      snprintf(cpu_str      + len,
-            sizeof(cpu_str) - len,
-            ": %d\n", amount_cores);
-      if (menu_entries_append(list, cpu_str,
-            msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
-            MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+            cores);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
          count++;
    }
 
-   for (controller = 0; controller < MAX_USERS; controller++)
+   /* Input devices */
    {
-      if (input_config_get_device_autoconfigured(controller))
+      const char *menu_driver = menu_driver_ident();
+      unsigned controller;
+      for (controller = 0; controller < MAX_USERS; controller++)
       {
-         snprintf(tmp, sizeof(tmp),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
-            controller + 1,
-            input_config_get_device_name(controller),
-            input_config_get_device_name_index(controller));
-
-         if (menu_entries_append(list, tmp, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-
-#ifdef HAVE_RGUI
-         if (string_is_equal(menu_driver, "rgui"))
+         if (input_config_get_device_autoconfigured(controller))
          {
-            /* TODO/FIXME - Localize */
-            strlcpy(tmp, "- Device Display Name: ", sizeof(tmp));
-            strlcat(tmp,
-               input_config_get_device_display_name(controller) ?
-               input_config_get_device_display_name(controller) :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(tmp));
-            if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-               count++;
-            /* TODO/FIXME - Localize */
-            strlcpy(tmp, "- Device Config Name: ", sizeof(tmp));
-            strlcat(tmp,
-               input_config_get_device_config_name(controller) ?
-               input_config_get_device_config_name(controller)  :
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(tmp));
-            if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-               count++;
-            /* TODO/FIXME - Localize */
-            snprintf(tmp, sizeof(tmp), "- Device VID/PID: %d/%d",
-               input_config_get_device_vid(controller),
-               input_config_get_device_pid(controller));
-            if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-               count++;
-         }
-#endif
-      }
-   }
-
-   if (frontend)
-   {
-      char tmp2[128];
-      int major  = 0;
-      int minor  = 0;
-
-      tmp2[0]    = '\0';
-
-      len        = strlcpy(tmp,
-                   msg_hash_to_str(
-                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
-                   sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
-      strlcat(tmp, frontend->ident, sizeof(tmp));
-      if (menu_entries_append(list, tmp, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
-
-      if (frontend->get_lakka_version)
-      {
-         frontend->get_lakka_version(tmp2, sizeof(tmp2));
-
-         len        = strlcpy(tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
-               sizeof(tmp));
-         tmp[len  ] = ':';
-         tmp[len+1] = ' ';
-         tmp[len+2] = '\0';
-         strlcat(tmp, tmp2, sizeof(tmp));
-
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-      }
-
-      if (frontend->get_name)
-      {
-         frontend->get_name(tmp2, sizeof(tmp2));
-
-         len        = strlcpy(tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
-               sizeof(tmp));
-         tmp[len  ] = ':';
-         tmp[len+1] = ' ';
-         tmp[len+2] = '\0';
-         strlcat(tmp, tmp2, sizeof(tmp));
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-      }
-
-      if (frontend->get_os)
-      {
-         frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
-         len = strlcpy(tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
-               sizeof(tmp));
-         snprintf(tmp + len, sizeof(tmp) - len, ": %s (v%d.%d)",
-               tmp2, major, minor);
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-      }
-
-      if (frontend->get_rating)
-      {
-         len = strlcpy(tmp,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
-               sizeof(tmp));
-         snprintf(tmp + len, sizeof(tmp) - len, ": %d",
-               frontend->get_rating());
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-      }
-
-      {
-         char tmp[128];
-         uint64_t memory_total = frontend_driver_get_total_memory();
-         uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
-
-         tmp[0] = '\0';
-
-         if (memory_used != 0 && memory_total != 0)
-         {
-            size_t _len = strlcpy(tmp, msg_hash_to_str(MSG_MEMORY),
-                  sizeof(tmp));
-            snprintf(tmp + _len, sizeof(tmp) - _len,
-                  ": %" PRIu64 "/%" PRIu64 " MB",
-                  BYTES_TO_MB(memory_used),
-                  BYTES_TO_MB(memory_total)
-                  );
-
-            if (menu_entries_append(list, tmp, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+            /* Port n Device Name: s (#n) */
+            snprintf(entry, sizeof(entry), /* Note: format string below */
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
+                  controller + 1,
+                  input_config_get_device_name(controller),
+                  input_config_get_device_name_index(controller));
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
+
+#ifdef HAVE_RGUI
+            if (string_is_equal(menu_driver, "rgui"))
+            {
+               /* Device Display Name */
+               snprintf(entry, sizeof(entry), /* TODO: localize */
+                     "- Device Display Name: %s",
+                     input_config_get_device_display_name(controller)
+                     ? input_config_get_device_display_name(controller)
+                     : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               if (menu_entries_append(list, entry, "",
+                     MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                  count++;
+
+               /* Device Config Name */
+               snprintf(entry, sizeof(entry), /* TODO: localize */
+                     "- Device Config Name: %s",
+                     input_config_get_device_config_name(controller)
+                     ? input_config_get_device_config_name(controller)
+                     : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               if (menu_entries_append(list, entry, "",
+                     MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                  count++;
+
+               /* Device VID/PID */
+               snprintf(entry, sizeof(entry), /* TODO: localize */
+                     "- Device VID/PID: %d/%d",
+                     input_config_get_device_vid(controller),
+                     input_config_get_device_pid(controller));
+               if (menu_entries_append(list, entry, "",
+                     MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                  count++;
+            }
+#endif
          }
       }
+   }
 
-      if (frontend->get_powerstate)
+   {
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      if (frontend)
       {
-         int seconds    = 0, percent = 0;
-         char tmp2[128];
-         enum frontend_powerstate state =
-            frontend->get_powerstate(&seconds, &percent);
+         /* Frontend Identifier */
+         snprintf(entry, sizeof(entry), "%s: %s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
+               frontend->ident);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
 
-         tmp2[0] = '\0';
-
-         if (percent != 0)
-            snprintf(tmp2, sizeof(tmp2), "%d%% ", percent);
-
-         switch (state)
+         /* Lakka Version */
+         if (frontend->get_lakka_version)
          {
-            case FRONTEND_POWERSTATE_NONE:
-               strlcat(tmp2,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(tmp2));
-               break;
-            case FRONTEND_POWERSTATE_NO_SOURCE:
-               strlcat(tmp2, "(", sizeof(tmp2));
-               strlcat(tmp2,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE),
-                     sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
-               break;
-            case FRONTEND_POWERSTATE_CHARGING:
-               strlcat(tmp2, "(", sizeof(tmp2));
-               strlcat(tmp2,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING),
-                     sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
-               break;
-            case FRONTEND_POWERSTATE_CHARGED:
-               strlcat(tmp2, "(", sizeof(tmp2));
-               strlcat(tmp2,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED),
-                     sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
-               break;
-            case FRONTEND_POWERSTATE_ON_POWER_SOURCE:
-               strlcat(tmp2, "(", sizeof(tmp2));
-               strlcat(tmp2,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING),
-                     sizeof(tmp2));
-               strlcat(tmp2, ")", sizeof(tmp2));
-               break;
+            frontend->get_lakka_version(tmp, sizeof(tmp));
+            snprintf(entry, sizeof(entry), "%s: %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
+                  tmp);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
          }
 
-         len         = strlcpy(tmp,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
-               sizeof(tmp));
-         tmp[len  ]  = ':';
-         tmp[len+1]  = ' ';
-         tmp[len+2]  = '\0';
-         strlcat(tmp, tmp2, sizeof(tmp));
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
+         /* Frontend name */
+         if (frontend->get_name)
+         {
+            frontend->get_name(tmp, sizeof(tmp));
+            snprintf(entry, sizeof(entry), "%s: %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
+                  tmp);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
+
+         /* Frontend OS */
+         if (frontend->get_os)
+         {
+            int major = 0;
+            int minor = 0;
+            frontend->get_os(tmp, sizeof(tmp), &major, &minor);
+            snprintf(entry, sizeof(entry), "%s: %s (v%d.%d)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
+                  tmp, major, minor);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
+
+         /* RetroRating Level */
+         if (frontend->get_rating)
+         {
+            snprintf(entry, sizeof(entry), "%s: %d",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
+                  frontend->get_rating());
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
+
+         /* Memory */
+         {
+            uint64_t memory_total = frontend_driver_get_total_memory();
+            uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
+            if (memory_used != 0 && memory_total != 0)
+            {
+               snprintf(entry, sizeof(entry), "%s: %" PRIu64 "/%" PRIu64 " MB",
+                     msg_hash_to_str(MSG_MEMORY),
+                     BYTES_TO_MB(memory_used),
+                     BYTES_TO_MB(memory_total));
+               if (menu_entries_append(list, entry, "",
+                     MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+                     MENU_SETTINGS_CORE_INFO_NONE,
+                     0, 0, NULL))
+                  count++;
+            }
+         }
+
+         /* Power Source */
+         if (frontend->get_powerstate)
+         {
+            int seconds = 0;
+            int percent = 0;
+            enum frontend_powerstate state =
+               frontend->get_powerstate(&seconds, &percent);
+
+            /* N/A */
+            if (state == FRONTEND_POWERSTATE_NONE)
+               snprintf(tmp, sizeof(entry), "%s",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            /* n% (No Source) */
+            else if (state == FRONTEND_POWERSTATE_NO_SOURCE)
+               snprintf(tmp, sizeof(tmp), "%d%% (%s)", percent,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE));
+            /* n% (Charging) */
+            else if (state == FRONTEND_POWERSTATE_CHARGING)
+               snprintf(tmp, sizeof(tmp), "%d%% (%s)", percent,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING));
+            /* n% (Charged) */
+            else if (state == FRONTEND_POWERSTATE_CHARGED)
+               snprintf(tmp, sizeof(tmp), "%d%% (%s)", percent,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED));
+            /* n% (Discharging) */
+            else if (state == FRONTEND_POWERSTATE_ON_POWER_SOURCE)
+               snprintf(tmp, sizeof(tmp), "%d%% (%s)", percent,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING));
+
+            /* Power Source */
+            snprintf(entry, sizeof(entry), "%s: %s",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
+                  tmp);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
       }
    }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-   video_context_driver_get_ident(&ident_info);
-   tmp_string = ident_info.ident;
-
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || \
+    defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    {
-	   len         = strlcpy(tmp,
-			   msg_hash_to_str(
-				   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
-			   sizeof(tmp));
-      tmp[len  ]  = ':';
-      tmp[len+1]  = ' ';
-      tmp[len+2]  = '\0';
-	   strlcat(tmp,
-			   tmp_string ? tmp_string
-			   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-			   sizeof(tmp));
-   }
-   if (menu_entries_append(list, tmp, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-      count++;
-
-   {
-      gfx_ctx_metrics_t metrics;
-      float val     = 0.0f;
-
-      metrics.type  = DISPLAY_METRIC_MM_WIDTH;
-      metrics.value = &val;
-
-      if (video_context_driver_get_metrics(&metrics))
+      gfx_ctx_ident_t ident_info;
+      video_context_driver_get_ident(&ident_info);
+      
+      /* Video Context Driver */
+      snprintf(entry, sizeof(entry), "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
+            string_is_empty(ident_info.ident)
+            ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+            : ident_info.ident);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+      
       {
-         len = strlcpy(tmp,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
-               sizeof(tmp));
-         snprintf(tmp      + len,
-               sizeof(tmp) - len,
-               ": %.2f", val);
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-      }
+         gfx_ctx_metrics_t metrics;
+         float val = 0.0f;
 
-      metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
+         metrics.value = &val;
 
-      if (video_context_driver_get_metrics(&metrics))
-      {
-         len = strlcpy(tmp,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
-               sizeof(tmp));
-         snprintf(tmp + len, sizeof(tmp) - len, ": %.2f", val);
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
-      }
+         /* Display Width (mm) */
+         metrics.type  = DISPLAY_METRIC_MM_WIDTH;
+         if (video_context_driver_get_metrics(&metrics))
+         {
+            snprintf(entry, sizeof(entry), "%s: %.2f",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
+                  val);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
 
-      metrics.type  = DISPLAY_METRIC_DPI;
+         /* Display Height (mm) */
+         metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
+         if (video_context_driver_get_metrics(&metrics))
+         {
+            snprintf(entry, sizeof(entry), "%s: %.2f",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
+                  val);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
 
-      if (video_context_driver_get_metrics(&metrics))
-      {
-         len = strlcpy(tmp,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
-               sizeof(tmp));
-         snprintf(tmp + len, sizeof(tmp) - len, ": %.2f", val);
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
+         /* DPI */
+         metrics.type  = DISPLAY_METRIC_DPI;
+         if (video_context_driver_get_metrics(&metrics))
+         {
+            snprintf(entry, sizeof(entry), "%s: %.2f",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
+                  val);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+                  0, 0, NULL))
+               count++;
+         }
       }
    }
 #endif
 
+   /* Supports %s: yes/no */
    {
-      unsigned i;
-      char feat_str[NAME_MAX_LENGTH];
-      typedef struct menu_features_info
+      struct menu_features_info
       {
          bool enabled;
          enum msg_hash_enums msg;
-      } menu_features_info_t;
-
-      menu_features_info_t info_list[] = {
+      } info_list[] = {
          {SUPPORTS_LIBRETRODB, MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT},
          {SUPPORTS_OVERLAY,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT},
          {SUPPORTS_COMMAND,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT},
@@ -2151,24 +2054,18 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          {SUPPORTS_V4L2        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT},
          {SUPPORTS_LIBUSB      ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT},
       };
+      unsigned info_idx;
       const char *val_yes_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES);
       const char *val_no_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO);
 
-      for (i = 0; i < ARRAY_SIZE(info_list); i++)
+      for (info_idx = 0; info_idx < ARRAY_SIZE(info_list); info_idx++)
       {
-         len             = strlcpy(feat_str,
-               msg_hash_to_str(
-                  info_list[i].msg),
-               sizeof(feat_str));
-         feat_str[len  ] = ':';
-         feat_str[len+1] = ' ';
-         feat_str[len+2] = '\0';
-         strlcat(feat_str,
-               info_list[i].enabled ? val_yes_str : val_no_str,
-               sizeof(feat_str));
-         if (menu_entries_append(list, feat_str, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         snprintf(entry, sizeof(entry), "%s: %s",
+               msg_hash_to_str(info_list[info_idx].msg),
+               info_list[info_idx].enabled ? val_yes_str : val_no_str);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
             count++;
       }
    }
