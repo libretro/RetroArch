@@ -5078,7 +5078,7 @@ static void retroarch_print_version(void)
 #endif
    fprintf(stdout, " " __DATE__ "\n");
 
-   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str), 0);
+   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s\n", str);
 }
 
@@ -6377,7 +6377,7 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[256];
          char str[128];
-         retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str), 0);
+         retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
 #ifdef HAVE_GIT_VERSION
          snprintf(str_output, sizeof(str_output),
@@ -6942,207 +6942,63 @@ bool retroarch_override_setting_is_set(
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
-      char *s, size_t len, size_t _len)
+      char *str_out, size_t str_len)
 {
    switch (type)
    {
       case RARCH_CAPABILITIES_CPU:
          {
             uint64_t cpu = cpu_features_get();
-
-            if (cpu & RETRO_SIMD_MMX)
-            {
-               s[_len++] = 'M';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_MMXEXT)
-            {
-               s[_len++] = 'M';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len++] = 'E';
-               s[_len++] = 'X';
-               s[_len++] = 'T';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_SSE)
-            {
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_SSE2)
-            {
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '2';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_SSE3)
-            {
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '3';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_SSE4)
-            {
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '4';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_SSE42)
-            {
-               s[_len++] = 'S';
-               s[_len++] = 'S';
-               s[_len++] = 'E';
-               s[_len++] = '4';
-               s[_len++] = '.';
-               s[_len++] = '2';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_AES)
-            {
-               s[_len++] = 'A';
-               s[_len++] = 'E';
-               s[_len++] = 'S';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_AVX)
-            {
-               s[_len++] = 'A';
-               s[_len++] = 'V';
-               s[_len++] = 'X';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_AVX2)
-            {
-               s[_len++] = 'A';
-               s[_len++] = 'V';
-               s[_len++] = 'X';
-               s[_len++] = '2';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_NEON)
-            {
-               s[_len++] = 'N';
-               s[_len++] = 'E';
-               s[_len++] = 'O';
-               s[_len++] = 'N';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_VFPV3)
-            {
-               s[_len++] = 'V';
-               s[_len++] = 'F';
-               s[_len++] = 'P';
-               s[_len++] = 'v';
-               s[_len++] = '3';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_VFPV4)
-            {
-               s[_len++] = 'V';
-               s[_len++] = 'F';
-               s[_len++] = 'P';
-               s[_len++] = 'v';
-               s[_len++] = '4';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_VMX)
-            {
-               s[_len++] = 'V';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_VMX128)
-            {
-               s[_len++] = 'V';
-               s[_len++] = 'M';
-               s[_len++] = 'X';
-               s[_len++] = '1';
-               s[_len++] = '2';
-               s[_len++] = '8';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_VFPU)
-            {
-               s[_len++] = 'V';
-               s[_len++] = 'F';
-               s[_len++] = 'P';
-               s[_len++] = 'U';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_PS)
-            {
-               s[_len++] = 'P';
-               s[_len++] = 'S';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            if (cpu & RETRO_SIMD_ASIMD)
-            {
-               s[_len++] = 'A';
-               s[_len++] = 'S';
-               s[_len++] = 'I';
-               s[_len++] = 'M';
-               s[_len++] = 'D';
-               s[_len++] = ' ';
-               s[_len+1] = '\0';
-            }
-            s[_len-1] = '\0';
+            snprintf(str_out, str_len,
+               "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+               cpu & RETRO_SIMD_MMX ? "MMX " : "",
+               cpu & RETRO_SIMD_MMXEXT ? "MMXEXT " : "",
+               cpu & RETRO_SIMD_SSE ? "SSE " : "",
+               cpu & RETRO_SIMD_SSE2 ? "SSE2 " : "",
+               cpu & RETRO_SIMD_SSE3 ? "SSE3 " : "",
+               cpu & RETRO_SIMD_SSSE3 ? "SSSE3 " : "",
+               cpu & RETRO_SIMD_SSE4 ? "SSE4 " : "",
+               cpu & RETRO_SIMD_SSE42 ? "SSE42 " : "",
+               cpu & RETRO_SIMD_AES ? "AES " : "",
+               cpu & RETRO_SIMD_AVX ? "AVX " : "",
+               cpu & RETRO_SIMD_AVX2 ? "AVX2 " : "",
+               cpu & RETRO_SIMD_NEON ? "NEON " : "",
+               cpu & RETRO_SIMD_VFPV3 ? "VFPV3 " : "",
+               cpu & RETRO_SIMD_VFPV4 ? "VFPV4 " : "",
+               cpu & RETRO_SIMD_VMX ? "VMX " : "",
+               cpu & RETRO_SIMD_VMX128 ? "VMX128 " : "",
+               cpu & RETRO_SIMD_VFPU ? "VFPU " : "",
+               cpu & RETRO_SIMD_PS ? "PS " : "",
+               cpu & RETRO_SIMD_ASIMD ? "ASIMD " : "");
+            break;
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         snprintf(s, len, "%s: MSVC (%d) %u-bit",
+         snprintf(str_out, str_len, "%s: MSVC (%d) %u-bit",
                msg_hash_to_str(MSG_COMPILER),
                _MSC_VER, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
-         snprintf(s, len, "%s: SNC (%d) %u-bit",
+         snprintf(str_out, str_len, "%s: SNC (%d) %u-bit",
                msg_hash_to_str(MSG_COMPILER),
                __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-         snprintf(s, len, "%s: MinGW (%d.%d.%d) %u-bit",
+         snprintf(str_out, str_len, "%s: MinGW (%d.%d.%d) %u-bit",
                msg_hash_to_str(MSG_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-         snprintf(s, len, "%s: Clang/LLVM (%s) %u-bit",
+         snprintf(str_out, str_len, "%s: Clang/LLVM (%s) %u-bit",
                msg_hash_to_str(MSG_COMPILER),
                __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-         snprintf(s, len, "%s: GCC (%d.%d.%d) %u-bit",
+         snprintf(str_out, str_len, "%s: GCC (%d.%d.%d) %u-bit",
                msg_hash_to_str(MSG_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #else
-         snprintf(s, len, "%s %u-bit",
+         snprintf(str_out, str_len, "%s %u-bit",
                msg_hash_to_str(MSG_UNKNOWN_COMPILER),
                (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
