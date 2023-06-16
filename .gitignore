@@ -176,6 +176,12 @@ obj-unix/
 *.res
 retroarch.cfg
 Makefile.local
+pkg/msvc/**/ARM
+pkg/msvc/**/ARM64
+pkg/msvc/**/* Cg
+pkg/msvc/**/* QT
+pkg/msvc/**/* QT+CG
+pkg/msvc/**/x64
 
 # Emscripten artifacts
 
