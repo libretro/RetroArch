@@ -6864,7 +6864,7 @@ static void setting_get_string_representation_uint_user_language(
    LANG_DATA(HUNGARIAN)
 
    if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
-      snprintf(s, len, "%s", modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)]);
+      strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
    else
    {
       const char *rating = msg_hash_to_str(
