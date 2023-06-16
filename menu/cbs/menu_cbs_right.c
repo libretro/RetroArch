@@ -94,12 +94,12 @@ static int generic_shader_action_parameter_right_internal(unsigned type, const c
    return ret;
 }
 
-int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
+static int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
 {
    return generic_shader_action_parameter_right_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PARAMETER_0);
 }
 
-int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound)
+static int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound)
 {
    return generic_shader_action_parameter_right_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
@@ -119,7 +119,7 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
    return 0;
 }
 
-int action_right_cheat(unsigned type, const char *label,
+static int action_right_cheat(unsigned type, const char *label,
       bool wraparound)
 {
    size_t idx             = type - MENU_SETTINGS_CHEAT_BEGIN;
@@ -287,8 +287,12 @@ static int action_right_mainmenu(unsigned type, const char *label,
 #ifdef HAVE_XMB
    struct menu_state    *menu_st       = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
-   size_t size                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
+   const char *menu_ident              = (driver_ctx && driver_ctx->ident) 
+      ? driver_ctx->ident 
+      : NULL;
+   size_t size                         = (driver_ctx && driver_ctx->list_get_size) 
+      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) 
+      : 0;
    /* Tab switching functionality only applies
     * to XMB */
    if (  (size == 1)
@@ -299,7 +303,9 @@ static int action_right_mainmenu(unsigned type, const char *label,
       bool menu_nav_wraparound_enable  = settings->bools.menu_navigation_wraparound_enable;
       if (driver_ctx)
       {
-         selection          = (driver_ctx->list_get_selection) ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         selection          = (driver_ctx->list_get_selection) 
+            ? driver_ctx->list_get_selection(menu_st->userdata) 
+            : 0;
          if (driver_ctx->list_get_size)
          {
             horiz_size      = driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_HORIZONTAL);
@@ -396,8 +402,8 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    if (pass_count < GFX_MAX_SHADERS)
       shader->passes++;
 
-   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
-                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags          |=  MENU_ST_FLAG_PREVENT_POPULATE
+                            |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    video_shader_resolve_parameters(shader);
 
    shader->flags           |= SHDR_FLAG_MODIFIED;
@@ -909,7 +915,8 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
 }
 #endif
 #endif
-int core_setting_right(unsigned type, const char *label,
+
+static int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned idx     = type - MENU_SETTINGS_CORE_OPTION_START;
@@ -989,7 +996,7 @@ static int action_right_replay_slot(unsigned type, const char *label,
    return 0;
 }
 
-int bind_right_generic(unsigned type, const char *label,
+static int bind_right_generic(unsigned type, const char *label,
        bool wraparound)
 {
    return menu_setting_set(type, MENU_ACTION_RIGHT, wraparound);

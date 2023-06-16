@@ -246,9 +246,6 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx);
 
-int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
-int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound);
-
 int action_cancel_pop_with_new_pos(const char *path,
       const char *label, unsigned type, size_t idx, size_t new_idx);
 
@@ -267,12 +264,6 @@ int action_ok_path_use_directory(const char *path,
 
 int action_ok_directory_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int core_setting_right(unsigned type, const char *label,
-      bool wraparound);
-
-int action_right_cheat(unsigned type, const char *label,
-      bool wraparound);
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);
 
@@ -329,9 +320,6 @@ int action_scan_directory(const char *path,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 #endif
-
-int bind_right_generic(unsigned type, const char *label,
-       bool wraparound);
 
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
