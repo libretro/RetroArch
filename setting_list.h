@@ -212,8 +212,6 @@ struct rarch_setting
 int setting_set_with_string_representation(
       rarch_setting_t* setting, const char *value);
 
-unsigned setting_get_bind_type(rarch_setting_t *setting);
-
 RETRO_END_DECLS
 
 #endif

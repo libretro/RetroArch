@@ -554,13 +554,6 @@ static bool SETTINGS_LIST_APPEND_internal(
    return true;
 }
 
-unsigned setting_get_bind_type(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-   return setting->bind_type;
-}
-
 static int setting_bind_action_ok(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -617,7 +610,7 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    if (setting->index_offset)
       def_binds     = (struct retro_keybind*)retro_keybinds_rest;
 
-   bind_type        = setting_get_bind_type(setting);
+   bind_type        = setting->bind_type;
    keybind->key     = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
    keybind->mbutton = NO_BTN;

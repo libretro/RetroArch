@@ -1446,7 +1446,7 @@ static int menu_input_key_bind_set_mode_common(
 
             menu_displaylist_info_init(&info);
 
-            bind_type                = setting_get_bind_type(setting);
+            bind_type                = setting->bind_type;
 
             binds->begin             = bind_type;
             binds->last              = bind_type;
