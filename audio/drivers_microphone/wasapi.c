@@ -225,7 +225,7 @@ static int wasapi_microphone_read_buffered(
 
    /* Now that we have samples available, let's give them to the core */
 
-   bytes_read = MIN(buffer_size, bytes_available);
+   bytes_read = MIN((int)buffer_size, bytes_available);
    fifo_read(microphone->buffer, buffer, bytes_read);
    /* Read data from the sample queue and store it in the provided buffer */
 
