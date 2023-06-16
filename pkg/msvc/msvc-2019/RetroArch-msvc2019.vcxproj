@@ -721,6 +721,16 @@
     <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.Contains('QT'))">
+    <QtVersion Condition="'$(QtVersion)' == ''">5.15.2</QtVersion>
+    <QtBuild Condition="'$(Platform)'=='Win32'">msvc2019</QtBuild>
+    <QtBuild Condition="'$(Platform)'=='x64'">msvc2019_64</QtBuild>
+    <QtDirectory Condition="'$(QtDirectory)' == ''">C:\Qt\$(QtVersion)\$(QtBuild)</QtDirectory>
+    <QtInclude>$(QtDirectory)\include</QtInclude>
+    <IncludePath>$(QtInclude);$(QtInclude)\QtCore;$(QtInclude)\QtWidgets;$(QtInclude)\QtGui;$(QtInclude)\QtConcurrent;$(QtInclude)\QtNetwork;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath);$(QtDirectory)\lib</LibraryPath>
+    <ExecutablePath>$(QtDirectory)\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
