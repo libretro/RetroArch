@@ -256,13 +256,7 @@ int generic_action_ok_displaylist_push(const char *path, const char *new_path,
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound);
 
-int action_ok_push_generic_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-
 int action_ok_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int action_ok_directory_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);
