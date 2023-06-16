@@ -353,6 +353,132 @@ typedef struct rarch_setting_info
 
 /* SETTINGS LIST */
 
+/**
+ * setting_set_with_string_representation:
+ * @setting            : pointer to setting
+ * @value              : value for the setting (string)
+ *
+ * Set a settings' value with a string. It is assumed
+ * that the string has been properly formatted.
+ **/
+static int setting_set_with_string_representation(rarch_setting_t* setting,
+      const char* value)
+{
+   switch (setting->type)
+   {
+      case ST_INT:
+         {
+            char *ptr;
+            uint32_t flags                 = setting->flags;
+            *setting->value.target.integer = (int)strtol(value, &ptr, 10);
+            if (flags & SD_FLAG_HAS_RANGE)
+            {
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
+                  *setting->value.target.integer = min;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.integer = min;
+                  else
+                     *setting->value.target.integer = max;
+               }
+            }
+         }
+         break;
+      case ST_UINT:
+         {
+            char *ptr;
+            uint32_t flags = setting->flags;
+            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
+            if (flags & SD_FLAG_HAS_RANGE)
+            {
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
+                  *setting->value.target.unsigned_integer = min;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.unsigned_integer = min;
+                  else
+                     *setting->value.target.unsigned_integer = max;
+               }
+            }
+         }
+         break;
+      case ST_SIZE:
+         {
+            uint32_t flags = setting->flags;
+            sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
+            if (flags & SD_FLAG_HAS_RANGE)
+            {
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
+                  *setting->value.target.sizet = min;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.sizet = min;
+                  else
+                     *setting->value.target.sizet = max;
+               }
+            }
+         }
+         break;
+      case ST_FLOAT:
+         {
+            char *ptr;
+            uint32_t flags = setting->flags;
+            /* strtof() is C99/POSIX. Just use the more portable kind. */
+            *setting->value.target.fraction = (float)strtod(value, &ptr);
+            if (flags & SD_FLAG_HAS_RANGE)
+            {
+               float min   = setting->min;
+               float max   = setting->max;
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
+                  *setting->value.target.fraction = min;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings && settings->bools.menu_navigation_wraparound_enable)
+                     *setting->value.target.fraction = min;
+                  else
+                     *setting->value.target.fraction = max;
+               }
+            }
+         }
+         break;
+      case ST_PATH:
+      case ST_DIR:
+      case ST_STRING:
+      case ST_STRING_OPTIONS:
+      case ST_ACTION:
+         if (setting->value.target.string)
+            strlcpy(setting->value.target.string, value, setting->size);
+         break;
+      case ST_BOOL:
+         if (string_is_equal(value, "true"))
+            *setting->value.target.boolean = true;
+         else if (string_is_equal(value, "false"))
+            *setting->value.target.boolean = false;
+         break;
+      default:
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   return 0;
+}
+
+
 static void menu_input_st_uint_cb(void *userdata, const char *str)
 {
    if (str && *str)
@@ -382,8 +508,13 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
          const char *label           = menu_st->input_dialog_kb_label_setting;
-         rarch_setting_t *setting    = menu_setting_find(label);
-         setting_set_with_string_representation(setting, str);
+
+         if (!string_is_empty(label))
+         {
+            rarch_setting_t *setting = NULL;
+            if ((setting = menu_setting_find(label)))
+               setting_set_with_string_representation(setting, str);
+         }
       }
    }
 
@@ -404,8 +535,13 @@ static void menu_input_st_int_cb(void *userdata, const char *str)
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
          const char *label           = menu_st->input_dialog_kb_label_setting;
-         rarch_setting_t  *setting   = menu_setting_find(label);
-         setting_set_with_string_representation(setting, str);
+
+         if (!string_is_empty(label))
+         {
+            rarch_setting_t *setting = NULL;
+            if ((setting = menu_setting_find(label)))
+               setting_set_with_string_representation(setting, str);
+         }
       }
    }
 
@@ -426,8 +562,13 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
          const char *label           = menu_st->input_dialog_kb_label_setting;
-         rarch_setting_t  *setting   = menu_setting_find(label);
-         setting_set_with_string_representation(setting, str);
+
+         if (!string_is_empty(label))
+         {
+            rarch_setting_t *setting = NULL;
+            if ((setting = menu_setting_find(label)))
+               setting_set_with_string_representation(setting, str);
+         }
       }
    }
 
@@ -446,7 +587,10 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
          rarch_setting_t *setting = NULL;
          if ((setting = menu_setting_find(label)))
          {
-            setting_set_with_string_representation(setting, str);
+            if (setting->value.target.string)
+               strlcpy(setting->value.target.string, str, setting->size);
+            if (setting->change_handler)
+               setting->change_handler(setting);
             menu_setting_generic(setting, 0, false);
          }
       }
@@ -920,134 +1064,6 @@ static void setting_get_string_representation_int(
 {
    if (setting)
       snprintf(s, len, "%d", *setting->value.target.integer);
-}
-
-/**
- * setting_set_with_string_representation:
- * @setting            : pointer to setting
- * @value              : value for the setting (string)
- *
- * Set a settings' value with a string. It is assumed
- * that the string has been properly formatted.
- **/
-int setting_set_with_string_representation(rarch_setting_t* setting,
-      const char* value)
-{
-   if (!setting || !value)
-      return -1;
-
-   switch (setting->type)
-   {
-      case ST_INT:
-         {
-            char *ptr;
-            uint32_t flags = setting->flags;
-            *setting->value.target.integer = (int)strtol(value, &ptr, 10);
-            if (flags & SD_FLAG_HAS_RANGE)
-            {
-               float min   = setting->min;
-               float max   = setting->max;
-               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
-                  *setting->value.target.integer = min;
-               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
-               {
-                  settings_t *settings = config_get_ptr();
-                  if (settings && settings->bools.menu_navigation_wraparound_enable)
-                     *setting->value.target.integer = min;
-                  else
-                     *setting->value.target.integer = max;
-               }
-            }
-         }
-         break;
-      case ST_UINT:
-         {
-            char *ptr;
-            uint32_t flags = setting->flags;
-            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 10);
-            if (flags & SD_FLAG_HAS_RANGE)
-            {
-               float min   = setting->min;
-               float max   = setting->max;
-               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
-                  *setting->value.target.unsigned_integer = min;
-               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
-               {
-                  settings_t *settings = config_get_ptr();
-                  if (settings && settings->bools.menu_navigation_wraparound_enable)
-                     *setting->value.target.unsigned_integer = min;
-                  else
-                     *setting->value.target.unsigned_integer = max;
-               }
-            }
-         }
-         break;
-      case ST_SIZE:
-         {
-            uint32_t flags = setting->flags;
-            sscanf(value, "%" PRI_SIZET, setting->value.target.sizet);
-            if (flags & SD_FLAG_HAS_RANGE)
-            {
-               float min   = setting->min;
-               float max   = setting->max;
-               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.sizet < min)
-                  *setting->value.target.sizet = min;
-               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.sizet > max)
-               {
-                  settings_t *settings = config_get_ptr();
-                  if (settings && settings->bools.menu_navigation_wraparound_enable)
-                     *setting->value.target.sizet = min;
-                  else
-                     *setting->value.target.sizet = max;
-               }
-            }
-         }
-         break;
-      case ST_FLOAT:
-         {
-            char *ptr;
-            uint32_t flags = setting->flags;
-            /* strtof() is C99/POSIX. Just use the more portable kind. */
-            *setting->value.target.fraction = (float)strtod(value, &ptr);
-            if (flags & SD_FLAG_HAS_RANGE)
-            {
-               float min   = setting->min;
-               float max   = setting->max;
-               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.fraction < min)
-                  *setting->value.target.fraction = min;
-               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.fraction > max)
-               {
-                  settings_t *settings = config_get_ptr();
-                  if (settings && settings->bools.menu_navigation_wraparound_enable)
-                     *setting->value.target.fraction = min;
-                  else
-                     *setting->value.target.fraction = max;
-               }
-            }
-         }
-         break;
-      case ST_PATH:
-      case ST_DIR:
-      case ST_STRING:
-      case ST_STRING_OPTIONS:
-      case ST_ACTION:
-         if (setting->value.target.string)
-            strlcpy(setting->value.target.string, value, setting->size);
-         break;
-      case ST_BOOL:
-         if (string_is_equal(value, "true"))
-            *setting->value.target.boolean = true;
-         else if (string_is_equal(value, "false"))
-            *setting->value.target.boolean = false;
-         break;
-      default:
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return 0;
 }
 
 static int setting_fraction_action_left_default(

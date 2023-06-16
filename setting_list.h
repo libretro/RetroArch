@@ -201,17 +201,6 @@ struct rarch_setting
    uint8_t              index;
 };
 
-/**
- * setting_set_with_string_representation:
- * @setting            : pointer to setting
- * @value              : value for the setting (string)
- *
- * Set a settings' value with a string. It is assumed
- * that the string has been properly formatted.
- **/
-int setting_set_with_string_representation(
-      rarch_setting_t* setting, const char *value);
-
 RETRO_END_DECLS
 
 #endif

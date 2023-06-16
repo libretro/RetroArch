@@ -2038,8 +2038,10 @@ static int set_path_generic(const char *label, const char *action_path)
 
    if (setting)
    {
-      setting_set_with_string_representation(
-            setting, action_path);
+      if (setting->value.target.string)
+         strlcpy(setting->value.target.string, action_path, setting->size);
+      if (setting->change_handler)
+         setting->change_handler(setting);
       return menu_setting_generic(setting, 0, false);
    }
 
@@ -3235,7 +3237,10 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
 
       if (setting)
       {
-         setting_set_with_string_representation(setting, str);
+         if (setting->value.target.string)
+            strlcpy(setting->value.target.string, str, setting->size);
+         if (setting->change_handler)
+            setting->change_handler(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (!string_is_empty(label))
@@ -3493,7 +3498,10 @@ static void menu_input_st_string_cb_cheat_file_save_as(
 
       if (setting)
       {
-         setting_set_with_string_representation(setting, str);
+         if (setting->value.target.string)
+            strlcpy(setting->value.target.string, str, setting->size);
+         if (setting->change_handler)
+            setting->change_handler(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (!string_is_empty(label))
