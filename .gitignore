@@ -1,7 +1,11 @@
 *.o
+*.obj
+*.pdb
+*.exe
 *.bmpobj
 *.binobj
 *.so
+*.so.*
 *.dll
 *.a
 *.elf
@@ -16,7 +20,7 @@
 .tmp.cxx
 .moc.h
 .moc.cpp
-config.log
+*.log
 /.project
 /.externalToolBuilders/
 /retroarch
@@ -158,21 +162,18 @@ ui/drivers/moc_*
 obj-unix/
 .vagrant/
 
-/pkg/msvc/Release Cg/*.exe
+# Visual Studio
 /pkg/msvc/Release Cg/*.iobj
 /pkg/msvc/Release Cg/*.ipdb
-/pkg/msvc/Release Cg/*.pdb
 /pkg/msvc/Release Cg/*.lpl
 /pkg/msvc/Release Cg/*.cfg
 /pkg/msvc/*.db
 /pkg/msvc/.vs
 /pkg/msvc/*/.vs
-/pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.tlog
-/pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.lastbuildstate
-/pkg/msvc/msvc-2010/Release Cg/*.log
-/pkg/msvc/msvc-2010/Release Cg/*.obj
-/pkg/msvc/msvc-2010/Release Cg/*.res
-/pkg/msvc/msvc-2010/Release Cg/*.pdb
+*.tlog
+*.lastbuildstate
+*.FileListAbsolute.txt
+*.res
 retroarch.cfg
 Makefile.local
 
