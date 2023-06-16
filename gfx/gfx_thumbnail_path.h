@@ -50,6 +50,24 @@ enum gfx_thumbnail_id
 /* Prevent direct access to gfx_thumbnail_path_data_t members */
 typedef struct gfx_thumbnail_path_data gfx_thumbnail_path_data_t;
 
+/* Used fixed size char arrays here, just to avoid
+ * the inconvenience of having to calloc()/free()
+ * each individual entry by hand... */
+struct gfx_thumbnail_path_data
+{
+   enum playlist_thumbnail_mode playlist_right_mode;
+   enum playlist_thumbnail_mode playlist_left_mode;
+   size_t playlist_index;
+   char system[PATH_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
+   char content_label[PATH_MAX_LENGTH];
+   char content_core_name[PATH_MAX_LENGTH];
+   char content_db_name[PATH_MAX_LENGTH];
+   char content_img[PATH_MAX_LENGTH];
+   char right_path[PATH_MAX_LENGTH];
+   char left_path[PATH_MAX_LENGTH];
+};
+
 /* Initialisation */
 
 /* Creates new thumbnail path data container.
@@ -63,12 +81,6 @@ gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void);
 void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data);
 
 /* Utility Functions */
-
-/* Fetches the thumbnail subdirectory (Named_Snaps,
- * Named_Titles, Named_Boxarts) corresponding to the
- * specified 'type index' (1, 2, 3).
- * Returns true if 'type index' is valid */
-bool gfx_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory);
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
@@ -124,10 +136,6 @@ bool gfx_thumbnail_get_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumb
  * Returns true if 'system' is valid. */
 bool gfx_thumbnail_get_system(gfx_thumbnail_path_data_t *path_data, const char **system);
 
-/* Fetches current content path.
- * Returns true if content path is valid. */
-bool gfx_thumbnail_get_content_path(gfx_thumbnail_path_data_t *path_data, const char **content_path);
-
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
 bool gfx_thumbnail_get_label(gfx_thumbnail_path_data_t *path_data, const char **label);
@@ -135,10 +143,6 @@ bool gfx_thumbnail_get_label(gfx_thumbnail_path_data_t *path_data, const char **
 /* Fetches current thumbnail core name.
  * Returns true if core name is valid. */
 bool gfx_thumbnail_get_core_name(gfx_thumbnail_path_data_t *path_data, const char **core_name);
-
-/* Fetches current database name.
- * Returns true if database name is valid. */
-bool gfx_thumbnail_get_db_name(gfx_thumbnail_path_data_t *path_data, const char **db_name);
 
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
