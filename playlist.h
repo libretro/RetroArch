@@ -71,10 +71,6 @@ enum playlist_sort_mode
    PLAYLIST_SORT_MODE_OFF
 };
 
-/* TODO/FIXME - since gfx_thumbnail_path.h has now
- * been divorced from the menu code, perhaps jdgleaver
- * can refactor this? */
-
 /* Note: We already have a left/right enum defined
  * in gfx_thumbnail_path.h - but we can't include
  * menu code here, so have to make a 'duplicate'... */
