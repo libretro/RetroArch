@@ -365,7 +365,7 @@ test_nosimd:
     return 0;
 #endif
 }
-#elif defined(__ARM_NEON) || defined(__aarch64__)
+#elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
 #include <arm_neon.h>
 #define DRMP3_HAVE_SIMD 1
 #define DRMP3_VSTORE vst1q_f32
