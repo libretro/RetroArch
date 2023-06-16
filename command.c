@@ -688,7 +688,6 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {
    char state_path[16384];
-   retro_ctx_size_info_t info;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
@@ -697,10 +696,11 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    snprintf(reply, sizeof(reply) - 1, "LOAD_STATE_SLOT %d", slot);
    if (savestates_enabled)
    {
+      size_t info_size;
       runloop_get_savestate_path(state_path, sizeof(state_path), slot);
 
-      core_serialize_size(&info);
-      savestates_enabled = (info.size > 0);
+      info_size          = core_serialize_size();
+      savestates_enabled = (info_size > 0);
    }
    if (savestates_enabled)
    {
@@ -718,7 +718,6 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char replay_path[16384];
-   retro_ctx_size_info_t info;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
@@ -726,15 +725,17 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    replay_path[0]               = '\0';
    if (savestates_enabled)
    {
+      size_t info_size;
       runloop_get_replay_path(replay_path, sizeof(replay_path), slot);
 
-      core_serialize_size(&info);
-      savestates_enabled = (info.size > 0);
+      info_size          = core_serialize_size();
+      savestates_enabled = (info_size > 0);
    }
    if (savestates_enabled)
    {
       ret = movie_start_playback(input_state_get_ptr(), replay_path);
-      if (ret) {
+      if (ret)
+      {
          input_driver_state_t *input_st = input_state_get_ptr();
          task_queue_wait(NULL,NULL);
          if(input_st->bsv_movie_state_handle)
@@ -1924,7 +1925,6 @@ void command_event_remove_current_config(enum override_type type)
 
 bool command_event_main_state(unsigned cmd)
 {
-   retro_ctx_size_info_t info;
    char msg[128];
    char state_path[16384];
    settings_t *settings        = config_get_ptr();
@@ -1936,11 +1936,12 @@ bool command_event_main_state(unsigned cmd)
 
    if (savestates_enabled)
    {
+      size_t info_size;
       runloop_get_current_savestate_path(state_path,
             sizeof(state_path));
 
-      core_serialize_size(&info);
-      savestates_enabled = (info.size > 0);
+      info_size          = core_serialize_size();
+      savestates_enabled = (info_size > 0);
    }
 
   /* TODO: Load state should act in one of three ways:

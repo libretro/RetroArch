@@ -5052,21 +5052,18 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       /* Maybe record checkpoint */
       if (checkpoint_interval != 0 && handle->frame_ptr > 0 && (handle->frame_ptr % (checkpoint_interval*60) == 0))
       {
-         retro_ctx_size_info_t info;
          retro_ctx_serialize_info_t serial_info;
-         uint8_t *st;
-         uint64_t size;
          uint8_t frame_tok = REPLAY_TOKEN_CHECKPOINT_FRAME;
-         core_serialize_size(&info);
-         size              = swap_if_big64(info.size);
-         st                = (uint8_t*)malloc(info.size);
+         size_t info_size  = core_serialize_size();
+         uint64_t size     = swap_if_big64(info_size);
+         uint8_t *st       = (uint8_t*)malloc(info_size);
          serial_info.data  = st;
-         serial_info.size  = info.size;
+         serial_info.size  = info_size;
          core_serialize(&serial_info);
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
          intfstream_write(handle->file, &size, sizeof(uint64_t));
-         intfstream_write(handle->file, st, info.size);
+         intfstream_write(handle->file, st, info_size);
          free(st);
       }
       else

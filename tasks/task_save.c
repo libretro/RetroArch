@@ -622,13 +622,12 @@ static void task_save_handler_finished(retro_task_t *task,
 
 static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
-   retro_ctx_size_info_t info;
-   core_serialize_size(&info);
-   if (!info.size)
+   size_t info_size = core_serialize_size();
+   if (!info_size)
       return 0;
-   size->coremem_size = info.size;
+   size->coremem_size = info_size;
    /* 8-byte identifier, 8-byte block header, content, 8-byte terminator */
-   size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info.size) + 8;
+   size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
 #ifdef HAVE_CHEEVOS
    /* 8-byte block header + content */
    if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
@@ -1601,7 +1600,6 @@ static void task_push_load_and_save_state(const char *path, void *data,
 bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 {
    size_t serial_size;
-   retro_ctx_size_info_t info;
    void *data  = NULL;
 
    if (!core_info_current_supports_savestate())
@@ -1611,11 +1609,10 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
       return false;
    }
 
-   core_serialize_size(&info);
+   serial_size = core_serialize_size();
 
-   if (info.size == 0)
+   if (serial_size == 0)
       return false;
-   serial_size = info.size;
 
    if (!save_state_in_background)
    {
@@ -2045,7 +2042,6 @@ bool content_load_state_from_ram(void)
  **/
 bool content_save_state_to_ram(void)
 {
-   retro_ctx_size_info_t info;
    void *data  = NULL;
    size_t serial_size;
 
@@ -2056,11 +2052,10 @@ bool content_save_state_to_ram(void)
       return false;
    }
 
-   core_serialize_size(&info);
+   serial_size = core_serialize_size();
 
-   if (info.size == 0)
+   if (serial_size == 0)
       return false;
-   serial_size = info.size;
 
    if (!save_state_in_background)
    {

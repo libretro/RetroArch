@@ -7693,27 +7693,21 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
    return ret;
 }
 
-bool core_serialize_size(retro_ctx_size_info_t *info)
+size_t core_serialize_size(void)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (!info)
-      return false;
-   info->size = runloop_st->current_core.retro_serialize_size();
-   return true;
+   return runloop_st->current_core.retro_serialize_size();
 }
 
-bool core_serialize_size_special(retro_ctx_size_info_t *info)
+size_t core_serialize_size_special(void)
 {
+   size_t val;
    runloop_state_t *runloop_st = &runloop_state;
-
-   if (!info)
-      return false;
-
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-   info->size         = runloop_st->current_core.retro_serialize_size();
+   val                = runloop_st->current_core.retro_serialize_size();
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
-   return true;
+   return val;
 }
 
 uint64_t core_serialization_quirks(void)

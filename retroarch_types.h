@@ -225,11 +225,6 @@ typedef struct retro_ctx_serialize_info
    size_t size;
 } retro_ctx_serialize_info_t;
 
-typedef struct retro_ctx_size_info
-{
-   size_t size;
-} retro_ctx_size_info_t;
-
 typedef struct retro_callbacks
 {
    retro_video_refresh_t frame_cb;

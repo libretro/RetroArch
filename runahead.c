@@ -1025,12 +1025,10 @@ static void runahead_error(runloop_state_t *runloop_st)
 static bool runahead_create(runloop_state_t *runloop_st)
 {
    /* get savestate size and allocate buffer */
-   retro_ctx_size_info_t info;
-   video_driver_state_t *video_st           = video_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   size_t info_size               = core_serialize_size_special();
 
-   core_serialize_size_special(&info);
-
-   runahead_save_state_list_init(runloop_st, info.size);
+   runahead_save_state_list_init(runloop_st, info_size);
    if (video_st->flags & VIDEO_FLAG_ACTIVE)
       video_st->flags |=  VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
    else
@@ -1364,18 +1362,18 @@ static int16_t preempt_input_state(unsigned port,
 static const char* preempt_allocate(runloop_state_t *runloop_st,
       const uint8_t frames)
 {
-   preempt_t *preempt          = (preempt_t*)calloc(1, sizeof(preempt_t));
-   retro_ctx_size_info_t info;
    uint8_t i;
+   size_t info_size;
+   preempt_t *preempt          = (preempt_t*)calloc(1, sizeof(preempt_t));
 
    if (!(runloop_st->preempt_data = preempt))
       return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
 
-   core_serialize_size_special(&info);
-   if (!info.size)
+   info_size = core_serialize_size_special();
+   if (!info_size)
       return msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES);
 
-   preempt->state_size = info.size;
+   preempt->state_size = info_size;
    preempt->frames     = frames;
 
    for (i = 0; i < frames; i++)

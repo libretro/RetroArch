@@ -108,7 +108,7 @@ static bool bsv_movie_init_playback(
 
    if (state_size)
    {
-      retro_ctx_size_info_t info;
+      size_t info_size;
       retro_ctx_serialize_info_t serial_info;
       uint8_t *buf       = (uint8_t*)malloc(state_size);
 
@@ -123,13 +123,13 @@ static bool bsv_movie_init_playback(
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
       }
-      core_serialize_size( &info);
+      info_size              = core_serialize_size();
       /* For cores like dosbox, the reported size is not always
          correct. So we just give a warning if they don't match up. */
       serial_info.data_const = handle->state;
       serial_info.size       = state_size;
       core_unserialize(&serial_info);
-      if (info.size != state_size)
+      if (info_size != state_size)
       {
          RARCH_WARN("%s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
@@ -144,7 +144,7 @@ static bool bsv_movie_init_playback(
 static bool bsv_movie_init_record(
       bsv_movie_t *handle, const char *path)
 {
-   retro_ctx_size_info_t info;
+   size_t info_size;
    time_t t                     = time(NULL);
    time_t time_lil              = swap_if_big64(t);
    uint32_t state_size          = 0;
@@ -168,9 +168,9 @@ static bool bsv_movie_init_record(
    header[VERSION_INDEX]    = REPLAY_FORMAT_VERSION;
    header[CRC_INDEX]        = swap_if_big32(content_crc);
 
-   core_serialize_size(&info);
+   info_size                = core_serialize_size();
 
-   state_size               = (unsigned)info.size;
+   state_size               = (unsigned)info_size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    handle->identifier = (int64_t)t;

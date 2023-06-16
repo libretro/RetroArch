@@ -6739,16 +6739,15 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
 
 static bool netplay_init_serialization(netplay_t *netplay)
 {
-   size_t i;
-   retro_ctx_size_info_t info = {0};
+   size_t i, info_size;
 
    if (netplay->state_size)
       return true;
 
-   core_serialize_size_special(&info);
-   if (!info.size)
+   info_size = core_serialize_size_special();
+   if (!info_size)
       return false;
-   netplay->state_size = info.size;
+   netplay->state_size = info_size;
 
    for (i = 0; i < netplay->buffer_size; i++)
    {
