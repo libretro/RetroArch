@@ -2613,11 +2613,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Remplacer le périphérique d'entrée utilisé par défaut par le pilote de microphone. Cette option dépend du pilote."
+   "Remplace le périphérique d'entrée utilisé par défaut par le pilote de microphone. Cette option dépend du pilote."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Remplacer le périphérique d'entrée utilisé par défaut par le pilote de microphone. Cette option dépend du pilote."
+   "Remplacer le périphérique audio utilisé par défaut par le pilote audio. Cette option dépend du pilote."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
