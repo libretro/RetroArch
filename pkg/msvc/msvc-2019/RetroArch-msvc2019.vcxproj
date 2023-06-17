@@ -141,6 +141,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
@@ -165,165 +166,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+  <PropertyGroup Condition="'$(Platform)'=='Win32'">
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM64'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="$(Configuration.Contains('QT'))">
     <QtVersion Condition="'$(QtVersion)' == ''">5.15.2</QtVersion>
@@ -334,6 +181,15 @@
     <IncludePath>$(QtInclude);$(QtInclude)\QtCore;$(QtInclude)\QtWidgets;$(QtInclude)\QtGui;$(QtInclude)\QtConcurrent;$(QtInclude)\QtNetwork;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath);$(QtDirectory)\lib</LibraryPath>
     <ExecutablePath>$(QtDirectory)\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.ToLower().Contains('cg'))">
+    <IncludePath>$(CG_INC_PATH);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.ToLower().Contains('cg')) And $(Platform.Contains('64'))">
+    <LibraryPath>$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.ToLower().Contains('cg')) And $(!Platform.Contains('64'))">
+    <LibraryPath>$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
