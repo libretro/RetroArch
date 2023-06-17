@@ -138,6 +138,9 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
@@ -164,272 +167,176 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2015\include\QtCore;$(QtDirectory)\msvc2015\include\QtWidgets;$(QtDirectory)\msvc2015\include\QtGui;$(QtDirectory)\msvc2015\include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(QtDirectory)\msvc2015\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2015\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(CG_INC_PATH);$(IncludePath);$(DXSDK_DIR)Include;$(QtDirectory)\msvc2017_64\include\QtCore;$(QtDirectory)\msvc2017_64\include\QtWidgets;$(QtDirectory)\msvc2017_64\include\QtGui;$(QtDirectory)\msvc2017_64\include\QtNetwork;$(QtDirectory)\msvc2017_64\include\QtConcurrent;$(QtDirectory)\msvc2017_64\include\</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(QtDirectory)\msvc2017_64\lib;$(LibraryPath)</LibraryPath>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisRules />
-    <CodeAnalysisRuleAssemblies />
     <ExecutablePath>$(QtDirectory)\msvc2017_64\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="$(Configuration.Contains('QT'))">
