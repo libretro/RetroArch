@@ -72,6 +72,10 @@ MSG_HASH(
    "使用するコアを選択します."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "リブレトロのコア実装を参照します。ブラウザの起動先はCore Directoryのパスに依存します。空白の場合はルートから始まります。\nCore Directory がディレクトリの場合、メニューはそのディレクトリをトップフォルダとして使用します。 Core Directoryがフルパスの場合、ファイルがあるフォルダから起動します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "コンテンツをロード"
    )
@@ -200,6 +204,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "RetroArchを終了します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch を終了します。任意のハードな方法でプログラムを殺す(SIGKILLなど)。 設定を保存せずに RetroArch を終了させます。Unix ライクでは SIGINT/SIGTERM はクリーンな初期化を可能にします。"
    )
 
 /* Main Menu > Load Core */
@@ -585,6 +593,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "ビルド日付"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch バージョン"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1129,6 +1141,10 @@ MSG_HASH(
    "オーディオ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "オーディオ出力の設定を変更します."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "入力"
    )
@@ -1183,6 +1199,82 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    "ファイルブラウザの設定を変更します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "構成ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Unix圧縮アーカイブファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "設定ファイルを作る"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "データベースのカーソル表."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "構成ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "シェーダープリセットファイル。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "シェーダーファイル。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "チートファイル."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "オーバーレイの表示拡大率."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "データベースファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "TrueType フォント ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "絹（普通）"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "画像ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "リブレトロコア。これを選択すると、このコアがゲームに関連付けられます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretroコア。このコアをRetroArchにロードさせるにはこのファイルを選択してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "ディレクトリ。選択してこのディレクトリを開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1337,6 +1429,14 @@ MSG_HASH(
    "使用する入力ドライバです. 一部のビデオドライバは強制的に異なる入力ドライバを使用します. "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "Linuxraw入力ドライバにはアクティブなTTYが必要です。 キーボードイベントは TTY から直接読み取られ、簡単になりますが、udevほど柔軟ではありません。 マウスなどは全くサポートされていません。このドライバーは古いジョイスティックAPI(/dev/input/js*) を使用しています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "使用する入力ドライバです. 一部のビデオドライバは強制的に異なる入力ドライバを使用します."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "コントローラ"
    )
@@ -1351,6 +1451,86 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "使用するビデオドライバです. "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x ドライバーです。最小バージョン: OpenGL 1.1.1 はシェーダーをサポートしていません。可能であれば、後の OpenGL ドライバーを使用してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x ドライバー。ソフトウェアレンダリングされたコアに加えて、libretro GL コアを使用することができます。 最小バージョン: OpenGL 2.0 または OpenGLES 2.0 をサポートします。 GLSL シェーダーフォーマットをサポートします。 可能であれば代わりにglcore ドライバーを使用します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x ドライバー。ソフトウェアレンダリングされたコアに加えて、libretro GL コアを使用することができます。 最小バージョン: OpenGL 3.2 または OpenGLES 3.0 をサポートします。 GLSL シェーダーフォーマットをサポートします。 可能であれば代わりにglcore ドライバーを使用します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "OpenGL 1.0x ドライバー。ソフトウェアレンダリングされたコアに加えて、libretro GL コアを使用することができます。 最小バージョン: OpenGL または OpenGLES をサポートします。 GLSL シェーダーフォーマットをサポートします。 可能であれば代わりにglcore ドライバーを使用します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2ソフトウェアレンダリングされたドライバ。パフォーマンスは最適ではありません。最後の手段としてのみ使用することを検討してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2ソフトウェアレンダリングドライバ。ソフトウェアレンダリングされたリブレトロコア実装のパフォーマンスは、お客様のプラットフォームSDLの実装によって異なります。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Appleプラットフォーム用のメタルドライバ。Slangシェーダーフォーマットに対応しています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "シェーダーサポートのないDirect3D 8ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "古いCgシェーダー形式をサポートするDirect3D 9ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "古いCgシェーダー形式をサポートするDirect3D 9ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "古いCgシェーダー形式をサポートするDirect3D 10ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "古いCgシェーダー形式をサポートするDirect3D 11ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "古いCgシェーダー形式をサポートするDirect3D 12ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanXドライバ。ラズベリーパイ0のVideocoer IV GPUにDispmanX APIを使用。3. オーバーレイやシェーダーのサポートはありません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "ブリット操作にSamsung Exynos SoC の G2D ブロックを使用する低レベルの Exynos ビデオドライバー。レンダリングされたコアのパフォーマンスは最適でなければなりません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Plain DRM ビデオドライバ。GPUオーバーレイを使用したハードウェアスケーリングにlibdrmを使用した低レベルビデオドライバです。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Allwinner SoCsのG2Dブロックを使用する、低レベルのSunxiビデオドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii Uドライバ。スラングシェーダーをサポートしています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "ドライバを切り替えます。GLSLシェーダーフォーマットに対応しています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDIドライバ。旧式のWindowsインターフェースを使用します。推奨されません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,

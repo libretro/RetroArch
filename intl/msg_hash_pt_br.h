@@ -1489,6 +1489,10 @@ MSG_HASH(
    "Driver PulseAudio. Se o sistema usa PulseAudio, certifique-se de usar este driver em vez de, por exemplo, ALSA."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Microfone"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -2232,6 +2236,10 @@ MSG_HASH(
    "Altera as configurações de saída de áudio."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Microfone"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2383,6 +2391,10 @@ MSG_HASH(
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Microfone"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Dispositivo"
