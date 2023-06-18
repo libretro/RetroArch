@@ -4222,6 +4222,7 @@ void config_read_keybinds_conf(void *data)
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
    config_file_t            *conf = (config_file_t*)data;
+   bool key_store[RETROK_LAST]    = {0};
 
    if (!conf)
       return;
@@ -4255,15 +4256,19 @@ void config_read_keybinds_conf(void *data)
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
 
-         /* Clear old mapping bit */
-         BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, bind->key);
+         /* Clear old mapping bit unless just recently set */
+         if (!key_store[bind->key])
+            input_keyboard_mapping_bits(0, bind->key);
 
          entry                      = config_get_entry(conf, str);
          if (entry && !string_is_empty(entry->value))
             bind->key               = input_config_translate_str_to_rk(
                   entry->value);
-         /* Store mapping bit */
-         BIT512_SET_PTR(&input_st->keyboard_mapping_bits, bind->key);
+
+         /* Store new mapping bit and remember it for a while
+          * so that next clear leaves the new key alone */
+         input_keyboard_mapping_bits(1, bind->key);
+         key_store[bind->key]       = true;
 
          input_config_parse_joy_button  (str, conf, prefix, btn, bind);
          input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
