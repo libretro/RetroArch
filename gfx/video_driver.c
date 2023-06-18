@@ -43,10 +43,6 @@
 #include "../menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_NETWORKING
-#include "../network/netplay/netplay.h"
-#endif
-
 #ifdef _WIN32
 #include "common/win32_common.h"
 #endif
@@ -1685,6 +1681,7 @@ void video_driver_set_size(unsigned width, unsigned height)
  * false (0) if:
  * a) threaded video mode is enabled
  * b) less than 2 frame time samples.
+ * c) FPS monitor enable is off.
  **/
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
@@ -2532,34 +2529,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_slowmotion       = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
    video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
 
-#ifdef _WIN32
-#ifdef HAVE_VULKAN
-   /* Vulkan in Windows does mailbox emulation
-    * in fullscreen with vsync, effectively
-    * discarding frames that can't be shown,
-    * therefore do not do it twice. */
-   if (     string_is_equal(video_driver_get_ident(), "vulkan")
-         && settings->bools.video_vsync
-         && video_info->fullscreen)
-      video_info->fastforward_frameskip    = false;
-#endif
-#endif
-
-#ifdef HAVE_MENU
-   /* Count paused running menu also as paused runloop. */
-   if (video_info->menu_is_alive)
-   {
-#ifdef HAVE_NETWORKING
-      video_info->runloop_is_paused       |= settings->bools.menu_pause_libretro &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-#else
-      video_info->runloop_is_paused       |= settings->bools.menu_pause_libretro;
-#endif
-      video_info->runloop_is_paused       |= !video_info->libretro_running;
-   }
-#endif
-
-   video_info->input_driver_nonblock_state   = input_st ? (input_st->flags & INP_FLAG_NONBLOCKING) : false;
+   video_info->input_driver_nonblock_state = input_st
+         ? (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    video_info->input_driver_grab_mouse_state = (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
    video_info->disp_userdata                 = disp_get_ptr();
 
@@ -3291,7 +3262,6 @@ void video_driver_frame(const void *data, unsigned width,
    video_st->frame_cache_width   = width;
    video_st->frame_cache_height  = height;
    video_st->frame_cache_pitch   = pitch;
-   video_st->frame_discard       = false;
 
    if (
             video_st->scaler_ptr
@@ -3310,30 +3280,23 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_build_info(&video_info);
 
-   /* Take target refresh rate as initial FPS value instead of 0.00 */
-   if (!last_fps)
-      last_fps = video_info.refresh_rate;
-
    /* If fast forward is active and fast forward
-    * frame skipping is enabled, and when
-    * paused or menu active, drop any frames
-    * that occur at a rate higher than display
+    * frame skipping is enabled, drop any frames
+    * that occur at a rate higher than the core-set
     * refresh rate. However: We must always render
     * the current frame when:
+    * - The menu is open
     * - The last frame was NULL and the
     *   current frame is not (i.e. if core was
     *   previously sending duped frames, ensure
     *   that the next frame update is captured) */
-   if (  (     video_info.input_driver_nonblock_state
-            && video_info.fastforward_frameskip
-            && !(last_frame_duped && !!data)
-         )
-         || video_info.runloop_is_paused
-         )
+   if (   video_info.input_driver_nonblock_state
+       && video_info.fastforward_frameskip
+       &&  !(video_info.menu_is_alive
+       ||   (last_frame_duped && !!data)))
    {
       retro_time_t frame_time_accumulator_prev = frame_time_accumulator;
       retro_time_t frame_time_delta            = new_time - last_time;
-      retro_time_t frame_time_target           = 1000000.0f / video_info.refresh_rate;
 
       /* Ignore initial previous frame time
        * to prevent rubber band startup */
@@ -3341,10 +3304,6 @@ void video_driver_frame(const void *data, unsigned width,
          nonblock_active = -1;
       else if (nonblock_active < 0)
          nonblock_active = 1;
-
-      /* Plain paused and unrestricted menu rendering require harsh limiting */
-      if (video_info.runloop_is_paused)
-         video_st->frame_discard = true;
 
       /* Accumulate the elapsed time since the
        * last frame */
@@ -3354,18 +3313,18 @@ void video_driver_frame(const void *data, unsigned width,
       /* Render frame if the accumulated time is
        * greater than or equal to the expected
        * core frame time */
-      render_frame = frame_time_accumulator >= frame_time_target;
+      render_frame = frame_time_accumulator >=
+            video_st->core_frame_time;
 
       /* If frame is to be rendered, subtract
        * expected frame time from accumulator */
       if (render_frame)
       {
-         video_st->frame_discard = false;
-         frame_time_accumulator -= frame_time_target;
+         frame_time_accumulator -= video_st->core_frame_time;
 
          /* Prevent external frame limiters from
           * pushing fast forward ratio down to 1x */
-         if (frame_time_accumulator + frame_time_accumulator_prev < frame_time_target)
+         if (frame_time_accumulator + frame_time_accumulator_prev < video_st->core_frame_time)
             frame_time_accumulator -= frame_time_delta;
 
          /* If fast forward is working correctly,
@@ -3377,7 +3336,7 @@ void video_driver_frame(const void *data, unsigned width,
           * will never empty and may potentially
           * overflow. If a 'runaway' accumulator
           * is detected, we simply reset it */
-         if (frame_time_accumulator > frame_time_target)
+         if (frame_time_accumulator > video_st->core_frame_time)
             frame_time_accumulator = 0;
       }
    }
@@ -3389,9 +3348,6 @@ void video_driver_frame(const void *data, unsigned width,
 
    last_time        = new_time;
    last_frame_duped = !data;
-
-   if (video_st->frame_discard)
-      return;
 
    /* Get the amount of frames per seconds. */
    if (video_st->frame_count)
@@ -3698,7 +3654,6 @@ void video_driver_frame(const void *data, unsigned width,
       audio_stats.close_to_underrun          = 0.0f;
       audio_stats.close_to_blocking          = 0.0f;
 
-      audio_compute_buffer_statistics(&audio_stats);
       video_monitor_fps_statistics(NULL, &stddev, NULL);
 
       video_info.osd_stat_params.x           = 0.008f;
@@ -3710,7 +3665,10 @@ void video_driver_frame(const void *data, unsigned width,
       video_info.osd_stat_params.drop_y      = (video_info.font_size / DEFAULT_FONT_SIZE) * -3;
       video_info.osd_stat_params.drop_mod    = 0.1f;
       video_info.osd_stat_params.drop_alpha  = 0.9f;
-      video_info.osd_stat_params.color       = COLOR_ABGR(alpha, blue, green, red);
+      video_info.osd_stat_params.color       = COLOR_ABGR(
+            alpha, blue, green, red);
+
+      audio_compute_buffer_statistics(&audio_stats);
 
       latency_stats[0] = '\0';
       tmp[0]           = '\0';

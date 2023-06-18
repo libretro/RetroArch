@@ -42,7 +42,6 @@
 #endif
 
 #include "../audio/audio_driver.h"
-#include "../midi_driver.h"
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -5078,15 +5077,16 @@ unsigned menu_event(
    input_driver_state_t *input_st                  = input_state_get_ptr();
    input_driver_t *current_input                   = input_st->current_driver;
    const input_device_driver_t
-         *joypad                                   = input_st->primary_joypad;
+      *joypad                                      = input_st->primary_joypad;
 #ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad         = input_st->secondary_joypad;
+   const input_device_driver_t *sec_joypad         =
+      input_st->secondary_joypad;
 #else
    const input_device_driver_t *sec_joypad         = NULL;
 #endif
    gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
-   menu_handle_t *menu                             = menu_st->driver_data;
+   menu_handle_t             *menu                 = menu_st->driver_data;
    bool keyboard_mapping_blocked                   = input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
@@ -5095,12 +5095,13 @@ unsigned menu_event(
    bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
    bool pointer_enabled                            = settings->bools.menu_pointer_enable;
    unsigned input_touch_scale                      = settings->uints.input_touch_scale;
-   unsigned menu_scroll_delay                      = settings->uints.menu_scroll_delay;
+   unsigned menu_scroll_delay                      =
+      settings->uints.menu_scroll_delay;
 #ifdef HAVE_OVERLAY
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
    bool overlay_active                             = input_overlay_enable 
-         && (input_st->overlay_ptr)
-         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
+      && (input_st->overlay_ptr)
+      && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
@@ -5268,11 +5269,11 @@ unsigned menu_event(
           * for old_input_state. */
 
          first_held                 = true;
-         delay_count                = 0;
          if (initial_held)
             delay_timer             = menu_scroll_delay;
          else
-            delay_timer             = menu_scroll_delay / 8;
+            delay_timer             = menu_scroll_fast ? 100 : 20;
+         delay_count                = 0;
       }
 
       if (delay_count >= delay_timer)
@@ -5287,25 +5288,25 @@ unsigned menu_event(
          new_scroll_accel           = menu_st->scroll.acceleration;
 
          if (menu_scroll_fast)
-            new_scroll_accel        = MIN(new_scroll_accel + 1, 20);
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 64);
          else
             new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
       }
 
       initial_held                  = false;
-      delay_count                  += anim_get_ptr()->delta_time;
    }
    else
    {
       set_scroll                    = true;
       first_held                    = false;
       initial_held                  = true;
-      delay_count                   = 0;
       navigation_initial            = 0;
    }
 
    if (set_scroll)
       menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
+
+   delay_count                     += anim_get_ptr()->delta_time;
 
    if (display_kb)
    {
@@ -6100,6 +6101,7 @@ void menu_driver_toggle(
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
    bool pause_libretro                = false;
+   bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = runloop_st->flags &
@@ -6117,6 +6119,9 @@ void menu_driver_toggle(
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
       pause_libretro                  = settings->bools.menu_pause_libretro;
+#endif
+#ifdef HAVE_AUDIOMIXER
+      audio_enable_menu               = settings->bools.audio_enable_menu;
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6172,34 +6177,27 @@ void menu_driver_toggle(
 
       menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Enforce menu vsync accordingly. */
-      if (     settings->bools.menu_throttle_framerate
-            && current_video->set_nonblock_state)
+      /* Menu should always run with vsync on and
+       * a video swap interval of 1 */
+      if (current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,
                false,
-               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && video_adaptive_vsync,
-               1);
-
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+               video_adaptive_vsync,
+               1
+               );
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      /* Always disable FF & SM when entering menu. */
-      input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
-      runloop_st->flags            &= ~RUNLOOP_FLAG_FASTMOTION;
-      runloop_st->flags            &= ~RUNLOOP_FLAG_SLOWMOTION;
-#if defined(HAVE_GFX_WIDGETS)
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
-#endif
-      driver_set_nonblock_state();
-
       if (pause_libretro)
-      {
-         midi_driver_set_all_sounds_off();
+      { /* If the menu pauses the game... */
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
+
+         if (!audio_enable_menu) /* If the menu shouldn't have audio... */
+            command_event(CMD_EVENT_AUDIO_STOP, NULL);
       }
 
       /* Override keyboard callback to redirect to menu instead.
@@ -6226,9 +6224,15 @@ void menu_driver_toggle(
          driver_set_nonblock_state();
 
       if (pause_libretro)
-      {
+      { /* If the menu pauses the game... */
+
+         if (!audio_enable_menu) /* ...and the menu doesn't have audio... */
+            command_event(CMD_EVENT_AUDIO_START, NULL);
+            /* ...then re-enable the audio driver (which we shut off earlier) */
+
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
+         /* Start the microphone, if it was paused beforehand */
 #endif
       }
 
