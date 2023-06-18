@@ -104,15 +104,15 @@ struct shader_program_cg
 typedef struct cg_shader_data
 {
    struct video_shader *shader;
-   char alias_define[GFX_MAX_SHADERS][128];
-   unsigned active_idx;
-   unsigned attribs_index;
+   CGcontext cgCtx;
    CGparameter attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    CGprofile cgVProf;
    CGprofile cgFProf;
    struct shader_program_cg prg[GFX_MAX_SHADERS];
+   size_t attribs_index;
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   CGcontext cgCtx;
+   unsigned active_idx;
+   char alias_define[GFX_MAX_SHADERS][128];
 } cg_shader_data_t;
 
 struct uniform_cg
@@ -238,7 +238,7 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
 
 static void gl_cg_reset_attrib(void *data)
 {
-   int i;
+   size_t i;
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    for (i = 0; i < cg->attribs_index; i++)
       cgGLDisableClientState(cg->attribs_elems[i]);
