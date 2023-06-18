@@ -68,4 +68,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: retroarch-UWP-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
-          path: pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
+          path: pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc2019.exe
