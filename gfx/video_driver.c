@@ -47,6 +47,10 @@
 #include "common/win32_common.h"
 #endif
 
+#ifdef __WINRT__
+#include "../uwp/uwp_func.h"
+#endif
+
 #include "../audio/audio_driver.h"
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
