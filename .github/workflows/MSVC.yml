@@ -31,7 +31,7 @@ jobs:
       - name: Get short SHA
         id: slug
         shell: powershell
-        run: echo "::set-output name=sha8::$('${{env.GITHUB_SHA}}'.Substring(0,8))"
+        run: echo "::set-output name=sha8::$('${{github.sha}}'.Substring(0,8))"
 
       - uses: actions/upload-artifact@v3
         with:
@@ -59,7 +59,7 @@ jobs:
       - name: Get short SHA
         id: slug
         shell: powershell
-        run: echo "::set-output name=sha8::$('${{env.GITHUB_SHA}}'.Substring(0,8))"
+        run: echo "::set-output name=sha8::$('${{github.sha}}'.Substring(0,8))"
 
       - uses: actions/upload-artifact@v3
         with:
