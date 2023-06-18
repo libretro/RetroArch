@@ -4167,7 +4167,7 @@ static void *udev_input_init(const char *joypad_driver)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {
-          RARCH_DBG("[udev]: Mouse/Touch #%u: \"%s\" (%s) %s\n",
+          RARCH_LOG("[udev]: Mouse/Touch #%u: \"%s\" (%s) %s.\n",
              mouse,
              udev->devices[i]->ident,
              udev->devices[i]->mouse.abs ? "ABS" : "REL",
@@ -4179,7 +4179,7 @@ static void *udev_input_init(const char *joypad_driver)
        }
        else
        {
-          RARCH_DBG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
+          RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
              keyboard,
              udev->devices[i]->ident,
              udev->devices[i]->devnode);
