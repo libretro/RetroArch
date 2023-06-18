@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: retroarch-UWP-${{matrix.configuration}}-${{matrix.platform.}}-${{ steps.slug.outputs.sha8 }}
+          name: retroarch-UWP-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
           path: pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
 
   msvc-2019:
@@ -57,5 +57,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: retroarch-UWP-${{matrix.configuration}}-${{matrix.platform.}}-${{ steps.slug.outputs.sha8 }}
+          name: retroarch-UWP-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
           path: pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
