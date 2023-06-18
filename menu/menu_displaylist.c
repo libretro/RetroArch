@@ -1913,6 +1913,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Power Source */
          if (frontend->get_powerstate)
          {
+            size_t _len;
             int seconds = 0;
             int percent = 0;
             enum frontend_powerstate state =
@@ -1920,7 +1921,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
             /* N/A */
             if (state == FRONTEND_POWERSTATE_NONE)
-               snprintf(tmp, sizeof(entry), "%s",
+               snprintf(tmp, sizeof(tmp), "%s",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             /* n% (No Source) */
             else if (state == FRONTEND_POWERSTATE_NO_SOURCE)
@@ -1940,9 +1941,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING));
 
             /* Power Source */
-            snprintf(entry, sizeof(entry), "%s: %s",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
-                  tmp);
+            _len = snprintf(entry, sizeof(entry), "%s: ",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE));
+            strlcpy(entry + _len, tmp, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
