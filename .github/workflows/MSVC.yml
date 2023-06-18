@@ -26,7 +26,7 @@ jobs:
       - name: Compile RA
         working-directory: "${{github.workspace}}/pkg/msvc-uwp"
         run: |
-          msbuild -p:"Configuration=${{matrix.configuration}}" -p"Platform=${{matrix.platform}}" .\RetroArch-msvcUWP.sln
+          msbuild -p:"Configuration=${{matrix.configuration}}" -p:"Platform=${{matrix.platform}}" .\RetroArch-msvcUWP.sln
 
       - name: Get short SHA
         id: slug
@@ -54,7 +54,7 @@ jobs:
       - name: Compile RA
         working-directory: "${{github.workspace}}/pkg/msvc"
         run: |
-          msbuild -p:"Configuration=${{matrix.configuration}}" -p"Platform=${{matrix.platform}}" .\RetroArch-msvc2019.sln
+          msbuild -p:"Configuration=${{matrix.configuration}}" -p:"Platform=${{matrix.platform}}" .\RetroArch-msvc2019.sln
 
       - name: Get short SHA
         id: slug
