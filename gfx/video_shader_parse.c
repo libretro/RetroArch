@@ -262,7 +262,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
                break;
             case RARCH_WILDCARD_CORE_REQUESTED_ROTATION:
                {
-                  char rotation_replace_strings[4][PATH_MAX_LENGTH] = {
+                  char rotation_replace_strings[4][64] = {
                      "CORE-REQ-ROT-0",
                      "CORE-REQ-ROT-90",
                      "CORE-REQ-ROT-180",
@@ -279,7 +279,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
                break;
             case RARCH_WILDCARD_VIDEO_USER_ROTATION:
                {
-                  char rotation_replace_strings[4][PATH_MAX_LENGTH] = {
+                  char rotation_replace_strings[4][64] = {
                      "VID-USER-ROT-0",
                      "VID-USER-ROT-90",
                      "VID-USER-ROT-180",
@@ -293,7 +293,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
                break;
             case RARCH_WILDCARD_VIDEO_FINAL_ROTATION:
                {
-                  char rotation_replace_strings[4][PATH_MAX_LENGTH] = {
+                  char rotation_replace_strings[4][64] = {
                      "VID-FINAL-ROT-0",
                      "VID-FINAL-ROT-90",
                      "VID-FINAL-ROT-180",
@@ -304,7 +304,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
                break;
             case RARCH_WILDCARD_SCREEN_ORIENTATION:
                {
-                  char rotation_replace_strings[4][PATH_MAX_LENGTH] = {
+                  char rotation_replace_strings[4][64] = {
                      "SCREEN-ORIENT-0",
                      "SCREEN-ORIENT-90",
                      "SCREEN-ORIENT-180",
@@ -2031,7 +2031,7 @@ static bool video_shader_override_values(config_file_t *override_conf,
          /* If the texture is defined in the reference config */
          if (config_get_entry(override_conf, shader->lut[i].id))
          {
-            char *tex_path             = (char*)malloc(PATH_MAX_LENGTH);
+            char *tex_path = (char*)malloc(PATH_MAX_LENGTH);
 
             /* Texture path from the config */
             config_get_path(override_conf, shader->lut[i].id, tex_path, PATH_MAX_LENGTH);

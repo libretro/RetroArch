@@ -669,7 +669,7 @@ void runloop_runtime_log_deinit(
 {
    if (verbosity_is_enabled())
    {
-      char log[PATH_MAX_LENGTH] = {0};
+      char log[256]             = {0};
       unsigned hours            = 0;
       unsigned minutes          = 0;
       unsigned seconds          = 0;
@@ -1136,8 +1136,8 @@ static bool validate_game_specific_options(char **output)
    if (!validate_game_options(
             runloop_st->system.info.library_name,
             game_options_path,
-            sizeof(game_options_path), false) ||
-       !path_is_valid(game_options_path))
+            sizeof(game_options_path), false)
+       || !path_is_valid(game_options_path))
       return false;
 
    RARCH_LOG("[Core]: %s \"%s\".\n",
@@ -1182,8 +1182,8 @@ static bool validate_folder_specific_options(
 
    if (!validate_folder_options(
             folder_options_path,
-            sizeof(folder_options_path), false) ||
-       !path_is_valid(folder_options_path))
+            sizeof(folder_options_path), false)
+       || !path_is_valid(folder_options_path))
       return false;
 
    RARCH_LOG("[Core]: %s \"%s\".\n",
@@ -1365,15 +1365,15 @@ static void runloop_core_msg_queue_push(
    switch (msg->level)
    {
       case RETRO_LOG_WARN:
-         category = MESSAGE_QUEUE_CATEGORY_WARNING;
+         category  = MESSAGE_QUEUE_CATEGORY_WARNING;
          break;
       case RETRO_LOG_ERROR:
-         category = MESSAGE_QUEUE_CATEGORY_ERROR;
+         category  = MESSAGE_QUEUE_CATEGORY_ERROR;
          break;
       case RETRO_LOG_INFO:
       case RETRO_LOG_DEBUG:
       default:
-         category = MESSAGE_QUEUE_CATEGORY_INFO;
+         category  = MESSAGE_QUEUE_CATEGORY_INFO;
          break;
    }
 
@@ -2921,9 +2921,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          /* Can potentially be called every frame,
           * don't do anything unless required. */
-         if (  (geom->base_width   != in_geom->base_width)  ||
-               (geom->base_height  != in_geom->base_height) ||
-               (geom->aspect_ratio != in_geom->aspect_ratio))
+         if (     (geom->base_width   != in_geom->base_width)
+               || (geom->base_height  != in_geom->base_height) 
+               || (geom->aspect_ratio != in_geom->aspect_ratio))
          {
             geom->base_width   = in_geom->base_width;
             geom->base_height  = in_geom->base_height;
@@ -4901,8 +4901,8 @@ bool core_options_remove_override(bool game_specific)
 
    /* Sanity check 1 - if there are no core options
     * or no overrides are active, there is nothing to do */
-   if (          !coreopts ||
-         (       (!(runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE))
+   if (          !coreopts
+         || (    (!(runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE))
               && (!(runloop_st->flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE))
       ))
       return true;
@@ -7902,9 +7902,9 @@ void runloop_path_set_redirect(settings_t *settings,
 
    /* Get content directory name, if per-content-directory
     * saves/states are enabled */
-   if ((sort_savefiles_by_content_enable ||
-         sort_savestates_by_content_enable) &&
-       !string_is_empty(runloop_st->runtime_content_path_basename))
+   if (    (sort_savefiles_by_content_enable
+         || sort_savestates_by_content_enable)
+         && !string_is_empty(runloop_st->runtime_content_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
             runloop_st->runtime_content_path_basename,
             sizeof(content_dir_name));
@@ -7917,8 +7917,9 @@ void runloop_path_set_redirect(settings_t *settings,
 #endif
       {
          /* Per-core and/or per-content-directory saves */
-         if ((sort_savefiles_enable || sort_savefiles_by_content_enable)
-               && !string_is_empty(old_savefile_dir))
+         if ((       sort_savefiles_enable 
+                  || sort_savefiles_by_content_enable)
+                 && !string_is_empty(old_savefile_dir))
          {
             /* Append content directory name to save location */
             if (sort_savefiles_by_content_enable)

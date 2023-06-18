@@ -1939,47 +1939,46 @@ bool content_load_ram_file(unsigned slot)
 static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
-   time_t time_;
-   struct tm tm_;
-   char timebuf[256];
    char path[PATH_MAX_LENGTH + 256 + 32];
-   char application_data[PATH_MAX_LENGTH];
-
-   application_data[0]    = '\0';
    path            [0]    = '\0';
-   timebuf         [0]    = '\0';
 
-   if (!fill_pathname_application_data(application_data,
-            sizeof(application_data)))
-      return false;
+   if (fill_pathname_application_data(path,
+            sizeof(path)))
+   {
+      size_t _len;
+      time_t time_;
+      struct tm tm_;
+      char timebuf[256];
+      timebuf         [0] = '\0';
+      time(&time_);
 
-   time(&time_);
+      rtime_localtime(&time_, &tm_);
 
-   rtime_localtime(&time_, &tm_);
+      strftime(timebuf, 256 * sizeof(char),
+            "%Y-%m-%d-%H-%M-%S", &tm_);
 
-   strftime(timebuf,
-         256 * sizeof(char),
-         "%Y-%m-%d-%H-%M-%S", &tm_);
+      _len = strlcat(path, "/RetroArch-recovery-", sizeof(path));
 
-   snprintf(path, sizeof(path),
-         "%s/RetroArch-recovery-%u%s",
-         application_data, type,
-         timebuf);
+      snprintf(path + _len, sizeof(path) - _len,
+            "%u%s", type, timebuf);
 
-   /* Fallback (emergency) saves are always
-    * uncompressed
-    * > If a regular save fails, then the host
-    *   system is experiencing serious technical
-    *   difficulties (most likely some kind of
-    *   hardware failure)
-    * > In this case, we don't want to further
-    *   complicate matters by introducing zlib
-    *   compression overheads */
-   if (!filestream_write_file(path, data, size))
-      return false;
+      /* Fallback (emergency) saves are always
+       * uncompressed
+       * > If a regular save fails, then the host
+       *   system is experiencing serious technical
+       *   difficulties (most likely some kind of
+       *   hardware failure)
+       * > In this case, we don't want to further
+       *   complicate matters by introducing zlib
+       *   compression overheads */
+      if (filestream_write_file(path, data, size))
+      {
+         RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
+         return true;
+      }
+   }
 
-   RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
-   return true;
+   return false;
 }
 
 /**
