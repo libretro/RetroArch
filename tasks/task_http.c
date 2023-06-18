@@ -380,12 +380,13 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
    tmp[len  ] = ' ';
    tmp[len+1] = '\0';
+   len       += 1;
 
    if (string_ends_with_size(s, ".index",
             strlen(s), STRLEN_CONST(".index")))
       s       = msg_hash_to_str(MSG_INDEX_FILE);
 
-   strlcat(tmp, s, sizeof(tmp));
+   strlcpy(tmp + len, s, sizeof(tmp) - len);
 
    t->title = strdup(tmp);
    return t;

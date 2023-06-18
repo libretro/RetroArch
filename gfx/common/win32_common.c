@@ -2103,7 +2103,8 @@ static void win32_localize_menu(HMENU menu)
                      buf_size);
                new_label_text[_len  ]  = '\t';
                new_label_text[_len+1]  = '\0';
-               strlcat(new_label_text, meta_key_name, buf_size);
+	       _len                   += 1;
+               strlcpy(new_label_text + _len, meta_key_name, buf_size - _len);
                /* Make first character of shortcut name uppercase */
                new_label_text[len1 + 1] = toupper(new_label_text[len1 + 1]);
             }

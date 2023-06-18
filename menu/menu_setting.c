@@ -1048,12 +1048,15 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
    if (setting)
    {
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
-
-      snprintf(s, len, "%d", *setting->value.target.integer);
+      size_t _len = snprintf(s, len, "%d", *setting->value.target.integer);
       if (list && (*setting->value.target.integer < (int)list->size) && !string_is_empty(list->elems[*setting->value.target.integer].data))
       {
-         strlcat(s, " - ", len);
-         strlcat(s, list->elems[*setting->value.target.integer].data, len);
+         s[_len  ] = ' ';
+         s[_len+1] = '-';
+         s[_len+2] = ' ';
+         s[_len+3] = '\0';
+         _len     += 3;
+         strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
       }
    }
 }
@@ -6956,8 +6959,8 @@ static void setting_get_string_representation_uint_menu_screensaver_timeout(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    else
    {
-      snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
-      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len);
+      size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
+      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
    }
 }
 

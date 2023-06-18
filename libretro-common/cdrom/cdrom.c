@@ -1346,9 +1346,9 @@ struct string_list* cdrom_get_available_drives(void)
       if (string_starts_with_size(dir_list->elems[i].data, "/dev/sg",
                STRLEN_CONST("/dev/sg")))
       {
+         char drive_string[33];
          libretro_vfs_implementation_file *stream;
          char drive_model[32]             = {0};
-         char drive_string[33]            = {0};
          union string_list_elem_attr attr = {0};
          int dev_index                    = 0;
          RFILE *file                      = filestream_open(
@@ -1380,9 +1380,9 @@ struct string_list* cdrom_get_available_drives(void)
          attr.i    = dev_index;
 
          if (!string_is_empty(drive_model))
-            strlcat(drive_string, drive_model, sizeof(drive_string));
+            strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcat(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -1462,10 +1462,10 @@ struct string_list* cdrom_get_available_drives(void)
          continue;
 
       {
+         char drive_string[33];
          libretro_vfs_implementation_file *stream;
          bool is_cdrom                    = false;
          char drive_model[32]             = {0};
-         char drive_string[33]            = {0};
          union string_list_elem_attr attr = {0};
          RFILE *file = filestream_open(cdrom_path, RETRO_VFS_FILE_ACCESS_READ, 0);
          if (!file)
@@ -1481,9 +1481,9 @@ struct string_list* cdrom_get_available_drives(void)
          attr.i = path[0];
 
          if (!string_is_empty(drive_model))
-            strlcat(drive_string, drive_model, sizeof(drive_string));
+            strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcat(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }

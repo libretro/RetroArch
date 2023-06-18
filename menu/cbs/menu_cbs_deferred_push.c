@@ -421,19 +421,15 @@ static int general_push(menu_displaylist_info_t *info,
    {
       /* Need to use the scratch buffer here */
       char tmp_str[PATH_MAX_LENGTH];
-      char tmp_str2[PATH_MAX_LENGTH];
       fill_pathname_join_special(tmp_str, menu->scratch2_buf,
             menu->scratch_buf, sizeof(tmp_str));
-      fill_pathname_join_special(tmp_str2, menu->scratch2_buf,
-            menu->scratch_buf, sizeof(tmp_str2));
 
       if (!string_is_empty(info->path))
          free(info->path);
+      info->path      = strdup(tmp_str);
       if (!string_is_empty(info->label))
          free(info->label);
-
-      info->path      = strdup(tmp_str);
-      info->label     = strdup(tmp_str2);
+      info->label     = strdup(tmp_str);
    }
 
    info->type_default = FILE_TYPE_PLAIN;

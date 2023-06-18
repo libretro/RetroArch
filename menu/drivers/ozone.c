@@ -4148,7 +4148,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             sizeof(ozone->selection_core_name));
       ozone->selection_core_name[_len  ] = ' ';
       ozone->selection_core_name[_len+1] = '\0';
-      strlcat(ozone->selection_core_name, core_label, sizeof(ozone->selection_core_name));
+      _len                              += 1;
+      strlcpy(ozone->selection_core_name + _len, core_label, sizeof(ozone->selection_core_name) - _len);
 
       if (!scroll_content_metadata)
          linebreak_after_colon(&ozone->selection_core_name);
@@ -4198,7 +4199,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                sizeof(ozone->selection_playtime));
          ozone->selection_playtime[_len  ] = ' ';
          ozone->selection_playtime[_len+1] = '\0';
-         strlcat(ozone->selection_playtime, disabled_str, sizeof(ozone->selection_playtime));
+	 _len                             += 1;
+         strlcpy(ozone->selection_playtime + _len, disabled_str, sizeof(ozone->selection_playtime) - _len);
 
          _len                                = 
             strlcpy(ozone->selection_lastplayed,
@@ -4206,7 +4208,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                sizeof(ozone->selection_lastplayed));
          ozone->selection_lastplayed[_len  ] = ' ';
          ozone->selection_lastplayed[_len+1] = '\0';
-         strlcat(ozone->selection_lastplayed, disabled_str, sizeof(ozone->selection_lastplayed));
+	 _len                               += 1;
+         strlcpy(ozone->selection_lastplayed + _len, disabled_str, sizeof(ozone->selection_lastplayed) - _len);
       }
 
       if (!scroll_content_metadata)
@@ -9224,8 +9227,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
 #ifdef HAVE_DISCORD_OWN_AVATAR
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
          {
-            strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
-            strlcat(filename, FILE_PATH_PNG_EXTENSION, sizeof(filename));
+            size_t _len = strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
+            strlcpy(filename + _len, FILE_PATH_PNG_EXTENSION, sizeof(filename) - _len);
          }
          else
 #endif

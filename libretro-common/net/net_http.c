@@ -419,7 +419,8 @@ void net_http_urlencode_full(char *dest,
    buf_pos         = strlcpy(dest, url_domain, size);
    dest[buf_pos]   = '/';
    dest[buf_pos+1] = '\0';
-   strlcat(dest, tmp, size);
+   buf_pos        += 1;
+   strlcpy(dest + buf_pos, tmp, size - buf_pos);
    free (tmp);
 }
 

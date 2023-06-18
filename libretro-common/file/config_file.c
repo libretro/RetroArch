@@ -366,8 +366,8 @@ static void config_file_get_realpath(char *s, size_t len,
       const char *home = getenv("HOME");
       if (home)
       {
-         strlcpy(s, home,     len);
-         strlcat(s, path + 1, len);
+         size_t _len = strlcpy(s, home,     len);
+         strlcpy(s + _len, path + 1, len - _len);
       }
       else
          strlcpy(s, path + 1, len);

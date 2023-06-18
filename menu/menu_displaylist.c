@@ -555,17 +555,18 @@ static int menu_displaylist_parse_core_info(
 
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         size_t len;
+         size_t _len;
          if (!info_list[i].name)
             continue;
 
-         len        = strlcpy(tmp,
+         _len        = strlcpy(tmp,
                msg_hash_to_str(info_list[i].msg),
                sizeof(tmp));
-         tmp[len  ] = ':';
-         tmp[len+1] = ' ';
-         tmp[len+2] = '\0';
-         strlcat(tmp, info_list[i].name, sizeof(tmp));
+         tmp[_len  ] = ':';
+         tmp[_len+1] = ' ';
+         tmp[_len+2] = '\0';
+         _len       += 2;
+         strlcpy(tmp + _len, info_list[i].name, sizeof(tmp) - _len);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -575,12 +576,12 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->categories_list)
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -590,12 +591,12 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->authors_list)
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -605,12 +606,12 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->permissions_list)
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -620,12 +621,12 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->licenses_list)
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -635,13 +636,13 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->supported_extensions_list)
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -651,12 +652,12 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->required_hw_api)
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->required_hw_api_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -689,13 +690,14 @@ static int menu_displaylist_parse_core_info(
          break;
    }
    {
-      size_t len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL),
             sizeof(tmp));
-      tmp[len  ] = ':';
-      tmp[len+1] = ' ';
-      tmp[len+2] = '\0';
-      strlcat(tmp, savestate_support, sizeof(tmp));
+      tmp[_len  ] = ':';
+      tmp[_len+1] = ' ';
+      tmp[_len+2] = '\0';
+      _len       += 2;
+      strlcpy(tmp + _len, savestate_support, sizeof(tmp) - _len);
    }
 
    if (menu_entries_append(list, tmp, "",
@@ -2330,7 +2332,8 @@ static int create_string_list_rdb_entry_string(
    tmp[_len  ]    = ':';
    tmp[_len+1]    = ' ';
    tmp[_len+2]    = '\0';
-   strlcat(tmp, actual_string, sizeof(tmp));
+   _len          += 2;
+   strlcpy(tmp + _len, actual_string, sizeof(tmp) - _len);
    menu_entries_append(list, tmp, output_label,
          enum_idx,
          0, 0, 0, NULL);
@@ -2379,7 +2382,8 @@ static int create_string_list_rdb_entry_int(
    tmp[_len  ]     = ':';
    tmp[_len+1]     = ' ';
    tmp[_len+2]     = '\0';
-   strlcat(tmp, str, sizeof(tmp));
+   _len           += 2;
+   strlcpy(tmp + _len, str, sizeof(tmp) - _len);
    menu_entries_append(list, tmp, output_label,
          enum_idx,
          0, 0, 0, NULL);
@@ -2523,13 +2527,14 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       if (db_info_entry->name)
       {
-         size_t len = strlcpy(tmp,
+         size_t _len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
                sizeof(tmp));
-         tmp[len  ] = ':';
-         tmp[len+1] = ' ';
-         tmp[len+2] = '\0';
-         strlcat(tmp, db_info_entry->name, sizeof(tmp));
+         tmp[_len  ] = ':';
+         tmp[_len+1] = ' ';
+         tmp[_len+2] = '\0';
+         _len       += 2;
+         strlcpy(tmp + _len, db_info_entry->name, sizeof(tmp) - _len);
          menu_entries_append(info->list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_NAME),
                MENU_ENUM_LABEL_RDB_ENTRY_NAME,
@@ -2538,13 +2543,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       if (db_info_entry->description)
       {
-         size_t len = strlcpy(tmp,
+         size_t _len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION),
                sizeof(tmp));
-         tmp[len  ] = ':';
-         tmp[len+1] = ' ';
-         tmp[len+2] = '\0';
-         strlcat(tmp, db_info_entry->description, sizeof(tmp));
+         tmp[_len  ] = ':';
+         tmp[_len+1] = ' ';
+         tmp[_len+2] = '\0';
+         strlcpy(tmp + _len, db_info_entry->description, sizeof(tmp) - _len);
          menu_entries_append(info->list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION),
                MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION,
@@ -2553,13 +2558,14 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       if (db_info_entry->genre)
       {
-         size_t len = strlcpy(tmp,
+         size_t _len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE),
                sizeof(tmp));
-         tmp[len  ] = ':';
-         tmp[len+1] = ' ';
-         tmp[len+2] = '\0';
-         strlcat(tmp, db_info_entry->genre, sizeof(tmp));
+         tmp[_len  ] = ':';
+         tmp[_len+1] = ' ';
+         tmp[_len+2] = '\0';
+         _len       += 2;
+         strlcpy(tmp + _len, db_info_entry->genre, sizeof(tmp) - _len);
          menu_entries_append(info->list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_GENRE),
                MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
@@ -4783,7 +4789,8 @@ static unsigned menu_displaylist_parse_content_information(
          tmp[_len  ] = ':';
          tmp[_len+1] = ' ';
          tmp[_len+2] = '\0';
-         strlcat(tmp, db_name_no_ext, sizeof(tmp));
+         _len       += 2;
+         strlcpy(tmp + _len, db_name_no_ext, sizeof(tmp) - _len);
          if (menu_entries_append(info_list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
@@ -4797,19 +4804,18 @@ static unsigned menu_displaylist_parse_content_information(
    if (      !(core_supports_no_game
             && string_is_empty(content_path)))
    {
-      size_t _len;
-
       /* Content label */
-      _len        = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
             sizeof(tmp));
       tmp[_len  ] = ':';
       tmp[_len+1] = ' ';
       tmp[_len+2] = '\0';
-      strlcat(tmp, !string_is_empty(content_label)
+      _len       += 2;
+      strlcpy(tmp + _len, !string_is_empty(content_label)
                   ? content_label
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  sizeof(tmp));
+                  sizeof(tmp) - _len);
       if (menu_entries_append(info_list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LABEL),
             MENU_ENUM_LABEL_CONTENT_INFO_LABEL,
@@ -4823,10 +4829,11 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[_len  ] = ':';
       tmp[_len+1] = ' ';
       tmp[_len+2] = '\0';
-      strlcat(tmp, !string_is_empty(content_path)
+      _len       += 2;
+      strlcpy(tmp + _len, !string_is_empty(content_path)
                   ? content_path
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  sizeof(tmp));
+                  sizeof(tmp) - _len);
       if (menu_entries_append(info_list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
             MENU_ENUM_LABEL_CONTENT_INFO_PATH,
@@ -4844,7 +4851,8 @@ static unsigned menu_displaylist_parse_content_information(
       tmp[_len  ] = ':';
       tmp[_len+1] = ' ';
       tmp[_len+2] = '\0';
-      strlcat(tmp, core_name, sizeof(tmp));
+      _len       += 2;
+      strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
       if (menu_entries_append(info_list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
             MENU_ENUM_LABEL_CORE_INFORMATION, /* Shortcut to core info */
@@ -6333,6 +6341,7 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
    for (i = 0; i < net_st->room_count; i++)
    {
+      size_t _len;
       struct netplay_room *room = &net_st->room_list[i];
 
       /* Get rid of any room that is not running RetroArch. */
@@ -6379,22 +6388,22 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-         strlcpy(passworded, "[",  sizeof(passworded));
-         strlcat(passworded, msg_room_pwd, sizeof(passworded));
+         _len = strlcpy(passworded, "[",  sizeof(passworded));
+         strlcpy(passworded + _len, msg_room_pwd, sizeof(passworded) - _len);
          strlcat(passworded, "] ", sizeof(passworded));
       }
       else
          *passworded = '\0';
 
-      strlcpy(buf, passworded,     sizeof(buf));
-      strlcat(buf, room_type,      sizeof(buf));
+      _len = strlcpy(buf, passworded, sizeof(buf));
+      strlcpy(buf + _len, room_type,  sizeof(buf) - _len);
       strlcat(buf, ": ",           sizeof(buf));
       strlcat(buf, room->nickname, sizeof(buf));
 
       if (!room->lan && !string_is_empty(room->country))
       {
-         strlcpy(country, " (",          sizeof(country));
-         strlcat(country, room->country, sizeof(country));
+         _len = strlcpy(country, " (", sizeof(country));
+         strlcpy(country + _len, room->country, sizeof(country) - _len);
          strlcat(country, ")",           sizeof(country));
          strlcat(buf, country,           sizeof(buf));
       }
@@ -11476,7 +11485,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  sizeof(desc_label));
                            desc_label[_len  ] = ' ';
                            desc_label[_len+1] = '\0';
-                           strlcat(desc_label, descriptor, sizeof(desc_label));
+                           _len              += 1;
+                           strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
                            strlcpy(descriptor, desc_label, sizeof(descriptor));
                         }
 
@@ -11528,7 +11538,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  sizeof(desc_label));
                            desc_label[_len  ] = ' ';
                            desc_label[_len+1] = '\0';
-                           strlcat(desc_label, descriptor, sizeof(desc_label));
+                           _len              += 1;
+                           strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
                            strlcpy(descriptor, desc_label, sizeof(descriptor));
                         }
 
@@ -11635,10 +11646,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (!string_is_empty(cd_info.serial))
                         {
                            char serial[256];
-                           strlcpy(serial,
+                           size_t _len = strlcpy(serial,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                                  sizeof(serial));
-                           strlcat(serial, "#: ", sizeof(serial));
+                           strlcpy(serial + _len, "#: ", sizeof(serial) - _len);
                            strlcat(serial, cd_info.serial, sizeof(serial));
 
                            if (menu_entries_append(info->list,
@@ -12426,7 +12437,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      _len2        = strlcpy(buf, buf_tmp, sizeof(buf));
                      buf[_len2  ] = ' ';
                      buf[_len2+1] = '\0';
-                     strlcat(buf, val_filter, sizeof(buf));
+                     _len2       += 1;
+                     strlcpy(buf + _len2, val_filter, sizeof(buf) - _len2);
                      if (menu_entries_append(info->list, buf, shdr_filter_pass,
                               MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS,
                               MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0, NULL))
@@ -12435,7 +12447,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      _len2        = strlcpy(buf, buf_tmp, sizeof(buf));
                      buf[_len2  ] = ' ';
                      buf[_len2+1] = '\0';
-                     strlcat(buf, val_scale, sizeof(buf));
+                     _len2       += 1;
+                     strlcpy(buf + _len2, val_scale, sizeof(buf) - _len2);
                      if (menu_entries_append(info->list, buf, shdr_scale_pass,
                               MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
                               MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0, NULL))

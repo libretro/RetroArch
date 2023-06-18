@@ -3856,6 +3856,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[PATH_MAX_LENGTH];
    char resolved_core_path[PATH_MAX_LENGTH];
    struct menu_state *menu_st    = menu_state_get_ptr();
@@ -3891,8 +3892,8 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          &entry);
 
    /* Provide visual feedback */
-   strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
-   strlcat(msg, core_display_name, sizeof(msg));
+   _len = strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+   strlcpy(msg + _len, core_display_name, sizeof(msg) - _len);
    runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    menu_entries_pop_stack(&selection, 0, 1);
@@ -3947,18 +3948,18 @@ static int action_ok_set_switch_cpu_profile(const char *path,
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
-
 static int action_ok_set_switch_gpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char command[PATH_MAX_LENGTH];
    char *profile_name  = SWITCH_GPU_PROFILES[entry_idx];
    size_t _len         = strlcpy(command, "gpu-profile set ", sizeof(command));
    snprintf(command + _len, sizeof(command) - _len, "'%s'", profile_name);
    system(command);
    /* TODO/FIXME - localize */
-   strlcpy(command, "Current profile set to ", sizeof(command));
-   strlcat(command, profile_name, sizeof(command));
+   _len = strlcpy(command, "Current profile set to ", sizeof(command));
+   strlcpy(command + _len, profile_name, sizeof(command) - _len);
    runloop_msg_queue_push(command, 1, 90, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return -1;
@@ -7664,11 +7665,10 @@ int action_ok_core_lock(const char *path,
 
    if (!core_info_set_core_lock(core_path, lock))
    {
+      size_t _len;
       const char *core_name = NULL;
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
-
-      msg[0] = '\0';
 
       /* Need to fetch core name for error message */
 
@@ -7681,20 +7681,18 @@ int action_ok_core_lock(const char *path,
          core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
-      strlcpy(
-            msg,
+      _len = strlcpy(msg,
             msg_hash_to_str(lock ?
                   MSG_CORE_LOCK_FAILED : MSG_CORE_UNLOCK_FAILED),
             sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcat(msg, core_name, sizeof(msg));
+         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(
-         msg,
+      runloop_msg_queue_push(msg,
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -7728,11 +7726,10 @@ int action_ok_core_set_standalone_exempt(const char *path,
 
    if (!core_info_set_core_standalone_exempt(core_path, exempt))
    {
-      const char *core_name = NULL;
+      size_t _len;
+      const char *core_name  = NULL;
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
-
-      msg[0] = '\0';
 
       /* Need to fetch core name for error message */
 
@@ -7745,15 +7742,14 @@ int action_ok_core_set_standalone_exempt(const char *path,
          core_name = path_basename_nocompression(core_path);
 
       /* Build error message */
-      strlcpy(
-            msg,
+      _len = strlcpy(msg,
             msg_hash_to_str(exempt ?
                   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED :
                   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED),
             sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcat(msg, core_name, sizeof(msg));
+         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
@@ -7780,11 +7776,10 @@ static int action_ok_core_delete(const char *path,
    /* Check whether core is locked */
    if (core_info_get_core_lock(core_path, true))
    {
+      size_t _len;
       const char *core_name  = NULL;
       core_info_t *core_info = NULL;
       char msg[PATH_MAX_LENGTH];
-
-      msg[0] = '\0';
 
       /* Need to fetch core name for notification */
 
@@ -7797,10 +7792,10 @@ static int action_ok_core_delete(const char *path,
          core_name = path_basename_nocompression(core_path);
 
       /* Build notification message */
-      strlcpy(msg, msg_hash_to_str(MSG_CORE_DELETE_DISABLED), sizeof(msg));
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_DELETE_DISABLED), sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcat(msg, core_name, sizeof(msg));
+         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       runloop_msg_queue_push(
          msg,
@@ -7827,10 +7822,9 @@ static int action_ok_core_delete(const char *path,
     * interface */
    if (play_feature_delivery_enabled())
    {
+      size_t _len;
       const char *core_filename = path_basename_nocompression(core_path);
       char backup_core_path[PATH_MAX_LENGTH];
-
-      backup_core_path[0] = '\0';
 
       if (play_feature_delivery_core_installed(core_filename))
          play_feature_delivery_delete(core_filename);
@@ -7846,13 +7840,13 @@ static int action_ok_core_delete(const char *path,
        * accumulation of mess, additionally check
        * for and remove any such backups when deleting
        * a core */
-      strlcpy(backup_core_path, core_path,
+      _len = strlcpy(backup_core_path, core_path,
             sizeof(backup_core_path));
-      strlcat(backup_core_path, FILE_PATH_BACKUP_EXTENSION,
-            sizeof(backup_core_path));
+      strlcpy(backup_core_path + _len, FILE_PATH_BACKUP_EXTENSION,
+            sizeof(backup_core_path) - _len);
 
-      if (!string_is_empty(backup_core_path) &&
-          path_is_valid(backup_core_path))
+      if (  !string_is_empty(backup_core_path)
+          && path_is_valid(backup_core_path))
          filestream_delete(backup_core_path);
    }
    else

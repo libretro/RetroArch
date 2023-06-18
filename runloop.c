@@ -6507,10 +6507,12 @@ static enum runloop_state_enum runloop_check_state(
                   cur_state_slot);
          _len = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
 
-         snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d", settings->ints.state_slot);
          if (cur_state_slot < 0)
-            strlcat(msg, " (Auto)", sizeof(msg));
+            snprintf(msg + _len, sizeof(msg) - _len,
+                  ": %d (Auto)", settings->ints.state_slot);
+         else
+            snprintf(msg + _len, sizeof(msg) - _len,
+                  ": %d", settings->ints.state_slot);
 
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)
@@ -6567,10 +6569,12 @@ static enum runloop_state_enum runloop_check_state(
                   cur_replay_slot);
          _len = strlcpy(msg, msg_hash_to_str(MSG_REPLAY_SLOT), sizeof(msg));
 
-         snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d", settings->ints.replay_slot);
          if (cur_replay_slot < 0)
-            strlcat(msg, " (Auto)", sizeof(msg));
+            snprintf(msg + _len, sizeof(msg) - _len,
+                  ": %d (Auto)", settings->ints.replay_slot);
+         else
+            snprintf(msg + _len, sizeof(msg) - _len,
+                  ": %d", settings->ints.replay_slot);
 
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)
