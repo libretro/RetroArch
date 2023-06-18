@@ -181,7 +181,7 @@ typedef struct
     * up to (but excluding) the point where it's converted to 16-bit audio
     * to give to the driver.
     */
-   float  *output_samples_buf;
+   float *output_samples_buf;
    size_t output_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
@@ -229,8 +229,7 @@ typedef struct
    size_t buffer_size;
    size_t data_ptr;
 
-   unsigned free_samples_buf[
-      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+   unsigned free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 
 #ifdef HAVE_AUDIOMIXER
    float mixer_volume_gain;
@@ -252,7 +251,7 @@ typedef struct
 #endif
 
    /* Sample the flush delta-time when fast forwarding to find the correct
-   ressample ratio. */
+   resample ratio. */
    retro_time_t last_flush_time;
    /* Exponential moving average */
    retro_time_t avg_flush_delta;

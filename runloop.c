@@ -2674,9 +2674,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.sample_rate);
 
             memcpy(av_info, *info, sizeof(*av_info));
-            video_st->core_frame_time = 1000000 /
-                  ((video_st->av_info.timing.fps > 0.0) ?
-                        video_st->av_info.timing.fps : 60.0);
 
             command_event(CMD_EVENT_REINIT, &reinit_flags);
 
@@ -4507,13 +4504,9 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
 
    if (!core_verify_api_version(runloop_st))
       return false;
+
    core_init_libretro_cbs(runloop_st, &runloop_st->retro_ctx);
-
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
-   video_st->core_frame_time = 1000000 /
-         ((video_st->av_info.timing.fps > 0.0) ?
-               video_st->av_info.timing.fps : 60.0);
-
    return true;
 }
 
@@ -4692,11 +4685,11 @@ void runloop_pause_checks(void)
 #ifdef HAVE_PRESENCE
    presence_userdata_t userdata;
 #endif
+   video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
    bool is_idle                   = runloop_st->flags & RUNLOOP_FLAG_IDLE;
 #if defined(HAVE_GFX_WIDGETS)
-   video_driver_state_t *video_st = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
    if (widgets_active)
@@ -4719,6 +4712,8 @@ void runloop_pause_checks(void)
 
       if (!is_idle)
          video_driver_cached_frame();
+
+      midi_driver_set_all_sounds_off();
 
 #ifdef HAVE_PRESENCE
       userdata.status = PRESENCE_GAME_PAUSED;
@@ -4747,6 +4742,9 @@ void runloop_pause_checks(void)
 
    /* Signal/reset paused rewind to take the initial step */
    runloop_st->run_frames_and_pause = -1;
+
+   /* Ignore frame delay target temporarily */
+   video_st->frame_delay_pause      = true;
 }
 
 struct string_list *path_get_subsystem_list(void)
@@ -5400,6 +5398,10 @@ static enum runloop_state_enum runloop_check_state(
    if (!aptMainLoop())
       return RUNLOOP_STATE_QUIT;
 #endif
+
+   /* When frames are generated quicker than necessary */
+   if (video_st->frame_discard)
+      return RUNLOOP_STATE_PAUSE;
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
 
