@@ -3427,25 +3427,27 @@ void video_driver_frame(const void *data, unsigned width,
 
       if ((video_st->frame_count % fps_update_interval) == 0)
       {
+         size_t new_len;
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
 
-         video_st->window_title_len = strlcpy(video_st->window_title,
-               video_st->title_buf, sizeof(video_st->window_title));
+         new_len = strlcpy(video_st->window_title, video_st->title_buf, 
+               sizeof(video_st->window_title));
 
          if (!string_is_empty(status_text))
          {
-            video_st->window_title[video_st->window_title_len  ] = ' ';
-            video_st->window_title[video_st->window_title_len+1] = '|';
-            video_st->window_title[video_st->window_title_len+2] = '|';
-            video_st->window_title[video_st->window_title_len+3] = ' ';
-            video_st->window_title[video_st->window_title_len+4] = '\0';
-            video_st->window_title_len = strlcat(video_st->window_title,
+            video_st->window_title[new_len    ] = ' ';
+            video_st->window_title[new_len + 1] = '|';
+            video_st->window_title[new_len + 2] = '|';
+            video_st->window_title[new_len + 3] = ' ';
+            video_st->window_title[new_len + 4] = '\0';
+            new_len = strlcat(video_st->window_title,
                   status_text, sizeof(video_st->window_title));
          }
 
-         curr_time        = new_time;
-         video_st->flags |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+         curr_time                  = new_time;
+         video_st->window_title_len = new_len;
+         video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
       }
    }
    else
@@ -3495,12 +3497,12 @@ void video_driver_frame(const void *data, unsigned width,
           * message at the end */
          if (!string_is_empty(status_text))
          {
-            status_text[buf_pos  ] = ' ';
-            status_text[buf_pos+1] = '|';
-            status_text[buf_pos+2] = '|';
-            status_text[buf_pos+3] = ' ';
-            status_text[buf_pos+4] = '\0';
-            buf_pos                = strlcat(status_text,
+            status_text[buf_pos    ] = ' ';
+            status_text[buf_pos + 1] = '|';
+            status_text[buf_pos + 2] = '|';
+            status_text[buf_pos + 3] = ' ';
+            status_text[buf_pos + 4] = '\0';
+            buf_pos                  = strlcat(status_text,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text));
          }
@@ -3699,8 +3701,8 @@ void video_driver_frame(const void *data, unsigned width,
       if (len)
       {
 	      /* TODO/FIXME - localize */
-	      strlcpy(latency_stats, "LATENCY\n", sizeof(latency_stats));
-	      strlcat(latency_stats, tmp, sizeof(latency_stats));
+	      size_t _len = strlcpy(latency_stats, "LATENCY\n", sizeof(latency_stats));
+	      strlcpy(latency_stats + _len, tmp, sizeof(latency_stats) - _len);
       }
 
       /* TODO/FIXME - localize */

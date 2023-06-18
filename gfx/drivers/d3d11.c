@@ -1550,25 +1550,23 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
                D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
-         char vs_path[PATH_MAX_LENGTH];
-         char ps_path[PATH_MAX_LENGTH];
+         char _path[PATH_MAX_LENGTH];
          const char *slang_path = d3d11->shader_preset->pass[i].source.path;
          const char *vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
-
-         strlcpy(vs_path, slang_path, sizeof(vs_path));
-         strlcpy(ps_path, slang_path, sizeof(ps_path));
-         strlcat(vs_path, ".vs.hlsl", sizeof(vs_path));
-         strlcat(ps_path, ".ps.hlsl", sizeof(ps_path));
+         size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
+         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
          if (!d3d11_init_shader(
-                  d3d11->device, vs_src, 0, vs_path, "main", NULL, NULL, desc, countof(desc),
+                  d3d11->device, vs_src, 0, _path, "main", NULL, NULL, desc, countof(desc),
                   &d3d11->pass[i].shader,
                   feat_level_hint
                   )) { }
 
+         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+
          if (!d3d11_init_shader(
-                  d3d11->device, ps_src, 0, ps_path, NULL, "main", NULL, NULL, 0,
+                  d3d11->device, ps_src, 0, _path, NULL, "main", NULL, NULL, 0,
                   &d3d11->pass[i].shader,
                   feat_level_hint
                   )) { }

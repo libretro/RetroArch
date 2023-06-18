@@ -383,9 +383,9 @@ void* task_push_http_transfer_file(const char* url, bool mute,
 
    if (string_ends_with_size(s, ".index",
             strlen(s), STRLEN_CONST(".index")))
-      strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
-   else
-      strlcat(tmp, s, sizeof(tmp));
+      s       = msg_hash_to_str(MSG_INDEX_FILE);
+
+   strlcat(tmp, s, sizeof(tmp));
 
    t->title = strdup(tmp);
    return t;

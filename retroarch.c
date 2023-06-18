@@ -6364,6 +6364,7 @@ bool retroarch_main_init(int argc, char *argv[])
          if (!string_is_empty(cpu_model))
          {
             size_t _len;
+            /* TODO/FIXME - localize */
             strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ",
                   sizeof(str_output));
             _len               = strlcat(str_output, cpu_model, sizeof(str_output));

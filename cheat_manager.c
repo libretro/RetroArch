@@ -193,37 +193,34 @@ bool cheat_manager_save(
 
    for (i = 0; i < cheat_st->size; i++)
    {
+      size_t _len;
       unsigned j;
-      char endian_key[100];
-      char key[256];
-      char desc_key[128];
-      char code_key[128];
-      char enable_key[128];
       char formatted_number[12];
+      char var_key[128];
+      char key[256];
  
       formatted_number[0] = '\0';
       snprintf(formatted_number, sizeof(formatted_number), "cheat%u_", i);
 
-      strlcpy(endian_key, formatted_number, sizeof(endian_key));
-      strlcat(endian_key, "big_endian", sizeof(endian_key));
-      strlcpy(desc_key, formatted_number, sizeof(desc_key));
-      strlcat(desc_key, "desc", sizeof(desc_key));
-      strlcpy(code_key, formatted_number, sizeof(code_key));
-      strlcat(code_key, "code", sizeof(code_key));
-      strlcpy(enable_key, formatted_number, sizeof(enable_key));
-      strlcat(enable_key, "enable", sizeof(enable_key));
+      _len = strlcpy(var_key, formatted_number, sizeof(var_key));
 
+      strlcpy(var_key + _len, "desc", sizeof(var_key) - _len);
       if (!string_is_empty(cheat_st->cheats[i].desc))
-         config_set_string(conf, desc_key, cheat_st->cheats[i].desc);
+         config_set_string(conf, var_key, cheat_st->cheats[i].desc);
       else
-         config_set_string(conf, desc_key, cheat_st->cheats[i].code);
+         config_set_string(conf, var_key, cheat_st->cheats[i].code);
 
-      config_set_string(conf, code_key, cheat_st->cheats[i].code);
-      config_set_string(conf, enable_key,
+      strlcpy(var_key + _len, "code", sizeof(var_key) - _len);
+      config_set_string(conf, var_key, cheat_st->cheats[i].code);
+
+      strlcpy(var_key + _len, "enable", sizeof(var_key) - _len);
+      config_set_string(conf, var_key,
                cheat_st->cheats[i].state 
             ? "true" 
             : "false");
-      config_set_string(conf, endian_key,
+
+      strlcpy(var_key + _len, "big_endian", sizeof(var_key) - _len);
+      config_set_string(conf, var_key,
                cheat_st->cheats[i].big_endian
             ? "true"
             : "false"

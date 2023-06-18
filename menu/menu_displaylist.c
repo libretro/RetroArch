@@ -5578,8 +5578,8 @@ static int menu_displaylist_parse_input_description_kbd_list(
       else
       {
          /* TODO/FIXME: Localize 'Keyboard' */
-         strlcpy(input_description, "Keyboard ", sizeof(input_description));
-         strlcat(input_description, key_label, sizeof(input_description));
+         size_t _len = strlcpy(input_description, "Keyboard ", sizeof(input_description));
+         strlcpy(input_description + _len, key_label, sizeof(input_description) - _len);
       }
 
       /* Add menu entry */
@@ -6366,7 +6366,7 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          strlcpy(country, " (",          sizeof(country));
          strlcat(country, room->country, sizeof(country));
          strlcat(country, ")",           sizeof(country));
-	 strlcat(buf, country,           sizeof(buf));
+         strlcat(buf, country,           sizeof(buf));
       }
       else
          *country = '\0';
@@ -11579,9 +11579,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         if (!string_is_empty(cd_info.title))
                         {
+                           /* TODO/FIXME - localize */
                            char title[sizeof("Title: ") + sizeof(cd_info.title)]; /* TODO/FIXME - C89 compliance */
-                           strlcpy(title, "Title: ", sizeof(title));
-                           strlcat(title, cd_info.title, sizeof(title));
+                           size_t _len = strlcpy(title, "Title: ", sizeof(title));
+                           strlcpy(title + _len, cd_info.title, sizeof(title) - _len);
 
                            if (menu_entries_append(info->list,
                                     title,
@@ -11595,8 +11596,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            char system[256];
                            /* TODO/FIXME - Localize */
-                           strlcpy(system, "System: ", sizeof(system));
-                           strlcat(system, cd_info.system, sizeof(system));
+                           size_t _len = strlcpy(system, "System: ", sizeof(system));
+                           strlcpy(system + _len, cd_info.system, sizeof(system) - _len);
 
                            if (menu_entries_append(info->list,
                                     system,
@@ -11627,8 +11628,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            char version[256];
                            /* TODO/FIXME - localize */
-                           strlcpy(version, "Version: ", sizeof(version));
-                           strlcat(version, cd_info.version, sizeof(version));
+                           size_t _len = strlcpy(version, "Version: ", sizeof(version));
+                           strlcpy(version + _len, cd_info.version, sizeof(version) - _len);
 
                            if (menu_entries_append(info->list,
                                     version,
@@ -11642,10 +11643,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            char release_date[256];
                            /* TODO/FIXME - Localize */
-                           strlcpy(release_date, "Release Date: ",
+                           size_t _len = strlcpy(release_date, "Release Date: ",
                                  sizeof(release_date));
-                           strlcat(release_date, cd_info.release_date,
-                                 sizeof(release_date));
+                           strlcpy(release_date + _len, cd_info.release_date,
+                                 sizeof(release_date) - _len);
 
                            if (menu_entries_append(info->list,
                                     release_date,
@@ -12087,71 +12088,61 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
 #ifdef HAVE_AUDIOMIXER
             {
-               char lbl_play[128];
-               char lbl_play_looped[128];
-               char lbl_play_sequential[128];
-               char lbl_remove[128];
-               char lbl_stop[128];
-               char lbl_volume[128];
+               char lbl[128];
                char mixer_stream_str[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
                size_t _len                 = strlcpy(mixer_stream_str, "mixer_stream_", sizeof(mixer_stream_str));
-
-               lbl_remove[0] = lbl_stop[0] = lbl_play[0] = lbl_play_looped[0] = '\0';
-               lbl_volume[0] = lbl_play_sequential[0]                         = '\0';
+               
+               lbl[0]                      = '\0';
 
                snprintf(mixer_stream_str + _len, sizeof(mixer_stream_str) - _len, "%d", id);
-               strlcpy(lbl_volume,          mixer_stream_str,         sizeof(lbl_volume));
-               strlcpy(lbl_stop,            mixer_stream_str,         sizeof(lbl_stop));
-               strlcpy(lbl_remove,          mixer_stream_str,         sizeof(lbl_remove));
-               strlcpy(lbl_play,            mixer_stream_str,         sizeof(lbl_play));
-               strlcpy(lbl_play_looped,     mixer_stream_str,         sizeof(lbl_play_looped));
-               strlcpy(lbl_play_sequential, mixer_stream_str,         sizeof(lbl_play_sequential));
-               strlcat(lbl_volume,          "_action_volume",         sizeof(lbl_volume));
-               strlcat(lbl_stop,            "_action_stop",           sizeof(lbl_stop));
-               strlcat(lbl_remove,          "_action_remove",         sizeof(lbl_remove));
-               strlcat(lbl_play,            "_action_play",           sizeof(lbl_play));
-               strlcat(lbl_play_looped,     "_action_play_looped",    sizeof(lbl_play_looped));
-               strlcat(lbl_play_sequential, "_action_play_sequential",sizeof(lbl_play_sequential));
 
+               _len = strlcpy(lbl, mixer_stream_str, sizeof(lbl));
+
+               strlcpy(lbl + _len, "_action_play", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY),
-                        lbl_play,
+                        lbl,
                         MSG_UNKNOWN,
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
+               strlcpy(lbl + _len, "_action_play_looped", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED),
-                        lbl_play_looped,
+                        lbl,
                         MSG_UNKNOWN,
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
+               strlcpy(lbl + _len, "_action_play_sequential",sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL),
-                        lbl_play_sequential,
+                        lbl,
                         MSG_UNKNOWN,
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
+               strlcpy(lbl + _len, "_action_stop", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP),
-                        lbl_stop,
+                        lbl,
                         MSG_UNKNOWN,
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
+               strlcpy(lbl + _len, "_action_remove", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE),
-                        lbl_remove,
+                        lbl,
                         MSG_UNKNOWN,
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
+               strlcpy(lbl + _len, "_action_volume", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
-                        lbl_volume,
+                        lbl,
                         MSG_UNKNOWN,
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN  +  id),
                         0, 0, NULL))

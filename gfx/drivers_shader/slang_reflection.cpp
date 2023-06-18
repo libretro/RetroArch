@@ -373,15 +373,15 @@ bool slang_reflect(
 
    /* Validate use of unexpected types. */
    if (
-         !vertex.sampled_images.empty()    ||
-         !vertex.storage_buffers.empty()   ||
-         !vertex.subpass_inputs.empty()    ||
-         !vertex.storage_images.empty()    ||
-         !vertex.atomic_counters.empty()   ||
-         !fragment.storage_buffers.empty() ||
-         !fragment.subpass_inputs.empty()  ||
-         !fragment.storage_images.empty()  ||
-         !fragment.atomic_counters.empty())
+            !vertex.sampled_images.empty()
+         || !vertex.storage_buffers.empty()
+         || !vertex.subpass_inputs.empty()
+         || !vertex.storage_images.empty()
+         || !vertex.atomic_counters.empty()
+         || !fragment.storage_buffers.empty()
+         || !fragment.subpass_inputs.empty()
+         || !fragment.storage_images.empty()
+         || !fragment.atomic_counters.empty())
    {
       RARCH_ERR("[slang]: Invalid resource type detected.\n");
       return false;
@@ -687,8 +687,8 @@ bool slang_reflect(
 
    {
       char buf[64];
-      strlcpy(buf, "[slang]:\n", sizeof(buf));
-      strlcat(buf, FILE_PATH_LOG_INFO, sizeof(buf));
+      size_t _len = strlcpy(buf, "[slang]:\n", sizeof(buf));
+      strlcpy(buf + _len, FILE_PATH_LOG_INFO, sizeof(buf) - _len);
       strlcat(buf, " [slang]:   Parameters:\n", sizeof(buf));
       RARCH_LOG(buf);
    }

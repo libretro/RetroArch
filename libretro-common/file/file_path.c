@@ -328,14 +328,16 @@ bool path_is_compressed_file(const char* path)
 size_t fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
+   size_t _len, _len2;
    char tmp_path[PATH_MAX_LENGTH];
    char *tok   = NULL;
    strlcpy(tmp_path, in_path, sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
-   strlcpy(out_path, tmp_path, size);
-   return strlcat(out_path, replace, size);
+   _len  = strlcpy(out_path, tmp_path, size);
+   _len2 = strlcpy(out_path + _len, replace, size - _len);
+   return _len + _len2;
 }
 
 

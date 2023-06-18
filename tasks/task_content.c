@@ -1046,16 +1046,19 @@ static bool content_file_load(
                   else
                      new_basedir[0] = '\0';
 
-                  if (string_is_empty(new_basedir) ||
-                     !path_is_directory(new_basedir) ||
-                     !is_path_accessible_using_standard_io(new_basedir))
+                  if (   string_is_empty  (new_basedir)
+                     || !path_is_directory(new_basedir)
+                     || !is_path_accessible_using_standard_io(new_basedir))
                   {
+                     size_t _len;
                      DWORD basedir_attribs;
                      RARCH_WARN("[Content]: Tried copying to cache directory, "
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
-                     strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcat(new_basedir, "VFSCACHE\\", sizeof(new_basedir));
+                     _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
+                     strlcpy(new_basedir + _len,
+                           "VFSCACHE\\",
+                           sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);
                      if (       (basedir_attribs == INVALID_FILE_ATTRIBUTES) 
                            || (!(basedir_attribs & FILE_ATTRIBUTE_DIRECTORY)))

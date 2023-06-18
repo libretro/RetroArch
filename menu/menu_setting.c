@@ -6552,8 +6552,8 @@ static void setting_get_string_representation_uint_autosave_interval(
 
    if (*setting->value.target.unsigned_integer)
    {
-      snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
-      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len);
+      size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
+      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -6570,8 +6570,8 @@ static void setting_get_string_representation_uint_replay_checkpoint_interval(
 
    if (*setting->value.target.unsigned_integer)
    {
-      snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
-      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len);
+      size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
+      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);

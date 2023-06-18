@@ -318,8 +318,8 @@ runtime_log_t *runtime_log_init(
        * the name of the core itself */
       if (supports_no_game)
       {
-         strlcpy(content_name, core_name, sizeof(content_name));
-         strlcat(content_name, ".lrtl", sizeof(content_name));
+         size_t _len = strlcpy(content_name, core_name, sizeof(content_name));
+         strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
       }
    }
    /* NOTE: TyrQuake requires a specific hack, since all
@@ -332,17 +332,19 @@ runtime_log_t *runtime_log_init(
          size_t path_length = last_slash + 1 - content_path;
          if (path_length < PATH_MAX_LENGTH)
          {
+            size_t _len;
             memset(tmp_buf, 0, sizeof(tmp_buf));
             strlcpy(tmp_buf,
                   content_path, path_length * sizeof(char));
-            strlcpy(content_name,
+            _len = strlcpy(content_name,
                   path_basename(tmp_buf), sizeof(content_name));
-            strlcat(content_name, ".lrtl", sizeof(content_name));
+            strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
          }
       }
    }
    else
    {
+      size_t _len;
       /* path_remove_extension() requires a char * (not const)
        * so have to use a temporary buffer... */
       char *tmp_buf_no_ext = NULL;
@@ -353,8 +355,8 @@ runtime_log_t *runtime_log_init(
       if (string_is_empty(tmp_buf_no_ext))
          return NULL;
 
-      strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
-      strlcat(content_name, ".lrtl", sizeof(content_name));
+      _len = strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
+      strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
    }
 
    if (string_is_empty(content_name))
@@ -510,12 +512,13 @@ void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
    s[_len+1]   = '\0';
    if (runtime_log)
    {
+      size_t _len2;
       char t[64];
-      t[0] = '\0';
-      snprintf(t, sizeof(t), "%02u:%02u:%02u",
+      t[0]  = '\0';
+      _len2 = snprintf(t, sizeof(t), "%02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
-      strlcat(s, t, len);
+      strlcpy(s + _len2, t, len - _len2);
    }
    else
    {
@@ -569,6 +572,7 @@ static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
 static bool runtime_last_played_human(runtime_log_t *runtime_log,
       char *str, size_t len)
 {
+   size_t _len;
    struct tm time_info;
    time_t last_played;
    time_t current;
@@ -607,13 +611,14 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
       delta /= periods[i];
 
    /* Generate string */
-   snprintf(tmp, sizeof(tmp), "%u ", (int)delta);
+   _len = snprintf(tmp, sizeof(tmp), "%u ", (int)delta);
    if (delta == 1)
-      strlcat(tmp, msg_hash_to_str((enum msg_hash_enums)units[i][0]),
-            sizeof(tmp));
+      strlcpy(tmp + _len, msg_hash_to_str((enum msg_hash_enums)units[i][0]),
+            sizeof(tmp) - _len);
    else
-      strlcat(tmp, msg_hash_to_str((enum msg_hash_enums)units[i][1]),
-            sizeof(tmp));
+      strlcpy(tmp + _len, msg_hash_to_str((enum msg_hash_enums)units[i][1]),
+            sizeof(tmp) - _len);
+
    strlcat(str, tmp, len);
    strlcat(str, " ", len);
    strlcat(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO), len);

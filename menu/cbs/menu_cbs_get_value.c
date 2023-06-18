@@ -97,6 +97,7 @@ static void menu_action_setting_audio_mixer_stream_volume(
       const char *path,
       char *s2, size_t len2)
 {
+   size_t _len;
    unsigned offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
    *w              = 19;
    strlcpy(s2, path, len2);
@@ -104,8 +105,8 @@ static void menu_action_setting_audio_mixer_stream_volume(
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
 
-   snprintf(s, len, "%.2f", audio_driver_mixer_get_stream_volume(offset));
-   strlcat(s, " dB", len);
+   _len = snprintf(s, len, "%.2f", audio_driver_mixer_get_stream_volume(offset));
+   strlcpy(s + _len, " dB", len - _len);
 }
 #endif
 
@@ -908,8 +909,8 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
       /* TODO/FIXME - Localize */
-      strlcpy(s, "Keyboard ", len);
-      strlcat(s, key_descriptors[key_id].desc, len);
+      size_t _len = strlcpy(s, "Keyboard ", len);
+      strlcpy(s + _len, key_descriptors[key_id].desc, len - _len);
    }
    else
    {

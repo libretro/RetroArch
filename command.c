@@ -1257,6 +1257,7 @@ bool command_event_save_auto_state(
       bool savestate_auto_save,
       const enum rarch_core_type current_core_type)
 {
+   size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    char savestate_name_auto[PATH_MAX_LENGTH];
 
@@ -1271,12 +1272,12 @@ bool command_event_save_auto_state(
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return false;
 
-   strlcpy(savestate_name_auto,
+   _len = strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
          sizeof(savestate_name_auto));
-   strlcat(savestate_name_auto,
+   strlcpy(savestate_name_auto + _len,
          ".auto",
-         sizeof(savestate_name_auto));
+         sizeof(savestate_name_auto) - _len);
 
    if (content_save_state((const char*)savestate_name_auto, true, true))
 	   RARCH_LOG("%s \"%s\" %s.\n",
@@ -1367,6 +1368,7 @@ bool command_event_load_entry_state(settings_t *settings)
 
 void command_event_load_auto_state(void)
 {
+   size_t _len;
    char savestate_name_auto[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
 
@@ -1382,12 +1384,12 @@ void command_event_load_auto_state(void)
       return;
 #endif
 
-   strlcpy(savestate_name_auto,
+   _len = strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
          sizeof(savestate_name_auto));
-   strlcat(savestate_name_auto,
+   strlcpy(savestate_name_auto + _len,
          ".auto",
-         sizeof(savestate_name_auto));
+         sizeof(savestate_name_auto) - _len);
 
    if (!path_is_valid(savestate_name_auto))
       return;

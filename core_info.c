@@ -1340,7 +1340,7 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
       const char *core_exts, bool show_hidden_files)
 {
-   size_t i;
+   size_t i, _len;
    char exts[32];
    core_path_list_t *path_list       = NULL;
    struct string_list *core_ext_list = NULL;
@@ -1375,11 +1375,12 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * > core + lock */
-   strlcpy(exts, core_exts, sizeof(exts));
-   strlcat(exts, "|lck",      sizeof(exts));
+   _len = strlcpy(exts, core_exts, sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcat(exts, "|lsae", sizeof(exts));
+   strlcpy(exts + _len, "|lck|lsae", sizeof(exts) - _len);
+#else
+   strlcpy(exts + _len, "|lck",      sizeof(exts) - _len);
 #endif
 
    /* Fetch core directory listing */
@@ -1617,21 +1618,21 @@ static void core_info_resolve_firmware(
 
    for (i = 0; i < firmware_count; i++)
    {
-      char path_key[64];
-      char desc_key[64];
-      char opt_key[64];
+      size_t _len2;
+      char key[64];
       struct config_entry_list *entry = NULL;
       bool tmp_bool                   = false;
 
       snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
-      strlcpy(path_key,  prefix,           sizeof(path_key));
-      strlcat(path_key,  "path",           sizeof(path_key));
-      strlcpy(desc_key,  prefix,           sizeof(desc_key));
-      strlcat(desc_key,  "desc",           sizeof(desc_key));
-      strlcpy(opt_key,   prefix,           sizeof(opt_key));
-      strlcat(opt_key,   "opt",            sizeof(opt_key));
+      _len2 = strlcpy(key, prefix, sizeof(key));
+      strlcpy(key + _len2, "opt", sizeof(key) - _len2);
 
-      entry = config_get_entry(conf, path_key);
+      if (config_get_bool(conf, key, &tmp_bool))
+         firmware[i].optional = tmp_bool;
+
+      strlcpy(key + _len2, "path", sizeof(key) - _len2);
+
+      entry = config_get_entry(conf, key);
 
       if (entry && !string_is_empty(entry->value))
       {
@@ -1639,16 +1640,15 @@ static void core_info_resolve_firmware(
          entry->value     = NULL;
       }
 
-      entry = config_get_entry(conf, desc_key);
+      strlcpy(key + _len2, "desc", sizeof(key) - _len2);
+
+      entry = config_get_entry(conf, key);
 
       if (entry && !string_is_empty(entry->value))
       {
          firmware[i].desc = entry->value;
          entry->value     = NULL;
       }
-
-      if (config_get_bool(conf, opt_key , &tmp_bool))
-         firmware[i].optional = tmp_bool;
    }
 
    info->firmware_count = firmware_count;
