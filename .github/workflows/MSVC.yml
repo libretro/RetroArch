@@ -20,6 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Compile RA
         working-directory: "${{github.workspace}}/pkg/msvc-uwp"
         run: |
@@ -44,6 +47,9 @@ jobs:
         # Qt and Cg builds are excluded for now
     steps:
       - uses: actions/checkout@v3
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
 
       - name: Compile RA
         working-directory: "${{github.workspace}}/pkg/msvc"
