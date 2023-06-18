@@ -56,7 +56,7 @@ typedef struct audio_mixer_stream
    char *name;
    size_t bufsize;
    float volume;
-   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_stream_type stream_type;
    enum audio_mixer_type type;
    enum audio_mixer_state state;
 } audio_mixer_stream_t;
@@ -70,8 +70,8 @@ typedef struct audio_mixer_stream_params
    unsigned slot_selection_idx;
    float volume;
    enum audio_mixer_slot_selection_type slot_selection_type;
-   enum audio_mixer_stream_type  stream_type;
-   enum audio_mixer_type  type;
+   enum audio_mixer_stream_type stream_type;
+   enum audio_mixer_type type;
    enum audio_mixer_state state;
 } audio_mixer_stream_params_t;
 #endif
@@ -181,7 +181,7 @@ typedef struct
     * up to (but excluding) the point where it's converted to 16-bit audio
     * to give to the driver.
     */
-   float  *output_samples_buf;
+   float *output_samples_buf;
    size_t output_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
@@ -213,8 +213,7 @@ typedef struct
    float *input_data;
    size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
-   struct audio_mixer_stream
-      mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
+   struct audio_mixer_stream mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
 #endif
    struct retro_audio_callback callback;                 /* ptr alignment */
                                                          /* ptr alignment */
@@ -229,8 +228,7 @@ typedef struct
    size_t buffer_size;
    size_t data_ptr;
 
-   unsigned free_samples_buf[
-      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+   unsigned free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 
 #ifdef HAVE_AUDIOMIXER
    float mixer_volume_gain;
@@ -251,8 +249,7 @@ typedef struct
    bool mixer_mute_enable;
 #endif
 
-   /* Sample the flush delta-time when fast forwarding to find the correct
-   ressample ratio. */
+   /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
    retro_time_t last_flush_time;
    /* Exponential moving average */
    retro_time_t avg_flush_delta;

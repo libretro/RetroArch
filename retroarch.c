@@ -2870,6 +2870,12 @@ bool command_event(enum event_command cmd, void *data)
          command_event_reinit(
                data ? *(const int*)data : DRIVERS_CMD_ALL);
 
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
+         /* Menu sounds require audio reinit. */
+         if (settings->bools.audio_enable_menu)
+            command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+#endif
+
          /* Recalibrate frame delay target */
          if (settings->bools.video_frame_delay_auto)
             video_st->frame_delay_target = 0;
@@ -3940,13 +3946,6 @@ bool command_event(enum event_command cmd, void *data)
 
             video_st->flags &= ~VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
             audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
-
-#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-            /* Menu sounds require audio reinit. */
-            if (     settings->bools.audio_enable_menu
-                  && menu_st->flags & MENU_ST_FLAG_ALIVE)
-               command_event(CMD_EVENT_AUDIO_REINIT, NULL);
-#endif
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
