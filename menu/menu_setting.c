@@ -8294,7 +8294,6 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
          {
-            audio_driver_load_system_sounds();
             if (settings->bools.audio_enable_menu_bgm)
                audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
             else
@@ -15402,7 +15401,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
-         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -16631,6 +16629,7 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO
                );
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_MENU_PAUSE_LIBRETRO);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_BOOL(
                list, list_info,
