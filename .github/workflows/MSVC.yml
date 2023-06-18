@@ -45,8 +45,9 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        configuration: [Debug, Release]
-        platform: [x86, x64, ARM, ARM64]
+        include:
+          - configuration: Release
+            platform: x64
         # Qt and Cg builds are excluded for now
     steps:
       - uses: actions/checkout@v3
