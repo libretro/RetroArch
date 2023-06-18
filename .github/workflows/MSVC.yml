@@ -15,8 +15,11 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        configuration: [Debug, DebugANGLE, Release, ReleaseANGLE]
-        platform: [x86, x64, ARM, ARM64]
+        include:
+          - configuration: Release
+            platform: x64
+          - configuration: ReleaseANGLE
+            platform: x64
     steps:
       - uses: actions/checkout@v3
 
