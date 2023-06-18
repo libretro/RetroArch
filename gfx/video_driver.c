@@ -2535,9 +2535,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
     * in fullscreen with vsync, effectively
     * discarding frames that can't be shown,
     * therefore do not do it twice. */
-   if (     string_is_equal(video_driver_get_ident(), "vulkan")
+   if (     video_info->fullscreen
          && settings->bools.video_vsync
-         && video_info->fullscreen)
+         && string_is_equal(video_driver_get_ident(), "vulkan"))
       video_info->fastforward_frameskip    = false;
 #endif
 #endif
