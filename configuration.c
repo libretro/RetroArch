@@ -4199,7 +4199,8 @@ bool config_load_override(void *data)
                sizeof(tmp_path));
          tmp_path[_len  ] = '|';
          tmp_path[_len+1] = '\0';
-         strlcat(tmp_path, core_path, sizeof(tmp_path));
+         _len            += 1;
+         strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
          RARCH_LOG("[Overrides]: Core-specific overrides stacking on top of previous overrides.\n");
       }
       else
@@ -4229,7 +4230,8 @@ bool config_load_override(void *data)
                   sizeof(tmp_path));
             tmp_path[_len  ] = '|';
             tmp_path[_len+1] = '\0';
-            strlcat(tmp_path, content_path, sizeof(tmp_path));
+            _len            += 1;
+            strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
             RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
          }
          else
@@ -4257,7 +4259,8 @@ bool config_load_override(void *data)
 			    sizeof(tmp_path));
             tmp_path[_len  ] = '|';
             tmp_path[_len+1] = '\0';
-            strlcat(tmp_path, game_path, sizeof(tmp_path));
+            _len            += 1;
+            strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);
             RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
          }
          else
@@ -4570,19 +4573,19 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         strlcpy(config + _len, "up",   sizeof(config) - _len);
+         strlcpy(config + _len, "up",    sizeof(config) - _len);
          break;
 
       case HAT_DOWN_MASK:
-         strlcpy(config + _len, "down", sizeof(config) - _len);
+         strlcpy(config + _len, "down",  sizeof(config) - _len);
          break;
 
       case HAT_LEFT_MASK:
-         strlcpy(config, "left",        sizeof(config) - _len);
+         strlcpy(config + _len, "left",  sizeof(config) - _len);
          break;
 
       case HAT_RIGHT_MASK:
-         strlcpy(config, "right",       sizeof(config) - _len);
+         strlcpy(config + _len, "right", sizeof(config) - _len);
          break;
 
       default:
@@ -5106,6 +5109,7 @@ bool config_save_file(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      size_t _len;
       char cfg[64];
       char formatted_number[4];
 
@@ -5118,19 +5122,16 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->uints.input_device[i]);
 
       strlcpy(cfg, "input_player",       sizeof(cfg));
-      strlcat(cfg, formatted_number,     sizeof(cfg));
-      strlcat(cfg, "_analog_dpad_mode",  sizeof(cfg));
-      config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
+      _len = strlcat(cfg, formatted_number,     sizeof(cfg));
 
-      strlcpy(cfg, "input_player",       sizeof(cfg));
-      strlcat(cfg, formatted_number,     sizeof(cfg));
-      strlcat(cfg, "_joypad_index",      sizeof(cfg));
+      strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
+      config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
+
+      strlcpy(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
       config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
 
-      strlcpy(cfg, "input_player",       sizeof(cfg));
-      strlcat(cfg, formatted_number,     sizeof(cfg));
-      strlcat(cfg, "_mouse_index",       sizeof(cfg));
-      config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
+      strlcpy(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
+      config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
    }
 
    /* Boolean settings */
@@ -5420,6 +5421,7 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
 
       for (i = 0; i < MAX_USERS; i++)
       {
+         size_t _len;
          uint8_t j;
          char cfg[64];
          char formatted_number[4];
@@ -5436,34 +5438,31 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
             RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
          }
 
-         if (settings->uints.input_analog_dpad_mode[i]
-               != overrides->uints.input_analog_dpad_mode[i])
+         strlcpy(cfg, "input_player",          sizeof(cfg));
+         _len = strlcat(cfg, formatted_number, sizeof(cfg));
+
+         if (settings->uints.input_mouse_index[i]
+               != overrides->uints.input_mouse_index[i])
          {
-            strlcpy(cfg, "input_player",      sizeof(cfg));
-            strlcat(cfg, formatted_number,    sizeof(cfg));
-            strlcat(cfg, "_analog_dpad_mode", sizeof(cfg));
-            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_analog_dpad_mode[i]);
+            strlcpy(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_mouse_index[i]);
+            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
 
          if (settings->uints.input_joypad_index[i]
                != overrides->uints.input_joypad_index[i])
          {
-            strlcpy(cfg, "input_player",   sizeof(cfg));
-            strlcat(cfg, formatted_number, sizeof(cfg));
-            strlcat(cfg, "_joypad_index",  sizeof(cfg));
+            strlcpy(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
             RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
          }
 
-         if (settings->uints.input_mouse_index[i]
-               != overrides->uints.input_mouse_index[i])
+         if (settings->uints.input_analog_dpad_mode[i]
+               != overrides->uints.input_analog_dpad_mode[i])
          {
-            strlcpy(cfg, "input_player",   sizeof(cfg));
-            strlcat(cfg, formatted_number, sizeof(cfg));
-            strlcat(cfg, "_mouse_index",   sizeof(cfg));
-            config_set_int(conf, cfg, overrides->uints.input_mouse_index[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
+            strlcpy(cfg + _len, "_analog_dpad_mode", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
+            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_analog_dpad_mode[i]);
          }
 
          for (j = 0; j < RARCH_BIND_LIST_END; j++)

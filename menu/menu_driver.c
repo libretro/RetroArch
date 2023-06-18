@@ -2883,6 +2883,7 @@ static bool menu_shader_manager_save_preset_internal(
       const char **target_dirs,
       size_t num_target_dirs)
 {
+   size_t _len;
    char fullname[PATH_MAX_LENGTH];
    char buffer[PATH_MAX_LENGTH];
    const char *preset_ext         = NULL;
@@ -2898,10 +2899,10 @@ static bool menu_shader_manager_save_preset_internal(
    preset_ext = video_shader_get_preset_extension(type);
 
    if (!string_is_empty(basename))
-      strlcpy(fullname, basename, sizeof(fullname));
+      _len = strlcpy(fullname, basename, sizeof(fullname));
    else
-      strlcpy(fullname, "retroarch", sizeof(fullname));
-   strlcat(fullname, preset_ext, sizeof(fullname));
+      _len = strlcpy(fullname, "retroarch", sizeof(fullname));
+   strlcpy(fullname + _len, preset_ext, sizeof(fullname) - _len);
 
    if (path_is_absolute(fullname))
    {

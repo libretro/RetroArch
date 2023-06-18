@@ -188,16 +188,16 @@ static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
    unsigned i;
    GLint loc;
    char buf[80];
-   strlcpy(buf, glsl->shader->prefix, sizeof(buf));
-   strlcat(buf, base, sizeof(buf));
+   size_t _len = strlcpy(buf, glsl->shader->prefix, sizeof(buf));
+   strlcpy(buf + _len, base, sizeof(buf) - _len);
    if ((loc = glGetUniformLocation(prog, buf)) >= 0)
       return loc;
 
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
       buf[0] = '\0';
-      strlcpy(buf, glsl_prefixes[i], sizeof(buf));
-      strlcat(buf, base, sizeof(buf));
+      _len = strlcpy(buf, glsl_prefixes[i], sizeof(buf));
+      strlcpy(buf + _len, base, sizeof(buf) - _len);
       if ((loc = glGetUniformLocation(prog, buf)) >= 0)
          return loc;
    }
@@ -211,15 +211,15 @@ static GLint gl_glsl_get_attrib(glsl_shader_data_t *glsl,
    unsigned i;
    GLint loc;
    char buf[80];
-   strlcpy(buf, glsl->shader->prefix, sizeof(buf));
-   strlcat(buf, base, sizeof(buf));
+   size_t _len = strlcpy(buf, glsl->shader->prefix, sizeof(buf));
+   strlcpy(buf + _len, base, sizeof(buf) - _len);
    if ((loc = glGetUniformLocation(prog, buf)) >= 0)
       return loc;
 
    for (i = 0; i < ARRAY_SIZE(glsl_prefixes); i++)
    {
-      strlcpy(buf, glsl_prefixes[i], sizeof(buf));
-      strlcat(buf, base, sizeof(buf));
+      _len = strlcpy(buf, glsl_prefixes[i], sizeof(buf));
+      strlcpy(buf + _len, base, sizeof(buf) - _len);
       if ((loc = glGetAttribLocation(prog, buf)) >= 0)
          return loc;
    }
@@ -682,28 +682,33 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
       GLuint prog,
       struct shader_uniforms_frame *frame, const char *base)
 {
-   char texture[64];
-   char texture_size[64];
-   char input_size[64];
-   char tex_coord[64];
-
-   strlcpy(texture,      base,          sizeof(texture));
-   strlcat(texture,      "Texture",     sizeof(texture));
-   strlcpy(texture_size, base,          sizeof(texture_size));
-   strlcat(texture_size, "TextureSize", sizeof(texture_size));
-   strlcpy(input_size,   base,          sizeof(input_size));
-   strlcat(input_size,   "InputSize",   sizeof(input_size));
-   strlcpy(tex_coord,    base,          sizeof(tex_coord));
-   strlcat(tex_coord,    "TexCoord",    sizeof(tex_coord));
+   char uni[64];
+   size_t _len = strlcpy(uni, base, sizeof(uni));
 
    if (frame->texture < 0)
-      frame->texture = gl_glsl_get_uniform(glsl, prog, texture);
-   if (frame->texture_size < 0)
-      frame->texture_size = gl_glsl_get_uniform(glsl, prog, texture_size);
-   if (frame->input_size < 0)
-      frame->input_size = gl_glsl_get_uniform(glsl, prog, input_size);
+   {
+      strlcpy(uni + _len, "Texture", sizeof(uni) - _len);
+      frame->texture = gl_glsl_get_uniform(glsl, prog, uni);
+   }
+
    if (frame->tex_coord < 0)
-      frame->tex_coord = gl_glsl_get_attrib(glsl, prog, tex_coord);
+   {
+      strlcpy(uni + _len, "TexCoord", sizeof(uni) - _len);
+      frame->tex_coord = gl_glsl_get_attrib(glsl, prog, uni);
+   }
+
+   if (frame->input_size < 0)
+   {
+      strlcpy(uni + _len, "InputSize",   sizeof(uni) - _len);
+      frame->input_size = gl_glsl_get_uniform(glsl, prog, uni);
+   }
+
+   if (frame->texture_size < 0)
+   {
+      strlcpy(uni + _len, "TextureSize", sizeof(uni) - _len);
+      frame->texture_size = gl_glsl_get_uniform(glsl, prog, uni);
+   }
+
 }
 
 static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,

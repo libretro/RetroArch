@@ -125,6 +125,7 @@ static void task_overlay_desc_populate_eightway_config(
       struct overlay_desc *desc,
       unsigned ol_idx, unsigned desc_idx)
 {
+   size_t _len;
    input_driver_state_t *input_st = input_state_get_ptr();
    overlay_eightway_config_t *eightway;
    char conf_key_base[20];
@@ -169,35 +170,32 @@ static void task_overlay_desc_populate_eightway_config(
 
    /* Redefine eightway vals if specified in conf
     */
-   strlcpy(conf_key, conf_key_base, sizeof(conf_key));
-   strlcat(conf_key, "_up", sizeof(conf_key));
+   _len = strlcpy(conf_key, conf_key_base, sizeof(conf_key));
+   strlcpy(conf_key + _len, "_up", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->up);
       free(str);
    }
 
-   strlcpy(conf_key, conf_key_base, sizeof(conf_key));
-   strlcat(conf_key, "_down", sizeof(conf_key));
+   strlcpy(conf_key + _len, "_down", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->down);
       free(str);
    }
 
-   strlcpy(conf_key, conf_key_base, sizeof(conf_key));
-   strlcat(conf_key, "_right", sizeof(conf_key));
-   if (config_get_string(loader->conf, conf_key, &str))
-   {
-      task_overlay_redefine_eightway_direction(str, &eightway->right);
-      free(str);
-   }
-
-   strlcpy(conf_key, conf_key_base, sizeof(conf_key));
-   strlcat(conf_key, "_left", sizeof(conf_key));
+   strlcpy(conf_key + _len, "_left", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->left);
+      free(str);
+   }
+
+   strlcpy(conf_key + _len, "_right", sizeof(conf_key) - _len);
+   if (config_get_string(loader->conf, conf_key, &str))
+   {
+      task_overlay_redefine_eightway_direction(str, &eightway->right);
       free(str);
    }
 
@@ -232,10 +230,11 @@ static bool task_overlay_load_desc(
       unsigned width, unsigned height,
       bool normalized, float alpha_mod, float range_mod)
 {
+   size_t _len;
    float width_mod, height_mod;
    char conf_key[64];
    char overlay_desc_key[32];
-   char overlay_desc_normalized_key[32];
+   char overlay_key[64];
    char overlay[256];
    float tmp_float                      = 0.0f;
    bool tmp_bool                        = false;
@@ -249,17 +248,16 @@ static bool task_overlay_load_desc(
    config_file_t *conf                  = loader->conf;
 
    overlay_desc_key[0]                  = 
+      overlay_key[0]                    =
       conf_key[0]                       =
       overlay[0]                        = '\0';
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
 
-   strlcpy(overlay_desc_normalized_key, overlay_desc_key,
-         sizeof(overlay_desc_normalized_key));
-   strlcat(overlay_desc_normalized_key, "_normalized",
-         sizeof(overlay_desc_normalized_key));
-   if (config_get_bool(conf, overlay_desc_normalized_key, &tmp_bool))
+   _len = strlcpy(overlay_key, overlay_desc_key, sizeof(overlay_key));
+   strlcpy(overlay_key + _len, "_normalized", sizeof(overlay_key) - _len);
+   if (config_get_bool(conf, overlay_key, &tmp_bool))
       normalized = tmp_bool;
 
    by_pixel = !normalized;
@@ -329,12 +327,9 @@ static bool task_overlay_load_desc(
 
       if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
       {
-         char overlay_target_key[64];
-         strlcpy(overlay_target_key, overlay_desc_key,
-               sizeof(overlay_target_key));
-         strlcat(overlay_target_key, "_next_target",
-               sizeof(overlay_target_key));
-         config_get_array(conf, overlay_target_key,
+         strlcpy(overlay_key + _len, "_next_target",
+               sizeof(overlay_key) - _len);
+         config_get_array(conf, overlay_key,
                desc->next_index_name, sizeof(desc->next_index_name));
       }
    }
@@ -370,28 +365,20 @@ static bool task_overlay_load_desc(
    {
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
+         if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
          {
-            char overlay_analog_saturate_key[64];
-
-            overlay_analog_saturate_key[0] = '\0';
-
-            if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
-            {
-               RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
-               ret = false;
-               goto end;
-            }
-
-            strlcpy(overlay_analog_saturate_key, overlay_desc_key,
-                  sizeof(overlay_analog_saturate_key));
-            strlcat(overlay_analog_saturate_key, "_saturate_pct",
-                  sizeof(overlay_analog_saturate_key));
-            if (config_get_float(conf, overlay_analog_saturate_key,
-                     &tmp_float))
-               desc->analog_saturate_pct = tmp_float;
-            else
-               desc->analog_saturate_pct = 1.0f;
+            RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+            ret = false;
+            goto end;
          }
+
+         strlcpy(overlay_key + _len, "_saturate_pct",
+               sizeof(overlay_key) - _len);
+         if (config_get_float(conf, overlay_key,
+                  &tmp_float))
+            desc->analog_saturate_pct = tmp_float;
+         else
+            desc->analog_saturate_pct = 1.0f;
          break;
       case OVERLAY_TYPE_DPAD_AREA:
       case OVERLAY_TYPE_ABXY_AREA:
@@ -407,45 +394,71 @@ static bool task_overlay_load_desc(
    desc->range_x = (float)strtod(list.elems[4].data, NULL) * width_mod;
    desc->range_y = (float)strtod(list.elems[5].data, NULL) * height_mod;
 
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_reach_right",   sizeof(conf_key));
-   desc->reach_right = 1.0f;
-   if (config_get_float(conf, conf_key, &tmp_float))
-      desc->reach_right = tmp_float;
+   _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
 
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_reach_left",   sizeof(conf_key));
-   desc->reach_left = 1.0f;
-   if (config_get_float(conf, conf_key, &tmp_float))
-      desc->reach_left = tmp_float;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_reach_up",   sizeof(conf_key));
-   desc->reach_up = 1.0f;
-   if (config_get_float(conf, conf_key, &tmp_float))
-      desc->reach_up = tmp_float;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_reach_down",   sizeof(conf_key));
-   desc->reach_down = 1.0f;
-   if (config_get_float(conf, conf_key, &tmp_float))
-      desc->reach_down = tmp_float;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_reach_x",   sizeof(conf_key));
+   strlcpy(conf_key + _len, "_reach_x",   sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
    {
       desc->reach_right = tmp_float;
       desc->reach_left  = tmp_float;
    }
 
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_reach_y",   sizeof(conf_key));
+   strlcpy(conf_key + _len, "_reach_y",   sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
    {
       desc->reach_up   = tmp_float;
       desc->reach_down = tmp_float;
    }
+
+   strlcpy(conf_key + _len, "_movable",   sizeof(conf_key) - _len);
+   desc->flags    &= ~OVERLAY_DESC_MOVABLE;
+   desc->delta_x   = 0.0f;
+   desc->delta_y   = 0.0f;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->flags |= OVERLAY_DESC_MOVABLE;
+
+   strlcpy(conf_key + _len, "_reach_up", sizeof(conf_key) - _len);
+   desc->reach_up = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_up = tmp_float;
+
+   strlcpy(conf_key + _len, "_alpha_mod",   sizeof(conf_key) - _len);
+   desc->alpha_mod = alpha_mod;
+   if (config_get_float(conf, conf_key, &tmp_float))
+         desc->alpha_mod = tmp_float;
+
+   strlcpy(conf_key + _len, "_range_mod",   sizeof(conf_key) - _len);
+   desc->range_mod = range_mod;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->range_mod = tmp_float;
+
+   strlcpy(conf_key + _len, "_exclusive",   sizeof(conf_key) - _len);
+   desc->flags &= ~OVERLAY_DESC_EXCLUSIVE;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->flags |= OVERLAY_DESC_EXCLUSIVE;
+
+   strlcpy(conf_key + _len, "_reach_down",   sizeof(conf_key) - _len);
+   desc->reach_down = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_down = tmp_float;
+
+   strlcpy(conf_key + _len, "_reach_left",   sizeof(conf_key) - _len);
+   desc->reach_left = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_left = tmp_float;
+
+   strlcpy(conf_key + _len, "_reach_right",   sizeof(conf_key) - _len);
+   desc->reach_right = 1.0f;
+   if (config_get_float(conf, conf_key, &tmp_float))
+      desc->reach_right = tmp_float;
+
+   strlcpy(conf_key + _len, "_range_mod_exclusive", sizeof(conf_key) - _len);
+   desc->flags &= ~OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
+   if (config_get_bool(conf, conf_key, &tmp_bool)
+         && tmp_bool)
+      desc->flags |= OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
 
    if (     (desc->reach_left == 0.0f && desc->reach_right == 0.0f)
          || (desc->reach_up   == 0.0f && desc->reach_down  == 0.0f))
@@ -455,42 +468,6 @@ static bool task_overlay_load_desc(
    desc->mod_w   = 2.0f * desc->range_x;
    desc->mod_y   = desc->y - desc->range_y;
    desc->mod_h   = 2.0f * desc->range_y;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_alpha_mod",   sizeof(conf_key));
-   desc->alpha_mod = alpha_mod;
-   if (config_get_float(conf, conf_key, &tmp_float))
-         desc->alpha_mod = tmp_float;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_range_mod",   sizeof(conf_key));
-   desc->range_mod = range_mod;
-   if (config_get_float(conf, conf_key, &tmp_float))
-      desc->range_mod = tmp_float;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_exclusive",   sizeof(conf_key));
-   desc->flags &= ~OVERLAY_DESC_EXCLUSIVE;
-   if (config_get_bool(conf, conf_key, &tmp_bool)
-         && tmp_bool)
-      desc->flags |= OVERLAY_DESC_EXCLUSIVE;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_range_mod_exclusive",   sizeof(conf_key));
-   desc->flags &= ~OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
-   if (config_get_bool(conf, conf_key, &tmp_bool)
-         && tmp_bool)
-      desc->flags |= OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
-
-   strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
-   strlcat(conf_key, "_movable",   sizeof(conf_key));
-   desc->flags    &= ~OVERLAY_DESC_MOVABLE;
-   desc->delta_x   = 0.0f;
-   desc->delta_y   = 0.0f;
-
-   if (config_get_bool(conf, conf_key, &tmp_bool)
-         && tmp_bool)
-      desc->flags |= OVERLAY_DESC_MOVABLE;
 
    input_overlay->pos ++;
 

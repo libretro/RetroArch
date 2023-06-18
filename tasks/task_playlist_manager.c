@@ -192,17 +192,17 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             
             if (entry)
             {
+               size_t _len;
                struct playlist_entry update_entry = {0};
                char task_title[PATH_MAX_LENGTH];
                /* Update progress display */
                task_free_title(task);
-               strlcpy(
-                     task_title,
-		     msg_hash_to_str(MSG_PLAYLIST_MANAGER_RESETTING_CORES),
+               _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_PLAYLIST_MANAGER_RESETTING_CORES),
                      sizeof(task_title));
                
                if (!string_is_empty(entry->label))
-                  strlcat(task_title, entry->label, sizeof(task_title));
+                  strlcpy(task_title + _len, entry->label, sizeof(task_title) - _len);
                else if (!string_is_empty(entry->path))
                {
                   char entry_name[PATH_MAX_LENGTH];
@@ -232,15 +232,16 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
          break;
       case PL_MANAGER_END:
          {
+            size_t _len;
             char task_title[PATH_MAX_LENGTH];
             /* Save playlist changes to disk */
             playlist_write_file(pl_manager->playlist);
             /* Update progress display */
             task_free_title(task);
-            strlcpy(
-                  task_title, msg_hash_to_str(MSG_PLAYLIST_MANAGER_CORES_RESET),
+            _len = strlcpy(task_title,
+                  msg_hash_to_str(MSG_PLAYLIST_MANAGER_CORES_RESET),
                   sizeof(task_title));
-            strlcat(task_title, pl_manager->playlist_name, sizeof(task_title));
+            strlcpy(task_title + _len, pl_manager->playlist_name, sizeof(task_title) - _len);
             
             task_set_title(task, strdup(task_title));
          }
@@ -278,6 +279,7 @@ static bool task_pl_manager_reset_cores_finder(
 
 bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
 {
+   size_t _len;
    task_finder_data_t find_data;
    char playlist_name[PATH_MAX_LENGTH];
    char task_title[PATH_MAX_LENGTH];
@@ -318,11 +320,10 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    pl_manager->status              = PL_MANAGER_BEGIN;
    
    /* Configure task */
-   strlcpy(
-         task_title,
-	 msg_hash_to_str(MSG_PLAYLIST_MANAGER_RESETTING_CORES),
+   _len = strlcpy(task_title,
+         msg_hash_to_str(MSG_PLAYLIST_MANAGER_RESETTING_CORES),
          sizeof(task_title));
-   strlcat(task_title, playlist_name, sizeof(task_title));
+   strlcpy(task_title + _len, playlist_name, sizeof(task_title) - _len);
    
    task->handler                 = task_pl_manager_reset_cores_handler;
    task->state                   = pl_manager;
@@ -652,15 +653,17 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
          break;
       case PL_MANAGER_END:
          {
+            size_t _len;
             char task_title[PATH_MAX_LENGTH];
             /* Save playlist changes to disk */
             playlist_write_file(pl_manager->playlist);
             /* Update progress display */
             task_free_title(task);
-            strlcpy(
-                  task_title, msg_hash_to_str(MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED),
+            _len = strlcpy(task_title,
+                  msg_hash_to_str(MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED),
                   sizeof(task_title));
-            strlcat(task_title, pl_manager->playlist_name, sizeof(task_title));
+            strlcpy(task_title + _len, pl_manager->playlist_name,
+                  sizeof(task_title) - _len);
             
             task_set_title(task, strdup(task_title));
          }
@@ -700,6 +703,7 @@ static bool task_pl_manager_clean_playlist_finder(
 bool task_push_pl_manager_clean_playlist(
       const playlist_config_t *playlist_config)
 {
+   size_t _len;
    task_finder_data_t find_data;
    char playlist_name[PATH_MAX_LENGTH];
    char task_title[PATH_MAX_LENGTH];
@@ -743,11 +747,10 @@ bool task_push_pl_manager_clean_playlist(
       goto error;
    
    /* Configure task */
-   strlcpy(
-         task_title,
-	 msg_hash_to_str(MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST),
+   _len = strlcpy(task_title,
+         msg_hash_to_str(MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST),
          sizeof(task_title));
-   strlcat(task_title, playlist_name, sizeof(task_title));
+   strlcpy(task_title + _len, playlist_name, sizeof(task_title) - _len);
    
    task->handler                 = task_pl_manager_clean_playlist_handler;
    task->state                   = pl_manager;
