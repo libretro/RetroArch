@@ -4220,7 +4220,6 @@ void input_keyboard_mapping_bits(unsigned mode, unsigned key)
 void config_read_keybinds_conf(void *data)
 {
    unsigned i;
-   input_driver_state_t *input_st = &input_driver_st;
    config_file_t            *conf = (config_file_t*)data;
    bool key_store[RETROK_LAST]    = {0};
 
