@@ -5077,17 +5077,15 @@ unsigned menu_event(
    menu_input_t *menu_input                        = &menu_st->input_state;
    input_driver_state_t *input_st                  = input_state_get_ptr();
    input_driver_t *current_input                   = input_st->current_driver;
-   const input_device_driver_t
-      *joypad                                      = input_st->primary_joypad;
+   const input_device_driver_t *joypad             = input_st->primary_joypad;
 #ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad         =
-      input_st->secondary_joypad;
+   const input_device_driver_t *sec_joypad         = input_st->secondary_joypad;
 #else
    const input_device_driver_t *sec_joypad         = NULL;
 #endif
    gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
-   menu_handle_t             *menu                 = menu_st->driver_data;
+   menu_handle_t *menu                             = menu_st->driver_data;
    bool keyboard_mapping_blocked                   = input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
@@ -5096,13 +5094,12 @@ unsigned menu_event(
    bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
    bool pointer_enabled                            = settings->bools.menu_pointer_enable;
    unsigned input_touch_scale                      = settings->uints.input_touch_scale;
-   unsigned menu_scroll_delay                      =
-      settings->uints.menu_scroll_delay;
+   unsigned menu_scroll_delay                      = settings->uints.menu_scroll_delay;
 #ifdef HAVE_OVERLAY
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
    bool overlay_active                             = input_overlay_enable 
-      && (input_st->overlay_ptr)
-      && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
+         && (input_st->overlay_ptr)
+         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
@@ -5144,11 +5141,11 @@ unsigned menu_event(
 
       /* Read mouse */
 #ifdef HAVE_IOS_TOUCHMOUSE
-       if (menu_mouse_enable)
-       {
-         settings->bools.menu_pointer_enable=true;
-         menu_pointer_enable=true;
-       }
+      if (menu_mouse_enable)
+      {
+         settings->bools.menu_pointer_enable = true;
+         menu_pointer_enable = true;
+      }
 #else
       if (menu_mouse_enable)
          menu_input_get_mouse_hw_state(
@@ -5270,11 +5267,11 @@ unsigned menu_event(
           * for old_input_state. */
 
          first_held                 = true;
+         delay_count                = 0;
          if (initial_held)
             delay_timer             = menu_scroll_delay;
          else
-            delay_timer             = menu_scroll_fast ? 100 : 20;
-         delay_count                = 0;
+            delay_timer             = menu_scroll_delay / 8;
       }
 
       if (delay_count >= delay_timer)
@@ -5289,12 +5286,13 @@ unsigned menu_event(
          new_scroll_accel           = menu_st->scroll.acceleration;
 
          if (menu_scroll_fast)
-            new_scroll_accel        = MIN(new_scroll_accel + 1, 64);
+            new_scroll_accel        = MIN(new_scroll_accel + 1, 25);
          else
             new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
       }
 
       initial_held                  = false;
+      delay_count                  += anim_get_ptr()->delta_time;
    }
    else
    {
@@ -5306,8 +5304,6 @@ unsigned menu_event(
 
    if (set_scroll)
       menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
-
-   delay_count                     += anim_get_ptr()->delta_time;
 
    if (display_kb)
    {
