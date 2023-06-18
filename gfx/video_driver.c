@@ -2529,8 +2529,20 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_slowmotion       = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
    video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
 
-   video_info->input_driver_nonblock_state = input_st
-         ? (input_st->flags & INP_FLAG_NONBLOCKING) : false;
+#ifdef _WIN32
+#ifdef HAVE_VULKAN
+   /* Vulkan in Windows does mailbox emulation
+    * in fullscreen with vsync, effectively
+    * discarding frames that can't be shown,
+    * therefore do not do it twice. */
+   if (     string_is_equal(video_driver_get_ident(), "vulkan")
+         && settings->bools.video_vsync
+         && video_info->fullscreen)
+      video_info->fastforward_frameskip    = false;
+#endif
+#endif
+
+   video_info->input_driver_nonblock_state   = input_st ? (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    video_info->input_driver_grab_mouse_state = (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
    video_info->disp_userdata                 = disp_get_ptr();
 
