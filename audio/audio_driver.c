@@ -797,10 +797,8 @@ bool audio_driver_init_internal(
 #endif
 
    /* Threaded driver is initially stopped. */
-   if (
-            (audio_driver_st.flags & AUDIO_FLAG_ACTIVE)
-         &&  audio_cb_inited
-         )
+   if (     (audio_driver_st.flags & AUDIO_FLAG_ACTIVE)
+         &&  audio_cb_inited)
       audio_driver_start(false);
 
    return true;
@@ -1444,7 +1442,8 @@ void audio_driver_load_system_sounds(void)
       task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
    if (path_cancel && audio_enable_menu_cancel)
       task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
-   if (audio_enable_menu_notice) {
+   if (audio_enable_menu_notice)
+   {
       if (path_notice)
          task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
       if (path_notice_back)
@@ -1882,11 +1881,10 @@ void audio_driver_menu_sample(void)
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
-   unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   unsigned sample_count                  = floor(info->sample_rate / info->fps) * 2;
    audio_driver_state_t *audio_st         = &audio_driver_st;
    bool check_flush                       = !(
-             (runloop_flags & RUNLOOP_FLAG_PAUSED)
-         || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+            !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED))
       check_flush                         = false;
