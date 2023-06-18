@@ -86,7 +86,8 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       s[_len  ] = ':';
       s[_len+1] = ' ';
       s[_len+2] = '\0';
-      strlcat(s, tmp, len);
+      _len     += 2;
+      strlcpy(s + _len, tmp, len - _len);
    }
    else
    {
@@ -96,7 +97,8 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       s[_len  ] = ':';
       s[_len+1] = ' ';
       s[_len+2] = '\0';
-      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+      _len     += 2;
+      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
    }
 
    return 1;
@@ -1840,10 +1842,10 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Only add sublabel if a core is currently assigned
     * > Both core name and core path must be valid */
-   if (  string_is_empty(entry->core_name) ||
-         string_is_equal(entry->core_name, "DETECT") ||
-         string_is_empty(entry->core_path) ||
-         string_is_equal(entry->core_path, "DETECT"))
+   if (     string_is_empty(entry->core_name)
+         || string_is_equal(entry->core_name, "DETECT")
+         || string_is_empty(entry->core_path)
+         || string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
    /* Add core name */
@@ -1855,20 +1857,20 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
-   if (((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
-         !content_runtime_log) ||
-       ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
-         !content_runtime_log_aggregate))
+   if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
+         && !content_runtime_log)
+       || ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE)
+         && !content_runtime_log_aggregate))
       return 0;
 
    /* Note: This looks heavy, but each string_is_equal() call will
     * return almost immediately */
-   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) &&
-       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)) &&
-       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) &&
-       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) &&
-       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) &&
-       !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+   if (   !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))
+       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) 
+       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)) 
+       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
       return 0;
 
    /* Check whether runtime info should be loaded from log file */
