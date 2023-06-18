@@ -1024,8 +1024,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       size_t _len = strlcpy(lbl_setting, "input_player", sizeof(lbl_setting));
       for (i = 0; i < MAX_USERS; i++)
       {
-         snprintf(lbl_setting + _len, sizeof(lbl_setting) - _len, "%d", i + 1);
-         strlcat(lbl_setting, "_joypad_index", sizeof(lbl_setting));
+         snprintf(lbl_setting + _len, sizeof(lbl_setting) - _len, "%d_joypad_index", i + 1);
 
          if (!string_is_equal(label, lbl_setting))
             continue;

@@ -1076,10 +1076,11 @@ extern "C" {
 
    enum retro_language uwp_get_language(void)
    {
+      size_t _len;
+      char lang_iso[16];
       auto lang                 = Windows::System::UserProfile::GlobalizationPreferences::Languages->GetAt(0);
       struct string_list  split = {0};
       char lang_bcp[16]         = {0};
-      char lang_iso[16]         = {0};
 
       wcstombs(lang_bcp, lang->Data(), sizeof(lang_bcp));
 
@@ -1087,11 +1088,11 @@ extern "C" {
       string_list_initialize(&split);
       string_split_noalloc(&split, lang_bcp, "-");
 
-      strlcpy(lang_iso, split.elems[0].data, sizeof(lang_iso));
+      _len = strlcpy(lang_iso, split.elems[0].data, sizeof(lang_iso));
 
       if (split.size >= 2)
       {
-         strlcat(lang_iso, "_", sizeof(lang_iso));
+         strlcpy(lang_iso + _len, "_", sizeof(lang_iso) - _len);
          strlcat(lang_iso, split.elems[split.size >= 3 ? 2 : 1].data,
                sizeof(lang_iso));
       }

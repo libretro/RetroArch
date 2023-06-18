@@ -286,8 +286,8 @@ static void *parport_joypad_init(void *data)
                {
                   if (!pad->button_enable[j])
                   {
-                     snprintf(pin, sizeof(pin), "%d ", j);
-                     strlcat(buf, pin, sizeof(buf));
+                     size_t _len = snprintf(pin, sizeof(pin), "%d ", j);
+                     strlcpy(buf + _len, pin, sizeof(buf) - _len);
                   }
                }
                RARCH_WARN("[Joypad]: Pin(s) %son %s were low"
