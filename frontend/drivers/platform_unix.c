@@ -1741,13 +1741,13 @@ static void frontend_unix_get_env(int *argc,
 
    if (xdg)
    {
-      strlcpy(base_path, xdg, sizeof(base_path));
-      strlcat(base_path, "/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
+      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
-      strlcpy(base_path, home, sizeof(base_path));
-      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, home, sizeof(base_path));
+      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
    else
       strlcpy(base_path, "retroarch", sizeof(base_path));
@@ -2255,21 +2255,23 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (xdg)
    {
-      strlcpy(base_path, xdg, sizeof(base_path));
-      strlcat(base_path, "/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
+      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
-      strlcpy(base_path, home, sizeof(base_path));
-      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, home, sizeof(base_path));
+      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
 #endif
 
-   strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
-   if (user)
    {
-      strlcat(udisks_media_path, "/", sizeof(udisks_media_path));
-      strlcat(udisks_media_path, user, sizeof(udisks_media_path));
+      size_t _len = strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
+      if (user)
+      {
+         strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
+         strlcat(udisks_media_path, user, sizeof(udisks_media_path));
+      }
    }
 
    if (!string_is_empty(base_path))

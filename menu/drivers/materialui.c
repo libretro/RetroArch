@@ -7176,7 +7176,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       _len        = strlcpy(msg, label, sizeof(msg));
       msg[_len  ] = '\n';
       msg[_len+1] = '\0';
-      strlcat(msg, str, sizeof(msg));
+      _len       += 1;
+      strlcpy(msg       + _len,
+		      str,
+            sizeof(msg) - _len);
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
@@ -7519,9 +7522,10 @@ static void materialui_status_bar_init(
 	    sizeof(mui->status_bar.runtime_fallback_str));
       mui->status_bar.runtime_fallback_str[_len  ] = ' ';
       mui->status_bar.runtime_fallback_str[_len+1] = '\0';
-      strlcat(mui->status_bar.runtime_fallback_str,
+      _len                                        += 1;
+      strlcpy(mui->status_bar.runtime_fallback_str          + _len,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED),
-	    sizeof(mui->status_bar.runtime_fallback_str));
+            sizeof(mui->status_bar.runtime_fallback_str)    - _len);
 
       _len = strlcpy(mui->status_bar.last_played_fallback_str,
             msg_hash_to_str(
@@ -7529,9 +7533,10 @@ static void materialui_status_bar_init(
             sizeof(mui->status_bar.last_played_fallback_str));
       mui->status_bar.last_played_fallback_str[_len  ] = ' ';
       mui->status_bar.last_played_fallback_str[_len+1] = '\0';
-      strlcat(mui->status_bar.last_played_fallback_str,
+      _len                                            += 1;
+      strlcpy(mui->status_bar.last_played_fallback_str       + _len,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED),
-            sizeof(mui->status_bar.last_played_fallback_str)
+            sizeof(mui->status_bar.last_played_fallback_str) - _len
             );
    }
 }
@@ -10966,8 +10971,10 @@ static void materialui_list_insert(
                {
                   char val[255];
                   unsigned user_value = i + 1;
-                  snprintf(val, sizeof(val), "%d", user_value);
-                  strlcat(val, "_input_binds_list", sizeof(val));
+                  size_t _len = snprintf(val, sizeof(val), "%d", user_value);
+                  strlcpy(val       + _len,
+                        "_input_binds_list",
+                        sizeof(val) - _len);
 
                   if (string_is_equal(label, val))
                   {

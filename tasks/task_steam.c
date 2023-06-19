@@ -76,10 +76,11 @@ task_finished:
    if (MIST_IS_SUCCESS(result))
    {
       char msg[PATH_MAX_LENGTH];
-      strlcpy(msg, msg_hash_to_str(MSG_CORE_INSTALLED),
+      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_INSTALLED),
             sizeof(msg));
-      strlcat(msg, state->name,
-            sizeof(msg));
+      strlcpy(msg       + _len,
+            state->name,
+            sizeof(msg) - _len);
 
       runloop_msg_queue_push(msg, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
@@ -97,6 +98,7 @@ void task_push_steam_core_dlc_install(
       AppId app_id,
       const char *name)
 {
+   size_t _len;
    char task_title[PATH_MAX_LENGTH];
 
    retro_task_t                  *task   = task_init();
@@ -107,9 +109,11 @@ void task_push_steam_core_dlc_install(
    state->name           = strdup(name);
    state->has_downloaded = false;
 
-   strlcpy(task_title, msg_hash_to_str(MSG_CORE_STEAM_INSTALLING),
+   _len = strlcpy(task_title, msg_hash_to_str(MSG_CORE_STEAM_INSTALLING),
          sizeof(task_title));
-   strlcat(task_title, name, sizeof(task_title));
+   strlcpy(task_title       + _len,
+         name,
+         sizeof(task_title) - _len);
 
    task->handler  = task_steam_core_dlc_install_handler;
    task->state    = state;

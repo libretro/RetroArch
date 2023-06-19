@@ -1283,6 +1283,7 @@ static void ctr_render_bottom_screen(void *data)
    {
       case CTR_BOTTOM_MENU_NOT_AVAILABLE:
          {
+            size_t _len;
             char str_path[PATH_MAX_LENGTH];
             const char *dir_assets = settings->paths.directory_bottom_assets;
 
@@ -1295,8 +1296,10 @@ static void ctr_render_bottom_screen(void *data)
                   msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
                   &params);
 
-	    strlcpy(str_path, dir_assets, sizeof(str_path));
-            strlcat(str_path, "\n/bottom_menu.png", sizeof(str_path));
+            _len = strlcpy(str_path, dir_assets, sizeof(str_path));
+            strlcpy(str_path       + _len,
+                  "\n/bottom_menu.png",
+                  sizeof(str_path) - _len);
 
             params.scale = 1.10f;
             params.y    -= 0.10f;

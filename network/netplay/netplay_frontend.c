@@ -761,6 +761,7 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
 #ifdef HAVE_MENU
 static void handshake_password(void *userdata, const char *line)
 {
+   size_t _len;
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
@@ -772,10 +773,12 @@ static void handshake_password(void *userdata, const char *line)
       return;
 
    connection = &netplay->connections[0];
-
-   snprintf(password, sizeof(password), "%08lX", (unsigned long)connection->salt);
+   _len       = snprintf(password, sizeof(password),
+         "%08lX", (unsigned long)connection->salt);
    if (!string_is_empty(line))
-      strlcat(password, line, sizeof(password));
+      strlcpy(password       + _len,
+            line,
+            sizeof(password) - _len);
 
    password_buf.cmd[0] = htonl(NETPLAY_CMD_PASSWORD);
    password_buf.cmd[1] = htonl(sizeof(password_buf.password));

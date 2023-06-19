@@ -683,16 +683,16 @@ int rcheevos_get_richpresence(char *s, size_t len)
       if (ret <= 0 && rcheevos_locals.game.title)
       {
          /* TODO/FIXME - localize */
-         strlcpy(s, "Playing ", len);
-         strlcat(s, rcheevos_locals.game.title, len);
+         size_t _len = strlcpy(s, "Playing ", len);
+         strlcpy(s + _len, rcheevos_locals.game.title, len - _len);
       }
       return ret;
    }
    if (rcheevos_locals.game.title)
    {
       /* TODO/FIXME - localize */
-      strlcpy(s, "Spectating ", len);
-      return (int)strlcat(s, rcheevos_locals.game.title, len);
+      size_t _len = strlcpy(s, "Spectating ", len);
+      return (int)strlcpy(s + _len, rcheevos_locals.game.title, len - _len);
    }
    return 0;
 }

@@ -296,6 +296,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
             if (entry)
             {
+               size_t _len;
                const char *entry_file     = NULL;
                const char *entry_file_ext = NULL;
                char task_title[PATH_MAX_LENGTH];
@@ -303,13 +304,15 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Update progress display */
                task_free_title(task);
 
-               strlcpy(task_title,
+               _len = strlcpy(task_title,
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP),
                      sizeof(task_title));
 
                if (!string_is_empty(entry->path) &&
                    (entry_file = path_basename(entry->path)))
-                  strlcat(task_title, entry_file, sizeof(task_title));
+                  strlcpy(task_title       + _len,
+                        entry_file,
+                        sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
                task_set_progress(task, (manual_scan->playlist_index * 100) /
@@ -359,18 +362,21 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
             if (!string_is_empty(content_path))
             {
+               size_t _len;
                char task_title[PATH_MAX_LENGTH];
                const char *content_file = path_basename(content_path);
 
                /* Update progress display */
                task_free_title(task);
 
-               strlcpy(task_title,
+               _len = strlcpy(task_title,
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS),
                      sizeof(task_title));
 
                if (!string_is_empty(content_file))
-                  strlcat(task_title, content_file, sizeof(task_title));
+                  strlcpy(task_title       + _len,
+                        content_file,
+                        sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
                task_set_progress(task,
@@ -417,6 +423,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
             if (!string_is_empty(m3u_path))
             {
+               size_t _len;
                char task_title[PATH_MAX_LENGTH];
                const char *m3u_name = path_basename_nocompression(m3u_path);
                m3u_file_t *m3u_file = NULL;
@@ -424,12 +431,14 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Update progress display */
                task_free_title(task);
 
-               strlcpy(task_title,
+               _len = strlcpy(task_title,
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
                      sizeof(task_title));
 
                if (!string_is_empty(m3u_name))
-                  strlcat(task_title, m3u_name, sizeof(task_title));
+                  strlcpy(task_title       + _len,
+                        m3u_name,
+                        sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
                task_set_progress(task, (manual_scan->m3u_index * 100) /
@@ -464,6 +473,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          break;
       case MANUAL_SCAN_END:
          {
+            size_t _len;
             char task_title[PATH_MAX_LENGTH];
 
             /* Ensure playlist is alphabetically sorted
@@ -477,11 +487,12 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             /* Update progress display */
             task_free_title(task);
 
-            strlcpy(
+            _len = strlcpy(
                   task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_END),
                   sizeof(task_title));
-            strlcat(task_title, manual_scan->task_config->system_name,
-                  sizeof(task_title));
+            strlcpy(task_title       + _len,
+                  manual_scan->task_config->system_name,
+                  sizeof(task_title) - _len);
 
             task_set_title(task, strdup(task_title));
          }
@@ -517,6 +528,7 @@ bool task_push_manual_content_scan(
       const playlist_config_t *playlist_config,
       const char *playlist_directory)
 {
+   size_t _len;
    task_finder_data_t find_data;
    char task_title[PATH_MAX_LENGTH];
    retro_task_t *task                = NULL;
@@ -585,11 +597,12 @@ bool task_push_manual_content_scan(
       goto error;
 
    /* > Get task title */
-   strlcpy(
+   _len = strlcpy(
          task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START),
          sizeof(task_title));
-   strlcat(task_title, manual_scan->task_config->system_name,
-         sizeof(task_title));
+   strlcpy(task_title       + _len,
+         manual_scan->task_config->system_name,
+         sizeof(task_title) - _len);
 
    /* > Configure task */
    task->handler                 = task_manual_content_scan_handler;

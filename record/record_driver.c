@@ -469,23 +469,23 @@ void recording_driver_update_streaming_url(void)
       case STREAMING_MODE_TWITCH:
          if (!string_is_empty(settings->arrays.twitch_stream_key))
          {
-            strlcpy(settings->paths.path_stream_url,
+            size_t _len = strlcpy(settings->paths.path_stream_url,
                   twitch_url,
                   sizeof(settings->paths.path_stream_url));
-            strlcat(settings->paths.path_stream_url,
+            strlcpy(settings->paths.path_stream_url       + _len,
                   settings->arrays.twitch_stream_key,
-                  sizeof(settings->paths.path_stream_url));
+                  sizeof(settings->paths.path_stream_url) - _len);
          }
          break;
       case STREAMING_MODE_YOUTUBE:
          if (!string_is_empty(settings->arrays.youtube_stream_key))
          {
-            strlcpy(settings->paths.path_stream_url,
+            size_t _len = strlcpy(settings->paths.path_stream_url,
                   youtube_url,
                   sizeof(settings->paths.path_stream_url));
-            strlcat(settings->paths.path_stream_url,
+            strlcpy(settings->paths.path_stream_url       + _len,
                   settings->arrays.youtube_stream_key,
-                  sizeof(settings->paths.path_stream_url));
+                  sizeof(settings->paths.path_stream_url) - _len);
          }
          break;
       case STREAMING_MODE_LOCAL:
@@ -500,12 +500,12 @@ void recording_driver_update_streaming_url(void)
       case STREAMING_MODE_FACEBOOK:
          if (!string_is_empty(settings->arrays.facebook_stream_key))
          {
-            strlcpy(settings->paths.path_stream_url,
+            size_t _len = strlcpy(settings->paths.path_stream_url,
                   facebook_url,
                   sizeof(settings->paths.path_stream_url));
-            strlcat(settings->paths.path_stream_url,
+            strlcpy(settings->paths.path_stream_url       + _len,
                   settings->arrays.facebook_stream_key,
-                  sizeof(settings->paths.path_stream_url));
+                  sizeof(settings->paths.path_stream_url) - _len);
          }
          break;
    }

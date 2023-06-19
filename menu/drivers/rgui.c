@@ -4665,7 +4665,10 @@ static void rgui_render_osk(
       size_t _len = strlcpy(msg, input_label, sizeof(msg));
       msg[_len  ] = '\n';
       msg[_len+1] = '\0';
-      strlcat(msg, input_str, sizeof(msg));
+      _len       += 1;
+      strlcpy(msg       + _len,
+            input_str,
+            sizeof(msg) - _len);
       rgui_render_messagebox(rgui, msg, fb_width, fb_height);
       return;
    }
@@ -6879,11 +6882,9 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
 
             if (path_is_valid(path))
-            {
-               strlcpy(
-                     rgui->savestate_thumbnail_file_path, path,
+               strlcpy(rgui->savestate_thumbnail_file_path,
+                     path,
                      sizeof(rgui->savestate_thumbnail_file_path));
-            }
          }
       }
    }

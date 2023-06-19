@@ -82,8 +82,8 @@ static void get_first_valid_core(char* path_return, size_t len)
          if (strlen(ent->d_name) > strlen(extension) 
                && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strlcpy(path_return, "sdmc:/retroarch/cores/", len);
-            strlcat(path_return, ent->d_name, len);
+            size_t _len = strlcpy(path_return, "sdmc:/retroarch/cores/", len);
+            strlcpy(path_return + _len, ent->d_name, len - _len);
             break;
          }
       }

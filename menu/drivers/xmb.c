@@ -6362,7 +6362,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       size_t _len                 = strlcpy(msg, label, sizeof(msg));
       msg[_len  ]                 = '\n';
       msg[_len+1]                 = '\0';
-      strlcat(msg, str, sizeof(msg));
+      _len                       += 1;
+      strlcpy(msg       + _len,
+            str,
+            sizeof(msg) - _len);
       render_background           = true;
    }
 
