@@ -1127,7 +1127,7 @@ void video_switch_refresh_rate_maybe(
       bool *video_switch_refresh_rate)
 {
    settings_t *settings               = config_get_ptr();
-   video_driver_state_t *video_st     = video_state_get_ptr();
+   video_driver_state_t *video_st     = &video_driver_st;
 
    float refresh_rate                 = *refresh_rate_suggest;
    float video_refresh_rate           = settings->floats.video_refresh_rate;
