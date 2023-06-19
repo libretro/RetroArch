@@ -940,7 +940,7 @@ static void drm_get_poke_interface(void *data,
    *iface = &drm_poke_interface;
 }
 
-static void drm_free(void *data)
+static void drm_gfx_free(void *data)
 {
    struct drm_video *_drmvars = data;
 
@@ -971,7 +971,7 @@ video_driver_t video_drm = {
    drm_suppress_screensaver,
    NULL, /* has_windowed */
    drm_set_shader,
-   drm_free,
+   drm_gfx_free,
    "drm",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
