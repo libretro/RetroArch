@@ -3857,7 +3857,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
       const char *content_label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t _len;
-   char msg[PATH_MAX_LENGTH];
+   char msg[128];
    char resolved_core_path[PATH_MAX_LENGTH];
    struct menu_state *menu_st    = menu_state_get_ptr();
    struct playlist_entry entry   = {0};
@@ -7236,8 +7236,7 @@ static int action_ok_video_resolution(const char *path,
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
-      char msg[PATH_MAX_LENGTH];
-
+      char msg[128];
       msg[0] = '\0';
 
 #if defined(_WIN32) || defined(__PS3__)
@@ -7668,7 +7667,7 @@ int action_ok_core_lock(const char *path,
       size_t _len;
       const char *core_name = NULL;
       core_info_t *core_info = NULL;
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       /* Need to fetch core name for error message */
 
@@ -7729,7 +7728,7 @@ int action_ok_core_set_standalone_exempt(const char *path,
       size_t _len;
       const char *core_name  = NULL;
       core_info_t *core_info = NULL;
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       /* Need to fetch core name for error message */
 
@@ -7779,7 +7778,7 @@ static int action_ok_core_delete(const char *path,
       size_t _len;
       const char *core_name  = NULL;
       core_info_t *core_info = NULL;
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       /* Need to fetch core name for notification */
 
@@ -8058,7 +8057,7 @@ static int action_ok_playlist_refresh(const char *path,
     * scan record */
    if (!scan_record_valid)
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
       if (string_is_empty(msg_subject))
          msg_subject = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       fill_pathname_join_special(msg, msg_prefix, msg_subject, sizeof(msg));

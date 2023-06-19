@@ -420,7 +420,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    softfilter_simd_mask_t cpu_features = (softfilter_simd_mask_t)cpu_features_get();
 #ifdef HAVE_DYLIB
    char basedir[PATH_MAX_LENGTH];
-   char ext_name[8];
+   char ext_name[16];
 #endif
    struct string_list *plugs     = NULL;
    rarch_softfilter_t *filt      = (rarch_softfilter_t*)

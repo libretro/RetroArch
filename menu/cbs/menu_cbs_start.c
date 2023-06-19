@@ -614,8 +614,7 @@ static int action_start_video_resolution(
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
-      char msg[PATH_MAX_LENGTH];
-
+      char msg[128];
       msg[0] = '\0';
 
 #if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
@@ -709,7 +708,7 @@ static int action_start_core_lock(
       size_t _len;
       const char *core_name  = NULL;
       core_info_t *core_info = NULL;
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       /* Need to fetch core name for error message */
 
@@ -769,7 +768,7 @@ static int action_start_core_set_standalone_exempt(
       size_t _len;
       const char *core_name  = NULL;
       core_info_t *core_info = NULL;
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       /* Need to fetch core name for error message */
 

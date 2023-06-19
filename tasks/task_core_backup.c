@@ -275,7 +275,7 @@ static void task_core_backup_handler(retro_task_t *task)
       case CORE_BACKUP_PRE_ITERATE:
          {
             size_t _len;
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[128];
             char backup_path[PATH_MAX_LENGTH];
 
             backup_path[0] = '\0';
@@ -416,7 +416,7 @@ static void task_core_backup_handler(retro_task_t *task)
             if (num_backups > backup_handle->auto_backup_history_size)
             {
                size_t _len;
-               char task_title[PATH_MAX_LENGTH];
+               char task_title[128];
 
                /* Get number of old backups to remove */
                backup_handle->num_auto_backups_to_remove = num_backups -
@@ -487,7 +487,7 @@ static void task_core_backup_handler(retro_task_t *task)
       case CORE_BACKUP_END:
          {
             size_t _len;
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[128];
             /* Set final task title */
             task_free_title(task);
 
@@ -545,7 +545,7 @@ void *task_push_core_backup(
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[128];
 
    /* Sanity check */
    if (    string_is_empty(core_path)
@@ -751,7 +751,7 @@ static void task_core_restore_handler(retro_task_t *task)
       case CORE_RESTORE_PRE_ITERATE:
          {
             size_t _len;
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[128];
 
             /* Open backup file */
 #if defined(HAVE_ZLIB)
@@ -888,7 +888,7 @@ static void task_core_restore_handler(retro_task_t *task)
       case CORE_RESTORE_END:
          {
             size_t _len;
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[128];
 
             /* Set final task title */
             task_free_title(task);
@@ -946,8 +946,8 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
-   char core_path[PATH_MAX_LENGTH];
    char task_title[256];
+   char core_path[PATH_MAX_LENGTH];
 
    core_path[0]  = '\0';
 
@@ -975,7 +975,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    if (backup_type == CORE_BACKUP_TYPE_INVALID)
    {
       const char *backup_filename = path_basename(backup_path);
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
       _len = strlcpy(msg,
             msg_hash_to_str(MSG_CORE_RESTORATION_INVALID_CONTENT),
             sizeof(msg));
@@ -1007,7 +1007,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    /* Check whether core is locked */
    if (core_info_get_core_lock(core_path, true))
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
       _len = strlcpy(msg,
             (backup_type == CORE_BACKUP_TYPE_ARCHIVE)
             ? msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED)

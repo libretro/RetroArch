@@ -522,8 +522,8 @@ static int playlist_association_right(unsigned type, const char *label,
       return -1;
 
    /* Get current core path association */
-   if (!string_is_empty(default_core_path) &&
-       !string_is_equal(default_core_path, "DETECT"))
+   if (   !string_is_empty(default_core_path)
+       && !string_is_equal(default_core_path, "DETECT"))
    {
       const char *default_core_filename = path_basename(default_core_path);
       if (!string_is_empty(default_core_filename))
@@ -1006,22 +1006,22 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type, const char *menu_label)
 {
 #ifdef HAVE_CHEATS
-   if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
+   if (     (type >= MENU_SETTINGS_CHEAT_BEGIN)
+         && (type <= MENU_SETTINGS_CHEAT_END))
    {
       BIND_ACTION_RIGHT(cbs, action_right_cheat);
    } else
 #endif
 #ifdef HAVE_AUDIOMIXER
-   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
+   if (     (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN)
+         && (type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END))
    {
       BIND_ACTION_RIGHT(cbs, audio_mixer_stream_volume_right);
    } else
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   if (     (type >= MENU_SETTINGS_SHADER_PARAMETER_0)
+         && (type <= MENU_SETTINGS_SHADER_PARAMETER_LAST))
    {
       BIND_ACTION_RIGHT(cbs, shader_action_parameter_right);
    }

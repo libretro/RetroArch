@@ -193,8 +193,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             if (entry)
             {
                size_t _len;
+               char task_title[128];
                struct playlist_entry update_entry = {0};
-               char task_title[PATH_MAX_LENGTH];
                /* Update progress display */
                task_free_title(task);
                _len = strlcpy(task_title,
@@ -205,7 +205,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                   strlcpy(task_title + _len, entry->label, sizeof(task_title) - _len);
                else if (!string_is_empty(entry->path))
                {
-                  char entry_name[PATH_MAX_LENGTH];
+                  char entry_name[128];
                   fill_pathname_base(entry_name, entry->path, sizeof(entry_name));
                   path_remove_extension(entry_name);
                   strlcat(task_title, entry_name, sizeof(task_title));
@@ -233,7 +233,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
       case PL_MANAGER_END:
          {
             size_t _len;
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[128];
             /* Save playlist changes to disk */
             playlist_write_file(pl_manager->playlist);
             /* Update progress display */
@@ -281,8 +281,8 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
 {
    size_t _len;
    task_finder_data_t find_data;
+   char task_title[128];
    char playlist_name[PATH_MAX_LENGTH];
-   char task_title[PATH_MAX_LENGTH];
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));
@@ -654,7 +654,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
       case PL_MANAGER_END:
          {
             size_t _len;
-            char task_title[PATH_MAX_LENGTH];
+            char task_title[128];
             /* Save playlist changes to disk */
             playlist_write_file(pl_manager->playlist);
             /* Update progress display */
@@ -705,8 +705,8 @@ bool task_push_pl_manager_clean_playlist(
 {
    size_t _len;
    task_finder_data_t find_data;
+   char task_title[128];
    char playlist_name[PATH_MAX_LENGTH];
-   char task_title[PATH_MAX_LENGTH];
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));

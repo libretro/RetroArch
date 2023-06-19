@@ -8935,7 +8935,7 @@ static bool setting_append_list_input_player_options(
          parent_group);
 
    {
-      char tmp_string[PATH_MAX_LENGTH];
+      char tmp_string[32];
 
       static char device_index[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];

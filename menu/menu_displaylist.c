@@ -1642,7 +1642,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
 
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
-   char entry[PATH_MAX_LENGTH];
+   char entry[256];
    char tmp[512];
    unsigned count = 0;
 
@@ -2299,9 +2299,9 @@ static int create_string_list_rdb_entry_string(
       file_list_t *list)
 {
    size_t _len;
+   char tmp[128];
    struct string_list str_list;
    union string_list_elem_attr attr;
-   char tmp[PATH_MAX_LENGTH];
    char *output_label               = NULL;
    int str_len                      = 0;
 
@@ -2352,11 +2352,10 @@ static int create_string_list_rdb_entry_int(
    struct string_list str_list;
    union string_list_elem_attr attr;
    char str[16];
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[128];
    char output_label[PATH_MAX_LENGTH];
    int str_len     = 0;
 
-   tmp[0]          = '\0';
    str[0]          = '\0';
    output_label[0] = '\0';
 
@@ -3776,7 +3775,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                break;
             case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
-                  char system[PATH_MAX_LENGTH];
+                  char system[64];
                   struct menu_state *menu_st  = menu_state_get_ptr();
                   system[0] = '\0';
 
@@ -3853,7 +3852,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
             if (download_enabled)
             {
-               char system[PATH_MAX_LENGTH];
+               char system[64];
                struct menu_state *menu_st  = menu_state_get_ptr();
                system[0] = '\0';
 
@@ -4188,6 +4187,7 @@ static unsigned menu_displaylist_parse_cores(
       menu_displaylist_info_t *info)
 {
    size_t i, list_size;
+   char out_dir[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
    unsigned count               = 0;
    const char *path             = info->path;
@@ -4225,17 +4225,14 @@ static unsigned menu_displaylist_parse_cores(
    }
 #endif
 
-   {
-      char out_dir[PATH_MAX_LENGTH];
-      fill_pathname_parent_dir(out_dir, path, sizeof(out_dir));
+   fill_pathname_parent_dir(out_dir, path, sizeof(out_dir));
 
-      if (string_is_empty(out_dir))
-         menu_entries_prepend(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
-               path,
-               MENU_ENUM_LABEL_PARENT_DIRECTORY,
-               FILE_TYPE_PARENT_DIRECTORY, 0, 0);
-   }
+   if (string_is_empty(out_dir))
+      menu_entries_prepend(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
+            path,
+            MENU_ENUM_LABEL_PARENT_DIRECTORY,
+            FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 
    if (!str_list)
    {
@@ -14561,7 +14558,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORES:
             menu_entries_clear(info->list);
             {
-               char ext_name[PATH_MAX_LENGTH];
+               char ext_name[16];
 
                ext_name[0] = '\0';
 
