@@ -1427,7 +1427,7 @@
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
-#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_MAIN
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
