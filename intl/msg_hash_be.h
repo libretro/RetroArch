@@ -102,12 +102,24 @@ MSG_HASH(
    "Плэй-лісты"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   "Тут адлюстроўваецца знойдзенае змесціва, адпаведнае базе даных."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "Імпартаваць змесціва"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   "Стварыць ці абнавіць плэй-лісты па знойдзенаму змесціву."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    "Паказаць меню стальніцы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Адключыць рэжым кіёска (патрабуецца перазапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -184,6 +196,10 @@ MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    "Запусціць відэапрацэсар"
    )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   "Запусціць аддалены RetroPad"
+   )
 
 /* Main Menu > Load Content */
 
@@ -211,16 +227,32 @@ MSG_HASH(
    "Абранае"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   "Тут адлюстроўваецца змесціва, дададзенае да 'Абранае'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "Музыка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   "Тут адлюстроўваецца музыка, якая калісьці прайгравалася."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
    "Відарысы"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   "Тут адлюстроўваюцца відарысы, якія былі калісьці прагледжаныя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
    "Відэа"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "Тут адлюстроўваецца відэа, якое калісьці прайгравалася."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -232,6 +264,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    "Пампавальнік ядраў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "Абнавіць усталяваныя ядры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "Абнавіць усе ўсталяваныя ядры да апошніх даступных версій."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -5400,6 +5440,122 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
    "Усе ўсталяваныя ядры апошніх версій"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "абноўлена ядраў: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "прапушчана ядраў: "
+   )
+MSG_HASH(
+   MSG_CORE_UPDATE_DISABLED,
+   "Абнаўленне ядра адключана - ядро заблакаванае: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   "Скід ядраў: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CORES_RESET,
+   "Скінута ядраў: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   "Ачыстка плэй-лісту: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   "Плэй-ліст ачышчаны: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Абнаўленне не атрымалася - плэй-ліст не змяшчае сапраўдных запісаў сканавання: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Абнаўленне не атрымалася - каталог змесціва няправільны або адсутнічае: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   "Абнаўленне не атрымалася - назва сістэмы няправільная або адсутнічае: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   "Абнаўленне не атрымалася - няправільнае ядро: "
+   )
+MSG_HASH(
+   MSG_ADDED_TO_FAVORITES,
+   "Дададзена да абранага"
+   )
+MSG_HASH(
+   MSG_ADD_TO_FAVORITES_FAILED,
+   "Не ўдалося дадаць да абранага: плэй-ліст запоўнены"
+   )
+MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Каталог праграмы"
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "Ужыванне шэйдара"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "Гук адключаны."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "Гук уключаны."
+   )
+MSG_HASH(
+   MSG_BYTES,
+   "байтаў"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "Файл опцый ядра паспяховы створаны."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "Файл опцый ядра паспяховы выдалены."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Усе опцыі ядра скінуты да прадвызначаных."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Опцыі ядра захаваныя ў:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Не атрымалася захаваць опцыі ядра ў:"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+   "Не ўдалося знайсці ніякі наступны драйвер"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "Не ўдалося знайсці сумяшчальную сістэму."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   "Не ўдалося знайсці сапраўдны трэк даных"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Не ўдалося адкрыць трэк даных"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_CONTENT_FILE,
+   "Не ўдалося прачытаць фал змесціва"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_MOVIE_HEADER,
+   "Не ўдалося прачытаць загаловак відэароліка."
    )
 MSG_HASH(
    MSG_ERROR,
