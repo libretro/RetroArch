@@ -703,7 +703,7 @@ void video_driver_force_fallback(const char *driver)
 
    if (msg_window)
    {
-      char text[PATH_MAX_LENGTH];
+      char text[128];
       ui_msg_window_state window_state;
       char *title          = strdup(msg_hash_to_str(MSG_ERROR));
 

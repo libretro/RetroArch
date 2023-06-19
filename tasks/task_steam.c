@@ -75,7 +75,7 @@ task_finished:
    /* If finished successfully */
    if (MIST_IS_SUCCESS(result))
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_INSTALLED),
             sizeof(msg));
       strlcpy(msg       + _len,
@@ -99,7 +99,7 @@ void task_push_steam_core_dlc_install(
       const char *name)
 {
    size_t _len;
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[128];
 
    retro_task_t                  *task   = task_init();
    steam_core_dlc_install_state_t* state = (steam_core_dlc_install_state_t*)calloc(1,

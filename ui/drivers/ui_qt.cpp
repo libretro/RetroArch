@@ -5095,8 +5095,8 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    size_t _len;
    QString path;
    QByteArray pathArray;
+   char filters[128];
    char core_ext[255]            = {0};
-   char filters[PATH_MAX_LENGTH] = {0};
    const char *pathData          = NULL;
    settings_t *settings          = config_get_ptr();
    const char *path_dir_libretro = settings->paths.directory_libretro;

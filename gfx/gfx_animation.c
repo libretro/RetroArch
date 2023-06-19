@@ -1374,22 +1374,20 @@ static void build_ticker_loop_string(
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
    {
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[32];
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(spacer, char_offset2), num_chars2);
-
       strlcat(dest_str, tmp, dest_str_len);
    }
 
    /* Copy 'leading' chunk of source string, if required */
    if (num_chars3 > 0)
    {
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[80];
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(src_str, char_offset3), num_chars3);
-
       strlcat(dest_str, tmp, dest_str_len);
    }
 }
