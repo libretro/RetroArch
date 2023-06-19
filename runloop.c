@@ -4541,25 +4541,6 @@ bool runloop_event_init_core(
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
    {
-#if 0
-//#ifdef HAVE_UPDATE_CORES
-      /* If netplay is enabled, update the core before initializing. */
-      const char *path_core = path_get(RARCH_PATH_CORE);
-
-      if (!string_is_empty(path_core) &&
-            !string_is_equal(path_core, "builtin"))
-      {
-         if (task_push_update_single_core(path_core,
-               settings->bools.core_updater_auto_backup,
-               settings->uints.core_updater_auto_backup_history_size,
-               settings->paths.directory_libretro,
-               settings->paths.directory_core_assets))
-            /* We must wait for the update to finish
-               before starting the core. */
-            task_queue_wait(NULL, NULL);
-      }
-#endif
-
       /* We need this in order for core_info_current_supports_netplay
          to work correctly at init_netplay,
          called later at event_init_content. */

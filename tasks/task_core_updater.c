@@ -134,6 +134,7 @@ typedef struct update_installed_cores_handle
    bool auto_backup;
 } update_installed_cores_handle_t;
 
+#if 0
 enum update_single_core_status
 {
    UPDATE_SINGLE_CORE_BEGIN = 0,
@@ -153,6 +154,7 @@ typedef struct update_single_core_handle
    char path_dir_core_assets[PATH_MAX_LENGTH];
    bool auto_backup;
 } update_single_core_handle_t;
+#endif
 
 #if defined(ANDROID)
 /* Play feature delivery core install */
@@ -1457,6 +1459,7 @@ task_finished:
       free_update_installed_cores_handle(update_installed_handle);
 }
 
+#if 0
 static void task_update_single_core_handler(retro_task_t *task)
 {
    update_single_core_handle_t *handle =
@@ -1559,12 +1562,16 @@ static void task_update_single_core_cleanup(retro_task_t *task)
    core_updater_list_free(handle->core_list);
    free(handle);
 }
+#endif
 
 static bool task_update_installed_cores_finder(retro_task_t *task, void *user_data)
 {
    if (task)
       if (     task->handler == task_update_installed_cores_handler
-            || task->handler == task_update_single_core_handler)
+#if 0
+            || task->handler == task_update_single_core_handler
+#endif
+            )
          return true;
    return false;
 }
@@ -1588,8 +1595,8 @@ void task_push_update_installed_cores(
 #endif
 
    /* Sanity check */
-   if (!update_installed_handle ||
-       string_is_empty(path_dir_libretro))
+   if (  !update_installed_handle
+       || string_is_empty(path_dir_libretro))
       goto error;
 
    /* Configure handle */
@@ -1648,6 +1655,7 @@ error:
       free_update_installed_cores_handle(update_installed_handle);
 }
 
+#if 0
 bool task_push_update_single_core(
       const char *path_core, bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro, const char *path_dir_core_assets)
@@ -1708,6 +1716,7 @@ bool task_push_update_single_core(
 
    return true;
 }
+#endif
 
 #if defined(ANDROID)
 /**************************************/
