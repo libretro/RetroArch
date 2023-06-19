@@ -4541,7 +4541,8 @@ bool runloop_event_init_core(
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
    {
-#ifdef HAVE_UPDATE_CORES
+#if 0
+//#ifdef HAVE_UPDATE_CORES
       /* If netplay is enabled, update the core before initializing. */
       const char *path_core = path_get(RARCH_PATH_CORE);
 
