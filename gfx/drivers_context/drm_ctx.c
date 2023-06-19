@@ -343,6 +343,7 @@ error:
 /* Get the mode from video_state */
 bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
 {
+#ifdef HAVE_CRTSWITCHRES
    video_driver_state_t *video_st = video_state_get_ptr();
    if (video_st->crt_switch_st.vdisplay < 1)
    {
@@ -375,6 +376,9 @@ bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
    /* consider the mode read and removed */
    video_st->crt_switch_st.vdisplay = 0;
    return true;
+#else
+   return false;
+#endif
 }
 
 /* Load custom hdmi timings from config */
