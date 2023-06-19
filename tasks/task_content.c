@@ -2147,7 +2147,6 @@ end:
 
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
-   uint16_t rarch_flags;
    content_information_ctx_t content_ctx;
    bool ret                           = true;
    content_state_t *p_content         = content_state_get_ptr();
@@ -2159,20 +2158,22 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
-   rarch_flags                        = retroarch_get_flags();
    content_ctx.flags                  = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
-      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   {
+      uint16_t rarch_flags = retroarch_get_flags();
+      if (rarch_flags & RARCH_FLAGS_IPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_BPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_UPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+      if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
+         content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   }
 #endif
    if (runloop_st->missing_bios)
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
@@ -2370,7 +2371,6 @@ bool task_push_load_content_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   uint16_t rarch_flags;
    content_information_ctx_t content_ctx;
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
@@ -2392,20 +2392,22 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
-   rarch_flags                        = retroarch_get_flags();
    content_ctx.flags                  = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
-      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   {
+      uint16_t rarch_flags = retroarch_get_flags();
+      if (rarch_flags & RARCH_FLAGS_IPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_BPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_UPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+      if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
+         content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   }
 #endif
    if (runloop_st->missing_bios)
       content_ctx.flags                      |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
