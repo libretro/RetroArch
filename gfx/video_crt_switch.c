@@ -77,15 +77,29 @@ static void crt_store_temp_changes(videocrt_switch_t *p_switch)
    p_switch->tmp_rotated       = p_switch->rotated;
 }
 
+static bool is_aspect_ratio_core_provided(void)
+{
+   settings_t *settings  = config_get_ptr();
+   return settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CORE;
+}
+
 static void crt_aspect_ratio_switch(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height,
       float srm_width, float srm_height)
 {
-   /* Send aspect float to video_driver */
-   video_driver_state_t *video_st = video_state_get_ptr();
    float fly_aspect               = (float)width / (float)height;
    p_switch->fly_aspect           = fly_aspect;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   /* We only force aspect ratio for the core provided setting */
+   if (!is_aspect_ratio_core_provided())
+   {
+      RARCH_LOG("[CRT]: Aspect ratio forced by user: %f\n", video_st->aspect_ratio);
+      return;
+   }
+
+   /* Send aspect float to video_driver */
    video_st->aspect_ratio         = fly_aspect;
    RARCH_LOG("[CRT]: Setting Aspect Ratio: %f \n", fly_aspect);
    RARCH_LOG("[CRT]: Setting Video Screen Size to: %dx%d \n",
@@ -449,7 +463,8 @@ void crt_switch_res_core(
          crt_store_temp_changes(p_switch);
       }
 
-      if (video_driver_get_aspect_ratio() != p_switch->fly_aspect)
+      if (is_aspect_ratio_core_provided() &&
+         video_driver_get_aspect_ratio() != p_switch->fly_aspect)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
          float fly_aspect               = (float)p_switch->fly_aspect;
