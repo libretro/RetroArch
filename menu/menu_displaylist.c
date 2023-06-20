@@ -1648,8 +1648,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    size_t _len    = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
          sizeof(entry));
-   entry[_len++ ] = ':';
-   entry[_len++ ] = ' ';
+   entry[  _len]   = ':';
+   entry[++_len]   = ' ';
+   entry[++_len]   = '\0';
    strlcpy(entry + _len, PACKAGE_VERSION, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1661,8 +1662,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
          sizeof(entry));
-   entry[_len++ ] = ':';
-   entry[_len++ ] = ' ';
+   entry[  _len]   = ':';
+   entry[++_len]   = ' ';
+   entry[++_len]   = '\0';
    strlcpy(entry + _len, retroarch_git_version, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1674,8 +1676,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
          sizeof(entry));
-   entry[_len++ ] = ':';
-   entry[_len++ ] = ' ';
+   entry[  _len]   = ':';
+   entry[++_len]   = ' ';
+   entry[++_len]   = '\0';
    strlcpy(entry + _len, __DATE__, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1712,8 +1715,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len            = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
             sizeof(entry));
-      entry[_len++ ] = ':';
-      entry[_len++ ] = ' ';
+      entry[  _len]   = ':';
+      entry[++_len]   = ' ';
+      entry[++_len]   = '\0';
       if (string_is_empty(cpu_model))
          strlcpy(entry + _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -1731,8 +1735,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
          sizeof(entry));
-   entry[_len++ ] = ':';
-   entry[_len++ ] = ' ';
+   entry[  _len]   = ':';
+   entry[++_len]   = ' ';
+   entry[++_len]   = '\0';
    strlcpy(entry + _len, tmp, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1744,8 +1749,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
          sizeof(entry));
-   entry[_len++ ] = ':';
-   entry[_len++ ] = ' ';
+   entry[  _len]   = ':';
+   entry[++_len]   = ' ';
+   entry[++_len]   = '\0';
    strlcpy(entry + _len, tmp, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1831,8 +1837,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          _len            = strlcpy(entry,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
                sizeof(entry));
-         entry[_len++ ]  = ':';
-         entry[_len++ ]  = ' ';
+         entry[  _len]   = ':';
+         entry[++_len]   = ' ';
+         entry[++_len]   = '\0';
          strlcpy(entry + _len, frontend->ident, sizeof(entry) - _len);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1847,8 +1854,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
                   sizeof(entry));
-            entry[_len++ ]  = ':';
-            entry[_len++ ]  = ' ';
+            entry[  _len]   = ':';
+            entry[++_len]   = ' ';
+            entry[++_len]   = '\0';
             strlcpy(entry + _len, lakka_ver, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1864,8 +1872,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                   sizeof(entry));
-            entry[_len++ ]  = ':';
-            entry[_len++ ]  = ' ';
+            entry[  _len]   = ':';
+            entry[++_len]   = ' ';
+            entry[++_len]   = '\0';
             strlcpy(entry + _len, frontend_name, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1883,8 +1892,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                   sizeof(entry));
-            entry[_len++ ]  = ':';
-            entry[_len++ ]  = ' ';
+            entry[  _len]   = ':';
+            entry[++_len]   = ' ';
+            entry[++_len]   = '\0';
             _len           += snprintf(entry + _len, sizeof(entry) - _len,
                   "%s (v%d.%d)", os_ver, major, minor);
             if (menu_entries_append(list, entry, "",
@@ -2097,11 +2107,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       for (info_idx = 0; info_idx < ARRAY_SIZE(info_list); info_idx++)
       {
-         size_t _len    = strlcpy(entry,
+         size_t _len     = strlcpy(entry,
                msg_hash_to_str(info_list[info_idx].msg),
                sizeof(entry));
-         entry[_len++ ] = ':';
-         entry[_len++ ] = ' ';
+         entry[  _len]   = ':';
+         entry[++_len]   = ' ';
+         entry[++_len]   = '\0';
          if (info_list[info_idx].enabled)
             strlcpy(entry + _len, val_yes_str, sizeof(entry) - _len);
          else
