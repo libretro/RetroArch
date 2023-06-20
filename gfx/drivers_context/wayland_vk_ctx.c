@@ -59,14 +59,6 @@ static void xdg_toplevel_handle_configure(void *data,
    wl->configured = false;
 }
 
-static void gfx_ctx_wl_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   gfx_ctx_wl_get_video_size_common(wl, width, height);
-}
-
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
@@ -84,7 +76,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
     * central place, so use that to trigger swapchain reinit. */
    *resize = wl->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
-   gfx_ctx_wl_check_window_common(wl, gfx_ctx_wl_get_video_size, quit, resize, 
+   gfx_ctx_wl_check_window_common(wl, gfx_ctx_wl_get_video_size_common, quit, resize, 
       width, height);
 
 }
@@ -109,12 +101,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    RARCH_ERR("[Wayland/Vulkan]: Failed to update swapchain.\n");
    return false;
-}
-
-static void gfx_ctx_wl_update_title(void *data)
-{
-   gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
-   gfx_ctx_wl_update_title_common(wl);
 }
 
 #ifdef HAVE_LIBDECOR_H
@@ -303,14 +289,14 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_bind_api,
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
-   gfx_ctx_wl_get_video_size,
+   gfx_ctx_wl_get_video_size_common,
    gfx_ctx_wl_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    gfx_ctx_wl_get_metrics_common,
    NULL,
-   gfx_ctx_wl_update_title,
+   gfx_ctx_wl_update_title_common,
    gfx_ctx_wl_check_window,
    gfx_ctx_wl_set_resize,
    gfx_ctx_wl_has_focus,
