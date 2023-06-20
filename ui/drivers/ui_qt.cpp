@@ -2711,13 +2711,13 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    QByteArray contentLabelArray;
    QByteArray contentDbNameArray;
    QByteArray contentCrc32Array;
-   char contentDbNameFull[PATH_MAX_LENGTH];
-   char corePathCached[PATH_MAX_LENGTH];
-   const char *corePath         = NULL;
-   const char *contentPath      = NULL;
-   const char *contentLabel     = NULL;
-   const char *contentDbName    = NULL;
-   const char *contentCrc32     = NULL;
+   char content_db_name_full[PATH_MAX_LENGTH];
+   char core_path_cached[PATH_MAX_LENGTH];
+   const char *core_path        = NULL;
+   const char *content_path     = NULL;
+   const char *content_label    = NULL;
+   const char *content_db_name  = NULL;
+   const char *content_crc32    = NULL;
 #ifdef HAVE_MENU
    struct menu_state *menu_st   = menu_state_get_ptr();
 #endif
@@ -2725,8 +2725,8 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
    core_info_t *coreInfo        = NULL;
 
-   contentDbNameFull[0]         = '\0';
-   corePathCached[0]            = '\0';
+   content_db_name_full[0]      = '\0';
+   core_path_cached[0]          = '\0';
 
    if (m_pendingRun)
       coreSelection             = CORE_SELECTION_CURRENT;
@@ -2798,8 +2798,8 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 
          if (!defaultCorePath.isEmpty())
          {
-            corePathArray = defaultCorePath.toUtf8();
-            contentPathArray = contentHash["path"].toUtf8();
+            corePathArray     = defaultCorePath.toUtf8();
+            contentPathArray  = contentHash["path"].toUtf8();
             contentLabelArray = contentHash["label_noext"].toUtf8();
          }
 
@@ -2812,41 +2812,41 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    contentDbNameArray                  = contentHash["db_name"].toUtf8();
    contentCrc32Array                   = contentHash["crc32"].toUtf8();
 
-   corePath                            = corePathArray.constData();
-   contentPath                         = contentPathArray.constData();
-   contentLabel                        = contentLabelArray.constData();
-   contentDbName                       = contentDbNameArray.constData();
-   contentCrc32                        = contentCrc32Array.constData();
+   core_path                           = corePathArray.constData();
+   content_path                        = contentPathArray.constData();
+   content_label                       = contentLabelArray.constData();
+   content_db_name                     = contentDbNameArray.constData();
+   content_crc32                       = contentCrc32Array.constData();
 
    /* Search for specified core - ensures path
     * is 'sanitised' */
-   if (core_info_find(corePath, &coreInfo) &&
-       !string_is_empty(coreInfo->path))
-      corePath = coreInfo->path;
+   if (    core_info_find(core_path, &coreInfo)
+       && !string_is_empty(coreInfo->path))
+      core_path = coreInfo->path;
 
    /* If a core is currently running, the following
     * call of 'command_event(CMD_EVENT_UNLOAD_CORE, NULL)'
     * will free the global core_info struct, which will
     * in turn free the pointer referenced by coreInfo->path.
-    * This will invalidate corePath, so we have to cache
+    * This will invalidate core_path, so we have to cache
     * its current value here. */
-   if (!string_is_empty(corePath))
-      strlcpy(corePathCached, corePath, sizeof(corePathCached));
+   if (!string_is_empty(core_path))
+      strlcpy(core_path_cached, core_path, sizeof(core_path_cached));
 
    /* Add lpl extension to db_name, if required */
-   if (!string_is_empty(contentDbName))
+   if (!string_is_empty(content_db_name))
    {
-      const char *extension = NULL;
+      size_t _len     = strlcpy(content_db_name_full, content_db_name,
+             sizeof(content_db_name_full));
+      const char *ext = path_get_extension(content_db_name_full);
 
-      strlcpy(contentDbNameFull, contentDbName, sizeof(contentDbNameFull));
-      extension = path_get_extension(contentDbNameFull);
-
-      if (      string_is_empty(extension) 
-            || !string_is_equal_noncase(
-            extension, FILE_PATH_LPL_EXTENSION_NO_DOT))
-         strlcat(
-               contentDbNameFull, FILE_PATH_LPL_EXTENSION,
-                     sizeof(contentDbNameFull));
+      if (      string_is_empty(ext) 
+            || !string_is_equal_noncase(ext,
+                FILE_PATH_LPL_EXTENSION_NO_DOT))
+         strlcpy(
+               content_db_name_full         + _len,
+               FILE_PATH_LPL_EXTENSION,
+               sizeof(content_db_name_full) - _len);
    }
 
    content_info.argc                   = 0;
@@ -2861,7 +2861,11 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
-         corePathCached, contentPath, contentLabel, contentDbNameFull, contentCrc32,
+         core_path_cached,
+         content_path,
+         content_label,
+         content_db_name_full,
+         content_crc32,
          &content_info, NULL, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
