@@ -242,15 +242,20 @@ static void xdg_screensaver_inhibit(Window wnd)
    }
 }
 
-void x11_suspend_screensaver(Window wnd, bool enable)
+bool x11_suspend_screensaver(void *data, bool enable)
 {
+   Window wnd;
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+      return false;
+   wnd = video_driver_window_get();
 #ifdef HAVE_DBUS
     if (dbus_suspend_screensaver(enable))
-       return;
+       return true;
 #endif
     if (enable)
        if (xdg_screensaver_available)
           xdg_screensaver_inhibit(wnd);
+    return true;
 }
 
 #ifdef HAVE_XF86VM

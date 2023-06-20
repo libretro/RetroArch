@@ -293,9 +293,8 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 
 static void gfx_ctx_x_swap_buffers(void *data)
 {
-   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
    if (x->is_double)
       glXSwapBuffers(g_x11_dpy, x->glx_win);
 #endif
@@ -313,7 +312,8 @@ static bool gfx_ctx_x_set_resize(void *data,
     * X11 loses focus on monitor/resolution swap and exits fullscreen.
     * Set window on top again to maintain both fullscreen and resolution.
     */
-   if (x->is_fullscreen) {
+   if (x->is_fullscreen)
+   {
       XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[GLX]: Resized fullscreen resolution to %dx%d.\n", width, height);
    }
@@ -966,18 +966,6 @@ static void gfx_ctx_x_input_driver(void *data,
    *input_data  = x_input;
 }
 
-static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-
-   return true;
-}
-
 static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)
 {
    switch (x_api)
@@ -1186,7 +1174,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    x11_check_window,
    gfx_ctx_x_set_resize,
    x11_has_focus,
-   gfx_ctx_x_suppress_screensaver,
+   x11_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_x_swap_buffers,
    gfx_ctx_x_input_driver,

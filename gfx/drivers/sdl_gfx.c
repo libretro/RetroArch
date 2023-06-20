@@ -432,19 +432,7 @@ static bool sdl_gfx_focus(void *data)
    return (SDL_GetAppState() & (SDL_APPINPUTFOCUS | SDL_APPACTIVE)) == (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
 }
 
-static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
-{
-#ifdef HAVE_X11
-   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
-   {
-      x11_suspend_screensaver(video_driver_window_get(), enable);
-      return true;
-   }
-#endif
-
-   return false;
-}
-
+static bool sdl_gfx_suspend_screensaver(void *data, bool enable) { return false; }
 /* TODO/FIXME - implement */
 static bool sdl_gfx_has_windowed(void *data) { return true; }
 
@@ -576,7 +564,11 @@ video_driver_t video_sdl = {
    sdl_gfx_set_nonblock_state,
    sdl_gfx_alive,
    sdl_gfx_focus,
-   sdl_gfx_suppress_screensaver,
+#ifdef HAVE_X11
+   x11_suspend_screensaver,
+#else
+   sdl_gfx_suspend_screensaver,
+#endif
    sdl_gfx_has_windowed,
    sdl_gfx_set_shader,
    sdl_gfx_free,

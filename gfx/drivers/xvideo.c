@@ -1064,15 +1064,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static bool xv_suppress_screensaver(void *data, bool enable)
-{
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-   return true;
-}
-
 static bool xv_has_windowed(void *data) { return true; }
 
 static void xv_free(void *data)
@@ -1182,7 +1173,7 @@ video_driver_t video_xvideo = {
    xv_set_nonblock_state,
    x11_alive,
    x11_has_focus_internal,
-   xv_suppress_screensaver,
+   x11_suspend_screensaver,
    xv_has_windowed,
    xv_set_shader,
    xv_free,

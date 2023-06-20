@@ -483,16 +483,6 @@ static void gfx_ctx_xegl_input_driver(void *data,
    *input_data  = xinput;
 }
 
-static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
-{
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-
-   return true;
-}
-
 static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data) { return xegl_api; }
 
 static bool gfx_ctx_xegl_bind_api(void *video_driver,
@@ -621,7 +611,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    x11_check_window,
    NULL, /* set_resize */
    x11_has_focus,
-   gfx_ctx_xegl_suppress_screensaver,
+   x11_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_xegl_swap_buffers,
    gfx_ctx_xegl_input_driver,

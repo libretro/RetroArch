@@ -508,16 +508,6 @@ static void gfx_ctx_x_vk_input_driver(void *data,
    *input_data  = x_input;
 }
 
-static bool gfx_ctx_x_vk_suppress_screensaver(void *data, bool enable)
-{
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-
-   return true;
-}
-
 static enum gfx_ctx_api gfx_ctx_x_vk_get_api(void *data)
 {
    return GFX_CTX_VULKAN_API;
@@ -575,7 +565,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    gfx_ctx_x_vk_check_window,
    gfx_ctx_x_vk_set_resize,
    x11_has_focus,
-   gfx_ctx_x_vk_suppress_screensaver,
+   x11_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_x_vk_swap_buffers,
    gfx_ctx_x_vk_input_driver,
