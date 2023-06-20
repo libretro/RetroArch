@@ -204,33 +204,6 @@ int system_property_get(const char *command,
 /* forward declaration */
 bool android_run_events(void *data);
 
-void android_dpi_get_density(char *s, size_t len)
-{
-   static bool inited_once             = false;
-   static bool inited2_once            = false;
-   static char string[PROP_VALUE_MAX]  = {0};
-   static char string2[PROP_VALUE_MAX] = {0};
-   if (!inited_once)
-   {
-      system_property_get("getprop", "ro.sf.lcd_density", string);
-      inited_once = true;
-   }
-
-   if (!string_is_empty(string))
-   {
-      strlcpy(s, string, len);
-      return;
-   }
-
-   if (!inited2_once)
-   {
-      system_property_get("wm", "density", string2);
-      inited2_once = true;
-   }
-
-   strlcpy(s, string2, len);
-}
-
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
    if (android_app)

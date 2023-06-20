@@ -41,6 +41,10 @@ typedef struct
    int swap_interval;
 } android_ctx_data_vk_t;
 
+/* FORWARD DECLARATION */
+bool android_display_get_metrics(void *data,
+	enum display_metric_types type, float *value);
+
 static void android_gfx_ctx_vk_destroy(void *data)
 {
    android_ctx_data_vk_t *and         = (android_ctx_data_vk_t*)data;
@@ -205,44 +209,6 @@ static bool android_gfx_ctx_vk_has_focus(void *data)
 
 static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { return false; }
 
-static bool android_gfx_ctx_vk_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   static int dpi = -1;
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_MM_WIDTH:
-      case DISPLAY_METRIC_MM_HEIGHT:
-         return false;
-      case DISPLAY_METRIC_DPI:
-         if (dpi == -1)
-         {
-            char density[PROP_VALUE_MAX];
-            android_dpi_get_density(density, sizeof(density));
-            if (string_is_empty(density))
-               goto dpi_fallback;
-            if ((dpi = atoi(density)) <= 0)
-               goto dpi_fallback;
-         }
-         *value = (float)dpi;
-         break;
-      case DISPLAY_METRIC_NONE:
-      default:
-         *value = 0;
-         return false;
-   }
-
-   return true;
-
-dpi_fallback:
-   /* Add a fallback in case the device doesn't report DPI.
-    * Hopefully fixes issues with the moto G2. */
-   dpi          = 90;
-   *value       = (float)dpi;
-   return true;
-}
-
 static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
@@ -307,7 +273,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    NULL,                                     /* get_video_output_size */
    NULL,                                     /* get_video_output_prev */
    NULL,                                     /* get_video_output_next */
-   android_gfx_ctx_vk_get_metrics,
+   android_display_get_metrics,
    NULL,
    NULL,                                     /* update_title */
    android_gfx_ctx_vk_check_window,
