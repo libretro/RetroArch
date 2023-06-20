@@ -9293,6 +9293,7 @@ static void RETRO_CALLCONV netplay_netpacket_send(const void* buf, size_t len,
    }
    else
    {
+      struct netplay_connection *connection;
       size_t i = client_id - (netplay->is_server ? 1 : 0);
       if (i >= netplay->connections_size)
       {
@@ -9300,7 +9301,7 @@ static void RETRO_CALLCONV netplay_netpacket_send(const void* buf, size_t len,
             client_id);
          return;
       }
-      struct netplay_connection *connection = &netplay->connections[i];
+      connection = &netplay->connections[i];
       if (     (connection->flags & NETPLAY_CONN_FLAG_ACTIVE)
             && (connection->mode == NETPLAY_CONNECTION_PLAYING)
             && !netplay_send_raw_cmd(netplay, connection,
