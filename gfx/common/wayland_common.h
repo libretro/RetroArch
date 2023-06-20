@@ -53,12 +53,12 @@ void libdecor_frame_handle_commit(struct libdecor_frame *frame,
       void *data);
 #endif
 
-void gfx_ctx_wl_get_video_size_common(gfx_ctx_wayland_data_t *wl,
-      unsigned *width, unsigned *height);
+void gfx_ctx_wl_get_video_size_common(void *data, unsigned *width,
+      unsigned *height);
 
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl);
 
-void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl);
+void gfx_ctx_wl_update_title_common(void *data);
 
 bool gfx_ctx_wl_get_metrics_common(void *data,
       enum display_metric_types type, float *value);

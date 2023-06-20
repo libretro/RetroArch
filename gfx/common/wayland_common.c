@@ -40,7 +40,7 @@
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-// Icon is 16x15 scaled by 16
+/* Icon is 16x15 scaled by 16 */
 #define SPLASH_WINDOW_WIDTH 240
 #define SPLASH_WINDOW_HEIGHT 256
 
@@ -89,7 +89,7 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       int32_t width, int32_t height, struct wl_array *states)
 {
    const uint32_t *state;
-   bool floating = true;
+   bool floating              = true;
 
    wl->fullscreen             = false;
    wl->maximized              = false;
@@ -100,23 +100,23 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       {
          case XDG_TOPLEVEL_STATE_FULLSCREEN:
             wl->fullscreen = true;
-            floating = false;
+            floating       = false;
             break;
          case XDG_TOPLEVEL_STATE_MAXIMIZED:
-            wl->maximized = true;
-            floating = false;
+            wl->maximized  = true;
+            floating       = false;
             break;
          case XDG_TOPLEVEL_STATE_TILED_LEFT:
          case XDG_TOPLEVEL_STATE_TILED_RIGHT:
          case XDG_TOPLEVEL_STATE_TILED_TOP:
          case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
-            floating = false;
+            floating       = false;
             break;
          case XDG_TOPLEVEL_STATE_RESIZING:
-            wl->resize = true;
+            wl->resize     = true;
             break;
          case XDG_TOPLEVEL_STATE_ACTIVATED:
-            wl->activated = true;
+            wl->activated  = true;
             break;
       }
    }
@@ -127,14 +127,14 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       height = wl->floating_height;
    }
 
-   if (     width  > 0
-         && height > 0)
+   if (     (width  > 0)
+         && (height > 0))
    {
-      wl->width  = width;
-      wl->height = height;
+      wl->width         = width;
+      wl->height        = height;
       wl->buffer_width  = wl->width * wl->buffer_scale;
       wl->buffer_height = wl->height * wl->buffer_scale;
-      wl->resize = true;
+      wl->resize        = true;
       if (wl->viewport)
          update_viewport(wl);
    }
@@ -147,11 +147,7 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
 }
 
 void xdg_toplevel_handle_close(void *data,
-      struct xdg_toplevel *xdg_toplevel)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   command_event(CMD_EVENT_QUIT, NULL);
-}
+      struct xdg_toplevel *xdg_toplevel) { command_event(CMD_EVENT_QUIT, NULL); }
 
 #ifdef HAVE_LIBDECOR_H
 void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
@@ -218,23 +214,18 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
 }
 
 void libdecor_frame_handle_close(struct libdecor_frame *frame,
-      void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   command_event(CMD_EVENT_QUIT, NULL);
-}
-
+      void *data) { command_event(CMD_EVENT_QUIT, NULL); }
 void libdecor_frame_handle_commit(struct libdecor_frame *frame,
-      void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-}
+      void *data) { }
 #endif
 
 
-void gfx_ctx_wl_get_video_size_common(gfx_ctx_wayland_data_t *wl,
+void gfx_ctx_wl_get_video_size_common(void *data,
       unsigned *width, unsigned *height)
 {
+   gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
+   if (!wl)
+      return;
    if (!wl->reported_display_size)
    {
       display_output_t *od;
@@ -361,35 +352,39 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->wl_pointer               = NULL;
    wl->wl_keyboard              = NULL;
 
-   wl->width         = 0;
-   wl->height        = 0;
-   wl->buffer_width  = 0;
-   wl->buffer_height = 0;
+   wl->width                    = 0;
+   wl->height                   = 0;
+   wl->buffer_width             = 0;
+   wl->buffer_height            = 0;
 }
 
-void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl)
+void gfx_ctx_wl_update_title_common(void *data)
 {
    char title[128];
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    title[0] = '\0';
 
    video_driver_get_window_title(title, sizeof(title));
 
+   if (wl)
+   {
 #ifdef HAVE_LIBDECOR_H
-   if (wl->libdecor)
-   {
-      if (wl && title[0])
-         wl->libdecor_frame_set_title(wl->libdecor_frame, title);
-   }
-   else
-#endif
-   {
-      if (wl && title[0])
+      if (wl->libdecor)
       {
-         if (wl->deco)
-            zxdg_toplevel_decoration_v1_set_mode(wl->deco,
-               ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-         xdg_toplevel_set_title(wl->xdg_toplevel, title);
+         if (title[0])
+            wl->libdecor_frame_set_title(wl->libdecor_frame, title);
+      }
+      else
+#endif
+      {
+         if (title[0])
+         {
+            if (wl->deco)
+               zxdg_toplevel_decoration_v1_set_mode(wl->deco,
+                     ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+            xdg_toplevel_set_title(wl->xdg_toplevel, title);
+         }
       }
    }
 }
@@ -397,8 +392,8 @@ void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl)
 bool gfx_ctx_wl_get_metrics_common(void *data,
       enum display_metric_types type, float *value)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    display_output_t *od;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    output_info_t *oi          = wl ? wl->current_output : NULL;
 
    if (!oi)
@@ -419,8 +414,8 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
          break;
 
       case DISPLAY_METRIC_DPI:
-         *value = (float)oi->width * 25.4f /
-                  (float)oi->physical_width;
+         *value =   (float)oi->width * 25.4f
+                  / (float)oi->physical_width;
          break;
 
       default:
@@ -745,11 +740,12 @@ bool gfx_ctx_wl_init_common(
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
     *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
-   if (video_monitor_index == 0 && wl_list_length (&wl->all_outputs) > 1) {
+   if (video_monitor_index == 0 && wl_list_length (&wl->all_outputs) > 1)
+   {
       if (!wl_draw_splash_screen(wl))
          RARCH_ERR("[Wayland]: Failed to draw splash screen\n");
 
-      // Make sure splash screen is on screen and sized
+      /* Make sure splash screen is on screen and sized */
 #ifdef HAVE_LIBDECOR_H
       if (wl->libdecor)
       {
@@ -842,7 +838,7 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
 
       if (video_monitor_index <= 0 && wl->current_output != NULL)
       {
-         oi = wl->current_output;
+         oi     = wl->current_output;
          output = oi->output;
          RARCH_LOG("[Wayland]: Auto fullscreen on display \"%s\" \"%s\"\n", oi->make, oi->model);
       }
@@ -892,32 +888,31 @@ bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
 
    if (!wl->idle_inhibit_manager)
       return false;
-   if (state == (!!wl->idle_inhibitor))
-      return true;
+   if (state != (!!wl->idle_inhibitor))
+   {
+      if (state)
+      {
+         RARCH_LOG("[Wayland]: Enabling idle inhibitor\n");
+         struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
+         wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
+      }
+      else
+      {
+         RARCH_LOG("[Wayland]: Disabling the idle inhibitor\n");
+         zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
+         wl->idle_inhibitor = NULL;
+      }
+   }
 
-   if (state)
-   {
-      RARCH_LOG("[Wayland]: Enabling idle inhibitor\n");
-      struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
-      wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
-   }
-   else
-   {
-      RARCH_LOG("[Wayland]: Disabling the idle inhibitor\n");
-      zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
-      wl->idle_inhibitor = NULL;
-   }
    return true;
 }
 
 float gfx_ctx_wl_get_refresh_rate(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
    if (!wl || !wl->current_output)
       return false;
-
-   return (float) wl->current_output->refresh_rate / 1000.0f;
+   return (float)wl->current_output->refresh_rate / 1000.0f;
 }
 
 bool gfx_ctx_wl_has_focus(void *data)
@@ -961,8 +956,8 @@ static void shm_buffer_handle_release(void *data,
 }
 
 #if 0
-static void xdg_surface_handle_configure(void *data, struct xdg_surface *surface,
-                                  uint32_t serial)
+static void xdg_surface_handle_configure(void *data,
+      struct xdg_surface *surface, uint32_t serial)
 {
    xdg_surface_ack_configure(surface, serial);
 }

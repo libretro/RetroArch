@@ -300,11 +300,11 @@ void egl_destroy(egl_ctx_data_t *egl)
     * If we screw up, any TTY will not restore.
     */
 
-   egl->ctx     = EGL_NO_CONTEXT;
-   egl->hw_ctx  = EGL_NO_CONTEXT;
-   egl->surf    = EGL_NO_SURFACE;
-   egl->dpy     = EGL_NO_DISPLAY;
-   egl->config  = 0;
+   egl->ctx      = EGL_NO_CONTEXT;
+   egl->hw_ctx   = EGL_NO_CONTEXT;
+   egl->surf     = EGL_NO_SURFACE;
+   egl->dpy      = EGL_NO_DISPLAY;
+   egl->config   = 0;
    g_egl_inited  = false;
 
    frontend_driver_destroy_signal_handler_state();
@@ -312,13 +312,12 @@ void egl_destroy(egl_ctx_data_t *egl)
 
 void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
 {
-   egl->use_hw_ctx = enable;
+   egl->use_hw_ctx     = enable;
 
    if (egl->dpy  == EGL_NO_DISPLAY)
       return;
    if (egl->surf == EGL_NO_SURFACE)
       return;
-
    _egl_make_current(egl->dpy, egl->surf,
          egl->surf,
          enable ? egl->hw_ctx : egl->ctx);
