@@ -3585,12 +3585,6 @@ static bool d3d11_get_hw_render_interface(
 }
 
 #ifndef __WINRT__
-static void d3d11_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
-{
-   win32_get_video_output_size(width, height, desc, desc_len);
-}
-
 static void d3d11_get_video_output_prev(void *data)
 {
    unsigned width  = 0;
@@ -3623,7 +3617,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
 #else
-   d3d11_get_video_output_size,
+   win32_get_video_output_size,
    d3d11_get_video_output_prev,
    d3d11_get_video_output_next,
 #endif

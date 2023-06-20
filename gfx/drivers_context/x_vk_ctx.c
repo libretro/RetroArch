@@ -390,7 +390,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
@@ -516,11 +516,6 @@ static enum gfx_ctx_api gfx_ctx_x_vk_get_api(void *data)
 static bool gfx_ctx_x_vk_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor) { return (api == GFX_CTX_VULKAN_API); }
 
-static void gfx_ctx_x_vk_show_mouse(void *data, bool state)
-{
-   x11_show_mouse(g_x11_dpy, g_x11_win, state);
-}
-
 static void gfx_ctx_x_vk_bind_hw_render(void *data, bool enable) { }
 
 static void *gfx_ctx_x_vk_get_context_data(void *data)
@@ -572,7 +567,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    NULL, /* get_proc_address */
    NULL,
    NULL,
-   gfx_ctx_x_vk_show_mouse,
+   x11_show_mouse,
    "vk_x",
    gfx_ctx_x_vk_get_flags,
    gfx_ctx_x_vk_set_flags,

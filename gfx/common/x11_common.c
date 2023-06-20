@@ -111,8 +111,10 @@ static void x11_hide_mouse(Display *dpy, Window win)
    XFreeColors(dpy, colormap, &black.pixel, 1, 0);
 }
 
-void x11_show_mouse(Display *dpy, Window win, bool state)
+void x11_show_mouse(void *data, bool state)
 {
+   Display *dpy = g_x11_dpy;
+   Window   win = g_x11_win;
    if (state)
       XUndefineCursor(dpy, win);
    else

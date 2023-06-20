@@ -137,7 +137,7 @@ void win32_check_window(void *data,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
-void win32_get_video_output_size(
+void win32_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len);
 
 void win32_get_video_output_prev(

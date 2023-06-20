@@ -777,12 +777,6 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 
 }
 
-static void gfx_ctx_wgl_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
-{
-   win32_get_video_output_size(width, height, desc, desc_len);
-}
-
 static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
 static void gfx_ctx_wgl_get_video_output_next(void *data) { }
 
@@ -795,7 +789,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_set_video_mode,
    win32_get_video_size,
    win32_get_refresh_rate,
-   gfx_ctx_wgl_get_video_output_size,
+   win32_get_video_output_size,
    gfx_ctx_wgl_get_video_output_prev,
    gfx_ctx_wgl_get_video_output_next,
    win32_get_metrics,

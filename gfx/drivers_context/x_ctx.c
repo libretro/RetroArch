@@ -623,7 +623,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
@@ -1031,11 +1031,6 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
    return false;
 }
 
-static void gfx_ctx_x_show_mouse(void *data, bool state)
-{
-   x11_show_mouse(g_x11_dpy, g_x11_win, state);
-}
-
 static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
@@ -1181,7 +1176,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_get_proc_address,
    NULL,
    NULL,
-   gfx_ctx_x_show_mouse,
+   x11_show_mouse,
    "x",
    gfx_ctx_x_get_flags,
    gfx_ctx_x_set_flags,

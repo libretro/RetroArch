@@ -28,7 +28,7 @@ extern Display *g_x11_dpy;
 extern Colormap g_x11_cmap;
 extern unsigned g_x11_screen;
 
-void x11_show_mouse(Display *dpy, Window win, bool state);
+void x11_show_mouse(void *data, bool state);
 void x11_set_net_wm_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(void *data, bool enable);
 

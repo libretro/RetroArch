@@ -2688,10 +2688,9 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    return true;
 }
 
-void win32_get_video_output_size(unsigned *width, unsigned *height, char *desc, size_t desc_len)
+void win32_get_video_output_size(void *data, unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
    DEVMODE dm;
-
    if (win32_get_video_output(&dm, -1, sizeof(dm)))
    {
       *width  = dm.dmPelsWidth;

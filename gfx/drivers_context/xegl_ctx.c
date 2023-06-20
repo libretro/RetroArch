@@ -398,7 +398,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
@@ -517,11 +517,6 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
    return false;
 }
 
-static void gfx_ctx_xegl_show_mouse(void *data, bool state)
-{
-   x11_show_mouse(g_x11_dpy, g_x11_win, state);
-}
-
 static void gfx_ctx_xegl_swap_buffers(void *data)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
@@ -618,7 +613,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_get_proc_address,
    NULL,
    NULL,
-   gfx_ctx_xegl_show_mouse,
+   x11_show_mouse,
    "egl_x",
    gfx_ctx_xegl_get_flags,
    gfx_ctx_xegl_set_flags,
