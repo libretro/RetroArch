@@ -6342,22 +6342,19 @@ bool retroarch_main_init(int argc, char *argv[])
    {
       {
          char str_output[256];
-         const char *cpu_model  = NULL;
-         str_output[0] = '\0';
-
-         cpu_model     = frontend_driver_get_cpu_model_name();
-
-         strlcpy(str_output,
+         const char *cpu_model  = frontend_driver_get_cpu_model_name();
+         size_t _len = strlcpy(str_output,
                "=== Build =======================================\n",
                sizeof(str_output));
 
          if (!string_is_empty(cpu_model))
          {
-            size_t _len;
             /* TODO/FIXME - localize */
-            strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ",
-                  sizeof(str_output));
-            _len               = strlcat(str_output, cpu_model, sizeof(str_output));
+            _len += strlcpy(str_output + _len,
+                  FILE_PATH_LOG_INFO " CPU Model Name: ",
+                  sizeof(str_output)   - _len);
+            _len              += strlcpy(str_output + _len, cpu_model,
+                                 sizeof(str_output) - _len);
             str_output[  _len] = '\n';
             str_output[++_len] = '\0';
          }

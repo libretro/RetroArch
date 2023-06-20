@@ -4064,12 +4064,13 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
             union string_list_elem_attr attr;
             char savename[PATH_MAX_LENGTH];
             char path[PATH_MAX_LENGTH];
+            size_t _len = 0;
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
-            ext[0]  = '.';
-            ext[1]  = '\0';
-            strlcat(ext, mem->extension, sizeof(ext));
+            ext[  _len]  = '.';
+            ext[++_len]  = '\0';
+            strlcpy(ext + _len, mem->extension, sizeof(ext) - _len);
             strlcpy(savename,
                   runloop_st->subsystem_fullpaths->elems[i].data,
                   sizeof(savename));

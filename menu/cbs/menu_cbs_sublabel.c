@@ -1635,34 +1635,36 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       ": %s (%s)\n"
       "%s: %s (%s)\n"
       "%s: %s ",
-      !string_is_empty(room->retroarch_version) ? room->retroarch_version :
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+      !string_is_empty(room->retroarch_version) 
+      ? room->retroarch_version
+      : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       (!string_is_empty(room->frontend) &&
-         !string_is_equal_case_insensitive(room->frontend, "N/A")) ?
-            room->frontend :
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+         !string_is_equal_case_insensitive(room->frontend, "N/A"))
+            ? room->frontend
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
       room->corename, room->coreversion,
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT),
       (!string_is_empty(room->gamename) &&
-         !string_is_equal_case_insensitive(room->gamename, "N/A")) ?
-            room->gamename :
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         !string_is_equal_case_insensitive(room->gamename, "N/A"))
+            ? room->gamename
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
    if (     string_is_empty(room->subsystem_name)
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
-      snprintf(buf, sizeof(buf), "(%08lX)",
-         (unsigned long)(unsigned)room->gamecrc);
+      _len = snprintf(buf, sizeof(buf), "(%08lX)",
+            (unsigned long)(unsigned)room->gamecrc);
    else
    {
-      buf[0 ]     = '(';
-      buf[1 ]     = '\0';
-      _len        = strlcat(buf, room->subsystem_name, sizeof(buf));
+      _len        = 0;
+      buf[  _len] = '(';
+      buf[++_len] = '\0';
+      _len       += strlcpy(buf + _len, room->subsystem_name, sizeof(buf) - _len);
       buf[  _len] = ')';
       buf[++_len] = '\0';
    }
 
-   strlcat(s, buf, len);
+   strlcpy(s + _len, buf, len - _len);
 
    return 0;
 }

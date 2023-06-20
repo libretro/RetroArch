@@ -1168,17 +1168,14 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    if (shader->luts)
    {
       char textures[4096];
-
-      textures[0] = '\0';
-
       /* Names of the textures */
-      strlcpy(textures, shader->lut[0].id, sizeof(textures));
+      size_t _len = strlcpy(textures, shader->lut[0].id, sizeof(textures));
 
       for (i = 1; i < shader->luts; i++)
       {
          /* O(n^2), but number of textures is very limited. */
-         strlcat(textures, ";", sizeof(textures));
-         strlcat(textures, shader->lut[i].id, sizeof(textures));
+         _len += strlcpy(textures + _len, ";",               sizeof(textures) - _len);
+         _len += strlcpy(textures + _len, shader->lut[i].id, sizeof(textures) - _len);
       }
 
       config_set_string(conf, "textures", textures);

@@ -9143,8 +9143,8 @@ static bool setting_append_list_input_player_options(
       {
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
-
-         i =  (j < RARCH_ANALOG_BIND_LIST_END) 
+         size_t _len = 0;
+         i           =  (j < RARCH_ANALOG_BIND_LIST_END) 
             ? input_config_bind_order[j] 
             : j;
 
@@ -9155,7 +9155,7 @@ static bool setting_append_list_input_player_options(
 
          if (!string_is_empty(buffer[user]))
          {
-            size_t  _len  = strlcpy(label, buffer[user], sizeof(label));
+            _len          = strlcpy(label, buffer[user], sizeof(label));
             label[  _len] = ' ';
             label[++_len] = '\0';
          }
@@ -9170,18 +9170,20 @@ static bool setting_append_list_input_player_options(
             )
          {
             if (system->input_desc_btn[user][i])
-               strlcat(label,
+               strlcpy(label       + _len,
                      system->input_desc_btn[user][i],
-                     sizeof(label));
+                     sizeof(label) - _len);
             else
             {
-               strlcat(label, value_na, sizeof(label));
+               strlcpy(label + _len, value_na, sizeof(label) - _len);
                if (settings->bools.input_descriptor_hide_unbound)
                   continue;
             }
          }
          else
-            strlcat(label, input_config_bind_map_get_desc(i), sizeof(label));
+            strlcpy(label       + _len,
+                  input_config_bind_map_get_desc(i),
+                  sizeof(label) - _len);
 
          snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
 
