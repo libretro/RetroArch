@@ -117,7 +117,7 @@ static bool switch_mode = false;
 
 static float mode_vrefresh(drmModeModeInfo *mode)
 {
-   return  mode->clock * 1000.00 / (mode->htotal * mode->vtotal);
+   return  mode->clock * 1000.00f / (mode->htotal * mode->vtotal);
 }
 
 static void dump_mode(drmModeModeInfo *mode, int index)
@@ -345,40 +345,38 @@ bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
 {
 #ifdef HAVE_CRTSWITCHRES
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (video_st->crt_switch_st.vdisplay < 1)
+   if (video_st->crt_switch_st.vdisplay >= 1)
    {
-      return false;
-   }
-   modeInfo->clock       = video_st->crt_switch_st.clock;
-   modeInfo->hdisplay    = video_st->crt_switch_st.hdisplay;
-   modeInfo->hsync_start = video_st->crt_switch_st.hsync_start;
-   modeInfo->hsync_end   = video_st->crt_switch_st.hsync_end;
-   modeInfo->htotal      = video_st->crt_switch_st.htotal;
-   modeInfo->vdisplay    = video_st->crt_switch_st.vdisplay;
-   modeInfo->vsync_start = video_st->crt_switch_st.vsync_start;
-   modeInfo->vsync_end   = video_st->crt_switch_st.vsync_end;
-   modeInfo->vtotal      = video_st->crt_switch_st.vtotal;
-   modeInfo->flags       = (video_st->crt_switch_st.interlace ? DRM_MODE_FLAG_INTERLACE : 0)
-                           | (video_st->crt_switch_st.doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
-                           | (video_st->crt_switch_st.hsync ? DRM_MODE_FLAG_PHSYNC : DRM_MODE_FLAG_NHSYNC)
-                           | (video_st->crt_switch_st.vsync ? DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC);
-   modeInfo->hskew       = 0;
-   modeInfo->vscan       = 0;
-   modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
-   modeInfo->type        = DRM_MODE_TYPE_USERDEF;
+      modeInfo->clock       = video_st->crt_switch_st.clock;
+      modeInfo->hdisplay    = video_st->crt_switch_st.hdisplay;
+      modeInfo->hsync_start = video_st->crt_switch_st.hsync_start;
+      modeInfo->hsync_end   = video_st->crt_switch_st.hsync_end;
+      modeInfo->htotal      = video_st->crt_switch_st.htotal;
+      modeInfo->vdisplay    = video_st->crt_switch_st.vdisplay;
+      modeInfo->vsync_start = video_st->crt_switch_st.vsync_start;
+      modeInfo->vsync_end   = video_st->crt_switch_st.vsync_end;
+      modeInfo->vtotal      = video_st->crt_switch_st.vtotal;
+      modeInfo->flags       = (video_st->crt_switch_st.interlace ? DRM_MODE_FLAG_INTERLACE : 0)
+         | (video_st->crt_switch_st.doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
+         | (video_st->crt_switch_st.hsync      ? DRM_MODE_FLAG_PHSYNC  : DRM_MODE_FLAG_NHSYNC)
+         | (video_st->crt_switch_st.vsync      ? DRM_MODE_FLAG_PVSYNC  : DRM_MODE_FLAG_NVSYNC);
+      modeInfo->hskew       = 0;
+      modeInfo->vscan       = 0;
+      modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
+      modeInfo->type        = DRM_MODE_TYPE_USERDEF;
 
-   snprintf(modeInfo->name, 45, "RetroArch_CRT-%dx%d@%.02f%s"
+      snprintf(modeInfo->name, 45, "RetroArch_CRT-%dx%d@%.02f%s"
             , video_st->crt_switch_st.hdisplay
             , video_st->crt_switch_st.vdisplay
             , mode_vrefresh(modeInfo)
             , video_st->crt_switch_st.interlace ? "i" : "");
-   dump_mode(modeInfo, 0);
-   /* consider the mode read and removed */
-   video_st->crt_switch_st.vdisplay = 0;
-   return true;
-#else
-   return false;
+      dump_mode(modeInfo, 0);
+      /* consider the mode read and removed */
+      video_st->crt_switch_st.vdisplay = 0;
+      return true;
+   }
 #endif
+   return false;
 }
 
 /* Load custom hdmi timings from config */
