@@ -1056,17 +1056,19 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    size_t _len;
    int count = 0, op;
    char lvwpath[PATH_MAX_LENGTH];
-   intfstream_t *file;
-   rjsonwriter_t* w;
+   intfstream_t *file     = NULL;
+   rjsonwriter_t* w       = NULL;
    explore_state_t *state = explore_state;
+   settings_t *settings   = NULL;
 
    menu_input_dialog_end();
    if (!name || !*name)
       return;
 
-   fill_pathname_join_special(lvwpath,
-         config_get_ptr()->paths.directory_playlist, name, sizeof(lvwpath));
-   strlcat(lvwpath, ".lvw", sizeof(lvwpath));
+   settings               = config_get_ptr();
+   _len                   = fill_pathname_join_special(lvwpath,
+         settings->paths.directory_playlist, name, sizeof(lvwpath));
+   strlcpy(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
 
    if (filestream_exists(lvwpath))
    {
@@ -1157,8 +1159,11 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
 
 static int explore_action_ok_saveview(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line = {0};
+   menu_input_ctx_line_t line;
    line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_NEW_VIEW);
+   line.label_setting         = NULL;
+   line.type                  = 0;
+   line.idx                   = 0;
    line.cb                    = explore_action_saveview_complete;
    menu_input_dialog_start(&line);
    return 0;
@@ -1166,13 +1171,13 @@ static int explore_action_ok_saveview(const char *path, const char *label, unsig
 
 static void explore_load_view(explore_state_t *state, const char* path)
 {
-   intfstream_t *file;
-   rjson_t* json;
-   uint8_t op = ((uint8_t)-1);
    unsigned cat;
+   rjson_t* json;
+   intfstream_t *file;
    enum rjson_type type;
+   uint8_t op            = ((uint8_t)-1);
 
-   state->view_levels = 0;
+   state->view_levels    = 0;
    state->view_search[0] = '\0';
 
    if (!(file = intfstream_open_file(path,
@@ -1191,21 +1196,24 @@ static void explore_load_view(explore_state_t *state, const char* path)
       if (depth == 1 && type == RJSON_STRING)
       {
          const char* key = rjson_get_string(json, NULL);
-         if (string_is_equal(key, "filter_name") &&
-               rjson_next(json) == RJSON_STRING)
+         if (        string_is_equal(key, "filter_name")
+                  && rjson_next(json) == RJSON_STRING)
             strlcpy(state->view_search,
-                  rjson_get_string(json, NULL), sizeof(state->view_search));
-         else if (string_is_equal(key, "filter_equal") &&
-               rjson_next(json) == RJSON_OBJECT)
+                  rjson_get_string(json, NULL),
+		  sizeof(state->view_search));
+         else if (   string_is_equal(key, "filter_equal")
+                  && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_EQUAL;
-         else if (string_is_equal(key, "filter_min") &&
-               rjson_next(json) == RJSON_OBJECT)
+         else if (   string_is_equal(key, "filter_min")
+                  && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MIN;
-         else if (string_is_equal(key, "filter_max") &&
-               rjson_next(json) == RJSON_OBJECT)
+         else if (   string_is_equal(key, "filter_max")
+                  && rjson_next(json) == RJSON_OBJECT)
             op = EXPLORE_OP_MAX;
       }
-      else if (depth == 2 && type == RJSON_STRING && op != ((uint8_t)-1))
+      else if (          (depth == 2)
+		      && (type == RJSON_STRING)
+		      && (op != ((uint8_t)-1)))
       {
          const char* key = rjson_get_string(json, NULL);
          for (cat = 0; cat != EXPLORE_CAT_COUNT; cat++)
@@ -1216,12 +1224,12 @@ static void explore_load_view(explore_state_t *state, const char* path)
          else
          {
             explore_string_t **entries = state->by[cat];
-            const char* value = NULL;
-            unsigned lvl, lvl_max = state->view_levels;
-            uint8_t valid_op = ((uint8_t)-1);
-
-            type = rjson_next(json);
-            if (type == RJSON_STRING || type == RJSON_NUMBER)
+            const char* value          = NULL;
+            unsigned lvl, lvl_max      = state->view_levels;
+            uint8_t valid_op           = ((uint8_t)-1);
+            type                       = rjson_next(json);
+            if (     type == RJSON_STRING 
+                  || type == RJSON_NUMBER)
                value = rjson_get_string(json, NULL);
             if (value && !*value)
                value = NULL;
@@ -1233,15 +1241,15 @@ static void explore_load_view(explore_state_t *state, const char* path)
             if (!value && state->has_unknown[cat] && op == EXPLORE_OP_EQUAL)
             {
                state->view_match[lvl] = NULL;
-               valid_op = EXPLORE_OP_EQUAL;
+               valid_op               = EXPLORE_OP_EQUAL;
             }
             else if (value && entries)
             {
+               int cmp;
                /* use existing qsort function for binary search */
-               explore_string_t *evalue = (explore_string_t *)
+               explore_string_t *evalue     = (explore_string_t *)
                      (value - offsetof(explore_string_t, str));
                uint32_t i, ifrom, ito, imax = (uint32_t)RBUF_LEN(entries);
-               int cmp;
                int (*compare_func)(const void *, const void *) =
                      (explore_by_info[cat].is_numeric
                         ? explore_qsort_func_nums
@@ -1261,19 +1269,21 @@ static void explore_load_view(explore_state_t *state, const char* path)
                if (op == EXPLORE_OP_EQUAL && !cmp)
                {
                   state->view_match[lvl] = entries[i];
-                  valid_op = EXPLORE_OP_EQUAL;
+                  valid_op               = EXPLORE_OP_EQUAL;
                }
                else if (op == EXPLORE_OP_MIN)
                {
                   state->view_idx_min[lvl] = (cmp ? i + 1 : i);
-                  valid_op = ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MAX)
-                                 ? EXPLORE_OP_RANGE : EXPLORE_OP_MIN);
+                  valid_op                 = 
+                     ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MAX)
+                      ? EXPLORE_OP_RANGE : EXPLORE_OP_MIN);
                }
                else if (op == EXPLORE_OP_MAX)
                {
                   state->view_idx_max[lvl] = i;
-                  valid_op = ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MIN)
-                                 ? EXPLORE_OP_RANGE : EXPLORE_OP_MAX);
+                  valid_op                 = 
+                     ((lvl != lvl_max && state->view_op[lvl] == EXPLORE_OP_MIN)
+                      ? EXPLORE_OP_RANGE : EXPLORE_OP_MAX);
                }
             }
             if (valid_op != ((uint8_t)-1))
@@ -1281,14 +1291,13 @@ static void explore_load_view(explore_state_t *state, const char* path)
                state->view_op       [lvl] = valid_op;
                state->view_cats     [lvl] = cat;
                state->view_use_split[lvl] = explore_by_info[cat].use_split;
-               if (lvl == lvl_max) state->view_levels++; 
+               if (lvl == lvl_max)
+                  state->view_levels++; 
             }
          }
       }
       else if (depth == 1 && type == RJSON_OBJECT_END)
-      {
          op = ((uint8_t)-1);
-      }
    }
    rjson_free(json);
    intfstream_close(file);
@@ -1310,13 +1319,11 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
    unsigned previous_type       = (depth > 1 ? stack_top[depth - 2].type : 0);
    unsigned current_cat         = current_type - EXPLORE_TYPE_FIRSTCATEGORY;
 
+   /* overwrite the menu title function with our custom one */
+   /* depth 1 is never popped so we can only do this on sub menus */
    if (depth > 1)
-   {
-      /* overwrite the menu title function with our custom one */
-      /* depth 1 is never popped so we can only do this on sub menus */
       ((menu_file_list_cbs_t*)stack_top[depth - 1].actiondata)
          ->action_get_title = explore_action_get_title;
-   }
 
    if (!state)
    {
@@ -1348,25 +1355,26 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
    /* clear any filter remaining from showing a view on the horizontal menu */
    if (current_type == MENU_EXPLORE_TAB)
    {
-      state->view_levels = 0;
+      state->view_levels    = 0;
       state->view_search[0] = '\0';
    }
 
    /* clear title string */
-   state->title[0] = '\0';
+   state->title[0]          = '\0';
 
    /* append filtered categories to title */
    for (i = 0; i != state->view_levels; i++)
    {
-      unsigned cat = state->view_cats[i];
+      unsigned cat               = state->view_cats[i];
       explore_string_t **entries = state->by[cat];
-      explore_string_t* match = state->view_match[i];
+      explore_string_t *match    = state->view_match[i];
       explore_append_title(state, "%s%s: ", (i ? " / " : ""),
             msg_hash_to_str(explore_by_info[cat].name_enum));
       switch (state->view_op[i])
       {
          case EXPLORE_OP_EQUAL:
-            explore_append_title(state, "%s", (match ? match->str
+            explore_append_title(state, "%s", (match 
+                  ? match->str
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
             break;
          case EXPLORE_OP_MIN:
@@ -1446,22 +1454,27 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
             if (is_top)
             {
                if (explore_by_info[cat].is_numeric)
-                  snprintf(tmp + tmplen, sizeof(tmp) - tmplen, " (%s - %s)",
-                        entries[0]->str, entries[RBUF_LEN(entries) - 1]->str);
+                  snprintf(tmp         + tmplen,
+                           sizeof(tmp) - tmplen,
+                           " (%s - %s)",
+                           entries[0]->str,
+                           entries[RBUF_LEN(entries) - 1]->str);
                else if (!explore_by_info[cat].is_boolean)
                {
-                  strlcat(tmp, " (", sizeof(tmp));
-                  snprintf(tmp + tmplen + 2, sizeof(tmp) - tmplen - 2,
+                  tmplen += strlcpy (tmp + tmplen, " (", sizeof(tmp) - tmplen);
+                  tmplen += snprintf(tmp + tmplen,       sizeof(tmp) - tmplen,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
                         (unsigned)RBUF_LEN(entries));
-                  strlcat(tmp, ")", sizeof(tmp));
+                  strlcpy(tmp  + tmplen, ")",  sizeof(tmp) - tmplen);
                }
             }
             else if (i != state->view_levels)
             {
-               strlcat(tmp, " (", sizeof(tmp));
-               strlcat(tmp, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER), sizeof(tmp));
-               strlcat(tmp, ")", sizeof(tmp));
+               tmplen += strlcpy(tmp + tmplen, " (", sizeof(tmp) - tmplen);
+               tmplen += strlcpy(tmp + tmplen,
+                     msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER),
+                     sizeof(tmp)     - tmplen);
+               strlcpy(tmp + tmplen, ")", sizeof(tmp) - tmplen);
             }
 
             explore_menu_entry(list, state,
@@ -1472,7 +1485,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       if (is_top)
       {
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = 
+               explore_action_sublabel_spacer;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL),
                EXPLORE_TYPE_SHOWALL, explore_action_ok);
@@ -1491,7 +1505,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       if (state->has_unknown[current_cat])
       {
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = 
+               explore_action_sublabel_spacer;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
                EXPLORE_TYPE_FILTERNULL, explore_action_ok);
@@ -1504,6 +1519,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
          || (previous_type >= EXPLORE_TYPE_FIRSTCATEGORY
             && previous_type < EXPLORE_TYPE_FIRSTITEM))
    {
+      size_t first_list_entry;
       unsigned           view_levels      = state->view_levels;
       char*              view_search      = state->view_search;
       uint8_t*           view_op          = state->view_op;
@@ -1518,22 +1534,17 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       bool is_show_all                    = (!view_levels && !has_search);
       bool is_filtered_category           = (current_cat < EXPLORE_CAT_COUNT);
       bool filtered_category_have_unknown = false;
-      size_t first_list_entry;
 
       if (is_show_all)
-      {
          explore_append_title(state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ALL));
-      }
 
       if (is_filtered_category)
       {
          /* List filtered items in a selected explore by category */
          if (!view_levels || view_cats[view_levels - 1] != current_cat)
-         {
             explore_append_title(state, " / %s",
                   msg_hash_to_str(explore_by_info[current_cat].by_enum));
-         }
          else
          {
             /* List all items again when setting a range filter */
@@ -1550,7 +1561,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW),
                EXPLORE_TYPE_VIEW, explore_action_ok_deleteview);
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = 
+               explore_action_sublabel_spacer;
       }
       else
       {
@@ -1563,7 +1575,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW),
                EXPLORE_TYPE_VIEW, explore_action_ok_saveview);
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = 
+               explore_action_sublabel_spacer;
       }
 
       first_list_entry = list->size;
@@ -1634,7 +1647,8 @@ SKIP_ENTRY:;
       }
 
       if (is_filtered_category)
-         qsort(list->list, list->size, sizeof(*list->list), explore_qsort_func_menulist);
+         qsort(list->list, list->size, sizeof(*list->list),
+               explore_qsort_func_menulist);
 
       explore_append_title(state,
             " (%u)", (unsigned)(list->size - first_list_entry));
@@ -1642,7 +1656,8 @@ SKIP_ENTRY:;
       if (is_filtered_category && filtered_category_have_unknown)
       {
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = 
+               explore_action_sublabel_spacer;
          explore_menu_entry(list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN),
                EXPLORE_TYPE_FILTERNULL, explore_action_ok);
@@ -1663,14 +1678,14 @@ SKIP_ENTRY:;
       for (pl_idx = 0; pl_idx != (int)RBUF_LEN(state->playlists); pl_idx++)
       {
          menu_displaylist_info_t          info;
-         const struct playlist_entry* pl_first = NULL;
+         const struct playlist_entry *pl_first = NULL;
          playlist_t                       *pl  = 
             state->playlists[pl_idx];
 
          playlist_get_index(pl, 0, &pl_first);
 
-         if (  pl_entry <  pl_first || 
-               pl_entry >= pl_first + playlist_size(pl))
+         if (     (pl_entry <  pl_first)
+               || (pl_entry >= pl_first + playlist_size(pl)))
             continue;
 
          /* Fake all the state so the content screen 
@@ -1693,8 +1708,9 @@ SKIP_ENTRY:;
 uintptr_t menu_explore_get_entry_icon(unsigned type)
 {
    unsigned i;
-   if (!explore_state || !explore_state->show_icons
-         || type < EXPLORE_TYPE_FIRSTITEM)
+   if (     !explore_state 
+         || !explore_state->show_icons
+         || (type < EXPLORE_TYPE_FIRSTITEM))
       return 0;
 
    i = (type - EXPLORE_TYPE_FIRSTITEM);
@@ -1719,12 +1735,13 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
    int              pl_idx;
    explore_entry_t* entry;
 
-   if (!explore_state || type < EXPLORE_TYPE_FIRSTITEM
-         || explore_state->show_icons != EXPLORE_ICONS_CONTENT)
+   if (     !explore_state 
+         || (type < EXPLORE_TYPE_FIRSTITEM)
+         || (explore_state->show_icons != EXPLORE_ICONS_CONTENT))
       return -1;
 
    entry = &explore_state->entries[type - EXPLORE_TYPE_FIRSTITEM];
-   if (entry >= RBUF_END(explore_state->entries)
+   if (     (entry >= RBUF_END(explore_state->entries))
          || !entry->playlist_entry)
       return -1;
 
@@ -1735,12 +1752,14 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
 
       playlist_get_index(pl, 0, &pl_first);
 
-      if (  entry->playlist_entry <  pl_first ||
-            entry->playlist_entry >= pl_first + playlist_size(pl))
+      if (     (entry->playlist_entry <  pl_first)
+            || (entry->playlist_entry >= pl_first + playlist_size(pl)))
          continue;
 
-      if (playlist) *playlist = pl;
-      if (playlist_entry) *playlist_entry = entry->playlist_entry;
+      if (playlist)
+         *playlist = pl;
+      if (playlist_entry)
+         *playlist_entry = entry->playlist_entry;
 
       /* correct numbers of list pos and list size */ 
       if (list && list_pos && list_size)
@@ -1758,12 +1777,13 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
       gfx_thumbnail_path_data_t *thumbnail_path_data)
 {
    const char *db_name;
-   ssize_t playlist_index = -1;
-   playlist_t *playlist = NULL;
    explore_entry_t* entry;
+   ssize_t playlist_index = -1;
+   playlist_t *playlist   = NULL;
 
-   if (!explore_state || type < EXPLORE_TYPE_FIRSTITEM
-         || explore_state->show_icons != EXPLORE_ICONS_CONTENT)
+   if (     !explore_state 
+         || (type < EXPLORE_TYPE_FIRSTITEM)
+         || (explore_state->show_icons != EXPLORE_ICONS_CONTENT))
       return -1;
 
    entry = &explore_state->entries[type - EXPLORE_TYPE_FIRSTITEM];
@@ -1772,7 +1792,8 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
 
    db_name = entry->by[EXPLORE_BY_SYSTEM]->str;
    if (!string_is_empty(db_name))
-      playlist_index = menu_explore_get_entry_playlist_index(type, &playlist, NULL, NULL, NULL, NULL);
+      playlist_index = menu_explore_get_entry_playlist_index(
+            type, &playlist, NULL, NULL, NULL, NULL);
 
    if (playlist_index >= 0 && playlist)
    {
