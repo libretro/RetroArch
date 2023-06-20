@@ -894,9 +894,7 @@ bool task_push_netplay_content_reload(const char *hostname)
       strlcpy(data->hostname, hostname, sizeof(data->hostname));
 
    flags = content_get_flags();
-   if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
-      scan_state.state |= STATE_LOAD_CONTENTLESS;
-   else if (flags & CONTENT_ST_FLAG_IS_INITED)
+   if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       const char *psubsystem = path_get(RARCH_PATH_SUBSYSTEM);
 
@@ -928,6 +926,10 @@ bool task_push_netplay_content_reload(const char *hostname)
          }
       }
    }
+
+   if ((flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT) &&
+         !(scan_state.state & (STATE_LOAD|STATE_LOAD_SUBSYSTEM)))
+      scan_state.state |= STATE_LOAD_CONTENTLESS;
 
    data->current.core_loaded = true;
 

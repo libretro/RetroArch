@@ -3484,6 +3484,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
+#ifdef HAVE_NETWORKING
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.\n");
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE, data);
+#endif
+         break;
+
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
@@ -4031,6 +4038,9 @@ void runloop_event_deinit_core(void)
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runloop_st->runtime_shader_preset_path[0] = '\0';
+#endif
+#ifdef HAVE_NETWORKING
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE, NULL);
 #endif
 }
 
@@ -6310,6 +6320,12 @@ static enum runloop_state_enum runloop_check_state(
          input_st->flags      |= INP_FLAG_NONBLOCKING;
       }
 
+#ifdef HAVE_NETWORKING
+      if (check2
+            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+         check2 = false;
+#endif
+
       if (check2)
       {
          if (input_st->flags & INP_FLAG_NONBLOCKING)
@@ -6407,6 +6423,14 @@ static enum runloop_state_enum runloop_check_state(
             else
                runloop_st->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
          }
+
+#ifdef HAVE_NETWORKING
+         if ((runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+               && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+         {
+            runloop_st->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
+         }
+#endif
 
          if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
          {
@@ -7404,6 +7428,9 @@ bool core_set_netplay_callbacks(void)
 {
    runloop_state_t *runloop_st        = &runloop_state;
 
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_SKIP_NETPLAY_CALLBACKS, NULL))
+      return true;
+
    /* Force normal poll type for netplay. */
    runloop_st->current_core.poll_type = POLL_TYPE_NORMAL;
 
@@ -7983,7 +8010,8 @@ void runloop_path_set_redirect(settings_t *settings,
 #ifdef HAVE_NETWORKING
    /* Special save directory for netplay clients. */
    if (      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
+         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_SKIP_NETPLAY_CALLBACKS, NULL))
    {
       fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
          sizeof(new_savefile_dir));

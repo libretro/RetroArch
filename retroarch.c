@@ -2521,6 +2521,10 @@ bool command_event(enum event_command cmd, void *data)
                return false;
             }
 #endif
+#ifdef HAVE_NETWORKING
+            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+               return false;
+#endif
             if (!command_event_main_state(cmd))
                return false;
             /* Run next frame to see the core output while paused */
