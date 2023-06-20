@@ -1438,10 +1438,10 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    {
       size_t len = utf8cpy(ticker->s,
             PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      ticker->s[len  ] = '.';
-      ticker->s[len+1] = '.';
-      ticker->s[len+2] = '.';
-      ticker->s[len+3] = '\0';
+      ticker->s[  len] = '.';
+      ticker->s[++len] = '.';
+      ticker->s[++len] = '.';
+      ticker->s[++len] = '\0';
       return false;
    }
 
@@ -1545,13 +1545,12 @@ static bool gfx_animation_ticker_smooth_fw(
 
       /* Determine number of characters to copy */
       num_chars = (ticker->field_width - suffix_width) / glyph_width;
-
       /* Copy string segment + add suffix */
-      _len = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
-      ticker->dst_str[_len  ] = '.';
-      ticker->dst_str[_len+1] = '.';
-      ticker->dst_str[_len+2] = '.';
-      ticker->dst_str[_len+3] = '\0';
+      _len      = utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      ticker->dst_str[  _len] = '.';
+      ticker->dst_str[++_len] = '.';
+      ticker->dst_str[++_len] = '.';
+      ticker->dst_str[++_len] = '\0';
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = (num_chars * glyph_width) + suffix_width;
@@ -1757,10 +1756,10 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       /* Copy string segment + add suffix */
       _len = utf8cpy(ticker->dst_str, ticker->dst_str_len,
             ticker->src_str, num_chars);
-      ticker->dst_str[_len  ] = '.';
-      ticker->dst_str[_len+1] = '.';
-      ticker->dst_str[_len+2] = '.';
-      ticker->dst_str[_len+3] = '\0';
+      ticker->dst_str[  _len] = '.';
+      ticker->dst_str[++_len] = '.';
+      ticker->dst_str[++_len] = '.';
+      ticker->dst_str[++_len] = '\0';
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = current_width + (3 * period_width);

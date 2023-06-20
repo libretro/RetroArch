@@ -1132,15 +1132,15 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
       free(tmp);
    }
 
-   path[len  ] = '.';
-   path[len+1] = 'p';
-   path[len+2] = 'n';
-   path[len+3] = 'g';
-   path[len+4] = '\0';
+   path[  len] = '.';
+   path[++len] = 'p';
+   path[++len] = 'n';
+   path[++len] = 'g';
+   path[++len] = '\0';
 
    /* Do not update wallpaper in "Load Content" playlists */
-   if ((xmb->categories_selection_ptr == 0 && depth > 4) ||
-         (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
+   if (    (xmb->categories_selection_ptr == 0 && depth > 4)
+        || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
       return strdup(xmb->bg_file_path);
    
    if (!path_is_valid(path))
@@ -2449,7 +2449,7 @@ static void xmb_context_reset_horizontal_list(
       if (string_ends_with_size(path, ".lpl",
                strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len, _len;
+         size_t len;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -2459,22 +2459,21 @@ static void xmb_context_reset_horizontal_list(
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
-         _len               = fill_pathname_base(
+         len                = fill_pathname_base(
                sysname, path, sizeof(sysname));
          /* Manually strip the extension (and dot) from sysname */
-            sysname[_len-4] = 
-            sysname[_len-3] = 
-            sysname[_len-2] = 
-            sysname[_len-1] = '\0';
-         _len               = _len-4;
+            sysname[len-4]  = 
+            sysname[len-3]  = 
+            sysname[len-2]  = 
+            sysname[len-1]  = '\0';
          len                = fill_pathname_join_special(
 			 texturepath, iconpath, sysname,
 			 sizeof(texturepath));
-         texturepath[len  ] = '.';
-         texturepath[len+1] = 'p';
-         texturepath[len+2] = 'n';
-         texturepath[len+3] = 'g';
-         texturepath[len+4] = '\0';
+         texturepath[  len] = '.';
+         texturepath[++len] = 'p';
+         texturepath[++len] = 'n';
+         texturepath[++len] = 'g';
+         texturepath[++len] = '\0';
 
          /* If the playlist icon doesn't exist return default */
 
@@ -2482,11 +2481,11 @@ static void xmb_context_reset_horizontal_list(
          {
                len = fill_pathname_join_special(texturepath, iconpath, "default",
                sizeof(texturepath));
-               texturepath[len  ] = '.';
-               texturepath[len+1] = 'p';
-               texturepath[len+2] = 'n';
-               texturepath[len+3] = 'g';
-               texturepath[len+4] = '\0';
+               texturepath[  len] = '.';
+               texturepath[++len] = 'p';
+               texturepath[++len] = 'n';
+               texturepath[++len] = 'g';
+               texturepath[++len] = '\0';
          }
 
          ti.width         = 0;
@@ -2506,20 +2505,7 @@ static void xmb_context_reset_horizontal_list(
             image_texture_free(&ti);
          }
 
-         /* Manually append '-content.png' to end of sysname string */
-         sysname[_len   ] = '-';
-         sysname[_len+1 ] = 'c';
-         sysname[_len+2 ] = 'o';
-         sysname[_len+3 ] = 'n';
-         sysname[_len+4 ] = 't';
-         sysname[_len+5 ] = 'e';
-         sysname[_len+6 ] = 'n';
-         sysname[_len+7 ] = 't';
-         sysname[_len+8 ] = '.';
-         sysname[_len+9 ] = 'p';
-         sysname[_len+10] = 'n';
-         sysname[_len+11] = 'g';
-         sysname[_len+12] = '\0';
+         strlcat(sysname, "-content.png", sizeof(sysname));
          /* Assemble new icon path */
          fill_pathname_join_special(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
@@ -6360,9 +6346,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       const char *str             = menu_input_dialog_get_buffer();
       const char *label           = menu_st->input_dialog_kb_label;
       size_t _len                 = strlcpy(msg, label, sizeof(msg));
-      msg[_len  ]                 = '\n';
-      msg[_len+1]                 = '\0';
-      _len                       += 1;
+      msg[  _len]                 = '\n';
+      msg[++_len]                 = '\0';
       strlcpy(msg       + _len,
             str,
             sizeof(msg) - _len);

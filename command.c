@@ -417,11 +417,11 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    #endif
    /* TODO: query any string */
 
-   strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
-   _len          = strlcat(reply, arg, sizeof(reply));
-   reply[_len  ] = ' ';
-   reply[_len+1] = '\0';
-   strlcat(reply, value, sizeof(reply));
+   _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
+   _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
+   reply[  _len] = ' ';
+   reply[++_len] = '\0';
+   _len = strlcpy(reply + _len, value, sizeof(reply) - _len);
    cmd->replier(cmd, reply, strlen(reply));
    return true;
 }
@@ -820,9 +820,9 @@ bool command_write_ram(command_t *cmd, const char *arg)
 bool command_version(command_t *cmd, const char* arg)
 {
    char reply[256];
-   size_t _len   = strlcpy(reply, PACKAGE_VERSION, sizeof(reply));
-   reply[_len  ] = '\n';
-   reply[_len+1] = '\0';
+   size_t  _len  = strlcpy(reply, PACKAGE_VERSION, sizeof(reply));
+   reply[  _len] = '\n';
+   reply[++_len] = '\0';
    cmd->replier(cmd, reply, strlen(reply));
 
    return true;
@@ -1771,8 +1771,8 @@ bool command_event_save_core_config(
       {
          size_t _len = strlcpy(tmp, config_path, sizeof(tmp));
          if (i)
-            snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
-         strlcat(tmp, ".cfg", sizeof(tmp));
+            _len += snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
+         strlcpy(tmp + _len, ".cfg", sizeof(tmp) - _len);
 
          if (!path_is_valid(tmp))
          {

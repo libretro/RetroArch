@@ -839,14 +839,11 @@ static const char *ctr_texture_path(unsigned id)
                      sizeof(state_path)))
                return NULL;
 
-            _len                 = strlcpy(texture_path,
+            _len = strlcpy(texture_path,
                   state_path, sizeof(texture_path));
-            texture_path[_len  ] = '.';
-            texture_path[_len+1] = 'p';
-            texture_path[_len+2] = 'n';
-            texture_path[_len+3] = 'g';
-            texture_path[_len+4] = '\0';
-
+            strlcpy(texture_path       + _len,
+                  ".png",
+                  sizeof(texture_path) - _len);
             return path_basename_nocompression(texture_path);
          }
       default:

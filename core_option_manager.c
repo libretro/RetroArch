@@ -1190,7 +1190,6 @@ core_option_manager_t *core_option_manager_new(
          const char *category_key = opt->opts[size].category_key;
          char address[256];
 
-
          /* Address string is nominally:
           *    <category_key><delim><tag><option_key>
           * ...where <tag> is prepended to the option
@@ -1198,17 +1197,18 @@ core_option_manager_t *core_option_manager_new(
           * collisions */
          if (string_is_empty(category_key))
          {
-            address[0] = '#';
-            address[1] = '\0';
-            strlcat(address, option_def->key, sizeof(address));
+            size_t _len     = 0;
+            address[  _len] = '#';
+            address[++_len] = '\0';
+            strlcpy(address + _len, option_def->key, sizeof(address) - _len);
          }
          else
          {
             size_t _len      = strlcpy(address, category_key, sizeof(address));
-            address[_len  ]  = ':';
-            address[_len+1]  = '#';
-            address[_len+2]  = '\0';
-            strlcat(address, option_def->key, sizeof(address));
+            address[  _len]  = ':';
+            address[++_len]  = '#';
+            address[++_len]  = '\0';
+            strlcpy(address + _len, option_def->key, sizeof(address) - _len);
          }
 
          if (!nested_list_add_item(opt->option_map,

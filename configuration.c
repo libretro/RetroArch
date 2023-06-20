@@ -4197,9 +4197,8 @@ bool config_load_override(void *data)
          size_t _len      = strlcpy(tmp_path,
                path_get(RARCH_PATH_CONFIG_OVERRIDE),
                sizeof(tmp_path));
-         tmp_path[_len  ] = '|';
-         tmp_path[_len+1] = '\0';
-         _len            += 1;
+         tmp_path[  _len] = '|';
+         tmp_path[++_len] = '\0';
          strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
          RARCH_LOG("[Overrides]: Core-specific overrides stacking on top of previous overrides.\n");
       }
@@ -4228,9 +4227,8 @@ bool config_load_override(void *data)
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
                   sizeof(tmp_path));
-            tmp_path[_len  ] = '|';
-            tmp_path[_len+1] = '\0';
-            _len            += 1;
+            tmp_path[  _len] = '|';
+            tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
             RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
          }
@@ -4257,9 +4255,8 @@ bool config_load_override(void *data)
             size_t _len      = strlcpy(tmp_path,
 			    path_get(RARCH_PATH_CONFIG_OVERRIDE),
 			    sizeof(tmp_path));
-            tmp_path[_len  ] = '|';
-            tmp_path[_len+1] = '\0';
-            _len            += 1;
+            tmp_path[  _len] = '|';
+            tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);
             RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
          }
@@ -4603,11 +4600,7 @@ static void save_keybind_joykey(config_file_t *conf,
    char key[64];
    size_t len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   key[len  ] = '_';
-   key[len+1] = 'b';
-   key[len+2] = 't';
-   key[len+3] = 'n';
-   key[len+4] = '\0';
+   strlcpy(key + len, "_btn", sizeof(key) - len);
 
    if (bind->joykey == NO_BTN)
    {
@@ -4627,12 +4620,7 @@ static void save_keybind_axis(config_file_t *conf,
 {
    char key[64];
    size_t len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   key[len  ] = '_';
-   key[len+1] = 'a';
-   key[len+2] = 'x';
-   key[len+3] = 'i';
-   key[len+4] = 's';
-   key[len+5] = '\0';
+   strlcpy(key + len, "_axis", sizeof(key) - len);
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -4667,12 +4655,7 @@ static void save_keybind_mbutton(config_file_t *conf,
    char key[64];
    size_t len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   key[len  ] = '_';
-   key[len+1] = 'm';
-   key[len+2] = 'b';
-   key[len+3] = 't';
-   key[len+4] = 'n';
-   key[len+5] = '\0';
+   strlcpy(key + len, "_mbtn", sizeof(key) - len);
 
    switch (bind->mbutton)
    {
@@ -4922,11 +4905,7 @@ bool config_save_autoconf_profile(const
    else
       len = fill_pathname_join_special(autoconf_file, autoconf_dir,
             sanitised_name, sizeof(autoconf_file));
-   autoconf_file[len  ] = '.';
-   autoconf_file[len+1] = 'c';
-   autoconf_file[len+2] = 'f';
-   autoconf_file[len+3] = 'g';
-   autoconf_file[len+4] = '\0';
+   strlcpy(autoconf_file + len, ".cfg", sizeof(autoconf_file) - len);
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
@@ -5654,23 +5633,11 @@ bool input_remapping_load_file(void *data, const char *path)
       _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      s1[_len  ] = '_';
-      s1[_len+1] = 'b';
-      s1[_len+2] = 't';
-      s1[_len+3] = 'n';
-      s1[_len+4] = '\0';
+      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      s2[_len  ] = '_';
-      s2[_len+1] = 'k';
-      s2[_len+2] = 'e';
-      s2[_len+3] = 'y';
-      s2[_len+4] = '\0';
+      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      s3[_len  ] = '_';
-      s3[_len+1] = 's';
-      s3[_len+2] = 't';
-      s3[_len+3] = 'k';
-      s3[_len+4] = '\0';
+      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
@@ -5832,23 +5799,11 @@ bool input_remapping_save_file(const char *path)
       _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      s1[_len  ] = '_';
-      s1[_len+1] = 'b';
-      s1[_len+2] = 't';
-      s1[_len+3] = 'n';
-      s1[_len+4] = '\0';
+      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      s2[_len  ] = '_';
-      s2[_len+1] = 'k';
-      s2[_len+2] = 'e';
-      s2[_len+3] = 'y';
-      s2[_len+4] = '\0';
+      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      s3[_len  ] = '_';
-      s3[_len+1] = 's';
-      s3[_len+2] = 't';
-      s3[_len+3] = 'k';
-      s3[_len+4] = '\0';
+      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {

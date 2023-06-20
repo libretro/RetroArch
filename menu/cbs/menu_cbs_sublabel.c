@@ -83,10 +83,9 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
             core_info->licenses_list, ", ");
       _len      = strlcpy(s,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[_len  ] = ':';
-      s[_len+1] = ' ';
-      s[_len+2] = '\0';
-      _len     += 2;
+      s[  _len] = ':';
+      s[++_len] = ' ';
+      s[++_len] = '\0';
       strlcpy(s + _len, tmp, len - _len);
    }
    else
@@ -94,10 +93,9 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
       /* No license found - set to N/A */
       _len      = strlcpy(s,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[_len  ] = ':';
-      s[_len+1] = ' ';
-      s[_len+2] = '\0';
-      _len     += 2;
+      s[  _len] = ':';
+      s[++_len] = ' ';
+      s[++_len] = '\0';
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
    }
 
@@ -1660,8 +1658,8 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       buf[0 ]     = '(';
       buf[1 ]     = '\0';
       _len        = strlcat(buf, room->subsystem_name, sizeof(buf));
-      buf[_len  ] = ')';
-      buf[_len+1] = '\0';
+      buf[  _len] = ')';
+      buf[++_len] = '\0';
    }
 
    strlcat(s, buf, len);
@@ -1704,12 +1702,12 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
    {
       size_t _len = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
             sizeof(buf));
-      buf[_len  ] = ':';
-      buf[_len+1] = ' ';
-      buf[_len+2] = '\0';
-      _len        = strlcat(buf, status, sizeof(buf));
-      buf[_len  ] = '\n';
-      buf[_len+1] = '\0';
+      buf[  _len] = ':';
+      buf[++_len] = ' ';
+      buf[++_len] = '\0';
+      _len       += strlcpy(buf + _len, status, sizeof(buf) - _len);
+      buf[  _len] = '\n';
+      buf[++_len] = '\0';
       strlcat(s, buf, len);
    }
 
@@ -1851,9 +1849,8 @@ static int action_bind_sublabel_playlist_entry(
    /* Add core name */
    _len      = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   s[_len  ] =  ' ';
-   s[_len+1] =  '\0';
-   _len     += 1;
+   s[  _len] =  ' ';
+   s[++_len] =  '\0';
    strlcpy(s + _len, entry->core_name, len - _len);
 
    /* Get runtime info *if* required runtime log is enabled
@@ -1985,20 +1982,20 @@ static int action_bind_sublabel_core_updater_entry(
             entry->licenses_list, ", ");
       _len      = strlcpy(s,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[_len  ] = ':';
-      s[_len+1] = ' ';
-      s[_len+2] = '\0';
-      strlcat(s, tmp, len);
+      s[  _len] = ':';
+      s[++_len] = ' ';
+      s[++_len] = '\0';
+      strlcpy(s + _len, tmp, len - _len);
    }
    else
    {
       /* No license found - set to N/A */
       _len      = strlcpy(s,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[_len  ] = ':';
-      s[_len+1] = ' ';
-      s[_len+2] = '\0';
-      strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+      s[  _len] = ':';
+      s[++_len] = ' ';
+      s[++_len] = '\0';
+      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
    }
    return 1;
 }
@@ -2020,15 +2017,15 @@ static int action_bind_sublabel_core_backup_entry(
    /* Add crc string */
    if (string_is_empty(crc))
    {
-      s[_len  ] = '0';
-      s[_len+1] = '0';
-      s[_len+2] = '0';
-      s[_len+3] = '0';
-      s[_len+4] = '0';
-      s[_len+5] = '0';
-      s[_len+6] = '0';
-      s[_len+7] = '0';
-      s[_len+8] = '\0';
+      s[  _len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '0';
+      s[++_len] = '\0';
    }
    else
       strlcpy(s + _len, crc, len - _len);

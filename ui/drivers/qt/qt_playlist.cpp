@@ -1410,7 +1410,7 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
    size_t len;
    playlist_config_t playlist_config;
-   char playlistPath[PATH_MAX_LENGTH];
+   char playlist_path[PATH_MAX_LENGTH];
    QByteArray plNameByteArray          = plName.toUtf8();
    const char *plNameCString           = plNameByteArray.data();
    playlist_t *cachedPlaylist          = playlist_get_cached();
@@ -1429,19 +1429,17 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       return corePath;
 
    /* Get playlist path */
-   len                 = fill_pathname_join_special(
-         playlistPath,  settings->paths.directory_playlist,
-         plNameCString, sizeof(playlistPath));
-   playlistPath[len  ] = '.';
-   playlistPath[len+1] = 'l';
-   playlistPath[len+2] = 'p';
-   playlistPath[len+3] = 'l';
-   playlistPath[len+4] = '\0';
+   len = fill_pathname_join_special(
+         playlist_path,  settings->paths.directory_playlist,
+         plNameCString, sizeof(playlist_path));
+   strlcpy(playlist_path       + len,
+         ".lpl",
+         sizeof(playlist_path) - len);
 
    /* Load playlist, if required */
    if (cachedPlaylist)
    {
-      if (string_is_equal(playlistPath,
+      if (string_is_equal(playlist_path,
                playlist_get_conf_path(cachedPlaylist)))
       {
          playlist     = cachedPlaylist;
@@ -1451,7 +1449,7 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
 
    if (loadPlaylist)
    {
-      playlist_config_set_path(&playlist_config, playlistPath);
+      playlist_config_set_path(&playlist_config, playlist_path);
       playlist = playlist_init(&playlist_config);
    }
 

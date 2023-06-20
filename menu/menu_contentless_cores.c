@@ -118,8 +118,8 @@ static void contentless_cores_init_info_entries(
    {
       core_info_t *core_info = core_info_get(core_info_list, i);
 
-      if (core_info &&
-          core_info->supports_no_game)
+      if (   core_info
+          && core_info->supports_no_game)
       {
          char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
          contentless_core_info_entry_t *entry =
@@ -127,9 +127,9 @@ static void contentless_cores_init_info_entries(
          size_t _len          = strlcpy(licenses_str,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
                sizeof(licenses_str));
-         licenses_str[_len  ] = ':';
-         licenses_str[_len+1] = ' ';
-         licenses_str[_len+2] = '\0';
+         licenses_str[  _len] = ':';
+         licenses_str[++_len] = ' ';
+         licenses_str[++_len] = '\0';
 
          /* Populate licences string */
          if (core_info->licenses_list)
@@ -164,10 +164,10 @@ void menu_contentless_cores_set_runtime(const char *core_id,
 {
    contentless_core_info_entry_t *info_entry = NULL;
 
-   if (!contentless_cores_state ||
-       !contentless_cores_state->info_entries ||
-       !runtime_info ||
-       string_is_empty(core_id))
+   if (   !contentless_cores_state
+       || !contentless_cores_state->info_entries
+       || !runtime_info 
+       || string_is_empty(core_id))
       return;
 
    info_entry = RHMAP_GET_STR(contentless_cores_state->info_entries, core_id);
@@ -200,9 +200,9 @@ void menu_contentless_cores_get_info(const char *core_id,
    if (!info)
       return;
 
-   if (!contentless_cores_state ||
-       !contentless_cores_state->info_entries ||
-       string_is_empty(core_id))
+   if (   !contentless_cores_state
+       || !contentless_cores_state->info_entries
+       || string_is_empty(core_id))
       *info = NULL;
 
    *info = RHMAP_GET_STR(contentless_cores_state->info_entries, core_id);
@@ -261,11 +261,11 @@ static void contentless_cores_unload_icons(contentless_cores_state_t *state)
 
 static void contentless_cores_load_icons(contentless_cores_state_t *state)
 {
+   size_t i;
+   char icon_path[PATH_MAX_LENGTH];
+   char icon_directory[PATH_MAX_LENGTH];
    bool rgba_supported              = video_driver_supports_rgba();
    core_info_list_t *core_info_list = NULL;
-   char icon_directory[PATH_MAX_LENGTH];
-   char icon_path[PATH_MAX_LENGTH];
-   size_t i;
 
    if (!state)
       return;
@@ -320,25 +320,24 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 
       /* Icon name is the first entry in the core
        * info database list */
-      if (core_info &&
-          core_info->supports_no_game &&
-          core_info->databases_list &&
-          (core_info->databases_list->size > 0))
+      if (    core_info
+          &&  core_info->supports_no_game
+          &&  core_info->databases_list
+          && (core_info->databases_list->size > 0))
       {
-         size_t len;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
          struct texture_image ti = {0};
-         ti.supports_rgba        = rgba_supported;
-
-         len                     = fill_pathname_join_special(
+         size_t len              = fill_pathname_join_special(
                icon_path, icon_directory,
                icon_name, sizeof(icon_path));
-         icon_path[len  ] = '.';
-         icon_path[len+1] = 'p';
-         icon_path[len+2] = 'n';
-         icon_path[len+3] = 'g';
-         icon_path[len+4] = '\0';
+         icon_path[  len]        = '.';
+         icon_path[++len]        = 'p';
+         icon_path[++len]        = 'n';
+         icon_path[++len]        = 'g';
+         icon_path[++len]        = '\0';
+
+         ti.supports_rgba        = rgba_supported;
 
          if (!path_is_valid(icon_path))
             continue;
@@ -367,35 +366,26 @@ uintptr_t menu_contentless_cores_get_entry_icon(const char *core_id)
 {
    contentless_cores_state_t *state = contentless_cores_state;
    uintptr_t *icon                  = NULL;
-
-   if (!state ||
-       !state->icons_enabled ||
-       !state->icons ||
-       string_is_empty(core_id))
+   if (   !state
+       || !state->icons_enabled
+       || !state->icons
+       || string_is_empty(core_id))
       return 0;
-
-   icon = RHMAP_GET_STR(state->icons->system, core_id);
-
-   if (icon)
+   if ((icon = RHMAP_GET_STR(state->icons->system, core_id)))
       return *icon;
-
    return state->icons->fallback;
 }
 
 void menu_contentless_cores_context_init(void)
 {
-   if (!contentless_cores_state)
-      return;
-
-   contentless_cores_load_icons(contentless_cores_state);
+   if (contentless_cores_state)
+      contentless_cores_load_icons(contentless_cores_state);
 }
 
 void menu_contentless_cores_context_deinit(void)
 {
-   if (!contentless_cores_state)
-      return;
-
-   contentless_cores_unload_icons(contentless_cores_state);
+   if (contentless_cores_state)
+      contentless_cores_unload_icons(contentless_cores_state);
 }
 
 void menu_contentless_cores_free(void)
@@ -422,8 +412,8 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
 
    if (core_info_list)
    {
-      size_t menu_index = 0;
       size_t i;
+      size_t menu_index = 0;
 
       /* Sort cores alphabetically */
       core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
@@ -432,29 +422,31 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
       for (i = 0; i < core_info_list->count; i++)
       {
          core_info_t *core_info = core_info_get(core_info_list, i);
-         bool core_valid = false;
 
          if (core_info)
          {
             switch (core_display_type)
             {
                case MENU_CONTENTLESS_CORES_DISPLAY_ALL:
-                  core_valid = core_info->supports_no_game;
+                  if (!(      core_info->supports_no_game))
+                     continue;
                   break;
                case MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE:
-                  core_valid = core_info->supports_no_game &&
-                        core_info->single_purpose;
+                  if (!(      core_info->supports_no_game
+                           && core_info->single_purpose))
+                     continue;
                   break;
                case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
-                  core_valid = core_info->supports_no_game &&
-                        !core_info->is_standalone_exempt;
+                  if (!(       core_info->supports_no_game
+                           && !core_info->is_standalone_exempt))
+                     continue;
                   break;
                default:
                   break;
             }
 
-            if (core_valid &&
-                menu_entries_append(list,
+            /* Valid core if we have reached here */
+            if (menu_entries_append(list,
                      core_info->path,
                      core_info->core_file_id.str,
                      MENU_ENUM_LABEL_CONTENTLESS_CORE,
@@ -486,8 +478,8 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *setti
       contentless_cores_load_icons(contentless_cores_state);
    }
 
-   if ((count == 0) &&
-       menu_entries_append(list,
+   if (  (count == 0)
+       && menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
             MENU_ENUM_LABEL_NO_CORES_AVAILABLE,

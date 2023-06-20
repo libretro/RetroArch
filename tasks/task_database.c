@@ -1082,11 +1082,11 @@ static int task_database_iterate_serial_lookup(
       if (!serial_buf)
          return 1;
 
-      strlcpy(query, "{'serial': b'", sizeof(query));
-      _len          = strlcat(query, serial_buf, sizeof(query));
-      query[_len  ] = '\'';
-      query[_len+1] = '}';
-      query[_len+2] = '\0';
+      _len  = strlcpy(query, "{'serial': b'", sizeof(query));
+      _len += strlcpy(query + _len, serial_buf, sizeof(query) - _len);
+      query[  _len] = '\'';
+      query[++_len] = '}';
+      query[++_len] = '\0';
       database_info_list_iterate_new(db_state, query);
 
       free(serial_buf);

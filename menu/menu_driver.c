@@ -4539,7 +4539,7 @@ void menu_entries_get_core_title(char *s, size_t len)
       : "";
    size_t _len = strlcpy(s, PACKAGE_VERSION, len);
 #if defined(_MSC_VER)
-   _len        = strlcat(s, msvc_vercode_to_str(_MSC_VER), len);
+   _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
 
    if (!string_is_empty(core_version))
@@ -7561,16 +7561,18 @@ int generic_menu_entry_action(
       {
 	      size_t _len             = strlcpy(speak_string,
                title_name, sizeof(speak_string));
-         speak_string[_len  ]    = ' ';
-         speak_string[_len+1]    = '\0';
-         _len                    = strlcat(speak_string,
-               current_label, sizeof(speak_string));
+         speak_string[  _len]    = ' ';
+         speak_string[++_len]    = '\0';
+         _len += strlcpy(speak_string + _len,
+               current_label,
+               sizeof(speak_string)   - _len);
          if (!string_is_equal(current_value, "..."))
          {
-            speak_string[_len  ] = ' ';
-            speak_string[_len+1] = '\0';
-            strlcat(speak_string, current_value,
-                  sizeof(speak_string));
+            speak_string[  _len] = ' ';
+            speak_string[++_len] = '\0';
+            strlcpy(speak_string       + _len,
+                  current_value,
+                  sizeof(speak_string) - _len);
          }
       }
       else
@@ -7579,10 +7581,11 @@ int generic_menu_entry_action(
                current_label, sizeof(speak_string));
          if (!string_is_equal(current_value, "..."))
          {
-            speak_string[_len  ] = ' ';
-            speak_string[_len+1] = '\0';
-            strlcat(speak_string, current_value,
-                  sizeof(speak_string));
+            speak_string[  _len] = ' ';
+            speak_string[++_len] = '\0';
+            strlcpy(speak_string       + _len,
+                  current_value,
+                  sizeof(speak_string) - _len);
          }
       }
 

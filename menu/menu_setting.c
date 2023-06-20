@@ -1051,11 +1051,10 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
       size_t _len = snprintf(s, len, "%d", *setting->value.target.integer);
       if (list && (*setting->value.target.integer < (int)list->size) && !string_is_empty(list->elems[*setting->value.target.integer].data))
       {
-         s[_len  ] = ' ';
-         s[_len+1] = '-';
-         s[_len+2] = ' ';
-         s[_len+3] = '\0';
-         _len     += 3;
+         s[  _len] = ' ';
+         s[++_len] = '-';
+         s[++_len] = ' ';
+         s[++_len] = '\0';
          strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
       }
    }
@@ -9156,9 +9155,9 @@ static bool setting_append_list_input_player_options(
 
          if (!string_is_empty(buffer[user]))
          {
-            size_t _len   = strlcpy(label, buffer[user], sizeof(label));
-            label[_len  ] = ' ';
-            label[_len+1] = '\0';
+            size_t  _len  = strlcpy(label, buffer[user], sizeof(label));
+            label[  _len] = ' ';
+            label[++_len] = '\0';
          }
          else
             label[0]      = '\0';

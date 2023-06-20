@@ -4104,11 +4104,9 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
       size_t len = strlcpy(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.savefile));
-      runloop_st->name.savefile[len  ] = '.';
-      runloop_st->name.savefile[len+1] = 's';
-      runloop_st->name.savefile[len+2] = 'r';
-      runloop_st->name.savefile[len+3] = 'm';
-      runloop_st->name.savefile[len+4] = '\0';
+      strlcpy(runloop_st->name.savefile       + len,
+            ".srm",
+            sizeof(runloop_st->name.savefile) - len);
    }
 
    if (path_is_directory(runloop_st->name.savefile))
@@ -4572,16 +4570,16 @@ bool runloop_event_init_core(
          video_st->title_buf,
          msg_hash_to_str(MSG_PROGRAM),
          sizeof(video_st->title_buf));
-   video_st->title_buf[len  ] = ' ';
-   video_st->title_buf[len+1] = '\0';
-   len = strlcat(video_st->title_buf,
+   video_st->title_buf[  len] = ' ';
+   video_st->title_buf[++len] = '\0';
+   len += strlcpy(video_st->title_buf + len,
          sys_info->info.library_name,
-         sizeof(video_st->title_buf));
-   video_st->title_buf[len  ] = ' ';
-   video_st->title_buf[len+1] = '\0';
-   strlcat(video_st->title_buf,
+         sizeof(video_st->title_buf)  - len);
+   video_st->title_buf[  len] = ' ';
+   video_st->title_buf[++len] = '\0';
+   strlcpy(video_st->title_buf        + len,
          sys_info->info.library_version,
-         sizeof(video_st->title_buf));
+         sizeof(video_st->title_buf)  - len);
 
    strlcpy(sys_info->valid_extensions,
          sys_info->info.valid_extensions ?
@@ -4760,11 +4758,9 @@ void runloop_path_fill_names(void)
       size_t len = strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ups));
-      runloop_st->name.ups[len  ] = '.';
-      runloop_st->name.ups[len+1] = 'u';
-      runloop_st->name.ups[len+2] = 'p';
-      runloop_st->name.ups[len+3] = 's';
-      runloop_st->name.ups[len+4] = '\0';
+      strlcpy(runloop_st->name.ups       + len,
+            ".ups",
+            sizeof(runloop_st->name.ups) - len);
    }
 
    if (string_is_empty(runloop_st->name.bps))
@@ -4772,11 +4768,9 @@ void runloop_path_fill_names(void)
       size_t len = strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.bps));
-      runloop_st->name.bps[len  ] = '.';
-      runloop_st->name.bps[len+1] = 'b';
-      runloop_st->name.bps[len+2] = 'p';
-      runloop_st->name.bps[len+3] = 's';
-      runloop_st->name.bps[len+4] = '\0';
+      strlcpy(runloop_st->name.bps       + len,
+            ".bps",
+            sizeof(runloop_st->name.bps) - len);
    }
 
    if (string_is_empty(runloop_st->name.ips))
@@ -4784,11 +4778,9 @@ void runloop_path_fill_names(void)
       size_t len = strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ips));
-      runloop_st->name.ips[len  ] = '.';
-      runloop_st->name.ips[len+1] = 'i';
-      runloop_st->name.ips[len+2] = 'p';
-      runloop_st->name.ips[len+3] = 's';
-      runloop_st->name.ips[len+4] = '\0';
+      strlcpy(runloop_st->name.ips       + len,
+            ".ips",
+            sizeof(runloop_st->name.ips) - len);
    }
 }
 
@@ -7805,11 +7797,9 @@ void runloop_path_set_names(void)
       size_t len = strlcpy(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.savefile));
-      runloop_st->name.savefile[len  ] = '.';
-      runloop_st->name.savefile[len+1] = 's';
-      runloop_st->name.savefile[len+2] = 'r';
-      runloop_st->name.savefile[len+3] = 'm';
-      runloop_st->name.savefile[len+4] = '\0';
+      strlcpy(runloop_st->name.savefile       + len,
+            ".srm",
+            sizeof(runloop_st->name.savefile) - len);
    }
 
    if (!retroarch_override_setting_is_set(
@@ -7819,13 +7809,9 @@ void runloop_path_set_names(void)
             runloop_st->name.savestate,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.savestate));
-      runloop_st->name.savestate[len  ] = '.';
-      runloop_st->name.savestate[len+1] = 's';
-      runloop_st->name.savestate[len+2] = 't';
-      runloop_st->name.savestate[len+3] = 'a';
-      runloop_st->name.savestate[len+4] = 't';
-      runloop_st->name.savestate[len+5] = 'e';
-      runloop_st->name.savestate[len+6] = '\0';
+      strlcpy(runloop_st->name.savestate       + len,
+            ".state",
+            sizeof(runloop_st->name.savestate) - len);
    }
 
 #ifdef HAVE_BSV_MOVIE
@@ -7836,14 +7822,9 @@ void runloop_path_set_names(void)
             runloop_st->name.replay,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.replay));
-      runloop_st->name.replay[len  ] = '.';
-      runloop_st->name.replay[len+1] = 'r';
-      runloop_st->name.replay[len+2] = 'e';
-      runloop_st->name.replay[len+3] = 'p';
-      runloop_st->name.replay[len+4] = 'l';
-      runloop_st->name.replay[len+5] = 'a';
-      runloop_st->name.replay[len+6] = 'y';
-      runloop_st->name.replay[len+7] = '\0';
+      strlcpy(runloop_st->name.replay          + len,
+            ".replay",
+            sizeof(runloop_st->name.replay)    - len);
    }
 #endif
   
@@ -7854,11 +7835,9 @@ void runloop_path_set_names(void)
             runloop_st->name.cheatfile,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.cheatfile));
-      runloop_st->name.cheatfile[len  ] = '.';
-      runloop_st->name.cheatfile[len+1] = 'c';
-      runloop_st->name.cheatfile[len+2] = 'h';
-      runloop_st->name.cheatfile[len+3] = 't';
-      runloop_st->name.cheatfile[len+4] = '\0';
+      strlcpy(runloop_st->name.cheatfile       + len,
+            ".cht",
+            sizeof(runloop_st->name.cheatfile) - len);
    }
 #endif
 }

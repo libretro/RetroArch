@@ -1029,14 +1029,12 @@ bool run_translation_service(settings_t *settings, bool paused)
       RARCH_LOG("Request size: %d\n", bmp64_length);
 #endif
    {
-      size_t _len;
       char new_ai_service_url[PATH_MAX_LENGTH];
       char separator                  = '?';
       unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
       unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
       const char *ai_service_url      = settings->arrays.ai_service_url;
-
-      _len = strlcpy(new_ai_service_url,
+      size_t _len                     = strlcpy(new_ai_service_url,
             ai_service_url, sizeof(new_ai_service_url));
 
       /* if query already exists in url, then use &'s instead */
@@ -1051,14 +1049,14 @@ bool run_translation_service(settings_t *settings, bool paused)
 
          if (!string_is_empty(lang_source))
          {
-            new_ai_service_url[_len  ] = separator;
-            new_ai_service_url[_len+1] = '\0';
-                                         strlcat(
-                  new_ai_service_url, "source_lang=",
-                  sizeof(new_ai_service_url));
-            _len                       = strlcat(
-                  new_ai_service_url, lang_source,
-                  sizeof(new_ai_service_url));
+            new_ai_service_url[  _len] = separator;
+            new_ai_service_url[++_len] = '\0';
+            _len += strlcpy(new_ai_service_url + _len,
+                  "source_lang=",
+                  sizeof(new_ai_service_url)   - _len);
+            _len += strlcpy(new_ai_service_url + _len,
+                  lang_source,
+                  sizeof(new_ai_service_url)   - _len);
             separator                  = '&';
          }
       }
@@ -1071,52 +1069,56 @@ bool run_translation_service(settings_t *settings, bool paused)
 
          if (!string_is_empty(lang_target))
          {
-            new_ai_service_url[_len  ] = separator;
-            new_ai_service_url[_len+1] = '\0';
-                                         strlcat(
-                  new_ai_service_url, "target_lang=",
-                  sizeof(new_ai_service_url));
-            _len                       = strlcat(
-                  new_ai_service_url, lang_target,
-                  sizeof(new_ai_service_url));
+            new_ai_service_url[  _len] = separator;
+            new_ai_service_url[++_len] = '\0';
+            _len += strlcpy(new_ai_service_url + _len,
+                  "target_lang=",
+                  sizeof(new_ai_service_url)   - _len);
+            _len += strlcpy(new_ai_service_url + _len,
+                  lang_target,
+                  sizeof(new_ai_service_url)   - _len);
             separator                  = '&';
          }
       }
 
       /* mode */
       {
-         unsigned ai_service_mode      = settings->uints.ai_service_mode;
+         unsigned ai_service_mode   = settings->uints.ai_service_mode;
          /*"image" is included for backwards compatability with
           * vgtranslate < 1.04 */
 
-         new_ai_service_url[_len  ] = separator;
-         new_ai_service_url[_len+1] = '\0';
-         strlcat(
-               new_ai_service_url, "output=",
-               sizeof(new_ai_service_url));
+         new_ai_service_url[  _len] = separator;
+         new_ai_service_url[++_len] = '\0';
+         _len += strlcpy(new_ai_service_url          + _len,
+               "output=",
+               sizeof(new_ai_service_url)            - _len);
 
          switch (ai_service_mode)
          {
             case 2:
-               strlcat(new_ai_service_url, "text",
-                     sizeof(new_ai_service_url));
+               _len += strlcpy(new_ai_service_url    + _len,
+                     "text",
+                     sizeof(new_ai_service_url)      - _len);
                break;
             case 1:
             case 3:
-               strlcat(new_ai_service_url, "sound,wav",
-                     sizeof(new_ai_service_url));
+               _len += strlcpy(new_ai_service_url    + _len,
+                     "sound,wav",
+                     sizeof(new_ai_service_url)      - _len);
                if (ai_service_mode == 1)
                   break;
                /* fall-through intentional for ai_service_mode == 3 */
             case 0:
-               strlcat(new_ai_service_url, "image,png",
-                     sizeof(new_ai_service_url));
+               _len += strlcpy(new_ai_service_url    + _len,
+                     "image,png",
+                     sizeof(new_ai_service_url)      - _len);
 #ifdef HAVE_GFX_WIDGETS
                if (     video_st->poke
                      && video_st->poke->load_texture
                      && video_st->poke->unload_texture)
-                  strlcat(new_ai_service_url, ",png-a",
-                        sizeof(new_ai_service_url));
+                  _len += strlcpy(new_ai_service_url + _len,
+                        ",png-a",
+                        sizeof(new_ai_service_url)   - _len);
 #endif
                break;
             default:

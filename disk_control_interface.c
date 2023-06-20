@@ -634,10 +634,10 @@ bool disk_control_append_image(
 
    /* Display log */
    _len        = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg));
-   msg[_len  ] = ':';
-   msg[_len+1] = ' ';
-   msg[_len+2] = '\0';
-   strlcat(msg, image_filename, sizeof(msg));
+   msg[  _len] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
+   strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    RARCH_LOG("[Disc]: %s\n", msg);
    /* This message should always be displayed, since
@@ -664,10 +664,10 @@ error:
 
    _len        = strlcpy(msg,
          msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg));
-   msg[_len  ] = ':';
-   msg[_len+1] = ' ';
-   msg[_len+2] = '\0';
-   strlcat(msg, image_filename, sizeof(msg));
+   msg[  _len] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
+   strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    runloop_msg_queue_push(
          msg, 0, 180,

@@ -7181,9 +7181,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Draw message box */
       _len        = strlcpy(msg, label, sizeof(msg));
-      msg[_len  ] = '\n';
-      msg[_len+1] = '\0';
-      _len       += 1;
+      msg[  _len] = '\n';
+      msg[++_len] = '\0';
       strlcpy(msg       + _len,
 		      str,
             sizeof(msg) - _len);
@@ -7527,9 +7526,8 @@ static void materialui_status_bar_init(
       _len = strlcpy(mui->status_bar.runtime_fallback_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
 	    sizeof(mui->status_bar.runtime_fallback_str));
-      mui->status_bar.runtime_fallback_str[_len  ] = ' ';
-      mui->status_bar.runtime_fallback_str[_len+1] = '\0';
-      _len                                        += 1;
+      mui->status_bar.runtime_fallback_str[  _len] = ' ';
+      mui->status_bar.runtime_fallback_str[++_len] = '\0';
       strlcpy(mui->status_bar.runtime_fallback_str          + _len,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED),
             sizeof(mui->status_bar.runtime_fallback_str)    - _len);
@@ -7538,9 +7536,8 @@ static void materialui_status_bar_init(
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
             sizeof(mui->status_bar.last_played_fallback_str));
-      mui->status_bar.last_played_fallback_str[_len  ] = ' ';
-      mui->status_bar.last_played_fallback_str[_len+1] = '\0';
-      _len                                            += 1;
+      mui->status_bar.last_played_fallback_str[  _len] = ' ';
+      mui->status_bar.last_played_fallback_str[++_len] = '\0';
       strlcpy(mui->status_bar.last_played_fallback_str       + _len,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED),
             sizeof(mui->status_bar.last_played_fallback_str) - _len

@@ -378,9 +378,8 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       s       = url;
 
    len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
-   tmp[len  ] = ' ';
-   tmp[len+1] = '\0';
-   len       += 1;
+   tmp[  len] = ' ';
+   tmp[++len] = '\0';
 
    if (string_ends_with_size(s, ".index",
             strlen(s), STRLEN_CONST(".index")))

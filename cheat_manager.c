@@ -171,13 +171,9 @@ bool cheat_manager_save(
       strlcpy(cheats_file, path, sizeof(cheats_file));
    else
    {
-      size_t len         = fill_pathname_join_special(cheats_file,
-            cheat_database, path, sizeof(cheats_file));
-      cheats_file[len  ] = '.';
-      cheats_file[len+1] = 'c';
-      cheats_file[len+2] = 'h';
-      cheats_file[len+3] = 't';
-      cheats_file[len+4] = '\0';
+      size_t len = fill_pathname_join_special(cheats_file, cheat_database,
+             path, sizeof(cheats_file));
+      strlcpy(cheats_file + len, ".cht", sizeof(cheats_file) - len);
    }
 
    if (!overwrite)

@@ -4146,9 +4146,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       _len                               = strlcpy(ozone->selection_core_name,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
             sizeof(ozone->selection_core_name));
-      ozone->selection_core_name[_len  ] = ' ';
-      ozone->selection_core_name[_len+1] = '\0';
-      _len                              += 1;
+      ozone->selection_core_name[  _len] = ' ';
+      ozone->selection_core_name[++_len] = '\0';
       strlcpy(ozone->selection_core_name + _len, core_label, sizeof(ozone->selection_core_name) - _len);
 
       if (!scroll_content_metadata)
@@ -4197,18 +4196,16 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             strlcpy(ozone->selection_playtime,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
                sizeof(ozone->selection_playtime));
-         ozone->selection_playtime[_len  ] = ' ';
-         ozone->selection_playtime[_len+1] = '\0';
-	 _len                             += 1;
+         ozone->selection_playtime[  _len] = ' ';
+         ozone->selection_playtime[++_len] = '\0';
          strlcpy(ozone->selection_playtime + _len, disabled_str, sizeof(ozone->selection_playtime) - _len);
 
          _len                                = 
             strlcpy(ozone->selection_lastplayed,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                sizeof(ozone->selection_lastplayed));
-         ozone->selection_lastplayed[_len  ] = ' ';
-         ozone->selection_lastplayed[_len+1] = '\0';
-	 _len                               += 1;
+         ozone->selection_lastplayed[  _len] = ' ';
+         ozone->selection_lastplayed[++_len] = '\0';
          strlcpy(ozone->selection_lastplayed + _len, disabled_str, sizeof(ozone->selection_lastplayed) - _len);
       }
 
@@ -4888,7 +4885,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len, _len;
+         size_t len;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -4897,22 +4894,21 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
 
-         _len               = fill_pathname_base(
+         len                = fill_pathname_base(
                sysname, path, sizeof(sysname));
          /* Manually strip the extension (and dot) from sysname */
-            sysname[_len-4] = 
-            sysname[_len-3] = 
-            sysname[_len-2] = 
-            sysname[_len-1] = '\0';
-         _len               = _len-4;
+            sysname[len-4]  = 
+            sysname[len-3]  = 
+            sysname[len-2]  = 
+            sysname[len-1]  = '\0';
          len                = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
-         texturepath[len]   = '.';
-         texturepath[len+1] = 'p';
-         texturepath[len+2] = 'n';
-         texturepath[len+3] = 'g';
-         texturepath[len+4] = '\0';
+         texturepath[  len] = '.';
+         texturepath[++len] = 'p';
+         texturepath[++len] = 'n';
+         texturepath[++len] = 'g';
+         texturepath[++len] = '\0';
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
@@ -4920,11 +4916,11 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             len                = fill_pathname_join_special(
                   texturepath, ozone->icons_path, "default",
                   sizeof(texturepath));
-            texturepath[len]   = '.';
-            texturepath[len+1] = 'p';
-            texturepath[len+2] = 'n';
-            texturepath[len+3] = 'g';
-            texturepath[len+4] = '\0';
+            texturepath[  len] = '.';
+            texturepath[++len] = 'p';
+            texturepath[++len] = 'n';
+            texturepath[++len] = 'g';
+            texturepath[++len] = '\0';
          }
 
          ti.width         = 0;
@@ -4944,20 +4940,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             image_texture_free(&ti);
          }
 
-         /* Manually append '-content.png' to end of sysname string */
-         sysname[_len   ] = '-';
-         sysname[_len+1 ] = 'c';
-         sysname[_len+2 ] = 'o';
-         sysname[_len+3 ] = 'n';
-         sysname[_len+4 ] = 't';
-         sysname[_len+5 ] = 'e';
-         sysname[_len+6 ] = 'n';
-         sysname[_len+7 ] = 't';
-         sysname[_len+8 ] = '.';
-         sysname[_len+9 ] = 'p';
-         sysname[_len+10] = 'n';
-         sysname[_len+11] = 'g';
-         sysname[_len+12] = '\0';
+         strlcat(sysname, "-content.png", sizeof(sysname));
          /* Assemble new icon path */
          fill_pathname_join_special(
                content_texturepath, ozone->icons_path, sysname,

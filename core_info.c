@@ -1487,13 +1487,11 @@ static bool core_info_path_is_locked(
    if (lock_list->size < 1)
       return false;
 
-   len                  = strlcpy(lock_filename, core_file_name,
+   len = strlcpy(lock_filename, core_file_name,
          sizeof(lock_filename));
-   lock_filename[len  ] = '.';
-   lock_filename[len+1] = 'l';
-   lock_filename[len+2] = 'c';
-   lock_filename[len+3] = 'k';
-   lock_filename[len+4] = '\0';
+   strlcpy(lock_filename       + len,
+         ".lck",
+         sizeof(lock_filename) - len);
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1520,14 +1518,11 @@ static bool core_info_path_is_standalone_exempt(
    if (exempt_list->size < 1)
       return false;
 
-   len                    = strlcpy(exempt_filename, core_file_name,
+   len = strlcpy(exempt_filename, core_file_name,
          sizeof(exempt_filename));
-   exempt_filename[len  ] = '.';
-   exempt_filename[len+1] = 'l';
-   exempt_filename[len+2] = 's';
-   exempt_filename[len+3] = 'a';
-   exempt_filename[len+4] = 'e';
-   exempt_filename[len+5] = '\0';
+   strlcpy(exempt_filename       + len,
+         ".lsae",
+         sizeof(exempt_filename) - len);
 
    hash = core_info_hash_string(exempt_filename);
 
@@ -2889,7 +2884,7 @@ static bool core_info_update_core_aux_file(const char *path, bool create)
  *   core info list this is *not* thread safe */
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
-   size_t len;
+   size_t _len;
    core_info_t *core_info = NULL;
    char lock_file_path[PATH_MAX_LENGTH];
 
@@ -2908,13 +2903,11 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   len                   = strlcpy(
-         lock_file_path, core_info->path, sizeof(lock_file_path));
-   lock_file_path[len  ] = '.';
-   lock_file_path[len+1] = 'l';
-   lock_file_path[len+2] = 'c';
-   lock_file_path[len+3] = 'k';
-   lock_file_path[len+4] = '\0';
+   _len  = strlcpy(lock_file_path, core_info->path,
+          sizeof(lock_file_path));
+   strlcpy(lock_file_path       + _len,
+         ".lck",
+         sizeof(lock_file_path) - _len);
 
    /* Create or delete lock file, as required */
    if (!core_info_update_core_aux_file(lock_file_path, lock))
@@ -2938,7 +2931,7 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path)
 {
-   size_t len;
+   size_t _len;
    core_info_t *core_info     = NULL;
    const char *core_file_path = NULL;
    bool is_locked             = false;
@@ -2969,14 +2962,11 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   len                   = strlcpy(
-         lock_file_path, core_file_path,
+   _len = strlcpy(lock_file_path, core_file_path,
          sizeof(lock_file_path));
-   lock_file_path[len  ] = '.';
-   lock_file_path[len+1] = 'l';
-   lock_file_path[len+2] = 'c';
-   lock_file_path[len+3] = 'k';
-   lock_file_path[len+4] = '\0';
+   strlcpy(lock_file_path       + _len,
+         ".lck",
+         sizeof(lock_file_path) - _len);
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
@@ -3016,14 +3006,11 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len                     = strlcpy(exempt_file_path, core_info->path,
+   _len = strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   exempt_file_path[_len  ] = '.';
-   exempt_file_path[_len+1] = 'l';
-   exempt_file_path[_len+2] = 's';
-   exempt_file_path[_len+3] = 'a';
-   exempt_file_path[_len+4] = 'e';
-   exempt_file_path[_len+5] = '\0';
+   strlcpy(exempt_file_path       + _len,
+         ".lsae",
+         sizeof(exempt_file_path) - _len);
 
    /* Create or delete 'standalone exempt' file, as required */
    if (core_info_update_core_aux_file(exempt_file_path, exempt))
@@ -3059,15 +3046,11 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len                     = strlcpy(
-         exempt_file_path, core_info->path,
+   _len = strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   exempt_file_path[_len  ] = '.';
-   exempt_file_path[_len+1] = 'l';
-   exempt_file_path[_len+2] = 's';
-   exempt_file_path[_len+3] = 'a';
-   exempt_file_path[_len+4] = 'e';
-   exempt_file_path[_len+5] = '\0';
+   strlcpy(exempt_file_path       + _len,
+         ".lsae",
+         sizeof(exempt_file_path) - _len);
 
    /* Check whether 'standalone exempt' file exists */
    if (path_is_valid(exempt_file_path))

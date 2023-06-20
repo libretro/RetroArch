@@ -390,7 +390,8 @@ bool gfx_widget_start_load_content_animation(void)
       /* If content was found in playlist but the entry
        * did not have a db_name, use playlist name itself
        * as the system name */
-      if (playlist_entry_found && !has_system)
+      if (      playlist_entry_found 
+            && !has_system)
       {
          const char *playlist_path = playlist_get_conf_path(playlist);
 
@@ -451,11 +452,9 @@ bool gfx_widget_start_load_content_animation(void)
    {
       size_t len = strlcpy(state->icon_file, state->system_name,
             sizeof(state->icon_file));
-      state->icon_file[len]   = '.';
-      state->icon_file[len+1] = 'p';
-      state->icon_file[len+2] = 'n';
-      state->icon_file[len+3] = 'g';
-      state->icon_file[len+4] = '\0';
+      strlcpy(state->icon_file       + len,
+            ".png",
+            sizeof(state->icon_file) - len);
 
       fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
@@ -480,16 +479,14 @@ bool gfx_widget_start_load_content_animation(void)
           (databases_list->size == 1))
          core_db_name = databases_list->elems[0].data;
 
-      if (!string_is_empty(core_db_name) &&
-          !string_is_equal(core_db_name, state->system_name))
+      if (   !string_is_empty(core_db_name)
+          && !string_is_equal(core_db_name, state->system_name))
       {
          size_t len = strlcpy(state->icon_file, core_db_name,
                sizeof(state->icon_file));
-         state->icon_file[len]   = '.';
-         state->icon_file[len+1] = 'p';
-         state->icon_file[len+2] = 'n';
-         state->icon_file[len+3] = 'g';
-         state->icon_file[len+4] = '\0';
+         strlcpy(state->icon_file       + len,
+               ".png",
+               sizeof(state->icon_file) - len);
 
          fill_pathname_join_special(icon_path,
                state->icon_directory, state->icon_file,

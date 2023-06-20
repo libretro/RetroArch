@@ -271,12 +271,9 @@ bool disk_index_file_init(
    len = fill_pathname_join_special(
          disk_index_file_path, disk_index_file_dir,
          content_name, sizeof(disk_index_file_path));
-   disk_index_file_path[len  ] = '.';
-   disk_index_file_path[len+1] = 'l';
-   disk_index_file_path[len+2] = 'd';
-   disk_index_file_path[len+3] = 'c';
-   disk_index_file_path[len+4] = 'i';
-   disk_index_file_path[len+5] = '\0';
+   strlcpy(disk_index_file_path       + len,
+         ".ldci",
+         sizeof(disk_index_file_path) - len);
    if (string_is_empty(disk_index_file_path))
       goto error;
 

@@ -72,10 +72,9 @@
       _len = strlcpy(s, title, len); \
    if (!string_is_empty(path)) \
    { \
-      s[_len  ]   = ':'; \
-      s[_len+1]   = ' '; \
-      s[_len+2]   = '\0'; \
-      _len       += 2; \
+      s[  _len]   = ':'; \
+      s[++_len]   = ' '; \
+      s[++_len]   = '\0'; \
       strlcpy(s + _len, path, len - _len); \
    } \
    return 1; \
@@ -112,13 +111,10 @@ static void action_get_title_fill_path_search_filter_default(
    const char *title = msg_hash_to_str(lbl);
    if (!string_is_empty(title))
       _len           = strlcpy(s, title, len);
-   s[_len  ]         = ' ';
-   s[_len+1]         = '\0';
+   s[  _len]         = ' ';
+   s[++_len]         = '\0';
    if (!string_is_empty(path))
-   {
-      _len          += 2;
       strlcpy(s + _len, path, len - _len);
-   }
 
    menu_entries_search_append_terms_string(s, len);
 }
@@ -428,15 +424,14 @@ static int action_get_title_deferred_core_backup_list(
       return 0;
 
    _len      = strlcpy(s, prefix, len);
-   s[_len  ] = ':';
-   s[_len+1] = ' ';
-   s[_len+2] = '\0';
-   _len     += 2;
+   s[  _len] = ':';
+   s[++_len] = ' ';
+   s[++_len] = '\0';
 
    /* Search for specified core
     * > If core is found, add display name */
-   if (core_info_find(core_path, &core_info) &&
-       core_info->display_name)
+   if (   core_info_find(core_path, &core_info)
+       && core_info->display_name)
       strlcpy(s + _len, core_info->display_name, len - _len);
    else
    {
@@ -508,11 +503,10 @@ static int action_get_core_information_steam_list(
       char *s, size_t len)
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
-   s[_len  ]   = ' ';
-   s[_len+1]   = '-';
-   s[_len+2]   = ' ';
-   s[_len+3]   = '\0';
-   _len       += 3;
+   s[  _len]   = ' ';
+   s[++_len]   = '-';
+   s[++_len]   = ' ';
+   s[++_len]   = '\0';
    strlcpy(s + _len, path, len - _len);
    return 1;
 }
@@ -823,10 +817,9 @@ static int action_get_title_generic(char *s, size_t len,
          if (!string_is_empty(elem0_path))
          {
             path_remove_extension(elem0_path);
-            s[_len  ] = ':';
-            s[_len+1] = ' ';
-            s[_len+2] = '\0';
-            _len     += 2;
+            s[  _len] = ':';
+            s[++_len] = ' ';
+            s[++_len] = '\0';
             strlcpy(s + _len, path_basename(elem0_path), len - _len);
          }
          return 0;
@@ -860,9 +853,8 @@ static int action_get_sideload_core_list(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST), len);
-   s[_len  ]   = ' ';
-   s[_len+1]   = '\0';
-   _len       += 2;
+   s[  _len]   = ' ';
+   s[++_len]   = '\0';
    if (!string_is_empty(path))
       strlcpy(s + _len, path, len - _len);
    return 0;
@@ -875,10 +867,9 @@ static int action_get_title_default(const char *path, const char *label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SELECT_FILE), len);
    if (!string_is_empty(path))
    {
-      s[_len  ] = ':';
-      s[_len+1] = ' ';
-      s[_len+2] = '\0';
-      _len     += 2;
+      s[  _len] = ':';
+      s[++_len] = ' ';
+      s[++_len] = '\0';
       strlcpy(s + _len, path, len - _len);
    }
 
@@ -949,11 +940,10 @@ static int action_get_title_group_settings(const char *path, const char *label,
       _len = strlcpy(s, elem0, len);
       if (!string_is_empty(elem1))
       {
-         s[_len  ] = ' ';
-         s[_len+1] = '-';
-         s[_len+2] = ' ';
-         s[_len+2] = '\0';
-         _len     += 3;
+         s[  _len] = ' ';
+         s[++_len] = '-';
+         s[++_len] = ' ';
+         s[++_len] = '\0';
          strlcpy(s + _len, elem1, len - _len);
       }
    }

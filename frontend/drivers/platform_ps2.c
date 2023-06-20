@@ -448,9 +448,9 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 
    if (hddMountStatus == HDD_MOUNT_STATUS_OK)
    {
-      size_t _len = strlcpy(hdd, mountString, sizeof(hdd));
-      hdd[_len  ] = '/';
-      hdd[_len+1] = '\0';
+      size_t _len  = strlcpy(hdd, mountString, sizeof(hdd));
+      hdd[   _len] = '/';
+      hdd[ ++_len] = '\0';
       menu_entries_append(list,
             hdd,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),

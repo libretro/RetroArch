@@ -566,47 +566,47 @@ bool input_driver_button_combo(
    switch (mode)
    {
       case INPUT_COMBO_DOWN_Y_L_R:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return true;
          break;
       case INPUT_COMBO_L3_R3:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
             return true;
          break;
       case INPUT_COMBO_L1_R1_START_SELECT:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return true;
          break;
       case INPUT_COMBO_START_SELECT:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return true;
          break;
       case INPUT_COMBO_L3_R:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return true;
          break;
       case INPUT_COMBO_L_R:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return true;
          break;
       case INPUT_COMBO_DOWN_SELECT:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return true;
          break;
       case INPUT_COMBO_L2_R2:
-         if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L2) &&
-             BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R2))
+         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L2)
+             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R2))
             return true;
          break;
       case INPUT_COMBO_HOLD_START:
@@ -1263,9 +1263,9 @@ static int16_t input_state_device(
             }
 
             /* Don't allow turbo for D-pad. */
-            if (     (id  < RETRO_DEVICE_ID_JOYPAD_UP)    ||
-                  (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT) &&
-                       (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
+            if (          (id  < RETRO_DEVICE_ID_JOYPAD_UP)
+                  || (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                       && (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
             {
                /*
                 * Apply turbo button if activated.
@@ -1314,8 +1314,8 @@ static int16_t input_state_device(
                      /* Avoid detecting buttons being held as multiple toggles */
                      if (!res)
                         input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
-                     else if (!(input_st->turbo_btns.turbo_pressed[port] & (1 << id)) &&
-                           turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
+                     else if (!(input_st->turbo_btns.turbo_pressed[port] & (1 << id))
+                           && turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
                      {
                         uint16_t enable_new;
                         input_st->turbo_btns.turbo_pressed[port] |= 1 << id;
@@ -1433,7 +1433,7 @@ static int16_t input_state_device(
 
                         if (settings->uints.input_remap_ids[port][offset] != offset)
                            reset_state = true;
-                        else if (settings->uints.input_remap_ids[port][offset+1] != (offset+1))
+                        else if (settings->uints.input_remap_ids[port][offset + 1] != (offset+1))
                            reset_state = true;
                      }
 
@@ -1444,14 +1444,14 @@ static int16_t input_state_device(
                         res = ret;
 
 #ifdef HAVE_OVERLAY
-                        if (input_st->overlay_ptr &&
-                            (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE) &&
-                            (port == 0) &&
-                            (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON) &&
-                            !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK) &&
-                                 (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)) ||
-                             ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK) &&
-                                 (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))))
+                        if (   (input_st->overlay_ptr)
+                            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
+                            && (port == 0)
+                            && (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+                            && !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK)
+                            &&   (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT))
+                            || ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
+                            &&   (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))))
                         {
                            input_overlay_state_t *ol_state =
                               &input_st->overlay_ptr->overlay_state;
@@ -1615,8 +1615,8 @@ static int16_t input_state_internal(
             input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
             mapped_port, device, idx, id);
 
-      if ((device == RETRO_DEVICE_ANALOG) &&
-          (ret == 0))
+      if (   (device == RETRO_DEVICE_ANALOG)
+          && (ret == 0))
       {
          if (input_st->libretro_input_binds[mapped_port])
          {
@@ -3071,13 +3071,7 @@ void input_config_get_bind_string_joykey(
       {
          size_t len = fill_pathname_join_delim(buf, prefix,
                bind->joykey_label, ' ', size);
-         buf[len  ] = ' ';
-         buf[len+1] = '(';
-         buf[len+2] = 'h';
-         buf[len+3] = 'a';
-         buf[len+4] = 't';
-         buf[len+5] = ')';
-         buf[len+6] = '\0';
+         strlcpy(buf + len, " (hat)", size - len);
       }
       else
       {
@@ -3114,13 +3108,7 @@ void input_config_get_bind_string_joykey(
       {
          size_t len = fill_pathname_join_delim(buf, prefix,
                bind->joykey_label, ' ', size);
-         buf[len  ] = ' ';
-         buf[len+1] = '(';
-         buf[len+2] = 'b';
-         buf[len+3] = 't';
-         buf[len+4] = 'n';
-         buf[len+5] = ')';
-         buf[len+6] = '\0';
+         strlcpy(buf + len, " (btn)", size - len);
       }
       else
          snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
@@ -3139,14 +3127,7 @@ void input_config_get_bind_string_joyaxis(
    {
       size_t len = fill_pathname_join_delim(buf, prefix,
             bind->joyaxis_label, ' ', size);
-      buf[len  ] = ' ';
-      buf[len+1] = '(';
-      buf[len+2] = 'a';
-      buf[len+3] = 'x';
-      buf[len+4] = 'i';
-      buf[len+5] = 's';
-      buf[len+6] = ')';
-      buf[len+7] = '\0';
+      strlcpy(buf + len, " (axis)", size - len);
    }
    else
    {
@@ -3205,6 +3186,7 @@ static unsigned get_kr_utf8( int c1,int c2,int c3)
 /* utf8 korean composition */
 static unsigned get_kr_composition( char* pcur, char* padd)
 {
+   size_t _len;
    static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
    static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
    static char cc3[] = {"ㄱㄱㄲ ㄱㅅㄳ ㄴㅈㄵ ㄴㅎㄶ ㄹㄱㄺ ㄹㅁㄻ ㄹㅂㄼ ㄹㅅㄽ ㄹㅌㄾ ㄹㅍㄿ ㄹㅎㅀ ㅂㅅㅄ ㅅㅅㅆ"};
@@ -3231,8 +3213,8 @@ static unsigned get_kr_composition( char* pcur, char* padd)
       return ret;
 
    /* single element composition  */
-   strlcpy(utf8, pcur, sizeof(utf8));
-   strlcat(utf8, padd, sizeof(utf8));
+   _len = strlcpy(utf8, pcur, sizeof(utf8));
+   strlcpy(utf8 + _len, padd, sizeof(utf8) - _len);
 
    if ((tmp2 = strstr(cc1, utf8)))
    {   
@@ -3290,7 +3272,8 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             strlcpy(utf8, s1 + (19 + c2) * 3, 4);
             utf8[3] = 0;
             strlcat(utf8, padd, sizeof(utf8));
-            if (!(tmp2 = strstr(cc2, utf8)) || tmp2 >= cc2 + sizeof(cc2) - 10)
+            if (    !(tmp2 = strstr(cc2, utf8)) 
+                  || (tmp2 >= cc2 + sizeof(cc2) - 10))
                return ret;
             strlcpy(utf8, tmp2 + 6, 4);
             utf8[3] = 0;
@@ -5600,9 +5583,9 @@ void input_driver_poll(void)
                   }
 #endif
                   remap_valid                   =
-                     (current_button_value == 1) &&
-                     (j != remap_button)         &&
-                     (remap_button != RARCH_UNMAPPED);
+                        (current_button_value == 1)
+                     && (j != remap_button)
+                     && (remap_button != RARCH_UNMAPPED);
 
 #ifdef HAVE_ACCESSIBILITY
                   /* gamepad override */

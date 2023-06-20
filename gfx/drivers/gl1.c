@@ -1117,18 +1117,18 @@ static void *gl1_init(const video_info_t *video,
 
    {
       char device_str[128];
-
+      size_t len    = 0;
       device_str[0] = '\0';
 
       if (!string_is_empty(vendor))
       {
-         size_t len        = strlcpy(device_str, vendor, sizeof(device_str));
-         device_str[len  ] = ' ';
-         device_str[len+1] = '\0';
+         len               = strlcpy(device_str, vendor, sizeof(device_str));
+         device_str[  len] = ' ';
+         device_str[++len] = '\0';
       }
 
       if (!string_is_empty(renderer))
-         strlcat(device_str, renderer, sizeof(device_str));
+         strlcpy(device_str + len, renderer, sizeof(device_str) - len);
 
       video_driver_set_gpu_device_string(device_str);
 

@@ -273,11 +273,9 @@ static bool screenshot_dump(
       {
          size_t len             = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         state->filename[len  ] = '.';
-         state->filename[len+1] = 'p';
-         state->filename[len+2] = 'n';
-         state->filename[len+3] = 'g';
-         state->filename[len+4] = '\0';
+         strlcpy(state->filename       + len,
+               ".png",
+               sizeof(state->filename) - len);
       }
       else
       {
@@ -331,18 +329,16 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t len             = strlcpy(
-                  state->shotname, path_basename_nocompression(name_base),
+            size_t len = strlcpy(state->shotname, 
+                  path_basename_nocompression(name_base),
                   sizeof(state->shotname));
-            state->shotname[len  ] = '.';
-            state->shotname[len+1] = 'p';
-            state->shotname[len+2] = 'n';
-            state->shotname[len+3] = 'g';
-            state->shotname[len+4] = '\0';
+            strlcpy(state->shotname       + len,
+                  ".png",
+                  sizeof(state->shotname) - len);
          }
 
-         if (  string_is_empty(new_screenshot_dir) || 
-               settings->bools.screenshots_in_content_dir)
+         if (     string_is_empty(new_screenshot_dir)
+               || settings->bools.screenshots_in_content_dir)
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
 

@@ -3038,13 +3038,12 @@ static void rgui_update_dynamic_theme_path(
    {
       size_t len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
-      rgui->theme_dynamic_path[len  ] = '.';
-      rgui->theme_dynamic_path[len+1] = 'c';
-      rgui->theme_dynamic_path[len+2] = 'f';
-      rgui->theme_dynamic_path[len+3] = 'g';
-      rgui->theme_dynamic_path[len+4] = '\0';
-
-      use_playlist_theme = path_is_valid(rgui->theme_dynamic_path);
+      rgui->theme_dynamic_path[  len] = '.';
+      rgui->theme_dynamic_path[++len] = 'c';
+      rgui->theme_dynamic_path[++len] = 'f';
+      rgui->theme_dynamic_path[++len] = 'g';
+      rgui->theme_dynamic_path[++len] = '\0';
+      use_playlist_theme              = path_is_valid(rgui->theme_dynamic_path);
    }
 
    if (!use_playlist_theme)
@@ -4663,9 +4662,8 @@ static void rgui_render_osk(
        * fallback to old style 'message box' implementation */
       char msg[255];
       size_t _len = strlcpy(msg, input_label, sizeof(msg));
-      msg[_len  ] = '\n';
-      msg[_len+1] = '\0';
-      _len       += 1;
+      msg[  _len] = '\n';
+      msg[++_len] = '\0';
       strlcpy(msg       + _len,
             input_str,
             sizeof(msg) - _len);

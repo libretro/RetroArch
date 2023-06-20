@@ -519,68 +519,68 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    switch (region_id)
    {
       case 'E':
-         s[_len  ] = '-';
-         s[_len+1] = 'U';
-         s[_len+2] = 'S';
-         s[_len+3] = 'A';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'U';
+         s[++_len] = 'S';
+         s[++_len] = 'A';
+         s[++_len] = '\0';
          return true;
       case 'J':
-         s[_len  ] = '-';
-         s[_len+1] = 'J';
-         s[_len+2] = 'P';
-         s[_len+3] = 'N';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'J';
+         s[++_len] = 'P';
+         s[++_len] = 'N';
+         s[++_len] = '\0';
          return true;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
-         s[_len  ] = '-';
-         s[_len+1] = 'E';
-         s[_len+2] = 'U';
-         s[_len+3] = 'R';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'E';
+         s[++_len] = 'U';
+         s[++_len] = 'R';
+         s[++_len] = '\0';
          return true;
       case 'Y':
-         s[_len  ] = '-';
-         s[_len+1] = 'F';
-         s[_len+2] = 'A';
-         s[_len+3] = 'H';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'F';
+         s[++_len] = 'A';
+         s[++_len] = 'H';
+         s[++_len] = '\0';
          return true;
       case 'D':
-         s[_len  ] = '-';
-         s[_len+1] = 'N';
-         s[_len+2] = 'O';
-         s[_len+3] = 'E';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'N';
+         s[++_len] = 'O';
+         s[++_len] = 'E';
+         s[++_len] = '\0';
          return true;
       case 'S':
-         s[_len  ] = '-';
-         s[_len+1] = 'E';
-         s[_len+2] = 'S';
-         s[_len+3] = 'P';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'E';
+         s[++_len] = 'S';
+         s[++_len] = 'P';
+         s[++_len] = '\0';
          return true;
       case 'F':
-         s[_len  ] = '-';
-         s[_len+1] = 'F';
-         s[_len+2] = 'R';
-         s[_len+3] = 'A';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'F';
+         s[++_len] = 'R';
+         s[++_len] = 'A';
+         s[++_len] = '\0';
          return true;
       case 'I':
-         s[_len  ] = '-';
-         s[_len+1] = 'I';
-         s[_len+2] = 'T';
-         s[_len+3] = 'A';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'I';
+         s[++_len] = 'T';
+         s[++_len] = 'A';
+         s[++_len] = '\0';
          return true;
       case 'H':
-         s[_len  ] = '-';
-         s[_len+1] = 'H';
-         s[_len+2] = 'O';
-         s[_len+3] = 'L';
-         s[_len+4] = '\0';
+         s[  _len] = '-';
+         s[++_len] = 'H';
+         s[++_len] = 'O';
+         s[++_len] = 'L';
+         s[++_len] = '\0';
          return true;
       default:
     break;
@@ -653,10 +653,10 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       strncpy(lgame_id, pre_game_id, index);
       lgame_id[index] = '\0';
       _len            = strlcat(s, lgame_id, len);
-      s[_len  ]       = '-';
-      s[_len+1]       = '5';
-      s[_len+2]       = '0';
-      s[_len+3]       = '\0';
+      s[  _len]       = '-';
+      s[++_len]       = '5';
+      s[++_len]       = '0';
+      s[++_len]       = '\0';
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
@@ -679,10 +679,10 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(lgame_id, &pre_game_id[3], 4);
          lgame_id[4]     = '\0';
          _len            = strlcat(s, lgame_id, len);
-         s[_len  ]       = '-';
-         s[_len+1]       = '5';
-         s[_len+2]       = '0';
-         s[_len+3]       = '\0';
+         s[  _len]       = '-';
+         s[++_len]       = '5';
+         s[++_len]       = '0';
+         s[++_len]       = '\0';
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
@@ -781,10 +781,10 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          }
          strlcat(s, lgame_id, len);
          _len      = strlcat(s, rgame_id, len);
-         s[_len  ] = '-';
-         s[_len+1] = '5';
-         s[_len+2] = '0';
-         s[_len+3] = '\0';
+         s[  _len] = '-';
+         s[++_len] = '5';
+         s[++_len] = '0';
+         s[++_len] = '\0';
          cue_append_multi_disc_suffix(s, filename);
          return true;
       case 'J':
@@ -851,9 +851,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(rgame_id, &raw_game_id[index + 1], length - 1);
          rgame_id[length - 1] = '\0';
          _len                 = strlcat(s, lgame_id, len);
-         s[_len  ]            = '-';
-         s[_len+1]            = '\0';
-         strlcat(s, rgame_id, len);
+         s[  _len]            = '-';
+         s[++_len]            = '\0';
+         strlcpy(s + _len, rgame_id, len - _len);
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
@@ -869,9 +869,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
       rgame_id[length - 1] = '\0';
       _len                 = strlcat(s, lgame_id, len);
-      s[_len  ]            = '-';
-      s[_len+1]            = '\0';
-      strlcat(s, rgame_id, len);
+      s[  _len]            = '-';
+      s[++_len]            = '\0';
+      strlcpy(s + _len, rgame_id, len - _len);
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
@@ -882,9 +882,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       strncpy(rgame_id, &raw_game_id[1], length - 1);
       rgame_id[length - 1] = '\0';
       _len                 = strlcpy(pre_game_id, lgame_id, sizeof(pre_game_id));
-      pre_game_id[_len  ]  = '-';
-      pre_game_id[_len+1]  = '\0';
-      strlcat(pre_game_id, rgame_id, sizeof(pre_game_id));
+      pre_game_id[  _len]  = '-';
+      pre_game_id[++_len]  = '\0';
+      strlcpy(pre_game_id + _len, rgame_id, sizeof(pre_game_id) - _len);
       total_hyphens_recalc = string_count_occurrences_single_character(pre_game_id, '-');
 
       if (total_hyphens_recalc >= 2)
@@ -899,9 +899,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
          rgame_id[length_recalc - 1] = '\0';
          _len                        = strlcat(s, lgame_id, len);
-         s[_len  ]                   = '-';
-         s[_len+1]                   = '\0';
-         strlcat(s, rgame_id, len);
+         s[  _len]                   = '-';
+         s[++_len]                   = '\0';
+         strlcpy(s + _len, rgame_id, len - _len);
          cue_append_multi_disc_suffix(s, filename);
       }
       else
@@ -919,9 +919,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
          rgame_id[length_recalc - 1] = '\0';
          _len                        = strlcat(s, lgame_id, len);
-         s[_len  ]                   = '-';
-         s[_len+1]                   = '\0';
-         strlcat(s, rgame_id ,len);
+         s[  _len]                   = '-';
+         s[++_len]                   = '\0';
+         strlcpy(s + _len, rgame_id, len - _len);
          cue_append_multi_disc_suffix(s, filename);
       }
       return true;
@@ -941,9 +941,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(rgame_id, &raw_game_id[length - 4], length - 3);
          rgame_id[length - 3] = '\0';
          _len                 = strlcat(s, lgame_id, len);
-         s[_len  ]            = '-';
-         s[_len+1]            = '\0';
-         strlcat(s, rgame_id, len);
+         s[  _len]            = '-';
+         s[++_len]            = '\0';
+         strlcpy(s + _len, rgame_id, len - _len);
          cue_append_multi_disc_suffix(s, filename);
          return true;
       }
@@ -976,9 +976,9 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
       rgame_id[length - 1] = '\0';
       _len                 = strlcat(s, lgame_id, len);
-      s[_len  ]            = '-';
-      s[_len+1]            = '\0';
-      strlcat(s, rgame_id, len);
+      s[  _len]            = '-';
+      s[++_len]            = '\0';
+      strlcpy(s + _len, rgame_id, len - _len);
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }

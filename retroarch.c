@@ -5431,21 +5431,12 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
       if (!string_ends_with_size(tmp_path, "_libretro",
             strlen(tmp_path), STRLEN_CONST("_libretro")))
-      {
-         tmp_path[_len  ] = '_';
-         tmp_path[_len+1] = 'l';
-         tmp_path[_len+2] = 'i';
-         tmp_path[_len+3] = 'b';
-         tmp_path[_len+4] = 'r';
-         tmp_path[_len+5] = 'e';
-         tmp_path[_len+6] = 't';
-         tmp_path[_len+7] = 'r';
-         tmp_path[_len+8] = 'o';
-         tmp_path[_len+9] = '\0';
-      }
+         strlcpy(tmp_path       + _len,
+               "_libretro",
+               sizeof(tmp_path) - _len);
 
-      if (!core_info_find(tmp_path, &core_info) ||
-          string_is_empty(core_info->path))
+      if (  !core_info_find(tmp_path, &core_info)
+          || string_is_empty(core_info->path))
          goto end;
 
       core_path         = core_info->path;
@@ -6367,8 +6358,8 @@ bool retroarch_main_init(int argc, char *argv[])
             strlcat(str_output, FILE_PATH_LOG_INFO " CPU Model Name: ",
                   sizeof(str_output));
             _len               = strlcat(str_output, cpu_model, sizeof(str_output));
-            str_output[_len  ] = '\n';
-            str_output[_len+1] = '\0';
+            str_output[  _len] = '\n';
+            str_output[++_len] = '\0';
          }
 
          RARCH_LOG_OUTPUT("%s", str_output);

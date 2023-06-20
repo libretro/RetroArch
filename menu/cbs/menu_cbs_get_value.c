@@ -859,15 +859,15 @@ static void menu_action_setting_disp_set_label_input_desc(
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND) { }
          else if (remap_idx % 2 == 0)
          {
-            s[_len  ] = ' ';
-            s[_len+1] = '+';
-            s[_len+2] = '\0';
+            s[  _len] = ' ';
+            s[++_len] = '+';
+            s[++_len] = '\0';
          }
          else
          {
-            s[_len  ] = ' ';
-            s[_len+1] = '-';
-            s[_len+2] = '\0';
+            s[  _len] = ' ';
+            s[++_len] = '-';
+            s[++_len] = '\0';
          }
          return;
       }

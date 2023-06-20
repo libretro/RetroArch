@@ -383,12 +383,12 @@ void fill_pathname_slash(char *path, size_t size)
       return;
    }
 
-   path_len               = strlen(path);
+   path_len            = strlen(path);
    /* Try to preserve slash type. */
    if (last_slash != (path + path_len - 1))
    {
-      path[path_len]   = last_slash[0];
-      path[path_len+1] = '\0';
+      path[  path_len] = last_slash[0];
+      path[++path_len] = '\0';
    }
 }
 
@@ -1002,14 +1002,14 @@ size_t fill_pathname_join_special(char *out_path,
          /* Try to preserve slash type. */
          if (last_slash != (out_path + len - 1))
          {
-            out_path[len]   = last_slash[0];
-            out_path[len+1] = '\0';
+            out_path[  len] = last_slash[0];
+            out_path[++len] = '\0';
          }
       }
       else
       {
-         out_path[len]      = PATH_DEFAULT_SLASH_C();
-         out_path[len+1]    = '\0';
+         out_path[  len]    = PATH_DEFAULT_SLASH_C();
+         out_path[++len]    = '\0';
       }
    }
 
@@ -1362,8 +1362,8 @@ void fill_pathname_application_path(char *s, size_t len)
          if (realpath(s, resolved_bundle_dir_buf))
          {
             size_t _len = strlcpy(s, resolved_bundle_dir_buf, len - 1);
-            s[_len  ]   = '/';
-            s[_len+1]   = '\0';
+            s[  _len]   = '/';
+            s[++_len]   = '\0';
          }
       }
 #endif

@@ -1039,11 +1039,9 @@ bool manual_content_scan_get_task_config(
          task_config->database_name,
          task_config->system_name,
          sizeof(task_config->database_name));
-   task_config->database_name[len  ] = '.';
-   task_config->database_name[len+1] = 'l';
-   task_config->database_name[len+2] = 'p';
-   task_config->database_name[len+3] = 'l';
-   task_config->database_name[len+4] = '\0';
+   strlcpy(task_config->database_name       + len,
+         ".lpl",
+         sizeof(task_config->database_name) - len);
 
    /* ...which can in turn be used to generate the
     * playlist path */
@@ -1274,8 +1272,8 @@ static bool manual_content_scan_get_playlist_content_path(
       if (filter_exts || (archive_list->size == 1))
       {
          /* Build path to file inside archive */
-         s[_len  ] = '#';
-         s[_len+1] = '\0';
+         s[  _len] = '#';
+         s[++_len] = '\0';
          strlcat(s, archive_file, len);
       }
 

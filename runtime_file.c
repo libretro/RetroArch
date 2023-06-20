@@ -779,8 +779,8 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
          struct tm time_info;
          runtime_log_get_last_played_time(runtime_log, &time_info);
          strftime_am_pm(tmp, sizeof(tmp), format_str, &time_info);
-         str[_len  ] = ' ';
-         str[_len+1] = '\0';
+         str[  _len] = ' ';
+         str[++_len] = '\0';
          strlcat(str, tmp, len);
          return;
       }
@@ -1038,8 +1038,8 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
                      sizeof(tmp));
-            str[_len  ] = ' ';
-            str[_len+1] = '\0';
+            str[  _len] = ' ';
+            str[++_len] = '\0';
             strlcat(str, tmp, len);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
