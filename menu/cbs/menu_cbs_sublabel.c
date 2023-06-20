@@ -131,8 +131,8 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
       return 0;
 
    /* Search for specified core */
-   if (!core_info_find(core_path, &core_info) ||
-       !core_info->supports_no_game)
+   if (   !core_info_find(core_path, &core_info)
+       || !core_info->supports_no_game)
       return 1;
 
    /* Get corresponding contentless core info entry */
@@ -146,18 +146,23 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
 
    /* > Runtime info is always omitted when using Ozone
     * > Check if required runtime log is enabled */
-   if (((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
-         !content_runtime_log) ||
-       ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
-         !content_runtime_log_aggregate) ||
-       string_is_equal(menu_ident, "ozone"))
+   if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
+       && !content_runtime_log)
+       || ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE)
+       && !content_runtime_log_aggregate)
+#ifdef HAVE_OZONE
+       || string_is_equal(menu_ident, "ozone")
+#endif
+      )
       display_runtime = false;
 
+#ifdef HAVE_MATERIALUI
    /* > License info is always displayed unless
     *   we are using GLUI with runtime info enabled */
    if (display_runtime && string_is_equal(menu_ident, "glui"))
       tmp[0  ] = '\0';
    else
+#endif
    {
       /* Display licenses */
       strlcpy(s, entry->licenses_str, len);
@@ -1853,7 +1858,7 @@ static int action_bind_sublabel_playlist_entry(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
    s[  _len] =  ' ';
    s[++_len] =  '\0';
-   strlcpy(s + _len, entry->core_name, len - _len);
+   _len     += strlcpy(s + _len, entry->core_name, len - _len);
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
@@ -1891,19 +1896,19 @@ static int action_bind_sublabel_playlist_entry(
 
       /* Runtime/last played strings are now cached in the
        * playlist, so we can add both in one go */
-      tmp[0  ] = '\n';
-      tmp[1  ] = '\0';
-      n        = strlcat(tmp, entry->runtime_str, sizeof(tmp));
+      tmp[  n] = '\n';
+      tmp[++n] = '\0';
+      n       += strlcpy(tmp + n, entry->runtime_str, sizeof(tmp) - n);
 
       if (n < 64 - 1)
       {
-         tmp[n  ] = '\n';
-         tmp[n+1] = '\0';
-         strlcat(tmp, entry->last_played_str, sizeof(tmp));
+         tmp[  n] = '\n';
+         tmp[++n] = '\0';
+         strlcpy(tmp + n, entry->last_played_str, sizeof(tmp) - n);
       }
 
       if (!string_is_empty(tmp))
-         strlcat(s, tmp, len);
+         strlcpy(s + _len, tmp, len - _len);
    }
 
    return 0;
@@ -5323,9 +5328,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       /* Per-port 'Analog to Digital Type' entries
        * require special handling */
-      if (string_starts_with_size(label, "input_player",
-            STRLEN_CONST("input_player")) &&
-         string_ends_with_size(label, "_analog_dpad_mode",
+      if (  string_starts_with_size(label, "input_player",
+            STRLEN_CONST("input_player"))
+         && string_ends_with_size(label, "_analog_dpad_mode",
                strlen(label), STRLEN_CONST("_analog_dpad_mode")))
       {
          unsigned i;
@@ -5333,9 +5338,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          size_t _len = strlcpy(key_input_adc_type, "input_player", sizeof(key_input_adc_type));
          for (i = 0; i < MAX_USERS; i++)
          {
-            snprintf(key_input_adc_type      + _len,
+            size_t _len2 = snprintf(key_input_adc_type      + _len,
                   sizeof(key_input_adc_type) - _len, "%u", i + 1);
-            strlcat(key_input_adc_type, "_analog_dpad_mode", sizeof(key_input_adc_type));
+            strlcpy(key_input_adc_type       + _len2,
+                  "_analog_dpad_mode",
+                  sizeof(key_input_adc_type) - _len2);
             if (!string_is_equal(label, key_input_adc_type))
                continue;
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
