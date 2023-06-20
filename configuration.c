@@ -5096,12 +5096,12 @@ bool config_save_file(const char *path)
 
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
 
-      strlcpy(cfg, "input_device_p",     sizeof(cfg));
-      strlcat(cfg, formatted_number,     sizeof(cfg));
+      _len = strlcpy(cfg, "input_device_p",     sizeof(cfg));
+      strlcpy(cfg + _len, formatted_number,     sizeof(cfg) - _len);
       config_set_int(conf, cfg, settings->uints.input_device[i]);
 
-      strlcpy(cfg, "input_player",       sizeof(cfg));
-      _len = strlcat(cfg, formatted_number,     sizeof(cfg));
+      _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+      _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
       strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
@@ -5417,8 +5417,8 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
             RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
          }
 
-         strlcpy(cfg, "input_player",          sizeof(cfg));
-         _len = strlcat(cfg, formatted_number, sizeof(cfg));
+         _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+         _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
          if (settings->uints.input_mouse_index[i]
                != overrides->uints.input_mouse_index[i])

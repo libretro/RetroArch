@@ -854,12 +854,12 @@ core_option_manager_t *core_option_manager_new_vars(
    {
       if (core_option_manager_parse_variable(opt, size, var, config_src))
       {
+         size_t _len = 0;
          /* If variable is read correctly, add it to
           * the map */
          char address[256];
-
-         address[0] = '#';
-         address[1] = '\0';
+         address[  _len]  = '#';
+         address[++_len]  = '\0';
 
          /* Address string is normally:
           *    <category_key><delim><tag><option_key>
@@ -869,7 +869,7 @@ core_option_manager_t *core_option_manager_new_vars(
           * so we could just set the address to
           * <option_key> - but for consistency with
           * 'modern' options, we apply the tag regardless */
-         strlcat(address, var->key, sizeof(address));
+         strlcpy(address + _len, var->key, sizeof(address) - _len);
 
          if (!nested_list_add_item(opt->option_map,
                address, NULL, (const void*)&opt->opts[size]))

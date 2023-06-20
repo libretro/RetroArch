@@ -1092,9 +1092,10 @@ extern "C" {
 
       if (split.size >= 2)
       {
-         strlcpy(lang_iso + _len, "_", sizeof(lang_iso) - _len);
-         strlcat(lang_iso, split.elems[split.size >= 3 ? 2 : 1].data,
-               sizeof(lang_iso));
+         _len += strlcpy(lang_iso + _len, "_", sizeof(lang_iso) - _len);
+         strlcpy(lang_iso       + _len,
+               split.elems[split.size >= 3 ? 2 : 1].data,
+               sizeof(lang_iso) - _len);
       }
       string_list_deinitialize(&split);
       return retroarch_get_language_from_iso(lang_iso);
