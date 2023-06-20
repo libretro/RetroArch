@@ -1628,10 +1628,10 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
    if (room_index >= (unsigned)net_st->room_count)
       return -1;
 
-   room = &net_st->room_list[room_index];
-   _len = strlcpy(s, msg_hash_to_str(MSG_PROGRAM), len);
+   room  = &net_st->room_list[room_index];
+   _len  = strlcpy(s, msg_hash_to_str(MSG_PROGRAM), len);
 
-   snprintf(s + _len, len - _len,
+   _len += snprintf(s + _len, len - _len,
       ": %s (%s)\n"
       "%s: %s (%s)\n"
       "%s: %s ",
@@ -1652,16 +1652,16 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
 
    if (     string_is_empty(room->subsystem_name)
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
-      _len = snprintf(buf, sizeof(buf), "(%08lX)",
+      snprintf(buf, sizeof(buf), "(%08lX)",
             (unsigned long)(unsigned)room->gamecrc);
    else
    {
-      _len        = 0;
-      buf[  _len] = '(';
-      buf[++_len] = '\0';
-      _len       += strlcpy(buf + _len, room->subsystem_name, sizeof(buf) - _len);
-      buf[  _len] = ')';
-      buf[++_len] = '\0';
+      size_t _len2  = 0;
+      buf[  _len2]  = '(';
+      buf[++_len2]  = '\0';
+      _len2        += strlcpy(buf + _len2, room->subsystem_name, sizeof(buf) - _len2);
+      buf[  _len2]  = ')';
+      buf[++_len2]  = '\0';
    }
 
    strlcpy(s + _len, buf, len - _len);
