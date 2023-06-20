@@ -478,6 +478,30 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    }
 }
 
+void win32_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   HWND         window     = win32_get_window();
+
+   if (window)
+   {
+      *width               = g_win32_resize_width;
+      *height              = g_win32_resize_height;
+   }
+   else
+   {
+      RECT mon_rect;
+      MONITORINFOEX current_mon;
+      unsigned mon_id      = 0;
+      HMONITOR hm_to_use   = NULL;
+
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+      mon_rect             = current_mon.rcMonitor;
+      *width               = mon_rect.right - mon_rect.left;
+      *height              = mon_rect.bottom - mon_rect.top;
+   }
+}
+
 bool win32_load_content_from_gui(const char *szFilename)
 {
    /* poll list of current cores */

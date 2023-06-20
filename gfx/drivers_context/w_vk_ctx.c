@@ -60,6 +60,9 @@ gfx_ctx_vulkan_data_t win32_vk;
 static void      *dinput_vk        = NULL;
 int              win32_vk_interval = 0;
 
+/* FORWARD DECLARATIONS */
+void win32_get_video_size(void *data, unsigned *width, unsigned *height);
+
 static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 {
    if (win32_vk_interval != interval)
@@ -136,7 +139,6 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
 static void gfx_ctx_w_vk_update_title(void *data)
 {
    char title[128];
-
    title[0] = '\0';
 
    video_driver_get_window_title(title, sizeof(title));
@@ -147,30 +149,6 @@ static void gfx_ctx_w_vk_update_title(void *data)
 
       if (window)
          window->set_title(&main_window, title);
-   }
-}
-
-static void gfx_ctx_w_vk_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   HWND         window     = win32_get_window();
-
-   if (!window)
-   {
-      RECT mon_rect;
-      MONITORINFOEX current_mon;
-      unsigned mon_id      = 0;
-      HMONITOR hm_to_use   = NULL;
-
-      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-      mon_rect             = current_mon.rcMonitor;
-      *width               = mon_rect.right - mon_rect.left;
-      *height              = mon_rect.bottom - mon_rect.top;
-   }
-   else
-   {
-      *width               = g_win32_resize_width;
-      *height              = g_win32_resize_height;
    }
 }
 
@@ -335,7 +313,7 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_bind_api,
    gfx_ctx_w_vk_swap_interval,
    gfx_ctx_w_vk_set_video_mode,
-   gfx_ctx_w_vk_get_video_size,
+   win32_get_video_size,
    win32_get_refresh_rate,
    gfx_ctx_w_vk_get_video_output_size,
    gfx_ctx_w_vk_get_video_output_prev,

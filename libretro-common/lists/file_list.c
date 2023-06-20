@@ -239,13 +239,9 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
 {
    if (!list || !alt)
       return;
-
    if (list->list[idx].alt)
       free(list->list[idx].alt);
-   list->list[idx].alt      = NULL;
-
-   if (alt)
-      list->list[idx].alt   = strdup(alt);
+   list->list[idx].alt   = strdup(alt);
 }
 
 static int file_list_alt_cmp(const void *a_, const void *b_)

@@ -123,6 +123,9 @@ typedef struct gfx_ctx_cgl_data
    void *empty;
 } gfx_ctx_wgl_data_t;
 
+/* FORWARD DECLARATIONS */
+void win32_get_video_size(void *data, unsigned *width, unsigned *height);
+
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
@@ -487,30 +490,6 @@ static void gfx_ctx_wgl_update_title(void *data)
    }
 }
 
-static void gfx_ctx_wgl_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   HWND         window          = win32_get_window();
-
-   if (window)
-   {
-      *width                    = g_win32_resize_width;
-      *height                   = g_win32_resize_height;
-   }
-   else
-   {
-      RECT mon_rect;
-      MONITORINFOEX current_mon;
-      unsigned mon_id           = 0;
-      HMONITOR hm_to_use        = NULL;
-
-      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-      mon_rect                  = current_mon.rcMonitor;
-      *width                    = mon_rect.right - mon_rect.left;
-      *height                   = mon_rect.bottom - mon_rect.top;
-   }
-}
-
 static void gfx_ctx_wgl_destroy(void *data)
 {
    HWND            window  = win32_get_window();
@@ -814,7 +793,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_bind_api,
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,
-   gfx_ctx_wgl_get_video_size,
+   win32_get_video_size,
    win32_get_refresh_rate,
    gfx_ctx_wgl_get_video_output_size,
    gfx_ctx_wgl_get_video_output_prev,

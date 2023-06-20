@@ -56,6 +56,7 @@ static bool g_es3                             = false;
 /* FORWARD DECLARATION */
 bool android_display_get_metrics(void *data,
       enum display_metric_types type, float *value);
+bool android_display_has_focus(void *data);
 
 static void android_gfx_ctx_destroy(void *data)
 {
@@ -234,20 +235,6 @@ static bool android_gfx_ctx_bind_api(void *data,
    return false;
 }
 
-static bool android_gfx_ctx_has_focus(void *data)
-{
-   bool                    focused = false;
-   struct android_app *android_app = (struct android_app*)g_android;
-   if (!android_app)
-      return true;
-
-   slock_lock(android_app->mutex);
-   focused = !android_app->unfocused;
-   slock_unlock(android_app->mutex);
-
-   return focused;
-}
-
 static bool android_gfx_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void android_gfx_ctx_swap_buffers(void *data)
@@ -304,7 +291,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL, /* update_title */
    android_gfx_ctx_check_window,
    android_gfx_ctx_set_resize,
-   android_gfx_ctx_has_focus,
+   android_display_has_focus,
    android_gfx_ctx_suppress_screensaver,
    false, /* has_windowed */
    android_gfx_ctx_swap_buffers,

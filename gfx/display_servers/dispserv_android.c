@@ -106,6 +106,20 @@ dpi_fallback:
    return true;
 }
 
+bool android_display_has_focus(void *data)
+{
+   bool                    focused = false;
+   struct android_app *android_app = (struct android_app*)g_android;
+   if (!android_app)
+      return true;
+
+   slock_lock(android_app->mutex);
+   focused = !android_app->unfocused;
+   slock_unlock(android_app->mutex);
+
+   return focused;
+}
+
 const video_display_server_t dispserv_android = {
    android_display_server_init,
    android_display_server_destroy,
