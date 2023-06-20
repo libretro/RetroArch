@@ -1641,7 +1641,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    char entry[256];
-   char tmp[512];
+   char tmp[128];
    unsigned count = 0;
 
    /* RetroArch Version */
@@ -1831,8 +1831,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          _len            = strlcpy(entry,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
                sizeof(entry));
-         entry[_len++ ] = ':';
-         entry[_len++ ] = ' ';
+         entry[_len++ ]  = ':';
+         entry[_len++ ]  = ' ';
          strlcpy(entry + _len, frontend->ident, sizeof(entry) - _len);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -1842,10 +1842,14 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Lakka Version */
          if (frontend->get_lakka_version)
          {
-            frontend->get_lakka_version(tmp, sizeof(tmp));
-            snprintf(entry, sizeof(entry), "%s: %s",
+            char lakka_ver[64];
+            frontend->get_lakka_version(lakka_ver, sizeof(lakka_ver));
+            _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
-                  tmp);
+                  sizeof(entry));
+            entry[_len++ ]  = ':';
+            entry[_len++ ]  = ' ';
+            strlcpy(entry + _len, lakka_ver, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -1855,10 +1859,14 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Frontend name */
          if (frontend->get_name)
          {
-            frontend->get_name(tmp, sizeof(tmp));
-            snprintf(entry, sizeof(entry), "%s: %s",
+            char frontend_name[64];
+            frontend->get_name(frontend_name, sizeof(frontend_name));
+            _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
-                  tmp);
+                  sizeof(entry));
+            entry[_len++ ]  = ':';
+            entry[_len++ ]  = ' ';
+            strlcpy(entry + _len, frontend_name, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -1868,12 +1876,17 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Frontend OS */
          if (frontend->get_os)
          {
+            char os_ver[64];
             int major = 0;
             int minor = 0;
-            frontend->get_os(tmp, sizeof(tmp), &major, &minor);
-            snprintf(entry, sizeof(entry), "%s: %s (v%d.%d)",
+            frontend->get_os(os_ver, sizeof(os_ver), &major, &minor);
+            _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
-                  tmp, major, minor);
+                  sizeof(entry));
+            entry[_len++ ]  = ':';
+            entry[_len++ ]  = ' ';
+            _len           += snprintf(entry + _len, sizeof(entry) - _len,
+                  "%s (v%d.%d)", os_ver, major, minor);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
