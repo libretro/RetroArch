@@ -778,8 +778,10 @@ static int database_info_list_iterate_found_match(
 
    if (!string_is_empty(db_state->serial))
    {
-      if (snprintf(db_crc, str_len, "%s|serial", db_state->serial) < 0)
-         RARCH_ERR("Serial string encoding error\n");
+      size_t _len = strlcpy(db_crc, db_state->serial, str_len);
+      strlcpy(db_crc  + _len,
+            "|serial",
+            str_len   - _len);
    }
    else
       snprintf(db_crc, str_len, "%08lX|crc", (unsigned long)db_info_entry->crc32);
