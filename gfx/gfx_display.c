@@ -43,28 +43,6 @@ gfx_display_t *disp_get_ptr(void)
    return &dispgfx_st;
 }
 
-static const float *null_get_default_matrix(void)
-{
-   static float dummy[16] = {0.0f};
-   return &dummy[0];
-}
-
-gfx_display_ctx_driver_t gfx_display_ctx_null = {
-   NULL,                                     /* draw            */
-   NULL,                                     /* draw_pipeline   */
-   NULL,                                     /* blend_begin     */
-   NULL,                                     /* blend_end       */
-   NULL,                                     /* get_default_mvp */
-   null_get_default_matrix,
-   null_get_default_matrix,
-   FONT_DRIVER_RENDER_DONT_CARE,
-   GFX_VIDEO_DRIVER_GENERIC,
-   "null",
-   false,
-   NULL,
-   NULL
-};
-
 /* Menu display drivers */
 static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_D3D8
@@ -119,7 +97,6 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_gdi,
 #endif
 #endif
-   &gfx_display_ctx_null,
    NULL,
 };
 
