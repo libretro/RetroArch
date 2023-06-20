@@ -5564,13 +5564,14 @@ static bool retroarch_parse_input_and_config(
 
    if (first_run)
    {
+      size_t _len = 0;
       /* Copy the args into a buffer so launch arguments can be reused */
       for (i = 0; i < (unsigned)argc; i++)
       {
-         strlcat(p_rarch->launch_arguments,
-               argv[i], sizeof(p_rarch->launch_arguments));
-         strlcat(p_rarch->launch_arguments, " ",
-               sizeof(p_rarch->launch_arguments));
+         _len += strlcpy(p_rarch->launch_arguments        + _len,
+               argv[i], sizeof(p_rarch->launch_arguments) - _len);
+         _len += strlcpy(p_rarch->launch_arguments        + _len,
+               " ",     sizeof(p_rarch->launch_arguments) - _len);
       }
       string_trim_whitespace_left(p_rarch->launch_arguments);
       string_trim_whitespace_right(p_rarch->launch_arguments);
