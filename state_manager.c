@@ -748,8 +748,9 @@ bool state_manager_check_rewind(
       {
 #ifdef HAVE_NETWORKING
          /* Make sure netplay isn't confused */
-         if (!was_reversed)
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL);
+         if (!was_reversed
+               && !netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL))
+            return false;
 #endif
 
          rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;

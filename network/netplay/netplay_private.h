@@ -162,6 +162,9 @@ enum netplay_cmd
    /* Sends over cheats enabled on client (unsupported) */
    NETPLAY_CMD_CHEATS         = 0x0047,
 
+   /* Send a network packet from the raw packet core interface */
+   NETPLAY_CMD_NETPACKET      = 0x0048,
+
    /* Misc. commands */
 
    /* Sends multiple config requests over,
