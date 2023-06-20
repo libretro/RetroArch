@@ -72,14 +72,16 @@ static int file_decompressed_subdir(const char *name,
 
 error:
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   strlcpy(userdata->dec->callback_error, "Failed to deflate ",
-		   CALLBACK_ERROR_SIZE);
-   _len                                  = strlcat(
-		   userdata->dec->callback_error,
-		   path, CALLBACK_ERROR_SIZE);
-   userdata->dec->callback_error[_len  ] = '.';
-   userdata->dec->callback_error[_len+1] = '\n';
-   userdata->dec->callback_error[_len+2] = '\0';
+   _len  = strlcpy(userdata->dec->callback_error,
+         "Failed to deflate ",
+         CALLBACK_ERROR_SIZE);
+   _len += strlcpy(
+		   userdata->dec->callback_error + _len,
+		   path,
+         CALLBACK_ERROR_SIZE - _len);
+   userdata->dec->callback_error[  _len] = '.';
+   userdata->dec->callback_error[++_len] = '\n';
+   userdata->dec->callback_error[++_len] = '\0';
 
    return 0;
 }
@@ -113,13 +115,13 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
 error:
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
-   strlcpy(dec->callback_error, "Failed to deflate ",
+   _len  = strlcpy(dec->callback_error, "Failed to deflate ",
 		   CALLBACK_ERROR_SIZE);
-   _len                        = strlcat(dec->callback_error,
-		   path, CALLBACK_ERROR_SIZE);
-   dec->callback_error[_len  ] = '.';
-   dec->callback_error[_len+1] = '\n';
-   dec->callback_error[_len+2] = '\0';
+   _len += strlcpy(dec->callback_error + _len,
+		   path, CALLBACK_ERROR_SIZE     - _len);
+   dec->callback_error[  _len] = '.';
+   dec->callback_error[++_len] = '\n';
+   dec->callback_error[++_len] = '\0';
 
    return 0;
 }
@@ -339,12 +341,14 @@ void *task_push_decompress(
 
    _len                = strlcpy(tmp,
 		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
-   tmp[_len  ]         = ' ';
-   tmp[_len+1]         = '\'';
-   tmp[_len+2]         = '\0';
-   _len                = strlcat(tmp, path_basename(source_file), sizeof(tmp));
+   tmp[  _len]         = ' ';
+   tmp[++_len]         = '\'';
+   tmp[++_len]         = '\0';
+   _len               += strlcpy(tmp + _len,
+         path_basename(source_file),
+                         sizeof(tmp) - _len);
    tmp[_len  ]         = '\'';
-   tmp[_len+1]         = '\0';
+   tmp[++_len]         = '\0';
 
    t->title            = strdup(tmp);
    t->mute             = mute;

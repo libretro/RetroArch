@@ -3392,6 +3392,7 @@ static bool materialui_render_process_entry_playlist_desktop(
 
          if (mui->status_bar.delay_timer > mui->thumbnail_stream_delay)
          {
+            size_t _len;
             settings_t *settings               = config_get_ptr();
             bool content_runtime_log           = settings->bools.content_runtime_log;
             bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
@@ -3462,21 +3463,27 @@ static bool materialui_render_process_entry_playlist_desktop(
                last_played_str = mui->status_bar.last_played_fallback_str;
 
             /* Generate metadata string */
-            strlcpy(mui->status_bar.str,
+            _len  = strlcpy(mui->status_bar.str,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
                   sizeof(mui->status_bar.str));
-            strlcat(mui->status_bar.str, " ",
-                  sizeof(mui->status_bar.str));
-            strlcat(mui->status_bar.str, core_name,
-                  sizeof(mui->status_bar.str));
-            strlcat(mui->status_bar.str, MUI_TICKER_SPACER,
-                  sizeof(mui->status_bar.str));
-            strlcat(mui->status_bar.str, runtime_str,
-                  sizeof(mui->status_bar.str));
-            strlcat(mui->status_bar.str, MUI_TICKER_SPACER,
-                  sizeof(mui->status_bar.str));
-            strlcat(mui->status_bar.str, last_played_str,
-                  sizeof(mui->status_bar.str));
+            _len += strlcpy(mui->status_bar.str + _len,
+                    " ",
+                    sizeof(mui->status_bar.str) - _len);
+            _len += strlcpy(mui->status_bar.str + _len,
+                    core_name,
+                    sizeof(mui->status_bar.str) - _len);
+            _len += strlcpy(mui->status_bar.str + _len,
+                    MUI_TICKER_SPACER,
+                    sizeof(mui->status_bar.str) - _len);
+            _len += strlcpy(mui->status_bar.str + _len,
+                    runtime_str,
+                    sizeof(mui->status_bar.str) - _len);
+            _len += strlcpy(mui->status_bar.str + _len,
+                    MUI_TICKER_SPACER,
+                    sizeof(mui->status_bar.str) - _len);
+            _len += strlcpy(mui->status_bar.str + _len,
+                    last_played_str,
+                    sizeof(mui->status_bar.str) - _len);
 
             /* All metadata is cached */
             mui->status_bar.cached = true;

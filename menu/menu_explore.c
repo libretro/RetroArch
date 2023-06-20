@@ -426,10 +426,11 @@ static void explore_load_icons(explore_state_t *state)
    for (i = 0; i != system_count; i++)
    {
       struct texture_image ti;
-
-      strlcpy(path + pathlen,
-            state->by[EXPLORE_BY_SYSTEM][i]->str, sizeof(path) - pathlen);
-      strlcat(path, ".png", sizeof(path));
+      size_t _len = pathlen;
+      _len       += strlcpy(path       + pathlen,
+                 state->by[EXPLORE_BY_SYSTEM][i]->str,
+                 sizeof(path) - pathlen);
+      strlcpy(path + _len, ".png", sizeof(path) - _len);
       if (!path_is_valid(path))
          continue;
 
@@ -1052,6 +1053,7 @@ static int explore_action_ok_deleteview(const char *path, const char *label, uns
 
 static void explore_action_saveview_complete(void *userdata, const char *name)
 {
+   size_t _len;
    int count = 0, op;
    char lvwpath[PATH_MAX_LENGTH];
    intfstream_t *file;

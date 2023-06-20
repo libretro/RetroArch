@@ -1535,17 +1535,17 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
        * to the displaylist */
       if (core_is_pending)
       {
-         size_t _len;
          char entry_alt_text[256];
-         _len                   = strlcpy(entry_alt_text, detect_core_str,
+         size_t _len = strlcpy(entry_alt_text, detect_core_str,
                sizeof(entry_alt_text));
          entry_alt_text[_len  ] = ' ';
-         entry_alt_text[_len+1] = '(';
-         entry_alt_text[_len+2] = '\0';
-         _len                   = strlcat(entry_alt_text,
-               pending_core_name, sizeof(entry_alt_text));
+         entry_alt_text[++_len] = '(';
+         entry_alt_text[++_len] = '\0';
+         _len       += strlcpy(entry_alt_text + _len,
+               pending_core_name,
+               sizeof(entry_alt_text)         - _len);
          entry_alt_text[_len  ] = ')';
-         entry_alt_text[_len+1] = '\0';
+         entry_alt_text[++_len] = '\0';
 
          menu_entries_prepend(info->list, pending_core_path,
                msg_hash_to_str(current_core_enum_label),
@@ -6386,24 +6386,28 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-         _len = strlcpy(passworded, "[",  sizeof(passworded));
-         strlcpy(passworded + _len, msg_room_pwd, sizeof(passworded) - _len);
-         strlcat(passworded, "] ", sizeof(passworded));
+         _len  = strlcpy(passworded, "[",
+               sizeof(passworded));
+         _len += strlcpy(passworded + _len,
+               msg_room_pwd,
+               sizeof(passworded) - _len);
+         _len += strlcpy(passworded + _len, "] ",
+               sizeof(passworded) - _len);
       }
       else
          *passworded = '\0';
 
-      _len = strlcpy(buf, passworded, sizeof(buf));
-      strlcpy(buf + _len, room_type,  sizeof(buf) - _len);
-      strlcat(buf, ": ",           sizeof(buf));
-      strlcat(buf, room->nickname, sizeof(buf));
+      _len  = strlcpy(buf,        passworded,     sizeof(buf));
+      _len += strlcpy(buf + _len, room_type,      sizeof(buf) - _len);
+      _len += strlcpy(buf + _len, ": ",           sizeof(buf) - _len);
+      _len += strlcpy(buf + _len, room->nickname, sizeof(buf) - _len);
 
       if (!room->lan && !string_is_empty(room->country))
       {
-         _len = strlcpy(country, " (", sizeof(country));
-         strlcpy(country + _len, room->country, sizeof(country) - _len);
-         strlcat(country, ")",           sizeof(country));
-         strlcat(buf, country,           sizeof(buf));
+         size_t _len2 = strlcpy(country, " (",            sizeof(country));
+         _len2       += strlcpy(country + _len2, room->country, sizeof(country) - _len2);
+         _len2       += strlcpy(country + _len2, ")",           sizeof(country) - _len2);
+         strlcpy(buf + _len, country, sizeof(buf) - _len);
       }
       else
          *country = '\0';
@@ -11647,8 +11651,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            size_t _len = strlcpy(serial,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                                  sizeof(serial));
-                           strlcpy(serial + _len, "#: ", sizeof(serial) - _len);
-                           strlcat(serial, cd_info.serial, sizeof(serial));
+                           _len += strlcpy(serial + _len, "#: ",          sizeof(serial) - _len);
+                           strlcpy(serial + _len, cd_info.serial, sizeof(serial) - _len);
 
                            if (menu_entries_append(info->list,
                                     serial,
@@ -11961,6 +11965,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
          case DISPLAYLIST_SWITCH_CPU_PROFILE:
             {
+               size_t _len;
                unsigned i;
                char text[PATH_MAX_LENGTH];
 #ifdef HAVE_LAKKA_SWITCH
@@ -11977,11 +11982,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                fgets(current_profile, PATH_MAX_LENGTH, profile);
                pclose(profile);
                /* TODO/FIXME - localize */
-               strlcpy(text, "Current profile: ", sizeof(text));
-               strlcat(text, current_profile, sizeof(text));
+               _len = strlcpy(text, "Current profile: ", sizeof(text));
+               strlcpy(text + _len, current_profile, sizeof(text) - _len);
 #else
                {
-                  size_t _len;
                   u32 currentClock = 0;
                   if (hosversionBefore(8, 0, 0))
                      pcvGetClockRate(PcvModule_CpuBus, &currentClock);
@@ -12022,6 +12026,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(HAVE_LAKKA_SWITCH)
          case DISPLAYLIST_SWITCH_GPU_PROFILE:
             {
+               size_t _len;
                unsigned i;
                char text[PATH_MAX_LENGTH];
                char current_profile[PATH_MAX_LENGTH];
@@ -12038,8 +12043,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                menu_entries_clear(info->list);
 
                /* TODO/FIXME - Localize */
-               strlcpy(text, "Current profile : ", sizeof(text));
-               strlcat(text, current_profile, sizeof(text));
+               _len = strlcpy(text, "Current profile : ", sizeof(text));
+               strlcpy(text + _len, current_profile, sizeof(text) - _len);
 
                if (menu_entries_append(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0, NULL))
                   count++;
@@ -12049,7 +12054,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   char title[PATH_MAX_LENGTH];
                   char* profile               = SWITCH_GPU_PROFILES[i];
                   char* speed                 = SWITCH_GPU_SPEEDS[i];
-                  size_t _len                 = strlcpy(title, profile, sizeof(title));
+                  _len                        = strlcpy(title, profile, sizeof(title));
                   snprintf(title + _len, sizeof(title) - _len, " (%s)", speed);
                   if (menu_entries_append(info->list, title, "", 0,
                            MENU_SET_SWITCH_GPU_PROFILE, 0, i, NULL))

@@ -9161,7 +9161,7 @@ static bool setting_append_list_input_player_options(
             label[_len+1] = '\0';
          }
          else
-            label[0] = '\0';
+            label[0]      = '\0';
 
          if (
                settings->bools.input_descriptor_label_show
