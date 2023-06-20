@@ -49,8 +49,6 @@ bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height);
 void x11_exit_fullscreen(Display *dpy);
 #endif
 
-void x11_suspend_screensaver(void *data, bool state);
-
 void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *width, unsigned *height);
 
