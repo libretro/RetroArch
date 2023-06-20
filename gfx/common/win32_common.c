@@ -2215,7 +2215,7 @@ bool win32_has_focus(void *data)
 
 HWND win32_get_window(void) { return main_window.hwnd; }
 
-bool win32_suppress_screensaver(void *data, bool enable)
+bool win32_suspend_screensaver(void *data, bool enable)
 {
    if (enable)
    {

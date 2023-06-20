@@ -798,7 +798,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    win32_check_window,
    gfx_ctx_wgl_set_resize,
    win32_has_focus,
-   win32_suppress_screensaver,
+   win32_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_wgl_swap_buffers,
    gfx_ctx_wgl_input_driver,

@@ -1883,10 +1883,7 @@ static void d3d9_hlsl_set_nonblock_state(void *data, bool state,
 }
 
 #ifdef _XBOX
-static bool d3d9_hlsl_suppress_screensaver(void *data, bool enable)
-{
-   return true;
-}
+static bool d3d9_hlsl_suspend_screensaver(void *data, bool enable) { return true; }
 #endif
 
 video_driver_t video_d3d9_hlsl = {
@@ -1896,9 +1893,9 @@ video_driver_t video_d3d9_hlsl = {
    d3d9_hlsl_alive,
    NULL, /* focus */
 #ifdef _XBOX
-   d3d9_hlsl_suppress_screensaver,
+   d3d9_hlsl_suspend_screensaver,
 #else
-   win32_suppress_screensaver,
+   win32_suspend_screensaver,
 #endif
    d3d9_has_windowed,
    d3d9_hlsl_set_shader,

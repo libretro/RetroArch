@@ -1454,10 +1454,7 @@ static bool d3d8_alive(void *data)
 }
 
 #ifdef _XBOX
-static bool d3d8_suppress_screensaver(void *data, bool enable)
-{
-   return true;
-}
+static bool d3d8_suspend_screensaver(void *data, bool enable) { return true; }
 #endif
 
 static void d3d8_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -2233,9 +2230,9 @@ video_driver_t video_d3d8 = {
    d3d8_alive,
    NULL, /* focus */
 #ifdef _XBOX
-   d3d8_suppress_screensaver,
+   d3d8_suspend_screensaver,
 #else
-   win32_suppress_screensaver,
+   win32_suspend_screensaver,
 #endif
    d3d8_has_windowed,
    d3d8_set_shader,
