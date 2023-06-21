@@ -389,16 +389,15 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
+   size_t buf_pos;
    size_t tmp_len;
-   size_t url_domain_len;
    char url_domain[256];
    char url_path[PATH_MAX_LENGTH];
-   size_t buf_pos                    = 0;
    char *tmp                         = NULL;
    int count                         = 0;
 
    strlcpy(url_path, source, sizeof(url_path));
-   tmp = url_path;
+   tmp            = url_path;
 
    while (count < 3 && tmp[0] != '\0')
    {
@@ -408,20 +407,19 @@ void net_http_urlencode_full(char *dest,
    }
 
    tmp_len        = strlen(tmp);
-   url_domain_len = ((strlcpy(url_domain, source, tmp - url_path)) - tmp_len) - 1;
+   buf_pos        = ((strlcpy(url_domain, source, tmp - url_path)) - tmp_len) - 1;
    strlcpy(url_path,
-         source + url_domain_len + 1,
-         tmp_len + 1
+         source  + buf_pos + 1,
+         tmp_len           + 1
          );
 
    tmp             = NULL;
    net_http_urlencode(&tmp, url_path);
    buf_pos         = strlcpy(dest, url_domain, size);
-   dest[buf_pos]   = '/';
-   dest[buf_pos+1] = '\0';
-   buf_pos        += 1;
+   dest[  buf_pos] = '/';
+   dest[++buf_pos] = '\0';
    strlcpy(dest + buf_pos, tmp, size - buf_pos);
-   free (tmp);
+   free(tmp);
 }
 
 static int net_http_new_socket(struct http_connection_t *conn)
@@ -756,12 +754,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (conn->port)
    {
       char portstr[16];
-
-      portstr[0] = '\0';
-
-      snprintf(portstr, sizeof(portstr), ":%i", conn->port);
-      net_http_send_str(&conn->sock_state, &error, portstr,
-            strlen(portstr));
+      size_t _len     = 0;
+      portstr[  _len] = ':';
+      portstr[++_len] = '\0';
+      _len           += snprintf(portstr + _len, sizeof(portstr) - _len,
+            "%i", conn->port);
+      net_http_send_str(&conn->sock_state, &error, portstr, _len);
    }
 
    net_http_send_str(&conn->sock_state, &error, "\r\n",
