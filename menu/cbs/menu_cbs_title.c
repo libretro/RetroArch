@@ -515,6 +515,7 @@ static int action_get_core_information_steam_list(
 static int action_get_title_dropdown_input_description_common(
       const char *input_name, unsigned port, char *s, size_t len)
 {
+   size_t _len;
    const char *input_label_ptr = input_name;
    char input_label[256];
 
@@ -537,10 +538,9 @@ static int action_get_title_dropdown_input_description_common(
             sizeof(input_label));
 
    /* Build title string */
-   snprintf(s, len, "%s %u - %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
-         port + 1,
-         input_label);
+   _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
+   _len += snprintf(s + _len, len - _len, " %u - ", port + 1);
+   _len += strlcpy (s + _len, input_label, len - _len);
 
    return 1;
 }
