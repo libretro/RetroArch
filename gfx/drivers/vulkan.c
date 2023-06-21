@@ -3692,12 +3692,6 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
          {
             delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
-#if defined(RARCH_MOBILE)
-            /* In portrait mode, we want viewport to gravitate to top of screen. */
-            if (device_aspect < 1.0f)
-                y = 0;
-            else
-#endif
             y               = (int)roundf(viewport_height * (0.5f - delta));
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
@@ -3715,6 +3709,12 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       vk->vp.width  = viewport_width;
       vk->vp.height = viewport_height;
    }
+
+#if defined(RARCH_MOBILE)
+   /* In portrait mode, we want viewport to gravitate to top of screen. */
+   if (device_aspect < 1.0f)
+      vk->vp.y = 0;
+#endif
 
    vulkan_set_projection(vk, &ortho, allow_rotate);
 
