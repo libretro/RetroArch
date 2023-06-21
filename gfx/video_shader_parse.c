@@ -2988,19 +2988,24 @@ bool video_shader_apply_shader(
             /* Display message */
             const char *msg_shader = msg_hash_to_str(MSG_SHADER);
             size_t _len            = strlcpy(msg, msg_shader, sizeof(msg));
-            msg[_len  ]            = ':';
-            msg[_len+1]            = ' ';
-            msg[_len+2]            = '\0';
+            msg[  _len]            = ':';
+            msg[++_len]            = ' ';
             if (preset_file)
             {
-               msg[_len+2]         = '"';
-               msg[_len+3]         = '\0';
-               _len                = strlcat(msg, preset_file, sizeof(msg));
-               msg[_len  ]        = '"';
-               msg[_len+1]        = '\0';
+               msg[++_len]         = '"';
+               msg[++_len]         = '\0';
+               _len               += strlcpy(msg + _len,
+                     preset_file,    sizeof(msg) - _len);
+               msg[  _len]         = '"';
+               msg[++_len]         = '\0';
             }
             else
-               strlcat(msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), sizeof(msg));
+            {
+               msg[++_len]         = '\0';
+               _len               += strlcpy(msg + _len,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
+                                     sizeof(msg) - _len);
+            }
 
 #ifdef HAVE_GFX_WIDGETS
             if (dispwidget_get_ptr()->active)

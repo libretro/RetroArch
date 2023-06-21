@@ -4830,6 +4830,7 @@ static void setting_get_string_representation_uint_video_monitor_index(rarch_set
 static void setting_get_string_representation_uint_custom_viewport_width(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len;
    struct retro_game_geometry  *geom    = NULL;
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
@@ -4838,23 +4839,21 @@ static void setting_get_string_representation_uint_custom_viewport_width(rarch_s
       return;
 
    geom    = (struct retro_game_geometry*)&av_info->geometry;
+   _len    = snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer);
 
    if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
-      snprintf(s, len, "%u (%ux)",
-            *setting->value.target.unsigned_integer,
+      snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_width);
    else if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
-      snprintf(s, len, "%u (%ux)",
-            *setting->value.target.unsigned_integer,
+      snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_height);
-   else
-      snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
 }
 
 static void setting_get_string_representation_uint_custom_viewport_height(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len;
    struct retro_game_geometry  *geom    = NULL;
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
@@ -4863,18 +4862,15 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
       return;
 
    geom    = (struct retro_game_geometry*)&av_info->geometry;
+   _len    = snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer);
 
    if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
-      snprintf(s, len, "%u (%ux)",
-            *setting->value.target.unsigned_integer,
+      snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_height);
    else  if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
-      snprintf(s, len, "%u (%ux)",
-            *setting->value.target.unsigned_integer,
+      snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_width);
-   else
-      snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
 }
 
 #ifdef HAVE_WASAPI
@@ -7766,10 +7762,12 @@ static void get_string_representation_input_mouse_index(
       if (!string_is_empty(device_name))
          strlcpy(s, device_name, len);
       else if (map > 0)
-         snprintf(s, len,
-               "%s (#%u)",
+      {
+         size_t _len = strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               map + 1);
+               len);
+         snprintf(s + _len, len - _len, " (#%u)", map + 1);
+      }
       else
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    }
@@ -8954,10 +8952,8 @@ static bool setting_append_list_input_player_options(
       static char split_joycon[MAX_USERS][64];
       static char label_split_joycon[MAX_USERS][64];
 #endif
-
-      tmp_string[0] = '\0';
-
-      snprintf(tmp_string, sizeof(tmp_string), "input_player%u", user + 1);
+      size_t _len = strlcpy(tmp_string, "input_player", sizeof(tmp_string));
+      snprintf(tmp_string + _len, sizeof(tmp_string) - _len, "%u", user + 1);
 
       snprintf(analog_to_digital[user], sizeof(analog_to_digital[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), user + 1);
@@ -14831,8 +14827,8 @@ static bool setting_append_list(
                   static char binds_list[MAX_USERS][255];
                   static char binds_label[MAX_USERS][255];
                   unsigned user_value = user + 1;
-
-                  snprintf(binds_list[user],  sizeof(binds_list[user]), "%d_input_binds_list", user_value);
+                  size_t _len = snprintf(binds_list[user],  sizeof(binds_list[user]), "%d", user_value);
+                  strlcpy(binds_list[user] + _len, "_input_binds_list", sizeof(binds_list[user]) - _len);
                   snprintf(binds_label[user], sizeof(binds_label[user]),
                         val_input_user_binds, user_value);
 
@@ -21524,9 +21520,8 @@ static bool setting_append_list(
                for (user = 0; user < max_users; user++)
                {
                   char s1[64], s2[64];
-
-                  snprintf(s1, sizeof(s1), "%s_user_p%d",
-                        lbl_network_remote_enable, user + 1);
+                  size_t _len = strlcpy(s1, lbl_network_remote_enable, sizeof(s1));
+                  snprintf(s1 + _len, sizeof(s1) - _len, "_user_p%d", user + 1);
                   snprintf(s2, sizeof(s2), val_network_remote_enable, user + 1);
 
                   CONFIG_BOOL_ALT(

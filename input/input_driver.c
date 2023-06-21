@@ -3075,29 +3075,33 @@ void input_config_get_bind_string_joykey(
       }
       else
       {
-         const char *na_str =
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-         size_t len         = snprintf(buf, size, "%sHat #%u ", prefix,
+         size_t len = strlcpy(buf, prefix, size);
+         len       += snprintf(buf + len, size - len, "Hat #%u ",
                (unsigned)GET_HAT(bind->joykey));
 
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               snprintf(buf + len, size - len, "up (%s)",    na_str);
+               len += strlcpy(buf + len, "up (",    size - len);
                break;
             case HAT_DOWN_MASK:
-               snprintf(buf + len, size - len, "down (%s)",  na_str);
+               len += strlcpy(buf + len, "down (",  size - len);
                break;
             case HAT_LEFT_MASK:
-               snprintf(buf + len, size - len, "left (%s)",  na_str);
+               len += strlcpy(buf + len, "left (",  size - len);
                break;
             case HAT_RIGHT_MASK:
-               snprintf(buf + len, size - len, "right (%s)", na_str);
+               len += strlcpy(buf + len, "right (", size - len);
                break;
             default:
-               snprintf(buf + len, size - len, "? (%s)",     na_str);
+               len += strlcpy(buf + len, "? (",     size - len);
                break;
          }
+         len       += strlcpy(buf + len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                             size - len);
+         buf[  len] =  ')';
+         buf[++len] = '\0';
       }
    }
    else

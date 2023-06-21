@@ -1761,9 +1761,11 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    /* CPU Cores */
    {
       unsigned cores = cpu_features_get_core_amount();
-      snprintf(entry, sizeof(entry), "%s: %u",
+      size_t _len    = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES),
-            cores);
+            sizeof(entry));
+      snprintf(entry + _len, sizeof(entry) - _len,
+            ": %u", cores);
       if (menu_entries_append(list, entry, "",
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
@@ -1895,8 +1897,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             entry[  _len]   = ':';
             entry[++_len]   = ' ';
             entry[++_len]   = '\0';
-            _len           += snprintf(entry + _len, sizeof(entry) - _len,
-                  "%s (v%d.%d)", os_ver, major, minor);
+            _len           += strlcpy (entry + _len, os_ver, sizeof(entry) - _len);
+            _len           += snprintf(entry + _len,         sizeof(entry) - _len,
+                  " (v%d.%d)", major, minor);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -1921,10 +1924,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
             if (memory_used != 0 && memory_total != 0)
             {
-               snprintf(entry, sizeof(entry), "%s: %" PRIu64 "/%" PRIu64 " MB",
-                     msg_hash_to_str(MSG_MEMORY),
-                     BYTES_TO_MB(memory_used),
-                     BYTES_TO_MB(memory_total));
+               _len = strlcpy(entry, 
+                     msg_hash_to_str(MSG_MEMORY), sizeof(entry));
+               snprintf(entry + _len, sizeof(entry) - _len, ": %" PRIu64 "/%" PRIu64 " MB",
+                     BYTES_TO_MB(memory_used), BYTES_TO_MB(memory_total));
                if (menu_entries_append(list, entry, "",
                      MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                      MENU_SETTINGS_CORE_INFO_NONE,
@@ -1944,8 +1947,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
             /* N/A */
             if (state == FRONTEND_POWERSTATE_NONE)
-               snprintf(tmp, sizeof(tmp), "%s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+               strlcpy(tmp,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                     sizeof(tmp));
             /* n% (No Source) */
             else if (state == FRONTEND_POWERSTATE_NO_SOURCE)
                snprintf(tmp, sizeof(tmp), "%d%% (%s)", percent,
@@ -1964,8 +1968,11 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING));
 
             /* Power Source */
-            _len = snprintf(entry, sizeof(entry), "%s: ",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE));
+            _len = strlcpy(entry, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
+                  sizeof(entry));
+            entry[  _len] = ':';
+            entry[++_len] = ' ';
+            entry[++_len] = '\0';
             strlcpy(entry + _len, tmp, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2002,9 +2009,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          metrics.type  = DISPLAY_METRIC_MM_WIDTH;
          if (video_context_driver_get_metrics(&metrics))
          {
-            snprintf(entry, sizeof(entry), "%s: %.2f",
+            _len = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
-                  val);
+                  sizeof(entry));
+            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -2015,9 +2023,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
          if (video_context_driver_get_metrics(&metrics))
          {
-            snprintf(entry, sizeof(entry), "%s: %.2f",
+            _len = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
-                  val);
+                  sizeof(entry));
+            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -2028,9 +2037,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          metrics.type  = DISPLAY_METRIC_DPI;
          if (video_context_driver_get_metrics(&metrics))
          {
-            snprintf(entry, sizeof(entry), "%s: %.2f",
+            _len = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
-                  val);
+                  sizeof(entry));
+            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
