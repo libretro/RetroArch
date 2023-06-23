@@ -3487,9 +3487,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
 #ifdef HAVE_NETWORKING
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.\n");
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE, data);
-#endif
+         if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE, data))
+         {
+            RARCH_ERR("[Environ] RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE set too late\n");
+            return false;
+         }
          break;
+#else
+         return false;
+#endif
 
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);

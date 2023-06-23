@@ -268,6 +268,19 @@ enum rarch_netplay_stall_reason
    NETPLAY_STALL_SERVER_REQUESTED
 };
 
+enum netplay_modus
+{
+   /* Netplay operates by having all participants send input data every
+      frame and run cores deterministically in sync on all connected devices.
+      It will rewind frames when input data from the past arrives. */
+   NETPLAY_MODUS_INPUT_FRAME_SYNC = 0,
+
+   /* Netplay operates by having the active core send and receive custom
+      packets once connection setup and handshake has been completed.
+      Time skips (pausing, fast forward, save state loading) are refused. */
+	NETPLAY_MODUS_CORE_PACKET_INTERFACE = 1,
+};
+
 /* Input state for a particular client-device pair */
 typedef struct netplay_input_state
 {
@@ -606,6 +619,9 @@ struct netplay
 
    /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;
+
+   /* Netplay mode of operation (cannot change at runtime) */
+   enum netplay_modus modus;
 
    /* Keyboard mapping (network and host) */
    uint16_t mapping_hton[RETROK_LAST];
