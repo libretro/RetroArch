@@ -1826,6 +1826,8 @@ enum retro_mod
                                             * rewinding, save state loading, etc.) are disabled to not interrupt
                                             * communication.
                                             *
+                                            * Should be set in either retro_init or retro_load_game, but not both.
+                                            *
                                             * When not set, a frontend may use state serialization based
                                             * multiplayer where a deterministic core supporting multiple
                                             * input devices does not need to do anything on its own.
@@ -3052,26 +3054,32 @@ struct retro_disk_control_ext_callback
    retro_get_image_label_t get_image_label;     /* Optional - may be NULL */
 };
 
-/* Callbacks for RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
+/* Definitions for RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
  * A core can set it if sending and receiving custom network packets
  * during a multiplayer session is desired.
  */
 
+/* Netpacket flags for retro_netpacket_send_t */
+#define RETRO_NETPACKET_UNRELIABLE  0        /* Packet to be sent unreliable, depending on network quality it might not arrive. */
+#define RETRO_NETPACKET_RELIABLE    (1 << 0) /* Reliable packets are guaranteed to arrive at the target in the order they were send. */
+#define RETRO_NETPACKET_UNSEQUENCED (1 << 1) /* Packet will not be sequenced with other packets and may arrive out of order. Cannot be set on reliable packets. */
+
 /* Used by the core to send a packet to one or more connected players.
  * A single packet sent via this interface can contain up to 64kb of data.
  *
- * If the ready callback has indicated the local player to be the host:
- *  - The broadcast flag can be set to true to send to multiple connected clients
- *  - On a broadcast, the client_id argument indicates 1 client NOT to send the packet to
- *  - Otherwise, the client_id argument indicates a single client to send the packet to
- * If the local player is a client connected to a host:
- *  - The broadcast flag is ignored
- *  - The client_id argument must be set to 0
+ * The broadcast flag can be set to true to send to multiple connected clients.
+ * On a broadcast, the client_id argument indicates 1 client NOT to send the
+ * packet to (pass 0xFFFF to send to everyone). Otherwise, the client_id
+ * argument indicates a single client to send the packet to.
+ *
+ * A frontend must support sending of reliable packets (RETRO_NETPACKET_RELIABLE).
+ * Unreliable packets might not be supported by the frontend but the flags can
+ * still be specified, reliable transmission will be used instead.
  *
  * This function is not guaranteed to be thread-safe and must be called during
  * retro_run or any of the netpacket callbacks passed with this interface.
  */
-typedef void (RETRO_CALLCONV *retro_netpacket_send_t)(const void* buf, size_t len, uint16_t client_id, bool broadcast);
+typedef void (RETRO_CALLCONV *retro_netpacket_send_t)(int flags, const void* buf, size_t len, uint16_t client_id, bool broadcast);
 
 /* Called by the frontend to signify that a multiplayer session has started.
  * If client_id is 0 the local player is the host of the session and at this
@@ -3087,12 +3095,8 @@ typedef void (RETRO_CALLCONV *retro_netpacket_send_t)(const void* buf, size_t le
 typedef void (RETRO_CALLCONV *retro_netpacket_start_t)(uint16_t client_id, retro_netpacket_send_t send_fn);
 
 /* Called by the frontend when a new packet arrives which has been sent from
- * a connected client or the host with retro_netpacket_send_t.
- * The client_id argument indicates who has sent the packet. On the host side
- * this will always be > 0 (coming from a connected client).
- * On a client connected to the host it is always 0 (coming from the host).
- * Packets sent with this interface arrive at this callback in a reliable
- * manner, meaning in the same order they were sent and without packet loss.
+ * another peer with retro_netpacket_send_t. The client_id argument indicates
+ * who has sent the packet.
  */
 typedef void (RETRO_CALLCONV *retro_netpacket_receive_t)(const void* buf, size_t len, uint16_t client_id);
 

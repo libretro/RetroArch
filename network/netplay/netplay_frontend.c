@@ -675,8 +675,10 @@ static uint32_t simple_rand_uint32(unsigned long *simple_rand_next)
    return ((part0 << 30) + (part1 << 15) + part2);
 }
 
-static void RETRO_CALLCONV netplay_netpacket_send(const void* buf, size_t len,
-      uint16_t client_id, bool broadcast);
+static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_i,
+      const void* buf, size_t len, uint16_t client_id, bool broadcast);
+static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
+      const void* buf, size_t len, uint16_t client_id, bool broadcast);
 
 /*
  * netplay_init_socket_buffer
@@ -1883,7 +1885,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    if (networking_driver_st.core_netpacket_interface &&
          networking_driver_st.core_netpacket_interface->start)
       networking_driver_st.core_netpacket_interface->start
-            ((uint16_t)netplay->self_client_num, netplay_netpacket_send);
+            ((uint16_t)netplay->self_client_num, netplay_netpacket_send_cb);
 
    /* Ask to switch to playing mode if we should */
    if (!settings->bools.netplay_start_as_spectator)
@@ -6160,7 +6162,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_NETPACKET:
+      case NETPLAY_CMD_NETPACKET_BROADCAST:
          {
+            uint32_t pkt_client_id;
+            void* buf = netplay->zbuffer;
             if (!networking_driver_st.core_netpacket_interface)
             {
                RARCH_ERR("[Netplay] NETPLAY_CMD_NETPACKET while core netpacket interface is not set.\n");
@@ -6172,15 +6177,46 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return netplay_cmd_nak(netplay, connection);
             }
 
-            RECV(netplay->zbuffer, cmd_size)
+            RECV(&pkt_client_id, sizeof(pkt_client_id))
+               return false;
+            pkt_client_id = ntohl(pkt_client_id);
+            RECV(buf, cmd_size)
                return false;
 
-            if (networking_driver_st.core_netpacket_interface->receive)
+            if (!netplay->is_server)
             {
-               uint16_t client_id = (!netplay->is_server ? (uint16_t)0 :
-                     (uint16_t)(connection - netplay->connections + 1));
-               networking_driver_st.core_netpacket_interface->receive
-                  (netplay->zbuffer, cmd_size, client_id);
+               /* packets arriving at a client are always meant for us */
+               if (networking_driver_st.core_netpacket_interface->receive)
+                  networking_driver_st.core_netpacket_interface->receive
+                     (buf, cmd_size, (uint16_t)pkt_client_id);
+            }
+            else
+            {
+               bool broadcast = (cmd == NETPLAY_CMD_NETPACKET_BROADCAST);
+               uint16_t incoming_client_id =
+                     (uint16_t)(connection - netplay->connections + 1);
+
+               /* check if this is a packet for the host */
+               if ((broadcast ? pkt_client_id : !pkt_client_id)
+                     && networking_driver_st.core_netpacket_interface->receive)
+                  networking_driver_st.core_netpacket_interface->receive
+                     (buf, cmd_size, incoming_client_id);
+
+               if (broadcast)
+               {
+                  /* relay to all but designated client and incoming client */
+                  size_t i, skip1 = pkt_client_id, skip2 = incoming_client_id;
+                  for (i = 0; i < netplay->connections_size; i++)
+                     if (i+1 != skip1 && i+1 != skip2)
+                         netplay_send_cmd_netpacket(netplay, i,
+                            buf, cmd_size, incoming_client_id, false);
+               }
+               else if (pkt_client_id && pkt_client_id != incoming_client_id)
+               {
+                  /* relay unless target is the host or the incoming client */
+                  netplay_send_cmd_netpacket(netplay, pkt_client_id-1,
+                     buf, cmd_size, incoming_client_id, false);
+               }
             }
             break;
          }
@@ -8705,7 +8741,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    /* Tell a core that uses the netpacket interface that the host is ready */
    if (netplay->is_server && net_st->core_netpacket_interface &&
          net_st->core_netpacket_interface->start)
-      net_st->core_netpacket_interface->start(0, netplay_netpacket_send);
+      net_st->core_netpacket_interface->start(0, netplay_netpacket_send_cb);
 
    return true;
 
@@ -9292,42 +9328,68 @@ bool netplay_decode_hostname(const char *hostname,
    return true;
 }
 
-static void RETRO_CALLCONV netplay_netpacket_send(const void* buf, size_t len,
-      uint16_t client_id, bool broadcast)
+/**
+ * netplay_send_cmd_netpacket
+ * @netplay       : pointer to netplay object
+ * @conn_idx      : connection index to send cmd to
+ * @buf           : packet data pointer
+ * @len           : packet data size
+ * @pkt_client_id : source id if host sending to client, otherwise recipient id or excepted id if broadcast
+ * @broadcast     : pass as true from client if host should relay this to everyone else
+ *
+ * Send a netpacket command to a connected peer.
+ */
+static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_idx,
+      const void* buf, size_t len, uint16_t pkt_client_id, bool broadcast)
+{
+   struct netplay_connection *connection;
+   struct socket_buffer *sbuf;
+   uint32_t cmdbuf[3];
+   bool need_flush;
+
+   if (conn_idx >= netplay->connections_size) return;
+   connection = &netplay->connections[conn_idx];
+   if (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE)) return;
+   if (connection->mode != NETPLAY_CONNECTION_PLAYING) return;
+
+   cmdbuf[0] = htonl(broadcast
+                 ? NETPLAY_CMD_NETPACKET_BROADCAST : NETPLAY_CMD_NETPACKET);
+   cmdbuf[1] = htonl(len);
+   cmdbuf[2] = htonl(pkt_client_id);
+
+   sbuf = &connection->send_packet_buffer;
+   need_flush = (buf_remaining(sbuf) < sizeof(cmdbuf)+len);
+
+   if (     (need_flush && !netplay_send_flush(sbuf, connection->fd, true))
+         || (!netplay_send(sbuf, connection->fd, cmdbuf, sizeof(cmdbuf)))
+         || (len && !netplay_send(sbuf, connection->fd, buf, len)))
+      netplay_hangup(netplay, connection);
+}
+
+static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
+      const void* buf, size_t len, uint16_t client_id, bool broadcast)
 {
    net_driver_state_t *net_st = &networking_driver_st;
    netplay_t *netplay         = net_st->data;
    if (!netplay) return;
 
-   if (broadcast && netplay->is_server)
+   if (!netplay->is_server)
    {
-      size_t i, skip = client_id;
-      for (i = 0; i < netplay->connections_size; i++)
-      {
-         struct netplay_connection *connection = &netplay->connections[i];
-         if (i+1 != skip && (connection->flags & NETPLAY_CONN_FLAG_ACTIVE)
-                         && (connection->mode == NETPLAY_CONNECTION_PLAYING)
-                         && !netplay_send_raw_cmd(netplay, connection,
-                              NETPLAY_CMD_NETPACKET, buf, len))
-            netplay_hangup(netplay, connection);
-      }
+      /* client always sends packet to host, host will relay it if needed */
+      netplay_send_cmd_netpacket(netplay, 0, buf, len, client_id, broadcast);
    }
-   else
+   else if (broadcast)
    {
-      struct netplay_connection *connection;
-      size_t i = client_id - (netplay->is_server ? 1 : 0);
-      if (i >= netplay->connections_size)
-      {
-         RARCH_ERR("[Netplay] Unable to send netpacket to client id %d.\n",
-            client_id);
-         return;
-      }
-      connection = &netplay->connections[i];
-      if (     (connection->flags & NETPLAY_CONN_FLAG_ACTIVE)
-            && (connection->mode == NETPLAY_CONNECTION_PLAYING)
-            && !netplay_send_raw_cmd(netplay, connection,
-                  NETPLAY_CMD_NETPACKET, buf, len))
-         netplay_hangup(netplay, connection);
+      /* send packet to all clients (client_id can be set as exception) */
+      size_t i;
+      for (i = 0; i < netplay->connections_size; i++)
+         if (i+1 != client_id)
+            netplay_send_cmd_netpacket(netplay, i, buf, len, 0, false);
+   }
+   else if (client_id)
+   {
+      /* send packet to specific client */
+      netplay_send_cmd_netpacket(netplay, client_id-1, buf, len, 0, false);
    }
 }
 
