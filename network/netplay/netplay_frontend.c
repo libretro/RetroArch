@@ -4451,7 +4451,7 @@ static uint8_t netplay_settings_share_mode(
 static void announce_play_spectate(netplay_t *netplay,
       const char *nick,
       enum rarch_netplay_connection_mode mode, uint32_t devices,
-      int32_t ping)
+      int32_t ping, uint32_t client_num)
 {
    char msg[512];
    const char *dmsg = NULL;
@@ -4478,16 +4478,23 @@ static void announce_play_spectate(netplay_t *netplay,
          uint32_t one_device = (uint32_t) -1;
          char *pdevice_str   = NULL;
 
-         for (device = 0; device < MAX_INPUT_DEVICES; device++)
+         if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
          {
-            if (!(devices & (1<<device)))
-               continue;
-            if (one_device == (uint32_t) -1)
-               one_device = device;
-            else
+            one_device = client_num;
+         }
+         else
+         {
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
             {
-               one_device = (uint32_t) -1;
-               break;
+               if (!(devices & (1<<device)))
+                  continue;
+               if (one_device == (uint32_t) -1)
+                  one_device = device;
+               else
+               {
+                  one_device = (uint32_t) -1;
+                  break;
+               }
             }
          }
 
@@ -4598,7 +4605,7 @@ static void handle_play_spectate(netplay_t *netplay,
                   NETPLAY_CMD_MODE, &payload, sizeof(payload));
 
                announce_play_spectate(netplay, connection->nick,
-                  NETPLAY_CONNECTION_SPECTATING, 0, -1);
+                  NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
             }
             else
             {
@@ -4609,7 +4616,7 @@ static void handle_play_spectate(netplay_t *netplay,
                netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
 
                announce_play_spectate(netplay, NULL,
-                  NETPLAY_CONNECTION_SPECTATING, 0, -1);
+                  NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
 
                /* It was the server, so tell everyone else */
                netplay_send_raw_cmd_all(netplay, NULL,
@@ -4643,7 +4650,12 @@ static void handle_play_spectate(netplay_t *netplay,
                share_mode &= ~NETPLAY_SHARE_NO_PREFERENCE;
             }
 
-            if (devices)
+            if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+            {
+               /* no device needs to be assigned with netpacket interface */
+               devices = 0;
+            }
+            else if (devices)
             {
                /* Make sure the devices are available and/or shareable */
                for (i = 0; i < MAX_INPUT_DEVICES; i++)
@@ -4800,17 +4812,27 @@ static void handle_play_spectate(netplay_t *netplay,
 
                payload.mode = htonl(mode | NETPLAY_CMD_MODE_BIT_YOU);
 
+               if (networking_driver_st.core_netpacket_interface
+                   && networking_driver_st.core_netpacket_interface->connected
+                   && !networking_driver_st.core_netpacket_interface->connected(
+                         (uint16_t)(connection - netplay->connections + 1)))
+               {
+                  /* core wants us to drop this new client */
+                  connection->mode = NETPLAY_CONNECTION_CONNECTED;
+                   uint32_t reason = htonl(
+                      NETPLAY_CMD_MODE_REFUSED_REASON_OTHER);
+                   netplay_send_raw_cmd(netplay, connection,
+                      NETPLAY_CMD_MODE_REFUSED, &reason, sizeof(reason));
+                   netplay_hangup(netplay, connection);
+                   return;
+               }
+
                /* Tell the player */
                netplay_send_raw_cmd(netplay, connection,
                   NETPLAY_CMD_MODE, &payload, sizeof(payload));
 
                announce_play_spectate(netplay, connection->nick,
-                  connection->mode, devices, connection->ping);
-
-               if (networking_driver_st.core_netpacket_interface
-                     && networking_driver_st.core_netpacket_interface->connected)
-                  networking_driver_st.core_netpacket_interface->connected
-                        ((uint16_t)(connection - netplay->connections + 1));
+                  connection->mode, devices, connection->ping, client_num);
             }
             else
             {
@@ -4828,7 +4850,7 @@ static void handle_play_spectate(netplay_t *netplay,
                netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
 
                announce_play_spectate(netplay, NULL,
-                  netplay->self_mode, devices, -1);
+                  netplay->self_mode, devices, -1, client_num);
             }
 
             payload.mode = htonl(mode);
@@ -5632,7 +5654,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
                /* Announce it */
                announce_play_spectate(netplay, NULL, netplay->self_mode, devices,
-                  connection->ping);
+                  connection->ping, client_num);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change self->%X\n", devices);
@@ -5677,7 +5699,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                netplay->read_frame_count[client_num] = netplay->server_frame_count;
 
                /* Announce it */
-               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_PLAYING, devices, -1);
+               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_PLAYING, devices, -1, client_num);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change %u->%u\n", client_num, devices);
@@ -5692,7 +5714,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   netplay->device_clients[device] &= ~(1<<client_num);
 
                /* Announce it */
-               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_SPECTATING, 0, -1);
+               announce_play_spectate(netplay, nick, NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
 
 #ifdef DEBUG_NETPLAY_STEPS
                RARCH_LOG("[Netplay] Received mode change %u->spectator\n", client_num);
@@ -5970,7 +5992,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_RESET:
-         {
+         {DBP_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC)
             uint32_t i;
             uint32_t frame;
             size_t   reset_ptr;
@@ -7418,7 +7440,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
             if (!netplay->is_server)
             {
                int i;
-               uint32_t client_mask = ~(1 << netplay->self_client_num);
+               uint32_t client_num = netplay->self_client_num;
+               uint32_t client_mask = ~(1 << client_num);
 
                netplay->connected_players &= client_mask;
 
@@ -7430,7 +7453,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
                netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
 
                announce_play_spectate(netplay, NULL,
-                  NETPLAY_CONNECTION_SPECTATING, 0, -1);
+                  NETPLAY_CONNECTION_SPECTATING, 0, -1, client_num);
             }
 
             netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
@@ -9335,7 +9358,7 @@ bool netplay_decode_hostname(const char *hostname,
  * @buf           : packet data pointer
  * @len           : packet data size
  * @pkt_client_id : source id if host sending to client, otherwise recipient id or excepted id if broadcast
- * @broadcast     : pass as true from client if host should relay this to everyone else
+ * @broadcast     : pass true on client if host should relay this to everyone else
  *
  * Send a netpacket command to a connected peer.
  */
@@ -9372,6 +9395,14 @@ static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
    net_driver_state_t *net_st = &networking_driver_st;
    netplay_t *netplay         = net_st->data;
    if (!netplay) return;
+
+   if (buf == NULL)
+   {
+      /* With NULL this function instead flushes packets and checks incoming */
+      netplay_send_flush_all(netplay, NULL);
+      input_poll_net(netplay);
+      return;
+   }
 
    if (!netplay->is_server)
    {
