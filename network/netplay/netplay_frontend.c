@@ -5992,7 +5992,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
       case NETPLAY_CMD_RESET:
-         {DBP_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC)
+         {
             uint32_t i;
             uint32_t frame;
             size_t   reset_ptr;
