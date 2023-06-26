@@ -4818,9 +4818,9 @@ static void handle_play_spectate(netplay_t *netplay,
                          (uint16_t)(connection - netplay->connections + 1)))
                {
                   /* core wants us to drop this new client */
-                  connection->mode = NETPLAY_CONNECTION_CONNECTED;
                    uint32_t reason = htonl(
                       NETPLAY_CMD_MODE_REFUSED_REASON_OTHER);
+                  connection->mode = NETPLAY_CONNECTION_CONNECTED;
                    netplay_send_raw_cmd(netplay, connection,
                       NETPLAY_CMD_MODE_REFUSED, &reason, sizeof(reason));
                    netplay_hangup(netplay, connection);
