@@ -4088,7 +4088,7 @@ enum retro_power_state
     * and that it does not have a battery.
     * This usually suggests a desktop computer or a non-portable game console.
     */
-   RETRO_POWERSTATE_PLUGGED_IN,
+   RETRO_POWERSTATE_PLUGGED_IN
 };
 
 /**
