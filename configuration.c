@@ -4558,37 +4558,34 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf)
 static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
-   size_t _len;
    char config[16];
-   unsigned hat     = (unsigned)GET_HAT(bind->joykey);
+   const char *hat  = NULL;
 
-   config[0]        = 'h';
-   config[1]        = '\0';
-
-   _len             = snprintf(config + 1, sizeof(config) - 1, "%u", hat); 
+   config[0]        = '\0';
 
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         strlcpy(config + _len, "up",    sizeof(config) - _len);
+         hat = "up";
          break;
 
       case HAT_DOWN_MASK:
-         strlcpy(config + _len, "down",  sizeof(config) - _len);
+         hat = "down";
          break;
 
       case HAT_LEFT_MASK:
-         strlcpy(config + _len, "left",  sizeof(config) - _len);
+         hat = "left";
          break;
 
       case HAT_RIGHT_MASK:
-         strlcpy(config + _len, "right", sizeof(config) - _len);
+         hat = "right";
          break;
 
       default:
          break;
    }
 
+   snprintf(config, sizeof(config), "h%u%s", GET_HAT(bind->joykey), hat);
    config_set_string(conf, key, config);
 }
 
