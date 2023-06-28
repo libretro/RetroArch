@@ -9229,6 +9229,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
          if (net_st->core_netpacket_interface)
          {
+            if (data && !memcmp(net_st->core_netpacket_interface,
+                  data, sizeof(*net_st->core_netpacket_interface)))
+               break; /* interface is not modified */
+
             free(net_st->core_netpacket_interface);
             net_st->core_netpacket_interface = NULL;
          }
