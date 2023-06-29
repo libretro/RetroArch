@@ -288,6 +288,7 @@ enum settings_list_type
    SETTINGS_LIST_INPUT,
    SETTINGS_LIST_INPUT_TURBO_FIRE,
    SETTINGS_LIST_INPUT_HOTKEY,
+   SETTINGS_LIST_INPUT_RETROPAD_BINDS,
    SETTINGS_LIST_RECORDING,
    SETTINGS_LIST_FRAME_THROTTLING,
    SETTINGS_LIST_FRAME_TIME_COUNTER,
@@ -14808,6 +14809,14 @@ static bool setting_append_list(
                   list, list_info,
                   MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,
                   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+                  
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
                   &group_info,
                   &subgroup_info,
                   parent_group);

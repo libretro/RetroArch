@@ -604,6 +604,7 @@ DEFAULT_TITLE_MACRO(action_get_core_counters_list,              MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_recording_settings_list,         MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_playlist_settings_list,          MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_playlist_manager_list,           MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)
+DEFAULT_TITLE_MACRO(action_get_input_retropad_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS)
 DEFAULT_TITLE_MACRO(action_get_input_hotkey_binds_settings_list,MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS)
 DEFAULT_TITLE_MACRO(action_get_driver_settings_list,            MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_core_settings_list,              MENU_ENUM_LABEL_VALUE_CORE_SETTINGS)
@@ -1227,6 +1228,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_online_pl_thumbnails_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
          action_get_title_input_binds_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST,
+         action_get_input_retropad_binds_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
          action_get_input_hotkey_binds_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST,
@@ -1573,6 +1576,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_input_binds_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_input_retropad_binds_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_hotkey_binds_settings_list);

@@ -1220,6 +1220,10 @@ MSG_HASH(
    "deferred_frame_throttle_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST,
+   "deferred_input_retropad_binds"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
    "deferred_input_hotkey_binds"
    )
@@ -1910,6 +1914,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
    "input_duty_cycle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,
+   "input_retropad_binds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,

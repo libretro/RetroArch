@@ -234,6 +234,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_recording_settings_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_list,          DISPLAYLIST_PLAYLIST_MANAGER_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
+GENERIC_DEFERRED_PUSH(deferred_push_input_retropad_binds_list,        DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
@@ -805,6 +806,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_INFORMATION, deferred_push_information},
       {MENU_ENUM_LABEL_SHADER_OPTIONS, deferred_push_shader_options},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST, deferred_user_binds_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST, deferred_push_input_retropad_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST, deferred_push_input_hotkey_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS, deferred_push_quick_menu_override_options},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST, deferred_push_accounts_youtube_list},
@@ -948,6 +950,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_retropad_binds_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
