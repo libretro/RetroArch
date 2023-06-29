@@ -467,6 +467,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST;
+      case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST;
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
@@ -1704,6 +1706,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_MICROPHONE_SETTINGS_LIST:
 #endif
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
+      case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
@@ -5983,6 +5986,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_latency_settings_list, ACTION_OK_DL
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_manager_list, ACTION_OK_DL_PLAYLIST_MANAGER_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_retropad_binds_list, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_hotkey_binds_list, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
@@ -8413,6 +8417,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,   action_ok_playlist_refresh},
          {MENU_ENUM_LABEL_RECORDING_SETTINGS,                  action_ok_push_recording_settings_list},
+         {MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,                  action_ok_push_input_retropad_binds_list},
          {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                  action_ok_push_input_hotkey_binds_list},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
          {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                    action_ok_push_accounts_youtube_list},
