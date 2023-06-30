@@ -74,7 +74,7 @@ var LibraryRWebAudio = {
       block: function() {
          do {
             RA.process();
-         } while (RA.bufIndex === RA.numBuffers-1);
+         } while (RA.bufIndex === RA.numBuffers-2);
       }
    },
 
@@ -114,7 +114,7 @@ var LibraryRWebAudio = {
       var count = 0;
 
       while (samples) {
-         if (RA.bufIndex === RA.numBuffers-1) {
+         if (RA.bufIndex === RA.numBuffers-2) {
             if (RA.nonblock) break;
             else RA.block();
          }
