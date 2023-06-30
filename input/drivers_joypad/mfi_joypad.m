@@ -31,6 +31,11 @@
 #define MAX_MFI_CONTROLLERS 4
 #endif
 
+#if TARGET_OS_IOS
+#include "../../configuration.h"
+static UIImpactFeedbackGenerator *deviceFeedbackGenerator;
+#endif
+
 enum
 {
     GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
@@ -487,6 +492,13 @@ void *apple_gamecontroller_joypad_init(void *data)
 {
    if (mfi_inited)
       return (void*)-1;
+
+#if TARGET_OS_IOS
+   if (!deviceFeedbackGenerator)
+      deviceFeedbackGenerator = [[UIImpactFeedbackGenerator alloc] init];
+   [deviceFeedbackGenerator prepare];
+#endif
+
    if (!apple_gamecontroller_available())
       return NULL;
    mfiControllers = [[NSMutableArray alloc] initWithCapacity:MAX_MFI_CONTROLLERS];
@@ -588,6 +600,17 @@ static int16_t apple_gamecontroller_joypad_state(
 static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
+#if TARGET_OS_IOS
+    settings_t *settings            = config_get_ptr();
+    bool enable_device_vibration    = settings->bools.enable_device_vibration;
+
+    if (enable_device_vibration && pad == 0)
+    {
+        [deviceFeedbackGenerator impactOccurredWithIntensity:((float)strength)/65535.0f];
+        [deviceFeedbackGenerator prepare];
+    }
+#endif
+
     if (pad < MAX_MFI_CONTROLLERS)
     {
        if (@available(iOS 14, tvOS 14, macOS 11, *))

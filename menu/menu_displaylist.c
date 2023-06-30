@@ -6742,6 +6742,13 @@ unsigned menu_displaylist_build_list(
          {
             input_driver_t *current_input =
                   input_state_get_ptr()->current_driver;
+            const frontend_ctx_driver_t *frontend =
+                  frontend_get_ptr();
+            char os_ver[64] = {0};
+            int major, minor;
+
+            if (frontend && frontend->get_os)
+               frontend->get_os(os_ver, sizeof(os_ver), &major, &minor);
 
             if (current_input->keypress_vibrate)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -6749,7 +6756,8 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
 
-            if (string_is_equal(current_input->ident, "android"))
+            if (string_is_equal(current_input->ident, "android") ||
+                (string_is_equal(current_input->ident, "cocoa") && string_is_equal(os_ver, "iOS")))
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
                         PARSE_ONLY_BOOL, false) == 0)
