@@ -22,7 +22,7 @@
 
 #include <sys/utsname.h>
 
-#include <mach/mach_host.h>
+#include <mach/mach.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
@@ -756,7 +756,6 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    return ret;
 }
 
-/* TODO/FIXME - is adding iOS/tvOS support possible here? */
 static uint64_t frontend_darwin_get_total_mem(void)
 {
 #if defined(OSX)
@@ -766,11 +765,15 @@ static uint64_t frontend_darwin_get_total_mem(void)
     size_t len     = sizeof(size);
     if (sysctl(mib, namelen, &size, &len, NULL, 0) >= 0)
        return size;
+#elif defined(IOS)
+    task_vm_info_data_t vmInfo;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
+       return vmInfo.resident_size_peak;
 #endif
     return 0;
 }
 
-/* TODO/FIXME - is adding iOS/tvOS support possible here? */
 static uint64_t frontend_darwin_get_free_mem(void)
 {
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
@@ -789,6 +792,11 @@ static uint64_t frontend_darwin_get_free_mem(void)
               (int64_t)vm_stats.wire_count)    * (int64_t)page_size;
         return used_memory;
     }
+#elif defined(IOS)
+    task_vm_info_data_t vmInfo;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
+        return vmInfo.resident_size_peak - vmInfo.resident_size;
 #endif
     return 0;
 }
