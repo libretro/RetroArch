@@ -74,7 +74,7 @@ var LibraryRWebAudio = {
       block: function() {
          do {
             RA.process();
-         } while (RA.bufIndex === RA.numBuffers);
+         } while (RA.bufIndex === RA.numBuffers-1);
       }
    },
 
@@ -87,6 +87,8 @@ var LibraryRWebAudio = {
 
       RA.numBuffers = ((latency * RA.context.sampleRate) / (1000 * RA.BUFFER_SIZE))|0;
       if (RA.numBuffers < 2) RA.numBuffers = 2;
+      
+      RA.numBuffers++;
 
       for (var i = 0; i < RA.numBuffers; i++) {
          RA.buffers[i] = RA.context.createBuffer(2, RA.BUFFER_SIZE, RA.context.sampleRate);
@@ -112,7 +114,7 @@ var LibraryRWebAudio = {
       var count = 0;
 
       while (samples) {
-         if (RA.bufIndex === RA.numBuffers) {
+         if (RA.bufIndex === RA.numBuffers-1) {
             if (RA.nonblock) break;
             else RA.block();
          }
