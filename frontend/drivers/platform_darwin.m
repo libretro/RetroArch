@@ -282,10 +282,18 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
 #if defined(IOS)
    get_ios_version(major, minor);
+#if TARGET_OS_TV
+   s[0] = 't';
+   s[1] = 'v';
+   s[2] = 'O';
+   s[3] = 'S';
+   s[4] = '\0';
+#else
    s[0] = 'i';
    s[1] = 'O';
    s[2] = 'S';
    s[3] = '\0';
+#endif
 #elif defined(OSX)
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 // MAC_OS_X_VERSION_10_13
