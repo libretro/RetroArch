@@ -855,7 +855,7 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
             {
                configuration_set_int(settings,
                      settings->ints.vulkan_gpu_index,
-                     list->size - 1);
+                     (int)list->size - 1);
             }
          }
 
