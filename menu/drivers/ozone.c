@@ -2785,7 +2785,7 @@ static unsigned ozone_get_sidebar_height(ozone_handle_t *ozone)
                : 0);
 }
 
-static unsigned ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
+static size_t ozone_get_selected_sidebar_y_position(ozone_handle_t *ozone)
 {
    return ozone->categories_selection_ptr * ozone->dimensions.sidebar_entry_height
          + (ozone->categories_selection_ptr - 1) * ozone->dimensions.sidebar_entry_padding_vertical

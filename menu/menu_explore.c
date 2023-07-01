@@ -592,7 +592,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             }
 
             RBUF_PUSH(rdbs, newrdb);
-            rdb_num = (uintptr_t)RBUF_LEN(rdbs);
+            rdb_num = (int)RBUF_LEN(rdbs);
             RHMAP_SET(rdb_indices, rdb_hash, rdb_num);
          }
 
@@ -1642,7 +1642,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 #endif
          else
             explore_menu_entry(list, state, e->playlist_entry->label,
-                  EXPLORE_TYPE_FIRSTITEM + (e - entries), explore_action_ok);
+                  (unsigned)(EXPLORE_TYPE_FIRSTITEM + (e - entries)), explore_action_ok);
 SKIP_ENTRY:;
       }
 

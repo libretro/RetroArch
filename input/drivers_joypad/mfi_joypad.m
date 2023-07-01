@@ -185,13 +185,12 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
     /* Don't let tvOS or iOS do anything with **our** buttons!!
      * iOS will start a screen recording if you hold or doubleclick  
      * the OPTIONS button, we don't want that. */
-    if (@available(iOS 14.0, tvOS 14.0, macOS 10.15, *))
+    if (@available(iOS 14.0, tvOS 14.0, macOS 11, *))
     {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
         gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
         gp.buttonMenu.preferredSystemGestureState    = GCSystemGestureStateDisabled;
-        if (@available(macOS 11, *))
-            gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
+        gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
     }
 #endif
     
