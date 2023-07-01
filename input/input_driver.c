@@ -558,10 +558,75 @@ const input_device_driver_t *input_joypad_init_driver(
    return input_joypad_init_first(data); /* fall back to first available driver */
 }
 
+static bool input_driver_button_combo_hold(
+      unsigned mode,
+      unsigned button,
+      retro_time_t current_time,
+      input_bits_t *p_input)
+{
+   rarch_timer_t *timer           = &input_driver_st.combo_timers[mode];
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   static bool enable_hotkey_dupe = false;
+
+   /* Flag current press when button and 'enable_hotkey' are the same,
+    * because 'input_hotkey_block_delay' clears the combo button bit. */
+   if (     BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+         && BIT256_GET_PTR(p_input, button))
+      enable_hotkey_dupe = true;
+
+   /* Ignore press if 'enable_hotkey' is not the combo button. */
+   if (      BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+         && !BIT256_GET_PTR(p_input, button)
+         && !enable_hotkey_dupe)
+      return false;
+
+   /* Allow using the same button for 'enable_hotkey' if set,
+    * and stop timer if holding fast-forward or slow-motion */
+   if (     !BIT256_GET_PTR(p_input, button)
+         && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+            && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
+            && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+            && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      )
+   {
+      /* Timer only runs while start is held down */
+      enable_hotkey_dupe = false;
+      timer->timer_begin = false;
+      timer->timer_end   = true;
+      timer->timeout_end = 0;
+      return false;
+   }
+
+   /* User started holding down the start button, start the timer */
+   if (!timer->timer_begin)
+   {
+      timer->timeout_us     = HOLD_BTN_DELAY_SEC * 1000000;
+      timer->timeout_end    = current_time + timer->timeout_us;
+      timer->timer_begin    = true;
+      timer->timer_end      = false;
+   }
+
+   timer->current           = current_time;
+   timer->timeout_us        = (timer->timeout_end - timer->current);
+
+   if (!timer->timer_end && (timer->timeout_us <= 0))
+   {
+      /* Start has been held down long enough,
+       * stop timer and enter menu */
+      enable_hotkey_dupe = false;
+      timer->timer_begin = false;
+      timer->timer_end   = true;
+      timer->timeout_end = 0;
+      return true;
+   }
+
+   return false;
+}
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
-      input_bits_t* p_input)
+      input_bits_t *p_input)
 {
    switch (mode)
    {
@@ -610,97 +675,11 @@ bool input_driver_button_combo(
             return true;
          break;
       case INPUT_COMBO_HOLD_START:
-         {
-            rarch_timer_t *timer        = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_START];
-            runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-            /* Allow using the same button for 'enable_hotkey' if set,
-             * and stop timer if holding fast-forward or slow-motion */
-            if (     !BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
-                  && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
-                     && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-               )
-            {
-               /* Timer only runs while start is held down */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return false;
-            }
-
-            /* User started holding down the start button, start the timer */
-            if (!timer->timer_begin)
-            {
-               uint64_t current_usec = cpu_features_get_time_usec();
-               timer->timeout_us     = HOLD_BTN_DELAY_SEC * 1000000;
-               timer->current        = current_usec;
-               timer->timeout_end    = timer->current + timer->timeout_us;
-               timer->timer_begin    = true;
-               timer->timer_end      = false;
-            }
-
-            timer->current           = current_time;
-            timer->timeout_us        = (timer->timeout_end - timer->current);
-
-            if (!timer->timer_end && (timer->timeout_us <= 0))
-            {
-               /* Start has been held down long enough,
-                * stop timer and enter menu */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return true;
-            }
-         }
-         break;
+         return input_driver_button_combo_hold(
+               INPUT_COMBO_HOLD_START, RETRO_DEVICE_ID_JOYPAD_START, current_time, p_input);
       case INPUT_COMBO_HOLD_SELECT:
-         {
-            rarch_timer_t *timer        = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_SELECT];
-            runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-            /* Allow using the same button for 'enable_hotkey' if set,
-             * and stop timer if holding fast-forward or slow-motion */
-            if (     !BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT)
-                  && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
-                     && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-               )
-            {
-               /* Timer only runs while select is held down */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return false;
-            }
-
-            /* User started holding down the select button, start the timer */
-            if (!timer->timer_begin)
-            {
-               uint64_t current_usec = cpu_features_get_time_usec();
-               timer->timeout_us     = HOLD_BTN_DELAY_SEC * 1000000;
-               timer->current        = current_usec;
-               timer->timeout_end    = timer->current + timer->timeout_us;
-               timer->timer_begin    = true;
-               timer->timer_end      = false;
-            }
-
-            timer->current           = current_time;
-            timer->timeout_us        = (timer->timeout_end - timer->current);
-
-            if (!timer->timer_end && (timer->timeout_us <= 0))
-            {
-               /* Select has been held down long enough,
-                * stop timer and enter menu */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return true;
-            }
-         }
-         break;
+         return input_driver_button_combo_hold(
+               INPUT_COMBO_HOLD_SELECT, RETRO_DEVICE_ID_JOYPAD_SELECT, current_time, p_input);
       default:
       case INPUT_COMBO_NONE:
          break;
