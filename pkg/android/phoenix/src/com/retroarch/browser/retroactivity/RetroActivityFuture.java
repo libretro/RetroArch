@@ -104,4 +104,23 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     // If QUITFOCUS parameter was set then completely exit Retroarch when focus is lost
     if (quitfocus) System.exit(0);
   }
+
+  public void inputGrabMouse(boolean state) {
+    // Attempt requestPointerCapture for SDK >= OREO
+    if (Build.VERSION.SDK_INT >= 26) {
+      try {
+        View view = getWindow().getDecorView();
+        if (state) view.requestPointerCapture();
+        else view.releasePointerCapture();
+      } catch (Exception e) { }
+    }
+    // Check for NVIDIA extensions and minimum SDK version
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+      try {
+        Method mInputManager_setCursorVisibility = InputManager.class.getMethod("setCursorVisibility", boolean.class);
+        InputManager inputManager = (InputManager)getSystemService(Context.INPUT_SERVICE);
+        mInputManager_setCursorVisibility.invoke(inputManager, state);
+      } catch (Exception e) { }
+    }
+  }
 }

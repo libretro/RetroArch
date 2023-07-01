@@ -61,9 +61,15 @@ enum {
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
     AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
-    AINPUT_SOURCE_STYLUS = 0x00004002,
+    AINPUT_SOURCE_STYLUS = 0x00004000 | AINPUT_SOURCE_CLASS_POINTER,
     AMOTION_EVENT_BUTTON_STYLUS_PRIMARY = 1 << 5,
     AMOTION_EVENT_BUTTON_STYLUS_SECONDARY = 1 << 6
+};
+#endif
+/* If using an NDK lower than 16b then add missing definition */
+#ifndef __ANDROID_API_O_MR1__
+enum {
+   AINPUT_SOURCE_MOUSE_RELATIVE = 0x00020000 | AINPUT_SOURCE_CLASS_NAVIGATION
 };
 #endif
 
@@ -638,7 +644,7 @@ static int android_check_quick_tap(android_input_t *android)
 }
 
 static INLINE void android_mouse_calculate_deltas(android_input_t *android,
-      AInputEvent *event,size_t motion_ptr)
+      AInputEvent *event,size_t motion_ptr,int source)
 {
    /* Adjust mouse speed based on ratio
     * between core resolution and system resolution */
@@ -657,30 +663,41 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       y_scale = 2 * (float)geom->base_height / (float)custom_vp->height;
    }
 
-   /* This axis is only available on Android Nougat and on 
-    * Android devices with NVIDIA extensions */
-   if (p_AMotionEvent_getAxisValue)
+   /* AINPUT_SOURCE_MOUSE_RELATIVE is available on Oreo (SDK 26) and newer,
+    * it passes the relative coordinates in the regular X and Y parts.
+    * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check */
+   if ((source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
    {
-      x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X,
-            motion_ptr);
-      y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y,
-            motion_ptr);
+      x = AMotionEvent_getX(event, motion_ptr);
+      y = AMotionEvent_getY(event, motion_ptr);
    }
-
-   /* If AXIS_RELATIVE had 0 values it might be because we're not 
-    * running Android Nougat or on a device
-    * with NVIDIA extension, so re-calculate deltas based on 
-    * AXIS_X and AXIS_Y. This has limitations
-    * compared to AXIS_RELATIVE because once the Android mouse cursor 
-    * hits the edge of the screen it is
-    * not possible to move the in-game mouse any further in that direction.
-    */
-   if (!x && !y)
+   else
    {
-      x = (AMotionEvent_getX(event, motion_ptr) - android->mouse_x_prev);
-      y = (AMotionEvent_getY(event, motion_ptr) - android->mouse_y_prev);
-      android->mouse_x_prev = AMotionEvent_getX(event, motion_ptr);
-      android->mouse_y_prev = AMotionEvent_getY(event, motion_ptr);
+      /* This axis is only available on Android Nougat and on 
+      * Android devices with NVIDIA extensions */
+      if (p_AMotionEvent_getAxisValue)
+      {
+         x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X,
+               motion_ptr);
+         y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y,
+               motion_ptr);
+      }
+
+      /* If AXIS_RELATIVE had 0 values it might be because we're not 
+      * running Android Nougat or on a device
+      * with NVIDIA extension, so re-calculate deltas based on 
+      * AXIS_X and AXIS_Y. This has limitations
+      * compared to AXIS_RELATIVE because once the Android mouse cursor 
+      * hits the edge of the screen it is
+      * not possible to move the in-game mouse any further in that direction.
+      */
+      if (!x && !y)
+      {
+         x = (AMotionEvent_getX(event, motion_ptr) - android->mouse_x_prev);
+         y = (AMotionEvent_getY(event, motion_ptr) - android->mouse_y_prev);
+         android->mouse_x_prev = AMotionEvent_getX(event, motion_ptr);
+         android->mouse_y_prev = AMotionEvent_getY(event, motion_ptr);
+      }
    }
 
    android->mouse_x_delta = ceil(x) * x_scale;
@@ -697,13 +714,13 @@ static INLINE void android_input_poll_event_type_motion(
    bool keyup        = (
             action == AMOTION_EVENT_ACTION_UP
          || action == AMOTION_EVENT_ACTION_CANCEL
-         || action == AMOTION_EVENT_ACTION_POINTER_UP)
-         || (source == AINPUT_SOURCE_MOUSE &&
-             action != AMOTION_EVENT_ACTION_DOWN);
+         || action == AMOTION_EVENT_ACTION_POINTER_UP);
 
    /* If source is mouse then calculate button state
-    * and mouse deltas and don't process as touchscreen event */
-   if (source == AINPUT_SOURCE_MOUSE)
+    * and mouse deltas and don't process as touchscreen event.
+    * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check */
+   if (    (source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
+        || (source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
    {
       /* getButtonState requires API level 14 */
       if (p_AMotionEvent_getButtonState)
@@ -732,7 +749,7 @@ static INLINE void android_input_poll_event_type_motion(
             android->mouse_l = 0;
       }
 
-      android_mouse_calculate_deltas(android,event,motion_ptr);
+      android_mouse_calculate_deltas(android,event,motion_ptr,source);
 
       return;
    }
@@ -785,7 +802,7 @@ static INLINE void android_input_poll_event_type_motion(
       if ((       action == AMOTION_EVENT_ACTION_MOVE 
                || action == AMOTION_EVENT_ACTION_HOVER_MOVE) 
             && ENABLE_TOUCH_SCREEN_MOUSE)
-         android_mouse_calculate_deltas(android,event,motion_ptr);
+         android_mouse_calculate_deltas(android,event,motion_ptr,source);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
@@ -967,7 +984,7 @@ static int android_input_get_id_port(android_input_t *android, int id,
    unsigned i;
    int ret = -1;
    if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE |
-            AINPUT_SOURCE_TOUCHPAD))
+            AINPUT_SOURCE_MOUSE_RELATIVE | AINPUT_SOURCE_TOUCHPAD))
          ret = 0; /* touch overlay is always user 1 */
 
    for (i = 0; i < android->pads_connected; i++)
@@ -1565,7 +1582,10 @@ static void android_input_poll_input_default(android_input_t *android)
                else if ((source & AINPUT_SOURCE_STYLUS) == AINPUT_SOURCE_STYLUS)
                   android_input_poll_event_type_motion_stylus(android, event,
                         port, source);
-               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
+               /* Only handle events from a touchscreen or mouse */
+               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
+                           | AINPUT_SOURCE_MOUSE
+                           | AINPUT_SOURCE_MOUSE_RELATIVE)))
                   android_input_poll_event_type_motion(android, event,
                         port, source);
                else
@@ -2056,6 +2076,18 @@ static float android_input_get_sensor_input(void *data,
    return 0.0f;
 }
 
+static void android_input_grab_mouse(void *data, bool state)
+{
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return;
+
+   if (g_android->inputGrabMouse)
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->inputGrabMouse, state);
+}
+
 static void android_input_keypress_vibrate()
 {
    static const int keyboard_press = 3;
@@ -2077,8 +2109,7 @@ input_driver_t input_android = {
    android_input_get_sensor_input,
    android_input_get_capabilities,
    "android",
-
-   NULL,                            /* grab_mouse */
+   android_input_grab_mouse,
    NULL,
    android_input_keypress_vibrate
 };

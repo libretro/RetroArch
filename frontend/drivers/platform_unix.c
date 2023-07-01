@@ -2090,6 +2090,8 @@ static void frontend_unix_init(void *data)
          "getVolumeCount", "()I");
    GET_METHOD_ID(env, android_app->getVolumePath, class,
          "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->inputGrabMouse, class,
+         "inputGrabMouse", "(Z)V");
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
