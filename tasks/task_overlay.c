@@ -397,6 +397,8 @@ static bool task_overlay_load_desc(
    _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
 
    strlcpy(conf_key + _len, "_reach_x",   sizeof(conf_key) - _len);
+   desc->reach_right = 1.0f;
+   desc->reach_left  = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
    {
       desc->reach_right = tmp_float;
@@ -404,6 +406,8 @@ static bool task_overlay_load_desc(
    }
 
    strlcpy(conf_key + _len, "_reach_y",   sizeof(conf_key) - _len);
+   desc->reach_up   = 1.0f;
+   desc->reach_down = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
    {
       desc->reach_up   = tmp_float;
@@ -419,7 +423,6 @@ static bool task_overlay_load_desc(
       desc->flags |= OVERLAY_DESC_MOVABLE;
 
    strlcpy(conf_key + _len, "_reach_up", sizeof(conf_key) - _len);
-   desc->reach_up = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_up = tmp_float;
 
@@ -440,17 +443,14 @@ static bool task_overlay_load_desc(
       desc->flags |= OVERLAY_DESC_EXCLUSIVE;
 
    strlcpy(conf_key + _len, "_reach_down",   sizeof(conf_key) - _len);
-   desc->reach_down = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_down = tmp_float;
 
    strlcpy(conf_key + _len, "_reach_left",   sizeof(conf_key) - _len);
-   desc->reach_left = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_left = tmp_float;
 
    strlcpy(conf_key + _len, "_reach_right",   sizeof(conf_key) - _len);
-   desc->reach_right = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_right = tmp_float;
 
