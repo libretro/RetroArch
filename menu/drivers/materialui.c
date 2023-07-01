@@ -10597,7 +10597,8 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_CORE_CHEAT_OPTIONS;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS)))
             {
                node->icon_texture_index = MUI_TEXTURE_CONTROLS;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
