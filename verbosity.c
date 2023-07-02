@@ -27,7 +27,11 @@
 #if TARGET_IPHONE_SIMULATOR
 #include <stdio.h>
 #else
+#if __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0
+#include <os/log.h>
+#else
 #include <asl.h>
+#endif
 #endif
 #endif
 
@@ -283,6 +287,12 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #else
+#if __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0
+   int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
+   char buffer[sz];
+   vsnprintf(buffer, sz, fmt, ap);
+   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+#else
    static aslclient asl_client;
    static int asl_initialized = 0;
    if (!asl_initialized)
@@ -299,6 +309,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
    asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
    asl_free(msg);
+#endif
 #endif
 #endif
 #if defined(HAVE_LIBNX)
