@@ -3104,7 +3104,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Turbo ateş ayarlarını değiştirin."
+   "Turbo ateş ayarlarını değiştirin.\nNot: turbo işlevi, ilgili 'Port X Kontrolleri' menüsünde giriş cihazınıza bir turbo düğmesinin eşlenmesini gerektirir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3128,7 +3128,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Kısa yol tuş ayarlarını değiştir."
+   "Oyun sırasında menüyü değiştirmek gibi kısayol tuşları için ayarları ve atamaları değiştirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "RetroPad Bağları"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Sanal retropad ile fiziksel bir giriş cihazının nasıl eşlendiğini değiştirin. Bir giriş cihazı doğru bir şekilde tanınır ve otomatik olarak yapılandırılırsa, kullanıcıların bu menüyü kullanması gerekmez.\nNot: çekirdeğe özel giriş değişiklikleri için bunun yerine Hızlı Menü 'Kontrolcüler' alt menüsünü kullanın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro, ön uçlardan (RetroArch gibi) çekirdeklere ve tersi yönde iletişim kurmak için 'RetroPad' olarak bilinen sanal bir oyun kumandası soyutlaması kullanır. Bu menü, sanal RetroPad'in fiziksel giriş aygıtlarıyla nasıl eşlendiğini ve bu aygıtların hangi sanal giriş bağlantı noktalarını işgal ettiğini belirler. Fiziksel bir giriş cihazı doğru bir şekilde tanınır ve otomatik olarak yapılandırılırsa, kullanıcıların muhtemelen bu menüyü kullanması gerekmez[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3136,7 +3148,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Bu port için kontrolcüleri değiştir."
+   "Bu sanal bağlantı noktası için sanal retropad ile fiziksel giriş cihazının nasıl eşlendiğini değiştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

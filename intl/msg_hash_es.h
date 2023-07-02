@@ -3103,10 +3103,6 @@ MSG_HASH(
    "Turbo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Cambia los ajustes del turbo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Respuesta háptica/vibración"
    )
@@ -3127,16 +3123,8 @@ MSG_HASH(
    "Teclas rápidas"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Cambia los ajustes de las teclas rápidas."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Controles del puerto %u "
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Cambia los controles para este puerto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

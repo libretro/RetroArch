@@ -2611,10 +2611,6 @@ MSG_HASH(
    "Turbo Ogień"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Zmień ustawienia ognia turbo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptyczne sprzężenie zwrotne / wibracje"
    )
@@ -2635,16 +2631,8 @@ MSG_HASH(
    "Klawisze skrótów"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Zmień ustawienia Hotkey."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Elementy sterujące portu %u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Zmień ustawienia dla tego portu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,

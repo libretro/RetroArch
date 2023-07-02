@@ -2351,10 +2351,6 @@ MSG_HASH(
    "Tekan Bertubi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Ubah pengaturan tekan bertubi."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Umpan Balik/Getaran Sentuh"
    )
@@ -2375,16 +2371,8 @@ MSG_HASH(
    "Pintasan"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Ubah pengaturan hotkey."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Kendali Porta %u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Ubah kendali untuk porta ini."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,

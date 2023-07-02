@@ -2323,10 +2323,6 @@ MSG_HASH(
    "Posa en pausa el contingut quan qualssevol controlador es desconnecte."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Canvia els ajustos per disparar amb turbo."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Canvia els ajustos de vibració i resposta hàptica."
    )

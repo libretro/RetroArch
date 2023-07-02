@@ -3064,7 +3064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Modifier les réglages de tir turbo."
+   "Changez les paramètres de tir turbo.\nRemarque : la fonction turbo nécessite le mappage d'une touche turbo à votre périphérique d'entrée dans le menu 'Commandes du port X' correspondant."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3088,7 +3088,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Modifier les réglages de touches de raccourcis."
+   "Modifie les paramètres et affectations des touches de raccourci, comme afficher/masquer le menu pendant le jeu par exemple."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "Affectations de RetroManette"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Change la façon dont la RetroManette virtuelle est mappée à un périphérique d'entrée physique. Si un périphérique d'entrée est reconnu et configuré correctement automatiquement, les utilisateurs n'ont probablement pas besoin d'utiliser ce menu.\nRemarque : pour les changements d'entrées spécifiques au cœurs, utilisez le sous-menu 'Commandes' du menu rapide à la place."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro utilise une abstraction de manette virtuelle connue sous le nom de 'RetroManette' pour communiquer des interfaces (comme RetroArch) aux cœurs et vice versa. Ce menu détermine comment la RetroManette virtuelle est mappée aux périphériques d'entrée physiques et quels ports d'entrée virtuels ces périphériques occupent. Si un périphérique d'entrée physique est reconnu et configuré correctement automatiquement, les utilisateurs n'ont probablement pas besoin d'utiliser ce menu du[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3096,7 +3108,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Modifier les touches pour ce port."
+   "Change la façon dont la RetroManette virtuelle est mappée à votre périphérique d'entrée physique pour ce port virtuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

@@ -1859,10 +1859,6 @@ MSG_HASH(
    "Πλήκτρο \"Turbo\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Αλλαγή ρυθμίσεων πλήκτου \"Turbo\"."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "Μενού Χειριστηρίων"
    )

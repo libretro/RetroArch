@@ -3031,10 +3031,6 @@ MSG_HASH(
    "Výchozí aktivní tlačítko pro režim Turbo 'Jedno Tlačítko'."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Změna nastavení turbo fire."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptická Zpětná Vazba/Vibrace"
    )
@@ -3051,16 +3047,8 @@ MSG_HASH(
    "Změna nastavení ovládání nabídky."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Změna nastavení hotkey."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Port %u Ovládání"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Změna ovládacích prvků pro tento port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

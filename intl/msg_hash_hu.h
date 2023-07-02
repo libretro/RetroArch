@@ -3091,10 +3091,6 @@ MSG_HASH(
    "Turbó mód"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "A turbó tüzelés beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Tapintható visszajelzés / rezgés"
    )
@@ -3115,16 +3111,8 @@ MSG_HASH(
    "Gyorsbillentyűk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "A gyorsbillentyűk beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "%u. csatlakozó kezelőszervei"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Az ehhez a csatlakozóhoz rendelt irányítás."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

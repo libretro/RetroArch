@@ -2171,10 +2171,6 @@ MSG_HASH(
    "وضع توربو"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "تغيير إعدادات نمط توربو."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "ردود الفعل اللفظية/الاهتزاز"
    )
