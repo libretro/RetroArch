@@ -5065,10 +5065,11 @@ unsigned menu_event(
       bool display_kb)
 {
    /* Used for key repeat */
+   static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
    static float delay_count                        = 0.0f;
-   static bool initial_held                        = true;
-   static bool first_held                          = false;
+   static bool hold_initial                        = true;
+   static bool hold_reset                          = true;
    static unsigned ok_old                          = 0;
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
@@ -5257,21 +5258,25 @@ unsigned menu_event(
 
    if (navigation_current)
    {
-      if (!first_held)
+      float delta_time              = (float)(menu_st->current_time_us - last_time_us) / 1000;
+
+      last_time_us                  = menu_st->current_time_us;
+
+      /* Store first direction in order to block "diagonals" */
+      if (!navigation_initial)
+         navigation_initial         = navigation_current;
+
+      if (hold_reset)
       {
-         /* Store first direction in order to block "diagonals" */
-         if (!navigation_initial)
-            navigation_initial      = navigation_current;
-
-         /* don't run anything first frame, only capture held inputs
-          * for old_input_state. */
-
-         first_held                 = true;
+         /* Don't run anything first frame */
+         hold_reset                 = false;
+         delay_timer                = (hold_initial) ? menu_scroll_delay : 33.33f;
          delay_count                = 0;
-         if (initial_held)
-            delay_timer             = menu_scroll_delay;
-         else
-            delay_timer             = menu_scroll_delay / 8;
+      }
+      else
+      {
+         hold_initial               = false;
+         delay_count               += delta_time;
       }
 
       if (delay_count >= delay_timer)
@@ -5280,25 +5285,17 @@ unsigned menu_event(
          for (i = 0; i < 6; i++)
             BIT32_SET(input_repeat, navigation_buttons[i]);
 
-         set_scroll                 = true;
-         first_held                 = false;
          p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
-         new_scroll_accel           = menu_st->scroll.acceleration;
-
-         if (menu_scroll_fast)
-            new_scroll_accel        = MIN(new_scroll_accel + 1, 25);
-         else
-            new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
+         set_scroll                 = true;
+         hold_reset                 = true;
+         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, (menu_scroll_fast) ? 25 : 5);
       }
-
-      initial_held                  = false;
-      delay_count                  += anim_get_ptr()->delta_time;
    }
    else
    {
       set_scroll                    = true;
-      first_held                    = false;
-      initial_held                  = true;
+      hold_reset                    = true;
+      hold_initial                  = true;
       navigation_initial            = 0;
    }
 
