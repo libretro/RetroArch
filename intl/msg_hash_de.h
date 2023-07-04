@@ -3007,6 +3007,10 @@ MSG_HASH(
    "Turbo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Einstellungen für Turbofeuer ändern.\nHinweis: Für die Turbofunktion muss dem Eingabegerät im entsprechenden Menü „Port X Steuerung“ eine Turbotaste zugewiesen werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Haptisches Feedback/Vibration"
    )
@@ -3023,8 +3027,28 @@ MSG_HASH(
    "Menü-Steuerungseinstellungen ändern."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "Einstellungen und Zuweisungen für Hotkeys ändern, z. B. das Menü während des Spielens umschalten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "RetroPad-Zuweisungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Ändert, wie das virtuelle Retropad einem physischen Eingabegerät zugeordnet wird. Wenn ein Eingabegerät korrekt erkannt und automatisch konfiguriert wird, brauchen Benutzer dieses Menü wahrscheinlich nicht zu verwenden.\nHinweis: Für Core-spezifische Eingabeänderungen bitte stattdessen das Untermenü „Steuerung“ des Schnellmenüs verwenden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro verwendet eine virtuelle Gamepad-Abstraktion, die als „RetroPad“ bekannt ist, um von Frontends (wie RetroArch) zu Kernen und umgekehrt zu kommunizieren. In diesem Menü wird festgelegt, wie das virtuelle RetroPad auf die physischen Eingabegeräte abgebildet wird und welche virtuellen Eingabeports diese Geräte belegen. Wenn ein physisches Eingabegerät korrekt erkannt und automatisch konfiguriert wird, braucht der Benutzer dieses Menü wahrscheinlich gar nicht zu verwenden und sollt[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Port %u Controller"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Ändert, wie das virtuelle Retropad dem physischen Eingabegerät für diesen virtuellen Anschluss zugewiesen wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

@@ -540,6 +540,10 @@ MSG_HASH(
 /* Settings > Input > Hotkeys */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "When assigned, the 'Hotkey Enable' key must be held before any other hotkeys are recognised. Allows controller buttons to be mapped to hotkey functions without affecting normal input. Assigning the modifier to controller only will not require it for keyboard hotkeys, and vice versa, but both modifiers work for both devices."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to another action (e.g. RetroPad 'Select')."
    )

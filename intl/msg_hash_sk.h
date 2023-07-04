@@ -170,6 +170,10 @@ MSG_HASH(
    "Zobrazí systémové informácie."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   "Súbor s nastaveniami"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
    "Spracujte a vytvárajte konfiguračné súbory."
    )
@@ -1016,12 +1020,24 @@ MSG_HASH(
    "Uložiť Aktuálne Nastavenia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "Prepísať aktuálny súbor s nastaveniami."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Uložiť Nové Nastavenia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "Uložiť súčasné nastavenia do samostatného súboru."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Resetovať do Predvolených Nastavení"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Obnoviť súčasné nastavenie na predvolené hodnoty."
    )
 
 /* Main Menu > Help */
@@ -1081,6 +1097,10 @@ MSG_HASH(
    "Zvuk"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Zmena vstupno-výstupných nastavení."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Vstup"
    )
@@ -1114,11 +1134,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "Ukládanie"
+   "Ukladanie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Zmena nastavenia ukládania."
+   "Zmena nastavenia ukladania."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1138,11 +1158,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   "Konfiguračný súbor."
+   "Súbor s nastaveniami."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
    "Komprimovaný archívny súbor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "Súbor s nastaveniami nahrávania."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
@@ -1150,7 +1174,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   "Konfiguračný súbor."
+   "Súbor s nastaveniami."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
@@ -1385,6 +1409,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Použiť ovládač vzorkovača zvuku."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Implementácia Windowed Sinc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Konvoluntná implementácia kosínusu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -2514,8 +2546,16 @@ MSG_HASH(
    "Uložiť stav"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "Ďalší slot na uloženie stavu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
    "Zvýši index aktuálne zvoleného slotu na ukladanie stavu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "Predchádzajúci slot na uloženie stavu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
@@ -2556,6 +2596,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
    "Prehrať opakovanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Ďalší záznamový slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Zvýši index aktuálne vybraného záznamového slotu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Predchádzajúci záznamový slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Zníži index aktuálne vybraného záznamového slotu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2778,6 +2834,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    "Uložiť nastavenie pri ukončení"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   "Pri ukončení uložiť zmeny do súboru s nastaveniami."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -4397,6 +4457,10 @@ MSG_HASH(
    "Informácie"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INFORMATION,
+   "Zobraziť viac informácií o obsahu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    "Stiahnuť miniatúry"
    )
@@ -4458,12 +4522,28 @@ MSG_HASH(
    "Urobiť screenshot"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   "Uložený stav"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATE_SLOT,
+   "Zmena aktuálne vybraného slotu so stavom."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
    "Uložiť stav"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Načítať stav"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Záznamový slot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "Zmena aktuálne vybraného slotu so stavom."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -6258,6 +6338,10 @@ MSG_HASH(
    "Súbor nenájdený"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_STATE_SLOT,
+   "Nájdený posledný slot so stavom"
+   )
+MSG_HASH(
    MSG_FRAMES,
    "Snímky"
    )
@@ -6280,6 +6364,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IN_GIGABYTES,
    "v gigabajtoch"
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Načítaný stav zo slotu #%d."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -6320,6 +6408,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAST_FORWARD,
    "Pretočiť dopredu."
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Prehrať slot"
    )
 MSG_HASH(
    MSG_SCREENSHOT_SAVED,
