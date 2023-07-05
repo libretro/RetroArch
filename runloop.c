@@ -3588,8 +3588,12 @@ bool libretro_get_system_info(
    return true;
 }
 
-bool auto_load_core(const char* szFilename)
+static bool auto_load_core(const char* content_path)
 {
+   /* TODO: error printing */
+   /* TODO: what happens if the string is valid but no file exists? */
+   if (string_is_empty(content_path)) return false;
+   
    /* poll list of current cores */
    core_info_list_t* core_info_list = NULL;
 
@@ -3605,35 +3609,31 @@ bool auto_load_core(const char* szFilename)
       content_ctx_info_t content_info = { 0 };
       const core_info_t* core_info = NULL;
       core_info_list_get_supported_cores(core_info_list,
-         (const char*)szFilename, &core_info, &list_size);
+         (const char*)content_path, &core_info, &list_size);
 
       if (list_size)
       {
-         path_set(RARCH_PATH_CONTENT, szFilename);
+         unsigned i;
+         core_info_t* current_core = NULL;
+         core_info_get_current_core(&current_core);
 
-         if (!path_is_empty(RARCH_PATH_CONTENT))
+         /*we already have path for libretro core */
+         for (i = 0; i < list_size; i++)
          {
-            unsigned i;
-            core_info_t* current_core = NULL;
-            core_info_get_current_core(&current_core);
+            const core_info_t* info = (const core_info_t*)&core_info[i];
 
-            /*we already have path for libretro core */
-            for (i = 0; i < list_size; i++)
+            if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
             {
-               const core_info_t* info = (const core_info_t*)&core_info[i];
-
-               if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
-               {
-                  /* Our previous core supports the current rom */
-                  task_push_load_content_with_current_core_from_companion_ui(
-                     NULL,
-                     &content_info,
-                     CORE_TYPE_PLAIN,
-                     NULL, NULL);
-                  return true;
-               }
+               /* Our previous core supports the current rom */
+               task_push_load_content_with_current_core_from_companion_ui(
+                  NULL,
+                  &content_info,
+                  CORE_TYPE_PLAIN,
+                  NULL, NULL);
+               return true;
             }
          }
+         
 
          /* Poll for cores for current rom since none exist. */
          if (list_size == 1)
