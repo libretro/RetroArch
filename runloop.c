@@ -3594,7 +3594,8 @@ bool auto_load_core(const char* szFilename)
    core_info_list_t* core_info_list = NULL;
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   //command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   /*This isn't needed, is it?*/
+   /*command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);*/
    core_info_get_list(&core_info_list);
 
    
@@ -3648,7 +3649,10 @@ bool auto_load_core(const char* szFilename)
          }
          else
          {
-            // TODO: this needs to delegate on systems like win32 that are able to
+            /*
+            For now, pick the first one if there are multiple
+            TODO: this needs to delegate on systems like win32 that are able to
+            */
             if (list_size > 1)
             {
                const core_info_t* info = (const core_info_t*)&core_info[0];
