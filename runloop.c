@@ -3732,7 +3732,7 @@ bool runloop_init_libretro_symbols(
                   {
                      auto_load_core(content_path);
                   }
-                  const char* path = path_get(RARCH_PATH_CORE);
+                  path = path_get(RARCH_PATH_CORE);
 
                   if (string_is_empty(path))
                   {
