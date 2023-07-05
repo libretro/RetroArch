@@ -3588,6 +3588,114 @@ bool libretro_get_system_info(
    return true;
 }
 
+bool auto_load_core(const char* szFilename)
+{
+   /* poll list of current cores */
+   core_info_list_t* core_info_list = NULL;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   //command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   core_info_get_list(&core_info_list);
+
+   
+   if (core_info_list)
+   {
+      size_t list_size;
+      content_ctx_info_t content_info = { 0 };
+      const core_info_t* core_info = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+         (const char*)szFilename, &core_info, &list_size);
+
+      if (list_size)
+      {
+         path_set(RARCH_PATH_CONTENT, szFilename);
+
+         if (!path_is_empty(RARCH_PATH_CONTENT))
+         {
+            unsigned i;
+            core_info_t* current_core = NULL;
+            core_info_get_current_core(&current_core);
+
+            /*we already have path for libretro core */
+            for (i = 0; i < list_size; i++)
+            {
+               const core_info_t* info = (const core_info_t*)&core_info[i];
+
+               if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+               {
+                  /* Our previous core supports the current rom */
+                  task_push_load_content_with_current_core_from_companion_ui(
+                     NULL,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL);
+                  return true;
+               }
+            }
+         }
+
+         /* Poll for cores for current rom since none exist. */
+         if (list_size == 1)
+         {
+            /*pick core that only exists and is bound to work. Ish. */
+            const core_info_t* info = (const core_info_t*)&core_info[0];
+
+            if (info)
+            {
+               path_set(RARCH_PATH_CORE, info->path);
+               return true;
+            }
+         }
+         else
+         {
+            // TODO: this needs to delegate on systems like win32 that are able to
+            if (list_size > 1)
+            {
+               const core_info_t* info = (const core_info_t*)&core_info[0];
+
+               if (info)
+               {
+                  path_set(RARCH_PATH_CORE, info->path);
+                  return true;
+               }
+            }
+#if 0
+            bool            okay = false;
+            settings_t* settings = config_get_ptr();
+            bool video_is_fs = settings->bools.video_fullscreen;
+            video_driver_state_t* video_st = video_state_get_ptr();
+
+            /* Fullscreen: Show mouse cursor for dialog */
+            if (video_is_fs)
+            {
+               if (video_st->poke
+                  && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, true);
+            }
+
+            /* Pick one core that could be compatible, ew */
+            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+               main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
+            {
+               task_push_load_content_with_current_core_from_companion_ui(
+                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+               okay = true;
+            }
+
+            /* Fullscreen: Hide mouse cursor after dialog */
+            if (video_is_fs)
+            {
+               if (video_st->poke
+                  && video_st->poke->show_mouse)
+                  video_st->poke->show_mouse(video_st->data, false);
+            }
+            return okay;
+#endif
+         }
+      }
+   }
+   return false;
+}
 bool runloop_init_libretro_symbols(
       void *data,
       enum rarch_core_type type,
@@ -3615,9 +3723,19 @@ bool runloop_init_libretro_symbols(
 
                if (string_is_empty(path))
                {
-                  RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
+                  const char* content_path = path_get(RARCH_PATH_CONTENT);
+                  if (!string_is_empty(content_path))
+                  {
+                     auto_load_core(content_path);
+                  }
+                  const char* path = path_get(RARCH_PATH_CORE);
+
+                  if (string_is_empty(path))
+                  {
+                     RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
-                  retroarch_fail(1, "init_libretro_symbols()");
+                     retroarch_fail(1, "init_libretro_symbols()");
+                  }
                }
 
                RARCH_LOG("[Core]: Loading dynamic libretro core from: \"%s\"\n",
