@@ -878,7 +878,7 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
    return NULL;
 }
 
-uint8_t *command_memory_get_pointer(
+static uint8_t *command_memory_get_pointer(
       const rarch_system_info_t* sys_info,
       unsigned address,
       unsigned int* max_bytes,
