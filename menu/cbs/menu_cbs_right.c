@@ -176,8 +176,8 @@ static int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
    settings_t *settings                  = config_get_ptr();
-   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
-   if (settings && system)
+   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
+   if (settings && sys_info)
    {
       unsigned bind_idx;
       unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
@@ -219,7 +219,7 @@ static int action_right_input_desc(unsigned type, const char *label,
          also skip all the axes until analog remapping is implemented */
       if (remap_idx != RARCH_UNMAPPED)
       {
-         if ((string_is_empty(system->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
+         if ((string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
             action_right_input_desc(type, label, wraparound);
       }
    }

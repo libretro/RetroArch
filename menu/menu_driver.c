@@ -2590,8 +2590,8 @@ static void menu_driver_set_last_shader_path_int(
    /* If parent directory is empty, then file name
     * is only valid if 'shader_path' refers to an
     * existing file in the root of the file system */
-   if (string_is_empty(shader_dir) &&
-       !path_is_valid(shader_path))
+   if (    string_is_empty(shader_dir)
+       && !path_is_valid(shader_path))
       return;
 
    /* Cache file name */
@@ -6486,9 +6486,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (frontend_driver_has_fork())
 #endif
             {
-               rarch_system_info_t *system = &runloop_state_get_ptr()->system;
-               libretro_free_system_info(&system->info);
-               memset(&system->info, 0, sizeof(struct retro_system_info));
+               rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+               libretro_free_system_info(&sys_info->info);
+               memset(&sys_info->info, 0, sizeof(struct retro_system_info));
             }
 
             gfx_animation_deinit();

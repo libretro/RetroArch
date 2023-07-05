@@ -564,7 +564,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
             systemname_len        = db_ext - db_name;
             if (systemname_len >= sizeof(newrdb.systemname))
-               systemname_len = sizeof(newrdb.systemname)-1;
+               systemname_len     = sizeof(newrdb.systemname)-1;
             memcpy(newrdb.systemname, db_name, systemname_len);
             newrdb.systemname[systemname_len] = '\0';
 

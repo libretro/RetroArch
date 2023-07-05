@@ -405,8 +405,8 @@ static void runloop_perf_log(void)
 
 static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
 {
-   runloop_state_t *runloop_st  = &runloop_state;
-   rarch_system_info_t *system  = &runloop_st->system;
+   runloop_state_t *runloop_st    = &runloop_state;
+   rarch_system_info_t *sys_info  = &runloop_st->system;
 
    switch (cmd)
    {
@@ -453,11 +453,11 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
                RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
          }
 
-         if (system)
+         if (sys_info)
          {
             for (i = 0; i < size && i < SUBSYSTEM_MAX_SUBSYSTEMS; i++)
             {
-               struct retro_subsystem_info *subsys_info = &runloop_st->subsystem_data[i];
+               struct retro_subsystem_info *subsys_info         = &runloop_st->subsystem_data[i];
                struct retro_subsystem_rom_info *subsys_rom_info = runloop_st->subsystem_data_roms[i];
                /* Nasty, but have to do it like this since
                 * the pointers are const char *

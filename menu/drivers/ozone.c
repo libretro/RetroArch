@@ -9472,7 +9472,6 @@ static int ozone_list_push(void *data, void *userdata,
       case DISPLAYLIST_MAIN_MENU:
          {
             settings_t   *settings      = config_get_ptr();
-            rarch_system_info_t *system = &runloop_state_get_ptr()->system;
             uint32_t flags              = runloop_get_flags();
 
             menu_entries_clear(info->list);
@@ -9490,7 +9489,8 @@ static int ozone_list_push(void *data, void *userdata,
             }
             else
             {
-               if (system && system->load_no_content)
+               rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+               if (sys_info && sys_info->load_no_content)
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,

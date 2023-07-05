@@ -4124,9 +4124,9 @@ bool config_load_override(void *data)
    char config_directory[PATH_MAX_LENGTH];
    bool should_append                     = false;
    bool show_notification                 = true;
-   rarch_system_info_t *system            = (rarch_system_info_t*)data;
-   const char *core_name                  = system ?
-      system->info.library_name : NULL;
+   rarch_system_info_t *sys_info          = (rarch_system_info_t*)data;
+   const char *core_name                  = sys_info
+      ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = NULL;
    settings_t *settings                   = config_st;
@@ -4410,8 +4410,8 @@ bool config_load_remap(const char *directory_input_remapping,
    /* final path for content-dir-specific configuration (prefix+suffix) */
    char content_path[PATH_MAX_LENGTH];
    config_file_t *new_conf                = NULL;
-   rarch_system_info_t *system            = (rarch_system_info_t*)data;
-   const char *core_name                  = system ? system->info.library_name : NULL;
+   rarch_system_info_t *sys_info          = (rarch_system_info_t*)data;
+   const char *core_name                  = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = NULL;
    bool has_content                       = !string_is_empty(rarch_path_basename);
@@ -5233,8 +5233,8 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
    int size_settings_size                      = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
    int array_settings_size                     = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
    int path_settings_size                      = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
-   rarch_system_info_t *system                 = (rarch_system_info_t*)data;
-   const char *core_name                       = system ? system->info.library_name : NULL;
+   rarch_system_info_t *sys_info               = (rarch_system_info_t*)data;
+   const char *core_name                       = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
    const char *game_name                       = NULL;
    bool has_content                            = !string_is_empty(rarch_path_basename);

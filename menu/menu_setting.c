@@ -5406,20 +5406,20 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
 {
    unsigned types                           = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t              *system = &runloop_state_get_ptr()->system;
+   rarch_system_info_t            *sys_info = &runloop_state_get_ptr()->system;
 
    devices[types++]                         = RETRO_DEVICE_NONE;
    devices[types++]                         = RETRO_DEVICE_JOYPAD;
 
-   if (system)
+   if (sys_info)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an
        * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
+      if (!sys_info->ports.size)
          devices[types++] = RETRO_DEVICE_ANALOG;
 
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
+      if (port < sys_info->ports.size)
+         desc = &sys_info->ports.data[port];
    }
 
    if (desc)
@@ -6474,8 +6474,8 @@ static void setting_get_string_representation_uint_libretro_device(
 {
    unsigned index_offset, device;
    const struct retro_controller_description *desc = NULL;
-   const char *name            = NULL;
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   const char *name              = NULL;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
    if (!setting)
       return;
@@ -6483,11 +6483,11 @@ static void setting_get_string_representation_uint_libretro_device(
    index_offset                = setting->index_offset;
    device                      = input_config_get_device(index_offset);
 
-   if (system)
+   if (sys_info)
    {
-      if (index_offset < system->ports.size)
+      if (index_offset < sys_info->ports.size)
          desc = libretro_find_controller_description(
-               &system->ports.data[index_offset],
+               &sys_info->ports.data[index_offset],
                device);
    }
 
@@ -8189,12 +8189,12 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             video_viewport_t vp;
-            rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+            rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
             video_driver_state_t *video_st       = video_state_get_ptr();
             struct retro_system_av_info *av_info = &video_st->av_info;
             video_viewport_t *custom_vp          = &settings->video_viewport_custom;
 
-            if (system)
+            if (sys_info)
             {
                unsigned int rotation             = retroarch_get_rotation();
                struct retro_game_geometry  *geom = (struct retro_game_geometry*)
@@ -8202,7 +8202,7 @@ static void general_write_handler(rarch_setting_t *setting)
 
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
-                      system->rotation) % 4);
+                      sys_info->rotation) % 4);
 
                /* Update Custom Aspect Ratio values */
                video_driver_get_viewport_info(&vp);
@@ -8907,7 +8907,7 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *system                = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
    const struct retro_keybind* const defaults = (user == 0)
          ? retro_keybinds_1 : retro_keybinds_rest;
    const char *temp_value                     = msg_hash_to_str
@@ -9166,9 +9166,9 @@ static bool setting_append_list_input_player_options(
                && (i != RARCH_TURBO_ENABLE)
             )
          {
-            if (system->input_desc_btn[user][i])
+            if (sys_info->input_desc_btn[user][i])
                strlcpy(label       + _len,
-                     system->input_desc_btn[user][i],
+                     sys_info->input_desc_btn[user][i],
                      sizeof(label) - _len);
             else
             {

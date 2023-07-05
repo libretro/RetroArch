@@ -2468,8 +2468,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
-            rarch_system_info_t *system_info = &runloop_st->system;
-            struct retro_system_info *system = &system_info->info;
+            rarch_system_info_t *sys_info    = &runloop_st->system;
+            struct retro_system_info *system = &sys_info->info;
             const char *core_path            = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
@@ -2480,7 +2480,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!libretro_get_system_info(
                      core_path,
                      system,
-                     &system_info->load_no_content))
+                     &sys_info->load_no_content))
                return false;
 
             if (!core_info_load(core_path))
@@ -4391,9 +4391,9 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_CONTROLLER_INIT:
          {
-            rarch_system_info_t *info = &runloop_st->system;
-            if (info)
-               command_event_init_controllers(info, settings,
+            rarch_system_info_t *sys_info = &runloop_st->system;
+            if (sys_info)
+               command_event_init_controllers(sys_info, settings,
                      settings->uints.input_max_users);
          }
          break;

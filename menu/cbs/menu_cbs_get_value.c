@@ -1140,22 +1140,22 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned images             = 0;
-   unsigned current            = 0;
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   unsigned images               = 0;
+   unsigned current              = 0;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-   if (!system)
+   if (!sys_info)
       return;
 
-   if (!disk_control_enabled(&system->disk_control))
+   if (!disk_control_enabled(&sys_info->disk_control))
       return;
 
    *w = 19;
    *s = '\0';
    strlcpy(s2, path, len2);
 
-   images  = disk_control_get_num_images(&system->disk_control);
-   current = disk_control_get_image_index(&system->disk_control);
+   images  = disk_control_get_num_images(&sys_info->disk_control);
+   current = disk_control_get_image_index(&sys_info->disk_control);
 
    if (current >= images)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_DISK), len);

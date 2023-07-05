@@ -206,10 +206,10 @@ static int filebrowser_parse(
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
          runloop_state_t *runloop_st          = runloop_state_get_ptr();
-         rarch_system_info_t *system          = &runloop_st->system;
+         rarch_system_info_t *sys_info        = &runloop_st->system;
          /* Core fully loaded, use the subsystem data */
-         if (system->subsystem.data)
-            subsystem = system->subsystem.data + content_get_subsystem();
+         if (sys_info->subsystem.data)
+            subsystem = sys_info->subsystem.data + content_get_subsystem();
          /* Core not loaded completely, use the data we peeked on load core */
          else
             subsystem = runloop_st->subsystem_data + content_get_subsystem();
@@ -240,11 +240,11 @@ static int filebrowser_parse(
 
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
-         runloop_state_t *runloop_st = runloop_state_get_ptr();
-         rarch_system_info_t *system = &runloop_st->system;
+         runloop_state_t *runloop_st   = runloop_state_get_ptr();
+         rarch_system_info_t *sys_info = &runloop_st->system;
          /* Core fully loaded, use the subsystem data */
-         if (system->subsystem.data)
-            subsystem = system->subsystem.data + content_get_subsystem();
+         if (sys_info->subsystem.data)
+            subsystem = sys_info->subsystem.data + content_get_subsystem();
          /* Core not loaded completely, use the data we peeked on load core */
          else
             subsystem = runloop_st->subsystem_data + content_get_subsystem();
@@ -1585,9 +1585,9 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
           string_is_empty(exts))
 #endif
       {
-         struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+         struct retro_system_info *sysinf = &runloop_state_get_ptr()->system.info;
          const char *core_path            = core_path_current;
-         const char *core_name            = system ? system->library_name : NULL;
+         const char *core_name            = sysinf ? sysinf->library_name : NULL;
 
          if (!string_is_empty(core_path))
          {
@@ -2189,7 +2189,7 @@ static int menu_displaylist_parse_playlist(file_list_t *info_list,
        * 'download thumbnails' option, we must also extend
        * this to music_history and video_history */
       if (
-            string_is_equal(path_playlist, "history")
+               string_is_equal(path_playlist, "history")
             || string_is_equal(path_playlist, "favorites")
             || string_ends_with_size(path_playlist, "_history",
                strlen(path_playlist), STRLEN_CONST("_history")))
@@ -3366,7 +3366,7 @@ static int menu_displaylist_parse_load_content_settings(
       bool quickmenu_show_resume_content  = settings->bools.quick_menu_show_resume_content;
       bool quickmenu_show_restart_content = settings->bools.quick_menu_show_restart_content;
       bool savestates_enabled             = core_info_current_supports_savestate();
-      rarch_system_info_t *system         = &runloop_state_get_ptr()->system;
+      rarch_system_info_t *sys_info       = &runloop_state_get_ptr()->system;
 
       if (quickmenu_show_resume_content)
          if (menu_entries_append(list,
@@ -3484,7 +3484,7 @@ static int menu_displaylist_parse_load_content_settings(
       }
 
       if ((!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            && disk_control_enabled(&system->disk_control))
+            && disk_control_enabled(&sys_info->disk_control))
          if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
@@ -3922,13 +3922,13 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 {
    unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinf = &runloop_state_get_ptr()->system.info;
 
    core_info_get_current_core(&core_info);
 
-   if (      system
-         && (!string_is_empty(system->library_name)
-         &&  !string_is_equal(system->library_name,
+   if (      sysinf
+         && (!string_is_empty(sysinf->library_name)
+         &&  !string_is_equal(sysinf->library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
          && core_info
@@ -5205,7 +5205,7 @@ static int menu_displaylist_parse_input_device_type_list(
    const char *val_retropad     = NULL;
    const char *val_retropad_an  = NULL;
    const char *val_unknown      = NULL;
-   rarch_system_info_t *system  = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info= &runloop_state_get_ptr()->system;
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
    size_t menu_index            = 0;
@@ -5220,7 +5220,7 @@ static int menu_displaylist_parse_input_device_type_list(
    char device_id[10];
    device_id[0]                 = '\0';
 
-   if (!system || !settings || !setting)
+   if (!sys_info || !settings || !setting)
       return 0;
 
    port = setting->index_offset;
@@ -5242,9 +5242,9 @@ static int menu_displaylist_parse_input_device_type_list(
       desc = NULL;
       name = NULL;
 
-      if (system && port < system->ports.size)
+      if (sys_info && port < sys_info->ports.size)
          desc = libretro_find_controller_description(
-               &system->ports.data[port],
+               &sys_info->ports.data[port],
                devices[i]);
       if (desc)
          name = desc->desc;
@@ -5303,7 +5303,6 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
 {
     char device_label[128];
     const char *val_disabled      = NULL;
-    rarch_system_info_t *system   = &runloop_state_get_ptr()->system;
     enum msg_hash_enums enum_idx  = (enum msg_hash_enums)atoi(info_path);
     struct menu_state *menu_st    = menu_state_get_ptr();
     rarch_setting_t     *setting  = menu_setting_find_enum(enum_idx);
@@ -5318,7 +5317,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
 
     device_label[0]               = '\0';
 
-    if (!system || !settings || !setting || !is_android_driver)
+    if (!settings || !setting || !is_android_driver)
        return 0;
 
     val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
@@ -5413,10 +5412,10 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
 static int menu_displaylist_parse_input_description_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   unsigned count              = 0;
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
-   size_t menu_index           = 0;
-   bool current_input_mapped   = false;
+   unsigned count                = 0;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   size_t menu_index             = 0;
+   bool current_input_mapped     = false;
    unsigned user_idx;
    unsigned btn_idx;
    unsigned current_remap_idx;
@@ -5426,7 +5425,7 @@ static int menu_displaylist_parse_input_description_list(
 
    entry_label[0] = '\0';
 
-   if (!system || !settings)
+   if (!settings)
       return 0;
 
    /* Determine user/button indices */
@@ -5463,7 +5462,7 @@ static int menu_displaylist_parse_input_description_list(
       const char *input_desc_btn;
 
       i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
-      input_desc_btn = system->input_desc_btn[mapped_port][i];
+      input_desc_btn = sys_info->input_desc_btn[mapped_port][i];
 
       /* Check whether an input is defined for
        * this button */

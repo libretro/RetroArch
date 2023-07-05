@@ -879,19 +879,19 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
 }
 
 uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* system,
+      const rarch_system_info_t* sys_info,
       unsigned address,
       unsigned int* max_bytes,
       int for_write,
       char *reply_at,
       size_t len)
 {
-   if (!system || system->mmaps.num_descriptors == 0)
+   if (!sys_info || sys_info->mmaps.num_descriptors == 0)
       strlcpy(reply_at, " -1 no memory map defined\n", len);
    else
    {
       size_t offset;
-      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&system->mmaps, address, &offset);
+      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
       if (!desc)
          strlcpy(reply_at, " -1 no descriptor for address\n", len);
       else if (!desc->core.ptr)
@@ -949,16 +949,16 @@ bool command_get_status(command_t *cmd, const char* arg)
 bool command_read_memory(command_t *cmd, const char *arg)
 {
    unsigned i;
-   char* reply                       = NULL;
-   char* reply_at                    = NULL;
-   const uint8_t* data               = NULL;
-   unsigned int nbytes               = 0;
-   unsigned int alloc_size           = 0;
-   unsigned int address              = -1;
-   size_t len                        = 0;
-   unsigned int max_bytes            = 0;
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
-   const rarch_system_info_t* system = &runloop_st->system;
+   char* reply                        = NULL;
+   char* reply_at                     = NULL;
+   const uint8_t* data                = NULL;
+   unsigned int nbytes                = 0;
+   unsigned int alloc_size            = 0;
+   unsigned int address               = -1;
+   size_t len                         = 0;
+   unsigned int max_bytes             = 0;
+   runloop_state_t *runloop_st        = runloop_state_get_ptr();
+   const rarch_system_info_t* sys_info= &runloop_st->system;
 
    if (sscanf(arg, "%x %u", &address, &nbytes) != 2)
       return false;
@@ -969,7 +969,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    reply_at   = reply + snprintf(reply, alloc_size - 1, "READ_CORE_MEMORY %x", address);
 
    if ((data = command_memory_get_pointer(
-               system, address, &max_bytes,
+               sys_info, address, &max_bytes,
                0, reply_at, alloc_size - strlen(reply))))
    {
       if (nbytes > max_bytes)
@@ -996,9 +996,9 @@ bool command_write_memory(command_t *cmd, const char *arg)
    char reply[128]              = "";
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
    const rarch_system_info_t
-      *system                   = &runloop_st->system;
+      *sys_info                 = &runloop_st->system;
    char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   uint8_t *data                = command_memory_get_pointer(system, address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
+   uint8_t *data                = command_memory_get_pointer(sys_info, address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)
    {
@@ -1100,11 +1100,11 @@ void command_event_set_mixer_volume(
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
 
-void command_event_init_controllers(rarch_system_info_t *info,
+void command_event_init_controllers(rarch_system_info_t *sys_info,
       settings_t *settings, unsigned num_active_users)
 {
    unsigned port;
-   unsigned num_core_ports = info->ports.size;
+   unsigned num_core_ports = sys_info->ports.size;
 
    for (port = 0; port < num_core_ports; port++)
    {
@@ -1133,7 +1133,7 @@ void command_event_init_controllers(rarch_system_info_t *info,
       }
 
       desc = libretro_find_controller_description(
-            &info->ports.data[port], device);
+            &sys_info->ports.data[port], device);
 
       if (desc && !desc->desc)
       {

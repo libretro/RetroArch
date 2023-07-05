@@ -947,7 +947,7 @@ static bool content_file_load(
    retro_ctx_load_content_info_t load_info;
    bool used_vfs_fallback_copy                = false;
 #ifdef __WINRT__
-   rarch_system_info_t *system                = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
 #endif
    enum rarch_content_type first_content_type = RARCH_CONTENT_NONE;
 
@@ -1019,8 +1019,8 @@ static bool content_file_load(
 #ifdef __WINRT__
             /* TODO: When support for the 'actual' VFS is added,
              * there will need to be some more logic here */
-            if (!system->supports_vfs &&
-                !is_path_accessible_using_standard_io(content_path))
+            if (   !sys_info->supports_vfs
+                && !is_path_accessible_using_standard_io(content_path))
             {
                /* Try to copy ACL to file first. If successful, this should mean that cores using standard I/O can still access them
                *  It would be better to set the ACL to allow full access for all application packages. However,
@@ -1506,7 +1506,7 @@ void menu_content_environment_get(int *argc, char *argv[],
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    runloop_state_t       *runloop_st = runloop_state_get_ptr();
-   rarch_system_info_t *sys_info     = &runloop_st->system;
+   rarch_system_info_t   *sys_info   = &runloop_st->system;
 
    if (!wrap_args)
       return;

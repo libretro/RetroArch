@@ -3549,8 +3549,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
    char content_dir_name[PATH_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
    struct menu_state *menu_st            = menu_state_get_ptr();
-   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
-   const char *core_name                 = system ? system->info.library_name : NULL;
+   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
+   const char *core_name                 = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename       = path_get(RARCH_PATH_BASENAME);
    bool has_content                      = !string_is_empty(rarch_path_basename);
    settings_t *settings                  = config_get_ptr();
@@ -3658,7 +3658,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
          /* After removing a remap file, attempt to
           * load any remaining remap file with the
           * next highest priority */
-         config_load_remap(directory_input_remapping, system);
+         config_load_remap(directory_input_remapping, sys_info);
       }
       else
          runloop_msg_queue_push(
@@ -5494,7 +5494,7 @@ static int action_ok_add_to_favorites(const char *path,
    if (!string_is_empty(content_path))
    {
       runloop_state_t *runloop_st      = runloop_state_get_ptr();
-      struct retro_system_info *system = &runloop_st->system.info;
+      struct retro_system_info *sysinf = &runloop_st->system.info;
       struct string_list *str_list     = NULL;
       const char *crc32                = NULL;
       const char *db_name              = NULL;
@@ -5528,7 +5528,7 @@ static int action_ok_add_to_favorites(const char *path,
                sizeof(content_label));
 
       /* > core_path + core_name */
-      if (system)
+      if (sysinf)
       {
          if (!string_is_empty(path_get(RARCH_PATH_CORE)))
          {
@@ -5547,8 +5547,8 @@ static int action_ok_add_to_favorites(const char *path,
 
          /* >> core_name (continued) */
          if (   string_is_empty(core_name) && 
-               !string_is_empty(system->library_name))
-            strlcpy(core_name, system->library_name, sizeof(core_name));
+               !string_is_empty(sysinf->library_name))
+            strlcpy(core_name, sysinf->library_name, sizeof(core_name));
       }
 
       if (string_is_empty(core_path) || string_is_empty(core_name))
