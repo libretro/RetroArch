@@ -137,10 +137,18 @@ static const char* find_core_updater_list_flush_target()
       {
          if (string_is_equal(candidate_label, all_targets[target_idx++])) return candidate_label;
       }
-      //if (string_is_equal(candidate_label, online_updater_str)) return candidate_label;
-      //if (string_is_equal(candidate_label, core_list_str)) return candidate_label;
    }
    return all_targets[0];
+}
+
+static int action_cancel_core_list(const char* path,
+   const char* label, unsigned type, size_t idx)
+{
+   /* When we back out of the filtered core list, clear out any filters we used */
+   struct menu_state* menu_st = menu_state_get_ptr();
+   menu_st->driver_data->deferred_path[0] = '\0';
+   menu_st->driver_data->detect_content_path[0] = '\0';
+   return action_cancel_pop_default(path, label, type, idx);
 }
 
 static int action_cancel_core_content(const char *path,
@@ -193,6 +201,12 @@ static int action_cancel_core_content(const char *path,
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST)) ||
+      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
+   {
+      BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
+   }
+      
    return -1;
 }
 
@@ -206,6 +220,9 @@ static int menu_cbs_init_bind_cancel_compare_type(
       case FILE_TYPE_DOWNLOAD_URL:
       case FILE_TYPE_DOWNLOAD_CORE:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
+         return 0;
+      case FILE_TYPE_CORE:
+         BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
          return 0;
       case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
          BIND_ACTION_CANCEL(cbs, action_cancel_contentless_core);

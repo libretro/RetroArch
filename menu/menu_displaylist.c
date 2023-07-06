@@ -12610,7 +12610,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                struct menu_state *menu_st       = menu_state_get_ptr();
                bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
                size_t selection                 = menu_st->selection_ptr;
-
+               //const char* 
                if (core_list)
                {
                   size_t menu_index = 0;
@@ -12652,6 +12652,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
 
                            if (!entry_valid)
+                              continue;
+                        }
+
+                        if (!string_is_empty(menu_st->driver_data->detect_content_path))
+                        {
+                           char const * const ext = path_get_extension(menu_st->driver_data->detect_content_path);
+
+                           if (string_list_find_elem(entry->supported_extensions, ext) == 0)
                               continue;
                         }
 
