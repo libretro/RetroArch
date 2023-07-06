@@ -3693,7 +3693,6 @@ bool runloop_init_libretro_symbols(
                         menu_driver_init(false);
 
                         struct menu_state* menu_state = menu_state_get_ptr();
-                        file_list_t* list = MENU_LIST_GET(menu_state->entries.list, 0);
 
                         strlcpy(menu_state->driver_data->deferred_path, content_path, sizeof(menu_state->driver_data->deferred_path));
                         /*
