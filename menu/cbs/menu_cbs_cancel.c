@@ -202,7 +202,8 @@ static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST)) ||
-      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
+      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)) ||
+      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE)))
    {
       BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
    }
