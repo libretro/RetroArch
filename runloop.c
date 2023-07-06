@@ -3686,10 +3686,11 @@ bool runloop_init_libretro_symbols(
                      if (!core_loaded) {
                         CORE_SYMBOLS(SYMBOL_DUMMY);
                         runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
-
+#ifdef HAVE_MENU
                         /* this is a hack, we should be deferring the core list until after we have loaded menu */
                         /* TODO: ask how to unhackify it */
-                        menu_driver_init(VIDEO_DRIVER_IS_THREADED_INTERNAL(video_state_get_ptr()));
+                        /* Init the menu driver early to add to the menu stack - the video threading argument will be set to the proper value on the regular init */
+                        menu_driver_init(false);
 
                         struct menu_state* menu_state = menu_state_get_ptr();
                         file_list_t* list = MENU_LIST_GET(menu_state->entries.list, 0);
@@ -3697,7 +3698,7 @@ bool runloop_init_libretro_symbols(
                         strlcpy(menu_state->driver_data->deferred_path, content_path, sizeof(menu_state->driver_data->deferred_path));
                         /*
                         detect_content_path is filled only in the case there's menu stack to read from
-                        because we aren't using a file tree browswer, fill it ourselves
+                        because we aren't using a file tree browser, fill it ourselves
                         */
                         strlcpy(menu_state->driver_data->detect_content_path, content_path, sizeof(menu_state->driver_data->detect_content_path));
 
@@ -3712,6 +3713,7 @@ bool runloop_init_libretro_symbols(
                            MSG_UNKNOWN, 0, 0,
                            content_path, NULL, 0, false);
                         break;
+#endif
                      }
                   }
                   path = path_get(RARCH_PATH_CORE);
