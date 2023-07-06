@@ -1630,10 +1630,11 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
                MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
                0, 0, 0, NULL))
             count++;
-
-         info->flags |= MD_FLAG_DOWNLOAD_CORE;
       }
+
    }
+
+   info->flags |= MD_FLAG_DOWNLOAD_CORE;
 
    return count;
 }
@@ -1924,7 +1925,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
             if (memory_used != 0 && memory_total != 0)
             {
-               _len = strlcpy(entry, 
+               _len = strlcpy(entry,
                      msg_hash_to_str(MSG_MEMORY), sizeof(entry));
                snprintf(entry + _len, sizeof(entry) - _len, ": %" PRIu64 "/%" PRIu64 " MB",
                      BYTES_TO_MB(memory_used), BYTES_TO_MB(memory_total));
@@ -1987,7 +1988,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       gfx_ctx_ident_t ident_info;
       video_context_driver_get_ident(&ident_info);
-      
+
       /* Video Context Driver */
       snprintf(entry, sizeof(entry), "%s: %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
@@ -1998,7 +1999,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
          count++;
-      
+
       {
          gfx_ctx_metrics_t metrics;
          float val = 0.0f;
@@ -12170,7 +12171,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char mixer_stream_str[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
                size_t _len                 = strlcpy(mixer_stream_str, "mixer_stream_", sizeof(mixer_stream_str));
-               
+
                lbl[0]                      = '\0';
 
                snprintf(mixer_stream_str + _len, sizeof(mixer_stream_str) - _len, "%d", id);

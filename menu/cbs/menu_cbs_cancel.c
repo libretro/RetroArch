@@ -62,7 +62,7 @@ int action_cancel_pop_default(const char *path,
       if (menu_st->driver_ctx->navigation_set)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
       /* Refresh menu */
-      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                       | MENU_ST_FLAG_PREVENT_POPULATE;
       return 0;
    }
@@ -113,16 +113,47 @@ static int action_cancel_cheat_details(const char *path,
 }
 #endif
 
+static const char* find_core_updater_list_flush_target()
+{
+   struct menu_state* menu_st = menu_state_get_ptr();
+   menu_list_t* list = menu_st->entries.list;
+   file_list_t const * const menu_list = MENU_LIST_GET(list, 0);
+   const size_t menu_stack_size = MENU_LIST_GET_STACK_SIZE(list, 0);
+   const char *candidate_label;
+   char const * const all_targets [] = {
+      msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER),
+      msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST),
+      msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST),
+      NULL,
+   };
+
+   int i;
+   int target_idx;
+   for(i = menu_stack_size - 1; i >= 0; i--)
+   {
+      candidate_label = menu_list->list[i].label;
+      target_idx = 0;
+      while (all_targets[target_idx])
+      {
+         if (string_is_equal(candidate_label, all_targets[target_idx++])) return candidate_label;
+      }
+      //if (string_is_equal(candidate_label, online_updater_str)) return candidate_label;
+      //if (string_is_equal(candidate_label, core_list_str)) return candidate_label;
+   }
+   return all_targets[0];
+}
+
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_label              = NULL;
-
+   size_t online_updater_idx = 0;
+   size_t load_core_idx = 0;
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
    {
-      menu_search_terms_t *menu_search_terms = 
+      menu_search_terms_t *menu_search_terms =
          menu_entries_search_get_terms();
 
       /* Check whether search terms have been set
@@ -136,12 +167,14 @@ static int action_cancel_core_content(const char *path,
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
          /* Refresh menu */
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                          | MENU_ST_FLAG_PREVENT_POPULATE;
          return 0;
       }
 
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+
+      menu_entries_flush_stack(find_core_updater_list_flush_target(), 0);
+
    }
    else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
