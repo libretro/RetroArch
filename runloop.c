@@ -3647,59 +3647,11 @@ static bool auto_load_core(const char* content_path)
                return true;
             }
          }
-         else
-         {
-            /*
-            For now, pick the first one if there are multiple
-            TODO: this needs to delegate on systems like win32 that are able to
-            */
-            if (list_size > 1)
-            {
-               const core_info_t* info = (const core_info_t*)&core_info[0];
-
-               if (info)
-               {
-                  path_set(RARCH_PATH_CORE, info->path);
-                  return true;
-               }
-            }
-#if 0
-            bool            okay = false;
-            settings_t* settings = config_get_ptr();
-            bool video_is_fs = settings->bools.video_fullscreen;
-            video_driver_state_t* video_st = video_state_get_ptr();
-
-            /* Fullscreen: Show mouse cursor for dialog */
-            if (video_is_fs)
-            {
-               if (video_st->poke
-                  && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, true);
-            }
-
-            /* Pick one core that could be compatible, ew */
-            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-               main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
-            {
-               task_push_load_content_with_current_core_from_companion_ui(
-                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-               okay = true;
-            }
-
-            /* Fullscreen: Hide mouse cursor after dialog */
-            if (video_is_fs)
-            {
-               if (video_st->poke
-                  && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, false);
-            }
-            return okay;
-#endif
-         }
       }
    }
    return false;
 }
+
 bool runloop_init_libretro_symbols(
       void *data,
       enum rarch_core_type type,
@@ -3730,7 +3682,37 @@ bool runloop_init_libretro_symbols(
                   const char* content_path = path_get(RARCH_PATH_CONTENT);
                   if (!string_is_empty(content_path))
                   {
-                     auto_load_core(content_path);
+                     bool core_loaded = auto_load_core(content_path);
+                     if (!core_loaded) {
+                        CORE_SYMBOLS(SYMBOL_DUMMY);
+                        runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
+
+                        /* this is a hack, we should be deferring the core list until after we have loaded menu */
+                        /* TODO: ask how to unhackify it */
+                        menu_driver_init(VIDEO_DRIVER_IS_THREADED_INTERNAL(video_state_get_ptr()));
+
+                        struct menu_state* menu_state = menu_state_get_ptr();
+                        file_list_t* list = MENU_LIST_GET(menu_state->entries.list, 0);
+
+                        strlcpy(menu_state->driver_data->deferred_path, content_path, sizeof(menu_state->driver_data->deferred_path));
+                        /*
+                        detect_content_path is filled only in the case there's menu stack to read from
+                        because we aren't using a file tree browswer, fill it ourselves
+                        */
+                        strlcpy(menu_state->driver_data->detect_content_path, content_path, sizeof(menu_state->driver_data->detect_content_path));
+
+                        /*
+                        for now - it's very important that this not be called if there's only one valid core, or else we init video twice
+                        it would be nice to unconditionally call this, as it also checks the core count
+
+                        NOTE: this doesn't currently handle starting _after_ the core has been downloaded,
+                        but neither does browsing using content browser and friends.
+                        */
+                        file_load_with_detect_core_wrapper(
+                           MSG_UNKNOWN, 0, 0,
+                           content_path, NULL, 0, false);
+                        break;
+                     }
                   }
                   path = path_get(RARCH_PATH_CORE);
 
