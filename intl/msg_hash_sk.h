@@ -69,7 +69,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Vybrať jadro, ktoré chcete použiť."
+   "Vyberte jadro, ktoré chcete použiť."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Stiahnite si doplnky, zložky a obsah pre RetroArch."
+   "Stiahnite si doplnky, súčasti a obsah pre RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -233,7 +233,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Spustiť adresár"
+   "Hlavný adresár"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
@@ -3860,8 +3860,24 @@ MSG_HASH(
    "Adresa servera"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   "Adresa hostiteľa pre pripojenie."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Maximálna latencia spojenia (ping), ktorý hostiteľ ešte akceptuje. Nastavte na 0 pre neobmedzenú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
    "Heslo servra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+   "Heslo používané klientami pri pripájaní k hostiteľovi."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+   "Heslo používané klientami pri pripájaní k hostiteľovi ako divák."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
@@ -4226,6 +4242,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
    "Hostiteľ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   "Prihlásiť sa k hostiteľovi sieťovej hry"
    )
 
 /* Netplay > Host */
@@ -6266,6 +6286,10 @@ MSG_HASH(
    "Schopnosti"
    )
 MSG_HASH(
+   MSG_CONNECTING_TO_NETPLAY_HOST,
+   "Prihlásiť sa k hostiteľovi sieťovej hry"
+   )
+MSG_HASH(
    MSG_CONNECTING_TO_PORT,
    "Pripájam na port"
    )
@@ -6424,6 +6448,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
    "Prepnúť metadáta"
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Stlačte znova pre ukončenie..."
    )
 MSG_HASH(
    MSG_TO,
