@@ -876,7 +876,11 @@ static int action_get_title_default(const char *path, const char *label,
       s[  _len] = ':';
       s[++_len] = ' ';
       s[++_len] = '\0';
+#if IOS
+      fill_pathname_abbreviate_special(s + _len, path, len - _len);
+#else
       strlcpy(s + _len, path, len - _len);
+#endif
    }
 
    menu_entries_search_append_terms_string(s, len);

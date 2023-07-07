@@ -54,6 +54,7 @@
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
+#include <lists/dir_list.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -712,36 +713,30 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    int ret = -1;
 #if TARGET_OS_IPHONE
 #ifdef HAVE_MENU
+   struct string_list *str_list          = NULL;
    file_list_t *list                     = (file_list_t*)data;
-   char bundle_path_buf[PATH_MAX_LENGTH] = {0};
-   char home_dir_buf[PATH_MAX_LENGTH]    = {0};
-   CFBundleRef bundle                    = CFBundleGetMainBundle();
-   enum msg_hash_enums enum_idx          = load_content 
-      ? MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR 
+   enum msg_hash_enums enum_idx          = load_content
+      ? MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR
       : MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-   CFURLRef bundle_url                   = CFBundleCopyBundleURL(bundle);
-   CFStringRef bundle_path               = CFURLCopyPath(bundle_url);
 
-   CFStringGetCString(bundle_path, bundle_path_buf,
-         sizeof(bundle_path_buf), kCFStringEncodingUTF8);
+   if (list->size == 0)
+      menu_entries_append(list,
+            "~/Documents/RetroArch",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   CFSearchPathForDirectoriesInDomains(
-         home_dir_buf, sizeof(home_dir_buf));
-
-   menu_entries_append(list,
-         home_dir_buf,
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   menu_entries_append(list, "/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-        FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   str_list = string_list_new();
+   // only add / if it's jailbroken
+   dir_list_append(str_list, "/private/var", NULL, true, false, false, false);
+   if (str_list->size > 0)
+      menu_entries_append(list, "/",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   string_list_free(str_list);
 
    ret = 0;
-
-   CFRelease(bundle_path);
-   CFRelease(bundle_url);
 #endif
 #endif
    return ret;
