@@ -109,8 +109,8 @@ enum event_command
    CMD_EVENT_STATISTICS_TOGGLE,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
-   /* Deinitializes overlay. */
-   CMD_EVENT_OVERLAY_DEINIT,
+   /* Frees or caches overlay. */
+   CMD_EVENT_OVERLAY_UNLOAD,
    /* Sets current scale factor for overlay. */
    CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
    /* Sets current alpha modulation for overlay. */

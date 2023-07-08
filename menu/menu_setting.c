@@ -8666,48 +8666,18 @@ static void preempt_change_handler(rarch_setting_t *setting)
 #ifdef HAVE_OVERLAY
 static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   settings_t *settings  = config_get_ptr();
-   bool input_overlay_hide_in_menu = settings ? settings->bools.input_overlay_hide_in_menu : false;
+   (void)setting;
 
-   if (!setting)
-      return;
-
-   if (input_overlay_hide_in_menu)
-   {
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-      return;
-   }
-
-   if (setting->value.target.boolean)
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   else
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   /* Force a re-init to apply updates */
+   command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+   command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 }
 
-static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
+static void overlay_show_mouse_cursor_change_handler(rarch_setting_t *setting)
 {
-   settings_t *settings  = config_get_ptr();
+   (void)setting;
 
-   if (!setting || !settings)
-      return;
-
-   /* This is very simple...
-    * The menu is currently active, so if:
-    * - Overlays are enabled
-    * - Overlays are not hidden in menus
-    * ...we just need to de-initialise then
-    * initialise the current overlay and the
-    * auto-rotate setting will be applied
-    * (i.e. There's no need to explicitly
-    * call the internal 'rotate overlay'
-    * function - saves having to expose it
-    * via the API) */
-   if (settings->bools.input_overlay_enable &&
-       !settings->bools.input_overlay_hide_in_menu)
-   {
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
+   input_overlay_check_mouse_cursor();
 }
 #endif
 
@@ -16213,6 +16183,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         (*list)[list_info->index - 1].change_handler = overlay_show_mouse_cursor_change_handler;
 
          CONFIG_BOOL(
                list, list_info,
@@ -16229,7 +16200,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         (*list)[list_info->index - 1].change_handler = overlay_auto_rotate_toggle_change_handler;
+         (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
          CONFIG_BOOL(
                list, list_info,

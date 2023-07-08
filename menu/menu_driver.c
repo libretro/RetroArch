@@ -6307,7 +6307,7 @@ void retroarch_menu_running(void)
 
 #ifdef HAVE_OVERLAY
    if (input_overlay_hide_in_menu)
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 #endif
 }
 

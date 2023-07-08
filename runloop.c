@@ -5502,7 +5502,7 @@ static enum runloop_state_enum runloop_check_state(
          if (controller_connected != last_controller_connected)
          {
             if (controller_connected)
-               input_overlay_deinit();
+               input_overlay_unload();
             else
                input_overlay_init();
 

@@ -2574,8 +2574,14 @@ static void input_overlay_free(input_overlay_t *ol)
 
    input_overlay_free_overlays(ol);
 
-   if (ol->iface->enable)
+   if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
+
+   if (ol->path)
+   {
+      free(ol->path);
+      ol->path = NULL;
+   }
 
    free(ol);
 }
@@ -4319,10 +4325,132 @@ void input_game_focus_free(void)
 }
 
 #ifdef HAVE_OVERLAY
-void input_overlay_deinit(void)
+static bool video_driver_overlay_interface(
+      const video_overlay_interface_t **iface)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   if (!video_st->current_video || !video_st->current_video->overlay_interface)
+      return false;
+   video_st->current_video->overlay_interface(video_st->data, iface);
+   return true;
+}
+
+static void input_overlay_enable_(bool enable)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+   float opacity                  = settings->floats.input_overlay_opacity;
+   bool auto_rotate               = settings->bools.input_overlay_auto_rotate;
+   bool hide_mouse_cursor         = !settings->bools.input_overlay_show_mouse_cursor
+         && (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
+
+   if (!ol)
+      return;
+
+   if (enable)
+   {
+      /* Set video interface */
+      ol->iface_data = video_st->data;
+      if (!video_driver_overlay_interface(&ol->iface) || !ol->iface)
+      {
+         RARCH_ERR("Overlay interface is not present in video driver.\n");
+         ol->flags &= ~INPUT_OVERLAY_ALIVE;
+         return;
+      }
+
+      /* Load last-active overlay */
+      input_overlay_load_active(input_st->overlay_visibility, ol, opacity);
+
+      /* Adjust to current settings */
+      command_event(CMD_EVENT_OVERLAY_SET_SCALE_FACTOR, NULL);
+
+      if (auto_rotate)
+         input_overlay_auto_rotate_(
+               video_st->width, video_st->height, true, ol);
+
+      /* Enable */
+      if (ol->iface->enable)
+         ol->iface->enable(ol->iface_data, true);
+
+      ol->flags |= (INPUT_OVERLAY_ENABLE | INPUT_OVERLAY_BLOCKED);
+
+      if (     hide_mouse_cursor
+            && video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
+   else
+   {
+      /* Disable and clear input state */
+      ol->flags &= ~INPUT_OVERLAY_ENABLE;
+
+      if (ol->iface && ol->iface->enable)
+         ol->iface->enable(ol->iface_data, false);
+      ol->iface = NULL;
+
+      memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));
+   }
+}
+
+static void input_overlay_deinit(void)
 {
    input_overlay_free(input_driver_st.overlay_ptr);
    input_driver_st.overlay_ptr = NULL;
+
+   input_overlay_free(input_driver_st.overlay_cache_ptr);
+   input_driver_st.overlay_cache_ptr = NULL;
+}
+
+static void input_overlay_move_to_cache(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t      *ol       = input_st->overlay_ptr;
+
+   if (!ol)
+      return;
+
+   /* Free existing cache */
+   input_overlay_free(input_driver_st.overlay_cache_ptr);
+
+   /* Disable current overlay */
+   input_overlay_enable_(false);
+
+   /* Move to cache */
+   input_st->overlay_cache_ptr = ol;
+   input_st->overlay_ptr       = NULL;
+}
+
+static void input_overlay_swap_with_cached(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t      *ol;
+
+   /* Disable current overlay */
+   input_overlay_enable_(false);
+
+   /* Swap with cached */
+   ol                          = input_st->overlay_cache_ptr;
+   input_st->overlay_cache_ptr = input_st->overlay_ptr;
+   input_st->overlay_ptr       = ol;
+
+   /* Enable and update to current settings */
+   input_overlay_enable_(true);
+}
+
+void input_overlay_unload(void)
+{
+   settings_t      *settings   = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   /* Free if overlays disabled or initing/deiniting core */
+   if (     !settings->bools.input_overlay_enable
+         || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+         ||  (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+      input_overlay_deinit();
+   else
+      input_overlay_move_to_cache();
 }
 
 void input_overlay_set_visibility(int overlay_idx,
@@ -4349,14 +4477,37 @@ void input_overlay_set_visibility(int overlay_idx,
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
-static bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface)
+static bool input_overlay_want_hidden(void)
 {
+   settings_t *settings = config_get_ptr();
+   bool hide            = false;
+
+#ifdef HAVE_MENU
+   if (settings->bools.input_overlay_hide_in_menu)
+      hide = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
+#endif
+   if (settings->bools.input_overlay_hide_when_gamepad_connected)
+      hide = hide || (input_config_get_device_name(0) != NULL);
+
+   return hide;
+}
+
+void input_overlay_check_mouse_cursor(void)
+{
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (!video_st->current_video || !video_st->current_video->overlay_interface)
-      return false;
-   video_st->current_video->overlay_interface(video_st->data, iface);
-   return true;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+
+   if (     ol && (ol->flags & INPUT_OVERLAY_ENABLE)
+         && video_st->poke
+         && video_st->poke->show_mouse)
+   {
+      if (settings->bools.input_overlay_show_mouse_cursor)
+         video_st->poke->show_mouse(video_st->data, true);
+      else if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
 }
 
 /* task_data = overlay_task_data_t* */
@@ -4364,186 +4515,105 @@ static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    size_t i;
-   overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
-   input_overlay_t                    *ol = NULL;
-   const video_overlay_interface_t *iface = NULL;
-   settings_t *settings                   = config_get_ptr();
-   bool input_overlay_show_mouse_cursor   = settings->bools.input_overlay_show_mouse_cursor;
-   bool inp_overlay_auto_rotate           = settings->bools.input_overlay_auto_rotate;
-   bool input_overlay_enable              = settings->bools.input_overlay_enable;
-   video_driver_state_t *video_st         = video_state_get_ptr();
-   input_driver_state_t *input_st         = &input_driver_st;
+   settings_t           *settings = config_get_ptr();
+   overlay_task_data_t  *data     = (overlay_task_data_t*)task_data;
+   input_overlay_t      *ol       = NULL;
+   input_driver_state_t *input_st = &input_driver_st;
+#ifdef HAVE_MENU
+   struct menu_state     *menu_st = menu_state_get_ptr();
+#endif
+   bool enable_overlay            = !input_overlay_want_hidden()
+         && settings->bools.input_overlay_enable;
+   uint16_t overlay_types;
+
    if (err)
       return;
 
-   if (data->flags & OVERLAY_LOADER_ENABLE)
-   {
-#ifdef HAVE_MENU
-      struct menu_state *menu_st = menu_state_get_ptr();
+   ol              = (input_overlay_t*)calloc(1, sizeof(*ol));
+   ol->overlays    = data->overlays;
+   ol->size        = data->size;
+   ol->active      = data->active;
+   ol->path        = data->overlay_path;
+   ol->next_index  = (unsigned)((ol->index + 1) % ol->size);
+   ol->flags      |= INPUT_OVERLAY_ALIVE;
+   overlay_types   = data->overlay_types;
 
-      /* Update menu entries */
-      if (menu_st->overlay_types != data->overlay_types)
-      {
-         menu_st->overlay_types  = data->overlay_types;
-         menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-      }
-
-      /* We can't display when the menu is up */
-      if (   (data->flags & OVERLAY_LOADER_HIDE_IN_MENU)
-          && (menu_st->flags & MENU_ST_FLAG_ALIVE))
-         goto abort_load;
-#endif
-
-      /* If 'hide_when_gamepad_connected' is enabled,
-       * we can't display when a gamepad is connected */
-      if (   (data->flags & OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED)
-          && (input_config_get_device_name(0) != NULL))
-         goto abort_load;
-   }
-
-   if (     !(data->flags & OVERLAY_LOADER_ENABLE)
-         || !video_driver_overlay_interface(&iface)
-         || !iface)
-   {
-      RARCH_ERR("Overlay interface is not present in video driver,"
-            " or not enabled.\n");
-      goto abort_load;
-   }
-
-   ol             = (input_overlay_t*)calloc(1, sizeof(*ol));
-   ol->overlays   = data->overlays;
-   ol->size       = data->size;
-   ol->active     = data->active;
-   ol->iface      = iface;
-   ol->iface_data = video_st->data;
-
-   input_overlay_load_active(input_st->overlay_visibility,
-         ol, data->overlay_opacity);
-
-   /* Enable or disable the overlay. */
-   if (data->flags & OVERLAY_LOADER_ENABLE)
-      ol->flags |= INPUT_OVERLAY_ENABLE;
-   else
-      ol->flags &= ~INPUT_OVERLAY_ENABLE;
-
-   if (ol->iface->enable)
-      ol->iface->enable(ol->iface_data, (ol->flags & INPUT_OVERLAY_ENABLE));
-
-   input_overlay_set_scale_factor(ol, &data->layout_desc,
-         video_st->width, video_st->height);
-
-   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
-   ol->state      = OVERLAY_STATUS_NONE;
-   ol->flags     |= INPUT_OVERLAY_ALIVE;
+   free(data);
 
    /* Due to the asynchronous nature of overlay loading
     * it is possible for overlay_ptr to be non-NULL here
     * > Ensure it is free()'d before assigning new pointer */
    if (input_st->overlay_ptr)
-   {
-      input_overlay_free_overlays(input_st->overlay_ptr);
-      free(input_st->overlay_ptr);
-   }
+      input_overlay_free(input_st->overlay_ptr);
    input_st->overlay_ptr = ol;
 
-   free(data);
+   /* Enable or disable the overlay */
+   input_overlay_enable_(enable_overlay);
 
-   if (!input_overlay_show_mouse_cursor)
+   /* Abort if enable failed */
+   if (!(ol->flags & INPUT_OVERLAY_ALIVE))
    {
-      if (     video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, false);
+      input_st->overlay_ptr = NULL;
+      input_overlay_free(ol);
+      return;
    }
 
-   /* Attempt to automatically rotate overlay, if required */
-   if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(
-            video_st->width,
-            video_st->height,
-            input_overlay_enable,
-            input_st->overlay_ptr);
+   /* Cache or free if hidden */
+   if (!enable_overlay)
+      input_overlay_unload();
 
    input_overlay_set_eightway_diagonal_sensitivity();
 
-   return;
-
-abort_load:
-   for (i = 0; i < data->size; i++)
-      input_overlay_free_overlay(&data->overlays[i]);
-
-   free(data->overlays);
-   free(data);
+#ifdef HAVE_MENU
+   /* Update menu entries */
+   if (menu_st->overlay_types != overlay_types)
+   {
+      menu_st->overlay_types  = overlay_types;
+      menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   }
+#endif
 }
 
 void input_overlay_init(void)
 {
-   settings_t *settings                     = config_get_ptr();
-   bool input_overlay_enable                = settings->bools.input_overlay_enable;
-   bool input_overlay_auto_scale            = settings->bools.input_overlay_auto_scale;
-   const char *path_overlay                 = settings->paths.path_overlay;
-   float overlay_opacity                    = settings->floats.input_overlay_opacity;
-   float overlay_scale_landscape            = settings->floats.input_overlay_scale_landscape;
-   float overlay_aspect_adjust_landscape    = settings->floats.input_overlay_aspect_adjust_landscape;
-   float overlay_x_separation_landscape     = settings->floats.input_overlay_x_separation_landscape;
-   float overlay_y_separation_landscape     = settings->floats.input_overlay_y_separation_landscape;
-   float overlay_x_offset_landscape         = settings->floats.input_overlay_x_offset_landscape;
-   float overlay_y_offset_landscape         = settings->floats.input_overlay_y_offset_landscape;
-   float overlay_scale_portrait             = settings->floats.input_overlay_scale_portrait;
-   float overlay_aspect_adjust_portrait     = settings->floats.input_overlay_aspect_adjust_portrait;
-   float overlay_x_separation_portrait      = settings->floats.input_overlay_x_separation_portrait;
-   float overlay_y_separation_portrait      = settings->floats.input_overlay_y_separation_portrait;
-   float overlay_x_offset_portrait          = settings->floats.input_overlay_x_offset_portrait;
-   float overlay_y_offset_portrait          = settings->floats.input_overlay_y_offset_portrait;
-   float overlay_touch_scale                = (float)settings->uints.input_touch_scale;
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+   input_overlay_t *ol_cache      = input_st->overlay_cache_ptr;
+   const char *path_overlay       = settings->paths.path_overlay;
+   bool want_hidden               = input_overlay_want_hidden();
+   bool overlay_shown             = ol
+         && (ol->flags & INPUT_OVERLAY_ENABLE)
+         && string_is_equal(path_overlay, ol->path);
+   bool overlay_cached            = ol_cache
+         && (ol_cache->flags & INPUT_OVERLAY_ALIVE)
+         && string_is_equal(path_overlay, ol_cache->path);
+   bool overlay_hidden            = !ol && overlay_cached;
 
-   bool load_enabled                        = input_overlay_enable;
-#ifdef HAVE_MENU
-   bool overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
-#else
-   bool overlay_hide_in_menu                = false;
-#endif
-   bool overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    if (frontend_driver_get_free_memory() < (3 * 1024 * 1024))
       return;
 #endif
 
+   /* Cancel if overlays disabled or task already done */
+   if (     !settings->bools.input_overlay_enable
+         || ( want_hidden && overlay_hidden)
+         || (!want_hidden && overlay_shown))
+      return;
+
+   /* Restore if cached */
+   if (!want_hidden && overlay_cached)
+   {
+      input_overlay_swap_with_cached();
+      return;
+   }
+
    input_overlay_deinit();
 
-   /* Cancel load if 'hide_when_gamepad_connected' is
-    * enabled and a gamepad is currently connected */
-   if (overlay_hide_when_gamepad_connected)
-      load_enabled = load_enabled && (input_config_get_device_name(0) == NULL);
-
-   if (load_enabled)
-   {
-      overlay_layout_desc_t layout_desc;
-
-      layout_desc.scale_landscape         = overlay_scale_landscape;
-      layout_desc.aspect_adjust_landscape = overlay_aspect_adjust_landscape;
-      layout_desc.x_separation_landscape  = overlay_x_separation_landscape;
-      layout_desc.y_separation_landscape  = overlay_y_separation_landscape;
-      layout_desc.x_offset_landscape      = overlay_x_offset_landscape;
-      layout_desc.y_offset_landscape      = overlay_y_offset_landscape;
-      layout_desc.scale_portrait          = overlay_scale_portrait;
-      layout_desc.aspect_adjust_portrait  = overlay_aspect_adjust_portrait;
-      layout_desc.x_separation_portrait   = overlay_x_separation_portrait;
-      layout_desc.y_separation_portrait   = overlay_y_separation_portrait;
-      layout_desc.x_offset_portrait       = overlay_x_offset_portrait;
-      layout_desc.y_offset_portrait       = overlay_y_offset_portrait;
-      layout_desc.touch_scale             = overlay_touch_scale;
-      layout_desc.auto_scale              = input_overlay_auto_scale;
-
-      task_push_overlay_load_default(input_overlay_loaded,
-            path_overlay,
-            overlay_hide_in_menu,
-            overlay_hide_when_gamepad_connected,
-            input_overlay_enable,
-            overlay_opacity,
-            &layout_desc,
-            NULL);
-   }
+   /* Start task */
+   task_push_overlay_load_default(
+         input_overlay_loaded, path_overlay, NULL);
 }
 #endif
 

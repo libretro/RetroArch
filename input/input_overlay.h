@@ -100,10 +100,7 @@ enum overlay_show_input_type
 
 enum OVERLAY_LOADER_FLAGS
 {
-   OVERLAY_LOADER_ENABLE                      = (1 << 0),
-   OVERLAY_LOADER_HIDE_IN_MENU                = (1 << 1),
-   OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED = (1 << 2),
-   OVERLAY_LOADER_RGBA_SUPPORT                = (1 << 3)
+   OVERLAY_LOADER_RGBA_SUPPORT = (1 << 0)
 };
 
 enum INPUT_OVERLAY_FLAGS
@@ -291,6 +288,7 @@ struct input_overlay
 {
    struct overlay *overlays;
    const struct overlay *active;
+   char *path;
    void *iface_data;
    const video_overlay_interface_t *iface;
    input_overlay_state_t overlay_state;
@@ -299,8 +297,6 @@ struct input_overlay
    size_t size;
 
    unsigned next_index;
-
-   enum overlay_status state;
 
    uint8_t flags;
 };
@@ -344,11 +340,10 @@ typedef struct input_overlay input_overlay_t;
 
 typedef struct
 {
+   char *overlay_path;
    struct overlay *overlays;
    struct overlay *active;
    size_t size;
-   float overlay_opacity;
-   overlay_layout_desc_t layout_desc;
    uint16_t overlay_types;
    uint8_t flags;
 } overlay_task_data_t;
