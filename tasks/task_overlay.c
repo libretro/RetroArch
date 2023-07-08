@@ -835,6 +835,22 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->center_x    = overlay->x + 0.5f * overlay->w;
       overlay->center_y    = overlay->y + 0.5f * overlay->h;
 
+      /* Check whether x/y separation are force disabled
+       * for this overlay */
+      strlcpy(conf_key + _len, "_block_x_separation", sizeof(conf_key) - _len);
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |=  OVERLAY_BLOCK_X_SEPARATION;
+      else
+         overlay->flags &= ~OVERLAY_BLOCK_X_SEPARATION;
+
+      strlcpy(conf_key + _len, "_block_y_separation", sizeof(conf_key) - _len);
+      if (config_get_bool(conf, conf_key, &tmp_bool)
+            && tmp_bool)
+         overlay->flags |=  OVERLAY_BLOCK_Y_SEPARATION;
+      else
+         overlay->flags &= ~OVERLAY_BLOCK_Y_SEPARATION;
+
       /* Check whether x/y separation are enabled
        * for this overlay in auto-scale mode */
       strlcpy(conf_key + _len, "_auto_x_separation", sizeof(conf_key) - _len);
@@ -856,23 +872,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
             && tmp_bool)
          overlay->flags |=  OVERLAY_AUTO_Y_SEPARATION;
       else
-         overlay->flags    &= ~OVERLAY_AUTO_Y_SEPARATION;
-
-      /* Check whether x/y separation are force disabled
-       * for this overlay */
-      strlcpy(conf_key + _len, "_block_x_separation", sizeof(conf_key) - _len);
-      if (config_get_bool(conf, conf_key, &tmp_bool)
-            && tmp_bool)
-         overlay->flags |=  OVERLAY_BLOCK_X_SEPARATION;
-      else
-         overlay->flags &= ~OVERLAY_BLOCK_X_SEPARATION;
-
-      strlcpy(conf_key + _len, "_block_y_separation", sizeof(conf_key) - _len);
-      if (config_get_bool(conf, conf_key, &tmp_bool)
-            && tmp_bool)
-         overlay->flags |=  OVERLAY_BLOCK_Y_SEPARATION;
-      else
-         overlay->flags &= ~OVERLAY_BLOCK_Y_SEPARATION;
+         overlay->flags &= ~OVERLAY_AUTO_Y_SEPARATION;
    }
 
    return;
