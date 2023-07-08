@@ -1189,6 +1189,10 @@ MSG_HASH(
    "Skompresowany plik archiwum."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "Plik konfiguracyjny nagrywania."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
    "Plik kursora bazy danych."
    )
@@ -1209,12 +1213,20 @@ MSG_HASH(
    "Plik Cheat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "Plik nakładki."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
    "Plik bazy danych."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
    "Plik czcionki TrueType."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "Zwykły plik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
@@ -1381,8 +1393,28 @@ MSG_HASH(
    "Sterownik wideo do użycia."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "Aktualny sterownik wideo."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Sterownik audio do użycia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Domyślny sterownik ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "Sterownik OpenAL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "Sterownik OpenSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Sterownik Jack Audio Connection Kit."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -1433,6 +1465,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
    "Sterownik menu do użycia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB to interfejs RetroArch, który wygląda jak menu konsoli 7 generacji. Może obsługiwać te same funkcje co Ozone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -2022,6 +2058,10 @@ MSG_HASH(
    "Kontrola gamma/kontrastu dla HDR. Zbiera kolory i zwiększa ogólny zakres pomiędzy najjaśniejszymi częściami i najciemniejszymi częściami obrazu. Im wyższy kontrast HDR jest wyższy, tym większa staje się ta różnica, tym niższa jest kontrast, tym bardziej zrzuca się obraz. Pomaga użytkownikom dostosować obraz do ich upodobań i tego, co mają najlepsze wrażenie na wyświetlaczu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Rozwiń Gamut"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    "Gdy przestrzeń kolorów zostanie przekonwertowana na przestrzeń liniową, kontroluje czy powinniśmy użyć rozszerzonej gamy, aby dostać się do HDR10."
    )
@@ -2416,6 +2456,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "Dostosuj głośność strumienia audio."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Stan: nd."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "Stan: zatrzymane"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "Stan: odtwarzanie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "Stan: odtwarzanie (zapętlone)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "Stan: odtwarzanie (sekwencyjne)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -2481,6 +2541,10 @@ MSG_HASH(
    )
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Wybierz klawiaturę fizyczną"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -2948,6 +3012,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    "Uruchamia / zatrzymuje przesyłanie strumieniowe bieżącej sesji na platformę wideo online."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   "Odtwórz powtórkę"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   "Nagraj powtórkę"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   "Zatrzymaj nagrywanie/powtórkę"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -5593,6 +5669,34 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
    "Wygląd"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
+   "Pozycja"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
+   "Lewy górny róg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   "Górny środek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   "Górny prawy róg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   "Lewy dolny róg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   "Dolny środek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   "Dolny prawy róg"
+   )
 
 /* Settings > Achievements > Visibility */
 
@@ -5643,6 +5747,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
    "Pokazuje opis tablicy wyników, gdy staje się aktywny."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Tracker tablicy wyników"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -5774,6 +5882,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
    "Wyciszanie z czasem wiadomości czatu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   "Kolor czatu (pseudonim)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
+   "Format: #RRGGBB lub RRGGBB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   "Kolor czatu (wiadomość)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
+   "Format: #RRGGBB lub RRGGBB"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
@@ -6024,6 +6148,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Ostatnio grane:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   "sek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
@@ -6572,6 +6700,10 @@ MSG_HASH(
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   "Włącz Rich Presence"
+   )
 
 
 MSG_HASH(
@@ -6886,6 +7018,14 @@ MSG_HASH(
    "Według gatunku"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   "Wg osiągnięć"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   "Wg kategorii"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
    "Według języka"
    )
@@ -6896,6 +7036,54 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
    "Według platformy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
+   "Wg wibracji"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   "Wg wyniku"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   "Wg mediów"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   "Wg sterowania"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   "Wg stylu sztuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   "Wg rozgrywki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   "Wg narracji"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   "Wg tempa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   "Wg perspektywy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   "Wg tematyki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   "Wg kamery"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
+   "Wg pojazdu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
@@ -7118,8 +7306,24 @@ MSG_HASH(
    "Jeśli stan został nadpisany, zostanie przywrócony do poprzedniego stanu zapisu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Slot powtórki"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    "Zmień aktualnie wybrany obszar stanu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   "Odtwórz powtórkę"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   "Nagraj powtórkę"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   "Zatrzymaj nagrywanie/powtórkę"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -7292,6 +7496,10 @@ MSG_HASH(
 /* Quick Menu > Controls > Manage Remap Files */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktywny plik remapu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
    "Aktualny plik ponownego mapowania w użyciu."
    )
@@ -7322,6 +7530,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
    "Usuń plik przemapowania gry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "Zresetuj ustawienia sterowania"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
@@ -9040,6 +9252,10 @@ MSG_HASH(
    "Tango jasny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
+   "Dynamiczne"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
    "Ciemny szary"
    )
@@ -10313,6 +10529,10 @@ MSG_HASH(
    "Podsystemy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   "Bieżąca zawartość: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
    "Nie znaleziono hostów gry sieciowej."
    )
@@ -11057,12 +11277,20 @@ MSG_HASH(
    "Zbanowano: \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Nie udało się zbanować klienta: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Granie"
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_SPECTATING,
    "Oglądanie"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_DEVICES,
+   "Urządzenia"
    )
 MSG_HASH(
    MSG_NETPLAY_CHAT_SUPPORTED,
@@ -12094,8 +12322,16 @@ MSG_HASH(
    "nie skonfigurowane"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) nie skonfigurowany"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "nieskonfigurowane, korzystające z trybu awaryjnego"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) nie skonfigurowany, uruchomiono tryb awaryjny "
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
@@ -12288,6 +12524,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
    "Serwer Netplay pełen"
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Jesteś zbanowany na tym serwerze"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
@@ -13030,6 +13270,14 @@ MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
    "Załaduj\nPunkt przywracania"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Przezroczystość koloru czcionki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   "Skala czcionki"
+   )
 #endif
 #ifdef HAVE_QT
 MSG_HASH(
@@ -13037,3 +13285,11 @@ MSG_HASH(
    "Skanowanie zakończone.<br><br>\nW celu poprawnego skanowania treści, musisz:\n<ul><li>mieć już pobrany kompatybilny rdzeń</li>\n<li>zaktualizować \"Pliki informacji rdzenia\" za pomocą aktualizatora online</li>\n<li>mieć zaktualizowane \"Bazy Danych\" za pomocą aktualizatora online</li>\n<li>zrestartować RetroArch, jeśli którakolwiek z powyższych operacji właśnie została wykonana</li></ul>\nNa koniec, zawartość musi pasować do istniejących baz danych z <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">tutaj</a>. Jeśli nadal nie działa, rozważ <a href=\"https://www.github.com/libretro/RetroArch/issues\">wysłanie zgłoszenia błędu</a>."
    )
 #endif
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_ENABLED,
+   "Mysz dotykowa jest włączona"
+   )
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_DISABLED,
+   "Mysz dotykowa jest wyłączona"
+   )
