@@ -2214,9 +2214,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_FILES:
          event_save_files(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM);
          break;
-      case CMD_EVENT_OVERLAY_DEINIT:
+      case CMD_EVENT_OVERLAY_UNLOAD:
 #ifdef HAVE_OVERLAY
-         input_overlay_deinit();
+         input_overlay_unload();
 #endif
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
          /* Because the overlay is a display widget,
@@ -3951,6 +3951,9 @@ bool command_event(enum event_command cmd, void *data)
                   if (input_driver_ungrab_mouse())
                      input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
             }
+#ifdef HAVE_OVERLAY
+            input_overlay_check_mouse_cursor();
+#endif
 
             video_st->flags &= ~VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
             audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;

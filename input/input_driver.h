@@ -515,6 +515,7 @@ typedef struct
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
+   input_overlay_t *overlay_cache_ptr;
    enum overlay_visibility *overlay_visibility;
    float overlay_eightway_dpad_slopes[2];
    float overlay_eightway_abxy_slopes[2];
@@ -996,9 +997,11 @@ void input_driver_deinit_command(input_driver_state_t *input_st);
 #endif
 
 #ifdef HAVE_OVERLAY
-void input_overlay_deinit(void);
+void input_overlay_unload(void);
 
 void input_overlay_init(void);
+
+void input_overlay_check_mouse_cursor(void);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
