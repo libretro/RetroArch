@@ -247,7 +247,10 @@ static void frontend_switch_get_env(
                       "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+                      "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));

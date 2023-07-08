@@ -294,6 +294,7 @@ enum settings_list_type
    SETTINGS_LIST_FRAME_TIME_COUNTER,
    SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
    SETTINGS_LIST_OVERLAY,
+   SETTINGS_LIST_OSK_OVERLAY,
    SETTINGS_LIST_MENU,
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
@@ -9997,6 +9998,15 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 #endif
 
          CONFIG_ACTION(
@@ -16499,9 +16509,74 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-         START_SUB_GROUP(list, list_info, "Onscreen Keyboard Overlay", &group_info, &subgroup_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
+         case SETTINGS_LIST_OSK_OVERLAY:
+#ifdef HAVE_OVERLAY
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_PATH(
+               list, list_info,
+               settings->paths.path_osk_overlay,
+               sizeof(settings->paths.path_osk_overlay),
+               MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+               settings->paths.directory_osk_overlay,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_INIT);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_osk_overlay_auto_scale,
+               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+               DEFAULT_INPUT_OVERLAY_AUTO_SCALE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_osk_overlay_opacity,
+               MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+               DEFAULT_INPUT_OVERLAY_OPACITY,
+               "%.2f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          END_SUB_GROUP(list, list_info, parent_group);
+
          END_GROUP(list, list_info, parent_group);
 #endif
          break;
@@ -22192,6 +22267,21 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_osk_overlay,
+               sizeof(settings->paths.directory_osk_overlay),
+               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 #endif
 
          CONFIG_DIR(
@@ -22836,6 +22926,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_FRAME_TIME_COUNTER,
       SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
       SETTINGS_LIST_OVERLAY,
+      SETTINGS_LIST_OSK_OVERLAY,
       SETTINGS_LIST_MENU,
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,

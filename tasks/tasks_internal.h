@@ -219,6 +219,7 @@ bool task_push_manual_content_scan(
 bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
+      bool is_osk,
       void *user_data);
 #endif
 

@@ -5483,7 +5483,6 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
    {
-      static char prev_overlay_restore               = false;
       static unsigned last_width                     = 0;
       static unsigned last_height                    = 0;
       unsigned video_driver_width                    = video_st->width;
@@ -5512,15 +5511,6 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Check next overlay hotkey */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
-
-      /* Ensure overlay is restored after displaying OSK */
-      if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
-         prev_overlay_restore = true;
-      else if (prev_overlay_restore)
-      {
-         input_overlay_init();
-         prev_overlay_restore = false;
-      }
 
       /* Check whether video aspect has changed */
       if ((video_driver_width  != last_width) ||

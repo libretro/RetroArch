@@ -1338,6 +1338,10 @@ MSG_HASH(
    "deferred_onscreen_overlay_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST,
+   "deferred_osk_overlay_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
    "deferred_onscreen_video_layout_settings_list"
    )
@@ -1976,6 +1980,10 @@ MSG_HASH(
    "input_overlay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OSK_OVERLAY,
+   "input_osk_overlay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
    "input_overlay_enable"
    )
@@ -2010,6 +2018,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
    "input_overlay_auto_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "input_osk_overlay_auto_scale"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
@@ -2620,6 +2632,10 @@ MSG_HASH(
    "onscreen_overlay_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
+   "osk_overlay_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "onscreen_video_layout_settings"
    )
@@ -2648,6 +2664,10 @@ MSG_HASH(
    "overlay_directory"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+   "osk_overlay_directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,
    "video_layout_directory"
    )
@@ -2656,8 +2676,16 @@ MSG_HASH(
    "input_overlay_opacity"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
+   "input_osk_overlay_opacity"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_PRESET,
    "input_overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+   "input_osk_overlay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,

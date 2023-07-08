@@ -388,6 +388,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 
    /* Hidden in displaylist */
    DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
+
    DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
 #if 0
    /* Deprecated */
@@ -1589,6 +1590,8 @@ static struct config_path_setting *populate_settings_path(
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",
          settings->paths.path_overlay, false, NULL, true);
+   SETTING_PATH("input_osk_overlay",
+         settings->paths.path_osk_overlay, false, NULL, true);
 #endif
    SETTING_PATH("video_record_config",
          settings->paths.path_record_config, false, NULL, true);
@@ -1651,6 +1654,8 @@ static struct config_path_setting *populate_settings_path(
 #ifdef HAVE_OVERLAY
    SETTING_PATH("overlay_directory",
          settings->paths.directory_overlay, true, NULL, true);
+   SETTING_PATH("osk_overlay_directory",
+         settings->paths.directory_osk_overlay, true, NULL, true);
 #endif
    SETTING_PATH(
          "screenshot_directory",
@@ -2041,6 +2046,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_show_mouse_cursor", &settings->bools.input_overlay_show_mouse_cursor, true, DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR, false);
    SETTING_BOOL("input_overlay_auto_rotate",    &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
    SETTING_BOOL("input_overlay_auto_scale",     &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
+   SETTING_BOOL("input_osk_overlay_auto_scale", &settings->bools.input_osk_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
    SETTING_BOOL("input_touch_vmouse_pointer",   &settings->bools.input_touch_vmouse_pointer, true, DEFAULT_INPUT_TOUCH_VMOUSE_POINTER, false);
@@ -2190,6 +2196,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
+   SETTING_FLOAT("input_osk_overlay_opacity",             &settings->floats.input_osk_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_overlay_scale_landscape",         &settings->floats.input_overlay_scale_landscape, true, DEFAULT_INPUT_OVERLAY_SCALE_LANDSCAPE, false);
    SETTING_FLOAT("input_overlay_aspect_adjust_landscape", &settings->floats.input_overlay_aspect_adjust_landscape, true, DEFAULT_INPUT_OVERLAY_ASPECT_ADJUST_LANDSCAPE, false);
    SETTING_FLOAT("input_overlay_x_separation_landscape",  &settings->floats.input_overlay_x_separation_landscape, true, DEFAULT_INPUT_OVERLAY_X_SEPARATION_LANDSCAPE, false);
@@ -2921,6 +2928,7 @@ void config_set_defaults(void *data)
    *settings->paths.path_rgui_theme_preset = '\0';
    *settings->paths.path_content_database  = '\0';
    *settings->paths.path_overlay           = '\0';
+   *settings->paths.path_osk_overlay       = '\0';
    *settings->paths.path_record_config     = '\0';
    *settings->paths.path_stream_config     = '\0';
    *settings->paths.path_stream_url        = '\0';
@@ -3027,6 +3035,10 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_overlay));
 #endif
    }
+   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]))
+      fill_pathname_expand_special(settings->paths.directory_osk_overlay,
+            g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+            sizeof(settings->paths.directory_osk_overlay));
 #endif
 
 #ifdef HAVE_MENU
@@ -3913,6 +3925,8 @@ static bool config_load_file(global_t *global,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->paths.directory_overlay, "default"))
       *settings->paths.directory_overlay = '\0';
+   if (string_is_equal(settings->paths.directory_osk_overlay, "default"))
+      *settings->paths.directory_osk_overlay = '\0';
 #endif
    if (string_is_equal(settings->paths.directory_system, "default"))
       *settings->paths.directory_system = '\0';
