@@ -6802,8 +6802,7 @@ unsigned menu_displaylist_build_list(
                if (i == RARCH_FIRST_META_KEY)
                   continue;
                /* Hidden items */
-               else if ((key == RARCH_OVERLAY_NEXT)
-                     || (key == RARCH_OSK))
+               else if (key == RARCH_OVERLAY_NEXT)
                   continue;
                /* Show combo entries before normal binds */
                else if (key == RARCH_MENU_TOGGLE)
@@ -9651,6 +9650,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OVERLAY_Y_SEPARATION_PORTRAIT,             PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_X_OFFSET_PORTRAIT,                 PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT,                 PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,                      PARSE_ACTION,     false },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -9700,6 +9700,17 @@ unsigned menu_displaylist_build_list(
                          BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA))
                         build_list[i].checked = true;
                      break;
+                  case MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS:
+                     /* Show keyboard menu if the main overlay has
+                      * an osk_toggle or if the OSK hotkey is set */
+                     if (input_overlay_enable &&
+                         (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_OSK_TOGGLE)
+                          || input_config_binds[0][RARCH_OSK].joykey  != NO_BTN
+                          || input_config_binds[0][RARCH_OSK].joyaxis != AXIS_NONE
+                          || input_config_binds[0][RARCH_OSK].key     != RETROK_UNKNOWN
+                          || input_config_binds[0][RARCH_OSK].mbutton != NO_BTN))
+                        build_list[i].checked = true;
+                     break;
                   default:
                      break;
                }
@@ -9716,6 +9727,20 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
          }
+         break;
+      case DISPLAYLIST_OSK_OVERLAY_SETTINGS_LIST:
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+                  PARSE_ONLY_PATH, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
          break;
 #endif
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
@@ -10623,6 +10648,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,      PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,      PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_OVERLAY_DIRECTORY,               PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,           PARSE_ONLY_DIR},
 #ifdef HAVE_SCREENSHOTS
                {MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,            PARSE_ONLY_DIR},
 #endif
@@ -13592,6 +13618,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_LATENCY_SETTINGS_LIST:
 #if defined(HAVE_OVERLAY)
          case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+         case DISPLAYLIST_OSK_OVERLAY_SETTINGS_LIST:
 #endif
          case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
          case DISPLAYLIST_ACCOUNTS_LIST:
@@ -14479,6 +14506,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_STREAM_CONFIG_FILES:
          case DISPLAYLIST_RECORD_CONFIG_FILES:
          case DISPLAYLIST_OVERLAYS:
+         case DISPLAYLIST_OSK_OVERLAYS:
          case DISPLAYLIST_FONTS:
          case DISPLAYLIST_VIDEO_FONTS:
          case DISPLAYLIST_AUDIO_FILTERS:
@@ -14517,6 +14545,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   break;
                case DISPLAYLIST_OVERLAYS:
                   info->type_default = FILE_TYPE_OVERLAY;
+                  info->exts         = strldup("cfg", sizeof("cfg"));
+                  break;
+               case DISPLAYLIST_OSK_OVERLAYS:
+                  info->type_default = FILE_TYPE_OSK_OVERLAY;
                   info->exts         = strldup("cfg", sizeof("cfg"));
                   break;
                case DISPLAYLIST_FONTS:

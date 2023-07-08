@@ -50,7 +50,14 @@ enum overlay_type
    OVERLAY_TYPE_ANALOG_RIGHT,
    OVERLAY_TYPE_DPAD_AREA,
    OVERLAY_TYPE_ABXY_AREA,
-   OVERLAY_TYPE_KEYBOARD
+   OVERLAY_TYPE_KEYBOARD,
+   OVERLAY_TYPE_LAST
+};
+
+/* Superset of overlay_type for menu entries */
+enum overlay_menu_type
+{
+   OVERLAY_TYPE_OSK_TOGGLE = OVERLAY_TYPE_LAST
 };
 
 enum overlay_status
@@ -100,14 +107,16 @@ enum overlay_show_input_type
 
 enum OVERLAY_LOADER_FLAGS
 {
-   OVERLAY_LOADER_RGBA_SUPPORT = (1 << 0)
+   OVERLAY_LOADER_RGBA_SUPPORT = (1 << 0),
+   OVERLAY_LOADER_IS_OSK       = (1 << 1)
 };
 
 enum INPUT_OVERLAY_FLAGS
 {
    INPUT_OVERLAY_ENABLE  = (1 << 0),
    INPUT_OVERLAY_ALIVE   = (1 << 1),
-   INPUT_OVERLAY_BLOCKED = (1 << 2)
+   INPUT_OVERLAY_BLOCKED = (1 << 2),
+   INPUT_OVERLAY_IS_OSK  = (1 << 3)
 };
 
 enum OVERLAY_FLAGS

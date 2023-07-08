@@ -390,6 +390,7 @@ typedef struct settings
       float audio_mixer_volume; /* dB scale. */
 
       float input_overlay_opacity;
+      float input_osk_overlay_opacity;
 
       float input_overlay_scale_landscape;
       float input_overlay_aspect_adjust_landscape;
@@ -500,6 +501,7 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
+      char path_osk_overlay[PATH_MAX_LENGTH];
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
@@ -523,6 +525,7 @@ typedef struct settings
       char directory_libretro[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
+      char directory_osk_overlay[PATH_MAX_LENGTH];
       char directory_resampler[PATH_MAX_LENGTH];
       char directory_screenshot[PATH_MAX_LENGTH];
       char directory_system[PATH_MAX_LENGTH];
@@ -635,6 +638,7 @@ typedef struct settings
       bool input_overlay_show_mouse_cursor;
       bool input_overlay_auto_rotate;
       bool input_overlay_auto_scale;
+      bool input_osk_overlay_auto_scale;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;

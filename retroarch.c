@@ -3039,19 +3039,24 @@ bool command_event(enum event_command cmd, void *data)
                *video_st                   = video_state_get_ptr();
             input_driver_state_t *input_st = input_state_get_ptr();
             bool inp_overlay_auto_rotate   = settings->bools.input_overlay_auto_rotate;
-            float input_overlay_opacity    = settings->floats.input_overlay_opacity;
-            if (!input_st->overlay_ptr)
+            input_overlay_t *ol            = input_st->overlay_ptr;
+            float input_overlay_opacity;
+            if (!ol)
                return false;
 
-            input_st->overlay_ptr->index   = input_st->overlay_ptr->next_index;
-            input_st->overlay_ptr->active  = &input_st->overlay_ptr->overlays[
-               input_st->overlay_ptr->index];
+            ol->index                      = ol->next_index;
+            ol->active                     = &ol->overlays[ol->index];
+
+            input_overlay_opacity          = (ol->flags & INPUT_OVERLAY_IS_OSK)
+                  ? settings->floats.input_osk_overlay_opacity
+                  : settings->floats.input_overlay_opacity;
 
             input_overlay_load_active(input_st->overlay_visibility,
-                  input_st->overlay_ptr, input_overlay_opacity);
+                  ol, input_overlay_opacity);
 
-            input_st->overlay_ptr->flags     |= INPUT_OVERLAY_BLOCKED;
-            input_st->overlay_ptr->next_index = (unsigned)((input_st->overlay_ptr->index + 1) % input_st->overlay_ptr->size);
+            ol->flags                     |= INPUT_OVERLAY_BLOCKED;
+            ol->next_index                 =
+                  (unsigned)((ol->index + 1) % ol->size);
 
             /* Check orientation, if required */
             if (inp_overlay_auto_rotate)
@@ -3061,18 +3066,37 @@ bool command_event(enum event_command cmd, void *data)
                            video_st->width,
                            video_st->height,
                            settings->bools.input_overlay_enable,
-                           input_st->overlay_ptr);
+                           ol);
          }
 #endif
          break;
       case CMD_EVENT_OSK_TOGGLE:
+#ifdef HAVE_OVERLAY
          {
-            input_driver_state_t *input_st   = input_state_get_ptr();
+            settings_t *settings           = config_get_ptr();
+            input_driver_state_t *input_st = input_state_get_ptr();
+
             if (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
                input_st->flags &= ~INP_FLAG_KB_LINEFEED_ENABLE;
-            else
+            else if (!string_is_empty(settings->paths.path_osk_overlay))
                input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_OSK_OVERLAY_NOT_SET), 1, 100, false,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+            command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+
+#ifdef HAVE_MENU
+            /* Avoid stray menu input during transition */
+            if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+            {
+               menu_st->input_state.select_inhibit  = true;
+               menu_st->input_state.cancel_inhibit  = true;
+            }
+#endif
          }
+#endif
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
 #ifdef HAVE_DSP_FILTER
@@ -3342,26 +3366,40 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             overlay_layout_desc_t layout_desc;
-            video_driver_state_t
-               *video_st                        = video_state_get_ptr();
-            input_driver_state_t *input_st      = input_state_get_ptr();
+            video_driver_state_t *video_st = video_state_get_ptr();
+            input_driver_state_t *input_st = input_state_get_ptr();
+            input_overlay_t *ol            = input_st->overlay_ptr;
 
-            layout_desc.scale_landscape         = settings->floats.input_overlay_scale_landscape;
-            layout_desc.aspect_adjust_landscape = settings->floats.input_overlay_aspect_adjust_landscape;
-            layout_desc.x_separation_landscape  = settings->floats.input_overlay_x_separation_landscape;
-            layout_desc.y_separation_landscape  = settings->floats.input_overlay_y_separation_landscape;
-            layout_desc.x_offset_landscape      = settings->floats.input_overlay_x_offset_landscape;
-            layout_desc.y_offset_landscape      = settings->floats.input_overlay_y_offset_landscape;
-            layout_desc.scale_portrait          = settings->floats.input_overlay_scale_portrait;
-            layout_desc.aspect_adjust_portrait  = settings->floats.input_overlay_aspect_adjust_portrait;
-            layout_desc.x_separation_portrait   = settings->floats.input_overlay_x_separation_portrait;
-            layout_desc.y_separation_portrait   = settings->floats.input_overlay_y_separation_portrait;
-            layout_desc.x_offset_portrait       = settings->floats.input_overlay_x_offset_portrait;
-            layout_desc.y_offset_portrait       = settings->floats.input_overlay_y_offset_portrait;
-            layout_desc.touch_scale             = (float)settings->uints.input_touch_scale;
-            layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
+            if (!ol)
+               break;
 
-            input_overlay_set_scale_factor(input_st->overlay_ptr,
+            if (ol->flags & INPUT_OVERLAY_IS_OSK)
+            {
+               memset(&layout_desc, 0, sizeof(overlay_layout_desc_t));
+               layout_desc.scale_landscape         = 1.0f;
+               layout_desc.scale_portrait          = 1.0f;
+               layout_desc.touch_scale             = 1.0f;
+               layout_desc.auto_scale              = settings->bools.input_osk_overlay_auto_scale;
+            }
+            else
+            {
+               layout_desc.scale_landscape         = settings->floats.input_overlay_scale_landscape;
+               layout_desc.aspect_adjust_landscape = settings->floats.input_overlay_aspect_adjust_landscape;
+               layout_desc.x_separation_landscape  = settings->floats.input_overlay_x_separation_landscape;
+               layout_desc.y_separation_landscape  = settings->floats.input_overlay_y_separation_landscape;
+               layout_desc.x_offset_landscape      = settings->floats.input_overlay_x_offset_landscape;
+               layout_desc.y_offset_landscape      = settings->floats.input_overlay_y_offset_landscape;
+               layout_desc.scale_portrait          = settings->floats.input_overlay_scale_portrait;
+               layout_desc.aspect_adjust_portrait  = settings->floats.input_overlay_aspect_adjust_portrait;
+               layout_desc.x_separation_portrait   = settings->floats.input_overlay_x_separation_portrait;
+               layout_desc.y_separation_portrait   = settings->floats.input_overlay_y_separation_portrait;
+               layout_desc.x_offset_portrait       = settings->floats.input_overlay_x_offset_portrait;
+               layout_desc.y_offset_portrait       = settings->floats.input_overlay_y_offset_portrait;
+               layout_desc.touch_scale             = (float)settings->uints.input_touch_scale;
+               layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
+            }
+
+            input_overlay_set_scale_factor(ol,
                   &layout_desc,
                   video_st->width,
                   video_st->height);
@@ -3373,11 +3411,18 @@ bool command_event(enum event_command cmd, void *data)
           * The alpha factor is applied for all overlays. */
 #ifdef HAVE_OVERLAY
          {
-            float input_overlay_opacity    = settings->floats.input_overlay_opacity;
             input_driver_state_t *input_st = input_state_get_ptr();
+            input_overlay_t *ol            = input_st->overlay_ptr;
 
-            input_overlay_set_alpha_mod(input_st->overlay_visibility,
-                  input_st->overlay_ptr, input_overlay_opacity);
+            if (ol)
+            {
+               float input_overlay_opacity = (ol->flags & INPUT_OVERLAY_IS_OSK)
+                     ? settings->floats.input_osk_overlay_opacity
+                     : settings->floats.input_overlay_opacity;
+
+               input_overlay_set_alpha_mod(input_st->overlay_visibility,
+                        ol, input_overlay_opacity);
+            }
          }
 #endif
          break;

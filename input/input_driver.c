@@ -2120,9 +2120,7 @@ static void input_overlay_poll(
       }
    }
 
-   if (!bits_any_set(out->buttons.data, ARRAY_SIZE(out->buttons.data)))
-      ol->flags &= ~INPUT_OVERLAY_BLOCKED;
-   else if (ol->flags & INPUT_OVERLAY_BLOCKED)
+   if (ol->flags & INPUT_OVERLAY_BLOCKED)
       memset(out, 0, sizeof(*out));
 }
 
@@ -2792,7 +2790,7 @@ static void input_poll_overlay(
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
-   for (i = 0; i < (int)ARRAY_SIZE(ol_state->keys); i++)
+   for (i = (int)ARRAY_SIZE(ol_state->keys); i-- > 0;)
    {
       if (ol_state->keys[i] != old_ol_state.keys[i])
       {
@@ -2802,9 +2800,13 @@ static void input_poll_overlay(
 
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
+            {
+               unsigned rk = i * 32 + j;
+               uint32_t c  = input_keymaps_translate_rk_to_ascii(rk, key_mod);
                input_keyboard_event(new_bits & (1 << j),
-                     i * 32 + j, 0, key_mod, RETRO_DEVICE_POINTER);
-      }
+                     rk, c, key_mod, RETRO_DEVICE_POINTER);
+            }
+         }
    }
 
    /* Map "analog" buttons to analog axes like regular input drivers do. */
@@ -4341,7 +4343,9 @@ static void input_overlay_enable_(bool enable)
    video_driver_state_t *video_st = video_state_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
    input_overlay_t *ol            = input_st->overlay_ptr;
-   float opacity                  = settings->floats.input_overlay_opacity;
+   float opacity                  = (ol && (ol->flags & INPUT_OVERLAY_IS_OSK))
+      ? settings->floats.input_osk_overlay_opacity
+      : settings->floats.input_overlay_opacity;
    bool auto_rotate               = settings->bools.input_overlay_auto_rotate;
    bool hide_mouse_cursor         = !settings->bools.input_overlay_show_mouse_cursor
          && (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
@@ -4519,9 +4523,6 @@ static void input_overlay_loaded(retro_task_t *task,
    overlay_task_data_t  *data     = (overlay_task_data_t*)task_data;
    input_overlay_t      *ol       = NULL;
    input_driver_state_t *input_st = &input_driver_st;
-#ifdef HAVE_MENU
-   struct menu_state     *menu_st = menu_state_get_ptr();
-#endif
    bool enable_overlay            = !input_overlay_want_hidden()
          && settings->bools.input_overlay_enable;
    uint16_t overlay_types;
@@ -4536,6 +4537,8 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->path        = data->overlay_path;
    ol->next_index  = (unsigned)((ol->index + 1) % ol->size);
    ol->flags      |= INPUT_OVERLAY_ALIVE;
+   if (data->flags & OVERLAY_LOADER_IS_OSK)
+      ol->flags   |= INPUT_OVERLAY_IS_OSK;
    overlay_types   = data->overlay_types;
 
    free(data);
@@ -4565,11 +4568,16 @@ static void input_overlay_loaded(retro_task_t *task,
    input_overlay_set_eightway_diagonal_sensitivity();
 
 #ifdef HAVE_MENU
-   /* Update menu entries */
-   if (menu_st->overlay_types != overlay_types)
+   /* Update menu entries if this is the main overlay */
+   if (!(ol->flags & INPUT_OVERLAY_IS_OSK))
    {
-      menu_st->overlay_types  = overlay_types;
-      menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      struct menu_state *menu_st = menu_state_get_ptr();
+
+      if (menu_st->overlay_types != overlay_types)
+      {
+         menu_st->overlay_types = overlay_types;
+         menu_st->flags        |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      }
    }
 #endif
 }
@@ -4580,7 +4588,12 @@ void input_overlay_init(void)
    input_driver_state_t *input_st = &input_driver_st;
    input_overlay_t *ol            = input_st->overlay_ptr;
    input_overlay_t *ol_cache      = input_st->overlay_cache_ptr;
-   const char *path_overlay       = settings->paths.path_overlay;
+   bool want_osk                  =
+            (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
+         && !string_is_empty(settings->paths.path_osk_overlay);
+   const char *path_overlay       = want_osk
+         ? settings->paths.path_osk_overlay
+         : settings->paths.path_overlay;
    bool want_hidden               = input_overlay_want_hidden();
    bool overlay_shown             = ol
          && (ol->flags & INPUT_OVERLAY_ENABLE)
@@ -4609,11 +4622,15 @@ void input_overlay_init(void)
       return;
    }
 
-   input_overlay_deinit();
+   /* Cache current overlay when loading a different type */
+   if (want_osk != (ol && (ol->flags & INPUT_OVERLAY_IS_OSK)))
+      input_overlay_unload();
+   else
+      input_overlay_deinit();
 
    /* Start task */
    task_push_overlay_load_default(
-         input_overlay_loaded, path_overlay, NULL);
+         input_overlay_loaded, path_overlay, want_osk, NULL);
 }
 #endif
 
@@ -5337,9 +5354,6 @@ void input_driver_poll(void)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
-#ifdef HAVE_OVERLAY
-   float input_overlay_opacity    = settings->floats.input_overlay_opacity;
-#endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
 
@@ -5389,6 +5403,9 @@ void input_driver_poll(void)
          (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
    {
       unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[0];
+      float input_overlay_opacity     = (input_st->overlay_ptr->flags & INPUT_OVERLAY_IS_OSK)
+         ? settings->floats.input_osk_overlay_opacity
+         : settings->floats.input_overlay_opacity;
 
       switch (input_analog_dpad_mode)
       {
@@ -6507,18 +6524,9 @@ void input_keyboard_event(bool down, unsigned code,
       if (!down)
          return;
 
-      switch (device)
-      {
-         case RETRO_DEVICE_POINTER:
-            if (code != 0x12d)
-               character = (char)code;
-            /* fall-through */
-         default:
-            if (!input_keyboard_line_event(input_st,
-                  &input_st->keyboard_line, character))
-               return;
-            break;
-      }
+      if (!input_keyboard_line_event(input_st,
+            &input_st->keyboard_line, character))
+         return;
 
       /* Line is complete, can free it now. */
       if (input_st->keyboard_line.buffer)
@@ -6542,9 +6550,11 @@ void input_keyboard_event(bool down, unsigned code,
        * pressing hotkeys and RetroPad binds, but
        * - not with Game Focus
        * - not from keyboard device type mappings
+       * - not from overlay keyboard input
        * - with 'enable_hotkey' modifier set and unpressed. */
       if (     !input_st->game_focus_state.enabled
-            && BIT512_GET(input_st->keyboard_mapping_bits, code))
+            && BIT512_GET(input_st->keyboard_mapping_bits, code)
+            && device != RETRO_DEVICE_POINTER)
       {
          settings_t *settings        = config_get_ptr();
          unsigned max_users          = settings->uints.input_max_users;

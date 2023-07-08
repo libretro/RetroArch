@@ -329,6 +329,8 @@ static bool task_overlay_load_desc(
          config_get_array(conf, overlay_key,
                desc->next_index_name, sizeof(desc->next_index_name));
       }
+      else if (BIT256_GET(desc->button_mask, RARCH_OSK))
+         BIT16_SET(loader->overlay_types, OVERLAY_TYPE_OSK_TOGGLE);
    }
 
    BIT16_SET(loader->overlay_types, desc->type);
@@ -962,6 +964,7 @@ static bool task_overlay_finder(retro_task_t *task, void *user_data)
 bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
+      bool is_osk,
       void *user_data)
 {
    task_finder_data_t find_data;
@@ -1012,6 +1015,8 @@ bool task_push_overlay_load_default(
    loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
 
+   if (is_osk)
+      loader->flags        |= OVERLAY_LOADER_IS_OSK;
 #ifdef RARCH_INTERNAL
    if (video_driver_supports_rgba())
       loader->flags        |= OVERLAY_LOADER_RGBA_SUPPORT;
