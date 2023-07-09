@@ -4518,7 +4518,6 @@ void input_overlay_check_mouse_cursor(void)
 static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   size_t i;
    settings_t           *settings = config_get_ptr();
    overlay_task_data_t  *data     = (overlay_task_data_t*)task_data;
    input_overlay_t      *ol       = NULL;
