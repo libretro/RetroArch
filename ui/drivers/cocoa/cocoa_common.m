@@ -349,7 +349,7 @@ void *glkitview_init(void);
     if (self.keyboardController.view.isHidden)
         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
     else
-        command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+        command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 #endif
 }
 

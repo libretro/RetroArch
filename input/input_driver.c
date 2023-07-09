@@ -2806,7 +2806,7 @@ static void input_poll_overlay(
                input_keyboard_event(new_bits & (1 << j),
                      rk, c, key_mod, RETRO_DEVICE_POINTER);
             }
-         }
+      }
    }
 
    /* Map "analog" buttons to analog axes like regular input drivers do. */
