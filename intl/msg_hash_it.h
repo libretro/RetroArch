@@ -3577,11 +3577,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Tastiera Su Schermo (Attiva / Disattiva)"
+   "Sovrapposizione Tastiera (Abilita)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Attiva o disattiva la tastiera sullo schermo."
+   "Attiva o disattiva la sovrapposizione della tastiera."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4876,6 +4876,41 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Spostamento di sovrapposizione verticale quando si usano gli orientamenti di visualizzazione verticale. I valori positivi si sovrappongono verso l'alto; i valori negativi verso il basso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Sovrapposizione Tastiera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Selezionare e regolare una sovrapposizione tastiera."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Sovrapposizione Tastiera Preset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Selezionare una sovrapposizione tastiera dal browser dei file."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Sovrapposizione Tastiera Scala Automatica"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Regola la sovrapposizione della tastiera al suo rapporto di aspetto originale. Disabilita per estenderla allo schermo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Sovrapposizione Tastiera Opacità"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "Opacità di tutti gli elementi UI della sovrapposizione tastiera."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -7399,6 +7434,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "Gli overlay sono memorizzate in questa directory."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Sovrapposizioni Tastiera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "Le sovrapposizioni della tastiera sono memorizzate in questa directory."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -12736,6 +12779,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Impossibile caricare l'overlay."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "La sovrapposizione della tastiera non è impostata."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,

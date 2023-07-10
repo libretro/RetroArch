@@ -2020,14 +2020,6 @@ MSG_HASH(
    "Ενεργοποίηση/Απενεργοποίηση της ένδειξης 'καρέ ανά δευτερόλεπτο'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Πληκτρολόγιο Οθόνης (Εναλλαγή)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Ενεργοποίηση/απενεργοποίηση πληκτρολόγιου οθόνης."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Υπηρεσία Τεχνητής Νοημοσύνης"
    )
@@ -2473,6 +2465,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
    "Επιλογή ενός επικαλλύματος από τον περιηγητή αρχείων."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

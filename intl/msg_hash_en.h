@@ -814,6 +814,9 @@ MSG_HASH(
    "Show the Mouse Cursor With Overlay"
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 

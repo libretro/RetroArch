@@ -3596,14 +3596,6 @@ MSG_HASH(
    "Active/désactive l'affichage des statistiques techniques à l'écran."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Clavier virtuel à l'écran (afficher/masquer)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Active/désactive le clavier virtuel à l'écran."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "Surimpression suivante"
    )
@@ -4901,6 +4893,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Décalage vertical de la surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives déplacent la surimpression vers le haut; les valeurs négatives vers le bas."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

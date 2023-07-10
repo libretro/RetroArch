@@ -3650,6 +3650,9 @@ MSG_HASH(
    "Виберіть накладку через менеджер файлів."
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(

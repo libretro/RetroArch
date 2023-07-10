@@ -3668,14 +3668,6 @@ MSG_HASH(
    "온스크린 기술적 통계 표시를 켜거나 끕니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "온스크린 키보드 (켜기/끄기)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "온스크린 키보드를 켜거나 끕니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "다음 오버레이"
    )
@@ -4981,6 +4973,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "세로 화면에서 사용할 오버레이의 세로 오프셋입니다. 값을 키우면 오버레이가 위쪽으로 이동하고, 값을 줄이면 오버레이가 아래쪽으로 이동합니다."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

@@ -3637,11 +3637,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Ekran Klavyesi (Değiştir)"
+   "Klavye Kaplaması (Değiştir)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Ekran klavyesini açar/kapatır."
+   "Klavye kaplamasını açar/kapatır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4944,6 +4944,41 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Dikey görüntüleme yönlerini kullanırken dikey kaplama dengesi. Pozitif değerler üst üste gelir; negatif değerler aşağıya."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Klavye Kaplaması"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Bir klavye kaplaması seçin ve ayarlayın."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Klavye Kaplaması Ön Ayarlı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Dosya tarayıcısından bir klavye kaplaması seçin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Otomatik Ölçekli Klavye Kaplaması"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Klavye kaplamasını orijinal en boy oranına ayarlayın. Ekrana genişletmek için devre dışı bırakın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Klavye Kaplaması Şeffaflık"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "Klavye kaplamasının tüm kullanıcı arayüzündeki şeffaflığı."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -7487,6 +7522,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "Kaplamalar bu dizinde saklanır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Klavye Kaplamaları"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "Klavye kaplamaları bu dizinde saklanır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -12992,6 +13035,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Kaplama yüklenemedi."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "Klavye kaplaması ayarlanmamış."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,

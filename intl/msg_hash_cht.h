@@ -3576,14 +3576,6 @@ MSG_HASH(
    "執行時顯示技術統計資訊的開關。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "螢幕鍵盤 (開關)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "顯示螢幕鍵盤的開關。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "下一個覆蓋元件"
    )
@@ -4909,6 +4901,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "設定螢幕直向顯示時, 覆蓋元件的垂直位置, 正數為向上偏移, 負數為向下偏移。"
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

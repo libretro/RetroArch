@@ -3080,14 +3080,6 @@ MSG_HASH(
    "Włącza/wyłącza wyświetlanie statystyk technicznych na ekranie."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Klawiatura ekranowa (przełącznik)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Włącza/wyłącza klawiaturę ekranową."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "Następna Nakładka"
    )
@@ -4257,6 +4249,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Pionowe przesunięcie nakładki podczas używania orientacji wyświetlania w orientacji pionowej. Wartości dodatnie przesuwają nakładkę w górę; ujemne wartości w dół."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

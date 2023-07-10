@@ -2678,6 +2678,9 @@ MSG_HASH(
    "Aplica un factor de correcció de relació d'aspecte a la superposició quan s'usa una orientació de pantalla vertical. Els valors positius incrementen (mentre que els valors negatius decreixen) l'altura efectiva de la superposició."
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 

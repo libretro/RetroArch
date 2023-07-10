@@ -2460,14 +2460,6 @@ MSG_HASH(
    "تبديل مؤشر حالة 'إطارات في الثانية' تشغيل/إيقاف."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "تشغيل لوحة المفاتيح"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "تشغيل/إيقاف تشغيل لوحة المفاتيح."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "التالي Overlay"
    )
@@ -3189,6 +3181,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
    "حدد تراكب من متصفح الملفات."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

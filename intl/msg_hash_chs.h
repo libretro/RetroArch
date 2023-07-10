@@ -3624,14 +3624,6 @@ MSG_HASH(
    "打开/关闭屏幕技术统计显示。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "屏幕键盘 (开关)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "打开/关闭屏幕键盘。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "下个遮罩"
    )
@@ -4941,6 +4933,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "使用竖屏显示模式时，垂直偏移遮罩。正数向上偏移，负数向下偏移。"
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
