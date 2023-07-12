@@ -256,7 +256,12 @@ bool init_netplay_discovery(void)
    if (addr)
       freeaddrinfo_retro(addr);
 
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+   netplay_mdns_start_discovery();
+   return true;
+#else
    return ret;
+#endif
 }
 
 /** Deinitialize Netplay discovery (client) */
@@ -269,6 +274,10 @@ void deinit_netplay_discovery(void)
       socket_close(net_st->lan_ad_client_fd);
       net_st->lan_ad_client_fd = -1;
    }
+
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+   netplay_mdns_finish_discovery(net_st);
+#endif
 }
 
 static bool netplay_lan_ad_client_query(void)
@@ -426,8 +435,15 @@ bool netplay_discovery_driver_ctl(
 
    switch (state)
    {
-      case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
-         return net_st->lan_ad_client_fd >= 0 && netplay_lan_ad_client_query();
+      case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY: {
+         bool rv;
+         if (net_st->lan_ad_client_fd >= 0)
+            rv = netplay_lan_ad_client_query();
+#if HAVE_NETPLAYDISCOVERY_NSNET
+         rv = true;
+#endif
+         return rv;
+      }
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES:
          return net_st->lan_ad_client_fd >= 0 &&
@@ -6850,7 +6866,12 @@ try_ipv4:
       netplay->connections[0].fd     = fd;
    }
    else
+   {
       netplay->listen_fd             = fd;
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+      netplay_mdns_publish(netplay);
+#endif
+   }
 
    return true;
 }
@@ -8627,6 +8648,9 @@ void deinit_netplay(void)
 
 #ifdef HAVE_NETPLAYDISCOVERY
       deinit_lan_ad_server_socket();
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
+      netplay_mdns_unpublish();
+#endif
 #endif
 
       net_st->data              = NULL;
