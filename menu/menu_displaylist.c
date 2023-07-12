@@ -10060,7 +10060,7 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH:
-                     if (widgets_active && notification_show_screenshot)
+                     if (widgets_active)
                         build_list[i].checked = true;
                      break;
 #endif
