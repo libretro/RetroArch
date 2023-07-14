@@ -4715,7 +4715,7 @@ static void input_keys_pressed(
             input_st->primary_joypad,
             sec_joypad,
             joypad_info,
-            &binds[port],
+            binds,
             input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
             port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
@@ -4749,7 +4749,7 @@ static void input_keys_pressed(
                input_st->primary_joypad,
                sec_joypad,
                joypad_info,
-               &binds[port],
+               binds,
                input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_GAME_FOCUS_TOGGLE))
@@ -4771,7 +4771,7 @@ static void input_keys_pressed(
                input_st->primary_joypad,
                sec_joypad,
                joypad_info,
-               &binds[port],
+               binds,
                input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
@@ -4803,7 +4803,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key);
@@ -4817,7 +4817,7 @@ static void input_keys_pressed(
                         input_st->primary_joypad,
                         sec_joypad,
                         joypad_info,
-                        &binds[port],
+                        binds,
                         input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                         port, RETRO_DEVICE_JOYPAD, 0, i);
 
@@ -4871,7 +4871,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
@@ -4889,7 +4889,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
@@ -4915,7 +4915,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
@@ -4934,7 +4934,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
@@ -4966,7 +4966,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i);
@@ -6110,8 +6110,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    /* Gather input from each (enabled) joypad */
    for (port = 0; port < (int)max_users; port++)
    {
-      input_bits_t tmp_bits;
-      input_bits_t *loop_bits                = NULL;
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
       struct retro_keybind *auto_binds       = input_autoconf_binds[port];
@@ -6119,26 +6117,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
       joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
 
-      if (port == 0)
-         loop_bits = current_bits;
-      else
-      {
-         loop_bits = &tmp_bits;
-         BIT256_CLEAR_ALL_PTR(loop_bits);
-      }
-
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
          int k;
          int s;
-
-         /* Push analog to D-Pad mappings to binds. */
-         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-         {
-            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
-            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
-         }
 
          /* Read input from both analog sticks. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
@@ -6194,7 +6177,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             false,
 #endif
             block_delay,
-            loop_bits,
+            current_bits,
             (const retro_keybind_set *)input_config_binds,
             binds_norm,
             binds_auto,
@@ -6205,27 +6188,10 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         int j;
-         /* Restores analog D-pad binds temporarily overridden. */
-         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
-         {
-            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
-            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
-         }
+         if (!all_users_control_menu)
+            break;
       }
 #endif /* HAVE_MENU */
-
-      /* we write port 0 directly to input_bits to save one iteration of this loop */
-      if (port != 0)
-      {
-         int i;
-         /* Update compound 'current_bits' record
-          * Note: Only digital inputs are considered */
-         for (i = 0; i < (int)ARRAY_SIZE(current_bits->data); i++)
-            current_bits->data[i] |= loop_bits->data[i];
-      }
-      else if (!all_users_control_menu)
-         break;
    }
 
 #ifdef HAVE_MENU
@@ -6282,7 +6248,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      input_st->current_data,
                      joypad,
                      sec_joypad,
-                     &joypad_info, (const retro_keybind_set *)input_config_binds,
+                     &joypad_info,
+                     (const retro_keybind_set *)input_config_binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
