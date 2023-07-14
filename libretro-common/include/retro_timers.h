@@ -39,6 +39,8 @@
 #include <psp2/kernel/threadmgr.h>
 #elif defined(_3DS)
 #include <3ds.h>
+#elif defined(EMSCRIPTEN)
+#include <emscripten/emscripten.h>
 #else
 #include <time.h>
 #endif
@@ -99,6 +101,8 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (usleep(1000 * (msec)))
 #elif defined(WIIU)
 #define retro_sleep(msec) (OSSleepTicks(ms_to_ticks((msec))))
+#elif defined(EMSCRIPTEN)
+#define retro_sleep(msec) (emscripten_sleep(msec))
 #else
 static INLINE void retro_sleep(unsigned msec)
 {
