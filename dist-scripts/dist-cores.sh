@@ -205,6 +205,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
    whole_archive=
    big_stack=
 
+   if [ $PLATFORM = "emscripten" ]; then
+      async=1 #emscripten needs async to sleep
+   fi
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
