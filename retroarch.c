@@ -4930,7 +4930,9 @@ int rarch_main(int argc, char *argv[], void *data)
 #if defined(EMSCRIPTEN)
 #include "gfx/common/gl_common.h"
 
+#ifdef HAVE_RWEBAUDIO
 void RWebAudioRecalibrateTime(void);
+#endif
 
 void emscripten_mainloop(void)
 {
@@ -4946,7 +4948,9 @@ void emscripten_mainloop(void)
    bool runloop_is_slowmotion             = runloop_flags & RUNLOOP_FLAG_SLOWMOTION;
    bool runloop_is_paused                 = runloop_flags & RUNLOOP_FLAG_PAUSED;
 
+#ifdef HAVE_RWEBAUDIO
    RWebAudioRecalibrateTime();
+#endif
 
    emscripten_frame_count++;
 

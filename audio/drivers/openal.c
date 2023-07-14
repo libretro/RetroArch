@@ -237,7 +237,11 @@ static bool al_start(void *data, bool is_shutdown)
 {
    al_t *al = (al_t*)data;
    if (al)
-      al->is_paused = false;
+#ifdef EMSCRIPTEN //NEVER EVER BLOCK THE MAIN THREAD!! Emscripten will handle this for us :)
+      al->nonblock = true;
+#else
+      al->nonblock = state;
+#endif
    return true;
 }
 
