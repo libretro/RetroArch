@@ -237,7 +237,7 @@ static bool al_start(void *data, bool is_shutdown)
 {
    al_t *al = (al_t*)data;
    if (al)
-      al->nonblock = state;
+      al->is_paused = false;
    return true;
 }
 
