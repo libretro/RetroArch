@@ -422,6 +422,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    reply[  _len] = ' ';
    reply[++_len] = '\0';
    _len = strlcpy(reply + _len, value, sizeof(reply) - _len);
+   /* TODO/FIXME - replace strlen(reply) by _len? check if they are equal */
    cmd->replier(cmd, reply, strlen(reply));
    return true;
 }
@@ -823,6 +824,7 @@ bool command_version(command_t *cmd, const char* arg)
    size_t  _len  = strlcpy(reply, PACKAGE_VERSION, sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
+   /* TODO/FIXME - replace strlen(reply) by _len? Check if they are equal */
    cmd->replier(cmd, reply, strlen(reply));
 
    return true;

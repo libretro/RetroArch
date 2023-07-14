@@ -540,7 +540,7 @@ static int action_get_title_dropdown_input_description_common(
    /* Build title string */
    _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
    _len += snprintf(s + _len, len - _len, " %u - ", port + 1);
-   _len += strlcpy (s + _len, input_label, len - _len);
+   strlcpy(s + _len, input_label, len - _len);
 
    return 1;
 }

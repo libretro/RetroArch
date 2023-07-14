@@ -3481,9 +3481,9 @@ static bool materialui_render_process_entry_playlist_desktop(
             _len += strlcpy(mui->status_bar.str + _len,
                     MUI_TICKER_SPACER,
                     sizeof(mui->status_bar.str) - _len);
-            _len += strlcpy(mui->status_bar.str + _len,
-                    last_played_str,
-                    sizeof(mui->status_bar.str) - _len);
+            strlcpy(mui->status_bar.str + _len,
+                  last_played_str,
+                  sizeof(mui->status_bar.str) - _len);
 
             /* All metadata is cached */
             mui->status_bar.cached = true;

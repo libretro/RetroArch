@@ -134,7 +134,6 @@ static void handle_translation_cb(
       retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
-   size_t pitch;
    unsigned width, height;
    unsigned image_width, image_height;
    uint8_t* raw_output_data          = NULL;
@@ -298,7 +297,6 @@ static void handle_translation_cb(
       dummy_data = video_st->frame_cache_data;
       width      = video_st->frame_cache_width;
       height     = video_st->frame_cache_height;
-      pitch      = video_st->frame_cache_pitch;
 
       /* try two different modes for text display *
        * In the first mode, we use display widget overlays, but they require
@@ -314,12 +312,12 @@ static void handle_translation_cb(
          bool ai_res;
          enum image_type_enum image_type;
          /* Write to overlay */
-         if (  raw_image_file_data[0] == 'B' &&
-               raw_image_file_data[1] == 'M')
+         if (     raw_image_file_data[0]    == 'B'
+               && raw_image_file_data[1]    == 'M')
              image_type = IMAGE_TYPE_BMP;
-         else if (raw_image_file_data[1] == 'P' &&
-                  raw_image_file_data[2] == 'N' &&
-                  raw_image_file_data[3] == 'G')
+         else if (   raw_image_file_data[1] == 'P'
+                  && raw_image_file_data[2] == 'N'
+                  && raw_image_file_data[3] == 'G')
             image_type = IMAGE_TYPE_PNG;
          else
          {
@@ -352,6 +350,7 @@ static void handle_translation_cb(
 #endif
       /* Can't use display widget overlays, so try writing to video buffer */
       {
+         size_t pitch;
          /* Write to video buffer directly (software cores only) */
          if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
          {
@@ -434,8 +433,7 @@ static void handle_translation_cb(
             goto finish;
          }
 
-         scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx));
-         if (!scaler)
+         if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
             goto finish;
 
          if (dummy_data == RETRO_HW_FRAME_BUFFER_VALID)
@@ -460,14 +458,14 @@ static void handle_translation_cb(
             raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_ARGB8888;
             pitch              = width * 4;
-            scaler->out_stride = width * 4;
+            scaler->out_stride = pitch;
          }
          else
          {
             raw_output_data    = (uint8_t*)malloc(width * height * 2 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_RGB565;
             pitch              = width * 2;
-            scaler->out_stride = width * 1;
+            scaler->out_stride = width;
          }
 
          if (!raw_output_data)
@@ -1096,9 +1094,9 @@ bool run_translation_service(settings_t *settings, bool paused)
          switch (ai_service_mode)
          {
             case 2:
-               _len += strlcpy(new_ai_service_url    + _len,
+               strlcpy(new_ai_service_url       + _len,
                      "text",
-                     sizeof(new_ai_service_url)      - _len);
+                     sizeof(new_ai_service_url) - _len);
                break;
             case 1:
             case 3:
@@ -1116,9 +1114,9 @@ bool run_translation_service(settings_t *settings, bool paused)
                if (     video_st->poke
                      && video_st->poke->load_texture
                      && video_st->poke->unload_texture)
-                  _len += strlcpy(new_ai_service_url + _len,
+                  strlcpy(new_ai_service_url       + _len,
                         ",png-a",
-                        sizeof(new_ai_service_url)   - _len);
+                        sizeof(new_ai_service_url) - _len);
 #endif
                break;
             default:

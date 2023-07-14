@@ -3521,13 +3521,13 @@ void video_driver_frame(const void *data, unsigned width,
             status_text[++buf_pos  ] = '|';
             status_text[++buf_pos  ] = ' ';
             status_text[++buf_pos  ] = '\0';
-            buf_pos                 += strlcpy(
+            strlcpy(
                   status_text         + buf_pos,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text) - buf_pos);
          }
          else
-            buf_pos                = strlcpy(status_text,
+            strlcpy(status_text,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text));
       }

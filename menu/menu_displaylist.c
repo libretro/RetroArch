@@ -1898,7 +1898,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             entry[++_len]   = ' ';
             entry[++_len]   = '\0';
             _len           += strlcpy (entry + _len, os_ver, sizeof(entry) - _len);
-            _len           += snprintf(entry + _len,         sizeof(entry) - _len,
+            snprintf(entry + _len,
+                  sizeof(entry) - _len,
                   " (v%d.%d)", major, minor);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -6219,7 +6220,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   {
                      _len += strlcpy(s + _len, " [",     sizeof(s) - _len);
                      _len += strlcpy(s + _len, rom_buff, sizeof(s) - _len);
-                     _len += strlcpy(s + _len, "]",      sizeof(s) - _len);
+                     strlcpy(s + _len, "]", sizeof(s) - _len);
                   }
                }
 
@@ -6254,7 +6255,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   _len += strlcpy(s + _len, " ",                sizeof(s) - _len);
                   _len += strlcpy(s + _len, subsystem->roms[0].desc,
                                                                 sizeof(s) - _len);
-                  _len += strlcpy(s + _len, "]",                sizeof(s) - _len);
+                  strlcpy(s + _len, "]", sizeof(s) - _len);
                }
             }
 
@@ -6416,7 +6417,7 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          _len += strlcpy(passworded + _len,
                msg_room_pwd,
                sizeof(passworded) - _len);
-         _len += strlcpy(passworded + _len, "] ",
+         strlcpy(passworded       + _len, "] ",
                sizeof(passworded) - _len);
       }
       else
@@ -6431,8 +6432,8 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          size_t _len2 = strlcpy(country, " (",            sizeof(country));
          _len2       += strlcpy(country + _len2, room->country, sizeof(country) - _len2);
-         _len2       += strlcpy(country + _len2, ")",           sizeof(country) - _len2);
-         strlcpy(buf + _len, country, sizeof(buf) - _len);
+         strlcpy(country + _len2, ")", sizeof(country) - _len2);
+         strlcpy(buf + _len, country,  sizeof(buf) - _len);
       }
       else
          *country = '\0';
@@ -7839,7 +7840,6 @@ unsigned menu_displaylist_build_list(
                strlcpy(off_string       + _len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
                      sizeof(off_string) - _len);
-               _len               = 0;
             }
             else
             {

@@ -572,7 +572,7 @@ static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
 static bool runtime_last_played_human(runtime_log_t *runtime_log,
       char *str, size_t len)
 {
-   size_t _len, _len2;
+   size_t _len;
    struct tm time_info;
    time_t last_played;
    time_t current;
@@ -612,16 +612,16 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
 
    /* Generate string */
    _len         = snprintf(tmp, sizeof(tmp), "%u ", (int)delta);
-   _len        += strlcpy (tmp       + _len,
+   strlcpy(tmp       + _len,
          msg_hash_to_str((enum msg_hash_enums)units[i][(delta == 1) ? 0 : 1]),
-                         sizeof(tmp) - _len);
+         sizeof(tmp) - _len);
 
-   _len2        = strlcat(str, tmp, len);
-   str[  _len2] = ' ';
-   str[++_len2] = '\0';
-   _len2       += strlcpy(str + _len2,
+   _len        = strlcat(str, tmp, len);
+   str[  _len] = ' ';
+   str[++_len] = '\0';
+   strlcpy(str + _len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO),
-         len - _len2);
+         len - _len);
 
    return true;
 }
