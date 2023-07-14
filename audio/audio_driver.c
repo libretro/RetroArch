@@ -143,7 +143,7 @@ audio_driver_t *audio_drivers[] = {
 #ifdef WIIU
    &audio_ax,
 #endif
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) && defined(HAVE_RWEBAUDIO)
    &audio_rwebaudio,
 #endif
 #if defined(PSP) || defined(VITA) || defined(ORBIS)
