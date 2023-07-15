@@ -458,7 +458,7 @@ static void handle_translation_cb(
             raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_ARGB8888;
             pitch              = width * 4;
-            scaler->out_stride = pitch;
+            scaler->out_stride = (int)pitch;
          }
          else
          {
