@@ -523,8 +523,8 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->is_locked)
+   if (   core_info_find(path, &core_info)
+       && core_info->is_locked)
    {
       s[0] = '[';
       s[1] = '!';
@@ -780,8 +780,8 @@ static void menu_action_setting_disp_set_label_core_lock(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->is_locked)
+   if (   core_info_find(path, &core_info)
+       && core_info->is_locked)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -811,9 +811,9 @@ static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
     *   calling core_info_get_core_standalone_exempt()
     *   since we don't want to perform disk access
     *   every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->supports_no_game &&
-       core_info->is_standalone_exempt)
+   if (   core_info_find(path, &core_info)
+       && core_info->supports_no_game
+       && core_info->is_standalone_exempt)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);

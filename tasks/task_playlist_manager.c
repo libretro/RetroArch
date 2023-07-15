@@ -392,8 +392,8 @@ static void pl_manager_validate_core_association(
       core_info_t *core_info = NULL;
       
       /* Search core info */
-      if (core_info_find(core_path, &core_info) &&
-          !string_is_empty(core_info->display_name))
+      if (    core_info_find(core_path, &core_info)
+          && !string_is_empty(core_info->display_name))
          strlcpy(core_display_name, core_info->display_name,
                sizeof(core_display_name));
       else

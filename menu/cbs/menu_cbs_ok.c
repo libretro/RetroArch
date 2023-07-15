@@ -7703,8 +7703,9 @@ int action_ok_core_lock(const char *path,
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
-      if (   core_info->display_name
-          && core_info_find(core_path, &core_info))
+      if (
+             core_info_find(core_path, &core_info)
+          && core_info->display_name)
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
@@ -7764,8 +7765,9 @@ int action_ok_core_set_standalone_exempt(const char *path,
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
-      if (   core_info->display_name
-          && core_info_find(core_path, &core_info))
+      if (
+             core_info_find(core_path, &core_info)
+          && core_info->display_name)
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
@@ -7814,8 +7816,9 @@ static int action_ok_core_delete(const char *path,
       /* Need to fetch core name for notification */
 
       /* If core is found, use display name */
-      if (     core_info->display_name
-            && core_info_find(core_path, &core_info))
+      if (   
+               core_info_find(core_path, &core_info)
+            && core_info->display_name)
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
