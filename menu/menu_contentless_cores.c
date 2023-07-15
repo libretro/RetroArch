@@ -138,13 +138,14 @@ static void contentless_cores_init_info_entries(
             tmp_str[0] = '\0';
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");
-            strlcat(licenses_str, tmp_str, sizeof(licenses_str));
+            strlcpy(licenses_str       + _len, tmp_str,
+                  sizeof(licenses_str) - _len);
          }
          /* No license found - set to N/A */
          else
-            strlcat(licenses_str,
+            strlcpy(licenses_str       + _len,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  sizeof(licenses_str));
+                  sizeof(licenses_str) - _len);
 
          entry->licenses_str            = strdup(licenses_str);
 

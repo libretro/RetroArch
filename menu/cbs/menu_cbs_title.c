@@ -467,8 +467,8 @@ static int action_get_core_information_list(
 
    /* Check whether we are parsing information for a
     * core updater/manager entry or the currently loaded core */
-   if ((menu_type == FILE_TYPE_DOWNLOAD_CORE) ||
-       (menu_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
+   if (   (menu_type == FILE_TYPE_DOWNLOAD_CORE)
+       || (menu_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
    {
       core_info_t *core_info_menu = NULL;
 
