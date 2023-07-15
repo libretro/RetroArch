@@ -1567,7 +1567,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; hid_drivers[i]; i++)
          {
             const char *opt  = hid_drivers[i]->ident;
-            *len            += STLREN_CONST(hid_drivers[i]->ident) + 1;
+            *len            += STRLEN_CONST(hid_drivers[i]->ident) + 1;
 
             /* Don't allow the user to set input HID driver to "null" using the UI.
              * Can prevent the user from locking him/herself out of the program. */
