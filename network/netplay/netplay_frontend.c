@@ -435,15 +435,16 @@ bool netplay_discovery_driver_ctl(
 
    switch (state)
    {
-      case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY: {
-         bool rv;
-         if (net_st->lan_ad_client_fd >= 0)
-            rv = netplay_lan_ad_client_query();
+      case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
+         {
+            bool rv = false;
+            if (net_st->lan_ad_client_fd >= 0)
+               rv = netplay_lan_ad_client_query();
 #if HAVE_NETPLAYDISCOVERY_NSNET
-         rv = true;
+            rv = true;
 #endif
-         return rv;
-      }
+            return rv;
+         }
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES:
          return net_st->lan_ad_client_fd >= 0 &&
