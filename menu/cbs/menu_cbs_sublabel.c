@@ -78,8 +78,9 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
    s[++_len]   = '\0';
 
    /* Search for specified core */
-   if (  core_info->licenses_list
-      && core_info_find(path, &core_info))
+   if (  
+         core_info_find(path, &core_info)
+      && core_info->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
       tmp[0] = '\0';
@@ -122,7 +123,7 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    if (playlist_show_sublabels)
    {
       /* Search for specified core */
-      if (   !core_info_find(core_path, &core_info)
+      if (     !core_info_find(core_path, &core_info)
             || !core_info->supports_no_game)
          return 1;
 
