@@ -2340,44 +2340,32 @@ static int create_string_list_rdb_entry_string(
 {
    size_t _len;
    char tmp[128];
-   struct string_list str_list;
-   union string_list_elem_attr attr;
-   char *output_label               = NULL;
-   int str_len                      = 0;
+   char *out_lbl     = NULL;
+   size_t str_len    = (strlen(label) + 1)
+	              + (strlen(actual_string) + 1)
+	              + (path_len + 1);
 
-   if (!string_list_initialize(&str_list))
+   if (!(out_lbl = (char*)calloc(str_len, sizeof(char))))
       return -1;
 
-   attr.i                           = 0;
-
-   str_len += strlen(label) + 1;
-   string_list_append(&str_list, label, attr);
-
-   str_len += strlen(actual_string) + 1;
-   string_list_append(&str_list, actual_string, attr);
-
-   str_len += path_len + 1;
-   string_list_append(&str_list, path, attr);
-
-   if (!(output_label = (char*)calloc(str_len, sizeof(char))))
-   {
-      string_list_deinitialize(&str_list);
-      return -1;
-   }
-
-   string_list_join_concat(output_label, str_len, &str_list, "|");
-   string_list_deinitialize(&str_list);
+   _len            = strlcpy(out_lbl, label, str_len);
+   out_lbl[  _len] = '|';
+   out_lbl[++_len] = '\0';
+   _len           += strlcpy(out_lbl + _len, actual_string, str_len - _len);
+   out_lbl[  _len] = '|';
+   out_lbl[++_len] = '\0';
+   strlcpy(out_lbl + _len, path, str_len - _len);
 
    _len           = strlcpy(tmp, desc, sizeof(tmp));
    tmp[  _len]    = ':';
    tmp[++_len]    = ' ';
    tmp[++_len]    = '\0';
    strlcpy(tmp + _len, actual_string, sizeof(tmp) - _len);
-   menu_entries_append(list, tmp, output_label,
+   menu_entries_append(list, tmp, out_lbl,
          enum_idx,
          0, 0, 0, NULL);
 
-   free(output_label);
+   free(out_lbl);
 
    return 0;
 }
@@ -2390,40 +2378,28 @@ static int create_string_list_rdb_entry_int(
       file_list_t *list)
 {
    size_t _len;
-   struct string_list str_list;
-   union string_list_elem_attr attr;
    char str[16];
    char tmp[128];
-   char output_label[PATH_MAX_LENGTH];
-   int str_len     = 0;
-
+   char out_lbl[PATH_MAX_LENGTH];
    str[0]          = '\0';
-   output_label[0] = '\0';
+   out_lbl[0]      = '\0';
 
-   if (!string_list_initialize(&str_list))
-      return -1;
+   snprintf(str, sizeof(str), "%d", actual_int);
 
-   attr.i          = 0;
-
-   str_len        += strlen(label) + 1;
-   string_list_append(&str_list, label, attr);
-
-   _len            = snprintf(str, sizeof(str), "%d", actual_int);
-   str_len        += _len + 1;
-   string_list_append(&str_list, str, attr);
-
-   str_len        += path_len + 1;
-   string_list_append(&str_list, path, attr);
-
-   string_list_join_concat(output_label, str_len, &str_list, "|");
-   string_list_deinitialize(&str_list);
+   _len            = strlcpy(out_lbl, label, sizeof(out_lbl));
+   out_lbl[  _len] = '|';
+   out_lbl[++_len] = '\0';
+   _len           += strlcpy(out_lbl + _len, str,  sizeof(out_lbl) - _len);
+   out_lbl[  _len] = '|';
+   out_lbl[++_len] = '\0';
+   strlcpy(out_lbl + _len, path, sizeof(out_lbl) - _len);
 
    _len            = strlcpy(tmp, desc, sizeof(tmp));
    tmp[  _len]     = ':';
    tmp[++_len]     = ' ';
    tmp[++_len]     = '\0';
    strlcpy(tmp + _len, str, sizeof(tmp) - _len);
-   menu_entries_append(list, tmp, output_label,
+   menu_entries_append(list, tmp, out_lbl,
          enum_idx,
          0, 0, 0, NULL);
 
