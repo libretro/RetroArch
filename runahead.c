@@ -511,11 +511,11 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       {
          if (port < sys_info->ports.size)
          {
-            unsigned device = (port < (int)num_active_users) ?
-                  runloop_st->port_map[port] : RETRO_DEVICE_NONE;
-
+            unsigned device = (port < num_active_users)
+                  ? runloop_st->port_map[port] 
+                  : RETRO_DEVICE_NONE;
             runloop_st->secondary_core.retro_set_controller_port_device(
-                  port, device);
+                  (unsigned)port, device);
          }
       }
    }
