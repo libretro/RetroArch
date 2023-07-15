@@ -709,15 +709,15 @@ static bool cheat_manager_get_game_specific_filename(
       bool saving)
 {
    char s1[PATH_MAX_LENGTH];
-   struct retro_system_info system_info;
+   struct retro_system_info sysinfo;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *core_name       = NULL;
    const char *game_name       = NULL;
 
-   if (!core_get_system_info(&system_info))
+   if (!core_get_system_info(&sysinfo))
       return false;
 
-   core_name = system_info.library_name;
+   core_name = sysinfo.library_name;
    game_name = path_basename_nocompression(runloop_st->name.cheatfile);
 
    if (     string_is_empty(path_cheat_database)

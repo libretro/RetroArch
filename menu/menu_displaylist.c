@@ -1581,13 +1581,13 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
        * it is impossible for RetroArch to populate a
        * core_info list */
 #if !defined(LOAD_WITHOUT_CORE_INFO)
-      if (!frontend_driver_get_core_extension(exts, sizeof(exts)) ||
-          string_is_empty(exts))
+      if (  !frontend_driver_get_core_extension(exts, sizeof(exts))
+          || string_is_empty(exts))
 #endif
       {
-         struct retro_system_info *sysinf = &runloop_state_get_ptr()->system.info;
-         const char *core_path            = core_path_current;
-         const char *core_name            = sysinf ? sysinf->library_name : NULL;
+         struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+         const char *core_path             = core_path_current;
+         const char *core_name             = sysinfo ? sysinfo->library_name : NULL;
 
          if (!string_is_empty(core_path))
          {
@@ -3924,15 +3924,15 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
 static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 {
-   unsigned count                   = 0;
-   core_info_t   *core_info         = NULL;
-   struct retro_system_info *sysinf = &runloop_state_get_ptr()->system.info;
+   unsigned count                    = 0;
+   core_info_t   *core_info          = NULL;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
 
    core_info_get_current_core(&core_info);
 
-   if (      sysinf
-         && (!string_is_empty(sysinf->library_name)
-         &&  !string_is_equal(sysinf->library_name,
+   if (      sysinfo
+         && (!string_is_empty(sysinfo->library_name)
+         &&  !string_is_equal(sysinfo->library_name,
              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
          )
          && core_info

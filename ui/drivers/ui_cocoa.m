@@ -840,9 +840,9 @@ static ui_application_t ui_application_cocoa = {
 {
    if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
-      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-      NSString *__core                 = [filenames objectAtIndex:0];
-      const char *core_name            = system->library_name;
+      struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+      NSString *__core                  = [filenames objectAtIndex:0];
+      const char *core_name             = sysinfo->library_name;
 
       if (core_name)
       {
@@ -907,8 +907,8 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 static void open_document_handler(
       ui_browser_window_state_t *state, bool result)
 {
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   const char            *core_name = system ? system->library_name : NULL;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+   const char            *core_name  = sysinfo ? sysinfo->library_name : NULL;
 
    if (!state || string_is_empty(state->result))
       return;

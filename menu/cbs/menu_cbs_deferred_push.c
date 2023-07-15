@@ -444,11 +444,11 @@ static int general_push(menu_displaylist_info_t *info,
    {
       case PUSH_ARCHIVE_OPEN:
          {
-            struct retro_system_info *system = 
+            struct retro_system_info *sysinfo = 
                &runloop_state_get_ptr()->system.info;
-            if (system)
-               if (!string_is_empty(system->valid_extensions))
-                  strlcpy(newstring2, system->valid_extensions,
+            if (sysinfo)
+               if (!string_is_empty(sysinfo->valid_extensions))
+                  strlcpy(newstring2, sysinfo->valid_extensions,
                         sizeof(newstring2));
          }
          break;
@@ -458,9 +458,9 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
-               struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-               if (system && !string_is_empty(system->valid_extensions))
-                  valid_extensions = system->valid_extensions;
+               struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+               if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
+                  valid_extensions = sysinfo->valid_extensions;
             }
 
             if (!valid_extensions)
@@ -493,26 +493,26 @@ static int general_push(menu_displaylist_info_t *info,
          {
             union string_list_elem_attr attr;
             char newstring[PATH_MAX_LENGTH];
-            struct string_list str_list2     = {0};
-            struct retro_system_info *system = 
+            struct string_list str_list2      = {0};
+            struct retro_system_info *sysinfo = 
                &runloop_state_get_ptr()->system.info;
-            bool filter_by_current_core      = settings->bools.filter_by_current_core;
+            bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            newstring[0]                     = '\0';
-            attr.i                           = 0;
+            newstring[0]                      = '\0';
+            attr.i                            = 0;
 
             string_list_initialize(&str_list2);
 
-            if (system)
+            if (sysinfo)
             {
-               if (!string_is_empty(system->valid_extensions))
+               if (!string_is_empty(sysinfo->valid_extensions))
                {
                   unsigned x;
                   struct string_list  str_list    = {0};
 
                   string_list_initialize(&str_list);
                   string_split_noalloc(&str_list,
-                        system->valid_extensions, "|");
+                        sysinfo->valid_extensions, "|");
 
                   for (x = 0; x < str_list.size; x++)
                   {

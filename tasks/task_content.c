@@ -1561,8 +1561,8 @@ static void task_push_to_history_list(
          || (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT))
    {
       char tmp[PATH_MAX_LENGTH];
-      const char *path_content       = path_get(RARCH_PATH_CONTENT);
-      struct retro_system_info *info = &runloop_st->system.info;
+      const char *path_content          = path_get(RARCH_PATH_CONTENT);
+      struct retro_system_info *sysinfo = &runloop_st->system.info;
 
       if (!string_is_empty(path_content))
       {
@@ -1581,7 +1581,7 @@ static void task_push_to_history_list(
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
-      if (info && !string_is_empty(tmp))
+      if (sysinfo && !string_is_empty(tmp))
       {
          const char *core_path      = NULL;
          const char *core_name      = NULL;
@@ -1627,7 +1627,7 @@ static void task_push_to_history_list(
                   core_name         = core_info->display_name;
 
                if (string_is_empty(core_name))
-                  core_name         = info->library_name;
+                  core_name         = sysinfo->library_name;
 
                if (launched_from_companion_ui)
                {
@@ -2530,19 +2530,19 @@ static bool task_load_content_internal(
 
    if (sys_info)
    {
-      struct retro_system_info *system        = &runloop_st->system.info;
+      struct retro_system_info *sysinfo       = &runloop_st->system.info;
 
       if (set_supports_no_game_enable)
          content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
 
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache          = strdup(path_dir_cache);
-      if (!string_is_empty(system->valid_extensions))
-         content_ctx.valid_extensions         = strdup(system->valid_extensions);
+      if (!string_is_empty(sysinfo->valid_extensions))
+         content_ctx.valid_extensions         = strdup(sysinfo->valid_extensions);
 
-      if (system->block_extract)
+      if (sysinfo->block_extract)
          content_ctx.flags |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
-      if (system->need_fullpath)
+      if (sysinfo->need_fullpath)
          content_ctx.flags |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
@@ -3040,7 +3040,7 @@ bool content_init(void)
 
    if (sys_info)
    {
-      struct retro_system_info *system = &runloop_st->system.info;
+      struct retro_system_info *sysinfo = &runloop_st->system.info;
 
       if (set_supports_no_game_enable)
          content_ctx.flags            |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
@@ -3049,12 +3049,12 @@ bool content_init(void)
          content_ctx.directory_system  = strdup(path_dir_system);
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache   = strdup(path_dir_cache);
-      if (!string_is_empty(system->valid_extensions))
-         content_ctx.valid_extensions  = strdup(system->valid_extensions);
+      if (!string_is_empty(sysinfo->valid_extensions))
+         content_ctx.valid_extensions  = strdup(sysinfo->valid_extensions);
 
-      if (system->block_extract)
+      if (sysinfo->block_extract)
          content_ctx.flags            |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
-      if (system->need_fullpath)
+      if (sysinfo->need_fullpath)
          content_ctx.flags            |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
       content_ctx.subsystem.data       = sys_info->subsystem.data;

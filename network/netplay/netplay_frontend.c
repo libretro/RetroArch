@@ -518,12 +518,12 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
    {
       char frontend_architecture_tmp[24];
       const frontend_ctx_driver_t *frontend_drv;
-      uint32_t has_password             = 0;
-      struct ad_packet ad_packet_buffer = {0};
-      struct retro_system_info *system  =
+      uint32_t has_password              = 0;
+      struct ad_packet ad_packet_buffer  = {0};
+      struct retro_system_info *sysinfo  =
          &runloop_state_get_ptr()->system.info;
-      struct string_list *subsystem     = path_get_subsystem_list();
-      settings_t *settings              = config_get_ptr();
+      struct string_list *subsystem      = path_get_subsystem_list();
+      settings_t *settings               = config_get_ptr();
 
       /* Make sure it's a valid query */
       if (ntohl(header) != DISCOVERY_QUERY_MAGIC)
@@ -557,9 +557,9 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
 
-      strlcpy(ad_packet_buffer.core, system->library_name,
+      strlcpy(ad_packet_buffer.core, sysinfo->library_name,
          sizeof(ad_packet_buffer.core));
-      strlcpy(ad_packet_buffer.core_version, system->library_version,
+      strlcpy(ad_packet_buffer.core_version, sysinfo->library_version,
          sizeof(ad_packet_buffer.core_version));
 
       strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,

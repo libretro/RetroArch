@@ -2468,9 +2468,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
-            rarch_system_info_t *sys_info    = &runloop_st->system;
-            struct retro_system_info *system = &sys_info->info;
-            const char *core_path            = path_get(RARCH_PATH_CORE);
+            rarch_system_info_t *sys_info     = &runloop_st->system;
+            struct retro_system_info *sysinfo = &sys_info->info;
+            const char *core_path             = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))
@@ -2479,7 +2479,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (!libretro_get_system_info(
                      core_path,
-                     system,
+                     sysinfo,
                      &sys_info->load_no_content))
                return false;
 
@@ -5048,15 +5048,15 @@ libretro_find_controller_description(
  *
  * Frees system information.
  **/
-void libretro_free_system_info(struct retro_system_info *info)
+void libretro_free_system_info(struct retro_system_info *sysinfo)
 {
-   if (!info)
+   if (!sysinfo)
       return;
 
-   free((void*)info->library_name);
-   free((void*)info->library_version);
-   free((void*)info->valid_extensions);
-   memset(info, 0, sizeof(*info));
+   free((void*)sysinfo->library_name);
+   free((void*)sysinfo->library_version);
+   free((void*)sysinfo->valid_extensions);
+   memset(sysinfo, 0, sizeof(*sysinfo));
 }
 
 static void retroarch_print_features(void)

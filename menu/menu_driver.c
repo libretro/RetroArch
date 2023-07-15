@@ -3015,12 +3015,12 @@ static bool menu_shader_manager_operate_auto_preset(
    char file[PATH_MAX_LENGTH];
    settings_t *settings                           = config_get_ptr();
    bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
-   struct retro_system_info *system               = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
    static enum rarch_shader_type shader_types[]   =
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
-   const char *core_name            = system ? system->library_name : NULL;
+   const char *core_name            = sysinfo ? sysinfo->library_name : NULL;
    const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
    const char *auto_preset_dirs[3]  = {0};
    bool has_content                 = !string_is_empty(rarch_path_basename);
@@ -4528,14 +4528,14 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
  * (shown at the top of the UI). */
 void menu_entries_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
    const char *core_name             = 
-       (system && !string_is_empty(system->library_name))
-      ? system->library_name
+       (sysinfo && !string_is_empty(sysinfo->library_name))
+      ? sysinfo->library_name
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    const char *core_version          = 
-      (system && system->library_version) 
-      ? system->library_version 
+      (sysinfo && sysinfo->library_version) 
+      ? sysinfo->library_version 
       : "";
    size_t _len = strlcpy(s, PACKAGE_VERSION, len);
 #if defined(_MSC_VER)

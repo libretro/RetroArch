@@ -3600,10 +3600,10 @@ void MainWindow::onStopClicked()
 
 void MainWindow::setCurrentCoreLabel()
 {
-   bool update                      = false;
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   QString libraryName              = system->library_name;
-   const char *no_core_str          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   bool update                       = false;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+   QString libraryName               = sysinfo->library_name;
+   const char *no_core_str           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
    if (     (m_statusLabel->text().isEmpty())
          || (m_currentCore != no_core_str && libraryName.isEmpty())
@@ -3617,8 +3617,8 @@ void MainWindow::setCurrentCoreLabel()
    {
       if (m_currentCore != libraryName && !libraryName.isEmpty())
       {
-         m_currentCore        = system->library_name;
-         m_currentCoreVersion = (string_is_empty(system->library_version) ? "" : system->library_version);
+         m_currentCore        = sysinfo->library_name;
+         m_currentCoreVersion = (string_is_empty(sysinfo->library_version) ? "" : sysinfo->library_version);
          update = true;
       }
    }

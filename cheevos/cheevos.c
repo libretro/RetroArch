@@ -1152,13 +1152,13 @@ void rcheevos_validate_config_settings(void)
 {
    int i;
    const rc_disallowed_setting_t 
-      *disallowed_settings          = NULL;
-   core_option_manager_t* coreopts  = NULL;
-   struct retro_system_info *system = 
+      *disallowed_settings           = NULL;
+   core_option_manager_t* coreopts   = NULL;
+   struct retro_system_info *sysinfo = 
       &runloop_state_get_ptr()->system.info;
    const settings_t* settings = config_get_ptr();
 
-   if (!system->library_name || !rcheevos_locals.hardcore_active)
+   if (!sysinfo->library_name || !rcheevos_locals.hardcore_active)
       return;
 
    if (!settings->bools.video_frame_delay_auto && settings->uints.video_frame_delay != 0) {
@@ -1172,7 +1172,7 @@ void rcheevos_validate_config_settings(void)
    }
 
    if (!(disallowed_settings 
-            = rc_libretro_get_disallowed_settings(system->library_name)))
+            = rc_libretro_get_disallowed_settings(sysinfo->library_name)))
       return;
 
    if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
@@ -1197,14 +1197,14 @@ void rcheevos_validate_config_settings(void)
    }
 
    if (rcheevos_locals.game.console_id &&
-      !rc_libretro_is_system_allowed(system->library_name, rcheevos_locals.game.console_id))
+      !rc_libretro_is_system_allowed(sysinfo->library_name, rcheevos_locals.game.console_id))
    {
       char buffer[256];
       buffer[0] = '\0';
       /* TODO/FIXME - localize */
       snprintf(buffer, sizeof(buffer),
             "Hardcore paused. You cannot earn hardcore achievements for %s using %s",
-            rc_console_name(rcheevos_locals.game.console_id), system->library_name);
+            rc_console_name(rcheevos_locals.game.console_id), sysinfo->library_name);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
       rcheevos_pause_hardcore();
 

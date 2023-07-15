@@ -594,7 +594,7 @@ static dylib_t load_dynamic_core(const char *path, char *buf,
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
-      struct retro_system_info *info, bool *load_no_content)
+      struct retro_system_info *sysinfo, bool *load_no_content)
 {
    dylib_t lib = dylib_load(path);
    void (*proc)(struct retro_system_info*);
@@ -611,7 +611,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
       return NULL;
    }
 
-   proc(info);
+   proc(sysinfo);
 
    if (load_no_content)
    {
@@ -3506,7 +3506,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
 bool libretro_get_system_info(
       const char *path,
-      struct retro_system_info *info,
+      struct retro_system_info *sysinfo,
       bool *load_no_content)
 {
    struct retro_system_info dummy_info;
@@ -3557,10 +3557,10 @@ bool libretro_get_system_info(
    retro_get_system_info(&dummy_info);
 #endif
 
-   memcpy(info, &dummy_info, sizeof(*info));
+   memcpy(sysinfo, &dummy_info, sizeof(*sysinfo));
 
-   runloop_st->current_library_name[0]    = '\0';
-   runloop_st->current_library_version[0] = '\0';
+   runloop_st->current_library_name[0]     = '\0';
+   runloop_st->current_library_version[0]  = '\0';
    runloop_st->current_valid_extensions[0] = '\0';
 
    if (!string_is_empty(dummy_info.library_name))
@@ -3577,9 +3577,9 @@ bool libretro_get_system_info(
             dummy_info.valid_extensions,
             sizeof(runloop_st->current_valid_extensions));
 
-   info->library_name     = runloop_st->current_library_name;
-   info->library_version  = runloop_st->current_library_version;
-   info->valid_extensions = runloop_st->current_valid_extensions;
+   sysinfo->library_name     = runloop_st->current_library_name;
+   sysinfo->library_version  = runloop_st->current_library_version;
+   sysinfo->valid_extensions = runloop_st->current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
@@ -7626,12 +7626,12 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    return false;
 }
 
-bool core_get_system_info(struct retro_system_info *system)
+bool core_get_system_info(struct retro_system_info *sysinfo)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (!system)
+   if (!sysinfo)
       return false;
-   runloop_st->current_core.retro_get_system_info(system);
+   runloop_st->current_core.retro_get_system_info(sysinfo);
    return true;
 }
 
@@ -7874,7 +7874,7 @@ void runloop_path_set_redirect(settings_t *settings,
    char new_savefile_dir[PATH_MAX_LENGTH];
    char new_savestate_dir[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st                 = &runloop_state;
-   struct retro_system_info *system            = &runloop_st->system.info;
+   struct retro_system_info *sysinfo           = &runloop_st->system.info;
    bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
    bool sort_savefiles_by_content_enable       = settings->bools.sort_savefiles_by_content_enable;
    bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
@@ -7898,10 +7898,10 @@ void runloop_path_set_redirect(settings_t *settings,
             runloop_st->runtime_content_path_basename,
             sizeof(content_dir_name));
 
-   if (system && !string_is_empty(system->library_name))
+   if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
 #ifdef HAVE_MENU
-      if (!string_is_equal(system->library_name,
+      if (!string_is_equal(sysinfo->library_name,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
@@ -7923,7 +7923,7 @@ void runloop_path_set_redirect(settings_t *settings,
                fill_pathname_join(
                      new_savefile_dir,
                      new_savefile_dir,
-                     system->library_name,
+                     sysinfo->library_name,
                      sizeof(new_savefile_dir));
 
             /* If path doesn't exist, try to create it,
@@ -7956,7 +7956,7 @@ void runloop_path_set_redirect(settings_t *settings,
                fill_pathname_join(
                      new_savestate_dir,
                      new_savestate_dir,
-                     system->library_name,
+                     sysinfo->library_name,
                      sizeof(new_savestate_dir));
 
             /* If path doesn't exist, try to create it.
@@ -8018,7 +8018,7 @@ void runloop_path_set_redirect(settings_t *settings,
    }
 #endif
 
-   if (system && !string_is_empty(system->library_name))
+   if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
       bool savefile_is_dir  = path_is_directory(new_savefile_dir);
       bool savestate_is_dir = path_is_directory(new_savestate_dir);
@@ -8043,7 +8043,7 @@ void runloop_path_set_redirect(settings_t *settings,
          fill_pathname_dir(runloop_st->name.savefile,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
-               : system->library_name,
+               : sysinfo->library_name,
                FILE_PATH_SRM_EXTENSION,
                sizeof(runloop_st->name.savefile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
@@ -8056,13 +8056,13 @@ void runloop_path_set_redirect(settings_t *settings,
          fill_pathname_dir(runloop_st->name.savestate,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
-               : system->library_name,
+               : sysinfo->library_name,
                FILE_PATH_STATE_EXTENSION,
                sizeof(runloop_st->name.savestate));
          fill_pathname_dir(runloop_st->name.replay,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
-               : system->library_name,
+               : sysinfo->library_name,
                FILE_PATH_BSV_EXTENSION,
                sizeof(runloop_st->name.replay));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",
@@ -8076,7 +8076,7 @@ void runloop_path_set_redirect(settings_t *settings,
          fill_pathname_dir(runloop_st->name.cheatfile,
                !string_is_empty(runloop_st->runtime_content_path_basename)
                ? runloop_st->runtime_content_path_basename
-               : system->library_name,
+               : sysinfo->library_name,
                FILE_PATH_CHT_EXTENSION,
                sizeof(runloop_st->name.cheatfile));
          RARCH_LOG("[Overrides]: %s \"%s\".\n",

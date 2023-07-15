@@ -1214,8 +1214,8 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_REMAP_FILE:
          {
-            struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-            const char *core_name            = system ? system->library_name : NULL;
+            struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+            const char *core_name             = sysinfo ? sysinfo->library_name : NULL;
 
             if (!string_is_empty(core_name) && !string_is_empty(settings->paths.directory_input_remapping))
             {
@@ -1235,8 +1235,8 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_OVERRIDE_FILE:
          {
-            struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-            const char *core_name            = system ? system->library_name : NULL;
+            struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+            const char *core_name             = sysinfo ? sysinfo->library_name : NULL;
 
             if (!string_is_empty(core_name))
             {
@@ -2870,7 +2870,7 @@ static int action_ok_load_cdrom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_CDROM
-   struct retro_system_info *system;
+   struct retro_system_info *sysinfo;
 
    if (!cdrom_drive_has_media(label[0]))
    {
@@ -2884,9 +2884,9 @@ static int action_ok_load_cdrom(const char *path,
       return -1;
    }
 
-   system = &runloop_state_get_ptr()->system.info;
+   sysinfo = &runloop_state_get_ptr()->system.info;
 
-   if (system && !string_is_empty(system->library_name))
+   if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
       char cdrom_path[256] = {0};
 
@@ -5516,11 +5516,11 @@ static int action_ok_add_to_favorites(const char *path,
     * > If content path is empty, cannot do anything... */
    if (!string_is_empty(content_path))
    {
-      runloop_state_t *runloop_st      = runloop_state_get_ptr();
-      struct retro_system_info *sysinf = &runloop_st->system.info;
-      struct string_list *str_list     = NULL;
-      const char *crc32                = NULL;
-      const char *db_name              = NULL;
+      runloop_state_t *runloop_st       = runloop_state_get_ptr();
+      struct retro_system_info *sysinfo = &runloop_st->system.info;
+      struct string_list *str_list      = NULL;
+      const char *crc32                 = NULL;
+      const char *db_name               = NULL;
 
       union string_list_elem_attr attr;
       char content_label[PATH_MAX_LENGTH];
@@ -5551,7 +5551,7 @@ static int action_ok_add_to_favorites(const char *path,
                sizeof(content_label));
 
       /* > core_path + core_name */
-      if (sysinf)
+      if (sysinfo)
       {
          if (!string_is_empty(path_get(RARCH_PATH_CORE)))
          {
@@ -5570,8 +5570,8 @@ static int action_ok_add_to_favorites(const char *path,
 
          /* >> core_name (continued) */
          if (   string_is_empty(core_name) && 
-               !string_is_empty(sysinf->library_name))
-            strlcpy(core_name, sysinf->library_name, sizeof(core_name));
+               !string_is_empty(sysinfo->library_name))
+            strlcpy(core_name, sysinfo->library_name, sizeof(core_name));
       }
 
       if (string_is_empty(core_path) || string_is_empty(core_name))
