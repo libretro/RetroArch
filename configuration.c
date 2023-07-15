@@ -1435,33 +1435,32 @@ const char *config_get_all_timezones(void)
    return char_list_new_special(STRING_LIST_TIMEZONES, NULL);
 }
 
-static void load_timezone(char *setting)
+static void load_timezone(char *s)
 {
    char haystack[TIMEZONE_LENGTH+32];
-   static char *needle = "TIMEZONE=";
-   size_t needle_len   = strlen(needle);
-   RFILE *tzfp         = filestream_open(LAKKA_TIMEZONE_PATH,
+   static char *needle     = "TIMEZONE=";
+   RFILE *tzfp             = filestream_open(LAKKA_TIMEZONE_PATH,
                        RETRO_VFS_FILE_ACCESS_READ,
                        RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
    if (tzfp)
    {
-      char *start = NULL;
+      char *start          = NULL;
 
       filestream_gets(tzfp, haystack, sizeof(haystack)-1);
       filestream_close(tzfp);
 
-      start = strstr(haystack, needle);
-
-      if (start)
-         strlcpy(setting, start + needle_len, TIMEZONE_LENGTH);
+      if ((start = strstr(haystack, needle)))
+      {
+         size_t needle_len = STRLEN_CONST("TIMEZONE=");
+         strlcpy(s, start + needle_len, TIMEZONE_LENGTH);
+      }
       else
-         strlcpy(setting, DEFAULT_TIMEZONE,   TIMEZONE_LENGTH);
+         strlcpy(s, DEFAULT_TIMEZONE,   TIMEZONE_LENGTH);
    }
    else
-      strlcpy(setting, DEFAULT_TIMEZONE, TIMEZONE_LENGTH);
+      strlcpy(s, DEFAULT_TIMEZONE, TIMEZONE_LENGTH);
 
-   config_set_timezone(setting);
+   config_set_timezone(s);
 }
 #endif
 
@@ -5744,6 +5743,7 @@ bool input_remapping_load_file(void *data, const char *path)
  **/
 bool input_remapping_save_file(const char *path)
 {
+   size_t _len;
    bool ret;
    unsigned i, j;
    char remap_file_dir[PATH_MAX_LENGTH];
@@ -5761,12 +5761,12 @@ bool input_remapping_save_file(const char *path)
       return false;
 
    /* Create output directory, if required */
-   strlcpy(remap_file_dir, path, sizeof(remap_file_dir));
-   path_parent_dir(remap_file_dir, strlen(remap_file_dir));
+   _len = strlcpy(remap_file_dir, path, sizeof(remap_file_dir));
+   path_parent_dir(remap_file_dir, _len);
 
-   if (!string_is_empty(remap_file_dir) &&
-       !path_is_directory(remap_file_dir) &&
-       !path_mkdir(remap_file_dir))
+   if (   !string_is_empty(remap_file_dir)
+       && !path_is_directory(remap_file_dir)
+       && !path_mkdir(remap_file_dir))
       return false;
 
    /* Attempt to load file */

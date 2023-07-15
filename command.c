@@ -421,9 +421,8 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
    reply[  _len] = ' ';
    reply[++_len] = '\0';
-   _len = strlcpy(reply + _len, value, sizeof(reply) - _len);
-   /* TODO/FIXME - replace strlen(reply) by _len? check if they are equal */
-   cmd->replier(cmd, reply, strlen(reply));
+   _len += strlcpy(reply + _len, value, sizeof(reply) - _len);
+   cmd->replier(cmd, reply, _len);
    return true;
 }
 
@@ -526,8 +525,7 @@ command_t* command_uds_new(void)
    command_t *cmd;
    command_uds_t *subcmd;
    struct sockaddr_un addr;
-   const char   *sp = "retroarch/cmd";
-   socklen_t addrsz = offsetof(struct sockaddr_un, sun_path) + strlen(sp) + 1;
+   socklen_t addrsz = offsetof(struct sockaddr_un, sun_path) + STRLEN_CONST("retroarch/cmd") + 1;
    int           fd = socket(AF_UNIX, SOCK_STREAM, 0);
    if (fd < 0)
       return NULL;
@@ -535,7 +533,7 @@ command_t* command_uds_new(void)
    /* use an abstract socket for simplicity */
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
-   strcpy(&addr.sun_path[1], sp);
+   strcpy(&addr.sun_path[1], "retroarch/cmd");
 
    if (bind(fd, (struct sockaddr*)&addr, addrsz) < 0 ||
        listen(fd, MAX_USER_CONNECTIONS) < 0)
@@ -824,8 +822,7 @@ bool command_version(command_t *cmd, const char* arg)
    size_t  _len  = strlcpy(reply, PACKAGE_VERSION, sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
-   /* TODO/FIXME - replace strlen(reply) by _len? Check if they are equal */
-   cmd->replier(cmd, reply, strlen(reply));
+   cmd->replier(cmd, reply, _len);
 
    return true;
 }
@@ -913,6 +910,7 @@ static uint8_t *command_memory_get_pointer(
 
 bool command_get_status(command_t *cmd, const char* arg)
 {
+   size_t _len;
    char reply[4096];
    uint8_t flags                  = content_get_flags();
 
@@ -937,13 +935,13 @@ bool command_get_status(command_t *cmd, const char* arg)
       if (!system_id)
          system_id                = runloop_st->system.info.library_name;
 
-      snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
+      _len = snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
             status, system_id, content_name, content_crc32);
    }
    else
-       strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
-   cmd->replier(cmd, reply, strlen(reply));
+   cmd->replier(cmd, reply, _len);
 
    return true;
 }
@@ -957,7 +955,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    unsigned int nbytes                = 0;
    unsigned int alloc_size            = 0;
    unsigned int address               = -1;
-   size_t len                         = 0;
+   size_t _len                        = 0;
    unsigned int max_bytes             = 0;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    const rarch_system_info_t* sys_info= &runloop_st->system;
@@ -981,12 +979,12 @@ bool command_read_memory(command_t *cmd, const char *arg)
          snprintf(reply_at + 3 * i, 4, " %02X", data[i]);
 
       reply_at[3 * nbytes] = '\n';
-      len                  = reply_at + 3 * nbytes + 1 - reply;
+      _len                 = reply_at + 3 * nbytes + 1 - reply;
    }
    else
-      len                  = strlen(reply);
+      _len                 = strlen(reply);
 
-   cmd->replier(cmd, reply, len);
+   cmd->replier(cmd, reply, _len);
    free(reply);
    return true;
 }
