@@ -560,8 +560,8 @@ static void action_ok_get_file_browser_start_path(
       pending_selection = path_basename(current_path);
 
       /* Check if current path is valid */
-      if (path_is_directory(start_path) &&
-          !string_is_empty(pending_selection))
+      if (    path_is_directory(start_path)
+          && !string_is_empty(pending_selection))
          current_path_valid = true;
    }
 
@@ -1170,8 +1170,8 @@ int generic_action_ok_displaylist_push(const char *path,
 
          /* If this is the 'Start Directory' content
           * list, use last selected directory/file */
-         if ((type == MENU_SETTING_ACTION_FAVORITES_DIR) &&
-             settings->bools.use_last_start_directory)
+         if (  (type == MENU_SETTING_ACTION_FAVORITES_DIR)
+             && settings->bools.use_last_start_directory)
          {
             info_path       = menu_driver_get_last_start_directory();
             menu_driver_set_pending_selection(
@@ -1217,7 +1217,8 @@ int generic_action_ok_displaylist_push(const char *path,
             struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
             const char *core_name             = sysinfo ? sysinfo->library_name : NULL;
 
-            if (!string_is_empty(core_name) && !string_is_empty(settings->paths.directory_input_remapping))
+            if (     !string_is_empty(core_name) 
+                  && !string_is_empty(settings->paths.directory_input_remapping))
             {
                fill_pathname_join_special(tmp,
                      settings->paths.directory_input_remapping, core_name, sizeof(tmp));
@@ -3117,7 +3118,8 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
    wifi_network_scan_t *scan    = driver_wifi_get_ssids();
    wifi_network_info_t *netinfo = &scan->net_list[idx];
 
-   if (idx < RBUF_LEN(scan->net_list) && passphrase)
+   if (     (idx < RBUF_LEN(scan->net_list))
+         && passphrase)
    {
       /* Need to fill in the passphrase that we got from the user! */
       strlcpy(netinfo->passphrase, passphrase, sizeof(netinfo->passphrase));
@@ -3624,8 +3626,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
-      if (!string_is_empty(remap_file_path) &&
-          input_remapping_save_file(remap_file_path))
+      if (  !string_is_empty(remap_file_path)
+          && input_remapping_save_file(remap_file_path))
       {
          switch (action_type)
          {
@@ -5009,7 +5011,8 @@ void cb_generic_download(retro_task_t *task,
             fill_pathname_join_special(shaderdir, dir_video_shader,
                   dirname, sizeof(shaderdir));
 
-            if (!path_is_directory(shaderdir) && !path_mkdir(shaderdir))
+            if (     !path_is_directory(shaderdir) 
+                  && !path_mkdir(shaderdir))
                goto finish;
 
             dir_path = shaderdir;
@@ -5569,8 +5572,8 @@ static int action_ok_add_to_favorites(const char *path,
          }
 
          /* >> core_name (continued) */
-         if (   string_is_empty(core_name) && 
-               !string_is_empty(sysinfo->library_name))
+         if (      string_is_empty(core_name)
+               && !string_is_empty(sysinfo->library_name))
             strlcpy(core_name, sysinfo->library_name, sizeof(core_name));
       }
 
@@ -5691,15 +5694,17 @@ static int action_ok_add_to_favorites_playlist(const char *path,
       }
 
       /* Replace "DETECT" with default_core_path + name if available */
-      if (!string_is_empty(entry->core_path) && !string_is_empty(entry->core_name))
+      if (     !string_is_empty(entry->core_path) 
+            && !string_is_empty(entry->core_name))
       {
-         if (  string_is_equal(entry->core_path, FILE_PATH_DETECT) &&
-               string_is_equal(entry->core_name, FILE_PATH_DETECT))
+         if (     string_is_equal(entry->core_path, FILE_PATH_DETECT)
+               && string_is_equal(entry->core_name, FILE_PATH_DETECT))
          {
             const char *default_core_path = playlist_get_default_core_path(playlist_curr);
             const char *default_core_name = playlist_get_default_core_name(playlist_curr);
 
-            if (!string_is_empty(default_core_path) && !string_is_empty(default_core_name))
+            if (     !string_is_empty(default_core_path) 
+                  && !string_is_empty(default_core_name))
             {
                strlcpy(core_path, default_core_path, sizeof(core_path));
                strlcpy(core_name, default_core_name, sizeof(core_name));
@@ -5713,7 +5718,8 @@ static int action_ok_add_to_favorites_playlist(const char *path,
       }
 
       /* > core_path + core_name */
-      if (!string_is_empty(core_path) && !string_is_empty(core_name))
+      if (     !string_is_empty(core_path) 
+            && !string_is_empty(core_name))
       {
          core_info_t *core_info = NULL;
 
@@ -5820,7 +5826,6 @@ static int action_ok_rdb_entry_submenu(const char *path,
 {
    union string_list_elem_attr attr;
    char new_label[PATH_MAX_LENGTH];
-   char new_path[PATH_MAX_LENGTH];
    int ret                         = -1;
    char *rdb                       = NULL;
    int len                         = 0;
@@ -5830,7 +5835,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    if (!label)
       return -1;
 
-   new_label[0] = new_path[0]      = '\0';
+   new_label[0]                    =  '\0';
 
    string_list_initialize(&str_list);
    if (!string_split_noalloc(&str_list, label, "|"))
@@ -5851,20 +5856,17 @@ static int action_ok_rdb_entry_submenu(const char *path,
    len += strlen(str_list.elems[2].data) + 1;
    string_list_append(&str_list2, str_list.elems[2].data, attr);
 
-   rdb = (char*)calloc(len, sizeof(char));
-
-   if (!rdb)
+   if (!(rdb = (char*)calloc(len, sizeof(char))))
       goto end;
 
    string_list_join_concat(rdb, len, &str_list2, "|");
-   strlcpy(new_path, rdb, sizeof(new_path));
 
    fill_pathname_join_delim(new_label,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
          str_list.elems[0].data, '_',
          sizeof(new_label));
 
-   ret = generic_action_ok_displaylist_push(new_path, NULL,
+   ret = generic_action_ok_displaylist_push(rdb, NULL,
          new_label, type, idx, entry_idx,
          ACTION_OK_DL_RDB_ENTRY_SUBMENU);
 
@@ -6132,8 +6134,8 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    /* Don't push the results if we left the netplay menu */
-   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) &&
-         !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+   if (     !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (error)
@@ -6213,8 +6215,8 @@ static void netplay_refresh_lan_cb(const void *data)
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    /* Don't push the results if we left the netplay menu */
-   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) &&
-         !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+   if (     !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (!hosts || !hosts->size)
@@ -6984,10 +6986,10 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
    unsigned user_idx;
    unsigned btn_idx;
 
-   if (!settings ||
-       (entry_type < MENU_SETTINGS_INPUT_DESC_BEGIN) ||
-       ((remap_idx >= RARCH_CUSTOM_BIND_LIST_END) &&
-            (remap_idx != RARCH_UNMAPPED)))
+   if (     !settings
+       ||  (entry_type < MENU_SETTINGS_INPUT_DESC_BEGIN)
+       || ((remap_idx >= RARCH_CUSTOM_BIND_LIST_END)
+       &&  (remap_idx != RARCH_UNMAPPED)))
       return -1;
 
    /* Determine user/button indices */
@@ -7652,8 +7654,8 @@ static int action_ok_core_restore_backup(const char *path,
     *   (otherwise user will be faced with 'no information
     *   available' when popping the stack - this would be
     *   confusing/ugly) */
-   if (task_push_core_restore(backup_path, dir_libretro, &core_loaded) &&
-       core_loaded)
+   if (   task_push_core_restore(backup_path, dir_libretro, &core_loaded)
+       && core_loaded)
       menu_entries_flush_stack(NULL, 0);
 
    return 0;
@@ -7701,8 +7703,8 @@ int action_ok_core_lock(const char *path,
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
-      if (core_info_find(core_path, &core_info) &&
-          core_info->display_name)
+      if (   core_info->display_name
+          && core_info_find(core_path, &core_info))
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
@@ -7710,8 +7712,8 @@ int action_ok_core_lock(const char *path,
 
       /* Build error message */
       _len = strlcpy(msg,
-            msg_hash_to_str(lock ?
-                  MSG_CORE_LOCK_FAILED : MSG_CORE_UNLOCK_FAILED),
+            msg_hash_to_str(lock
+                  ? MSG_CORE_LOCK_FAILED : MSG_CORE_UNLOCK_FAILED),
             sizeof(msg));
 
       if (!string_is_empty(core_name))
@@ -7762,8 +7764,8 @@ int action_ok_core_set_standalone_exempt(const char *path,
       /* Need to fetch core name for error message */
 
       /* If core is found, use display name */
-      if (core_info_find(core_path, &core_info) &&
-          core_info->display_name)
+      if (   core_info->display_name
+          && core_info_find(core_path, &core_info))
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
@@ -7812,8 +7814,8 @@ static int action_ok_core_delete(const char *path,
       /* Need to fetch core name for notification */
 
       /* If core is found, use display name */
-      if (core_info_find(core_path, &core_info) &&
-          core_info->display_name)
+      if (     core_info->display_name
+            && core_info_find(core_path, &core_info))
          core_name = core_info->display_name;
       /* If not, use core file name */
       else
@@ -8729,18 +8731,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, action_ok_cheat);
    }
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
-            (type < MENU_SETTINGS_CHEEVOS_START))
+   else if (   (type >= MENU_SETTINGS_CORE_OPTION_START)
+            && (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_OK(cbs, action_ok_core_option_dropdown_list);
    }
-   else if ((type >= MENU_SETTINGS_INPUT_DESC_BEGIN) &&
-            (type <= MENU_SETTINGS_INPUT_DESC_END))
+   else if (   (type >= MENU_SETTINGS_INPUT_DESC_BEGIN)
+            && (type <= MENU_SETTINGS_INPUT_DESC_END))
    {
       BIND_ACTION_OK(cbs, action_ok_input_description_dropdown_box_list);
    }
-   else if ((type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) &&
-            (type <= MENU_SETTINGS_INPUT_DESC_KBD_END))
+   else if (   (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+            && (type <= MENU_SETTINGS_INPUT_DESC_KBD_END))
    {
       BIND_ACTION_OK(cbs, action_ok_input_description_kbd_dropdown_box_list);
    }

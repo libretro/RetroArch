@@ -69,35 +69,27 @@
 
 static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
-   size_t _len;
    core_info_t *core_info = NULL;
+   size_t _len = 
+      strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+   s[  _len]   = ':';
+   s[++_len]   = ' ';
+   s[++_len]   = '\0';
 
    /* Search for specified core */
-   if (core_info_find(path, &core_info) &&
-       core_info->licenses_list)
+   if (  core_info->licenses_list
+      && core_info_find(path, &core_info))
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
       tmp[0] = '\0';
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
-      _len      = strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[  _len] = ':';
-      s[++_len] = ' ';
-      s[++_len] = '\0';
       strlcpy(s + _len, tmp, len - _len);
    }
-   else
-   {
-      /* No license found - set to N/A */
-      _len      = strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[  _len] = ':';
-      s[++_len] = ' ';
-      s[++_len] = '\0';
+   else /* No license found - set to N/A */
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
-   }
 
    return 1;
 }
@@ -127,76 +119,76 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
                (enum playlist_sublabel_last_played_date_separator_type)
                      settings->uints.menu_timedate_date_separator;
 
-   if (!playlist_show_sublabels)
-      return 0;
+   if (playlist_show_sublabels)
+   {
+      /* Search for specified core */
+      if (   !core_info_find(core_path, &core_info)
+            || !core_info->supports_no_game)
+         return 1;
 
-   /* Search for specified core */
-   if (   !core_info_find(core_path, &core_info)
-       || !core_info->supports_no_game)
-      return 1;
+      /* Get corresponding contentless core info entry */
+      menu_contentless_cores_get_info(core_info->core_file_id.str,
+            &entry);
 
-   /* Get corresponding contentless core info entry */
-   menu_contentless_cores_get_info(core_info->core_file_id.str,
-         &entry);
+      if (!entry)
+         return 1;
 
-   if (!entry)
-      return 1;
+      /* Determine which info we need to display */
 
-   /* Determine which info we need to display */
-
-   /* > Runtime info is always omitted when using Ozone
-    * > Check if required runtime log is enabled */
-   if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
-       && !content_runtime_log)
-       || ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE)
-       && !content_runtime_log_aggregate)
+      /* > Runtime info is always omitted when using Ozone
+       * > Check if required runtime log is enabled */
+      if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
+               && !content_runtime_log)
+            || ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE)
+               && !content_runtime_log_aggregate)
 #ifdef HAVE_OZONE
-       || string_is_equal(menu_ident, "ozone")
+            || string_is_equal(menu_ident, "ozone")
 #endif
-      )
-      display_runtime = false;
+         )
+         display_runtime = false;
 
 #ifdef HAVE_MATERIALUI
-   /* > License info is always displayed unless
-    *   we are using GLUI with runtime info enabled */
-   if (display_runtime && string_is_equal(menu_ident, "glui"))
-      tmp[0  ] = '\0';
-   else
+      /* > License info is always displayed unless
+       *   we are using GLUI with runtime info enabled */
+      if (display_runtime && string_is_equal(menu_ident, "glui"))
+         tmp[0  ] = '\0';
+      else
 #endif
-   {
-      /* Display licenses */
-      strlcpy(s, entry->licenses_str, len);
-      tmp[0  ] = '\n';
-      tmp[1  ] = '\0';
-   }
-
-   if (display_runtime)
-   {
-      /* Check whether runtime info should be loaded
-       * from log file */
-      if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_UNKNOWN)
-         runtime_update_contentless_core(
-               core_path,
-               directory_runtime_log,
-               directory_playlist,
-               (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-               playlist_sublabel_last_played_style,
-               menu_timedate_date_separator);
-
-      /* Check whether runtime info is valid */
-      if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
       {
-         size_t n    = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
+         /* Display licenses */
+         strlcpy(s, entry->licenses_str, len);
+         tmp[0  ] = '\n';
+         tmp[1  ] = '\0';
+      }
 
-         if (n < 64 - 1)
+      if (display_runtime)
+      {
+         /* Check whether runtime info should be loaded
+          * from log file */
+         if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_UNKNOWN)
+            runtime_update_contentless_core(
+                  core_path,
+                  directory_runtime_log,
+                  directory_playlist,
+                  (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
+                  playlist_sublabel_last_played_style,
+                  menu_timedate_date_separator);
+
+         /* Check whether runtime info is valid */
+         if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
          {
-            tmp[n  ] = '\n';
-            tmp[n+1] = '\0';
-            strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
-         }
+            size_t n    = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
 
-         if (!string_is_empty(tmp))
-            strlcat(s, tmp, len);
+            if (n < 64 - 1)
+            {
+               tmp[n  ] = '\n';
+               tmp[n+1] = '\0';
+               strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
+            }
+
+            if (!string_is_empty(tmp))
+               strlcat(s, tmp, len);
+         }
       }
    }
 
@@ -1355,9 +1347,9 @@ static int action_bind_sublabel_cpu_policy_entry_list(
 {
    /* Displays info about the Policy entry */
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
-   int idx = atoi(path);
    if (drivers)
    {
+      int idx     = atoi(path);
       size_t _len = strlcpy(s, drivers[idx]->scaling_governor, len);
       snprintf(s + _len, len - _len, " | Freq: %u MHz\n", 
             drivers[idx]->current_frequency / 1000);
@@ -1613,6 +1605,7 @@ static int action_bind_sublabel_cheat_desc(
 
    if (cheat_manager_state.cheats)
    {
+      /* TODO/FIXME - localize */
       if (cheat_manager_state.cheats[offset].handler == CHEAT_HANDLER_TYPE_EMU)
          strlcpy(s, "Emulator-Handled", len);
       else
@@ -1980,35 +1973,28 @@ static int action_bind_sublabel_core_updater_entry(
 {
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
+   size_t _len = 
+      strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+   s[  _len]   = ':';
+   s[++_len]   = ' ';
+   s[++_len]   = '\0';
 
    /* Search for specified core */
    if (   core_list
        && core_updater_list_get_filename(core_list, path, &entry)
        && entry->licenses_list)
    {
-      size_t _len;
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
       tmp[0] = '\0';
       /* Add license text */
       string_list_join_concat(tmp, sizeof(tmp),
             entry->licenses_list, ", ");
-      _len      = strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[  _len] = ':';
-      s[++_len] = ' ';
-      s[++_len] = '\0';
       strlcpy(s + _len, tmp, len - _len);
    }
-   else
-   {
-      /* No license found - set to N/A */
-      size_t _len = strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[  _len]   = ':';
-      s[++_len]   = ' ';
-      s[++_len]   = '\0';
+   else /* No license found - set to N/A */
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
-   }
+
    return 1;
 }
 #endif
