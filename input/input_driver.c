@@ -2898,7 +2898,7 @@ static void input_poll_overlay(
  * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
  *
- * Translates tring representation to key identifier.
+ * Translates string representation to key identifier.
  *
  * Returns: key identifier.
  **/

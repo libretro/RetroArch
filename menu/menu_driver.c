@@ -2469,10 +2469,13 @@ static void menu_cbs_init(
       const menu_ctx_driver_t *menu_driver_ctx,
       file_list_t *list,
       menu_file_list_cbs_t *cbs,
-      const char *path, const char *label,
+      const char *path,
+      const char *label,
+      size_t lbl_len,
       unsigned type, size_t idx)
 {
-   const char *menu_label         = NULL;
+   size_t menu_lbl_len;
+   const char *menu_lbl           = NULL;
    file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
 #ifdef DEBUG_LOG
    menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
@@ -2481,10 +2484,12 @@ static void menu_cbs_init(
 #endif
 
    if (menu_list && menu_list->size)
-      menu_label = menu_list->list[menu_list->size - 1].label;
+      menu_lbl = menu_list->list[menu_list->size - 1].label;
 
-   if (!label || !menu_label)
+   if (!label || !menu_lbl)
       return;
+
+   menu_lbl_len = strlen(menu_lbl);
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");
@@ -2495,7 +2500,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_ok.c, then map this callback to the entry. */
-   menu_cbs_init_bind_ok(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_ok(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_cancel.c, then map this callback to the entry. */
@@ -2519,11 +2524,11 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_left.c, then map this callback to the entry. */
-   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_left(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_right.c, then map this callback to the entry. */
-   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_right(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_deferred_push.c, then map this callback to the entry. */
@@ -2531,7 +2536,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_get_string_representation.c, then map this callback to the entry. */
-   menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
+   menu_cbs_init_bind_get_string_representation(cbs, path, label, lbl_len, type, idx);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_title.c, then map this callback to the entry. */
@@ -2543,7 +2548,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_sublabel.c, then map this callback to the entry. */
-   menu_cbs_init_bind_sublabel(cbs, path, label, type, idx);
+   menu_cbs_init_bind_sublabel(cbs, path, label, lbl_len, type, idx);
 
    if (menu_driver_ctx && menu_driver_ctx->bind_init)
       menu_driver_ctx->bind_init(
@@ -4168,7 +4173,7 @@ bool menu_entries_append(
 {
    menu_ctx_list_t list_info;
    size_t i;
-   size_t idx;
+   size_t idx, lbl_len;
    const char *menu_path       = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
    struct menu_state  *menu_st = &menu_driver_state;
@@ -4248,9 +4253,11 @@ bool menu_entries_append(
          cbs->setting                 = menu_setting_find_enum(enum_idx);
    }
 
+   lbl_len  = strlen(label);
+
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
-         list, cbs, path, label, type, idx);
+         list, cbs, path, label, lbl_len, type, idx);
 
    return true;
 }
@@ -4260,6 +4267,7 @@ void menu_entries_prepend(file_list_t *list,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
+   size_t lbl_len;
    menu_ctx_list_t list_info;
    size_t i;
    size_t idx                  = 0;
@@ -4331,9 +4339,11 @@ void menu_entries_prepend(file_list_t *list,
 
    list->list[idx].actiondata      = cbs;
 
+   lbl_len  = strlen(label);
+
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
-         list, cbs, path, label, type, idx);
+         list, cbs, path, label, lbl_len, type, idx);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)

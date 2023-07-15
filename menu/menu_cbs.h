@@ -269,21 +269,27 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, size_t lbl_len,
+      unsigned type, size_t idx);
 
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, size_t lbl_len,
+      unsigned type, size_t idx);
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -295,8 +301,10 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);

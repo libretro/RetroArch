@@ -2055,7 +2055,9 @@ static int action_bind_sublabel_generic(
 }
 
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx)
 {
    unsigned i;
    typedef struct info_range_list
@@ -5357,7 +5359,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       if (  string_starts_with_size(label, "input_player",
             STRLEN_CONST("input_player"))
          && string_ends_with_size(label, "_analog_dpad_mode",
-               strlen(label), STRLEN_CONST("_analog_dpad_mode")))
+               lbl_len, STRLEN_CONST("_analog_dpad_mode")))
       {
          unsigned i;
          char key_input_adc_type[64];

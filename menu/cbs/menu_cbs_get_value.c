@@ -2266,14 +2266,16 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 }
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
 
    if (  string_starts_with_size(
-            label, "input_player", STRLEN_CONST("input_player")) &&
-         string_ends_with_size(label, "joypad_index", strlen(label),
+            label, "input_player", STRLEN_CONST("input_player"))
+         && string_ends_with_size(label, "joypad_index", lbl_len,
                STRLEN_CONST("joypad_index"))
       )
    {
