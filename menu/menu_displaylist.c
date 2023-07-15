@@ -6467,14 +6467,14 @@ unsigned menu_displaylist_build_list(
    {
       case DISPLAYLIST_OPTIONS_OVERRIDES:
          {
-            runloop_state_t *runloop_st      = runloop_state_get_ptr();
-            rarch_system_info_t *system      = &runloop_st->system;
-
-            const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
-            const char *core_name            = system ? system->info.library_name : NULL;
             char config_directory[PATH_MAX_LENGTH];
             char content_dir_name[PATH_MAX_LENGTH];
             char override_path[PATH_MAX_LENGTH];
+            runloop_state_t *runloop_st      = runloop_state_get_ptr();
+            rarch_system_info_t *sys_info    = &runloop_st->system;
+
+            const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
+            const char *core_name            = sys_info ? sys_info->info.library_name : NULL;
             bool has_content                 = !string_is_empty(path_get(RARCH_PATH_CONTENT));
             bool core_override_remove        = false;
             bool content_dir_override_remove = false;

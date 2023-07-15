@@ -188,8 +188,8 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
    unsigned i;
    int result;
    struct retro_memory_map mmap;
-   rarch_system_info_t* system                 = &runloop_state_get_ptr()->system;
-   rarch_memory_map_t* mmaps                   = &system->mmaps;
+   rarch_system_info_t *sys_info               = &runloop_state_get_ptr()->system;
+   rarch_memory_map_t *mmaps                   = &sys_info->mmaps;
    struct retro_memory_descriptor *descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
    if (!descriptors)
       return 0;
@@ -2045,11 +2045,10 @@ static void rcheevos_identify_game_callback(void* userdata)
 
 static int rcheevos_get_image_path(unsigned index, char* buffer, size_t buffer_size)
 {
-   rarch_system_info_t* system = &runloop_state_get_ptr()->system;
-   if (!system->disk_control.cb.get_image_path)
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   if (!sys_info->disk_control.cb.get_image_path)
       return 0;
-
-   return system->disk_control.cb.get_image_path(index, buffer, buffer_size);
+   return sys_info->disk_control.cb.get_image_path(index, buffer, buffer_size);
 }
 
 static bool rcheevos_identify_game(const struct retro_game_info* info)

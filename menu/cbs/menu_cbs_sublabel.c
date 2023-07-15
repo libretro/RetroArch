@@ -1401,11 +1401,11 @@ static int action_bind_sublabel_subsystem_add(
 {
    const struct retro_subsystem_info *subsystem = NULL;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
-   rarch_system_info_t *system                  = &runloop_st->system;
+   rarch_system_info_t *sys_info                = &runloop_st->system;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem = system->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
+   if (sys_info->subsystem.data)
+      subsystem = sys_info->subsystem.data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
    /* Core not loaded completely, use the data we peeked on load core */
    else
       subsystem = runloop_st->subsystem_data + (type - MENU_SETTINGS_SUBSYSTEM_ADD);
@@ -1542,29 +1542,27 @@ static int action_bind_sublabel_remap_sublabel(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   size_t _len;
    settings_t *settings = config_get_ptr();
    unsigned port        = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
          / (RARCH_FIRST_CUSTOM_BIND + 8);
 
-   if (!settings || (port >= MAX_USERS))
-      return 0;
-
-   /* Device name is set per-port
-    * If the user changes the device index for
-    * a port, then we are effectively changing
-    * the port to which the corresponding
-    * controller is connected... */
-   port = settings->uints.input_joypad_index[port];
-   _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
-
-   snprintf(s + _len, len - _len, " %u: %s",
-         port + 1,
-           input_config_get_device_display_name(port)
-         ? input_config_get_device_display_name(port)
-         : (input_config_get_device_name(port)
-         ? input_config_get_device_name(port)
-         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   if (settings && (port < MAX_USERS))
+   {
+      /* Device name is set per-port
+       * If the user changes the device index for
+       * a port, then we are effectively changing
+       * the port to which the corresponding
+       * controller is connected... */
+      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
+      port = settings->uints.input_joypad_index[port];
+      snprintf(s + _len, len - _len, " %u: %s",
+            port + 1,
+            input_config_get_device_display_name(port)
+            ? input_config_get_device_display_name(port)
+            : (input_config_get_device_name(port)
+            ? input_config_get_device_name(port)
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)));
+   }
    return 0;
 }
 
@@ -1587,11 +1585,11 @@ static int action_bind_sublabel_input_remap_port(
     * This is difficult to obtain here - the only
     * way to get it is to parse the entry label
     * (input_remap_port_p<port_index+1>) */
-   if (string_is_empty(entry.label) ||
-       (sscanf(entry.label,
+   if (   string_is_empty(entry.label)
+       || (sscanf(entry.label,
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
-                  &display_port) != 1) ||
-       (display_port >= MAX_USERS + 1))
+                  &display_port) != 1)
+       || (display_port >= MAX_USERS + 1))
       return 0;
 
    snprintf(s, len,
@@ -1871,7 +1869,7 @@ static int action_bind_sublabel_playlist_entry(
     * *and* this is a valid playlist type */
    if (   ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE)
          && !content_runtime_log)
-       || ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE)
+         || ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE)
          && !content_runtime_log_aggregate))
       return 0;
 
@@ -1980,15 +1978,15 @@ static int action_bind_sublabel_core_updater_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   size_t _len;
    core_updater_list_t *core_list         = core_updater_list_get_cached();
    const core_updater_list_entry_t *entry = NULL;
 
    /* Search for specified core */
-   if (core_list &&
-       core_updater_list_get_filename(core_list, path, &entry) &&
-       entry->licenses_list)
+   if (   core_list
+       && core_updater_list_get_filename(core_list, path, &entry)
+       && entry->licenses_list)
    {
+      size_t _len;
       char tmp[MENU_SUBLABEL_MAX_LENGTH];
       tmp[0] = '\0';
       /* Add license text */
@@ -2004,11 +2002,11 @@ static int action_bind_sublabel_core_updater_entry(
    else
    {
       /* No license found - set to N/A */
-      _len      = strlcpy(s,
+      size_t _len = strlcpy(s,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-      s[  _len] = ':';
-      s[++_len] = ' ';
-      s[++_len] = '\0';
+      s[  _len]   = ':';
+      s[++_len]   = ' ';
+      s[++_len]   = '\0';
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
    }
    return 1;
@@ -2028,7 +2026,7 @@ static int action_bind_sublabel_core_backup_entry(
    /* Set sublabel prefix */
    size_t _len     = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
 
-   /* Add crc string */
+   /* Add CRC string */
    if (string_is_empty(crc))
    {
       s[  _len] = '0';

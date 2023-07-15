@@ -154,40 +154,38 @@ bool init_location(
       bool verbosity_enabled)
 {
    location_driver_state_t 
-      *location_st             = &location_driver_st;
-   rarch_system_info_t *system = (rarch_system_info_t*)data;
+      *location_st               = &location_driver_st;
+
    /* Resource leaks will follow if location 
       interface is initialized twice. */
-   if (location_st->data)
-      return true;
-
-   location_driver_find_driver(settings,
-         "location driver", verbosity_enabled);
-
-   location_st->data = location_st->driver->init();
-
    if (!location_st->data)
    {
-      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      return false;
-   }
+      rarch_system_info_t *sys_info = (rarch_system_info_t*)data;
+      location_driver_find_driver(settings,
+            "location driver", verbosity_enabled);
 
-   if (system->location_cb.initialized)
-      system->location_cb.initialized();
+      if (!(location_st->data = location_st->driver->init()))
+      {
+         RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
+         return false;
+      }
+
+      if (sys_info->location_cb.initialized)
+         sys_info->location_cb.initialized();
+   }
  
    return true;
 }
 
 void uninit_location(void *data)
 {
-   location_driver_state_t 
-      *location_st             = &location_driver_st;
-	rarch_system_info_t *system = (rarch_system_info_t*)data;
+   location_driver_state_t *location_st = &location_driver_st;
 
    if (location_st->data && location_st->driver)
    {
-      if (system->location_cb.deinitialized)
-         system->location_cb.deinitialized();
+      rarch_system_info_t *sys_info = (rarch_system_info_t*)data;
+      if (sys_info->location_cb.deinitialized)
+         sys_info->location_cb.deinitialized();
 
       if (location_st->driver->free)
          location_st->driver->free(location_st->data);

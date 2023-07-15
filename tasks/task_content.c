@@ -2768,11 +2768,11 @@ void content_set_subsystem(unsigned idx)
    const struct retro_subsystem_info *subsystem = NULL;
    runloop_state_t                  *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content                  = content_state_get_ptr();
-   rarch_system_info_t                  *system = &runloop_st->system;
+   rarch_system_info_t                *sys_info = &runloop_st->system;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem                                 = system->subsystem.data + idx;
+   if (sys_info->subsystem.data)
+      subsystem                                 = sys_info->subsystem.data + idx;
    /* Core not loaded completely, use the data we peeked on load core */
    else
       subsystem                                 = runloop_st->subsystem_data + idx;
@@ -2798,15 +2798,15 @@ void content_set_subsystem(unsigned idx)
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
-   rarch_system_info_t         *system = &runloop_st->system;
+   rarch_system_info_t       *sys_info = &runloop_st->system;
    unsigned i                          = 0;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info 
       *subsystem                       = runloop_st->subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem                        = system->subsystem.data;
+   if (sys_info->subsystem.data)
+      subsystem                        = sys_info->subsystem.data;
 
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
@@ -2824,13 +2824,13 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
 {
    unsigned i                                   = 0;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
-   rarch_system_info_t                  *system = &runloop_st->system;
+   rarch_system_info_t                *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info *subsystem = runloop_st->subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem = system->subsystem.data;
+   if (sys_info->subsystem.data)
+      subsystem = sys_info->subsystem.data;
 
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {

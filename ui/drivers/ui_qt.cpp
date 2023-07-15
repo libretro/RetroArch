@@ -2913,11 +2913,11 @@ void MainWindow::setCoreActions()
    ViewType                    viewType = getCurrentViewType();
    QHash<QString, QString>         hash = getCurrentContentHash();
    QString      currentPlaylistFileName = QString();
-   rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
 
    m_launchWithComboBox->clear();
 
-   if (system->load_no_content) /* Is contentless core? */
+   if (sys_info->load_no_content) /* Is contentless core? */
       m_startCorePushButton->show();
    else
       m_startCorePushButton->hide();
