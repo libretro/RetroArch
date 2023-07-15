@@ -2088,6 +2088,7 @@ static void win32_localize_menu(HMENU menu)
       if (label_enum != MSG_UNKNOWN)
       {
          int len;
+         size_t len2;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
 #else
@@ -2104,18 +2105,26 @@ static void win32_localize_menu(HMENU menu)
             Fullscreen = "Alt+Enter" */
          if (label_enum == 
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
-            meta_key_name           = "Ctrl+O";
+         {
+            meta_key_name = "Ctrl+O";
+            len2          = STRLEN_CONST("Ctrl+O");
+         }
          else if (label_enum == 
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
-            meta_key_name           = "Alt+Enter";
+         {
+            meta_key_name = "Alt+Enter";
+            len2          = STRLEN_CONST("Alt+Enter");
+         }
          else if (meta_key != 0)
-            meta_key_name           = meta_key_to_name(meta_key);
+         {
+            meta_key_name = meta_key_to_name(meta_key);
+            len2          = strlen(meta_key_name);
+         }
 
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
             size_t len1     = strlen(new_label);
-            size_t len2     = strlen(meta_key_name);
             size_t buf_size = len1 + len2 + 2;
             new_label_text  = (char*)malloc(buf_size);
 

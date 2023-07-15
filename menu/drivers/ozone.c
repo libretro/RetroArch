@@ -4164,11 +4164,10 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                (ozone->dimensions.thumbnail_bar_width
                      - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2))
                      / ozone->fonts.footer.glyph_width;
-
-         strlcpy(tmpstr, ozone->selection_core_name, sizeof(tmpstr));
+         size_t _len = strlcpy(tmpstr, ozone->selection_core_name, sizeof(tmpstr));
          (ozone->word_wrap)(ozone->selection_core_name,
                sizeof(ozone->selection_core_name),
-               tmpstr, strlen(tmpstr),
+               tmpstr, _len,
                metadata_len, ozone->fonts.footer.wideglyph_width, 0);
          ozone->selection_core_name_lines = ozone_count_lines(ozone->selection_core_name);
       }
@@ -4227,10 +4226,9 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
           * (unlike core names), so this should never overflow the
           * side bar */
          char tmpstr[256];
-
-         strlcpy(tmpstr, ozone->selection_lastplayed, sizeof(tmpstr));
+         size_t _len = strlcpy(tmpstr, ozone->selection_lastplayed, sizeof(tmpstr));
          (ozone->word_wrap)(ozone->selection_lastplayed,
-               sizeof(ozone->selection_lastplayed), tmpstr, strlen(tmpstr), 30, 100, 0);
+               sizeof(ozone->selection_lastplayed), tmpstr, _len, 30, 100, 0);
          ozone->selection_lastplayed_lines = ozone_count_lines(ozone->selection_lastplayed);
       }
       else
