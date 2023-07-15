@@ -185,8 +185,6 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
 BOOL IsIconic(HWND hwnd);
 #endif
 
-bool win32_load_content_from_gui(const char *szFilename);
-
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
 
 void win32_update_title(void);

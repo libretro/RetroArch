@@ -81,13 +81,13 @@ static bool trigger_spurious_error(void)
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
-      VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-      VkDebugUtilsMessageTypeFlagsEXT messageType,
+      VkDebugUtilsMessageSeverityFlagBitsEXT msg_severity,
+      VkDebugUtilsMessageTypeFlagsEXT msg_type,
       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
       void *pUserData)
 {
-   if (     (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-         && (messageType     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
+   if (     (msg_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+         && (msg_type     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
    {
       RARCH_ERR("[Vulkan]: Validation Error: %s\n", pCallbackData->pMessage);
    }
@@ -846,14 +846,11 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    VkResult res;
    uint32_t i, layer_count;
    VkLayerProperties properties[128];
-   const char **instance_extensions;
-   const char **instance_layers;
-   gfx_ctx_vulkan_data_t *vk = (gfx_ctx_vulkan_data_t *)opaque;
-   VkInstanceCreateInfo info = *create_info;
-   VkInstance instance       = VK_NULL_HANDLE;
-
-   instance_extensions       = (const char **)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
-   instance_layers           = (const char **)malloc((info.enabledLayerCount + 1) * sizeof(const char *));
+   gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
+   VkInstanceCreateInfo info        = *create_info;
+   VkInstance instance              = VK_NULL_HANDLE;
+   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
+   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1) * sizeof(const char *));
 
    memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    memcpy((void*)instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
@@ -953,7 +950,6 @@ static bool vulkan_update_display_mode(
 {
    unsigned visible_width  = mode->parameters.visibleRegion.width;
    unsigned visible_height = mode->parameters.visibleRegion.height;
-   unsigned visible_rate   = mode->parameters.refreshRate;
 
    if (!info->width || !info->height)
    {
@@ -968,15 +964,16 @@ static bool vulkan_update_display_mode(
    }
    else
    {
+      unsigned visible_rate = mode->parameters.refreshRate;
       /* For particular resolutions, find the closest. */
-      int delta_x     = (int)info->width  - (int)visible_width;
-      int delta_y     = (int)info->height - (int)visible_height;
-      int old_delta_x = (int)info->width  - (int)*width;
-      int old_delta_y = (int)info->height - (int)*height;
-      int delta_rate  = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
+      int delta_x           = (int)info->width  - (int)visible_width;
+      int delta_y           = (int)info->height - (int)visible_height;
+      int old_delta_x       = (int)info->width  - (int)*width;
+      int old_delta_y       = (int)info->height - (int)*height;
+      int delta_rate        = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
 
-      int dist        = delta_x     * delta_x     + delta_y     * delta_y;
-      int old_dist    = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
+      int dist              = delta_x     * delta_x     + delta_y     * delta_y;
+      int old_dist          = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
 
       if (dist < old_dist && delta_rate < 1000)
       {
@@ -1482,21 +1479,21 @@ struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device, struct vk_descriptor_manager *manager)
 {
-   if (manager->count < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
-      return manager->current->sets[manager->count++];
-
-   while (manager->current->next)
+   if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
    {
+      while (manager->current->next)
+      {
+         manager->current = manager->current->next;
+         manager->count   = 0;
+         return manager->current->sets[manager->count++];
+      }
+
+      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
+      retro_assert(manager->current->next);
+
       manager->current = manager->current->next;
       manager->count   = 0;
-      return manager->current->sets[manager->count++];
    }
-
-   manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-   retro_assert(manager->current->next);
-
-   manager->current = manager->current->next;
-   manager->count   = 0;
    return manager->current->sets[manager->count++];
 }
 

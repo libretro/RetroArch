@@ -502,7 +502,7 @@ void win32_get_video_size(void *data,
    }
 }
 
-bool win32_load_content_from_gui(const char *szFilename)
+static bool win32_load_content_from_gui(const char *szFilename)
 {
    /* poll list of current cores */
    core_info_list_t *core_info_list = NULL;
@@ -565,30 +565,37 @@ bool win32_load_content_from_gui(const char *szFilename)
             bool video_is_fs                  = settings->bools.video_fullscreen;
             video_driver_state_t *video_st    = video_state_get_ptr();
 
-            /* Fullscreen: Show mouse cursor for dialog */
-            if (video_is_fs)
+            if (   video_is_fs
+                && video_st->poke
+                && video_st->poke->show_mouse)
             {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, true);
+               /* Show mouse cursor for dialog */
+               video_st->poke->show_mouse(video_st->data, true);
+
+               /* Pick one core that could be compatible, ew */
+               if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+                        main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
+               {
+                  task_push_load_content_with_current_core_from_companion_ui(
+                        NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+                  okay = true;
+               }
+
+               /* Hide mouse cursor after dialog */
+               video_st->poke->show_mouse(video_st->data, false);
+            }
+            else
+            {
+               /* Pick one core that could be compatible, ew */
+               if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
+                        main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
+               {
+                  task_push_load_content_with_current_core_from_companion_ui(
+                        NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+                  okay = true;
+               }
             }
 
-            /* Pick one core that could be compatible, ew */
-            if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-                     main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
-            {
-               task_push_load_content_with_current_core_from_companion_ui(
-                     NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-               okay = true;
-            }
-
-            /* Fullscreen: Hide mouse cursor after dialog */
-            if (video_is_fs)
-            {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, false);
-            }
             return okay;
          }
       }
@@ -1543,18 +1550,17 @@ LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
 
 static LRESULT wnd_proc_wm_vk_create(HWND hwnd)
 {
+   RECT rect;
    extern int win32_vk_interval;
    extern gfx_ctx_vulkan_data_t win32_vk;
-   RECT rect;
-   HINSTANCE instance;
-   unsigned width  = 0;
-   unsigned height = 0;
+   unsigned width     = 0;
+   unsigned height    = 0;
+   HINSTANCE instance = GetModuleHandle(NULL);
 
    GetClientRect(hwnd, &rect);
 
-   instance = GetModuleHandle(NULL);
-   width    = rect.right - rect.left;
-   height   = rect.bottom - rect.top;
+   width              = rect.right - rect.left;
+   height             = rect.bottom - rect.top;
 
    if (!vulkan_surface_create(&win32_vk,
             VULKAN_WSI_WIN32,
@@ -1568,7 +1574,6 @@ static LRESULT wnd_proc_wm_vk_create(HWND hwnd)
 }
 
 #ifdef HAVE_DINPUT
-
 LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -2023,7 +2028,7 @@ static unsigned int menu_id_to_meta_key(unsigned int menu_id)
 /* Given a short key (meta key), get its name as a string */
 /* For single character results, may return same pointer 
  * with different data inside (modifying the old result) */
-static const char *meta_key_to_name(unsigned int meta_key)
+static const char *win32_meta_key_to_name(unsigned int meta_key)
 {
    int i = 0;
    const struct retro_keybind* key = &input_config_binds[0][meta_key];
@@ -2061,7 +2066,6 @@ static void win32_localize_menu(HMENU menu)
 
    for (;;)
    {
-      BOOL okay;
       enum msg_hash_enums label_enum;
       memset(&menu_item_info, 0, sizeof(menu_item_info));
       menu_item_info.cbSize     = sizeof(menu_item_info);
@@ -2073,12 +2077,12 @@ static void win32_localize_menu(HMENU menu)
 #endif
 
 #ifndef LEGACY_WIN32
-      okay                    = GetMenuItemInfoW(menu, index, true, &menu_item_info);
-#else
-      okay                    = GetMenuItemInfoA(menu, index, true, &menu_item_info);
-#endif
-      if (!okay)
+      if (!GetMenuItemInfoW(menu, index, true, &menu_item_info))
          break;
+#else
+      if (!GetMenuItemInfoA(menu, index, true, &menu_item_info))
+         break;
+#endif
 
       /* Recursion - call this on submenu items too */
       if (menu_item_info.hSubMenu)
@@ -2117,7 +2121,7 @@ static void win32_localize_menu(HMENU menu)
          }
          else if (meta_key != 0)
          {
-            meta_key_name = meta_key_to_name(meta_key);
+            meta_key_name = win32_meta_key_to_name(meta_key);
             len2          = strlen(meta_key_name);
          }
 
