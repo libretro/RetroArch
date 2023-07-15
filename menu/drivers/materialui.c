@@ -11052,13 +11052,15 @@ static void materialui_set_thumbnail_system(void *userdata, char *s, size_t len)
             mui->thumbnail_path_data, s, playlist_get_cached());
 }
 
-static void materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
+static size_t materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
 {
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
    const char *system       = NULL;
-   if (mui)
-      if (gfx_thumbnail_get_system(mui->thumbnail_path_data, &system))
-         strlcpy(s, system, len);
+   if (!mui)
+      return 0;
+   if (!gfx_thumbnail_get_system(mui->thumbnail_path_data, &system))
+      return 0;
+   return strlcpy(s, system, len);
 }
 
 static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)

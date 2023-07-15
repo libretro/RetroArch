@@ -6717,13 +6717,15 @@ static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
             rgui->thumbnail_path_data, s, playlist_get_cached());
 }
 
-static void rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
+static size_t rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
 {
    rgui_t *rgui       = (rgui_t*)userdata;
    const char *system = NULL;
-   if (rgui)
-      if (gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
-         strlcpy(s, system, len);
+   if (!rgui)
+	   return 0;
+   if (!gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+      return 0;
+   return strlcpy(s, system, len);
 }
 
 static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)

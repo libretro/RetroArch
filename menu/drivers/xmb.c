@@ -1346,15 +1346,15 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
          xmb->thumbnail_path_data, s, playlist_get_cached());
 }
 
-static void xmb_get_thumbnail_system(void *data, char*s, size_t len)
+static size_t xmb_get_thumbnail_system(void *data, char*s, size_t len)
 {
    xmb_handle_t *xmb  = (xmb_handle_t*)data;
    const char *system = NULL;
    if (!xmb)
-      return;
-
-   if (gfx_thumbnail_get_system(xmb->thumbnail_path_data, &system))
-      strlcpy(s, system, len);
+      return 0;
+   if (!gfx_thumbnail_get_system(xmb->thumbnail_path_data, &system))
+      return 0;
+   return strlcpy(s, system, len);
 }
 
 static void xmb_unload_thumbnail_textures(void *data)

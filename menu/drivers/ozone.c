@@ -11163,15 +11163,15 @@ static void ozone_set_thumbnail_system(void *data, char *s, size_t len)
          ozone->thumbnail_path_data, s, playlist_get_cached());
 }
 
-static void ozone_get_thumbnail_system(void *data, char *s, size_t len)
+static size_t ozone_get_thumbnail_system(void *data, char *s, size_t len)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
    const char *system    = NULL;
    if (!ozone)
-      return;
-
-   if (gfx_thumbnail_get_system(ozone->thumbnail_path_data, &system))
-      strlcpy(s, system, len);
+      return 0;
+   if (!gfx_thumbnail_get_system(ozone->thumbnail_path_data, &system))
+      return 0;
+   return strlcpy(s, system, len);
 }
 
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
