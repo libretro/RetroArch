@@ -52,7 +52,7 @@ static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
    VkAttachmentReference color_ref;
    VkRenderPassCreateInfo rp_info;
    VkAttachmentDescription attachment;
-   VkSubpassDescription subpass       = {0};
+   VkSubpassDescription subpass;
 
    rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
    rp_info.pNext                = NULL;
@@ -79,9 +79,16 @@ static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
    attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
    attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-   subpass.colorAttachmentCount = 1;
-   subpass.pColorAttachments    = &color_ref;
+   subpass.flags                     = 0;
+   subpass.pipelineBindPoint         = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.inputAttachmentCount      = 0;
+   subpass.pInputAttachments         = NULL;
+   subpass.colorAttachmentCount      = 1;
+   subpass.pColorAttachments         = &color_ref;
+   subpass.pResolveAttachments       = NULL;
+   subpass.pDepthStencilAttachment   = NULL;
+   subpass.preserveAttachmentCount   = 0;
+   subpass.pPreserveAttachments      = NULL;
 
    vkCreateRenderPass(device, &rp_info, NULL, render_pass);
 }
@@ -1988,14 +1995,14 @@ bool Pass::init_pipeline_layout()
 
 bool Pass::init_pipeline()
 {
-   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-   VkVertexInputAttributeDescription attributes[2]       = {{0}};
-   VkVertexInputBindingDescription binding               = {0};
-   VkPipelineVertexInputStateCreateInfo vertex_input     = {
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-   VkPipelineRasterizationStateCreateInfo raster         = {
-      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+   VkVertexInputBindingDescription binding;
+   VkPipelineDynamicStateCreateInfo dynamic;
+   VkPipelineInputAssemblyStateCreateInfo input_assembly;
+   VkPipelineVertexInputStateCreateInfo vertex_input;
+   VkPipelineRasterizationStateCreateInfo raster;
+   VkShaderModuleCreateInfo module_info;
+   VkPipelineMultisampleStateCreateInfo multisample;
+   VkVertexInputAttributeDescription attributes[2];
    VkPipelineColorBlendAttachmentState blend_attachment  = {0};
    VkPipelineColorBlendStateCreateInfo blend             = {
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
@@ -2003,18 +2010,12 @@ bool Pass::init_pipeline()
       VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
    VkPipelineDepthStencilStateCreateInfo depth_stencil   = {
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-   VkPipelineMultisampleStateCreateInfo multisample      = {
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-   VkPipelineDynamicStateCreateInfo dynamic              = {
-      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
    static const VkDynamicState dynamics[]                = {
       VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
    VkPipelineShaderStageCreateInfo shader_stages[2]      = {
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
    };
-   VkShaderModuleCreateInfo module_info                  = {
-      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
    VkGraphicsPipelineCreateInfo pipe                     = {
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 
@@ -2022,7 +2023,11 @@ bool Pass::init_pipeline()
       return false;
 
    /* Input assembly */
+   input_assembly.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+   input_assembly.pNext    = NULL;
+   input_assembly.flags    = 0;
    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+   input_assembly.primitiveRestartEnable = VK_FALSE;
 
    /* VAO state */
    attributes[0].location  = 0;
@@ -2038,23 +2043,31 @@ bool Pass::init_pipeline()
    binding.stride          = 4 * sizeof(float);
    binding.inputRate       = VK_VERTEX_INPUT_RATE_VERTEX;
 
+   vertex_input.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+   vertex_input.pNext                           = NULL;
+   vertex_input.flags                           = 0;
    vertex_input.vertexBindingDescriptionCount   = 1;
    vertex_input.pVertexBindingDescriptions      = &binding;
    vertex_input.vertexAttributeDescriptionCount = 2;
    vertex_input.pVertexAttributeDescriptions    = attributes;
 
    /* Raster state */
+   raster.sType                                 = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+   raster.pNext                                 = NULL;
+   raster.flags                                 = 0;
+   raster.depthClampEnable                      = VK_FALSE;
+   raster.rasterizerDiscardEnable               = VK_FALSE;
    raster.polygonMode                           = VK_POLYGON_MODE_FILL;
    raster.cullMode                              = VK_CULL_MODE_NONE;
-   raster.frontFace                             = 
-      VK_FRONT_FACE_COUNTER_CLOCKWISE;
-   raster.depthClampEnable                      = false;
-   raster.rasterizerDiscardEnable               = false;
-   raster.depthBiasEnable                       = false;
+   raster.frontFace                             = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+   raster.depthBiasEnable                       = VK_FALSE;
+   raster.depthBiasConstantFactor               = 0.0f;
+   raster.depthBiasClamp                        = 0.0f;
+   raster.depthBiasSlopeFactor                  = 0.0f;
    raster.lineWidth                             = 1.0f;
 
    /* Blend state */
-   blend_attachment.blendEnable                 = false;
+   blend_attachment.blendEnable                 = VK_FALSE;
    blend_attachment.colorWriteMask              = 0xf;
    blend.attachmentCount                        = 1;
    blend.pAttachments                           = &blend_attachment;
@@ -2064,31 +2077,44 @@ bool Pass::init_pipeline()
    viewport.scissorCount                        = 1;
 
    /* Depth-stencil state */
-   depth_stencil.depthTestEnable                = false;
-   depth_stencil.depthWriteEnable               = false;
-   depth_stencil.depthBoundsTestEnable          = false;
-   depth_stencil.stencilTestEnable              = false;
+   depth_stencil.depthTestEnable                = VK_FALSE;
+   depth_stencil.depthWriteEnable               = VK_FALSE;
+   depth_stencil.depthBoundsTestEnable          = VK_FALSE;
+   depth_stencil.stencilTestEnable              = VK_FALSE;
    depth_stencil.minDepthBounds                 = 0.0f;
    depth_stencil.maxDepthBounds                 = 1.0f;
 
    /* Multisample state */
+   multisample.sType                            = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+   multisample.pNext                            = NULL;
+   multisample.flags                            = 0;
    multisample.rasterizationSamples             = VK_SAMPLE_COUNT_1_BIT;
+   multisample.sampleShadingEnable              = VK_FALSE;
+   multisample.minSampleShading                 = 0.0f;
+   multisample.pSampleMask                      = NULL;
+   multisample.alphaToCoverageEnable            = VK_FALSE;
+   multisample.alphaToOneEnable                 = VK_FALSE;
 
    /* Dynamic state */
-   dynamic.pDynamicStates    = dynamics;
+   dynamic.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+   dynamic.pNext             = NULL;
+   dynamic.flags             = 0;
    dynamic.dynamicStateCount = sizeof(dynamics) / sizeof(dynamics[0]);
+   dynamic.pDynamicStates    = dynamics;
 
    /* Shaders */
-   module_info.codeSize     = vertex_shader.size() * sizeof(uint32_t);
-   module_info.pCode        = vertex_shader.data();
-   shader_stages[0].stage   = VK_SHADER_STAGE_VERTEX_BIT;
-   shader_stages[0].pName   = "main";
+   module_info.sType         = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+   module_info.pNext         = NULL;
+   module_info.codeSize      = vertex_shader.size() * sizeof(uint32_t);
+   module_info.pCode         = vertex_shader.data();
+   shader_stages[0].stage    = VK_SHADER_STAGE_VERTEX_BIT;
+   shader_stages[0].pName    = "main";
    vkCreateShaderModule(device, &module_info, NULL, &shader_stages[0].module);
 
-   module_info.codeSize     = fragment_shader.size() * sizeof(uint32_t);
-   module_info.pCode        = fragment_shader.data();
-   shader_stages[1].stage   = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName   = "main";
+   module_info.codeSize      = fragment_shader.size() * sizeof(uint32_t);
+   module_info.pCode         = fragment_shader.data();
+   shader_stages[1].stage    = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName    = "main";
    vkCreateShaderModule(device, &module_info, NULL, &shader_stages[1].module);
 
    pipe.stageCount          = 2;
@@ -2101,8 +2127,9 @@ bool Pass::init_pipeline()
    pipe.pViewportState      = &viewport;
    pipe.pDepthStencilState  = &depth_stencil;
    pipe.pDynamicState       = &dynamic;
-   pipe.renderPass          = final_pass ? swapchain_render_pass :
-      framebuffer->get_render_pass();
+   pipe.renderPass          = final_pass 
+	   ? swapchain_render_pass
+	   : framebuffer->get_render_pass();
    pipe.layout              = pipeline_layout;
 
    if (vkCreateGraphicsPipelines(device,
