@@ -167,10 +167,10 @@ int system_property_get(const char *command,
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
-   cmd[buf_pos]                 = ' ';
-   cmd[buf_pos+1]               = '\0';
+   cmd[  buf_pos]               = ' ';
+   cmd[++buf_pos]               = '\0';
 
-   buf_pos                      = strlcat(cmd, args, sizeof(cmd));
+   strlcpy(cmd + buf_pos, args, sizeof(cmd) - buf_pos);
 
    if (!(pipe = popen(cmd, "r")))
    {
@@ -2246,8 +2246,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       size_t _len = strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
       if (user)
       {
-         strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
-         strlcat(udisks_media_path, user, sizeof(udisks_media_path));
+         _len += strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
+         strlcpy(udisks_media_path + _len, user, sizeof(udisks_media_path) - _len);
       }
    }
 

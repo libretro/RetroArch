@@ -604,6 +604,7 @@ int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
+            size_t _len;
             const char * t =
                   "RetroArch 依赖于一种独特的音频/视频同步形式，\n"
                   "需要根据显示器的刷新率对其进行校准，以获得最佳\n"
@@ -623,8 +624,8 @@ int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcpy(s, t, len);
-            strlcat(s, u, len);
+            _len = strlcpy(s, t, len);
+            strlcpy(s + _len, u, len - _len);
          }
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:

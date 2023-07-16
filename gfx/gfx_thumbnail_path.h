@@ -59,10 +59,10 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_left_mode;
    size_t playlist_index;
    char content_path[PATH_MAX_LENGTH];
-   char content_label[PATH_MAX_LENGTH];
    char content_img[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
+   char content_label[256];
    char content_core_name[256];
    char system[256];
    char content_db_name[256];

@@ -4489,6 +4489,7 @@ static void announce_play_spectate(netplay_t *netplay,
       enum rarch_netplay_connection_mode mode, uint32_t devices,
       int32_t ping, uint32_t client_num)
 {
+   size_t _len;
    char msg[512];
    const char *dmsg = NULL;
 
@@ -4515,9 +4516,7 @@ static void announce_play_spectate(netplay_t *netplay,
          char *pdevice_str   = NULL;
 
          if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
-         {
             one_device = client_num;
-         }
          else
          {
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
@@ -4538,11 +4537,11 @@ static void announce_play_spectate(netplay_t *netplay,
          {
             /* Only have one device, simpler message */
             if (nick)
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N),
                   NETPLAY_NICK_LEN, nick, one_device + 1);
             else
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N),
                   one_device + 1);
          }
@@ -4564,11 +4563,11 @@ static void announce_play_spectate(netplay_t *netplay,
 
             /* Then we make the final string */
             if (nick)
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S),
                   NETPLAY_NICK_LEN, nick, sizeof(device_str), device_str);
             else
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S),
                   sizeof(device_str), device_str);
          }
@@ -4577,7 +4576,7 @@ static void announce_play_spectate(netplay_t *netplay,
          {
             snprintf(ping_str, sizeof(ping_str), " (ping: %i ms)",
                (int)ping);
-            strlcat(msg, ping_str, sizeof(msg));
+            strlcpy(msg + _len, ping_str, sizeof(msg) - _len);
          }
 
          dmsg = msg;

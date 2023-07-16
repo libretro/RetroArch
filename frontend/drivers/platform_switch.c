@@ -172,10 +172,10 @@ static void get_first_valid_core(char *path_return, size_t len)
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
             size_t _len = strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
-            strlcpy(path_return + _len,
+            _len += strlcpy(path_return + _len,
                   "/",
                   len           - _len);
-            strlcat(path_return, ent->d_name, len);
+            strlcpy(path_return + _len, ent->d_name, len - _len);
             break;
          }
       }
@@ -328,19 +328,16 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          const char *content = path_get(RARCH_PATH_CONTENT);
 #ifdef HAVE_NETWORKING
          char *arg_data[NETPLAY_FORK_MAX_ARGS];
-
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
                (void*)arg_data))
          {
             char buf[PATH_MAX];
             char **arg = arg_data;
-
             do
             {
                snprintf(buf, sizeof(buf), " \"%s\"", *arg);
                strlcat(args, buf, sizeof(args));
-            }
-            while (*(++arg));
+            } while (*(++arg));
          }
          else
 #endif

@@ -208,7 +208,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                   char entry_name[128];
                   fill_pathname_base(entry_name, entry->path, sizeof(entry_name));
                   path_remove_extension(entry_name);
-                  strlcat(task_title, entry_name, sizeof(task_title));
+                  strlcpy(task_title + _len, entry_name, sizeof(task_title) - _len);
                }
                
                task_set_title(task, strdup(task_title));

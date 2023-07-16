@@ -688,8 +688,8 @@ bool slang_reflect(
    {
       char buf[64];
       size_t _len = strlcpy(buf, "[slang]:\n", sizeof(buf));
-      strlcpy(buf + _len, FILE_PATH_LOG_INFO, sizeof(buf) - _len);
-      strlcat(buf, " [slang]:   Parameters:\n", sizeof(buf));
+      _len       += strlcpy(buf + _len, FILE_PATH_LOG_INFO, sizeof(buf) - _len);
+      strlcpy(buf + _len, " [slang]:   Parameters:\n", sizeof(buf) - _len);
       RARCH_LOG(buf);
    }
 

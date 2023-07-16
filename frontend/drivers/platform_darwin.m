@@ -296,7 +296,7 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 #endif
 #elif defined(OSX)
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 // MAC_OS_X_VERSION_10_13
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
    NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
    *major = (int)version.majorVersion;
    *minor = (int)version.minorVersion;
@@ -355,7 +355,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFRelease(bundle_url);
 
 #if HAVE_STEAM
-   // for steam we're going to put everything next to the .app
+   /* For Steam, we're going to put everything next to the .app */
    fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
 #else
    CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
@@ -377,16 +377,16 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #if defined(OSX)
    fill_pathname_application_data(application_data, sizeof(application_data));
 #else
-   // ios and tvos are going to put everything in the documents dir
+   /* iOS and tvOS are going to put everything in the documents dir */
    strncpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
 
-   // By the time we are here:
-   // bundle_path_buf is the full path of the .app
-   // documents_dir_buf is where user documents go (macos: ~/Documents/RetroArch)
-   // application_data is where "hidden" app data goes (macos: ~/Library/Application Support/RetroArch, ios: documents dir)
+   /* By the time we are here:
+    * bundle_path_buf is the full path of the .app
+    * documents_dir_buf is where user documents go (macos: ~/Documents/RetroArch)
+    * application_data is where "hidden" app data goes (macos: ~/Library/Application Support/RetroArch, ios: documents dir)
 
-   // this stuff we expect the user to find easily, possibly sync across iCloud
+    * this stuff we expect the user to find easily, possibly sync across iCloud */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], documents_dir_buf, "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], documents_dir_buf, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], documents_dir_buf, "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
@@ -441,16 +441,14 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     fill_pathname_join_special(assets_zip_path,
           bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
-    CFURLRef resource_url;
-    CFStringRef resource_path;
+    char full_resource_path_buf[PATH_MAX_LENGTH];
     char resource_path_buf[PATH_MAX_LENGTH] = {0};
-    resource_url  = CFBundleCopyResourcesDirectoryURL(bundle);
-    resource_path = CFURLCopyPath(resource_url);
+    CFURLRef resource_url     = CFBundleCopyResourcesDirectoryURL(bundle);
+    CFStringRef resource_path = CFURLCopyPath(resource_url);
     CFStringGetCString(resource_path, resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
     CFRelease(resource_path);
     CFRelease(resource_url);
 
-    char full_resource_path_buf[PATH_MAX_LENGTH];
     fill_pathname_join_special(full_resource_path_buf,
           bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
     fill_pathname_join_special(assets_zip_path,

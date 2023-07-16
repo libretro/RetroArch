@@ -49,6 +49,7 @@
 
 static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 {
+   size_t _len;
    char build_str[11]     = {0};
    bool server            = false;
    const char *arch       = "";
@@ -95,65 +96,65 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    {
       case 10:
          if (server)
-            strlcpy(s, "Windows Server 2016", len);
+            _len = strlcpy(s, "Windows Server 2016", len);
          else
-            strlcpy(s, "Windows 10", len);
+            _len = strlcpy(s, "Windows 10", len);
          break;
       case 6:
          switch (vi.dwMinorVersion)
          {
             case 3:
                if (server)
-                  strlcpy(s, "Windows Server 2012 R2", len);
+                  _len = strlcpy(s, "Windows Server 2012 R2", len);
                else
-                  strlcpy(s, "Windows 8.1", len);
+                  _len = strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
                if (server)
-                  strlcpy(s, "Windows Server 2012", len);
+                  _len = strlcpy(s, "Windows Server 2012", len);
                else
-                  strlcpy(s, "Windows 8", len);
+                  _len = strlcpy(s, "Windows 8", len);
                break;
             case 1:
                if (server)
-                  strlcpy(s, "Windows Server 2008 R2", len);
+                  _len = strlcpy(s, "Windows Server 2008 R2", len);
                else
-                  strlcpy(s, "Windows 7", len);
+                  _len = strlcpy(s, "Windows 7", len);
                break;
             case 0:
                if (server)
-                  strlcpy(s, "Windows Server 2008", len);
+                  _len = strlcpy(s, "Windows Server 2008", len);
                else
-                  strlcpy(s, "Windows Vista", len);
+                  _len = strlcpy(s, "Windows Vista", len);
                break;
             default:
                break;
          }
          break;
       default:
-         snprintf(s, len, "Windows %i.%i", *major, *minor);
+         _len = snprintf(s, len, "Windows %i.%i", *major, *minor);
          break;
    }
 
    if (!string_is_empty(arch))
    {
-      strlcat(s, " ", len);
-      strlcat(s, arch, len);
+      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   strlcat(s, " Build ", len);
-   strlcat(s, build_str, len);
+   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy(s + _len, build_str, len - _len);
 
    if (!string_is_empty(vi.szCSDVersion))
    {
-      strlcat(s, " ", len);
-      strlcat(s, vi.szCSDVersion, len);
+      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 
    if (!string_is_empty(uwp_device_family))
    {
-      strlcat(s, " ", len);
-      strlcat(s, uwp_device_family, len);
+      _len += strlcpy(s + _len, " ", len - _len);
+      strlcpy(s + _len, uwp_device_family, len - _len);
    }
 }
 

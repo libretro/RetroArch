@@ -5107,9 +5107,9 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
 
    frontend_driver_get_core_extension(core_ext, sizeof(core_ext));
 
-   _len = strlcpy(filters, "Cores (*.", sizeof(filters));
-   strlcpy(filters + _len, core_ext, sizeof(filters) - _len);
-   strlcat(filters, ");;All Files (*.*)", sizeof(filters));
+   _len  = strlcpy(filters, "Cores (*.", sizeof(filters));
+   _len += strlcpy(filters + _len, core_ext,     sizeof(filters) - _len);
+   strlcpy(filters + _len, ");;All Files (*.*)", sizeof(filters) - _len);
 
    path                          = QFileDialog::getOpenFileName(
          this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE),

@@ -41,7 +41,7 @@ static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src)
 {
    char *scrub_char_ptr = NULL;
    /* Copy source label string */
-   strlcpy(s, src, len);
+   size_t _len          = strlcpy(s, src, len);
    /* Scrub characters that are not cross-platform and/or violate the
     * No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
@@ -49,7 +49,7 @@ static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src)
    while ((scrub_char_ptr = strpbrk(s, "&*/:`\"<>?\\|")))
       *scrub_char_ptr = '_';
    /* Add PNG extension */
-   strlcat(s, ".png", len);
+   strlcpy(s + _len, ".png", len - _len);
 }
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
