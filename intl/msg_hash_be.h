@@ -325,6 +325,10 @@ MSG_HASH(
    "Звесткі аб сістэме"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   "Прагляд звестак аб пэўнай прыладзе."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    "Кіраванне базамі даных"
    )
