@@ -1012,21 +1012,23 @@ static bool vulkan_filter_chain_load_luts(
       video_shader *shader)
 {
    unsigned i;
-   VkCommandBufferBeginInfo begin_info           = {
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   VkSubmitInfo submit_info                      = {
-      VK_STRUCTURE_TYPE_SUBMIT_INFO };
+   VkSubmitInfo submit_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandBufferBeginInfo begin_info;
    VkCommandBuffer cmd                           = VK_NULL_HANDLE;
-   VkCommandBufferAllocateInfo cmd_info          = { 
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
    bool recording                                = false;
 
+   cmd_info.sType                                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.pNext                                = NULL;
    cmd_info.commandPool                          = info->command_pool;
    cmd_info.level                                = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    cmd_info.commandBufferCount                   = 1;
 
    vkAllocateCommandBuffers(info->device, &cmd_info, &cmd);
+   begin_info.sType                              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext                              = NULL;
    begin_info.flags                              = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo                   = NULL;
    vkBeginCommandBuffer(cmd, &begin_info);
    recording                                     = true;
 
@@ -1044,8 +1046,14 @@ static bool vulkan_filter_chain_load_luts(
    }
 
    vkEndCommandBuffer(cmd);
-   submit_info.commandBufferCount = 1;
-   submit_info.pCommandBuffers    = &cmd;
+   submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.pNext                = NULL;
+   submit_info.waitSemaphoreCount   = 0;
+   submit_info.pWaitSemaphores      = NULL;
+   submit_info.commandBufferCount   = 1;
+   submit_info.pCommandBuffers      = &cmd;
+   submit_info.signalSemaphoreCount = 0;
+   submit_info.pSignalSemaphores    = NULL;
    vkQueueSubmit(info->queue, 1, &submit_info, VK_NULL_HANDLE);
    vkQueueWaitIdle(info->queue);
    vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
@@ -2180,11 +2188,11 @@ CommonResources::CommonResources(VkDevice device,
 
    info.mipLodBias              = 0.0f;
    info.maxAnisotropy           = 1.0f;
-   info.compareEnable           = false;
+   info.compareEnable           = VK_FALSE;
    info.minLod                  = 0.0f;
    info.maxLod                  = VK_LOD_CLAMP_NONE;
-   info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+   info.unnormalizedCoordinates = VK_FALSE;
 
    for (i = 0; i < GLSLANG_FILTER_CHAIN_COUNT; i++)
    {
