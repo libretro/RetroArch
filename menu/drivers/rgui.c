@@ -280,8 +280,6 @@ typedef struct
 {
    retro_time_t thumbnail_load_trigger_time; /* uint64_t */
 
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-
    struct
    {
       bitmapfont_lut_t *regular;
@@ -5192,7 +5190,7 @@ static void rgui_render(
       rgui_render_fs_thumbnail(rgui, fb_width, fb_height, fb_pitch);
 
       /* Get thumbnail title */
-      if (     gfx_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title)
+      if (     gfx_thumbnail_get_label(menu_st->thumbnail_path_data, &thumbnail_title)
             || is_state_slot)
       {
          /* State slot title */
@@ -6504,10 +6502,6 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
          settings->bools.menu_rgui_shadows,
          settings->bools.menu_rgui_extended_ascii);
 
-   rgui->thumbnail_path_data = gfx_thumbnail_path_init();
-   if (!rgui->thumbnail_path_data)
-      goto error;
-
    rgui->thumbnail_queue_size        = 0;
    rgui->left_thumbnail_queue_size   = 0;
    rgui->gfx_thumbnails_prev         = -1;
@@ -6562,8 +6556,6 @@ static void rgui_free(void *data)
    if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
       gfx_display_deinit_white_texture();
 #endif
-   if (rgui->thumbnail_path_data)
-      free(rgui->thumbnail_path_data);
 
    rgui_fonts_free(rgui);
 
@@ -6709,33 +6701,14 @@ static void rgui_navigation_clear(void *data, bool pending_push)
    rgui->scroll_y             = 0;
 }
 
-static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
-{
-   rgui_t *rgui = (rgui_t*)userdata;
-   if (rgui)
-      gfx_thumbnail_set_system(
-            rgui->thumbnail_path_data, s, playlist_get_cached());
-}
-
-static size_t rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
-{
-   rgui_t *rgui       = (rgui_t*)userdata;
-   const char *system = NULL;
-   if (!rgui)
-	   return 0;
-   if (!gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
-      return 0;
-   return strlcpy(s, system, len);
-}
-
-static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
+static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_st, bool download_missing)
 {
    const char *thumbnail_path      = NULL;
    const char *left_thumbnail_path = NULL;
    bool thumbnails_missing         = false;
 
    /* Right (or fullscreen) thumbnail */
-   if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
+   if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
          GFX_THUMBNAIL_RIGHT, &thumbnail_path))
    {
       if (rgui_request_thumbnail(
@@ -6757,7 +6730,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    if (     !(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          && string_is_empty(rgui->savestate_thumbnail_file_path))
    {
-      if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
+      if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
             GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
       {
          if (rgui_request_thumbnail(
@@ -6773,7 +6746,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    }
    else if (!string_is_empty(rgui->savestate_thumbnail_file_path))
    {
-      if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
+      if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
             GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
       {
          if (rgui_request_thumbnail(
@@ -6805,9 +6778,9 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
 
       /* Explore list needs cached selection index */
       if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-         selection = gfx_thumbnail_get_playlist_index(rgui->thumbnail_path_data);
+         selection = gfx_thumbnail_get_playlist_index(menu_st->thumbnail_path_data);
 
-      if (gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+      if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
          task_push_pl_entry_thumbnail_download(system,
                playlist, (unsigned)selection,
                false, true);
@@ -6967,7 +6940,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
             rgui->playlist_index = playlist_index;
          }
 
-         gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
+         gfx_thumbnail_set_content_playlist(menu_st->thumbnail_path_data,
                playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
       else if (rgui->is_quick_menu)
@@ -6977,7 +6950,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
 
          playlist_index = rgui->playlist_index;
 
-         gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
+         gfx_thumbnail_set_content_playlist(menu_st->thumbnail_path_data,
                playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
 #if defined(HAVE_LIBRETRODB)
@@ -6994,16 +6967,16 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
             menu_entry_get(&entry, 0, selection, NULL, true);
 
             rgui->playlist_index =
-                  menu_explore_set_playlist_thumbnail(entry.type, rgui->thumbnail_path_data);
+                  menu_explore_set_playlist_thumbnail(entry.type, menu_st->thumbnail_path_data);
          }
       }
 #endif
 
-      if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
-         has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
+      if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
+         has_thumbnail = gfx_thumbnail_update_path(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
 
-      if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
-         has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
+      if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+         has_thumbnail = gfx_thumbnail_update_path(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
    }
 
    /* Save state thumbnails */
@@ -7022,7 +6995,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    {
       /* Check whether thumbnails should be loaded immediately */
       if ((menu_rgui_thumbnail_delay == 0) || force_load)
-         rgui_load_current_thumbnails(rgui, network_on_demand_thumbnails);
+         rgui_load_current_thumbnails(rgui, menu_st, network_on_demand_thumbnails);
       else
       {
          /* Schedule a delayed load */
@@ -7085,6 +7058,7 @@ static void rgui_toggle_fs_thumbnail(rgui_t *rgui,
 static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    rgui_t                *rgui = (rgui_t*)userdata;
+   struct menu_state *menu_st  = menu_state_get_ptr();
    settings_t        *settings = config_get_ptr();
    bool rgui_inline_thumbnails = false;
    if (!rgui || !settings)
@@ -7094,8 +7068,8 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
 
    /* Only refresh thumbnails if thumbnails are enabled */
    if (     ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || rgui_inline_thumbnails)
-         && (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
-             gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
+         && (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+         ||  gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
    {
       /* In all cases, reset current thumbnails */
       rgui->fs_thumbnail.width           = 0;
@@ -7500,6 +7474,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                        = (rgui_t*)data;
    settings_t *settings                = config_get_ptr();
+   struct menu_state *menu_st          = menu_state_get_ptr();
    bool bg_filler_thickness_enable     = settings->bools.menu_rgui_background_filler_thickness_enable;
    bool border_filler_thickness_enable = settings->bools.menu_rgui_border_filler_thickness_enable;
 #if defined(DINGUX)
@@ -7740,7 +7715,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
             (settings->uints.menu_rgui_thumbnail_delay * 1000 * ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) 
                   ? 1.5f
                   : 1.0f)))
-         rgui_load_current_thumbnails(rgui,
+         rgui_load_current_thumbnails(rgui, menu_st,
                settings->bools.network_on_demand_thumbnails);
    }
 
@@ -8153,8 +8128,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* update_thumbnail_path */
    rgui_update_thumbnail_image,
    rgui_refresh_thumbnail_image,
-   rgui_set_thumbnail_system,
-   rgui_get_thumbnail_system,
    NULL,                               /* set_thumbnail_content */
    rgui_osk_ptr_at_pos,
    rgui_update_savestate_thumbnail_path,

@@ -1494,10 +1494,8 @@ int generic_action_ok_displaylist_push(const char *path,
 
             fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
             path_remove_extension(lpl_basename);
-            if (     menu_st->driver_ctx
-                  && menu_st->driver_ctx->set_thumbnail_system)
-               menu_st->driver_ctx->set_thumbnail_system(
-                     menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+            menu_driver_set_thumbnail_system(
+                  menu_st->userdata, lpl_basename, sizeof(lpl_basename));
 
             info.directory_ptr = idx;
             info_path          = tmp;
@@ -7963,10 +7961,8 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
    if (!playlist || !menu)
       return -1;
 
-   if (     menu_st->driver_ctx
-         && menu_st->driver_ctx->get_thumbnail_system)
-      menu_st->driver_ctx->get_thumbnail_system(
-            menu_st->userdata, system, sizeof(system));
+   menu_driver_get_thumbnail_system(
+         menu_st->userdata, system, sizeof(system));
 
    task_push_pl_entry_thumbnail_download(system,
          playlist, menu->rpl_entry_selection_ptr,

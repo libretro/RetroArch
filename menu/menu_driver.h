@@ -434,8 +434,6 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*refresh_thumbnail_image)(void *data, unsigned i);
-   void (*set_thumbnail_system)(void *data, char* s, size_t len);
-   size_t (*get_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
@@ -526,6 +524,7 @@ struct menu_state
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
    menu_handle_t *driver_data;
    void *userdata;
    const menu_ctx_driver_t *driver_ctx;
@@ -791,6 +790,10 @@ bool menu_is_nonrunning_quick_menu(void);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
+
+void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
+
+size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

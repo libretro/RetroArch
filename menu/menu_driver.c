@@ -289,8 +289,6 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* update_thumbnail_path */
   NULL,  /* update_thumbnail_image */
   NULL,  /* refresh_thumbnail_image */
-  NULL,  /* set_thumbnail_system */
-  NULL,  /* get_thumbnail_system */
   NULL,  /* set_thumbnail_content */
   NULL,  /* osk_ptr_at_pos */
   NULL,  /* update_savestate_thumbnail_path */
@@ -3700,6 +3698,10 @@ static bool rarch_menu_init(
    bool config_save_on_exit    = settings->bools.config_save_on_exit;
 #endif
 
+   /* thumbnail initialization */
+   if (!(menu_st->thumbnail_path_data = gfx_thumbnail_path_init()))
+      return false;
+
    /* Ensure that menu pointer input is correctly
     * initialised */
    memset(menu_input, 0, sizeof(menu_input_t));
@@ -6507,7 +6509,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_settings_deinit(menu_st);
             if (menu_st->entries.list)
                menu_list_free(menu_st->driver_ctx, menu_st->entries.list);
-            menu_st->entries.list          = NULL;
+            menu_st->entries.list           = NULL;
+
+            if (menu_st->thumbnail_path_data)
+               free(menu_st->thumbnail_path_data);
+            menu_st->thumbnail_path_data    = NULL;
 
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);
@@ -7904,4 +7910,20 @@ bool menu_is_nonrunning_quick_menu(void)
    menu_entry_get(&entry, 0, 0, NULL, true);
 
    return string_is_equal(entry.label, "collection");
+}
+
+void menu_driver_set_thumbnail_system(void *data, char *s, size_t len)
+{
+   struct menu_state               *menu_st = &menu_driver_state;
+   gfx_thumbnail_set_system(
+         menu_st->thumbnail_path_data, s, playlist_get_cached());
+}
+
+size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len)
+{
+   const char *system         = NULL;
+   struct menu_state *menu_st = &menu_driver_state;
+   if (!gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
+      return 0;
+   return strlcpy(s, system, len);
 }

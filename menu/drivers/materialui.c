@@ -594,9 +594,6 @@ typedef struct materialui_handle
          const char *src, size_t src_len,
          int line_width, int wideglyph_width, unsigned max_lines);
 
-   /* Thumbnail helpers */
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-
    struct
    {
       materialui_playlist_icons_t playlist;  /* ptr alignment */
@@ -3224,6 +3221,7 @@ static INLINE void materialui_kill_scroll_animation(
  * is detected */
 static bool materialui_render_process_entry_default(
       materialui_handle_t* mui,
+      struct menu_state *menu_st,
       materialui_node_t *node,
       size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
@@ -3243,6 +3241,7 @@ static bool materialui_render_process_entry_default(
  * Always returns true */
 static bool materialui_render_process_entry_playlist_thumb_list(
       materialui_handle_t* mui,
+      struct menu_state *menu_st,
       materialui_node_t *node,
       size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
@@ -3256,7 +3255,7 @@ static bool materialui_render_process_entry_playlist_thumb_list(
     * and free thumbnails for all off-screen entries */
    if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
       gfx_thumbnail_process_streams(
-            mui->thumbnail_path_data,
+            menu_st->thumbnail_path_data,
             p_anim,
             mui->playlist, playlist_idx,
             &node->thumbnails.primary,
@@ -3266,7 +3265,7 @@ static bool materialui_render_process_entry_playlist_thumb_list(
             network_on_demand_thumbnails);
    else
       gfx_thumbnail_process_stream(
-            mui->thumbnail_path_data,
+            menu_st->thumbnail_path_data,
             p_anim,
             GFX_THUMBNAIL_RIGHT,
             mui->playlist, playlist_idx,
@@ -3285,6 +3284,7 @@ static bool materialui_render_process_entry_playlist_thumb_list(
  * Always returns true */
 static bool materialui_render_process_entry_playlist_dual_icon(
       materialui_handle_t* mui,
+      struct menu_state *menu_st,
       materialui_node_t *node,
       size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
@@ -3299,7 +3299,7 @@ static bool materialui_render_process_entry_playlist_dual_icon(
     * > Note that secondary thumbnail is force
     *   enabled in dual icon mode */
    gfx_thumbnail_process_streams(
-         mui->thumbnail_path_data,
+         menu_st->thumbnail_path_data,
          p_anim,
          mui->playlist, playlist_idx,
          &node->thumbnails.primary,
@@ -3318,6 +3318,7 @@ static bool materialui_render_process_entry_playlist_dual_icon(
  * Always returns true */
 static bool materialui_render_process_entry_playlist_desktop(
       materialui_handle_t* mui,
+      struct menu_state *menu_st,
       materialui_node_t *node,
       size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
@@ -3343,7 +3344,7 @@ static bool materialui_render_process_entry_playlist_desktop(
     * > Note that secondary thumbnail is force
     *   enabled */
    gfx_thumbnail_process_streams(
-         mui->thumbnail_path_data,
+         menu_st->thumbnail_path_data,
          p_anim,
          mui->playlist, playlist_idx,
          &node->thumbnails.primary,
@@ -3518,6 +3519,7 @@ static bool materialui_render_process_entry_playlist_desktop(
 
 static bool (*materialui_render_process_entry)(
       materialui_handle_t* mui,
+      struct menu_state *menu_st,
       materialui_node_t *node,
       size_t entry_idx, size_t selection, size_t playlist_idx,
       bool first_entry_found, bool last_entry_found,
@@ -3537,6 +3539,7 @@ static void materialui_init_font(
 
 static void materialui_layout(
       materialui_handle_t *mui,
+      struct menu_state *menu_st,
       gfx_display_t *p_disp,
       settings_t *settings,
       bool video_is_threaded);
@@ -3627,7 +3630,7 @@ static void materialui_render(void *data,
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
-      materialui_layout(mui, p_disp,
+      materialui_layout(mui, menu_st, p_disp,
             settings, video_driver_is_threaded());
       video_driver_monitor_reset();
    }
@@ -3824,7 +3827,7 @@ static void materialui_render(void *data,
       /* Perform any additional processing required
        * for the current entry */
       if (!materialui_render_process_entry(
-            mui, node, i, selection,
+            mui, menu_st, node, i, selection,
             list->list[i].entry_idx,
             first_entry_found, last_entry_found,
             thumbnail_upscale_threshold,
@@ -7288,6 +7291,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
  * user has enabled playlist thumbnails */
 static void materialui_set_list_view_type(
       materialui_handle_t *mui, 
+      struct menu_state *menu_st,
       unsigned thumbnail_view_portrait,
       unsigned thumbnail_view_landscape)
 {
@@ -7306,7 +7310,7 @@ static void materialui_set_list_view_type(
       mui->list_view_type = MUI_LIST_VIEW_PLAYLIST;
 
       /* Check whether primary thumbnail is enabled */
-      if (gfx_thumbnail_is_enabled(mui->thumbnail_path_data,
+      if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data,
                GFX_THUMBNAIL_RIGHT))
       {
          mui->flags |= MUI_FLAG_PRIMARY_THUMBNAIL_AVAILABLE;
@@ -7697,12 +7701,14 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
  * - Returns false if secondary thumbnails cannot be
  *   enabled (due to per-playlist override) */
 static bool materialui_force_enable_secondary_thumbnail(
-      materialui_handle_t *mui, settings_t *settings)
+      materialui_handle_t *mui,
+      struct menu_state *menu_st,
+      settings_t *settings)
 {
    /* If secondary thumbnail is already enabled,
     * do nothing */
    if (gfx_thumbnail_is_enabled(
-         mui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+         menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
       return true;
 
    /* Secondary thumbnail is disabled
@@ -7733,14 +7739,16 @@ static bool materialui_force_enable_secondary_thumbnail(
    /* Final check - this will return true unless a
     * per-playlist override is in place */
    return gfx_thumbnail_is_enabled(
-         mui->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
+         menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
 }
 
 /* Determines whether dual thumbnails should be enabled
  * based on current list view mode, thumbnail dimensions
  * and screen size */
 static void materialui_set_secondary_thumbnail_enable(
-      materialui_handle_t *mui, settings_t *settings)
+      materialui_handle_t *mui,
+      struct menu_state *menu_st,
+      settings_t *settings)
 {
    switch (mui->list_view_type)
    {
@@ -7764,7 +7772,7 @@ static void materialui_set_secondary_thumbnail_enable(
 
             /* Attempt to force enable secondary thumbnails if
              * global 'Secondary Thumbnail' type is set to OFF */
-            if (!materialui_force_enable_secondary_thumbnail(mui, settings))
+            if (!materialui_force_enable_secondary_thumbnail(mui, menu_st, settings))
                return;
 
             /* Secondary thumbnails are supported/enabled
@@ -7807,7 +7815,7 @@ static void materialui_set_secondary_thumbnail_enable(
           *   want 'missing thumbnail' images if
           *   thumbnails are actively disabled via
           *   a per-playlist override */
-         materialui_force_enable_secondary_thumbnail(mui, settings);
+         materialui_force_enable_secondary_thumbnail(mui, menu_st, settings);
          mui->flags |=  MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
          break;
       case MUI_LIST_VIEW_PLAYLIST:
@@ -7825,15 +7833,17 @@ static void materialui_set_secondary_thumbnail_enable(
  * and calculates appropriate thumbnail dimensions/settings.
  * Must be called when updating menu layout and
  * populating menu lists. */
-static void materialui_update_list_view(materialui_handle_t *mui, settings_t *settings)
+static void materialui_update_list_view(materialui_handle_t *mui,
+      struct menu_state *menu_st,
+      settings_t *settings)
 {
-   materialui_set_list_view_type(mui, 
+   materialui_set_list_view_type(mui, menu_st,
          settings->uints.menu_materialui_thumbnail_view_portrait,
          settings->uints.menu_materialui_thumbnail_view_landscape);
    materialui_set_landscape_optimisations_enable(mui);
    materialui_status_bar_init(mui, settings);
    materialui_set_thumbnail_dimensions(mui);
-   materialui_set_secondary_thumbnail_enable(mui, settings);
+   materialui_set_secondary_thumbnail_enable(mui, menu_st, settings);
 
    /* Miscellaneous post-list-switch configuration:
     * > Set appropriate thumbnail stream delay */
@@ -7940,6 +7950,7 @@ static void materialui_init_font(
 /* Compute the positions of the widgets */
 static void materialui_layout(
       materialui_handle_t *mui,
+      struct menu_state *menu_st,
       gfx_display_t *p_disp,
       settings_t *settings,
       bool video_is_threaded)
@@ -8032,7 +8043,7 @@ static void materialui_layout(
    mui->sys_bar_cache.timedate_str[0]        = '\0';
    mui->sys_bar_cache.timedate_width         = 0;
 
-   materialui_update_list_view(mui, settings);
+   materialui_update_list_view(mui, menu_st, settings);
 
    mui->flags       |=  MUI_FLAG_NEED_COMPUTE;
 }
@@ -8113,10 +8124,6 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    *userdata = mui;
-
-   /* Initialise thumbnail path data */
-   if (!(mui->thumbnail_path_data = gfx_thumbnail_path_init()))
-      goto error;
 
    /* Get DPI/screen-size-aware base unit size for
     * UI elements */
@@ -8240,9 +8247,6 @@ static void materialui_free(void *data)
    gfx_display_deinit_white_texture();
 
    font_driver_bind_block(NULL, NULL);
-
-   if (mui->thumbnail_path_data)
-      free(mui->thumbnail_path_data);
 
    materialui_free_playlist_icon_list(mui);
 
@@ -8733,7 +8737,7 @@ static void materialui_populate_entries(
    materialui_populate_nav_bar(mui, menu_st, label, settings);
 
    /* Update list view/thumbnail parameters */
-   materialui_update_list_view(mui, settings);
+   materialui_update_list_view(mui, menu_st, settings);
 
    /* Reset touch feedback parameters
     * (i.e. there should be no leftover highlight
@@ -8800,11 +8804,12 @@ static void materialui_context_reset(void *data, bool is_threaded)
    settings_t        *settings     = config_get_ptr();
    const char *path_menu_wallpaper = settings ? settings->paths.path_menu_wallpaper : NULL;
    gfx_display_t *p_disp           = disp_get_ptr();
+   struct menu_state *menu_st      = menu_state_get_ptr();
 
    if (!mui)
       return;
 
-   materialui_layout(mui, p_disp, settings, is_threaded);
+   materialui_layout(mui, menu_st, p_disp, settings, is_threaded);
    materialui_context_bg_destroy(mui);
    gfx_display_deinit_white_texture();
    gfx_display_init_white_texture();
@@ -9047,7 +9052,9 @@ static int materialui_switch_tabs(
 
 /* If viewing a playlist with thumbnails enabled,
  * cycles current thumbnail view mode */
-static void materialui_switch_list_view(materialui_handle_t *mui, settings_t *settings)
+static void materialui_switch_list_view(materialui_handle_t *mui,
+      struct menu_state *menu_st,
+      settings_t *settings)
 {
    bool secondary_thumbnail_enabled_prev = mui->flags &
       MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
@@ -9091,7 +9098,7 @@ static void materialui_switch_list_view(materialui_handle_t *mui, settings_t *se
    }
 
    /* Update list view parameters */
-   materialui_update_list_view(mui, settings);
+   materialui_update_list_view(mui, menu_st, settings);
 
    /* If the new list view does not have thumbnails
     * enabled, or last view had dual thumbnails and
@@ -9275,7 +9282,7 @@ static enum menu_action materialui_parse_menu_entry_action(
             {
                settings_t *settings = config_get_ptr();
                if (settings)
-                  materialui_switch_list_view(mui, settings);
+                  materialui_switch_list_view(mui, menu_st, settings);
                new_action = MENU_ACTION_NOOP;
             }
             else if (!materialui_entry_onscreen(mui, selection))
@@ -10079,7 +10086,7 @@ static int materialui_pointer_up(void *userdata,
                   {
                      settings_t *settings = config_get_ptr();
                      if (settings)
-                        materialui_switch_list_view(mui, settings);
+                        materialui_switch_list_view(mui, menu_st, settings);
                      return 0;
                   }
                   /* Fall back to normal cancel action */
@@ -11044,25 +11051,6 @@ static void materialui_list_clear(file_list_t *list)
    }
 }
 
-static void materialui_set_thumbnail_system(void *userdata, char *s, size_t len)
-{
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   if (mui)
-      gfx_thumbnail_set_system(
-            mui->thumbnail_path_data, s, playlist_get_cached());
-}
-
-static size_t materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
-{
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   const char *system       = NULL;
-   if (!mui)
-      return 0;
-   if (!gfx_thumbnail_get_system(mui->thumbnail_path_data, &system))
-      return 0;
-   return strlcpy(s, system, len);
-}
-
 static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    materialui_handle_t *mui           = (materialui_handle_t*)userdata;
@@ -11150,8 +11138,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    materialui_refresh_thumbnail_image,
-   materialui_set_thumbnail_system,
-   materialui_get_thumbnail_system,
    NULL,
    gfx_display_osk_ptr_at_pos,
    NULL, /* update_savestate_thumbnail_path */

@@ -2181,7 +2181,6 @@ static int menu_displaylist_parse_playlist(
          strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
    }
 
-   if (menu_st->driver_ctx && menu_st->driver_ctx->set_thumbnail_system)
    {
       /* Inform menu driver of current system name
        * > Note: history, favorites and images_history
@@ -2201,7 +2200,7 @@ static int menu_displaylist_parse_playlist(
       {
          char system_name[15];
          strlcpy(system_name, path_playlist, sizeof(system_name));
-         menu_st->driver_ctx->set_thumbnail_system(
+         menu_driver_set_thumbnail_system(
                menu_st->userdata, system_name, sizeof(system_name));
       }
       else if (!string_is_empty(info_path))
@@ -2209,7 +2208,7 @@ static int menu_displaylist_parse_playlist(
          char lpl_basename[256];
          fill_pathname_base(lpl_basename, info_path, sizeof(lpl_basename));
          path_remove_extension(lpl_basename);
-         menu_st->driver_ctx->set_thumbnail_system(
+         menu_driver_set_thumbnail_system(
                menu_st->userdata, lpl_basename, sizeof(lpl_basename));
       }
    }
@@ -2462,10 +2461,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          sizeof(path_base));
    path_remove_extension(path_base);
 
-   if (     menu_st->driver_ctx
-         && menu_st->driver_ctx->set_thumbnail_system)
-      menu_st->driver_ctx->set_thumbnail_system(
-            menu_st->userdata, path_base, sizeof(path_base));
+   menu_driver_set_thumbnail_system(
+         menu_st->userdata, path_base, sizeof(path_base));
 
    strlcat(path_base, ".lpl", sizeof(path_base));
 
@@ -3329,10 +3326,8 @@ static int menu_displaylist_parse_horizontal_list(
           * is loaded/cached */
          fill_pathname_base(lpl_basename, item->path, sizeof(lpl_basename));
          path_remove_extension(lpl_basename);
-         if (     menu_st->driver_ctx
-               && menu_st->driver_ctx->set_thumbnail_system)
-            menu_st->driver_ctx->set_thumbnail_system(
-                  menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+         menu_driver_set_thumbnail_system(
+               menu_st->userdata, lpl_basename, sizeof(lpl_basename));
       }
 
       if ((playlist = playlist_get_cached()))
@@ -3798,15 +3793,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
                break;
             case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
-                  size_t sys_len;
                   char sys_thumb[64];
                   struct menu_state *menu_st  = menu_state_get_ptr();
-                  sys_thumb[0] = '\0';
-
-                  if (     menu_st->driver_ctx
-                        && menu_st->driver_ctx->get_thumbnail_system)
-                     sys_len = menu_st->driver_ctx->get_thumbnail_system(
-                           menu_st->userdata, sys_thumb, sizeof(sys_thumb));
+                  size_t sys_len              = menu_driver_get_thumbnail_system(
+                        menu_st->userdata, sys_thumb, sizeof(sys_thumb));
 
                   if (!string_is_empty(sys_thumb))
                      remove_entry_enabled =
@@ -3876,21 +3866,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
             if (download_enabled)
             {
-               size_t sys_len;
                char sys_thumb[64];
-               struct menu_state *menu_st  = menu_state_get_ptr();
-               sys_thumb[0] = '\0';
-
+               struct menu_state *menu_st = menu_state_get_ptr();
                /* Only show 'Download Thumbnails' on supported playlists */
-               download_enabled = false;
-               if (     menu_st->driver_ctx
-                     && menu_st->driver_ctx->get_thumbnail_system)
-                  sys_len = menu_st->driver_ctx->get_thumbnail_system(
-                        menu_st->userdata, sys_thumb, sizeof(sys_thumb));
+               size_t sys_len             = menu_driver_get_thumbnail_system(
+                     menu_st->userdata, sys_thumb, sizeof(sys_thumb));
 
                if (!string_is_empty(sys_thumb))
                   download_enabled = !string_ends_with_size(
                         sys_thumb, "_history", sys_len, STRLEN_CONST("_history"));
+               else
+                  download_enabled = false;
             }
 
             if (settings->bools.network_on_demand_thumbnails)
