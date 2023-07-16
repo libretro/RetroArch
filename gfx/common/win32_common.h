@@ -187,8 +187,6 @@ BOOL IsIconic(HWND hwnd);
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
 
-void win32_update_title(void);
-
 RETRO_END_DECLS
 
 #endif

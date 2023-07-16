@@ -4063,3 +4063,22 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
       );
 #endif
 }
+
+void video_driver_update_title(void *data)
+{
+#ifndef _XBOX
+   const ui_window_t *window         = ui_companion_driver_get_window_ptr();
+   if (window)
+   {
+      static char prev_title[128];
+      char title[128];
+      title[0] = '\0';
+      video_driver_get_window_title(title, sizeof(title));
+      if (title[0] && !string_is_equal(title, prev_title))
+      {
+         window->set_title(&main_window, title);
+         strlcpy(prev_title, title, sizeof(prev_title));
+      }
+   }
+#endif
+}

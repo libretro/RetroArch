@@ -68,7 +68,7 @@ static void *android_gfx_ctx_vk_init(void *video_driver)
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)calloc(1, sizeof(*and));
 
    if (!android_app || !and)
-      return false;
+      return NULL;
 
    if (!vulkan_context_init(&and->vk, VULKAN_WSI_ANDROID))
    {

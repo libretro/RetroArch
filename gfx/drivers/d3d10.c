@@ -2537,7 +2537,7 @@ static bool d3d10_gfx_frame(
    d3d10->flags &= ~D3D10_ST_FLAG_SPRITES_ENABLE;
 
 #ifndef __WINRT__
-   win32_update_title();
+   video_driver_update_title(NULL);
 #endif
    DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
 

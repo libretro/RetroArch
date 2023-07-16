@@ -1271,6 +1271,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+void video_driver_update_title(void *data);
+
 extern const video_driver_t *video_drivers[];
 
 extern video_driver_t video_gl3;

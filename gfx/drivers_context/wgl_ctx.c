@@ -473,23 +473,6 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
 static bool gfx_ctx_wgl_set_resize(void *data,
       unsigned width, unsigned height) { return false; }
 
-static void gfx_ctx_wgl_update_title(void *data)
-{
-   char title[128];
-
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (title[0])
-   {
-      const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-      if (window)
-         window->set_title(&main_window, title);
-   }
-}
-
 static void gfx_ctx_wgl_destroy(void *data)
 {
    HWND            window  = win32_get_window();
@@ -794,7 +777,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_get_video_output_next,
    win32_get_metrics,
    NULL,
-   gfx_ctx_wgl_update_title,
+   video_driver_update_title,
    win32_check_window,
    gfx_ctx_wgl_set_resize,
    win32_has_focus,

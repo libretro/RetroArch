@@ -59,13 +59,11 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
 
 static float gfx_ctx_khr_display_get_refresh_rate(void *data)
 {
-   float refresh_rate = 0.0f;
+   float refresh_rate          = 0.0f;
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
    if (khr)
-   {
       refresh_rate = khr->refresh_rate_x1000 / 1000.0f;
-   }
 
    return refresh_rate;
 }

@@ -3826,7 +3826,7 @@ static bool d3d12_gfx_frame(
    d3d12->flags &= ~D3D12_ST_FLAG_SPRITES_ENABLE;
 
 #if defined(_WIN32) && !defined(__WINRT__)
-   win32_update_title();
+   video_driver_update_title(NULL);
 #endif
 
 #ifdef HAVE_DXGI_HDR

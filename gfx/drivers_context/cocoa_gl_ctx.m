@@ -544,7 +544,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_get_metrics,
    NULL, /* translate_aspect */
 #ifdef OSX
-   cocoa_update_title,
+   video_driver_update_title,
 #else
    NULL, /* update_title */
 #endif

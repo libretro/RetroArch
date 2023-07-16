@@ -344,19 +344,6 @@ font_renderer_t gdi_font = {
  * VIDEO DRIVER 
  */
 
-static void gfx_ctx_gdi_update_title(void)
-{
-   char title[128];
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (window && title[0])
-      window->set_title(&main_window, title);
-}
-
 static void gfx_ctx_gdi_get_video_size(
       unsigned *width, unsigned *height)
 {
@@ -779,7 +766,7 @@ static bool gdi_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   gfx_ctx_gdi_update_title();
+   video_driver_update_title(NULL);
 
    return true;
 }
