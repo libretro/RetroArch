@@ -781,7 +781,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
          strftime_am_pm(tmp, sizeof(tmp), format_str, &time_info);
          str[  _len] = ' ';
          str[++_len] = '\0';
-         strlcat(str, tmp, len);
+         strlcpy(str + _len, tmp, len - _len);
          return;
       }
 
@@ -1040,7 +1040,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                      sizeof(tmp));
             str[  _len] = ' ';
             str[++_len] = '\0';
-            strlcat(str, tmp, len);
+            strlcpy(str + _len, tmp, len - _len);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
          default:
