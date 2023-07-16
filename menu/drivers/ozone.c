@@ -10177,7 +10177,9 @@ static void ozone_render(void *data,
 
       /* Explore list needs cached selection index */
       if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
-         selection = gfx_thumbnail_get_playlist_index(menu_st->thumbnail_path_data);
+         selection = menu_st->thumbnail_path_data 
+            ? menu_st->thumbnail_path_data->playlist_index
+            : 0;
 
       switch (ozone->thumbnails.pending)
       {

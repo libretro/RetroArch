@@ -6778,7 +6778,9 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
 
       /* Explore list needs cached selection index */
       if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-         selection = gfx_thumbnail_get_playlist_index(menu_st->thumbnail_path_data);
+         selection = menu_st->thumbnail_path_data 
+            ? menu_st->thumbnail_path_data->playlist_index
+            : 0;
 
       if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
          task_push_pl_entry_thumbnail_download(system,

@@ -35,45 +35,22 @@
 
 #include "gfx_thumbnail_path.h"
 
-/* Resets thumbnail path data
- * (blanks all internal string containers) */
-void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
+/* Fills content_img field of path_data using existing
+ * content_label field (for internal use only) */
+static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src)
 {
-   if (!path_data)
-      return;
-   
-   path_data->system[0]            = '\0';
-   path_data->content_path[0]      = '\0';
-   path_data->content_label[0]     = '\0';
-   path_data->content_core_name[0] = '\0';
-   path_data->content_db_name[0]   = '\0';
-   path_data->content_img[0]       = '\0';
-   path_data->right_path[0]        = '\0';
-   path_data->left_path[0]         = '\0';
-   
-   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   char *scrub_char_ptr = NULL;
+   /* Copy source label string */
+   strlcpy(s, src, len);
+   /* Scrub characters that are not cross-platform and/or violate the
+    * No-Intro filename standard:
+    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
+    * Replace these characters in the entry name with underscores */
+   while ((scrub_char_ptr = strpbrk(s, "&*/:`\"<>?\\|")))
+      *scrub_char_ptr = '_';
+   /* Add PNG extension */
+   strlcat(s, ".png", len);
 }
-
-/* Initialisation */
-
-/* Creates new thumbnail path data container.
- * Returns handle to new gfx_thumbnail_path_data_t object.
- * on success, otherwise NULL.
- * Note: Returned object must be free()d */
-gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
-{
-   gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
-      malloc(sizeof(*path_data));
-   if (!path_data)
-      return NULL;
-
-   gfx_thumbnail_path_reset(path_data);
-   
-   return path_data;
-}
-
-/* Utility Functions */
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
@@ -124,6 +101,46 @@ end:
    return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 }
 
+/* Resets thumbnail path data
+ * (blanks all internal string containers) */
+void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
+{
+   if (!path_data)
+      return;
+   
+   path_data->system[0]            = '\0';
+   path_data->content_path[0]      = '\0';
+   path_data->content_label[0]     = '\0';
+   path_data->content_core_name[0] = '\0';
+   path_data->content_db_name[0]   = '\0';
+   path_data->content_img[0]       = '\0';
+   path_data->right_path[0]        = '\0';
+   path_data->left_path[0]         = '\0';
+   
+   path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+}
+
+/* Initialisation */
+
+/* Creates new thumbnail path data container.
+ * Returns handle to new gfx_thumbnail_path_data_t object.
+ * on success, otherwise NULL.
+ * Note: Returned object must be free()d */
+gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
+{
+   gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
+      malloc(sizeof(*path_data));
+   if (!path_data)
+      return NULL;
+
+   gfx_thumbnail_path_reset(path_data);
+   
+   return path_data;
+}
+
+/* Utility Functions */
+
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
 bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
@@ -152,28 +169,6 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thu
 }
 
 /* Setters */
-
-/* Fills content_img field of path_data using existing
- * content_label field (for internal use only) */
-static void gfx_thumbnail_fill_content_img(gfx_thumbnail_path_data_t *path_data)
-{
-   char *scrub_char_pointer = NULL;
-   
-   /* Copy source label string */
-   strlcpy(path_data->content_img,
-         path_data->content_label, sizeof(path_data->content_img));
-   
-   /* Scrub characters that are not cross-platform and/or violate the
-    * No-Intro filename standard:
-    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
-    * Replace these characters in the entry name with underscores */
-   while ((scrub_char_pointer = 
-            strpbrk(path_data->content_img, "&*/:`\"<>?\\|")))
-      *scrub_char_pointer = '_';
-   
-   /* Add PNG extension */
-   strlcat(path_data->content_img, ".png", sizeof(path_data->content_img));
-}
 
 /* Sets current 'system' (default database name).
  * Returns true if 'system' is valid.
@@ -298,7 +293,8 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    strlcpy(path_data->content_label, label, sizeof(path_data->content_label));
    
    /* Determine content image name */
-   gfx_thumbnail_fill_content_img(path_data);
+   gfx_thumbnail_fill_content_img(path_data->content_img,
+         sizeof(path_data->content_img), path_data->content_label);
    
    /* Have to set content path to *something*...
     * Just use label value (it doesn't matter) */
@@ -452,7 +448,8 @@ bool gfx_thumbnail_set_content_playlist(
             "", sizeof(path_data->content_label));
    
    /* Determine content image name */
-   gfx_thumbnail_fill_content_img(path_data);
+   gfx_thumbnail_fill_content_img(path_data->content_img,
+         sizeof(path_data->content_img), path_data->content_label);
 
    /* Store playlist index */
    path_data->playlist_index = idx;
@@ -741,11 +738,4 @@ bool gfx_thumbnail_get_content_dir(
    strlcpy(content_dir, path_basename_nocompression(tmp_buf), len);
    
    return !string_is_empty(content_dir);
-}
-
-/* Fetches current playlist index. */
-size_t gfx_thumbnail_get_playlist_index(
-      gfx_thumbnail_path_data_t *path_data)
-{
-   return (path_data) ? path_data->playlist_index : 0;
 }

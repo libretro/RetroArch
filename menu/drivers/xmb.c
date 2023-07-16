@@ -4930,7 +4930,9 @@ static void xmb_render(void *data,
 
       /* Explore list needs cached selection index */
       if (xmb->is_explore_list)
-         selection = gfx_thumbnail_get_playlist_index(menu_st->thumbnail_path_data);
+         selection = menu_st->thumbnail_path_data 
+            ? menu_st->thumbnail_path_data->playlist_index
+            : 0;
 
       switch (xmb->thumbnails.pending)
       {

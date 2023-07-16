@@ -58,14 +58,14 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_right_mode;
    enum playlist_thumbnail_mode playlist_left_mode;
    size_t playlist_index;
-   char system[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char content_label[PATH_MAX_LENGTH];
-   char content_core_name[PATH_MAX_LENGTH];
-   char content_db_name[PATH_MAX_LENGTH];
    char content_img[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
+   char content_core_name[256];
+   char system[256];
+   char content_db_name[256];
 };
 
 /* Initialisation */
@@ -152,9 +152,6 @@ bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
 bool gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
-
-/* Fetches current playlist index. */
-size_t gfx_thumbnail_get_playlist_index(gfx_thumbnail_path_data_t *path_data);
 
 RETRO_END_DECLS
 
