@@ -2252,6 +2252,7 @@ static int menu_displaylist_parse_playlist(
 
       if (!string_is_empty(entry->path))
       {
+         size_t _len;
          /* Standard playlist entry
           * > Base menu entry label is always playlist label
           *   > If playlist label is NULL, fallback to playlist entry file name
@@ -2259,10 +2260,13 @@ static int menu_displaylist_parse_playlist(
           *   no further action is necessary */
 
          if (string_is_empty(entry->label))
-            fill_pathname(menu_entry_label,
-                  path_basename(entry->path), "", sizeof(menu_entry_label));
+            _len = fill_pathname(menu_entry_label,
+                  path_basename(entry->path), "",
+                  sizeof(menu_entry_label));
          else
-            strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
+            _len = strlcpy(menu_entry_label,
+                  entry->label,
+                  sizeof(menu_entry_label));
 
          if (sanitization)
             (*sanitization)(menu_entry_label);
@@ -2275,8 +2279,13 @@ static int menu_displaylist_parse_playlist(
                 && !string_is_empty(entry->core_path)
                 && !string_is_equal(entry->core_path, "DETECT"))
             {
-               strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
-               strlcat(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
+               _len += strlcpy(
+                     menu_entry_label         + _len,
+                     label_spacer,
+                     sizeof(menu_entry_label) - _len);
+               strlcpy(menu_entry_label       + _len,
+                     entry->core_name,
+                     sizeof(menu_entry_label) - _len);
             }
          }
 
