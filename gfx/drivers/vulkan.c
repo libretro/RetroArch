@@ -384,8 +384,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
    VkMemoryAllocateInfo alloc;
+   VkBufferCreateInfo buffer_info;
    VkDevice device                      = vk->context->device;
-   VkBufferCreateInfo buffer_info       = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
    VkImageSubresource subresource       = { VK_IMAGE_ASPECT_COLOR_BIT };
 
    memset(&tex, 0, sizeof(tex));
@@ -409,13 +409,19 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    info.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
 
    /* Align stride to 4 bytes to make sure we can use compute shader uploads without too many problems. */
-   buffer_width            = width * vulkan_format_to_bpp(format);
-   buffer_width            = (buffer_width + 3u) & ~3u;
+   buffer_width                      = width * vulkan_format_to_bpp(format);
+   buffer_width                      = (buffer_width + 3u) & ~3u;
 
-   buffer_info.size        = buffer_width * height;
-   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+   buffer_info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer_info.pNext                 = NULL;
+   buffer_info.flags                 = 0;
+   buffer_info.size                  = buffer_width * height;
+   buffer_info.usage                 = 0;
+   buffer_info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+   buffer_info.queueFamilyIndexCount = 0;
+   buffer_info.pQueueFamilyIndices   = NULL;
 
-   remap_tex_fmt           = VK_REMAP_TO_TEXFMT(format);
+   remap_tex_fmt                     = VK_REMAP_TO_TEXFMT(format);
 
    /* Compatibility concern. Some Apple hardware does not support rgb565.
     * Use compute shader uploads instead.
@@ -2169,6 +2175,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       ;
 
    int i;
+   VkPipelineMultisampleStateCreateInfo multisample;
    VkPipelineInputAssemblyStateCreateInfo input_assembly = {
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
    VkPipelineVertexInputStateCreateInfo vertex_input     = {
@@ -2182,8 +2189,6 @@ static void vulkan_init_pipelines(vk_t *vk)
       VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
    VkPipelineDepthStencilStateCreateInfo depth_stencil   = {
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-   VkPipelineMultisampleStateCreateInfo multisample      = {
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
    VkPipelineDynamicStateCreateInfo dynamic              = {
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
 
@@ -2201,7 +2206,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    VkVertexInputAttributeDescription attributes[3]       = {{0}};
    VkVertexInputBindingDescription binding               = {0};
 
-   static const VkDynamicState dynamics[] = {
+   static const VkDynamicState dynamics[]                = {
       VK_DYNAMIC_STATE_VIEWPORT,
       VK_DYNAMIC_STATE_SCISSOR,
    };
@@ -2262,7 +2267,15 @@ static void vulkan_init_pipelines(vk_t *vk)
    depth_stencil.maxDepthBounds         = 1.0f;
 
    /* Multisample state */
+   multisample.sType                    = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+   multisample.pNext                    = NULL;
+   multisample.flags                    = 0;
    multisample.rasterizationSamples     = VK_SAMPLE_COUNT_1_BIT;
+   multisample.sampleShadingEnable      = VK_FALSE;
+   multisample.minSampleShading         = 0.0f;
+   multisample.pSampleMask              = NULL;
+   multisample.alphaToCoverageEnable    = VK_FALSE;
+   multisample.alphaToOneEnable         = VK_FALSE;
 
    /* Dynamic state */
    dynamic.pDynamicStates               = dynamics;
@@ -2461,10 +2474,10 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
    }
 
-   cpipe.layout = vk->pipelines.layout;
-   cpipe.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-   cpipe.stage.pName = "main";
-   cpipe.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+   cpipe.layout           = vk->pipelines.layout;
+   cpipe.stage.sType      = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   cpipe.stage.pName      = "main";
+   cpipe.stage.stage      = VK_SHADER_STAGE_COMPUTE_BIT;
 
    module_info.codeSize   = sizeof(rgb565_to_rgba8888_comp);
    module_info.pCode      = rgb565_to_rgba8888_comp;
