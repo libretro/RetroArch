@@ -6604,27 +6604,6 @@ unsigned menu_displaylist_build_list(
                count++;
          }
          break;
-      case DISPLAYLIST_ARCHIVE_ACTION:
-         {
-            menu_displaylist_build_info_selective_t build_list[] = {
-#ifdef HAVE_COMPRESSION
-               {MENU_ENUM_LABEL_OPEN_ARCHIVE, PARSE_ACTION, true},
-#endif
-               {MENU_ENUM_LABEL_LOAD_ARCHIVE, PARSE_ACTION, true},
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
-         }
-         break;
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          {
             runloop_state_t *runloop_st                  = runloop_state_get_ptr();
@@ -12877,6 +12856,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_INFO_MESSAGE, 0, 0, NULL))
                      count++;
                   info->flags       &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+                  ret                = 0;
                }
 
                ret                   = 0;
@@ -13424,6 +13404,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info->flags                   |= MD_FLAG_NEED_PUSH;
             }
             break;
+         case DISPLAYLIST_ARCHIVE_ACTION:
+	    menu_entries_clear(info->list);
+#ifdef HAVE_COMPRESSION
+            if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_OPEN_ARCHIVE),
+                     MENU_ENUM_LABEL_OPEN_ARCHIVE,
+                     0, 0, 0, NULL))
+               count++;
+#endif
+            if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE),
+                     MENU_ENUM_LABEL_LOAD_ARCHIVE,
+                     0, 0, 0, NULL))
+               count++;
+
+            info->flags    |= MD_FLAG_NEED_PUSH;
+            break;
          case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
             menu_entries_clear(info->list);
 #ifdef HAVE_COMPRESSION
@@ -13708,7 +13707,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_MIST
          case DISPLAYLIST_STEAM_SETTINGS_LIST:
 #endif
-         case DISPLAYLIST_ARCHIVE_ACTION:
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
             count = menu_displaylist_build_list(info->list, settings, type, false);
