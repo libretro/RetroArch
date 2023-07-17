@@ -655,7 +655,6 @@ static void menu_action_setting_disp_set_label_cpu_policy(
       const char *path,
       char *s2, size_t len2)
 {
-   size_t _len;
    unsigned policyid              = atoi(path);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
    cpu_scaling_driver_t *d        = drivers[policyid];
