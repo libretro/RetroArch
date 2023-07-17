@@ -103,15 +103,25 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - MENU: Video settings menu cleanup
 - MENU: Try to declutter Quick Menu
 - MENU: Change network port menu options to 'allow_input' mode
+- MENU: Preselect current core in "Set Core Assocation" menu for more carefree usage
+- MENU: Focus back to "Set Core Association" item after returning from the menu instead of first item
+- MENU: Replaced hack fix for focusing the first item after returning from core suggestion "Run" menu after association reset
+- MENU: Fixed setting core association in history/favorites after resetting it and running without setting
+- MENU: Relocate playlist manager core association options to prevent accidental resets with Start
 - MENU/RGUI: Implement 'Remember Selection' option
 - MENU/RGUI: Fix savestate thumbnail fullscreen cancel action
 - MENU/RGUI: Fix and add toggle for playlist thumbnails
 - MENU/OZONE: Update Dracula theme
 - MENU/OZONE: Return to sidebar from playlist manage quick access
 - MENU/OZONE: Sidebar multiline scrolling
+- MENU/XMB: XMB menu playlist index bugfix
 - MENU/XMB: Playlist label limit fixes
 - MENU/XMB: Prevent playlist label truncating long items even when right thumbnail is not enabled/visible
-- MEUN/XMB: Prevent playlist label length resetting to full width on every item change while thumbnail is pending
+- MENU/XMB: Prevent playlist label length resetting to full width on every item change while thumbnail is pending
+- MENU/XMB: Stop showing playlist entry index outside of playlists
+- MENU/XMB: Fix menu focus issue when returning from "Set Core Association" if playlist index is greater than the previous menu
+- MENU/EXPLORE: Prevent flashing when browsing fullscreen thumbnails
+- MENU/EXPLORE: Match label ticker length behavior with playlists 
 - MENU/SOUNDS: Fix certain audio drivers from hanging when menu pause is enabled with menu sounds
 - MENU/SOUNDS: Fix menu sounds stopping after fullscreen toggle / video reinit
 - MENU/QT/WIMP: Cleanup Desktop Menu welcome text
