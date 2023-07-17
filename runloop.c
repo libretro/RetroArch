@@ -3653,15 +3653,6 @@ static bool auto_load_core(const char* content_path)
    return false;
 }
 
-#ifdef HAVE_MENU
-/* TODO: where can we declare this? */
-extern int file_load_with_detect_core_wrapper(
-   enum msg_hash_enums enum_label_idx,
-   size_t idx, size_t entry_idx,
-   const char* path, const char* label,
-   unsigned type, bool is_carchive);
-#endif
-
 bool runloop_init_libretro_symbols(
       void *data,
       enum rarch_core_type type,
