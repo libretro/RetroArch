@@ -198,9 +198,9 @@ const char *path_get_archive_delim(const char *path)
          string_to_lower(buf);
 
          /* Check if this is a '.zip', '.apk' or '.7z' file */
-         if (string_is_equal(buf,     ".zip") ||
-             string_is_equal(buf,     ".apk") ||
-             string_is_equal(buf + 1, ".7z"))
+         if (   string_is_equal(buf,     ".zip")
+             || string_is_equal(buf,     ".apk")
+             || string_is_equal(buf + 1, ".7z"))
             return delim;
       }
       else if (delim - path > 3)
@@ -652,18 +652,12 @@ void path_parent_dir(char *path, size_t len)
  **/
 const char *path_basename(const char *path)
 {
-   /* We cut at the first compression-related hash */
-   const char *delim = path_get_archive_delim(path);
-   if (delim)
-      return delim + 1;
-
-   {
-      /* We cut at the last slash */
-      const char *last  = find_last_slash(path);
-      if (last)
-         return last + 1;
-   }
-
+   /* We cut either at the first compression-related hash,
+    * or we cut at the last slash */
+   const char *ptr = NULL;
+   if (     (ptr = path_get_archive_delim(path))
+         || (ptr = find_last_slash(path)))
+      return ptr + 1;
    return path;
 }
 
@@ -797,9 +791,9 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
          return NULL;
 
       len = strlen(tmp);
-      t += len;
+      t  += len;
 
-      if (tmp[len-1] != '/')
+      if (tmp[len - 1] != '/')
          tmp[t++] = '/';
 
       if (string_is_empty(buf))
@@ -843,7 +837,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
       else
       {
          /* fail when truncating */
-         if (t + next-p+1 > PATH_MAX_LENGTH-1)
+         if (t + next - p + 1 > PATH_MAX_LENGTH-1)
             return NULL;
 
          while (p <= next)
