@@ -7435,7 +7435,7 @@ static void xmb_navigation_pointer_changed(void *data)
 static void xmb_navigation_set(void *data, bool scroll)
 {
    xmb_handle_t  *xmb  = (xmb_handle_t*)data;
-   xmb_selection_pointer_changed(xmb, true);
+   xmb_selection_pointer_changed(xmb, scroll);
 }
 
 static void xmb_navigation_alphabet(void *data, size_t *unused)

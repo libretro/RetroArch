@@ -1097,11 +1097,11 @@ static unsigned menu_displaylist_parse_core_information_steam(
    bool installed             = false;
    MistResult result          = steam_get_core_dlcs(&dlc_list, false);
    if (MIST_IS_ERROR(result))
-	   goto error;
+      goto error;
 
    /* Get the core dlc information */
    if (!(core_dlc = steam_get_core_dlc_by_name(dlc_list, info_path)))
-	   return 0;
+      return 0;
 
    /* Check if installed */
    result = mist_steam_apps_is_dlc_installed(core_dlc->app_id, &installed);
@@ -2350,8 +2350,8 @@ static int create_string_list_rdb_entry_string(
    char tmp[128];
    char *out_lbl     = NULL;
    size_t str_len    = (strlen(label) + 1)
-	              + (strlen(actual_string) + 1)
-	              + (path_len + 1);
+         + (strlen(actual_string) + 1)
+         + (path_len + 1);
 
    if (!(out_lbl = (char*)calloc(str_len, sizeof(char))))
       return -1;
@@ -11319,7 +11319,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 {
    struct menu_state   *menu_st   = menu_state_get_ptr();
    menu_dialog_t        *p_dialog = &menu_st->dialog_st;
-   static bool core_selected      = false;
    bool push_list                 = (menu_st->driver_ctx->list_push
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
@@ -12996,7 +12995,36 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags       &= ~MD_FLAG_NEED_SORT;
             info->flags       |=  MD_FLAG_NEED_REFRESH
                                |  MD_FLAG_NEED_PUSH;
-            core_selected      = true;
+
+            /* Pre-select current associated core */
+            if (menu)
+            {
+               size_t idx                         = menu->rpl_entry_selection_ptr;
+               playlist_t *cached_playlist        = playlist_get_cached();
+               const struct playlist_entry *entry = NULL;
+               const core_info_t* core_info       = NULL;
+
+               if (cached_playlist)
+                  playlist_get_index(cached_playlist, idx, &entry);
+
+               if (!entry)
+                  break;
+
+               core_info                          = playlist_entry_get_core_info(entry);
+
+               if (     core_info
+                     && !string_is_empty(core_info->display_name))
+               {
+                  size_t selection_idx            = 0;
+
+                  if (menu_entries_list_search(core_info->display_name, &selection_idx))
+                  {
+                     menu_st->selection_ptr       = selection_idx;
+                     if (menu_st->driver_ctx->navigation_set)
+                        menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
+                  }
+               }
+            }
             break;
          case DISPLAYLIST_CORE_INFO:
             {
@@ -13813,16 +13841,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
             menu_entries_clear(info->list);
-            ret                = menu_displaylist_parse_horizontal_content_actions
-               (menu, settings, info->list);
+            ret = menu_displaylist_parse_horizontal_content_actions(menu, settings, info->list);
             info->flags       |=  MD_FLAG_NEED_REFRESH
                                |  MD_FLAG_NEED_PUSH;
-
-            if (core_selected)
-            {
-               info->flags     |=  MD_FLAG_NEED_CLEAR;
-               core_selected    = false;
-            }
             break;
          case DISPLAYLIST_OPTIONS:
             menu_entries_clear(info->list);
