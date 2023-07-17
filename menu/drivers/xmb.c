@@ -2752,6 +2752,10 @@ static void xmb_populate_entries(void *data,
          xmb->is_explore_list = false;
       else if (!xmb->is_quick_menu)
          xmb->skip_thumbnail_reset = true;
+
+      /* 'is_playlist' must be cleared for 'xmb_set_thumbnail_content' */
+      if (xmb->is_explore_list)
+         xmb->is_playlist = false;
    }
 #endif
 
@@ -3763,7 +3767,7 @@ static int xmb_draw_item(
                && (  (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                   || (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_PENDING)));
 
-      if (     xmb->is_playlist
+      if (     (xmb->is_playlist || xmb->is_explore_list)
             && !xmb->is_playlist_information
             && xmb->use_ps3_layout
             && (  show_right_thumbnail
@@ -3803,7 +3807,7 @@ static int xmb_draw_item(
    }
 
    /* Don't update ticker limit while waiting for thumbnail status */
-   if (     xmb->is_playlist
+   if (     (xmb->is_playlist || xmb->is_explore_list)
          && (  (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
                && xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
             || (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
@@ -5818,7 +5822,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Allow browsing playlist in fullscreen thumbnail mode */
-   if (    (xmb->is_playlist || xmb->is_state_slot)
+   if (    (xmb->is_playlist || xmb->is_explore_list || xmb->is_state_slot)
          && xmb->show_fullscreen_thumbnails
          && xmb->fullscreen_thumbnails_available
          && (menu_st->selection_ptr != xmb->fullscreen_thumbnail_selection))
