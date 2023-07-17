@@ -372,17 +372,12 @@ char *find_last_slash(const char *str)
  * Assumes path is a directory. Appends a slash
  * if not already there.
  **/
-void fill_pathname_slash(char *path, size_t size)
+size_t fill_pathname_slash(char *path, size_t size)
 {
    size_t path_len;
    const char *last_slash = find_last_slash(path);
-
    if (!last_slash)
-   {
-      strlcat(path, PATH_DEFAULT_SLASH(), size);
-      return;
-   }
-
+      return strlcat(path, PATH_DEFAULT_SLASH(), size);
    path_len            = strlen(path);
    /* Try to preserve slash type. */
    if (last_slash != (path + path_len - 1))
@@ -390,6 +385,7 @@ void fill_pathname_slash(char *path, size_t size)
       path[  path_len] = last_slash[0];
       path[++path_len] = '\0';
    }
+   return path_len;
 }
 
 /**
@@ -412,12 +408,11 @@ void fill_pathname_slash(char *path, size_t size)
 size_t fill_pathname_dir(char *in_dir, const char *in_basename,
       const char *replace, size_t size)
 {
-   const char *base = NULL;
-
-   fill_pathname_slash(in_dir, size);
-   base = path_basename(in_basename);
-   strlcat(in_dir, base, size);
-   return strlcat(in_dir, replace, size);
+   size_t _len      = fill_pathname_slash(in_dir, size);
+   const char *base = path_basename(in_basename);
+   _len            += strlcpy(in_dir + _len, base,    size - _len);
+   _len            += strlcpy(in_dir + _len, replace, size - _len);
+   return _len;
 }
 
 /**
@@ -570,8 +565,9 @@ size_t fill_dated_filename(char *out_filename,
 size_t fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
-   char format[NAME_MAX_LENGTH];
    struct tm tm_;
+   char format[NAME_MAX_LENGTH];
+   size_t _len     = 0;
    time_t cur_time = time(NULL);
 
    rtime_localtime(&cur_time, &tm_);
@@ -583,8 +579,9 @@ size_t fill_str_dated_filename(char *out_filename,
       return strlcat(out_filename, format, size);
    }
    strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
-   strlcat(out_filename, format, size);
-   return strlcat(out_filename, ext, size);
+   _len  = strlcat(out_filename, format, size);
+   _len += strlcpy(out_filename + _len, ext, size - _len);
+   return _len;
 }
 
 /**
@@ -964,11 +961,13 @@ void fill_pathname_resolve_relative(char *out_path,
 size_t fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
+   size_t _len = 0;
    if (out_path != dir)
-      strlcpy(out_path, dir, size);
+      _len = strlcpy(out_path, dir, size);
    if (*out_path)
-      fill_pathname_slash(out_path, size);
-   return strlcat(out_path, path, size);
+      _len = fill_pathname_slash(out_path, size);
+   _len   += strlcpy(out_path + _len, path, size - _len);
+   return _len;
 }
 
 /**
@@ -1013,7 +1012,8 @@ size_t fill_pathname_join_special(char *out_path,
       }
    }
 
-   return strlcat(out_path, path, size);
+   len += strlcpy(out_path + len, path, size - len);
+   return len;
 }
 
 size_t fill_pathname_join_special_ext(char *out_path,
@@ -1021,12 +1021,12 @@ size_t fill_pathname_join_special_ext(char *out_path,
       const char *last, const char *ext,
       size_t size)
 {
-   fill_pathname_join(out_path, dir, path, size);
+   size_t _len = fill_pathname_join(out_path, dir, path, size);
    if (*out_path)
-      fill_pathname_slash(out_path, size);
-
-   strlcat(out_path, last, size);
-   return strlcat(out_path, ext, size);
+      _len     = fill_pathname_slash(out_path, size);
+   _len       += strlcpy(out_path + _len, last, size - _len);
+   _len       += strlcpy(out_path + _len, ext,  size - _len);
+   return _len;
 }
 
 /**
@@ -1043,19 +1043,19 @@ size_t fill_pathname_join_special_ext(char *out_path,
 size_t fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
-   size_t copied;
-   /* behavior of strlcpy is undefined if dst and src overlap */
+   size_t _len;
+   /* Behavior of strlcpy is undefined if dst and src overlap */
    if (out_path == dir)
-      copied          = strlen(dir);
+      _len          = strlen(dir);
    else
-      copied          = strlcpy(out_path, dir, size);
+      _len          = strlcpy(out_path, dir, size);
 
-   out_path[copied]   = delim;
-   out_path[copied+1] = '\0';
+   out_path[_len]   = delim;
+   out_path[_len+1] = '\0';
 
    if (path)
       return strlcat(out_path, path, size);
-   return copied;
+   return _len;
 }
 
 size_t fill_pathname_expand_special(char *out_path,
