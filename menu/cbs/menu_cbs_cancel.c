@@ -120,25 +120,26 @@ static const char* find_core_updater_list_flush_target()
    file_list_t const * const menu_list = MENU_LIST_GET(list, 0);
    const size_t menu_stack_size = MENU_LIST_GET_STACK_SIZE(list, 0);
    const char *candidate_label;
-   char const * const all_targets [] = {
-      msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER),
-      msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST),
-      msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST),
+   int all_targets_hashes[] = {
+      MENU_ENUM_LABEL_ONLINE_UPDATER,
+      MENU_ENUM_LABEL_CORE_LIST,
+      MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
       NULL,
    };
 
-   int i;
+   size_t i;
    int target_idx;
-   for(i = menu_stack_size - 1; i >= 0; i--)
+   /* Iterate from the top of the stack to the bottom. If we hit zero we hit the bottom of the stack, can choose as last resort. */
+   for(i = menu_stack_size - 1; i > 0; i--)
    {
       candidate_label = menu_list->list[i].label;
       target_idx = 0;
-      while (all_targets[target_idx])
+      while (all_targets_hashes[target_idx])
       {
-         if (string_is_equal(candidate_label, all_targets[target_idx++])) return candidate_label;
+         if (string_is_equal(candidate_label, msg_hash_to_str(all_targets_hashes[target_idx++]))) return candidate_label;
       }
    }
-   return all_targets[0];
+   return msg_hash_to_str(all_targets_hashes[0]);
 }
 
 static int action_cancel_core_list(const char* path,
