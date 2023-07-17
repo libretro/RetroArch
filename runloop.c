@@ -3590,13 +3590,14 @@ bool libretro_get_system_info(
 
 static bool auto_load_core(const char* content_path)
 {
+   core_info_list_t* core_info_list = NULL;
+
    /* TODO: error printing */
    /* TODO: what happens if the string is valid but no file exists? */
    if (string_is_empty(content_path)) return false;
    
    /* poll list of current cores */
-   core_info_list_t* core_info_list = NULL;
-
+   
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    /*This isn't needed, is it?*/
    /*command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);*/
@@ -3691,6 +3692,8 @@ bool runloop_init_libretro_symbols(
                   {
                      bool core_loaded = auto_load_core(content_path);
                      if (!core_loaded) {
+                        struct menu_state* menu_state = menu_state_get_ptr();
+
                         CORE_SYMBOLS(SYMBOL_DUMMY);
                         runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
 #ifdef HAVE_MENU
@@ -3699,7 +3702,6 @@ bool runloop_init_libretro_symbols(
                         /* Init the menu driver early to add to the menu stack - the video threading argument will be set to the proper value on the regular init */
                         menu_driver_init(false);
 
-                        struct menu_state* menu_state = menu_state_get_ptr();
 
                         strlcpy(menu_state->driver_data->deferred_path, content_path, sizeof(menu_state->driver_data->deferred_path));
                         /*
