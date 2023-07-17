@@ -511,7 +511,7 @@ static void handle_translation_cb(
       size_t i;
       char key[8];
       size_t length = strlen(key_str);
-      int start     = 0;
+      size_t start  = 0;
 
       for (i = 1; i < length; i++)
       {

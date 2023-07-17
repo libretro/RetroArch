@@ -9194,7 +9194,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
    };
    unsigned i;
    ozone_handle_t *ozone      = (ozone_handle_t*) data;
-   struct menu_state *menu_st = menu_state_get_ptr();
 
    if (ozone)
    {
