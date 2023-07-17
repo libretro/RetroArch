@@ -140,16 +140,26 @@ static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource
 static D3D12_GPU_VIRTUAL_ADDRESS
 d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {
-   D3D12_HEAP_PROPERTIES heap_props    = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
-   D3D12_RESOURCE_DESC   resource_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+   D3D12_RESOURCE_DESC   resource_desc;
+   D3D12_HEAP_PROPERTIES heap_props;
 
+   heap_props.Type                     = D3D12_HEAP_TYPE_UPLOAD;
+   heap_props.CPUPageProperty          = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference     = D3D12_MEMORY_POOL_UNKNOWN;
+   heap_props.CreationNodeMask         = 1;
+   heap_props.VisibleNodeMask          = 1;
+
+   resource_desc.Dimension             = D3D12_RESOURCE_DIMENSION_BUFFER;
+   resource_desc.Alignment             = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
    resource_desc.Width                 = size_in_bytes;
    resource_desc.Height                = 1;
    resource_desc.DepthOrArraySize      = 1;
    resource_desc.MipLevels             = 1;
+   resource_desc.Format                = DXGI_FORMAT_UNKNOWN;
    resource_desc.SampleDesc.Count      = 1;
+   resource_desc.SampleDesc.Quality    = 0;
    resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   resource_desc.Flags                 = D3D12_RESOURCE_FLAG_NONE;
 
    device->lpVtbl->CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
@@ -266,11 +276,18 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    }
 
    {
-      D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = {
-         texture->desc.Format, D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE
-      };
-      D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
+      D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support;
+      D3D12_HEAP_PROPERTIES heap_props;
+
+      format_support.Format          = texture->desc.Format;
+      format_support.Support1        = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE;
+      format_support.Support2        = D3D12_FORMAT_SUPPORT2_NONE;
+
+      heap_props.Type                = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CPUPageProperty     = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference= D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask    = 1;
+      heap_props.VisibleNodeMask     = 1;
 
       if (texture->desc.MipLevels > 1)
       {
@@ -323,20 +340,30 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
       device->lpVtbl->CreateRenderTargetView(device, (ID3D12Resource*)texture->handle, NULL, texture->rt_view);
    else
    {
-      D3D12_HEAP_PROPERTIES heap_props  = { D3D12_HEAP_TYPE_UPLOAD, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-                                           D3D12_MEMORY_POOL_UNKNOWN, 1, 1 };
-      D3D12_RESOURCE_DESC   buffer_desc = { D3D12_RESOURCE_DIMENSION_BUFFER };
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   buffer_desc;
+
+      heap_props.Type                     = D3D12_HEAP_TYPE_UPLOAD;
+      heap_props.CPUPageProperty          = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference     = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask         = 1;
+      heap_props.VisibleNodeMask          = 1;
 
       device->lpVtbl->GetCopyableFootprints(
             device, &texture->desc, 0, 1, 0, &texture->layout, &texture->num_rows,
             &texture->row_size_in_bytes, &texture->total_bytes);
 
-      buffer_desc.Width            = texture->total_bytes;
-      buffer_desc.Height           = 1;
-      buffer_desc.DepthOrArraySize = 1;
-      buffer_desc.MipLevels        = 1;
-      buffer_desc.SampleDesc.Count = 1;
-      buffer_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      buffer_desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+      buffer_desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+      buffer_desc.Width              = texture->total_bytes;
+      buffer_desc.Height             = 1;
+      buffer_desc.DepthOrArraySize   = 1;
+      buffer_desc.MipLevels          = 1;
+      buffer_desc.Format             = DXGI_FORMAT_UNKNOWN;
+      buffer_desc.SampleDesc.Count   = 1;
+      buffer_desc.SampleDesc.Quality = 0;
+      buffer_desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      buffer_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
 
       device->lpVtbl->CreateCommittedResource(
             device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
