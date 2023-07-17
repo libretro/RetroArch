@@ -208,8 +208,8 @@ static void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_t
     * If we're already in GENERAL, add a host -> shader read memory barrier
     * to invalidate texture caches.
     */
-   if (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED &&
-       texture->layout != VK_IMAGE_LAYOUT_GENERAL)
+   if (   (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED)
+       && (texture->layout != VK_IMAGE_LAYOUT_GENERAL))
       return;
 
    switch (texture->type)
@@ -379,34 +379,40 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    unsigned i;
    uint32_t buffer_width;
    struct vk_texture tex;
+   VkImageCreateInfo info;
    VkFormat remap_tex_fmt;
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
    VkDevice device                      = vk->context->device;
-   VkImageCreateInfo info               = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
    VkBufferCreateInfo buffer_info       = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
    VkImageViewCreateInfo view           = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
    VkMemoryAllocateInfo alloc           = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    VkImageSubresource subresource       = { VK_IMAGE_ASPECT_COLOR_BIT };
-   VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-   VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-   VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 
    memset(&tex, 0, sizeof(tex));
 
-   info.imageType          = VK_IMAGE_TYPE_2D;
-   info.format             = format;
-   info.extent.width       = width;
-   info.extent.height      = height;
-   info.extent.depth       = 1;
-   info.arrayLayers        = 1;
-   info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
-   info.mipLevels          = 1;
-   info.samples            = VK_SAMPLE_COUNT_1_BIT;
+   info.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+   info.pNext                 = NULL;
+   info.flags                 = 0;
+   info.imageType             = VK_IMAGE_TYPE_2D;
+   info.format                = format;
+   info.extent.width          = width;
+   info.extent.height         = height;
+   info.extent.depth          = 1;
+   info.mipLevels             = 1;
+   info.arrayLayers           = 1;
+   info.samples               = VK_SAMPLE_COUNT_1_BIT;
+   info.tiling                = VK_IMAGE_TILING_OPTIMAL;
+   info.usage                 = 0;
+   info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount = 0;
+   info.pQueueFamilyIndices   = NULL;
+   info.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
 
    /* Align stride to 4 bytes to make sure we can use compute shader uploads without too many problems. */
    buffer_width            = width * vulkan_format_to_bpp(format);
    buffer_width            = (buffer_width + 3u) & ~3u;
+
    buffer_info.size        = buffer_width * height;
    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -431,8 +437,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    if (type == VULKAN_TEXTURE_STREAMED)
    {
       VkFormatProperties format_properties;
-      const VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
-         VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+      const VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+                                          | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
 
       vkGetPhysicalDeviceFormatProperties(
             vk->context->gpu, format, &format_properties);
@@ -456,30 +462,31 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
          tex.flags         |= VK_TEX_FLAG_MIPMAP;
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
-         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
          break;
 
       case VULKAN_TEXTURE_DYNAMIC:
          retro_assert(!initial && "Dynamic textures must not have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
-         info.usage        |= VK_IMAGE_USAGE_SAMPLED_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.usage        |= VK_IMAGE_USAGE_SAMPLED_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
          break;
 
       case VULKAN_TEXTURE_STREAMED:
-         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT
+                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
          info.tiling        = VK_IMAGE_TILING_LINEAR;
          info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
          break;
 
       case VULKAN_TEXTURE_STAGING:
-         buffer_info.usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+         buffer_info.usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT 
+                            | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
          info.tiling        = VK_IMAGE_TILING_LINEAR;
          break;
@@ -491,7 +498,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
    }
 
-   if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
+   if (     (type != VULKAN_TEXTURE_STAGING)
+         && (type != VULKAN_TEXTURE_READBACK))
    {
       vkCreateImage(device, &info, NULL, &tex.image);
       vulkan_debug_mark_image(device, tex.image);
@@ -508,6 +516,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       vulkan_debug_mark_buffer(device, tex.buffer);
       vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
    }
+
    alloc.allocationSize = mem_reqs.size;
 
    switch (type)
@@ -521,49 +530,51 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
 
       default:
-         /* Try to find a memory type which is cached, even if it means manual cache management. */
+         /* Try to find a memory type which is cached, 
+          * even if it means manual cache management. */
          alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
                &vk->context->memory_properties,
                mem_reqs.memoryTypeBits,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-               VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+               | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+               | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
          if ((vk->context->memory_properties.memoryTypes
-                  [alloc.memoryTypeIndex].propertyFlags &
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+                  [ alloc.memoryTypeIndex].propertyFlags
+                  & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
             tex.flags |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
 
          /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
           * so fallback to copy path. */
-         if (type == VULKAN_TEXTURE_STREAMED &&
-               (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+         if (      type == VULKAN_TEXTURE_STREAMED
+               && (vk->context->memory_properties.memoryTypes[
+                     alloc.memoryTypeIndex].propertyFlags
+                   & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
          {
             /* Recreate texture but for STAGING this time ... */
 #ifdef VULKAN_DEBUG
             RARCH_DBG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
 #endif
-            type = VULKAN_TEXTURE_STAGING;
+            type                  = VULKAN_TEXTURE_STAGING;
             vkDestroyImage(device, tex.image, NULL);
-            tex.image          = VK_NULL_HANDLE;
-            info.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+            tex.image             = VK_NULL_HANDLE;
+            info.initialLayout    = VK_IMAGE_LAYOUT_GENERAL;
 
-            buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            buffer_info.usage     = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             vkCreateBuffer(device, &buffer_info, NULL, &tex.buffer);
             vulkan_debug_mark_buffer(device, tex.buffer);
             vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
 
             alloc.allocationSize  = mem_reqs.size;
             alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
-                  &vk->context->memory_properties,
-                  mem_reqs.memoryTypeBits,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                    &vk->context->memory_properties,
+                    mem_reqs.memoryTypeBits,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                  | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
          }
          break;
    }
@@ -585,9 +596,9 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    }
 
    /* We can pilfer the old memory and move it over to the new texture. */
-   if (old &&
-         old->memory_size >= mem_reqs.size &&
-         old->memory_type == alloc.memoryTypeIndex)
+   if (     old
+         && old->memory_size >= mem_reqs.size
+         && old->memory_type == alloc.memoryTypeIndex)
    {
       tex.memory      = old->memory;
       tex.memory_size = old->memory_size;
@@ -618,7 +629,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    if (tex.buffer)
       vkBindBufferMemory(device, tex.buffer, tex.memory, 0);
 
-   if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
+   if (     type != VULKAN_TEXTURE_STAGING 
+         && type != VULKAN_TEXTURE_READBACK)
    {
       view.image                       = tex.image;
       view.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
@@ -641,7 +653,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    else
       tex.view        = VK_NULL_HANDLE;
 
-   if (tex.image && info.tiling == VK_IMAGE_TILING_LINEAR)
+   if (     tex.image 
+         && info.tiling == VK_IMAGE_TILING_LINEAR)
       vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
    else if (tex.buffer)
    {
@@ -693,21 +706,26 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             {
                VkBufferImageCopy region;
                VkCommandBuffer staging;
+               VkCommandBufferAllocateInfo cmd_info;
                enum VkImageLayout layout_fmt = 
                   (tex.flags & VK_TEX_FLAG_MIPMAP)
                   ? VK_IMAGE_LAYOUT_GENERAL
                   : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-               struct vk_texture tmp         = vulkan_create_texture(vk, NULL,
+               struct vk_texture tmp                = vulkan_create_texture(vk, NULL,
                      width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
+               VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+               VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 
-               cmd_info.commandPool          = vk->staging_pool;
-               cmd_info.level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-               cmd_info.commandBufferCount   = 1;
+               cmd_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+               cmd_info.pNext                       = NULL;
+               cmd_info.commandPool                 = vk->staging_pool;
+               cmd_info.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+               cmd_info.commandBufferCount          = 1;
 
                vkAllocateCommandBuffers(vk->context->device,
                      &cmd_info, &staging);
 
-               begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+               begin_info.flags                     = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
                vkBeginCommandBuffer(staging, &begin_info);
 
@@ -842,7 +860,7 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    if (compute_upload)
    {
       const uint32_t ubo[3] = { dynamic->width, dynamic->height, (uint32_t)(staging->stride / 4) /* in terms of u32 words */ };
-      VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+      VkWriteDescriptorSet write;
       VkDescriptorBufferInfo buffer_info;
       VkDescriptorImageInfo image_info;
       struct vk_buffer_range range;
@@ -879,29 +897,30 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
             sizeof(ubo));
 
       image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-      image_info.imageView = dynamic->view;
-      image_info.sampler = VK_NULL_HANDLE;
+      image_info.imageView   = dynamic->view;
+      image_info.sampler     = VK_NULL_HANDLE;
 
-      buffer_info.buffer = staging->buffer;
-      buffer_info.offset = 0;
-      buffer_info.range = VK_WHOLE_SIZE;
+      buffer_info.buffer     = staging->buffer;
+      buffer_info.offset     = 0;
+      buffer_info.range      = VK_WHOLE_SIZE;
 
-      write.descriptorCount = 1;
+      write.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.pNext            = NULL;
+      write.dstSet           = set;
+      write.dstBinding       = 3;
+      write.dstArrayElement  = 0;
+      write.descriptorCount  = 1;
+      write.descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      write.pImageInfo       = &image_info;
+      write.pBufferInfo      = NULL;
       write.pTexelBufferView = NULL;
-      write.dstArrayElement = 0;
-      write.dstSet = set;
-
-      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-      write.dstBinding = 3;
-      write.pImageInfo = &image_info;
-      write.pBufferInfo = NULL;
 
       vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
 
-      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      write.dstBinding = 4;
-      write.pImageInfo = NULL;
-      write.pBufferInfo = &buffer_info;
+      write.descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      write.dstBinding       = 4;
+      write.pImageInfo       = NULL;
+      write.pBufferInfo      = &buffer_info;
 
       vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
 
@@ -932,19 +951,19 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
             VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT);
-      region.bufferOffset = 0;
-      region.bufferRowLength = 0;
-      region.bufferImageHeight = 0;
-      region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      region.imageSubresource.mipLevel = 0;
+      region.bufferOffset                    = 0;
+      region.bufferRowLength                 = 0;
+      region.bufferImageHeight               = 0;
+      region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      region.imageSubresource.mipLevel       = 0;
       region.imageSubresource.baseArrayLayer = 0;
-      region.imageSubresource.layerCount = 1;
-      region.imageOffset.x = 0;
-      region.imageOffset.y = 0;
-      region.imageOffset.z = 0;
-      region.imageExtent.width = dynamic->width;
-      region.imageExtent.height = dynamic->height;
-      region.imageExtent.depth = 1;
+      region.imageSubresource.layerCount     = 1;
+      region.imageOffset.x                   = 0;
+      region.imageOffset.y                   = 0;
+      region.imageOffset.z                   = 0;
+      region.imageExtent.width               = dynamic->width;
+      region.imageExtent.height              = dynamic->height;
+      region.imageExtent.depth               = 1;
       vkCmdCopyBufferToImage(
             cmd,
             staging->buffer,
@@ -2722,8 +2741,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
       vk->filter_chain); 
-      VkFormat rt_format = (shader_preset && shader_preset->passes) ?
-         vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
+      VkFormat rt_format = (shader_preset && shader_preset->passes)
+         ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) 
+         : VK_FORMAT_UNDEFINED;
       bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
 
       switch (rt_format)
@@ -2793,7 +2813,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain); 
-      VkFormat rt_format = (shader_preset && shader_preset->passes) ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) : VK_FORMAT_UNDEFINED;
+      VkFormat rt_format = (shader_preset && shader_preset->passes) 
+         ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1) 
+         : VK_FORMAT_UNDEFINED;
       bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
 
       switch (rt_format)
@@ -2855,21 +2877,22 @@ static void vulkan_init_static_resources(vk_t *vk)
 {
    int i;
    uint32_t blank[4 * 4];
-   VkCommandPoolCreateInfo pool_info = {
-      VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+   VkCommandPoolCreateInfo pool_info;
+   VkPipelineCacheCreateInfo cache;
 
    /* Create the pipeline cache. */
-   VkPipelineCacheCreateInfo cache   = {
-      VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
-
-   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-   if (!vk->context)
-      return;
+   cache.sType                = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+   cache.pNext                = NULL;
+   cache.flags                = 0;
+   cache.initialDataSize      = 0;
+   cache.pInitialData         = NULL;
 
    vkCreatePipelineCache(vk->context->device,
          &cache, NULL, &vk->pipelines.cache);
 
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.pNext            = NULL;
+   pool_info.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
    pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
 
    vkCreateCommandPool(vk->context->device,
@@ -3298,16 +3321,18 @@ static void *vulkan_init(const video_info_t *video,
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vulkan_init_hw_render(vk);
-   vulkan_init_static_resources(vk);
    if (vk->context)
    {
       int i;
       static const VkDescriptorPoolSize pool_sizes[4] = {
-         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
-         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       };
+
+      vulkan_init_static_resources(vk);
+
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
       vulkan_init_render_pass(vk);
@@ -3413,10 +3438,10 @@ static void vulkan_check_swapchain(vk_t *vk)
    {
       int i;
       static const VkDescriptorPoolSize pool_sizes[4] = {
-         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
          { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
-         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
@@ -3790,20 +3815,21 @@ static void vulkan_readback(vk_t *vk)
 
 static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 {
-   VkCommandBufferBeginInfo begin_info = {
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   VkSubmitInfo submit_info            = {
-      VK_STRUCTURE_TYPE_SUBMIT_INFO };
-
+   VkSubmitInfo submit_info;
+   VkCommandBufferBeginInfo begin_info;
+   const VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
    const VkClearColorValue clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
-   const VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
    unsigned frame_index                = vk->context->current_frame_index;
    unsigned swapchain_index            = vk->context->current_swapchain_index;
    struct vk_per_frame *chain          = &vk->swapchain[frame_index];
    struct vk_image *backbuffer         = &vk->backbuffers[swapchain_index];
    vk->chain                           = chain;
    vk->cmd                             = chain->cmd;
+
+   begin_info.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext                    = NULL;
    begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo         = NULL;
    vkResetCommandBuffer(vk->cmd, 0);
    vkBeginCommandBuffer(vk->cmd, &begin_info);
 
@@ -3824,8 +3850,16 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 
    vkEndCommandBuffer(vk->cmd);
 
+   submit_info.sType                   = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.pNext                   = NULL;
+   submit_info.waitSemaphoreCount      = 0;
+   submit_info.pWaitSemaphores         = NULL;
+   submit_info.pWaitDstStageMask       = NULL;
    submit_info.commandBufferCount      = 1;
    submit_info.pCommandBuffers         = &vk->cmd;
+   submit_info.signalSemaphoreCount    = 0;
+   submit_info.pSignalSemaphores       = NULL;
+
    if (
             (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
          && (vk->context->swapchain_semaphores[swapchain_index] !=
@@ -4064,12 +4098,14 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->tracker.mvp.data[i]        = 0.0f;
 
    waits_for_semaphores              = 
-       (vk->flags & VK_FLAG_HW_ENABLE) && frame &&
-       !vk->hw.num_cmd && (vk->flags & VK_FLAG_HW_VALID_SEMAPHORE);
+          (vk->flags & VK_FLAG_HW_ENABLE)
+       && frame
+       && !vk->hw.num_cmd 
+       && (vk->flags & VK_FLAG_HW_VALID_SEMAPHORE);
 
-   if (waits_for_semaphores &&
-       vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED &&
-       vk->hw.src_queue_family != vk->context->graphics_queue_index)
+   if (   waits_for_semaphores
+       && (vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED)
+       && (vk->hw.src_queue_family != vk->context->graphics_queue_index))
    {
       /* Acquire ownership of image from other queue family. */
       VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
@@ -4557,9 +4593,9 @@ static bool vulkan_frame(void *data, const void *frame,
       }
    }
 
-   if (waits_for_semaphores &&
-       vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED &&
-       vk->hw.src_queue_family != vk->context->graphics_queue_index)
+   if (    waits_for_semaphores
+       && (vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED)
+       && (vk->hw.src_queue_family != vk->context->graphics_queue_index))
    {
       /* Release ownership of image back to other queue family. */
       VULKAN_TRANSFER_IMAGE_OWNERSHIP(vk->cmd,
@@ -4946,21 +4982,15 @@ static void vulkan_set_texture_frame(void *data,
 {
    size_t y;
    unsigned stride;
-   uint8_t *ptr                        = NULL;
-   uint8_t *dst                        = NULL;
-   const uint8_t *src                  = NULL;
-   vk_t *vk                            = (vk_t*)data;
-   unsigned idx                        = 0;
-   struct vk_texture *texture          = NULL;
-   struct vk_texture *texture_optimal  = NULL;
-   VkFormat fmt                        = VK_FORMAT_B8G8R8A8_UNORM;
-   bool do_memcpy                      = true;
-   const VkComponentMapping br_swizzle = {
-      VK_COMPONENT_SWIZZLE_B,
-      VK_COMPONENT_SWIZZLE_G,
-      VK_COMPONENT_SWIZZLE_R,
-      VK_COMPONENT_SWIZZLE_A,
-   };
+   uint8_t *ptr                          = NULL;
+   uint8_t *dst                          = NULL;
+   const uint8_t *src                    = NULL;
+   vk_t *vk                              = (vk_t*)data;
+   unsigned idx                          = 0;
+   struct vk_texture *texture            = NULL;
+   struct vk_texture *texture_optimal    = NULL;
+   VkFormat fmt                          = VK_FORMAT_B8G8R8A8_UNORM;
+   bool do_memcpy                        = true;
    const VkComponentMapping *ptr_swizzle = NULL;
 
    if (!vk)
@@ -4972,23 +5002,33 @@ static void vulkan_set_texture_frame(void *data,
        vkGetPhysicalDeviceFormatProperties(vk->context->gpu, VK_FORMAT_B4G4R4A4_UNORM_PACK16, &formatProperties);
        if (formatProperties.optimalTilingFeatures != 0)
        {
-           /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
-            * just apply the swizzle in the image view instead. */
-           fmt         = VK_FORMAT_B4G4R4A4_UNORM_PACK16;
-           ptr_swizzle = &br_swizzle;
+          static const VkComponentMapping br_swizzle = 
+          {VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_A};
+          /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
+           * just apply the swizzle in the image view instead. */
+          fmt          = VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+          ptr_swizzle  = &br_swizzle;
        }
        else
            do_memcpy   = false;
    }
 
    idx                 = vk->context->current_frame_index;
-   texture             = &vk->menu.textures[idx  ];
-   texture_optimal     = &vk->menu.textures_optimal[idx  ];
+   texture             = &vk->menu.textures[idx];
+   texture_optimal     = &vk->menu.textures_optimal[idx];
 
    *texture            = vulkan_create_texture(vk,
-         texture->memory ? texture : NULL,
-         width, height, fmt, NULL, ptr_swizzle,
-         texture_optimal->memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
+           texture->memory 
+         ? texture 
+         : NULL,
+         width,
+         height,
+         fmt,
+         NULL,
+         ptr_swizzle,
+           texture_optimal->memory 
+         ? VULKAN_TEXTURE_STAGING 
+         : VULKAN_TEXTURE_STREAMED);
 
    vkMapMemory(vk->context->device, texture->memory,
          texture->offset, texture->size, 0, (void**)&ptr);
@@ -5026,8 +5066,14 @@ static void vulkan_set_texture_frame(void *data,
 
    if (texture->type == VULKAN_TEXTURE_STAGING)
       *texture_optimal = vulkan_create_texture(vk,
-            texture_optimal->memory ? texture_optimal : NULL,
-            width, height, fmt, NULL, ptr_swizzle,
+              texture_optimal->memory 
+            ? texture_optimal 
+            : NULL,
+            width,
+            height,
+            fmt,
+            NULL,
+            ptr_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
    else
    {
