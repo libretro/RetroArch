@@ -2902,18 +2902,16 @@ static void input_poll_overlay(
  *
  * Returns: key identifier.
  **/
-enum retro_key input_config_translate_str_to_rk(const char *str)
+enum retro_key input_config_translate_str_to_rk(const char *str, size_t len)
 {
    size_t i;
-   if (strlen(str) == 1 && ISALPHA((int)*str))
+   if (len == 1 && ISALPHA((int)*str))
       return (enum retro_key)(RETROK_a + (TOLOWER((int)*str) - (int)'a'));
    for (i = 0; input_config_key_map[i].str; i++)
    {
       if (string_is_equal_noncase(input_config_key_map[i].str, str))
          return input_config_key_map[i].key;
    }
-
-   RARCH_WARN("[Input]: Key name \"%s\" not found.\n", str);
    return RETROK_UNKNOWN;
 }
 
@@ -4236,7 +4234,7 @@ void config_read_keybinds_conf(void *data)
          entry                      = config_get_entry(conf, str);
          if (entry && !string_is_empty(entry->value))
             bind->key               = input_config_translate_str_to_rk(
-                  entry->value);
+                  entry->value, strlen(entry->value));
 
          /* Store new mapping bit and remember it for a while
           * so that next clear leaves the new key alone */

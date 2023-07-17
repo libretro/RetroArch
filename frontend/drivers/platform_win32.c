@@ -269,7 +269,7 @@ static void gfx_set_dwm(void)
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
-   size_t _len;
+   size_t _len            = 0;
    char build_str[11]     = {0};
    bool server            = false;
    const char *arch       = "";

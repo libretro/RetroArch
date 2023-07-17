@@ -136,7 +136,7 @@ config_file_t *config_file_new_from_path_to_string(const char *path);
  **/
 void config_file_free(config_file_t *conf);
 
-void config_file_add_reference(config_file_t *conf, char *path);
+size_t config_file_add_reference(config_file_t *conf, char *path);
 
 bool config_file_deinitialize(config_file_t *conf);
 
@@ -291,24 +291,17 @@ bool config_get_bool(config_file_t *conf, const char *entry, bool *in);
 
 /* Setters. Similar to the getters.
  * Will not write to entry if the entry was obtained from an #include. */
-void config_set_double(config_file_t *conf, const char *entry, double value);
-void config_set_float(config_file_t *conf, const char *entry, float value);
-void config_set_int(config_file_t *conf, const char *entry, int val);
-void config_set_hex(config_file_t *conf, const char *entry, unsigned val);
-void config_set_uint64(config_file_t *conf, const char *entry, uint64_t val);
-void config_set_char(config_file_t *conf, const char *entry, char val);
+size_t config_set_double(config_file_t *conf, const char *entry, double value);
+size_t config_set_float(config_file_t *conf, const char *entry, float value);
+size_t config_set_int(config_file_t *conf, const char *entry, int val);
+size_t config_set_hex(config_file_t *conf, const char *entry, unsigned val);
+size_t config_set_uint64(config_file_t *conf, const char *entry, uint64_t val);
+size_t config_set_char(config_file_t *conf, const char *entry, char val);
+size_t config_set_uint(config_file_t *conf, const char *key, unsigned int val);
+
+void config_set_path(config_file_t *conf, const char *entry, const char *val);
 void config_set_string(config_file_t *conf, const char *entry, const char *val);
 void config_unset(config_file_t *conf, const char *key);
-void config_set_path(config_file_t *conf, const char *entry, const char *val);
-
-/**
- * config_set_bool:
-
- * TODO/FIXME - could be turned into a trivial macro or removed
- **/
-void config_set_bool(config_file_t *conf, const char *entry, bool val);
-
-void config_set_uint(config_file_t *conf, const char *key, unsigned int val);
 
 /**
  * config_file_write:

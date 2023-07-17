@@ -307,7 +307,7 @@ static bool task_overlay_load_desc(
    else if (strstr(key, "retrok_") == key)
    {
       desc->type          = OVERLAY_TYPE_KEYBOARD;
-      desc->retro_key_idx = input_config_translate_str_to_rk(key + 7);
+      desc->retro_key_idx = input_config_translate_str_to_rk(key + 7, strlen(key + 7));
    }
    else
    {
