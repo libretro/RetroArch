@@ -618,9 +618,10 @@ static const char *menu_driver_get_last_start_directory(void)
 }
 
 
-int generic_action_ok_displaylist_push(const char *path,
-      const char *new_path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
+int generic_action_ok_displaylist_push(
+      const char *path, const char *new_path,
+      const char *label, unsigned type,
+      size_t idx, size_t entry_idx,
       unsigned action_type)
 {
    menu_displaylist_info_t info;
@@ -1588,14 +1589,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
-         info.directory_ptr                       = idx;
-         menu->scratchpad.unsigned_var            = (unsigned)idx;
-         info_path                                = dir_libretro;
-         info_label                               = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
-         info.enum_idx                            =
-            MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
-         dl_type                                  = DISPLAYLIST_GENERIC;
+         info.directory_ptr = idx;
+         info_path          = dir_libretro;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
+         dl_type            = DISPLAYLIST_GENERIC;
+
+         /* Required for writing to correct playlist entry */
+         menu->scratchpad.unsigned_var = (unsigned)type;
          break;
       case ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST:
 #ifdef HAVE_CHEATS
@@ -1973,9 +1974,13 @@ static int file_load_with_detect_core_wrapper(
                menu_path_new, path,
                sizeof(menu->detect_content_path));
 
+      /* Return to idx 0 */
       if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
-         return generic_action_ok_displaylist_push(path, NULL,
-               NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
+         return generic_action_ok_displaylist_push(
+               path, NULL,
+               NULL, menu->rpl_entry_selection_ptr,
+               0, entry_idx,
+               ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
 
       switch (ret)
       {
@@ -2001,8 +2006,11 @@ static int file_load_with_detect_core_wrapper(
                break;
             }
          case 0:
-            ret = generic_action_ok_displaylist_push(path, NULL, label, type,
-                  idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+            ret = generic_action_ok_displaylist_push(
+                  path, NULL,
+                  label, type,
+                  idx, entry_idx,
+                  ACTION_OK_DL_DEFERRED_CORE_LIST);
             break;
          default:
             break;
@@ -3093,8 +3101,11 @@ int  generic_action_ok_help(const char *path,
 {
    const char               *lbl  = msg_hash_to_str(id);
 
-   return generic_action_ok_displaylist_push(path, NULL, lbl, id2, idx,
-         entry_idx, ACTION_OK_DL_HELP);
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         lbl, id2,
+         idx, entry_idx,
+         ACTION_OK_DL_HELP);
 }
 
 #ifdef HAVE_BLUETOOTH
@@ -3246,8 +3257,11 @@ static int action_ok_shader_pass(const char *path,
       return -1;
 
    menu->scratchpad.unsigned_var = type - MENU_SETTINGS_SHADER_PASS_0;
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_SHADER_PASS);
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         label, type,
+         idx, entry_idx,
+         ACTION_OK_DL_SHADER_PASS);
 }
 
 static void menu_input_st_string_cb_save_preset(void *userdata,
@@ -4142,7 +4156,8 @@ push_dropdown_list:
     * rather than hijacking the generic one... */
    generic_action_ok_displaylist_push(
          option_path_str, NULL,
-         option_lbl_str, 0, idx, 0,
+         option_lbl_str, 0,
+         idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
 
    return 0;
@@ -4735,7 +4750,9 @@ static int action_ok_core_updater_list(const char *path,
    }
 
    return generic_action_ok_displaylist_push(
-         path, NULL, label, type, idx, entry_idx,
+         path, NULL,
+         label, type,
+         idx, entry_idx,
          ACTION_OK_DL_CORE_UPDATER_LIST);
 }
 
@@ -4903,8 +4920,11 @@ static int generic_action_ok_network(const char *path,
    net_http_urlencode_full(url_path_encoded, url_path, sizeof(url_path_encoded));
    task_push_http_transfer_file(url_path_encoded, suppress_msg, url_label, callback, transf);
 
-   return generic_action_ok_displaylist_push(path, NULL,
-         label, type, idx, entry_idx, type_id2);
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         label, type,
+         idx, entry_idx,
+         type_id2);
 }
 
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
@@ -5482,9 +5502,12 @@ static int action_ok_set_core_association(const char *path,
       return -1;
 
    /* TODO/FIXME - menu->rpl_entry_selection_ptr - find
-    * a way so that we can remove this temporary state */
-   return generic_action_ok_displaylist_push(path, NULL,
-         NULL, 0, menu->rpl_entry_selection_ptr, entry_idx,
+    * a way so that we can remove this temporary state
+    * required for playlist entry write */
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         NULL, menu->rpl_entry_selection_ptr,
+         idx, entry_idx,
          ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
 }
 
@@ -5864,8 +5887,10 @@ static int action_ok_rdb_entry_submenu(const char *path,
          str_list.elems[0].data, '_',
          sizeof(new_label));
 
-   ret = generic_action_ok_displaylist_push(rdb, NULL,
-         new_label, type, idx, entry_idx,
+   ret = generic_action_ok_displaylist_push(
+         rdb, NULL,
+         new_label, type,
+         idx, entry_idx,
          ACTION_OK_DL_RDB_ENTRY_SUBMENU);
 
 end:
@@ -6059,10 +6084,11 @@ static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char *new_path = NULL;
-   int ret        = generic_action_ok_displaylist_push(path, new_path,
-      msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-      MENU_SETTING_ACTION_FAVORITES_DIR, idx,
-      entry_idx, ACTION_OK_DL_CONTENT_LIST);
+   int ret        = generic_action_ok_displaylist_push(
+         path, new_path,
+         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES), MENU_SETTING_ACTION_FAVORITES_DIR,
+         idx, entry_idx,
+         ACTION_OK_DL_CONTENT_LIST);
 
    free(new_path);
    return ret;
@@ -6324,18 +6350,21 @@ static int action_ok_scan_directory_list(const char *path,
    const char *dir_menu_content      = settings->paths.directory_menu_content;
 
    filebrowser_clear_type();
-   return generic_action_ok_displaylist_push(path,
-         dir_menu_content, label, type, idx,
-         entry_idx, ACTION_OK_DL_SCAN_DIR_LIST);
+   return generic_action_ok_displaylist_push(
+         path, dir_menu_content,
+         label, type,
+         idx, entry_idx,
+         ACTION_OK_DL_SCAN_DIR_LIST);
 }
 
 static int action_ok_push_random_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, path,
-         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-         type, idx,
-         entry_idx, ACTION_OK_DL_CONTENT_LIST);
+   return generic_action_ok_displaylist_push(
+         path, path,
+         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES), type,
+         idx, entry_idx,
+         ACTION_OK_DL_CONTENT_LIST);
 }
 
 static int action_ok_push_downloads_dir(const char *path,
@@ -6345,11 +6374,11 @@ static int action_ok_push_downloads_dir(const char *path,
    const char *dir_core_assets       = settings->paths.directory_core_assets;
 
    filebrowser_set_type(FILEBROWSER_SELECT_FILE);
-   return generic_action_ok_displaylist_push(path,
-         dir_core_assets,
-         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-         type, idx,
-         entry_idx, ACTION_OK_DL_CONTENT_LIST);
+   return generic_action_ok_displaylist_push(
+         path, dir_core_assets,
+         msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES), type,
+         idx, entry_idx,
+         ACTION_OK_DL_CONTENT_LIST);
 }
 
 int action_ok_push_filebrowser_list_dir_select(const char *path,
@@ -6371,8 +6400,11 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 
    filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
-   return generic_action_ok_displaylist_push(path, current_value, label, type, idx,
-         entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+   return generic_action_ok_displaylist_push(
+         path, current_value,
+         label, type,
+         idx, entry_idx,
+         ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
 int action_ok_push_filebrowser_list_file_select(const char *path,
@@ -6385,8 +6417,11 @@ int action_ok_push_filebrowser_list_file_select(const char *path,
 
    filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         label, type,
+         idx, entry_idx,
+         ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
 int action_ok_push_manual_content_scan_dir_select(const char *path,
@@ -6396,9 +6431,11 @@ int action_ok_push_manual_content_scan_dir_select(const char *path,
    const char *dir_menu_content      = settings->paths.directory_menu_content;
 
    filebrowser_clear_type();
-   return generic_action_ok_displaylist_push(path,
-         dir_menu_content, label, type, idx,
-         entry_idx, ACTION_OK_DL_MANUAL_SCAN_DIR_LIST);
+   return generic_action_ok_displaylist_push(
+         path, dir_menu_content,
+         label, type,
+         idx, entry_idx,
+         ACTION_OK_DL_MANUAL_SCAN_DIR_LIST);
 }
 
 /* TODO/FIXME */
@@ -7061,8 +7098,11 @@ static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    filebrowser_clear_type();
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_PUSH_DEFAULT);
+   return generic_action_ok_displaylist_push(
+         path, NULL,
+         label, type,
+         idx, entry_idx,
+         ACTION_OK_DL_PUSH_DEFAULT);
 }
 
 static int action_ok_start_core(const char *path,
@@ -7227,9 +7267,11 @@ static int action_ok_load_archive_detect_core(const char *path,
          break;
       case 0:
          idx = menu_st->selection_ptr;
-         ret = generic_action_ok_displaylist_push(path, NULL,
+         ret = generic_action_ok_displaylist_push(
+               path, NULL,
                label, type,
-               idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+               idx, entry_idx,
+               ACTION_OK_DL_DEFERRED_CORE_LIST);
          break;
       default:
          break;
@@ -7249,8 +7291,9 @@ DEFAULT_ACTION_OK_HELP(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING
 static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 {
    generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+         NULL, NULL,
+         NULL, 0,
+         idx, 0,
          lbl);
    return 0;
 }
@@ -7338,8 +7381,9 @@ static int action_ok_remappings_port_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    generic_action_ok_displaylist_push(
-         path,
-         NULL, label, 0, idx, 0,
+         path, NULL,
+         label, 0,
+         idx, 0,
          ACTION_OK_DL_REMAPPINGS_PORT_LIST);
    return 0;
 }
@@ -7392,7 +7436,9 @@ static int action_ok_input_description_dropdown_box_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(
-      path, NULL, label, type, idx, entry_idx,
+      path, NULL,
+      label, type,
+      idx, entry_idx,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION);
 }
 
@@ -7401,7 +7447,9 @@ static int action_ok_input_description_kbd_dropdown_box_list(
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(
-      path, NULL, label, type, idx, entry_idx,
+      path, NULL,
+      label, type,
+      idx, entry_idx,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD);
 }
 
