@@ -383,10 +383,9 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    VkFormat remap_tex_fmt;
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
+   VkMemoryAllocateInfo alloc;
    VkDevice device                      = vk->context->device;
    VkBufferCreateInfo buffer_info       = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-   VkImageViewCreateInfo view           = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-   VkMemoryAllocateInfo alloc           = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    VkImageSubresource subresource       = { VK_IMAGE_ASPECT_COLOR_BIT };
 
    memset(&tex, 0, sizeof(tex));
@@ -517,7 +516,10 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       vkGetBufferMemoryRequirements(device, tex.buffer, &mem_reqs);
    }
 
-   alloc.allocationSize = mem_reqs.size;
+   alloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext           = NULL;
+   alloc.allocationSize  = mem_reqs.size;
+   alloc.memoryTypeIndex = 0;
 
    switch (type)
    {
@@ -632,21 +634,27 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    if (     type != VULKAN_TEXTURE_STAGING 
          && type != VULKAN_TEXTURE_READBACK)
    {
-      view.image                       = tex.image;
-      view.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
-      view.format                      = format;
+      VkImageViewCreateInfo view;
+      view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      view.pNext                           = NULL;
+      view.flags                           = 0;
+      view.image                           = tex.image;
+      view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+      view.format                          = format;
       if (swizzle)
-         view.components               = *swizzle;
+         view.components                   = *swizzle;
       else
       {
-         view.components.r             = VK_COMPONENT_SWIZZLE_R;
-         view.components.g             = VK_COMPONENT_SWIZZLE_G;
-         view.components.b             = VK_COMPONENT_SWIZZLE_B;
-         view.components.a             = VK_COMPONENT_SWIZZLE_A;
+         view.components.r                 = VK_COMPONENT_SWIZZLE_R;
+         view.components.g                 = VK_COMPONENT_SWIZZLE_G;
+         view.components.b                 = VK_COMPONENT_SWIZZLE_B;
+         view.components.a                 = VK_COMPONENT_SWIZZLE_A;
       }
-      view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      view.subresourceRange.levelCount = info.mipLevels;
-      view.subresourceRange.layerCount = 1;
+      view.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      view.subresourceRange.baseMipLevel   = 0;
+      view.subresourceRange.levelCount     = info.mipLevels;
+      view.subresourceRange.baseArrayLayer = 0;
+      view.subresourceRange.layerCount     = 1;
 
       vkCreateImageView(device, &view, NULL, &tex.view);
    }
@@ -706,6 +714,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             {
                VkBufferImageCopy region;
                VkCommandBuffer staging;
+               VkSubmitInfo submit_info;
+               VkCommandBufferBeginInfo begin_info;
                VkCommandBufferAllocateInfo cmd_info;
                enum VkImageLayout layout_fmt = 
                   (tex.flags & VK_TEX_FLAG_MIPMAP)
@@ -713,8 +723,6 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                   : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                struct vk_texture tmp                = vulkan_create_texture(vk, NULL,
                      width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
-               VkSubmitInfo submit_info             = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-               VkCommandBufferBeginInfo begin_info  = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 
                cmd_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
                cmd_info.pNext                       = NULL;
@@ -725,7 +733,10 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                vkAllocateCommandBuffers(vk->context->device,
                      &cmd_info, &staging);
 
+               begin_info.sType                     = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+               begin_info.pNext                     = NULL;
                begin_info.flags                     = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+               begin_info.pInheritanceInfo          = NULL;
 
                vkBeginCommandBuffer(staging, &begin_info);
 
@@ -814,8 +825,15 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
                vkEndCommandBuffer(staging);
-               submit_info.commandBufferCount = 1;
-               submit_info.pCommandBuffers    = &staging;
+               submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+               submit_info.pNext                = NULL;
+               submit_info.waitSemaphoreCount   = 0;
+               submit_info.pWaitSemaphores      = NULL;
+               submit_info.pWaitDstStageMask    = NULL;
+               submit_info.commandBufferCount   = 1;
+               submit_info.pCommandBuffers      = &staging;
+               submit_info.signalSemaphoreCount = 0;
+               submit_info.pSignalSemaphores    = NULL;
 
 #ifdef HAVE_THREADS
                slock_lock(vk->context->queue_lock);
@@ -847,7 +865,6 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
 
    return tex;
 }
-
 
 /* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
  * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
