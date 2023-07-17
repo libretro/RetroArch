@@ -4503,24 +4503,6 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          playlist_path, "_history.lpl", strlen(playlist_path),
          STRLEN_CONST("_history.lpl"));
 
-   /* Default core association
-    * > This is only shown for collection playlists
-    *   (i.e. it is not relevant for history/favourites) */
-   if (   !is_content_history
-       && !string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
-      menu_entries_append(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
-            MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-            MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0, NULL);
-
-   /* Reset core associations */
-   menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES),
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES),
-         MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
-         MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES, 0, 0, NULL);
-
    /* Label display mode */
    menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE),
@@ -4577,6 +4559,24 @@ static bool menu_displaylist_parse_playlist_manager_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE),
             MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE,
             MENU_SETTING_PLAYLIST_MANAGER_SORT_MODE, 0, 0, NULL);
+
+   /* Default core association
+    * > This is only shown for collection playlists
+    *   (i.e. it is not relevant for history/favourites) */
+   if (   !is_content_history
+       && !string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+            MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0, NULL);
+
+   /* Reset core associations */
+   menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES),
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES),
+         MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
+         MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES, 0, 0, NULL);
 
    /* Refresh playlist */
    if (playlist_scan_refresh_enabled(playlist))
