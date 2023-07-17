@@ -444,7 +444,7 @@ bool gfx_thumbnail_set_content_playlist(
             content_label, sizeof(path_data->content_label));
    else
       fill_pathname(path_data->content_label,
-            path_basename_nocompression(content_path),
+            path_basename(content_path),
             "", sizeof(path_data->content_label));
    
    /* Determine content image name */
