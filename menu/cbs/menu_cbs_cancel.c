@@ -124,7 +124,7 @@ static const char* find_core_updater_list_flush_target()
       MENU_ENUM_LABEL_ONLINE_UPDATER,
       MENU_ENUM_LABEL_CORE_LIST,
       MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
-      NULL,
+      MSG_UNKNOWN,
    };
 
    size_t i;
@@ -134,7 +134,7 @@ static const char* find_core_updater_list_flush_target()
    {
       candidate_label = menu_list->list[i].label;
       target_idx = 0;
-      while (all_targets_hashes[target_idx])
+      while (all_targets_hashes[target_idx] != MSG_UNKNOWN)
       {
          if (string_is_equal(candidate_label, msg_hash_to_str(all_targets_hashes[target_idx++]))) return candidate_label;
       }
