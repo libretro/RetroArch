@@ -2677,23 +2677,28 @@ static void xmb_populate_entries(void *data,
    xmb_system_tab       = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    xmb_horizontal_type  = (xmb_system_tab == UINT_MAX ? xmb_get_horizontal_selection_type(xmb) : 0);
    /* Determine whether this is a playlist */
-   xmb->is_playlist     = (depth == 1
-                      && ((xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES)
-                      || (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY)
+   xmb->is_playlist     =
+            (depth == 1
+         && (  (xmb_system_tab == XMB_SYSTEM_TAB_FAVORITES)
+            || (xmb_system_tab == XMB_SYSTEM_TAB_HISTORY)
 #ifdef HAVE_IMAGEVIEWER
-                      || (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES)
+            || (xmb_system_tab == XMB_SYSTEM_TAB_IMAGES)
 #endif
-                      || (xmb_system_tab == XMB_SYSTEM_TAB_MUSIC)
+            || (xmb_system_tab == XMB_SYSTEM_TAB_MUSIC)
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-                      || (xmb_system_tab == XMB_SYSTEM_TAB_VIDEO)
+            || (xmb_system_tab == XMB_SYSTEM_TAB_VIDEO)
 #endif
-                      ))
-                      || (xmb_horizontal_type == FILE_TYPE_PLAYLIST_COLLECTION)
-                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
-                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
-                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
-                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
+         ))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
+
+   xmb->is_playlist |=
+            (xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
+         || (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4);
+
    xmb->is_playlist = 
              xmb->is_playlist
          && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION))
