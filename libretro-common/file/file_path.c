@@ -537,14 +537,14 @@ void fill_pathname_parent_dir(char *out_dir,
 size_t fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
-   time_t cur_time = time(NULL);
+   size_t _len;
    struct tm tm_;
-
+   time_t cur_time = time(NULL);
    rtime_localtime(&cur_time, &tm_);
-
-   strftime(out_filename, size,
+   _len  = strftime(out_filename, size,
          "RetroArch-%m%d-%H%M%S", &tm_);
-   return strlcat(out_filename, ext, size);
+   _len += strlcpy(out_filename + _len, ext, size - _len);
+   return _len;
 }
 
 /**
@@ -569,18 +569,19 @@ size_t fill_str_dated_filename(char *out_filename,
    char format[NAME_MAX_LENGTH];
    size_t _len     = 0;
    time_t cur_time = time(NULL);
-
    rtime_localtime(&cur_time, &tm_);
-
-   strlcpy(out_filename, in_str, size);
+   _len      = strlcpy(out_filename, in_str, size);
    if (string_is_empty(ext))
    {
       strftime(format, sizeof(format), "-%y%m%d-%H%M%S", &tm_);
-      return strlcat(out_filename, format, size);
+      _len  += strlcpy(out_filename + _len, format, size - _len);
    }
-   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
-   _len  = strlcat(out_filename, format, size);
-   _len += strlcpy(out_filename + _len, ext, size - _len);
+   else
+   {
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
+      _len  += strlcpy(out_filename + _len, format, size - _len);
+      _len  += strlcpy(out_filename + _len, ext,    size - _len);
+   }
    return _len;
 }
 
