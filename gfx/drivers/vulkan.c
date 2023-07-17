@@ -2202,13 +2202,13 @@ static void vulkan_init_pipelines(vk_t *vk)
    raster.polygonMode                   = VK_POLYGON_MODE_FILL;
    raster.cullMode                      = VK_CULL_MODE_NONE;
    raster.frontFace                     = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-   raster.depthClampEnable              = false;
-   raster.rasterizerDiscardEnable       = false;
-   raster.depthBiasEnable               = false;
+   raster.depthClampEnable              = VK_FALSE;
+   raster.rasterizerDiscardEnable       = VK_FALSE;
+   raster.depthBiasEnable               = VK_FALSE;
    raster.lineWidth                     = 1.0f;
 
    /* Blend state */
-   blend_attachment.blendEnable         = false;
+   blend_attachment.blendEnable         = VK_FALSE;
    blend_attachment.colorWriteMask      = 0xf;
    blend.attachmentCount                = 1;
    blend.pAttachments                   = &blend_attachment;
@@ -2218,10 +2218,10 @@ static void vulkan_init_pipelines(vk_t *vk)
    viewport.scissorCount                = 1;
 
    /* Depth-stencil state */
-   depth_stencil.depthTestEnable        = false;
-   depth_stencil.depthWriteEnable       = false;
-   depth_stencil.depthBoundsTestEnable  = false;
-   depth_stencil.stencilTestEnable      = false;
+   depth_stencil.depthTestEnable        = VK_FALSE;
+   depth_stencil.depthWriteEnable       = VK_FALSE;
+   depth_stencil.depthBoundsTestEnable  = VK_FALSE;
+   depth_stencil.stencilTestEnable      = VK_FALSE;
    depth_stencil.minDepthBounds         = 0.0f;
    depth_stencil.maxDepthBounds         = 1.0f;
 
@@ -2252,7 +2252,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkCreateShaderModule(vk->context->device,
          &module_info, NULL, &shader_stages[0].module);
 
-   blend_attachment.blendEnable         = true;
+   blend_attachment.blendEnable         = VK_TRUE;
    blend_attachment.colorWriteMask      = 0xf;
    blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
    blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -2298,13 +2298,13 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   blend_attachment.blendEnable = false;
+   blend_attachment.blendEnable = VK_FALSE;
 
    /* HDR pipeline. */
-   module_info.codeSize   = sizeof(hdr_frag);
-   module_info.pCode      = hdr_frag;
-   shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName = "main";
+   module_info.codeSize         = sizeof(hdr_frag);
+   module_info.pCode            = hdr_frag;
+   shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName       = "main";
    vkCreateShaderModule(vk->context->device,
          &module_info, NULL, &shader_stages[1].module);
 
@@ -2321,7 +2321,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
-   blend_attachment.blendEnable = true; 
+   blend_attachment.blendEnable = VK_TRUE; 
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
@@ -2453,13 +2453,13 @@ static void vulkan_init_samplers(vk_t *vk)
    info.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
    info.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
    info.mipLodBias              = 0.0f;
-   info.anisotropyEnable        = false;
+   info.anisotropyEnable        = VK_FALSE;
    info.maxAnisotropy           = 1.0f;
-   info.compareEnable           = false;
+   info.compareEnable           = VK_FALSE;
    info.minLod                  = 0.0f;
    info.maxLod                  = 0.0f;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-   info.unnormalizedCoordinates = false;
+   info.unnormalizedCoordinates = VK_FALSE;
    vkCreateSampler(vk->context->device,
          &info, NULL, &vk->samplers.nearest);
 

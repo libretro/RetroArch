@@ -690,24 +690,23 @@ const char *path_basename_nocompression(const char *path)
  **/
 bool path_is_absolute(const char *path)
 {
-   if (string_is_empty(path))
-      return false;
-
-   if (path[0] == '/')
-      return true;
-
-#if defined(_WIN32)
-   /* Many roads lead to Rome...
-    * Note: Drive letter can only be 1 character long */
-   return ( string_starts_with_size(path,     "\\\\", STRLEN_CONST("\\\\"))
-         || string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/")) 
-         || string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")));
-#elif defined(__wiiu__) || defined(VITA)
+   if (!string_is_empty(path))
    {
-      const char *seperator = strchr(path, ':');
-      return (seperator && (seperator[1] == '/'));
-   }
+      if (path[0] == '/')
+         return true;
+#if defined(_WIN32)
+      /* Many roads lead to Rome...
+       * Note: Drive letter can only be 1 character long */
+      return ( string_starts_with_size(path,     "\\\\", STRLEN_CONST("\\\\"))
+            || string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/")) 
+            || string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")));
+#elif defined(__wiiu__) || defined(VITA)
+      {
+         const char *seperator = strchr(path, ':');
+         return (seperator && (seperator[1] == '/'));
+      }
 #endif
+   }
 
    return false;
 }
@@ -733,7 +732,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 #ifdef _WIN32
-   char *ret = NULL;
+   char *ret         = NULL;
    wchar_t *rel_path = utf8_to_utf16_string_alloc(buf);
 
    if (rel_path)
@@ -787,7 +786,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
    {
       size_t len;
       /* rebase on working directory */
-      if (!getcwd(tmp, PATH_MAX_LENGTH-1))
+      if (!getcwd(tmp, PATH_MAX_LENGTH - 1))
          return NULL;
 
       len = strlen(tmp);
@@ -824,8 +823,8 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
             return NULL;
 
          /* delete previous segment in tmp by adjusting size t
-          * tmp[t-1] == '/', find '/' before that */
-         t = t-2;
+          * tmp[t - 1] == '/', find '/' before that */
+         t -= 2;
          while (tmp[t] != '/')
             t--;
          t++;
@@ -837,7 +836,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
       else
       {
          /* fail when truncating */
-         if (t + next - p + 1 > PATH_MAX_LENGTH-1)
+         if (t + next - p + 1 > PATH_MAX_LENGTH - 1)
             return NULL;
 
          while (p <= next)
@@ -1158,12 +1157,12 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  *
  * Leaf function.
  *
- * Changes the slashes to the correct kind for the os 
+ * Changes the slashes to the correct kind for the OS 
  * So forward slash on linux and backslash on Windows
  **/
 void pathname_conform_slashes_to_os(char *path)
 {
-   /* Conform slashes to os standard so we get proper matching */
+   /* Conform slashes to OS standard so we get proper matching */
    char *p;
    for (p = path; *p; p++)
       if (*p == '/' || *p == '\\')
@@ -1181,7 +1180,7 @@ void pathname_conform_slashes_to_os(char *path)
  **/
 void pathname_make_slashes_portable(char *path)
 {
-   /* Conform slashes to os standard so we get proper matching */
+   /* Conform slashes to OS standard so we get proper matching */
    char *p;
    for (p = path; *p; p++)
       if (*p == '/' || *p == '\\')

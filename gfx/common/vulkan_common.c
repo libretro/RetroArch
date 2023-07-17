@@ -2209,7 +2209,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.preTransform           = pre_transform;
    info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
-   info.clipped                = true;
+   info.clipped                = VK_TRUE;
    info.oldSwapchain           = old_swapchain;
 
 #ifdef _WIN32
