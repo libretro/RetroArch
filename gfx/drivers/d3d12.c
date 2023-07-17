@@ -3603,6 +3603,7 @@ static bool d3d12_gfx_frame(
                }
 
                {
+                  D3D12_SAMPLER_DESC desc;
                   D3D12_CPU_DESCRIPTOR_HANDLE handle = {
                           d3d12->pass[i].samplers.ptr 
                         - d3d12->desc.sampler_heap.gpu.ptr 
@@ -3610,10 +3611,11 @@ static bool d3d12_gfx_frame(
                         + texture_sem->binding 
                         * d3d12->desc.sampler_heap.stride
                   };
-                  D3D12_SAMPLER_DESC desc = { D3D12_FILTER_MIN_MAG_MIP_LINEAR };
 
                   if (texture_sem->filter == RARCH_FILTER_NEAREST)
                      desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+                  else
+                     desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 
                   switch (texture_sem->wrap)
                   {
@@ -3637,10 +3639,15 @@ static bool d3d12_gfx_frame(
 
                   desc.AddressV       = desc.AddressU;
                   desc.AddressW       = desc.AddressU;
+                  desc.MipLODBias     = 0.0f;
                   desc.MaxAnisotropy  = 1;
                   desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+                  desc.BorderColor[0] = 0.0f;
+                  desc.BorderColor[1] = 0.0f;
+                  desc.BorderColor[2] = 0.0f;
+                  desc.BorderColor[3] = 0.0f;
                   desc.MinLOD         = -D3D12_FLOAT32_MAX;
-                  desc.MaxLOD         = D3D12_FLOAT32_MAX;
+                  desc.MaxLOD         =  D3D12_FLOAT32_MAX;
 
                   d3d12->device->lpVtbl->CreateSampler(d3d12->device, &desc, handle);
                }
