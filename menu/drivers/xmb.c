@@ -356,6 +356,7 @@ typedef struct xmb_handle
 
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
+   unsigned ticker_limit;
 
    float fullscreen_thumbnail_alpha;
    float x;
@@ -3747,38 +3748,40 @@ static int xmb_draw_item(
 
    if (!texture_switch)
    {
-      if (
-            (
-                (xmb->thumbnails.savestate.status  == GFX_THUMBNAIL_STATUS_AVAILABLE)
-            || (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-            && ((xmb->thumbnails.right.status      == GFX_THUMBNAIL_STATUS_AVAILABLE)
-            ||  (xmb->thumbnails.right.status      == GFX_THUMBNAIL_STATUS_PENDING)))
-            || (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
-            && ((xmb->thumbnails.left.status       == GFX_THUMBNAIL_STATUS_AVAILABLE)
-            ||  (xmb->thumbnails.left.status       == GFX_THUMBNAIL_STATUS_PENDING)))
-            )
+      bool menu_xmb_vertical_thumbnails = settings->bools.menu_xmb_vertical_thumbnails;
+      bool show_right_thumbnail         =
+            (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+               && (  (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+                  || (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_PENDING)));
+      bool show_left_thumbnail          =
+            (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+               && (  (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+                  || (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_PENDING)));
+
+      if (     xmb->is_playlist
             && !xmb->is_playlist_information
             && xmb->use_ps3_layout
+            && (  show_right_thumbnail
+               || (show_left_thumbnail && menu_xmb_vertical_thumbnails))
          )
       {
-         if (xmb->is_playlist)
-            ticker_limit      = 40 * xmb_scale_mod[1];
+         ticker_limit                   = 40 * xmb_scale_mod[1];
 
          /* Can increase text length if thumbnail is downscaled */
          if (xmb_thumbnail_scale_factor < 100)
          {
-            float ticker_scale_factor =
+            float ticker_scale_factor   =
                   1.0f - ((float)xmb_thumbnail_scale_factor / 100.0f);
 
-            ticker_limit             +=
+            ticker_limit               +=
                   (unsigned)(ticker_scale_factor * 15.0f * xmb_scale_mod[1]);
 
-            line_ticker_width        +=
+            line_ticker_width          +=
                   (unsigned)(ticker_scale_factor * 10.0f * xmb_scale_mod[3]);
          }
       }
       else if (!draw_text_value || string_is_empty(entry.value))
-         ticker_limit           = ((xmb->use_ps3_layout) ? 78 : 56) * xmb_scale_mod[2];
+         ticker_limit                   = ((xmb->use_ps3_layout) ? 78 : 56) * xmb_scale_mod[2];
    }
 
    switch (entry_type)
@@ -3794,6 +3797,17 @@ static int xmb_draw_item(
          break;
    }
 
+   /* Don't update ticker limit while waiting for thumbnail status */
+   if (     xmb->is_playlist
+         && (  (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+               && xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+            || (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+               && xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_UNKNOWN))
+      )
+      ; /* no-op */
+   else
+      xmb->ticker_limit = ticker_limit;
+
    if (!string_is_empty(entry.rich_label))
       ticker_str                = entry.rich_label;
    else
@@ -3802,7 +3816,7 @@ static int xmb_draw_item(
    if (use_smooth_ticker)
    {
       ticker_smooth.selected    = (i == current);
-      ticker_smooth.field_width = xmb->font_size * 0.5f * ticker_limit;
+      ticker_smooth.field_width = xmb->font_size * 0.5f * xmb->ticker_limit;
       ticker_smooth.src_str     = ticker_str;
       ticker_smooth.dst_str     = tmp;
       ticker_smooth.dst_str_len = sizeof(tmp);
@@ -3813,7 +3827,7 @@ static int xmb_draw_item(
    else
    {
       ticker.s        = tmp;
-      ticker.len      = ticker_limit;
+      ticker.len      = xmb->ticker_limit;
       ticker.str      = ticker_str;
       ticker.selected = (i == current);
 
