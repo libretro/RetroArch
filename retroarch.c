@@ -765,8 +765,8 @@ void driver_set_nonblock_state(void)
             video_nonblock = true;
          video_st->current_video->set_nonblock_state(video_st->data,
                video_nonblock,
-               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               adaptive_vsync, swap_interval);
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
+               && adaptive_vsync, swap_interval);
       }
    }
 
@@ -878,20 +878,20 @@ void drivers_init(
       float refresh_rate                   = av_info->timing.fps;
       unsigned autoswitch_refresh_rate     = settings->uints.video_autoswitch_refresh_rate;
       bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
-      bool windowed_fullscreen             = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
-      bool all_fullscreen                  = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
+      bool windowed_fullscreen             = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
+      bool all_fullscreen                  = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
    
       /* Making a switch from PC standard 60 Hz to NTSC 59.94 is excluded by the last condition. */
-      if (  refresh_rate > 0.0
+      if (     (refresh_rate > 0.0f)
             && !settings->uints.crt_switch_resolution
             && !settings->bools.vrr_runloop_enable
             && video_display_server_has_resolution_list()
             && (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF)
             && (fabs(settings->floats.video_refresh_rate - refresh_rate) > 1))
       {
-         if (((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen) ||
-             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN) && windowed_fullscreen)   ||
-             ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN) && all_fullscreen))
+         if (   ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen)
+             || ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN)  && windowed_fullscreen)
+             || ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN)       && all_fullscreen))
          {
             bool video_switch_refresh_rate = false;
    
@@ -977,8 +977,8 @@ void drivers_init(
    {
       bool rarch_force_fullscreen = video_st->flags &
          VIDEO_FLAG_FORCE_FULLSCREEN;
-      bool video_is_fullscreen    = settings->bools.video_fullscreen ||
-            rarch_force_fullscreen;
+      bool video_is_fullscreen    = settings->bools.video_fullscreen
+                                 || rarch_force_fullscreen;
 
       p_dispwidget->active= gfx_widgets_init(
             p_disp,
@@ -1017,8 +1017,8 @@ void drivers_init(
    /* Initialising the menu driver will also initialise
     * core info - if we are not initialising the menu
     * driver, must initialise core info 'by hand' */
-   if (!(flags & DRIVER_VIDEO_MASK) ||
-       !(flags & DRIVER_MENU_MASK))
+   if (   !(flags & DRIVER_VIDEO_MASK)
+       || !(flags & DRIVER_MENU_MASK))
    {
       command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
       command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
@@ -1967,12 +1967,12 @@ enum rarch_content_type path_is_media_type(const char *path)
    string_to_lower(ext_lower);
 
    /* hack, to detect livestreams so the ffmpeg core can be started */
-   if (string_starts_with_size(path, "udp://",   STRLEN_CONST("udp://"))   ||
-       string_starts_with_size(path, "http://",  STRLEN_CONST("http://"))  ||
-       string_starts_with_size(path, "https://", STRLEN_CONST("https://")) ||
-       string_starts_with_size(path, "tcp://",   STRLEN_CONST("tcp://"))   ||
-       string_starts_with_size(path, "rtmp://",  STRLEN_CONST("rtmp://"))  ||
-       string_starts_with_size(path, "rtp://",   STRLEN_CONST("rtp://")))
+   if (   string_starts_with_size(path, "udp://",   STRLEN_CONST("udp://"))
+       || string_starts_with_size(path, "http://",  STRLEN_CONST("http://"))
+       || string_starts_with_size(path, "https://", STRLEN_CONST("https://"))
+       || string_starts_with_size(path, "tcp://",   STRLEN_CONST("tcp://"))
+       || string_starts_with_size(path, "rtmp://",  STRLEN_CONST("rtmp://"))
+       || string_starts_with_size(path, "rtp://",   STRLEN_CONST("rtp://")))
       return RARCH_CONTENT_MOVIE;
 
    switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
@@ -2159,8 +2159,8 @@ void dir_check_defaults(const char *custom_ini_path)
 
    /* Early return for people with a custom folder setup
     * so it doesn't create unnecessary directories */
-   if (!string_is_empty(custom_ini_path) &&
-       path_is_valid(custom_ini_path))
+   if (  !string_is_empty(custom_ini_path)
+       && path_is_valid(custom_ini_path))
       return;
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
@@ -3328,7 +3328,8 @@ bool command_event(enum event_command cmd, void *data)
             audio_st->callback.callback  = NULL;
             audio_st->callback.set_state = NULL;
 
-            if (!type || !runloop_event_init_core(settings, input_st, *type,
+            if (     !type 
+                  || !runloop_event_init_core(settings, input_st, *type,
                      p_rarch->dir_savefile, p_rarch->dir_savestate))
             {
                /* If core failed to initialise, audio callback
@@ -3355,8 +3356,8 @@ bool command_event(enum event_command cmd, void *data)
                video_st->current_video->set_nonblock_state(
                      video_st->data, false,
                      video_driver_test_all_flags(
-                        GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-                     adaptive_vsync, swap_interval);
+                        GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
+                     && adaptive_vsync, swap_interval);
          }
          break;
       case CMD_EVENT_VIDEO_SET_ASPECT_RATIO:
@@ -3526,8 +3527,9 @@ bool command_event(enum event_command cmd, void *data)
                         playlist_get_sort_mode(g_defaults.content_favorites);
 
                      /* New addition - need to resort if option is enabled */
-                     if ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
-                           (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
+                     if (     (playlist_sort_alphabetical 
+                           && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+                           || (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites);
@@ -3700,8 +3702,8 @@ bool command_event(enum event_command cmd, void *data)
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
 #ifdef HAVE_NETWORKING
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro
+               && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
 #endif
@@ -3723,8 +3725,8 @@ bool command_event(enum event_command cmd, void *data)
          else
          {
 #ifdef HAVE_NETWORKING
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro &&
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro
+               && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
 #endif
@@ -3924,8 +3926,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_HOST_TOGGLE:
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
          {
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) ||
-                  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+            if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
+                  || netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
                command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
          }
          else
@@ -4286,8 +4288,8 @@ bool command_event(enum event_command cmd, void *data)
                      video_st->poke->show_mouse(video_st->data, false);
                }
                /* Ungrab only if windowed and auto mouse grab is disabled */
-               else if (!video_fullscreen &&
-                     !settings->bools.input_auto_mouse_grab)
+               else if (!video_fullscreen
+                     && !settings->bools.input_auto_mouse_grab)
                {
                   if (input_driver_ungrab_mouse())
                      input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
@@ -4395,7 +4397,8 @@ bool command_event(enum event_command cmd, void *data)
             unsigned ai_service_mode  = settings->uints.ai_service_mode;
 
 #ifdef HAVE_AUDIOMIXER
-            if (ai_service_mode == 1 && audio_driver_is_ai_service_speech_running())
+            if (    (ai_service_mode == 1)
+                  && audio_driver_is_ai_service_speech_running())
             {
                audio_driver_mixer_stop_stream(10);
                audio_driver_mixer_remove_stream(10);
@@ -4415,7 +4418,7 @@ bool command_event(enum event_command cmd, void *data)
             if (is_accessibility_enabled(
                      accessibility_enable,
                      access_st->enabled)
-                  && ai_service_mode == 2
+                  && (ai_service_mode == 2)
                   && is_narrator_running(accessibility_enable))
                accessibility_speak_priority(
                      accessibility_enable,
@@ -4428,7 +4431,7 @@ bool command_event(enum event_command cmd, void *data)
                if (data)
                   paused = *((bool*)data);
 
-               if (      access_st->ai_service_auto == 0
+               if (     (access_st->ai_service_auto == 0)
                      && !settings->bools.ai_service_pause)
                   access_st->ai_service_auto = 1;
 
@@ -5454,10 +5457,10 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
       core_ext[0] = '\0';
 
-      if (string_is_empty(settings->paths.directory_libretro) ||
-          !frontend_driver_get_core_extension(core_ext,
-               sizeof(core_ext)) ||
-          !string_is_equal(path_ext, core_ext))
+      if (    string_is_empty(settings->paths.directory_libretro)
+          || !frontend_driver_get_core_extension(core_ext,
+               sizeof(core_ext))
+          || !string_is_equal(path_ext, core_ext))
          goto end;
 
       fill_pathname_join_special(tmp_path, settings->paths.directory_libretro,
@@ -5468,8 +5471,8 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
       path_stats = path_stat(tmp_path);
 
-      if ((path_stats & RETRO_VFS_STAT_IS_VALID) != 0 &&
-          (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
+      if (   (path_stats & RETRO_VFS_STAT_IS_VALID)     != 0 
+          && (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
       {
          core_path         = tmp_path;
          core_path_matched = true;
@@ -7282,8 +7285,8 @@ void retroarch_favorites_init(void)
 
    /* Ensure that playlist is sorted alphabetically,
     * if required */
-   if ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
-       (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
+   if (   (playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+       || (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
       playlist_qsort(g_defaults.content_favorites);
 }
 

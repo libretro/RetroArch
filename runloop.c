@@ -745,8 +745,8 @@ static bool dynamic_verify_hw_context(
          case RETRO_HW_CONTEXT_OPENGLES3:
          case RETRO_HW_CONTEXT_OPENGLES_VERSION:
          case RETRO_HW_CONTEXT_OPENGL:
-            if (!string_is_equal(video_ident, "gl") &&
-                  !string_is_equal(video_ident, "glcore"))
+            if (     !string_is_equal(video_ident, "gl")
+                  && !string_is_equal(video_ident, "glcore"))
                return false;
             break;
          case RETRO_HW_CONTEXT_D3D10:
@@ -1218,8 +1218,8 @@ static void runloop_init_core_options_path(
    bool game_specific_options     = settings->bools.game_specific_options;
 
    /* Check whether game-specific options exist */
-   if (game_specific_options &&
-       validate_game_specific_options(&game_options_path))
+   if (   game_specific_options
+       && validate_game_specific_options(&game_options_path))
    {
       /* Notify system that we have a valid core options
        * override */
@@ -1233,8 +1233,8 @@ static void runloop_init_core_options_path(
       free(game_options_path);
    }
    /* Check whether folder-specific options exist */
-   else if (game_specific_options &&
-            validate_folder_specific_options(
+   else if (   game_specific_options
+            && validate_folder_specific_options(
                &folder_options_path))
    {
       /* Notify system that we have a valid core options
@@ -1277,7 +1277,8 @@ static void runloop_init_core_options_path(
 
       /* If not using per-core options, or if a per-core options
        * file does not yet exist, must fetch 'global' options path */
-      if (!per_core_options || !per_core_options_exist)
+      if (     !per_core_options 
+            || !per_core_options_exist)
       {
          const char *options_path   = path_core_options;
 
@@ -1750,8 +1751,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   *update_display_callback =
                         (const struct retro_core_options_update_display_callback*)data;
 
-            if (update_display_callback &&
-                update_display_callback->callback)
+            if (   update_display_callback
+                && update_display_callback->callback)
                runloop_st->core_options_callback.update_display =
                      update_display_callback->callback;
             else
@@ -1832,8 +1833,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
                    * priority */
-                  if (!runloop_st->core_status_msg.set ||
-                      (runloop_st->core_status_msg.priority <= msg->priority))
+                  if (   !runloop_st->core_status_msg.set
+                      || (runloop_st->core_status_msg.priority <= msg->priority))
                   {
                      if (!string_is_empty(msg->msg))
                      {
@@ -1974,7 +1975,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             const char *dir_system          = settings->paths.directory_system;
             bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
 
-            if (string_is_empty(dir_system) || systemfiles_in_content_dir)
+            if (     string_is_empty(dir_system) 
+                  || systemfiles_in_content_dir)
             {
                const char *fullpath = path_get(RARCH_PATH_CONTENT);
 
@@ -2647,15 +2649,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
 
             no_video_reinit                       = (
-                     crt_switch_resolution == 0
-                  && video_switch_refresh_rate == false
+                     (crt_switch_resolution     == 0)
+                  && (video_switch_refresh_rate == false)
                   && data
                   && ((*info)->geometry.max_width  == av_info->geometry.max_width)
                   && ((*info)->geometry.max_height == av_info->geometry.max_height));
 
             /* First set new refresh rate and display rate, then after REINIT do
              * another display rate change to make sure the change stays */
-            if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
+            if (     video_switch_refresh_rate 
+                  && video_display_server_set_refresh_rate(refresh_rate))
                video_monitor_set_refresh_rate(refresh_rate);
 
             /* When not doing video reinit, we also must not do input and menu
@@ -3204,7 +3207,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          bool menu_opened = false;
          bool core_paused = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
          bool no_audio    = ((audio_st->flags & AUDIO_FLAG_SUSPENDED) 
-               || !(audio_st->flags & AUDIO_FLAG_ACTIVE));
+                         || !(audio_st->flags & AUDIO_FLAG_ACTIVE));
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
@@ -3221,8 +3224,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          menu_opened = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
          if (menu_opened)
 #ifdef HAVE_NETWORKING
-            core_paused = settings->bools.menu_pause_libretro &&
-               netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+            core_paused = settings->bools.menu_pause_libretro
+               && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
             core_paused = settings->bools.menu_pause_libretro;
 #endif
@@ -3254,15 +3257,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
 
          /* VSync overrides the mode if the rate is limited by the display. */
-         if (menu_opened || /* Menu currently always runs with vsync on. */
-               (    settings->bools.video_vsync 
-                && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
-                     && !(input_state_get_ptr()->flags & INP_FLAG_NONBLOCKING)))
+         if (      menu_opened /* Menu currently always runs with vsync on. */
+               || (settings->bools.video_vsync 
+               && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
+               && !(input_state_get_ptr()->flags & INP_FLAG_NONBLOCKING)))
          {
             float refresh_rate = video_driver_get_refresh_rate();
             if (refresh_rate == 0.0f)
                refresh_rate = settings->floats.video_refresh_rate;
-            if (refresh_rate < throttle_state->rate || !throttle_state->rate)
+            if (    (refresh_rate < throttle_state->rate)
+                  || !throttle_state->rate)
             {
                /* Keep the mode as fast forward even if vsync limits it. */
                if (refresh_rate < core_fps)
@@ -3749,9 +3753,9 @@ static void runloop_fastmotion_override_free(runloop_state_t *runloop_st)
       *video_st            = video_state_get_ptr();
    settings_t *settings    = config_get_ptr();
    float fastforward_ratio = settings->floats.fastforward_ratio;
-   bool reset_frame_limit  = runloop_st->fastmotion_override.current.fastforward &&
-         (runloop_st->fastmotion_override.current.ratio >= 0.0f) &&
-         (runloop_st->fastmotion_override.current.ratio != fastforward_ratio);
+   bool reset_frame_limit  = runloop_st->fastmotion_override.current.fastforward
+         && (runloop_st->fastmotion_override.current.ratio >= 0.0f)
+         && (runloop_st->fastmotion_override.current.ratio != fastforward_ratio);
 
    runloop_st->fastmotion_override.current.ratio          = 0.0f;
    runloop_st->fastmotion_override.current.fastforward    = false;
@@ -3909,8 +3913,8 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
    float fastforward_ratio_default                    = settings ?
          settings->floats.fastforward_ratio : 0.0f;
    float fastforward_ratio_last                       =
-            (runloop_st->fastmotion_override.current.fastforward &&
-                  (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
+                     (runloop_st->fastmotion_override.current.fastforward
+                  && (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
                         runloop_st->fastmotion_override.current.ratio :
                               fastforward_ratio_default;
 #if defined(HAVE_GFX_WIDGETS)
@@ -3962,8 +3966,8 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
    }
 
    /* Update frame limit, if required */
-   fastforward_ratio_current = (runloop_st->fastmotion_override.current.fastforward &&
-         (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
+   fastforward_ratio_current = (runloop_st->fastmotion_override.current.fastforward
+         && (runloop_st->fastmotion_override.current.ratio >= 0.0f)) ?
                runloop_st->fastmotion_override.current.ratio :
                      fastforward_ratio_default;
 
@@ -4225,7 +4229,8 @@ static bool event_init_content(
    are true.
 */
 #ifdef HAVE_CHEEVOS
-   if (!cheevos_enable || !cheevos_hardcore_mode_enable)
+   if (     !cheevos_enable 
+         || !cheevos_hardcore_mode_enable)
 #endif
    {
 #ifdef HAVE_BSV_MOVIE
@@ -4234,7 +4239,8 @@ static bool event_init_content(
      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
       {
-         if (runloop_st->entry_state_slot && !command_event_load_entry_state(settings))
+         if (      runloop_st->entry_state_slot 
+               && !command_event_load_entry_state(settings))
          {
            /* loading the state failed, reset entry slot */
             runloop_st->entry_state_slot = 0;
@@ -4918,11 +4924,11 @@ bool core_options_remove_override(bool game_specific)
     * > If we have removed a game-specific config,
     *   check whether a folder-specific config
     *   exists */
-   if (game_specific &&
-       validate_folder_options(
+   if (   game_specific
+       && validate_folder_options(
           new_options_path,
-          sizeof(new_options_path), false) &&
-       path_is_valid(new_options_path))
+          sizeof(new_options_path), false)
+       && path_is_valid(new_options_path))
       folder_options_active = true;
 
    /* > If a folder-specific config does not exist,
@@ -4956,8 +4962,8 @@ bool core_options_remove_override(bool game_specific)
       goto error;
 
    /* > If we have a valid file, load it */
-   if (folder_options_active ||
-       path_is_valid(new_options_path))
+   if (   folder_options_active
+       || path_is_valid(new_options_path))
    {
       size_t i, j;
 
@@ -5405,8 +5411,8 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_MENU
    last_input                       = current_bits;
    if (
-         ((menu_toggle_gamepad_combo != INPUT_COMBO_NONE) &&
-          input_driver_button_combo(
+         ((menu_toggle_gamepad_combo != INPUT_COMBO_NONE)
+          && input_driver_button_combo(
              menu_toggle_gamepad_combo,
              current_time,
              &last_input)))
@@ -5427,7 +5433,9 @@ static enum runloop_state_enum runloop_check_state(
       if (input_active || (menu_st->input_driver_flushing_input > 0))
       {
          BIT256_CLEAR_ALL(current_bits);
-         if (runloop_paused && !runloop_paused_hotkey && settings->bools.menu_pause_libretro)
+         if (      runloop_paused 
+               && !runloop_paused_hotkey 
+               && settings->bools.menu_pause_libretro)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
          else if (runloop_paused_hotkey)
          {
@@ -5513,8 +5521,8 @@ static enum runloop_state_enum runloop_check_state(
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
 
       /* Check whether video aspect has changed */
-      if ((video_driver_width  != last_width) ||
-          (video_driver_height != last_height))
+      if (   (video_driver_width  != last_width)
+          || (video_driver_height != last_height))
       {
          /* Update scaling/offset factors */
          command_event(CMD_EVENT_OVERLAY_SET_SCALE_FACTOR, NULL);
@@ -5553,8 +5561,8 @@ static enum runloop_state_enum runloop_check_state(
       unsigned video_driver_height                   = video_st->height;
 
       /* Check whether video aspect has changed */
-      if ((video_driver_width  != last_width) ||
-          (video_driver_height != last_height))
+      if (   (video_driver_width  != last_width)
+          || (video_driver_height != last_height))
       {
          /* Update set aspect ratio so the full matches the current video width & height */
          command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
@@ -5574,9 +5582,9 @@ static enum runloop_state_enum runloop_check_state(
             current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
       /* Check for quit gamepad combo */
-      if (!trig_quit_key &&
-          ((quit_gamepad_combo != INPUT_COMBO_NONE) &&
-          input_driver_button_combo(
+      if (    !trig_quit_key
+          && ((quit_gamepad_combo != INPUT_COMBO_NONE)
+          && input_driver_button_combo(
              quit_gamepad_combo,
              current_time,
              &current_bits)))
@@ -5585,7 +5593,8 @@ static enum runloop_state_enum runloop_check_state(
       quit_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
-      if (trig_quit_key && quit_press_twice)
+      if (     trig_quit_key 
+            && quit_press_twice)
       {
          static retro_time_t quit_key_time   = 0;
          retro_time_t cur_time               = current_time;
@@ -5612,7 +5621,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_SCREENSHOTS
          unsigned runloop_max_frames = runloop_st->max_frames;
 
-         if ((runloop_max_frames != 0)
+         if (     (runloop_max_frames != 0)
                && (frame_count >= runloop_max_frames)
                && (runloop_st->flags & RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT))
          {
@@ -5697,8 +5706,8 @@ static enum runloop_state_enum runloop_check_state(
    {
       bool rarch_force_fullscreen = video_st->flags &
          VIDEO_FLAG_FORCE_FULLSCREEN;
-      bool video_is_fullscreen    = settings->bools.video_fullscreen ||
-            rarch_force_fullscreen;
+      bool video_is_fullscreen    = settings->bools.video_fullscreen
+                                 || rarch_force_fullscreen;
 
       RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
       gfx_widgets_iterate(
@@ -5841,8 +5850,8 @@ static enum runloop_state_enum runloop_check_state(
       {
          bool runloop_is_inited      = runloop_st->flags & RUNLOOP_FLAG_IS_INITED;
 #ifdef HAVE_NETWORKING
-         bool menu_pause_libretro    = settings->bools.menu_pause_libretro &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+         bool menu_pause_libretro    = settings->bools.menu_pause_libretro
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
 #endif
@@ -5899,8 +5908,8 @@ static enum runloop_state_enum runloop_check_state(
             menu->state               = 0;
          }
 
-         if (settings->bools.audio_enable_menu &&
-               !libretro_running)
+         if (settings->bools.audio_enable_menu
+               && !libretro_running)
             audio_driver_menu_sample();
       }
 
@@ -5942,8 +5951,8 @@ static enum runloop_state_enum runloop_check_state(
             && !string_is_equal(menu_driver, "null");
       bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 
-      if (  (pressed && !old_pressed) ||
-            core_type_is_dummy)
+      if (    (pressed && !old_pressed)
+            || core_type_is_dummy)
       {
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
@@ -5977,8 +5986,8 @@ static enum runloop_state_enum runloop_check_state(
       bool volume_hotkey_down                    = BIT256_GET(
             current_bits, RARCH_VOLUME_DOWN);
 
-      if (  (volume_hotkey_up   && !volume_hotkey_down) ||
-            (volume_hotkey_down && !volume_hotkey_up))
+      if (     (volume_hotkey_up   && !volume_hotkey_down)
+            || (volume_hotkey_down && !volume_hotkey_up))
       {
          if (volume_hotkey_delay > 0)
             volume_hotkey_delay--;
@@ -6352,8 +6361,8 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Display fast-forward notification, unless
     * disabled via override */
-   if (!runloop_st->fastmotion_override.current.fastforward ||
-       runloop_st->fastmotion_override.current.notification)
+   if (  !runloop_st->fastmotion_override.current.fastforward
+       || runloop_st->fastmotion_override.current.notification)
    {
       /* > Use widgets, if enabled */
 #if defined(HAVE_GFX_WIDGETS)
@@ -6423,9 +6432,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_NETWORKING
          if ((runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
                && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
-         {
             runloop_st->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
-         }
 #endif
 
          if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
@@ -6498,14 +6505,12 @@ static enum runloop_state_enum runloop_check_state(
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
                   cur_state_slot);
-         _len = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
+         _len  = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
+         _len += snprintf(msg + _len, sizeof(msg) - _len,
+                  ": %d", settings->ints.state_slot);
 
          if (cur_state_slot < 0)
-            snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d (Auto)", settings->ints.state_slot);
-         else
-            snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d", settings->ints.state_slot);
+            strlcpy(msg + _len, " (Auto)", sizeof(msg) - _len);
 
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)
@@ -6560,14 +6565,12 @@ static enum runloop_state_enum runloop_check_state(
          if (check1)
             configuration_set_int(settings, settings->ints.replay_slot,
                   cur_replay_slot);
-         _len = strlcpy(msg, msg_hash_to_str(MSG_REPLAY_SLOT), sizeof(msg));
+         _len  = strlcpy(msg, msg_hash_to_str(MSG_REPLAY_SLOT), sizeof(msg));
+         _len += snprintf(msg + _len, sizeof(msg) - _len,
+                  ": %d", settings->ints.replay_slot);
 
          if (cur_replay_slot < 0)
-            snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d (Auto)", settings->ints.replay_slot);
-         else
-            snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d", settings->ints.replay_slot);
+            strlcpy(msg + _len, " (Auto)", sizeof(msg) - _len);
 
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)
@@ -6743,8 +6746,8 @@ int runloop_iterate(void)
    bool menu_pause_libretro                     = settings->bools.menu_pause_libretro;
 #endif
    bool core_paused                             =
-         (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ||
-         (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
+            (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
    bool core_paused                             = (runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
@@ -6774,7 +6777,7 @@ int runloop_iterate(void)
       bool is_locked_fps                   = (
                (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
             || (input_st->flags & INP_FLAG_NONBLOCKING))
-            | !!recording_st->data;
+             | !!recording_st->data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps)
          ? runloop_st->frame_time.reference
          : (current - runloop_last_frame_time);
@@ -6804,9 +6807,9 @@ int runloop_iterate(void)
       if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
             || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf))
-          && audio_st->current_audio->write_avail
-          && audio_st->context_audio_data
-          && audio_st->buffer_size)
+            && audio_st->current_audio->write_avail
+            && audio_st->context_audio_data
+            && audio_st->buffer_size)
       {
          size_t audio_buf_avail;
 
@@ -7985,12 +7988,14 @@ void runloop_path_set_redirect(settings_t *settings,
 
       if (string_is_empty(new_savefile_dir))
          RARCH_LOG("Cannot resolve save file path.\n");
-      else if (sort_savefiles_enable || sort_savefiles_by_content_enable)
+      else if (sort_savefiles_enable 
+            || sort_savefiles_by_content_enable)
          RARCH_LOG("Saving files in content directory is set. This overrides other save file directory settings.\n");
    }
 
    /* Set savestate directory if empty based on content directory */
-   if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
+   if (     string_is_empty(new_savestate_dir) 
+         || savestates_in_content_dir)
    {
       strlcpy(new_savestate_dir,
             runloop_st->runtime_content_path_basename,
@@ -7999,7 +8004,8 @@ void runloop_path_set_redirect(settings_t *settings,
 
       if (string_is_empty(new_savestate_dir))
          RARCH_LOG("Cannot resolve save state file path.\n");
-      else if (sort_savestates_enable || sort_savestates_by_content_enable)
+      else if (sort_savestates_enable 
+            || sort_savestates_by_content_enable)
          RARCH_LOG("Saving save states in content directory is set. This overrides other save state file directory settings.\n");
    }
 
