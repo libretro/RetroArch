@@ -1256,17 +1256,17 @@ static ozone_theme_t ozone_theme_dracula = {
    /* Float colors for quads and icons */
    COLOR_HEX_TO_FLOAT(0x282A36, 1.0f),                   /* header_footer_separator */
    COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* text */
-   COLOR_HEX_TO_FLOAT(0x44475A, 1.0f),                   /* selection */
-   COLOR_HEX_TO_FLOAT(0xBD93F9, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f),                   /* selection_border */
    COLOR_HEX_TO_FLOAT(0x282A36, 1.0f),                   /* entries_border */
    COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0xBD93F9, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f),                   /* text_selected */
    COLOR_HEX_TO_FLOAT(0x6272A4, 1.0f),                   /* message_background */
 
    /* RGBA colors for text */
    0xF8F8F2FF,                                           /* text_rgba */
    0xF8F8F2FF,                                           /* text_sidebar_rgba */
-   0xF8F8F2FF,                                           /* text_selected_rgba */
+   0xFF79C6FF,                                           /* text_selected_rgba */
    0x6272A4FF,                                           /* text_sublabel_rgba */
 
    /* Screensaver 'tint' (RGB24) */
@@ -10176,7 +10176,7 @@ static void ozone_render(void *data,
 
       /* Explore list needs cached selection index */
       if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
-         selection = menu_st->thumbnail_path_data 
+         selection = menu_st->thumbnail_path_data
             ? menu_st->thumbnail_path_data->playlist_index
             : 0;
 
@@ -12073,7 +12073,7 @@ static void ozone_populate_entries(
    }
 
    /* State slots must not allow fullscreen thumbnails when slot has no image */
-   if (    (ozone->flags & OZONE_FLAG_IS_STATE_SLOT) 
+   if (    (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
          && string_is_empty(ozone->savestate_thumbnail_file_path))
       ozone->flags &= ~OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
 }
