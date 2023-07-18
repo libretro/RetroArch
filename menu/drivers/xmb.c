@@ -1543,7 +1543,7 @@ static void xmb_selection_pointer_changed(
          {
             size_t entry_idx_selection = selection + 1;
             unsigned entry_idx_offset  = xmb->entry_index_offset;
-            bool show_entry_idx        = true;
+            bool show_entry_idx        = (xmb->is_playlist || xmb->is_explore_list) ? true : false;
 
             if (xmb->is_explore_list)
             {
@@ -2696,8 +2696,9 @@ static void xmb_populate_entries(void *data,
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
 
    xmb->is_playlist |=
-            (xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
-         || (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4);
+            (xmb_horizontal_type == FILE_TYPE_PLAYLIST_COLLECTION)
+         && (  (xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1)
+            || (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4));
 
    xmb->is_playlist = 
              xmb->is_playlist
@@ -2779,17 +2780,17 @@ static void xmb_populate_entries(void *data,
       xmb_update_dynamic_wallpaper(xmb);
 
    /* Determine whether to show entry index */
-   /* Update list size & entry index texts */
-   if (show_entry_idx)
-      xmb->entry_index_str[0] = '\0';
+   xmb->entry_index_str[0] = '\0';
+   xmb->entry_idx_enabled  = show_entry_idx;
 
-   if ((xmb->entry_idx_enabled = show_entry_idx &&
-         !xmb->is_quick_menu &&
-         (xmb->is_playlist || xmb->is_explore_list)))
+   if (     !xmb->is_quick_menu
+         && (xmb->is_playlist || xmb->is_explore_list))
    {
       size_t entry_idx_selection = menu_st->selection_ptr + 1;
       size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
       unsigned entry_idx_offset  = 0;
+      show_entry_idx             =
+            (xmb->is_playlist || xmb->is_explore_list) ? show_entry_idx : false;
 
       if (xmb->is_explore_list)
       {
