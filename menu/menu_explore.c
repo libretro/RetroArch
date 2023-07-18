@@ -1424,6 +1424,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 
       if (!*state->view_search)
       {
+         /* Start navigation from first item */
+         if (menu_st->selection_ptr < 1)
+            menu_st->selection_ptr = 1;
+
          explore_menu_entry(
                list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
@@ -1555,6 +1559,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       }
       else if (current_type == EXPLORE_TYPE_VIEW)
       {
+         /* Start navigation from first item */
+         if (menu_st->selection_ptr < 1)
+            menu_st->selection_ptr = 1;
+
          /* Show a saved view */
          state->show_icons = EXPLORE_ICONS_CONTENT;
          explore_menu_entry(list, state,
@@ -1566,6 +1574,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       }
       else
       {
+         /* Start navigation from first item */
+         if (menu_st->selection_ptr < 2)
+            menu_st->selection_ptr = 2;
+
          /* Game list */
          state->show_icons = EXPLORE_ICONS_CONTENT;
          explore_menu_entry(list, state,
