@@ -1468,7 +1468,11 @@ bool config_overlay_enable_default(void)
 {
    if (g_defaults.overlay_set)
       return g_defaults.overlay_enable;
+#if defined(RARCH_MOBILE)
    return true;
+#else
+   return false;
+#endif
 }
 
 static struct config_array_setting *populate_settings_array(settings_t *settings, int *size)
