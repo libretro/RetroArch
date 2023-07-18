@@ -2210,8 +2210,8 @@ bool win32_has_focus(void *data)
 
       if (     (     g_win32_resize_width  < min_width
                   || g_win32_resize_height < min_height)
-            && min_width  - g_win32_resize_width  < MIN_WIDTH  / 2
-            && min_height - g_win32_resize_height < MIN_HEIGHT / 2)
+            && min_width  - g_win32_resize_width  < MIN_WIDTH  / 1.5f
+            && min_height - g_win32_resize_height < MIN_HEIGHT / 1.5f)
          SetWindowPos(main_window.hwnd, NULL, 0, 0,
                min_width  + extra_width,
                min_height + extra_height,
