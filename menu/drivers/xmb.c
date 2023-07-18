@@ -1580,8 +1580,8 @@ static void xmb_selection_pointer_changed(
                update_thumbnails = true;
             }
             /* Database + Explore list updates */
-            else if ((xmb->is_db_manager_list && depth <= 4) ||
-                  xmb->is_explore_list)
+            else if ((xmb->is_db_manager_list && depth <= 4)
+                  || xmb->is_explore_list)
             {
                xmb_set_thumbnail_content(xmb, NULL);
                update_thumbnails         = true;
@@ -1828,7 +1828,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
             || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
       {
-         if (xmb->is_playlist || xmb->is_db_manager_list)
+         if (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_explore_list)
          {
             if (!(xmb->is_db_manager_list && xmb->depth > 4))
                xmb_unload_thumbnail_textures(xmb);
@@ -2204,7 +2204,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    {
       xmb_unload_thumbnail_textures(xmb);
 
-      if (xmb->is_playlist)
+      if (xmb->is_playlist || xmb->is_explore_list)
       {
          xmb_set_thumbnail_content(xmb, NULL);
          xmb_update_thumbnail_image(xmb);
@@ -2665,13 +2665,15 @@ static void xmb_populate_entries(void *data,
    unsigned xmb_system_tab, xmb_horizontal_type;
    xmb_handle_t *xmb                  = (xmb_handle_t*)data;
    settings_t *settings               = config_get_ptr();
-   struct menu_state   *menu_st       = menu_state_get_ptr();
+   struct menu_state *menu_st         = menu_state_get_ptr();
    menu_list_t *menu_list             = menu_st->entries.list;
-   bool menu_dynamic_wallpaper_enable =
-      settings ? settings->bools.menu_dynamic_wallpaper_enable : false;
-   bool show_entry_idx                = settings ? settings->bools.playlist_show_entry_idx : false;
+   bool menu_dynamic_wallpaper_enable = settings
+         ? settings->bools.menu_dynamic_wallpaper_enable : false;
+   bool show_entry_idx                = settings
+         ? settings->bools.playlist_show_entry_idx : false;
    bool was_db_manager_list           = false;
-   unsigned    depth                  = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   static unsigned depth_prev         = 0;
+   unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    if (!xmb)
       return;
    xmb_system_tab       = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
@@ -2751,8 +2753,10 @@ static void xmb_populate_entries(void *data,
       xmb->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
       if (!menu_explore_is_content_list() || xmb->is_quick_menu)
          xmb->is_explore_list = false;
-      else if (!xmb->is_quick_menu)
+      else if (!xmb->is_quick_menu && depth < depth_prev)
          xmb->skip_thumbnail_reset = true;
+      else
+         xmb->skip_thumbnail_reset = false;
 
       /* 'is_playlist' must be cleared for 'xmb_set_thumbnail_content' */
       if (xmb->is_explore_list)
@@ -2774,6 +2778,8 @@ static void xmb_populate_entries(void *data,
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
+
+   depth_prev = depth;
 
    xmb_set_title(xmb);
    if (menu_dynamic_wallpaper_enable)
