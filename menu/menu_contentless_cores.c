@@ -295,7 +295,10 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 
    if (path_is_valid(icon_path))
    {
-      struct texture_image ti = {0};
+      struct texture_image ti;
+      ti.pixels               = NULL;
+      ti.width                = 0;
+      ti.height               = 0;
       ti.supports_rgba        = rgba_supported;
 
       if (image_texture_load(&ti, icon_path))
@@ -326,9 +329,9 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
           &&  core_info->databases_list
           && (core_info->databases_list->size > 0))
       {
+         struct texture_image ti;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
-         struct texture_image ti = {0};
          size_t len              = fill_pathname_join_special(
                icon_path, icon_directory,
                icon_name, sizeof(icon_path));
@@ -338,6 +341,9 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          icon_path[++len]        = 'g';
          icon_path[++len]        = '\0';
 
+         ti.pixels               = NULL;
+         ti.width                = 0;
+         ti.height               = 0;
          ti.supports_rgba        = rgba_supported;
 
          if (!path_is_valid(icon_path))

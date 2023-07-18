@@ -1399,7 +1399,10 @@ static bool d3d10_gfx_set_shader(void* data,
 
    for (i = 0; i < d3d10->shader_preset->luts; i++)
    {
-      struct texture_image image = { 0 };
+      struct texture_image image;
+      image.pixels               = NULL;
+      image.width                = 0;
+      image.height               = 0;
       image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d10->shader_preset->lut[i].path))

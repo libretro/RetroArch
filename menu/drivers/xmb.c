@@ -1213,6 +1213,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
              || string_is_equal(entry.label, "loadstate")
              || string_is_equal(entry.label, "savestate"))
          {
+            size_t _len;
             char path[8204];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
@@ -1226,19 +1227,19 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             if (state_slot < 0)
             {
                path[0] = '\0';
-               fill_pathname_join_delim(path,
+               _len = fill_pathname_join_delim(path,
                      runloop_st->name.savestate, "auto", '.', sizeof(path));
             }
             else
             {
-               size_t _len = strlcpy(path,
+               _len = strlcpy(path,
                      runloop_st->name.savestate, sizeof(path));
                if (state_slot > 0)
-                  snprintf(path + _len, sizeof(path) - _len, "%d",
+                  _len += snprintf(path + _len, sizeof(path) - _len, "%d",
                         state_slot);
             }
 
-            strlcat(path, FILE_PATH_PNG_EXTENSION, sizeof(path));
+            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
 
             if (path_is_valid(path))
             {
