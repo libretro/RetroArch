@@ -383,8 +383,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_memory_update_interval,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_statistics_show,               MENU_ENUM_SUBLABEL_STATISTICS_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ping_show,             MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_retropad_settings,           MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_retropad_settings,       MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_remap_settings,           MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_enable_hotkey,         MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY)
@@ -2139,7 +2140,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    if (     type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
          && type <= MENU_SETTINGS_REMAPPING_PORT_END)
    {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_bind_settings);
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_remap_settings);
       return 0;
    }
    else if (type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE)
