@@ -536,6 +536,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    /* Source */
    _len  = strlcpy(shader_var, "shader", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
+
    if (!config_get_path(conf, shader_var, tmp_path, sizeof(tmp_path)))
    {
       RARCH_ERR("[Shaders]: Couldn't parse shader source \"%s\".\n", shader_var);
@@ -551,10 +552,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    strlcpy(shader_var + _len, formatted_num,   sizeof(shader_var) - _len);
 
    if (config_get_bool(conf, shader_var, &tmp_bool))
-   {
-      bool smooth  = tmp_bool;
-      pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
-   }
+      pass->filter = tmp_bool ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
    else
       pass->filter = RARCH_FILTER_UNSPEC;
 
@@ -717,7 +715,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       else
       {
          _len = strlcpy(shader_var, "scale_y", sizeof(shader_var));
-         strlcpy(shader_var, formatted_num, sizeof(shader_var) - _len);
+         strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_float(conf, shader_var, &fattr))
             scale->scale_y = fattr;
       }
@@ -1105,7 +1103,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
    strlcpy(tmp_base, path, PATH_MAX_LENGTH);
 
-   /* ensure we use a clean base like the shader passes and texture paths do */
+   /* Ensure we use a clean base like the shader passes and texture paths do */
    path_resolve_realpath(tmp_base, PATH_MAX_LENGTH, false);
    path_basedir(tmp_base);
 
@@ -1132,7 +1130,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
          _len = strlcpy(key, "filter_linear", sizeof(key));
-         strlcpy(key, formatted_num, sizeof(key) - _len);
+         strlcpy(key + _len, formatted_num, sizeof(key) - _len);
          config_set_string(conf, key,
                (pass->filter == RARCH_FILTER_LINEAR)
                ? "true"
@@ -1409,8 +1407,8 @@ static bool video_shader_check_reference_chain_for_save(
  * @return false if a referenced preset cannot be saved
  **/
 static bool video_shader_write_referenced_preset(
-      const char *path_to_save,
-      const struct video_shader *shader)
+      const struct video_shader *shader,
+      const char *path_to_save)
 {
    size_t i;
    config_file_t *conf                    = NULL;
@@ -1451,7 +1449,7 @@ static bool video_shader_write_referenced_preset(
             "a path to a previously loaded preset file on disk.\n");
       goto end;
    }
-   
+
    /* If the initial preset loaded is the ever-changing retroarch 
     * preset don't save a reference
     * TODO/FIXME - remove once we don't write this preset anymore */
@@ -2166,7 +2164,7 @@ bool video_shader_write_preset(const char *path,
    /* If we should still save a referenced preset do it now */
    if (reference)
    {
-      if (video_shader_write_referenced_preset(path, shader))
+      if (video_shader_write_referenced_preset(shader, path))
          return true;
 
       RARCH_WARN("[Shaders]: Failed writing simple preset to \"%s\" "
@@ -3108,10 +3106,12 @@ void video_shader_toggle(settings_t *settings)
    struct video_shader *shader     = menu_shader_get();
    struct menu_state *menu_st      = menu_state_get_ptr();
    shader->flags                  |=  SHDR_FLAG_MODIFIED;
+
    if (toggle)
       shader->flags               &= ~SHDR_FLAG_DISABLED;
    else
       shader->flags               |=  SHDR_FLAG_DISABLED;
+
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
 
