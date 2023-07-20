@@ -133,7 +133,6 @@ void *cocoa_screen_get_chosen(void);
 float cocoa_screen_get_native_scale(void);
 #else
 float cocoa_screen_get_backing_scale_factor(void);
-void cocoa_update_title(void *data);
 #endif
 
 bool cocoa_get_metrics(

@@ -147,6 +147,7 @@ typedef struct
    struct netplay_room host_room;
    struct netplay_room *room_list;
    struct netplay_rooms *rooms_data;
+   struct retro_netpacket_callback *core_netpacket_interface;
    /* Used while Netplay is running */
    netplay_t *data;
    netplay_client_info_t *client_info;

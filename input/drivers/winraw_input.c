@@ -414,7 +414,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
          settings_t *settings = config_get_ptr();
          if (     settings->bools.input_overlay_enable
-               && settings->bools.input_overlay_show_mouse_cursor)
+               && !string_is_empty(settings->paths.path_overlay))
             getcursorpos = true;
       }
 

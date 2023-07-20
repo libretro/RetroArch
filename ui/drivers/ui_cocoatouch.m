@@ -42,6 +42,9 @@
 
 #import <AVFoundation/AVFoundation.h>
 
+#import <MetricKit/MetricKit.h>
+#import <MetricKit/MXMetricManager.h>
+
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
 id<ApplePlatform> apple_platform;
@@ -333,6 +336,12 @@ enum
 
 @end
 
+#if TARGET_OS_IOS
+@interface RetroArch_iOS () <MXMetricManagerSubscriber>
+
+@end
+#endif
+
 @implementation RetroArch_iOS
 
 #pragma mark - ApplePlatform
@@ -473,6 +482,10 @@ enum
 
    rarch_start_draw_observer();
 
+#if TARGET_OS_IOS
+   [MXMetricManager.sharedManager addSubscriber:self];
+#endif
+
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
@@ -558,6 +571,27 @@ enum
 }
 
 - (void)supportOtherAudioSessions { }
+
+#if TARGET_OS_IOS
+- (void)didReceiveMetricPayloads:(NSArray<MXMetricPayload *> *)payloads
+{
+    for (MXMetricPayload *payload in payloads)
+    {
+        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_LOG("Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+    }
+}
+
+- (void)didReceiveDiagnosticPayloads:(NSArray<MXDiagnosticPayload *> *)payloads
+{
+    for (MXDiagnosticPayload *payload in payloads)
+    {
+        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_LOG("Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+    }
+}
+#endif
+
 @end
 
 int main(int argc, char *argv[])

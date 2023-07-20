@@ -421,10 +421,10 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       settings_t *settings)
 {
    const enum rarch_core_type
-      last_core_type           = runloop_st->last_core_type;
-   rarch_system_info_t *info   = &runloop_st->system;
-   unsigned num_active_users   = settings->uints.input_max_users;
-   uint8_t flags               = content_get_flags();
+      last_core_type             = runloop_st->last_core_type;
+   rarch_system_info_t *sys_info = &runloop_st->system;
+   unsigned num_active_users     = settings->uints.input_max_users;
+   uint8_t flags                 = content_get_flags();
 
    if (     (last_core_type != CORE_TYPE_PLAIN)
          || (!runloop_st->load_content_info)
@@ -504,18 +504,18 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    runloop_st->secondary_core.retro_set_input_poll(
          runloop_st->secondary_callbacks.poll_cb);
 
-   if (info)
+   if (sys_info)
    {
-      int port;
+      ssize_t port;
       for (port = 0; port < MAX_USERS; port++)
       {
-         if (port < (int)info->ports.size)
+         if (port < sys_info->ports.size)
          {
-            unsigned device = (port < (int)num_active_users) ?
-                  runloop_st->port_map[port] : RETRO_DEVICE_NONE;
-
+            unsigned device = (port < num_active_users)
+                  ? runloop_st->port_map[port] 
+                  : RETRO_DEVICE_NONE;
             runloop_st->secondary_core.retro_set_controller_port_device(
-                  port, device);
+                  (unsigned)port, device);
          }
       }
    }

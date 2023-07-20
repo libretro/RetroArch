@@ -109,8 +109,8 @@ enum event_command
    CMD_EVENT_STATISTICS_TOGGLE,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
-   /* Deinitializes overlay. */
-   CMD_EVENT_OVERLAY_DEINIT,
+   /* Frees or caches overlay. */
+   CMD_EVENT_OVERLAY_UNLOAD,
    /* Sets current scale factor for overlay. */
    CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
    /* Sets current alpha modulation for overlay. */
@@ -423,13 +423,6 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
-uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* system,
-      unsigned address,
-      unsigned int* max_bytes,
-      int for_write,
-      char *reply_at,
-      size_t len);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

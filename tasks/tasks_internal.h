@@ -219,11 +219,7 @@ bool task_push_manual_content_scan(
 bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
-      bool overlay_hide_in_menu,
-      bool overlay_hide_when_gamepad_connected,
-      bool input_overlay_enable,
-      float input_overlay_opacity,
-      overlay_layout_desc_t *layout_desc,
+      bool is_osk,
       void *user_data);
 #endif
 

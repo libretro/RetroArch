@@ -2913,11 +2913,11 @@ void MainWindow::setCoreActions()
    ViewType                    viewType = getCurrentViewType();
    QHash<QString, QString>         hash = getCurrentContentHash();
    QString      currentPlaylistFileName = QString();
-   rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
 
    m_launchWithComboBox->clear();
 
-   if (system->load_no_content) /* Is contentless core? */
+   if (sys_info->load_no_content) /* Is contentless core? */
       m_startCorePushButton->show();
    else
       m_startCorePushButton->hide();
@@ -3600,10 +3600,10 @@ void MainWindow::onStopClicked()
 
 void MainWindow::setCurrentCoreLabel()
 {
-   bool update                      = false;
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   QString libraryName              = system->library_name;
-   const char *no_core_str          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   bool update                       = false;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+   QString libraryName               = sysinfo->library_name;
+   const char *no_core_str           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
    if (     (m_statusLabel->text().isEmpty())
          || (m_currentCore != no_core_str && libraryName.isEmpty())
@@ -3617,8 +3617,8 @@ void MainWindow::setCurrentCoreLabel()
    {
       if (m_currentCore != libraryName && !libraryName.isEmpty())
       {
-         m_currentCore        = system->library_name;
-         m_currentCoreVersion = (string_is_empty(system->library_version) ? "" : system->library_version);
+         m_currentCore        = sysinfo->library_name;
+         m_currentCoreVersion = (string_is_empty(sysinfo->library_version) ? "" : sysinfo->library_version);
          update = true;
       }
    }
@@ -5107,9 +5107,9 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
 
    frontend_driver_get_core_extension(core_ext, sizeof(core_ext));
 
-   _len = strlcpy(filters, "Cores (*.", sizeof(filters));
-   strlcpy(filters + _len, core_ext, sizeof(filters) - _len);
-   strlcat(filters, ");;All Files (*.*)", sizeof(filters));
+   _len  = strlcpy(filters, "Cores (*.", sizeof(filters));
+   _len += strlcpy(filters + _len, core_ext,     sizeof(filters) - _len);
+   strlcpy(filters + _len, ");;All Files (*.*)", sizeof(filters) - _len);
 
    path                          = QFileDialog::getOpenFileName(
          this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE),

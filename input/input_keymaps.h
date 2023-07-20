@@ -231,6 +231,15 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
+/**
+ * input_translate_rk_to_ascii:
+ * @key : Retro key identifier
+ * @mod : retro_mod mask
+ *
+ * Translates a retro key identifier with mod mask to ASCII.
+ */
+uint8_t input_keymaps_translate_rk_to_ascii(enum retro_key key, enum retro_mod mod);
+
 extern enum retro_key rarch_keysym_lut[RETROK_LAST];
 
 extern const struct input_key_map input_config_key_map[];

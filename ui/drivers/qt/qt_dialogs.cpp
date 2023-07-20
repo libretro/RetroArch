@@ -1103,10 +1103,10 @@ void CoreOptionsDialog::buildLayout()
       {
          QString contentLabel;
          QString label;
-         rarch_system_info_t *system = &runloop_st->system;
+         rarch_system_info_t *sys_info = &runloop_st->system;
 
-         /* TODO/FIXME - why have this check here? system is not used */
-         if (system)
+         /* TODO/FIXME - why have this check here? sys_info is not used */
+         if (sys_info)
             contentLabel = QFileInfo(path_get(RARCH_PATH_BASENAME)).completeBaseName();
 
          if (!contentLabel.isEmpty())

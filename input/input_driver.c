@@ -558,10 +558,75 @@ const input_device_driver_t *input_joypad_init_driver(
    return input_joypad_init_first(data); /* fall back to first available driver */
 }
 
+static bool input_driver_button_combo_hold(
+      unsigned mode,
+      unsigned button,
+      retro_time_t current_time,
+      input_bits_t *p_input)
+{
+   rarch_timer_t *timer           = &input_driver_st.combo_timers[mode];
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   static bool enable_hotkey_dupe = false;
+
+   /* Flag current press when button and 'enable_hotkey' are the same,
+    * because 'input_hotkey_block_delay' clears the combo button bit. */
+   if (     BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+         && BIT256_GET_PTR(p_input, button))
+      enable_hotkey_dupe = true;
+
+   /* Ignore press if 'enable_hotkey' is not the combo button. */
+   if (      BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+         && !BIT256_GET_PTR(p_input, button)
+         && !enable_hotkey_dupe)
+      return false;
+
+   /* Allow using the same button for 'enable_hotkey' if set,
+    * and stop timer if holding fast-forward or slow-motion */
+   if (     !BIT256_GET_PTR(p_input, button)
+         && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
+            && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
+            && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+            && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      )
+   {
+      /* Timer only runs while start is held down */
+      enable_hotkey_dupe = false;
+      timer->timer_begin = false;
+      timer->timer_end   = true;
+      timer->timeout_end = 0;
+      return false;
+   }
+
+   /* User started holding down the start button, start the timer */
+   if (!timer->timer_begin)
+   {
+      timer->timeout_us     = HOLD_BTN_DELAY_SEC * 1000000;
+      timer->timeout_end    = current_time + timer->timeout_us;
+      timer->timer_begin    = true;
+      timer->timer_end      = false;
+   }
+
+   timer->current           = current_time;
+   timer->timeout_us        = (timer->timeout_end - timer->current);
+
+   if (!timer->timer_end && (timer->timeout_us <= 0))
+   {
+      /* Start has been held down long enough,
+       * stop timer and enter menu */
+      enable_hotkey_dupe = false;
+      timer->timer_begin = false;
+      timer->timer_end   = true;
+      timer->timeout_end = 0;
+      return true;
+   }
+
+   return false;
+}
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
-      input_bits_t* p_input)
+      input_bits_t *p_input)
 {
    switch (mode)
    {
@@ -610,97 +675,11 @@ bool input_driver_button_combo(
             return true;
          break;
       case INPUT_COMBO_HOLD_START:
-         {
-            rarch_timer_t *timer        = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_START];
-            runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-            /* Allow using the same button for 'enable_hotkey' if set,
-             * and stop timer if holding fast-forward or slow-motion */
-            if (     !BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
-                  && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
-                     && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-               )
-            {
-               /* Timer only runs while start is held down */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return false;
-            }
-
-            /* User started holding down the start button, start the timer */
-            if (!timer->timer_begin)
-            {
-               uint64_t current_usec = cpu_features_get_time_usec();
-               timer->timeout_us     = HOLD_BTN_DELAY_SEC * 1000000;
-               timer->current        = current_usec;
-               timer->timeout_end    = timer->current + timer->timeout_us;
-               timer->timer_begin    = true;
-               timer->timer_end      = false;
-            }
-
-            timer->current           = current_time;
-            timer->timeout_us        = (timer->timeout_end - timer->current);
-
-            if (!timer->timer_end && (timer->timeout_us <= 0))
-            {
-               /* Start has been held down long enough,
-                * stop timer and enter menu */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return true;
-            }
-         }
-         break;
+         return input_driver_button_combo_hold(
+               INPUT_COMBO_HOLD_START, RETRO_DEVICE_ID_JOYPAD_START, current_time, p_input);
       case INPUT_COMBO_HOLD_SELECT:
-         {
-            rarch_timer_t *timer        = &input_driver_st.combo_timers[INPUT_COMBO_HOLD_SELECT];
-            runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-            /* Allow using the same button for 'enable_hotkey' if set,
-             * and stop timer if holding fast-forward or slow-motion */
-            if (     !BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT)
-                  && !( BIT256_GET_PTR(p_input, RARCH_ENABLE_HOTKEY)
-                     && !(input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-                     && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-               )
-            {
-               /* Timer only runs while select is held down */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return false;
-            }
-
-            /* User started holding down the select button, start the timer */
-            if (!timer->timer_begin)
-            {
-               uint64_t current_usec = cpu_features_get_time_usec();
-               timer->timeout_us     = HOLD_BTN_DELAY_SEC * 1000000;
-               timer->current        = current_usec;
-               timer->timeout_end    = timer->current + timer->timeout_us;
-               timer->timer_begin    = true;
-               timer->timer_end      = false;
-            }
-
-            timer->current           = current_time;
-            timer->timeout_us        = (timer->timeout_end - timer->current);
-
-            if (!timer->timer_end && (timer->timeout_us <= 0))
-            {
-               /* Select has been held down long enough,
-                * stop timer and enter menu */
-               timer->timer_end   = true;
-               timer->timer_begin = false;
-               timer->timeout_end = 0;
-               return true;
-            }
-         }
-         break;
+         return input_driver_button_combo_hold(
+               INPUT_COMBO_HOLD_SELECT, RETRO_DEVICE_ID_JOYPAD_SELECT, current_time, p_input);
       default:
       case INPUT_COMBO_NONE:
          break;
@@ -2141,9 +2120,7 @@ static void input_overlay_poll(
       }
    }
 
-   if (!bits_any_set(out->buttons.data, ARRAY_SIZE(out->buttons.data)))
-      ol->flags &= ~INPUT_OVERLAY_BLOCKED;
-   else if (ol->flags & INPUT_OVERLAY_BLOCKED)
+   if (ol->flags & INPUT_OVERLAY_BLOCKED)
       memset(out, 0, sizeof(*out));
 }
 
@@ -2595,8 +2572,14 @@ static void input_overlay_free(input_overlay_t *ol)
 
    input_overlay_free_overlays(ol);
 
-   if (ol->iface->enable)
+   if (ol->iface && ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
+
+   if (ol->path)
+   {
+      free(ol->path);
+      ol->path = NULL;
+   }
 
    free(ol);
 }
@@ -2807,7 +2790,7 @@ static void input_poll_overlay(
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
-   for (i = 0; i < (int)ARRAY_SIZE(ol_state->keys); i++)
+   for (i = (int)ARRAY_SIZE(ol_state->keys); i-- > 0;)
    {
       if (ol_state->keys[i] != old_ol_state.keys[i])
       {
@@ -2817,8 +2800,12 @@ static void input_poll_overlay(
 
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
+            {
+               unsigned rk = i * 32 + j;
+               uint32_t c  = input_keymaps_translate_rk_to_ascii(rk, key_mod);
                input_keyboard_event(new_bits & (1 << j),
-                     i * 32 + j, 0, key_mod, RETRO_DEVICE_POINTER);
+                     rk, c, key_mod, RETRO_DEVICE_POINTER);
+            }
       }
    }
 
@@ -2911,22 +2898,20 @@ static void input_poll_overlay(
  * input_config_translate_str_to_rk:
  * @str                            : String to translate to key ID.
  *
- * Translates tring representation to key identifier.
+ * Translates string representation to key identifier.
  *
  * Returns: key identifier.
  **/
-enum retro_key input_config_translate_str_to_rk(const char *str)
+enum retro_key input_config_translate_str_to_rk(const char *str, size_t len)
 {
    size_t i;
-   if (strlen(str) == 1 && ISALPHA((int)*str))
+   if (len == 1 && ISALPHA((int)*str))
       return (enum retro_key)(RETROK_a + (TOLOWER((int)*str) - (int)'a'));
    for (i = 0; input_config_key_map[i].str; i++)
    {
       if (string_is_equal_noncase(input_config_key_map[i].str, str))
          return input_config_key_map[i].key;
    }
-
-   RARCH_WARN("[Input]: Key name \"%s\" not found.\n", str);
    return RETROK_UNKNOWN;
 }
 
@@ -4249,7 +4234,7 @@ void config_read_keybinds_conf(void *data)
          entry                      = config_get_entry(conf, str);
          if (entry && !string_is_empty(entry->value))
             bind->key               = input_config_translate_str_to_rk(
-                  entry->value);
+                  entry->value, strlen(entry->value));
 
          /* Store new mapping bit and remember it for a while
           * so that next clear leaves the new key alone */
@@ -4340,10 +4325,134 @@ void input_game_focus_free(void)
 }
 
 #ifdef HAVE_OVERLAY
-void input_overlay_deinit(void)
+static bool video_driver_overlay_interface(
+      const video_overlay_interface_t **iface)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   if (!video_st->current_video || !video_st->current_video->overlay_interface)
+      return false;
+   video_st->current_video->overlay_interface(video_st->data, iface);
+   return true;
+}
+
+static void input_overlay_enable_(bool enable)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+   float opacity                  = (ol && (ol->flags & INPUT_OVERLAY_IS_OSK))
+      ? settings->floats.input_osk_overlay_opacity
+      : settings->floats.input_overlay_opacity;
+   bool auto_rotate               = settings->bools.input_overlay_auto_rotate;
+   bool hide_mouse_cursor         = !settings->bools.input_overlay_show_mouse_cursor
+         && (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
+
+   if (!ol)
+      return;
+
+   if (enable)
+   {
+      /* Set video interface */
+      ol->iface_data = video_st->data;
+      if (!video_driver_overlay_interface(&ol->iface) || !ol->iface)
+      {
+         RARCH_ERR("Overlay interface is not present in video driver.\n");
+         ol->flags &= ~INPUT_OVERLAY_ALIVE;
+         return;
+      }
+
+      /* Load last-active overlay */
+      input_overlay_load_active(input_st->overlay_visibility, ol, opacity);
+
+      /* Adjust to current settings */
+      command_event(CMD_EVENT_OVERLAY_SET_SCALE_FACTOR, NULL);
+
+      if (auto_rotate)
+         input_overlay_auto_rotate_(
+               video_st->width, video_st->height, true, ol);
+
+      /* Enable */
+      if (ol->iface->enable)
+         ol->iface->enable(ol->iface_data, true);
+
+      ol->flags |= (INPUT_OVERLAY_ENABLE | INPUT_OVERLAY_BLOCKED);
+
+      if (     hide_mouse_cursor
+            && video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
+   else
+   {
+      /* Disable and clear input state */
+      ol->flags &= ~INPUT_OVERLAY_ENABLE;
+
+      if (ol->iface && ol->iface->enable)
+         ol->iface->enable(ol->iface_data, false);
+      ol->iface = NULL;
+
+      memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));
+   }
+}
+
+static void input_overlay_deinit(void)
 {
    input_overlay_free(input_driver_st.overlay_ptr);
    input_driver_st.overlay_ptr = NULL;
+
+   input_overlay_free(input_driver_st.overlay_cache_ptr);
+   input_driver_st.overlay_cache_ptr = NULL;
+}
+
+static void input_overlay_move_to_cache(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t      *ol       = input_st->overlay_ptr;
+
+   if (!ol)
+      return;
+
+   /* Free existing cache */
+   input_overlay_free(input_driver_st.overlay_cache_ptr);
+
+   /* Disable current overlay */
+   input_overlay_enable_(false);
+
+   /* Move to cache */
+   input_st->overlay_cache_ptr = ol;
+   input_st->overlay_ptr       = NULL;
+}
+
+static void input_overlay_swap_with_cached(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t      *ol;
+
+   /* Disable current overlay */
+   input_overlay_enable_(false);
+
+   /* Swap with cached */
+   ol                          = input_st->overlay_cache_ptr;
+   input_st->overlay_cache_ptr = input_st->overlay_ptr;
+   input_st->overlay_ptr       = ol;
+
+   /* Enable and update to current settings */
+   input_overlay_enable_(true);
+}
+
+void input_overlay_unload(void)
+{
+   settings_t      *settings   = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   /* Free if overlays disabled or initing/deiniting core */
+   if (     !settings->bools.input_overlay_enable
+         || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+         ||  (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+      input_overlay_deinit();
+   else
+      input_overlay_move_to_cache();
 }
 
 void input_overlay_set_visibility(int overlay_idx,
@@ -4370,201 +4479,155 @@ void input_overlay_set_visibility(int overlay_idx,
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
-static bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface)
+static bool input_overlay_want_hidden(void)
 {
+   settings_t *settings = config_get_ptr();
+   bool hide            = false;
+
+#ifdef HAVE_MENU
+   if (settings->bools.input_overlay_hide_in_menu)
+      hide = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
+#endif
+   if (settings->bools.input_overlay_hide_when_gamepad_connected)
+      hide = hide || (input_config_get_device_name(0) != NULL);
+
+   return hide;
+}
+
+void input_overlay_check_mouse_cursor(void)
+{
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (!video_st->current_video || !video_st->current_video->overlay_interface)
-      return false;
-   video_st->current_video->overlay_interface(video_st->data, iface);
-   return true;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+
+   if (     ol && (ol->flags & INPUT_OVERLAY_ENABLE)
+         && video_st->poke
+         && video_st->poke->show_mouse)
+   {
+      if (settings->bools.input_overlay_show_mouse_cursor)
+         video_st->poke->show_mouse(video_st->data, true);
+      else if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
 }
 
 /* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   size_t i;
-   overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
-   input_overlay_t                    *ol = NULL;
-   const video_overlay_interface_t *iface = NULL;
-   settings_t *settings                   = config_get_ptr();
-   bool input_overlay_show_mouse_cursor   = settings->bools.input_overlay_show_mouse_cursor;
-   bool inp_overlay_auto_rotate           = settings->bools.input_overlay_auto_rotate;
-   bool input_overlay_enable              = settings->bools.input_overlay_enable;
-   video_driver_state_t *video_st         = video_state_get_ptr();
-   input_driver_state_t *input_st         = &input_driver_st;
+   settings_t           *settings = config_get_ptr();
+   overlay_task_data_t  *data     = (overlay_task_data_t*)task_data;
+   input_overlay_t      *ol       = NULL;
+   input_driver_state_t *input_st = &input_driver_st;
+   bool enable_overlay            = !input_overlay_want_hidden()
+         && settings->bools.input_overlay_enable;
+   uint16_t overlay_types;
+
    if (err)
       return;
 
-   if (data->flags & OVERLAY_LOADER_ENABLE)
-   {
-#ifdef HAVE_MENU
-      struct menu_state *menu_st = menu_state_get_ptr();
+   ol              = (input_overlay_t*)calloc(1, sizeof(*ol));
+   ol->overlays    = data->overlays;
+   ol->size        = data->size;
+   ol->active      = data->active;
+   ol->path        = data->overlay_path;
+   ol->next_index  = (unsigned)((ol->index + 1) % ol->size);
+   ol->flags      |= INPUT_OVERLAY_ALIVE;
+   if (data->flags & OVERLAY_LOADER_IS_OSK)
+      ol->flags   |= INPUT_OVERLAY_IS_OSK;
+   overlay_types   = data->overlay_types;
 
-      /* Update menu entries */
-      if (menu_st->overlay_types != data->overlay_types)
-      {
-         menu_st->overlay_types  = data->overlay_types;
-         menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-      }
-
-      /* We can't display when the menu is up */
-      if (   (data->flags & OVERLAY_LOADER_HIDE_IN_MENU)
-          && (menu_st->flags & MENU_ST_FLAG_ALIVE))
-         goto abort_load;
-#endif
-
-      /* If 'hide_when_gamepad_connected' is enabled,
-       * we can't display when a gamepad is connected */
-      if (   (data->flags & OVERLAY_LOADER_HIDE_WHEN_GAMEPAD_CONNECTED)
-          && (input_config_get_device_name(0) != NULL))
-         goto abort_load;
-   }
-
-   if (     !(data->flags & OVERLAY_LOADER_ENABLE)
-         || !video_driver_overlay_interface(&iface)
-         || !iface)
-   {
-      RARCH_ERR("Overlay interface is not present in video driver,"
-            " or not enabled.\n");
-      goto abort_load;
-   }
-
-   ol             = (input_overlay_t*)calloc(1, sizeof(*ol));
-   ol->overlays   = data->overlays;
-   ol->size       = data->size;
-   ol->active     = data->active;
-   ol->iface      = iface;
-   ol->iface_data = video_st->data;
-
-   input_overlay_load_active(input_st->overlay_visibility,
-         ol, data->overlay_opacity);
-
-   /* Enable or disable the overlay. */
-   if (data->flags & OVERLAY_LOADER_ENABLE)
-      ol->flags |= INPUT_OVERLAY_ENABLE;
-   else
-      ol->flags &= ~INPUT_OVERLAY_ENABLE;
-
-   if (ol->iface->enable)
-      ol->iface->enable(ol->iface_data, (ol->flags & INPUT_OVERLAY_ENABLE));
-
-   input_overlay_set_scale_factor(ol, &data->layout_desc,
-         video_st->width, video_st->height);
-
-   ol->next_index = (unsigned)((ol->index + 1) % ol->size);
-   ol->state      = OVERLAY_STATUS_NONE;
-   ol->flags     |= INPUT_OVERLAY_ALIVE;
+   free(data);
 
    /* Due to the asynchronous nature of overlay loading
     * it is possible for overlay_ptr to be non-NULL here
     * > Ensure it is free()'d before assigning new pointer */
    if (input_st->overlay_ptr)
-   {
-      input_overlay_free_overlays(input_st->overlay_ptr);
-      free(input_st->overlay_ptr);
-   }
+      input_overlay_free(input_st->overlay_ptr);
    input_st->overlay_ptr = ol;
 
-   free(data);
+   /* Enable or disable the overlay */
+   input_overlay_enable_(enable_overlay);
 
-   if (!input_overlay_show_mouse_cursor)
+   /* Abort if enable failed */
+   if (!(ol->flags & INPUT_OVERLAY_ALIVE))
    {
-      if (     video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, false);
+      input_st->overlay_ptr = NULL;
+      input_overlay_free(ol);
+      return;
    }
 
-   /* Attempt to automatically rotate overlay, if required */
-   if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(
-            video_st->width,
-            video_st->height,
-            input_overlay_enable,
-            input_st->overlay_ptr);
+   /* Cache or free if hidden */
+   if (!enable_overlay)
+      input_overlay_unload();
 
    input_overlay_set_eightway_diagonal_sensitivity();
 
-   return;
+#ifdef HAVE_MENU
+   /* Update menu entries if this is the main overlay */
+   if (!(ol->flags & INPUT_OVERLAY_IS_OSK))
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
 
-abort_load:
-   for (i = 0; i < data->size; i++)
-      input_overlay_free_overlay(&data->overlays[i]);
-
-   free(data->overlays);
-   free(data);
+      if (menu_st->overlay_types != overlay_types)
+      {
+         menu_st->overlay_types = overlay_types;
+         menu_st->flags        |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      }
+   }
+#endif
 }
 
 void input_overlay_init(void)
 {
-   settings_t *settings                     = config_get_ptr();
-   bool input_overlay_enable                = settings->bools.input_overlay_enable;
-   bool input_overlay_auto_scale            = settings->bools.input_overlay_auto_scale;
-   const char *path_overlay                 = settings->paths.path_overlay;
-   float overlay_opacity                    = settings->floats.input_overlay_opacity;
-   float overlay_scale_landscape            = settings->floats.input_overlay_scale_landscape;
-   float overlay_aspect_adjust_landscape    = settings->floats.input_overlay_aspect_adjust_landscape;
-   float overlay_x_separation_landscape     = settings->floats.input_overlay_x_separation_landscape;
-   float overlay_y_separation_landscape     = settings->floats.input_overlay_y_separation_landscape;
-   float overlay_x_offset_landscape         = settings->floats.input_overlay_x_offset_landscape;
-   float overlay_y_offset_landscape         = settings->floats.input_overlay_y_offset_landscape;
-   float overlay_scale_portrait             = settings->floats.input_overlay_scale_portrait;
-   float overlay_aspect_adjust_portrait     = settings->floats.input_overlay_aspect_adjust_portrait;
-   float overlay_x_separation_portrait      = settings->floats.input_overlay_x_separation_portrait;
-   float overlay_y_separation_portrait      = settings->floats.input_overlay_y_separation_portrait;
-   float overlay_x_offset_portrait          = settings->floats.input_overlay_x_offset_portrait;
-   float overlay_y_offset_portrait          = settings->floats.input_overlay_y_offset_portrait;
-   float overlay_touch_scale                = (float)settings->uints.input_touch_scale;
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+   input_overlay_t *ol_cache      = input_st->overlay_cache_ptr;
+   bool want_osk                  =
+            (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
+         && !string_is_empty(settings->paths.path_osk_overlay);
+   const char *path_overlay       = want_osk
+         ? settings->paths.path_osk_overlay
+         : settings->paths.path_overlay;
+   bool want_hidden               = input_overlay_want_hidden();
+   bool overlay_shown             = ol
+         && (ol->flags & INPUT_OVERLAY_ENABLE)
+         && string_is_equal(path_overlay, ol->path);
+   bool overlay_cached            = ol_cache
+         && (ol_cache->flags & INPUT_OVERLAY_ALIVE)
+         && string_is_equal(path_overlay, ol_cache->path);
+   bool overlay_hidden            = !ol && overlay_cached;
 
-   bool load_enabled                        = input_overlay_enable;
-#ifdef HAVE_MENU
-   bool overlay_hide_in_menu                = settings->bools.input_overlay_hide_in_menu;
-#else
-   bool overlay_hide_in_menu                = false;
-#endif
-   bool overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    if (frontend_driver_get_free_memory() < (3 * 1024 * 1024))
       return;
 #endif
 
-   input_overlay_deinit();
+   /* Cancel if overlays disabled or task already done */
+   if (     !settings->bools.input_overlay_enable
+         || ( want_hidden && overlay_hidden)
+         || (!want_hidden && overlay_shown))
+      return;
 
-   /* Cancel load if 'hide_when_gamepad_connected' is
-    * enabled and a gamepad is currently connected */
-   if (overlay_hide_when_gamepad_connected)
-      load_enabled = load_enabled && (input_config_get_device_name(0) == NULL);
-
-   if (load_enabled)
+   /* Restore if cached */
+   if (!want_hidden && overlay_cached)
    {
-      overlay_layout_desc_t layout_desc;
-
-      layout_desc.scale_landscape         = overlay_scale_landscape;
-      layout_desc.aspect_adjust_landscape = overlay_aspect_adjust_landscape;
-      layout_desc.x_separation_landscape  = overlay_x_separation_landscape;
-      layout_desc.y_separation_landscape  = overlay_y_separation_landscape;
-      layout_desc.x_offset_landscape      = overlay_x_offset_landscape;
-      layout_desc.y_offset_landscape      = overlay_y_offset_landscape;
-      layout_desc.scale_portrait          = overlay_scale_portrait;
-      layout_desc.aspect_adjust_portrait  = overlay_aspect_adjust_portrait;
-      layout_desc.x_separation_portrait   = overlay_x_separation_portrait;
-      layout_desc.y_separation_portrait   = overlay_y_separation_portrait;
-      layout_desc.x_offset_portrait       = overlay_x_offset_portrait;
-      layout_desc.y_offset_portrait       = overlay_y_offset_portrait;
-      layout_desc.touch_scale             = overlay_touch_scale;
-      layout_desc.auto_scale              = input_overlay_auto_scale;
-
-      task_push_overlay_load_default(input_overlay_loaded,
-            path_overlay,
-            overlay_hide_in_menu,
-            overlay_hide_when_gamepad_connected,
-            input_overlay_enable,
-            overlay_opacity,
-            &layout_desc,
-            NULL);
+      input_overlay_swap_with_cached();
+      return;
    }
+
+   /* Cache current overlay when loading a different type */
+   if (want_osk != (ol && (ol->flags & INPUT_OVERLAY_IS_OSK)))
+      input_overlay_unload();
+   else
+      input_overlay_deinit();
+
+   /* Start task */
+   task_push_overlay_load_default(
+         input_overlay_loaded, path_overlay, want_osk, NULL);
 }
 #endif
 
@@ -4650,7 +4713,7 @@ static void input_keys_pressed(
             input_st->primary_joypad,
             sec_joypad,
             joypad_info,
-            &binds[port],
+            binds,
             input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
             port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
@@ -4684,7 +4747,7 @@ static void input_keys_pressed(
                input_st->primary_joypad,
                sec_joypad,
                joypad_info,
-               &binds[port],
+               binds,
                input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_GAME_FOCUS_TOGGLE))
@@ -4706,7 +4769,7 @@ static void input_keys_pressed(
                input_st->primary_joypad,
                sec_joypad,
                joypad_info,
-               &binds[port],
+               binds,
                input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
@@ -4738,7 +4801,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key);
@@ -4752,7 +4815,7 @@ static void input_keys_pressed(
                         input_st->primary_joypad,
                         sec_joypad,
                         joypad_info,
-                        &binds[port],
+                        binds,
                         input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                         port, RETRO_DEVICE_JOYPAD, 0, i);
 
@@ -4806,7 +4869,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
@@ -4824,7 +4887,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
@@ -4850,7 +4913,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
@@ -4869,7 +4932,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
@@ -4901,7 +4964,7 @@ static void input_keys_pressed(
                      input_st->primary_joypad,
                      sec_joypad,
                      joypad_info,
-                     &binds[port],
+                     binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i);
@@ -5288,9 +5351,6 @@ void input_driver_poll(void)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
-#ifdef HAVE_OVERLAY
-   float input_overlay_opacity    = settings->floats.input_overlay_opacity;
-#endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
 
@@ -5340,6 +5400,9 @@ void input_driver_poll(void)
          (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
    {
       unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[0];
+      float input_overlay_opacity     = (input_st->overlay_ptr->flags & INPUT_OVERLAY_IS_OSK)
+         ? settings->floats.input_osk_overlay_opacity
+         : settings->floats.input_overlay_opacity;
 
       switch (input_analog_dpad_mode)
       {
@@ -6045,8 +6108,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    /* Gather input from each (enabled) joypad */
    for (port = 0; port < (int)max_users; port++)
    {
-      input_bits_t tmp_bits;
-      input_bits_t *loop_bits                = NULL;
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
       struct retro_keybind *auto_binds       = input_autoconf_binds[port];
@@ -6054,26 +6115,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
       joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
 
-      if (port == 0)
-         loop_bits = current_bits;
-      else
-      {
-         loop_bits = &tmp_bits;
-         BIT256_CLEAR_ALL_PTR(loop_bits);
-      }
-
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
          int k;
          int s;
-
-         /* Push analog to D-Pad mappings to binds. */
-         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-         {
-            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
-            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
-         }
 
          /* Read input from both analog sticks. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
@@ -6129,7 +6175,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             false,
 #endif
             block_delay,
-            loop_bits,
+            current_bits,
             (const retro_keybind_set *)input_config_binds,
             binds_norm,
             binds_auto,
@@ -6140,27 +6186,10 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         int j;
-         /* Restores analog D-pad binds temporarily overridden. */
-         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
-         {
-            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
-            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
-         }
+         if (!all_users_control_menu)
+            break;
       }
 #endif /* HAVE_MENU */
-
-      /* we write port 0 directly to input_bits to save one iteration of this loop */
-      if (port != 0)
-      {
-         int i;
-         /* Update compound 'current_bits' record
-          * Note: Only digital inputs are considered */
-         for (i = 0; i < (int)ARRAY_SIZE(current_bits->data); i++)
-            current_bits->data[i] |= loop_bits->data[i];
-      }
-      else if (!all_users_control_menu)
-         break;
    }
 
 #ifdef HAVE_MENU
@@ -6217,7 +6246,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      input_st->current_data,
                      joypad,
                      sec_joypad,
-                     &joypad_info, (const retro_keybind_set *)input_config_binds,
+                     &joypad_info,
+                     (const retro_keybind_set *)input_config_binds,
                      input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
@@ -6458,18 +6488,9 @@ void input_keyboard_event(bool down, unsigned code,
       if (!down)
          return;
 
-      switch (device)
-      {
-         case RETRO_DEVICE_POINTER:
-            if (code != 0x12d)
-               character = (char)code;
-            /* fall-through */
-         default:
-            if (!input_keyboard_line_event(input_st,
-                  &input_st->keyboard_line, character))
-               return;
-            break;
-      }
+      if (!input_keyboard_line_event(input_st,
+            &input_st->keyboard_line, character))
+         return;
 
       /* Line is complete, can free it now. */
       if (input_st->keyboard_line.buffer)
@@ -6493,9 +6514,11 @@ void input_keyboard_event(bool down, unsigned code,
        * pressing hotkeys and RetroPad binds, but
        * - not with Game Focus
        * - not from keyboard device type mappings
+       * - not from overlay keyboard input
        * - with 'enable_hotkey' modifier set and unpressed. */
       if (     !input_st->game_focus_state.enabled
-            && BIT512_GET(input_st->keyboard_mapping_bits, code))
+            && BIT512_GET(input_st->keyboard_mapping_bits, code)
+            && device != RETRO_DEVICE_POINTER)
       {
          settings_t *settings        = config_get_ptr();
          unsigned max_users          = settings->uints.input_max_users;

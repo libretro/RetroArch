@@ -77,6 +77,7 @@ enum
    ACTION_OK_DL_AUDIO_DSP_PLUGIN,
    ACTION_OK_DL_VIDEO_FILTER,
    ACTION_OK_DL_OVERLAY_PRESET,
+   ACTION_OK_DL_OSK_OVERLAY_PRESET,
    ACTION_OK_DL_VIDEO_FONT,
    ACTION_OK_DL_SHADER_PASS,
    ACTION_OK_DL_FAVORITES_LIST,
@@ -130,6 +131,7 @@ enum
 #ifdef HAVE_MIST
    ACTION_OK_DL_CORE_INFORMATION_STEAM_LIST,
 #endif
+   ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST,
    ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST,
    ACTION_OK_DL_RECORDING_SETTINGS_LIST,
    ACTION_OK_DL_PLAYLIST_SETTINGS_LIST,
@@ -182,6 +184,7 @@ enum
    ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST,
+   ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
    ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST,
@@ -266,21 +269,27 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, size_t lbl_len,
+      unsigned type, size_t idx);
 
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, size_t lbl_len,
+      unsigned type, size_t idx);
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -292,8 +301,10 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);

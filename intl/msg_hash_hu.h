@@ -3091,10 +3091,6 @@ MSG_HASH(
    "Turbó mód"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "A turbó tüzelés beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Tapintható visszajelzés / rezgés"
    )
@@ -3115,16 +3111,8 @@ MSG_HASH(
    "Gyorsbillentyűk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "A gyorsbillentyűk beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "%u. csatlakozó kezelőszervei"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Az ehhez a csatlakozóhoz rendelt irányítás."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3613,11 +3601,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Képernyőbillentyűzet (váltógomb)"
+   "Billentyűzet rátét (váltógomb)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "A képernyőn megjelenő billentyűzetet kapcsolja be-ki."
+   "A billentyűzetként szolgáló képernyőrátét be/ki kapcsolása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4916,6 +4904,33 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "A rátét függőleges eltolása, álló tájolású képernyők esetén. Pozitív értékek felfele mozdítják a rátétet, negatív értékek lefele."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Billentyűzet rátét"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Billentyűzetként szolgáló képernyőrátét kiválasztása és beállítása."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Billentyűzet rátét preset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Billentyűzet rátét kiválasztása a fájlböngészővel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Billentyűzet rátét automatikus méretezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "A billentyűzet rátét eredeti képarányának alkalmazása. Kikapcsolva a képernyőhöz igazodik."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -7459,6 +7474,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "A képernyőrátétek ebbe a könyvtárba kerülnek."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Billentyűzet rátétek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "A billentyűzet rátétek ebbe a könyvtárba kerülnek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -12652,6 +12675,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Képernyőrátét betöltése sikertelen."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "Nincs beállított billentyűzet rátét."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,

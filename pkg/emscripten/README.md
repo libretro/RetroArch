@@ -41,7 +41,7 @@ fceumm_libretro.wasm
 
 Most of the magic happens on the browser so nothing really on that regard
 
-I you want a self hosted version you need
+If you want a self hosted version you need
 - A web server, nginx/apache will do, download a build here: 
   https://buildbot.libretro.com/nightly/emscripten/
 - Extract the build somewhere in your web-server 

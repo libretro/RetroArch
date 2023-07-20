@@ -2351,10 +2351,6 @@ MSG_HASH(
    "Tekan Bertubi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Ubah pengaturan tekan bertubi."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Umpan Balik/Getaran Sentuh"
    )
@@ -2375,16 +2371,8 @@ MSG_HASH(
    "Pintasan"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Ubah pengaturan hotkey."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Kendali Porta %u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Ubah kendali untuk porta ini."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -2543,10 +2531,6 @@ MSG_HASH(
    "Mematinyalakan atau mencetik sinkronisasi ke laju bingkai (framerate) konten yang tepat."
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Papan Tombol di Layar (Mati/Nyala)"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Layanan AI"
@@ -2709,6 +2693,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
    "Fisik (Stik Kendali)"
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

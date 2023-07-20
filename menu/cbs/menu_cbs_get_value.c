@@ -523,8 +523,8 @@ static void menu_action_setting_disp_set_label_core_manager_entry(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->is_locked)
+   if (   core_info_find(path, &core_info)
+       && core_info->is_locked)
    {
       s[0] = '[';
       s[1] = '!';
@@ -655,7 +655,6 @@ static void menu_action_setting_disp_set_label_cpu_policy(
       const char *path,
       char *s2, size_t len2)
 {
-   size_t _len;
    unsigned policyid              = atoi(path);
    cpu_scaling_driver_t **drivers = get_cpu_scaling_drivers(false);
    cpu_scaling_driver_t *d        = drivers[policyid];
@@ -780,8 +779,8 @@ static void menu_action_setting_disp_set_label_core_lock(
     * > Note: We search core_info here instead of
     *   calling core_info_get_core_lock() since we
     *   don't want to perform disk access every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->is_locked)
+   if (   core_info_find(path, &core_info)
+       && core_info->is_locked)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -811,9 +810,9 @@ static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
     *   calling core_info_get_core_standalone_exempt()
     *   since we don't want to perform disk access
     *   every frame */
-   if (core_info_find(path, &core_info) &&
-       core_info->supports_no_game &&
-       core_info->is_standalone_exempt)
+   if (   core_info_find(path, &core_info)
+       && core_info->supports_no_game
+       && core_info->is_standalone_exempt)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -1140,22 +1139,22 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned images             = 0;
-   unsigned current            = 0;
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   unsigned images               = 0;
+   unsigned current              = 0;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-   if (!system)
+   if (!sys_info)
       return;
 
-   if (!disk_control_enabled(&system->disk_control))
+   if (!disk_control_enabled(&sys_info->disk_control))
       return;
 
    *w = 19;
    *s = '\0';
    strlcpy(s2, path, len2);
 
-   images  = disk_control_get_num_images(&system->disk_control);
-   current = disk_control_get_image_index(&system->disk_control);
+   images  = disk_control_get_num_images(&sys_info->disk_control);
+   current = disk_control_get_image_index(&sys_info->disk_control);
 
    if (current >= images)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_DISK), len);
@@ -2170,6 +2169,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
                menu_action_setting_disp_set_label_menu_file_carchive);
          break;
       case FILE_TYPE_OVERLAY:
+      case FILE_TYPE_OSK_OVERLAY:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_overlay);
          break;
@@ -2265,14 +2265,16 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 }
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
 
    if (  string_starts_with_size(
-            label, "input_player", STRLEN_CONST("input_player")) &&
-         string_ends_with_size(label, "joypad_index", strlen(label),
+            label, "input_player", STRLEN_CONST("input_player"))
+         && string_ends_with_size(label, "joypad_index", lbl_len,
                STRLEN_CONST("joypad_index"))
       )
    {

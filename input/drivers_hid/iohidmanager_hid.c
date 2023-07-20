@@ -71,6 +71,7 @@ enum IOHIDReportType translate_hid_report_type(
       case HID_REPORT_OUTPUT:
          return kIOHIDReportTypeOutput;
       case HID_REPORT_COUNT:
+      default:
          return kIOHIDReportTypeCount;
    }
 }

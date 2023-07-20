@@ -149,6 +149,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_override_file_load,             DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_stream_configfile,              DISPLAYLIST_STREAM_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
+GENERIC_DEFERRED_PUSH(deferred_push_input_osk_overlay,              DISPLAYLIST_OSK_OVERLAYS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_font_path,                DISPLAYLIST_VIDEO_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
@@ -187,6 +188,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_settings_list, DISPLA
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_notifications_views_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST)
 #if defined(HAVE_OVERLAY)
 GENERIC_DEFERRED_PUSH(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_osk_overlay_settings_list,      DISPLAYLIST_OSK_OVERLAY_SETTINGS_LIST)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
@@ -234,6 +236,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_recording_settings_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_list,          DISPLAYLIST_PLAYLIST_MANAGER_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_playlist_manager_settings,      DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS)
+GENERIC_DEFERRED_PUSH(deferred_push_input_retropad_binds_list,        DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_ACCOUNTS_TWITCH_LIST)
@@ -441,11 +444,11 @@ static int general_push(menu_displaylist_info_t *info,
    {
       case PUSH_ARCHIVE_OPEN:
          {
-            struct retro_system_info *system = 
+            struct retro_system_info *sysinfo = 
                &runloop_state_get_ptr()->system.info;
-            if (system)
-               if (!string_is_empty(system->valid_extensions))
-                  strlcpy(newstring2, system->valid_extensions,
+            if (sysinfo)
+               if (!string_is_empty(sysinfo->valid_extensions))
+                  strlcpy(newstring2, sysinfo->valid_extensions,
                         sizeof(newstring2));
          }
          break;
@@ -455,9 +458,9 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
             {
-               struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-               if (system && !string_is_empty(system->valid_extensions))
-                  valid_extensions = system->valid_extensions;
+               struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+               if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
+                  valid_extensions = sysinfo->valid_extensions;
             }
 
             if (!valid_extensions)
@@ -490,26 +493,26 @@ static int general_push(menu_displaylist_info_t *info,
          {
             union string_list_elem_attr attr;
             char newstring[PATH_MAX_LENGTH];
-            struct string_list str_list2     = {0};
-            struct retro_system_info *system = 
+            struct string_list str_list2      = {0};
+            struct retro_system_info *sysinfo = 
                &runloop_state_get_ptr()->system.info;
-            bool filter_by_current_core      = settings->bools.filter_by_current_core;
+            bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            newstring[0]                     = '\0';
-            attr.i                           = 0;
+            newstring[0]                      = '\0';
+            attr.i                            = 0;
 
             string_list_initialize(&str_list2);
 
-            if (system)
+            if (sysinfo)
             {
-               if (!string_is_empty(system->valid_extensions))
+               if (!string_is_empty(sysinfo->valid_extensions))
                {
                   unsigned x;
                   struct string_list  str_list    = {0};
 
                   string_list_initialize(&str_list);
                   string_split_noalloc(&str_list,
-                        system->valid_extensions, "|");
+                        sysinfo->valid_extensions, "|");
 
                   for (x = 0; x < str_list.size; x++)
                   {
@@ -711,6 +714,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST, deferred_push_onscreen_notifications_views_settings_list},
 #if defined(HAVE_OVERLAY)
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST, deferred_push_onscreen_overlay_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST, deferred_push_osk_overlay_settings_list},
 #endif
       {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST, deferred_push_menu_file_browser_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST, deferred_push_menu_views_settings_list},
@@ -805,6 +809,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_INFORMATION, deferred_push_information},
       {MENU_ENUM_LABEL_SHADER_OPTIONS, deferred_push_shader_options},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST, deferred_user_binds_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST, deferred_push_input_retropad_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST, deferred_push_input_hotkey_binds_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS, deferred_push_quick_menu_override_options},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST, deferred_push_accounts_youtube_list},
@@ -864,6 +869,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_MENU_WALLPAPER, deferred_push_images},
       {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN, deferred_push_audio_dsp_plugin},
       {MENU_ENUM_LABEL_INPUT_OVERLAY, deferred_push_input_overlay},
+      {MENU_ENUM_LABEL_INPUT_OSK_OVERLAY, deferred_push_input_osk_overlay},
       {MENU_ENUM_LABEL_VIDEO_FONT_PATH, deferred_push_video_font_path},
       {MENU_ENUM_LABEL_XMB_FONT, deferred_push_xmb_font_path},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD, deferred_push_cheat_file_load},
@@ -948,6 +954,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_retropad_binds_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
@@ -1211,6 +1220,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_INPUT_OVERLAY:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
             break;
+         case MENU_ENUM_LABEL_INPUT_OSK_OVERLAY:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
+            break;
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
             break;
@@ -1274,6 +1286,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #if defined(HAVE_OVERLAY)
          case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_osk_overlay_settings_list);
             break;
 #endif
          case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:

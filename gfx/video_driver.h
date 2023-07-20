@@ -859,6 +859,7 @@ typedef struct
 
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
+   char window_title_prev[512];
    char gpu_device_string[128];
    char gpu_api_version_string[128];
    char title_buf[64];
@@ -1270,6 +1271,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  **/
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
+
+void video_driver_update_title(void *data);
 
 extern const video_driver_t *video_drivers[];
 

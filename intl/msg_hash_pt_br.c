@@ -712,38 +712,40 @@ int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Bem-vindo ao RetroArch \n"
             );
             break;
-        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC: {
-            /* Work around C89 limitations */
-            char u[501];
-            const char *t =
-                    "O RetroArch utiliza uma forma única de \n"
-                            "sincronização de áudio/video aonde ele \n"
-                            "precisa ser calibrado pela taxa de \n"
-                            "atualização da sua tela para um melhor \n"
-                            "resultado no desempenho. \n"
-                            " \n"
-                            "Se você experimentar qualquer estalido \n"
-                            "no áudio ou rasgo de vídeo, normalmente \n"
-                            "isto significa que você precisa calibrar \n"
-                            "as configurações. Algumas escolhas abaixo: \n"
-                            " \n";
-            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
+        case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
+            {
+               /* Work around C89 limitations */
+               char u[501];
+               size_t _len;
+               const char *t =
+                  "O RetroArch utiliza uma forma única de \n"
+                  "sincronização de áudio/video aonde ele \n"
+                  "precisa ser calibrado pela taxa de \n"
+                  "atualização da sua tela para um melhor \n"
+                  "resultado no desempenho. \n"
+                  " \n"
+                  "Se você experimentar qualquer estalido \n"
+                  "no áudio ou rasgo de vídeo, normalmente \n"
+                  "isto significa que você precisa calibrar \n"
+                  "as configurações. Algumas escolhas abaixo: \n"
+                  " \n";
+               snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Vá para '%s' -> '%s', e habilite \n"
-                             "'Vídeo paralelizado'. A taxa de atualização \n"
-                             "não irá importar neste modo, a taxa de \n"
-                             "quadros será maior, mas o vídeo será \n"
-                             "menos fluído. \n"
-                             "b) Vá para '%s' -> '%s', e observe \n"
-                             "'%s'. Deixe executar até \n"
-                             "2048 quadros, então pressione 'OK'.",
+                     "'Vídeo paralelizado'. A taxa de atualização \n"
+                     "não irá importar neste modo, a taxa de \n"
+                     "quadros será maior, mas o vídeo será \n"
+                     "menos fluído. \n"
+                     "b) Vá para '%s' -> '%s', e observe \n"
+                     "'%s'. Deixe executar até \n"
+                     "2048 quadros, então pressione 'OK'.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcpy(s, t, len);
-            strlcat(s, u, len);
-        }
+               _len = strlcpy(s, t, len);
+               strlcpy(s + _len, u, len - _len);
+            }
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
             snprintf(s, len,

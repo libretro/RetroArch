@@ -374,8 +374,10 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
          }
          {
             char *replace_output = string_replace_substring(replaced_path,
-               wildcard_tokens[i].token_name, strlen(wildcard_tokens[i].token_name),
-               replace_text, strlen(replace_text));
+               wildcard_tokens[i].token_name,
+               strlen(wildcard_tokens[i].token_name),
+               replace_text,
+               strlen(replace_text));
 
             strlcpy(replaced_path, replace_output, PATH_MAX_LENGTH);
             
@@ -1524,7 +1526,7 @@ static bool video_shader_write_referenced_preset(
 
    /* If the reference path is the same as the path we want to save 
     * or the reference path is in the config (auto shader) folder */
-   if (string_is_equal(path_to_ref, path_to_save_conformed) 
+   if (      string_is_equal(path_to_ref, path_to_save_conformed) 
          || !strncmp(config_dir, path_to_ref, strlen(config_dir)))
    {
       /* If the config from the reference path has a reference in it,
@@ -3002,9 +3004,9 @@ bool video_shader_apply_shader(
             else
             {
                msg[++_len]         = '\0';
-               _len               += strlcpy(msg + _len,
+               strlcpy(msg       + _len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
-                                     sizeof(msg) - _len);
+                     sizeof(msg) - _len);
             }
 
 #ifdef HAVE_GFX_WIDGETS

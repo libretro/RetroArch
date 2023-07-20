@@ -568,8 +568,8 @@ void *task_push_core_backup(
       core_info_t *core_info = NULL;
 
       /* If core is found, use display name */
-      if (core_info_find(core_path, &core_info) &&
-          core_info->display_name)
+      if (   core_info_find(core_path, &core_info)
+          && core_info->display_name)
          core_name = core_info->display_name;
       else
       {
@@ -992,8 +992,8 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
 
    /* Get core name
     * > If core is found, use display name */
-   if (core_info_find(core_path, &core_info) &&
-       core_info->display_name)
+   if (   core_info_find(core_path, &core_info)
+       && core_info->display_name)
       core_name = core_info->display_name;
    else
    {

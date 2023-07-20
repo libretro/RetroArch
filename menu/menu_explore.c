@@ -564,7 +564,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 
             systemname_len        = db_ext - db_name;
             if (systemname_len >= sizeof(newrdb.systemname))
-               systemname_len = sizeof(newrdb.systemname)-1;
+               systemname_len     = sizeof(newrdb.systemname)-1;
             memcpy(newrdb.systemname, db_name, systemname_len);
             newrdb.systemname[systemname_len] = '\0';
 
@@ -592,7 +592,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             }
 
             RBUF_PUSH(rdbs, newrdb);
-            rdb_num = (uintptr_t)RBUF_LEN(rdbs);
+            rdb_num = (int)RBUF_LEN(rdbs);
             RHMAP_SET(rdb_indices, rdb_hash, rdb_num);
          }
 
@@ -1424,6 +1424,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 
       if (!*state->view_search)
       {
+         /* Start navigation from first item */
+         if (menu_st->selection_ptr < 1)
+            menu_st->selection_ptr = 1;
+
          explore_menu_entry(
                list, state,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
@@ -1555,6 +1559,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       }
       else if (current_type == EXPLORE_TYPE_VIEW)
       {
+         /* Start navigation from first item */
+         if (menu_st->selection_ptr < 1)
+            menu_st->selection_ptr = 1;
+
          /* Show a saved view */
          state->show_icons = EXPLORE_ICONS_CONTENT;
          explore_menu_entry(list, state,
@@ -1566,6 +1574,10 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       }
       else
       {
+         /* Start navigation from first item */
+         if (menu_st->selection_ptr < 2)
+            menu_st->selection_ptr = 2;
+
          /* Game list */
          state->show_icons = EXPLORE_ICONS_CONTENT;
          explore_menu_entry(list, state,
@@ -1642,7 +1654,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 #endif
          else
             explore_menu_entry(list, state, e->playlist_entry->label,
-                  EXPLORE_TYPE_FIRSTITEM + (e - entries), explore_action_ok);
+                  (unsigned)(EXPLORE_TYPE_FIRSTITEM + (e - entries)), explore_action_ok);
 SKIP_ENTRY:;
       }
 

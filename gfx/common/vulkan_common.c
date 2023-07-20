@@ -81,13 +81,13 @@ static bool trigger_spurious_error(void)
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
-      VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-      VkDebugUtilsMessageTypeFlagsEXT messageType,
+      VkDebugUtilsMessageSeverityFlagBitsEXT msg_severity,
+      VkDebugUtilsMessageTypeFlagsEXT msg_type,
       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
       void *pUserData)
 {
-   if (     (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-         && (messageType     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
+   if (     (msg_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+         && (msg_type     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
    {
       RARCH_ERR("[Vulkan]: Validation Error: %s\n", pCallbackData->pMessage);
    }
@@ -261,10 +261,12 @@ static void vulkan_debug_mark_object(VkDevice device,
    if (vkSetDebugUtilsObjectNameEXT)
    {
       char merged_name[1024];
-      VkDebugUtilsObjectNameInfoEXT info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+      VkDebugUtilsObjectNameInfoEXT info;
       size_t _len                        = strlcpy(merged_name, name, sizeof(merged_name));
       snprintf(merged_name + _len, sizeof(merged_name) - _len, " (%u)", count);
 
+      info.sType                         = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+      info.pNext                         = NULL;
       info.objectType                    = object_type;
       info.objectHandle                  = object_handle;
       info.pObjectName                   = merged_name;
@@ -846,19 +848,16 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    VkResult res;
    uint32_t i, layer_count;
    VkLayerProperties properties[128];
-   const char **instance_extensions;
-   const char **instance_layers;
-   gfx_ctx_vulkan_data_t *vk = (gfx_ctx_vulkan_data_t *)opaque;
-   VkInstanceCreateInfo info = *create_info;
-   VkInstance instance       = VK_NULL_HANDLE;
-
-   instance_extensions       = (const char **)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
-   instance_layers           = (const char **)malloc((info.enabledLayerCount + 1) * sizeof(const char *));
+   gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
+   VkInstanceCreateInfo info        = *create_info;
+   VkInstance instance              = VK_NULL_HANDLE;
+   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
+   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1) * sizeof(const char *));
 
    memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
-   memcpy((void*)instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
-   info.ppEnabledExtensionNames = instance_extensions;
-   info.ppEnabledLayerNames = instance_layers;
+   memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
+   info.ppEnabledExtensionNames     = instance_extensions;
+   info.ppEnabledLayerNames         = instance_layers;
 
    instance_extensions[info.enabledExtensionCount++] = "VK_KHR_surface";
 
@@ -897,7 +896,7 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    }
 
 #ifdef VULKAN_DEBUG
-   instance_layers[info.enabledLayerCount++] = "VK_LAYER_KHRONOS_validation";
+   instance_layers[info.enabledLayerCount++]         = "VK_LAYER_KHRONOS_validation";
    instance_extensions[info.enabledExtensionCount++] = "VK_EXT_debug_utils";
 #endif
 
@@ -953,7 +952,6 @@ static bool vulkan_update_display_mode(
 {
    unsigned visible_width  = mode->parameters.visibleRegion.width;
    unsigned visible_height = mode->parameters.visibleRegion.height;
-   unsigned visible_rate   = mode->parameters.refreshRate;
 
    if (!info->width || !info->height)
    {
@@ -968,15 +966,16 @@ static bool vulkan_update_display_mode(
    }
    else
    {
+      unsigned visible_rate = mode->parameters.refreshRate;
       /* For particular resolutions, find the closest. */
-      int delta_x     = (int)info->width  - (int)visible_width;
-      int delta_y     = (int)info->height - (int)visible_height;
-      int old_delta_x = (int)info->width  - (int)*width;
-      int old_delta_y = (int)info->height - (int)*height;
-      int delta_rate  = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
+      int delta_x           = (int)info->width  - (int)visible_width;
+      int delta_y           = (int)info->height - (int)visible_height;
+      int old_delta_x       = (int)info->width  - (int)*width;
+      int old_delta_y       = (int)info->height - (int)*height;
+      int delta_rate        = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
 
-      int dist        = delta_x     * delta_x     + delta_y     * delta_y;
-      int old_dist    = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
+      int dist              = delta_x     * delta_x     + delta_y     * delta_y;
+      int old_dist          = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
 
       if (dist < old_dist && delta_rate < 1000)
       {
@@ -994,6 +993,7 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
       const struct vulkan_display_surface_info *info)
 {
    unsigned dpy, i, j;
+   VkDisplaySurfaceCreateInfoKHR create_info;
    bool ret                                  = true;
    uint32_t display_count                    = 0;
    uint32_t plane_count                      = 0;
@@ -1003,7 +1003,6 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayModePropertiesKHR *modes         = NULL;
    uint32_t best_plane                       = UINT32_MAX;
    VkDisplayPlaneAlphaFlagBitsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
-   VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
    VkDisplayModeKHR best_mode                = VK_NULL_HANDLE;
    /* Monitor index starts on 1, 0 is auto. */
    unsigned monitor_index                    = info->monitor_index;
@@ -1156,6 +1155,9 @@ out:
    if (best_plane == UINT32_MAX)
       GOTO_FAIL();
 
+   create_info.sType              = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
+   create_info.pNext              = NULL;
+   create_info.flags              = 0;
    create_info.displayMode        = best_mode;
    create_info.planeIndex         = best_plane;
    create_info.planeStackIndex    = planes[best_plane].currentStackIndex;
@@ -1482,21 +1484,21 @@ struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device, struct vk_descriptor_manager *manager)
 {
-   if (manager->count < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
-      return manager->current->sets[manager->count++];
-
-   while (manager->current->next)
+   if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
    {
+      while (manager->current->next)
+      {
+         manager->current = manager->current->next;
+         manager->count   = 0;
+         return manager->current->sets[manager->count++];
+      }
+
+      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
+      retro_assert(manager->current->next);
+
       manager->current = manager->current->next;
       manager->count   = 0;
-      return manager->current->sets[manager->count++];
    }
-
-   manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-   retro_assert(manager->current->next);
-
-   manager->current = manager->current->next;
-   manager->count   = 0;
    return manager->current->sets[manager->count++];
 }
 
@@ -2212,7 +2214,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.preTransform           = pre_transform;
    info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
-   info.clipped                = true;
+   info.clipped                = VK_TRUE;
    info.oldSwapchain           = old_swapchain;
 
 #ifdef _WIN32
@@ -2292,8 +2294,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
+   VkApplicationInfo app;
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
-   VkApplicationInfo app          = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   const char *prog_name          = NULL;
    video_driver_state_t *video_st = video_state_get_ptr();
    struct retro_hw_render_context_negotiation_interface_vulkan 
                            *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)video_st->hw_render_context_negotiation;
@@ -2350,9 +2353,12 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-   app.pApplicationName   = msg_hash_to_str(MSG_PROGRAM);
+   prog_name              = msg_hash_to_str(MSG_PROGRAM);
+   app.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+   app.pNext              = NULL;
+   app.pApplicationName   = prog_name;
    app.applicationVersion = 0;
-   app.pEngineName        = msg_hash_to_str(MSG_PROGRAM);
+   app.pEngineName        = prog_name;
    app.engineVersion      = 0;
    app.apiVersion         = VK_API_VERSION_1_0;
 
@@ -2420,9 +2426,16 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
                vulkan_context_create_instance_wrapper, vk);
       else
       {
-         VkInstanceCreateInfo info = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-         info.pApplicationInfo     = &app;
-         vk->context.instance      = vulkan_context_create_instance_wrapper(vk, &info);
+         VkInstanceCreateInfo info;
+         info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+         info.pNext                   = NULL;
+         info.flags                   = 0;
+         info.pApplicationInfo        = &app;
+         info.enabledLayerCount       = 0;
+         info.ppEnabledLayerNames     = NULL;
+         info.enabledExtensionCount   = 0;
+         info.ppEnabledExtensionNames = NULL;
+         vk->context.instance         = vulkan_context_create_instance_wrapper(vk, &info);
       }
 
       if (vk->context.instance == VK_NULL_HANDLE)

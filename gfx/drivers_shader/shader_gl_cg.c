@@ -167,8 +167,8 @@ static void gl_cg_set_uniform_parameter(
 
       if (param->lookup.add_prefix)
       {
-         strlcpy(ident, "IN.", sizeof(ident));
-         strlcat(ident, param->lookup.ident, sizeof(ident));
+         size_t _len = strlcpy(ident, "IN.", sizeof(ident));
+         strlcpy(ident + _len, param->lookup.ident, sizeof(ident) - _len);
       }
       location = cgGetNamedParameter(prog, param->lookup.add_prefix ? ident : param->lookup.ident);
    }

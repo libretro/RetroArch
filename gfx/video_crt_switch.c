@@ -57,12 +57,12 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, fl
 
 static bool crt_check_for_changes(videocrt_switch_t *p_switch)
 {
-   if ((p_switch->ra_core_height != p_switch->ra_tmp_height) ||
-       (p_switch->ra_core_width  != p_switch->ra_tmp_width) ||
-       (p_switch->center_adjust  != p_switch->tmp_center_adjust||
-        p_switch->porch_adjust   != p_switch->tmp_porch_adjust ) ||
-       (p_switch->ra_core_hz    != p_switch->ra_tmp_core_hz) ||
-       (p_switch->rotated       != p_switch->tmp_rotated))
+   if (   (p_switch->ra_core_height != p_switch->ra_tmp_height)
+       || (p_switch->ra_core_width  != p_switch->ra_tmp_width)
+       || (p_switch->center_adjust  != p_switch->tmp_center_adjust
+       ||  p_switch->porch_adjust   != p_switch->tmp_porch_adjust)
+       || (p_switch->ra_core_hz     != p_switch->ra_tmp_core_hz)
+       || (p_switch->rotated        != p_switch->tmp_rotated))
       return true;
    return false;
 }
@@ -77,23 +77,18 @@ static void crt_store_temp_changes(videocrt_switch_t *p_switch)
    p_switch->tmp_rotated       = p_switch->rotated;
 }
 
-static bool is_aspect_ratio_core_provided(void)
-{
-   settings_t *settings  = config_get_ptr();
-   return settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CORE;
-}
-
 static void crt_aspect_ratio_switch(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height,
       float srm_width, float srm_height)
 {
+   settings_t *settings           = config_get_ptr();
    float fly_aspect               = (float)width / (float)height;
    p_switch->fly_aspect           = fly_aspect;
    video_driver_state_t *video_st = video_state_get_ptr();
 
    /* We only force aspect ratio for the core provided setting */
-   if (!is_aspect_ratio_core_provided())
+   if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_CORE)
    {
       RARCH_LOG("[CRT]: Aspect ratio forced by user: %f\n", video_st->aspect_ratio);
       return;
@@ -120,6 +115,7 @@ static void crt_switch_set_aspect(
       float srm_xscale, float srm_yscale,
       bool srm_isstretched )
 {
+   sr_state state;
    unsigned int patched_width  = 0;
    unsigned int patched_height = 0;
    int scaled_width            = 0;
@@ -139,7 +135,6 @@ static void crt_switch_set_aspect(
       patched_height           = height;
    }
 
-   sr_state state;
    sr_get_state(&state);
 
    if ((int)srm_width >= state.super_width && !srm_isstretched)
@@ -153,29 +148,14 @@ static void crt_switch_set_aspect(
    crt_aspect_ratio_switch(p_switch, scaled_width, scaled_height, srm_width, srm_height);
 }
 
-static bool is_kms_driver_context(void)
-{
-   gfx_ctx_ident_t gfxctx;
-   video_context_driver_get_ident(&gfxctx);
-   RARCH_LOG("[CRT] Video context is: %s\n", gfxctx.ident);
-   return (gfxctx.ident && strncmp(gfxctx.ident, "kms",3) == 0);
-}
-
-static bool is_khr_driver_context()
-{
-   gfx_ctx_ident_t gfxctx;
-   video_context_driver_get_ident(&gfxctx);
-   RARCH_LOG("[CRT] Video context is: %s\n", gfxctx.ident);
-   return (gfxctx.ident && strncmp(gfxctx.ident, "khr_display",11) == 0);
-}
-
 #if !defined(HAVE_VIDEOCORE)
 static bool crt_sr2_init(videocrt_switch_t *p_switch,
       int monitor_index, unsigned int crt_mode, unsigned int super_width)
 {
-   const char* err_msg;
-   char* mode;
+   char *mode;
+   const char *err_msg;
    char index[10];
+   gfx_ctx_ident_t gfxctx;
    char ra_config_path[PATH_MAX_LENGTH];
    char sr_ini_file[PATH_MAX_LENGTH];
 
@@ -184,8 +164,12 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
    else
       strlcpy(index, "0", sizeof(index));
 
-   p_switch->kms_ctx = is_kms_driver_context();
-   p_switch->khr_ctx = is_khr_driver_context();
+   video_context_driver_get_ident(&gfxctx);
+
+   p_switch->kms_ctx = (gfxctx.ident && strncmp(gfxctx.ident, "kms", 3) == 0);
+   p_switch->khr_ctx = (gfxctx.ident && strncmp(gfxctx.ident, "khr_display", 11) == 0);
+
+   RARCH_LOG("[CRT] Video context is: %s\n", gfxctx.ident);
 
    if (!p_switch->sr2_active)
    {
@@ -200,18 +184,18 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
       {
          case 1:
             sr_set_monitor("arcade_15");
-            RARCH_LOG("[CRT]: CRT Mode: %d - arcade_15 \n", crt_mode) ;
+            RARCH_LOG("[CRT]: CRT Mode: %d - arcade_15 \n", crt_mode);
             break;
          case 2:
             sr_set_monitor("arcade_31");
-            RARCH_LOG("[CRT]: CRT Mode: %d - arcade_31 \n", crt_mode) ;
+            RARCH_LOG("[CRT]: CRT Mode: %d - arcade_31 \n", crt_mode);
             break;
          case 3:
             sr_set_monitor("pc_31_120");
-            RARCH_LOG("[CRT]: CRT Mode: %d - pc_31_120 \n", crt_mode) ;
+            RARCH_LOG("[CRT]: CRT Mode: %d - pc_31_120 \n", crt_mode);
             break;
          case 4:
-            RARCH_LOG("[CRT]: CRT Mode: %d - Selected from ini \n", crt_mode) ;
+            RARCH_LOG("[CRT]: CRT Mode: %d - Selected from ini \n", crt_mode);
             break;
          default:
             break;
@@ -219,15 +203,15 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
 
       if (super_width > 2)
       {
-         sr_set_user_mode(super_width, 0, 0);
          char sw[16];
-         sprintf(sw, "%d", super_width);
+         sr_set_user_mode(super_width, 0, 0);
+         snprintf(sw, sizeof(sw), "%d", super_width);
          sr_set_option(SR_OPT_SUPER_WIDTH, sw);
       }
 
       if (p_switch->kms_ctx)
             p_switch->rtn = sr_init_disp("dummy", NULL);
-      else if (monitor_index+1 > 0)
+      else if (monitor_index + 1 > 0)
       {
          RARCH_LOG("[CRT]: Monitor Index Manual: %s\n", &index[0]);
          p_switch->rtn = sr_init_disp(index, NULL);
@@ -301,7 +285,6 @@ static void get_modeline_for_kms(videocrt_switch_t *p_switch, sr_mode* srm)
    p_switch->vsync       = srm->vsync;
 }
 
-
 static void switch_res_crt(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height,
@@ -371,17 +354,21 @@ static void switch_res_crt(
       p_switch->sr_core_hz = (float)srm.vfreq;
 
       crt_switch_set_aspect(p_switch,
-            p_switch->rotated? h : w,
-            p_switch->rotated? w : h,
+            p_switch->rotated ? h : w,
+            p_switch->rotated ? w : h,
             srm.width, srm.height,
-            (float)srm.x_scale, (float)srm.y_scale, srm.is_stretched);
+            (float)srm.x_scale,
+            (float)srm.y_scale,
+            srm.is_stretched);
    }
    else
    {
       crt_switch_set_aspect(p_switch,
             width, height,
             width, height,
-            (float)1, (float)1, false);
+            1.0f,
+            1.0f,
+            false);
       video_driver_set_size(width , height);
       video_driver_apply_state_changes();
    }
@@ -406,6 +393,7 @@ void crt_switch_res_core(
       int monitor_index, bool dynamic,
       int super_width, bool hires_menu)
 {
+   settings_t *settings  = config_get_ptr();
    if (height <= 4)
    {
       hz              = 60;
@@ -463,8 +451,8 @@ void crt_switch_res_core(
          crt_store_temp_changes(p_switch);
       }
 
-      if (is_aspect_ratio_core_provided() &&
-         video_driver_get_aspect_ratio() != p_switch->fly_aspect)
+      if (  (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CORE)
+         && video_driver_get_aspect_ratio() != p_switch->fly_aspect)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
          float fly_aspect               = (float)p_switch->fly_aspect;
@@ -560,7 +548,7 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
    int yscale                          = 1;
 
    if (height > 300)
-      height = height/2;
+      height /= 2;
 
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
@@ -574,17 +562,17 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
       w = w+width;
 
    if (w > 2000)
-         w =w- width;
+      w = w - width;
 
    width = w;
 
    crt_aspect_ratio_switch(p_switch, width,height,width,height);
 
    /* following code is the mode line generator */
-   hfp      = ((width * 0.044) + (width / 112));
-   hbp      = ((width * 0.172) + (width /64));
+   hfp      = ((width * 0.044f) + (width / 112));
+   hbp      = ((width * 0.172f) + (width /64));
 
-   hsp      = (width * 0.117);
+   hsp      = (width * 0.117f);
 
    if (height < 241)
       vmax = 261;
@@ -621,18 +609,15 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
       vsp = vfp + 6; /* needs to be 6 for interlaced */
 
    vsp  = 3;
-   vbp  = (vmax-height)-vsp-vfp;
-   hmax = width+hfp+hsp+hbp;
+   vbp  = (vmax - height) - vsp - vfp;
+   hmax = width + hfp + hsp + hbp;
 
    if (height < 300)
-   {
-      pixel_clock = (hmax * vmax * hz) ;
-      ip_flag     = 0;
-   }
+      pixel_clock = (hmax * vmax * hz);
 
    if (height > 300)
    {
-      pixel_clock = (hmax * vmax * (hz/2)) /2 ;
+      pixel_clock = (hmax * vmax * (hz/2)) / 2;
       ip_flag     = 1;
    }
 
@@ -643,19 +628,12 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
          hz, ip_flag, pixel_clock);
 
    vcos_init();
-
    vchi_initialise(&vchi_instance);
-
    vchi_connect(NULL, 0, vchi_instance);
-
    vc_vchi_gencmd_init(vchi_instance, &vchi_connection, 1);
-
    vc_gencmd(buffer, sizeof(buffer), set_hdmi_timing);
-
    vc_gencmd_stop();
-
    vchi_disconnect(vchi_instance);
-
    snprintf(output1,  sizeof(output1),
          "tvservice -e \"DMT 87\" > /dev/null");
    system(output1);

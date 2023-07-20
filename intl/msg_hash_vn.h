@@ -1634,6 +1634,9 @@ MSG_HASH(
    "Tự động tải Preferred Overlay"
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 

@@ -233,7 +233,6 @@ static bool screenshot_dump(
       bool use_thread,
       unsigned pixel_format_type)
 {
-   struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
    bool history_list_enable       = settings->bools.history_list_enable;
@@ -310,16 +309,17 @@ static bool screenshot_dump(
 
             if (path_is_empty(RARCH_PATH_CONTENT))
             {
-               if (!core_get_system_info(&system_info))
+               struct retro_system_info sysinfo;
+               if (!core_get_system_info(&sysinfo))
                {
                   free(state);
                   return false;
                }
 
-               if (string_is_empty(system_info.library_name))
+               if (string_is_empty(sysinfo.library_name))
                   screenshot_name = "RetroArch";
                else
-                  screenshot_name = system_info.library_name;
+                  screenshot_name = sysinfo.library_name;
             }
             else
                screenshot_name = path_basename_nocompression(name_base);

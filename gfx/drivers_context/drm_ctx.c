@@ -113,7 +113,7 @@ typedef struct hdmi_timings
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 static drmModeModeInfo gfx_ctx_crt_switch_mode;
-static bool switch_mode = false;
+static bool switch_mode                   = false;
 
 static float mode_vrefresh(drmModeModeInfo *mode)
 {
@@ -385,7 +385,7 @@ static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
    settings_t *settings     = config_get_ptr();
    char *crt_switch_timings = settings->arrays.crt_switch_timings;
 
-   if(modeInfo && !string_is_empty(crt_switch_timings))
+   if (modeInfo && !string_is_empty(crt_switch_timings))
    {
       hdmi_timings_t timings;
       int ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
@@ -570,8 +570,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
    /* Recreate the surface */
-   //*
-   if(switch_mode)
+   if (switch_mode)
    {
       RARCH_DBG("[KMS]: modeswitch detected, doing GBM and EGL stuff\n");
       if (drm->gbm_surface)
@@ -593,9 +592,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
             GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
       if (!drm->gbm_surface)
-      {
          RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
-      }
 
       /* Creates an EGL surface and make it current */
       egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
@@ -617,8 +614,8 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    drm->waiting_for_flip = gfx_ctx_drm_queue_flip(drm);
 
    /* Triple-buffered page flips */
-   if (max_swapchain_images >= 3 &&
-         gbm_surface_has_free_buffers(drm->gbm_surface))
+   if (     max_swapchain_images >= 3
+         && gbm_surface_has_free_buffers(drm->gbm_surface))
       return;
 
    gfx_ctx_drm_wait_flip(drm, true);
@@ -837,28 +834,28 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size,
     * which is not appropriate. */
-   if(gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
+   if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
    {
       RARCH_DBG("[KMS]: New mode detected: %dx%d\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
-      g_drm_mode = &gfx_ctx_crt_switch_mode;
+      g_drm_mode     = &gfx_ctx_crt_switch_mode;
       drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
       drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
-      switch_mode = true;
+      switch_mode    = true;
       /* Let's exit, since modeswitching will happen while swapping buffers */
       return true;
    }
    if ((width == 0 && height == 0) || !fullscreen)
    {
-      g_drm_mode                   = &g_drm_connector->modes[0];
       RARCH_WARN("[KMS]: Falling back to mode 0 (default)\n");
+      g_drm_mode     = &g_drm_connector->modes[0];
    }
    else
    {
       /* check if custom HDMI timings were asked */
       if (gfx_ctx_crt_switch_mode.vdisplay > 0)
       {
-         g_drm_mode                = &gfx_ctx_crt_switch_mode;
          RARCH_LOG("[DRM]: custom mode requested: %s\n", gfx_ctx_crt_switch_mode.name);
+         g_drm_mode  = &gfx_ctx_crt_switch_mode;
       }
       else
       {

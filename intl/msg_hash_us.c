@@ -52,6 +52,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
        switch (msg)
        {
+          case MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS), len);
+             break;
           case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
              break;

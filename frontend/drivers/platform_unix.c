@@ -167,10 +167,10 @@ int system_property_get(const char *command,
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
-   cmd[buf_pos]                 = ' ';
-   cmd[buf_pos+1]               = '\0';
+   cmd[  buf_pos]               = ' ';
+   cmd[++buf_pos]               = '\0';
 
-   buf_pos                      = strlcat(cmd, args, sizeof(cmd));
+   strlcpy(cmd + buf_pos, args, sizeof(cmd) - buf_pos);
 
    if (!(pipe = popen(cmd, "r")))
    {
@@ -1555,6 +1555,8 @@ static void frontend_unix_get_env(int *argc,
                   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
                   "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], app_dir,
+                  "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
 
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -1858,7 +1860,9 @@ static void frontend_unix_get_env(int *argc,
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
-         "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], base_path,
+         "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
@@ -2242,8 +2246,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       size_t _len = strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
       if (user)
       {
-         strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
-         strlcat(udisks_media_path, user, sizeof(udisks_media_path));
+         _len += strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
+         strlcpy(udisks_media_path + _len, user, sizeof(udisks_media_path) - _len);
       }
    }
 

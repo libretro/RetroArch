@@ -2323,10 +2323,6 @@ MSG_HASH(
    "Posa en pausa el contingut quan qualssevol controlador es desconnecte."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Canvia els ajustos per disparar amb turbo."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Canvia els ajustos de vibració i resposta hàptica."
    )
@@ -2681,6 +2677,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
    "Aplica un factor de correcció de relació d'aspecte a la superposició quan s'usa una orientació de pantalla vertical. Els valors positius incrementen (mentre que els valors negatius decreixen) l'altura efectiva de la superposició."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 

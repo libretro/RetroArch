@@ -1461,7 +1461,7 @@ void video_driver_free_internal(void)
    bool        is_threaded           = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 #endif
 
-   command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 
    if (!(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
@@ -2392,6 +2392,25 @@ size_t video_driver_get_window_title(char *buf, unsigned len)
    return video_st->window_title_len;
 }
 
+void video_driver_update_title(void *data)
+{
+#ifndef _XBOX
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+   video_driver_state_t *video_st = &video_driver_st;
+   if (     video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE
+         && window)
+   {
+      if (     video_st->window_title[0]
+            && !string_is_equal(video_st->window_title, video_st->window_title_prev))
+      {
+         window->set_title((void*)video_st->display_userdata, video_st->window_title);
+         strlcpy(video_st->window_title_prev, video_st->window_title, sizeof(video_st->window_title_prev));
+      }
+      video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+   }
+#endif
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_t *custom_vp             = NULL;
@@ -3178,7 +3197,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          return false;
 
 #ifdef HAVE_OVERLAY
-   input_overlay_deinit();
+   input_overlay_unload();
    input_overlay_init();
 #endif
 
@@ -3224,6 +3243,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          if (input_driver_grab_mouse())
             input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
    }
+
+#ifdef HAVE_OVERLAY
+   input_overlay_check_mouse_cursor();
+#endif
 
    return true;
 }
@@ -3517,13 +3540,13 @@ void video_driver_frame(const void *data, unsigned width,
             status_text[++buf_pos  ] = '|';
             status_text[++buf_pos  ] = ' ';
             status_text[++buf_pos  ] = '\0';
-            buf_pos                 += strlcpy(
+            strlcpy(
                   status_text         + buf_pos,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text) - buf_pos);
          }
          else
-            buf_pos                = strlcpy(status_text,
+            strlcpy(status_text,
                   runloop_st->core_status_msg.str,
                   sizeof(status_text));
       }
@@ -3879,6 +3902,7 @@ void video_driver_reinit(int flags)
    video_driver_state_t *video_st          = &video_driver_st;
    struct retro_hw_render_callback *hwr    =
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
+
    if (hwr->cache_context != false)
       video_st->flags                     |=  VIDEO_FLAG_CACHE_CONTEXT;
    else
@@ -3886,6 +3910,8 @@ void video_driver_reinit(int flags)
    video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
    video_driver_reinit_context(settings, flags);
    video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT;
+
+   video_st->window_title_prev[0]          = '\0';
 }
 
 void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)

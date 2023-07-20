@@ -63,3 +63,7 @@
 #import "../gfx/common/metal/metal_renderer.m"
 #import "../gfx/drivers/metal.m"
 #endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+#import "../network/netplay/netplay_nsnetservice.m"
+#endif

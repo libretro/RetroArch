@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A88422A4E7AA9003161C0 /* OpenAL.framework */; };
 		0714E7142983A5AC00E6B45B /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; };
 		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
@@ -160,6 +161,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		070A88422A4E7AA9003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = tvOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
@@ -467,6 +469,7 @@
 				9204BE171D319EF300BD49DB /* CoreMedia.framework in Frameworks */,
 				9204BE181D319EF300BD49DB /* AVFoundation.framework in Frameworks */,
 				9204BE191D319EF300BD49DB /* CoreVideo.framework in Frameworks */,
+				070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */,
 				9204BE1A1D319EF300BD49DB /* AudioToolbox.framework in Frameworks */,
 				9204BE1B1D319EF300BD49DB /* CoreAudio.framework in Frameworks */,
 				9204BE1C1D319EF300BD49DB /* UIKit.framework in Frameworks */,
@@ -1180,6 +1183,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				070A88422A4E7AA9003161C0 /* OpenAL.framework */,
 				92EDD1622982E40C00AD33B4 /* libMoltenVK.dylib */,
 				0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */,
 				9210C2F124B3A19100E6FE7C /* Metal.framework */,
@@ -1543,7 +1547,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.15.0;
+				CURRENT_PROJECT_VERSION = 1.16.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1573,7 +1577,7 @@
 					"@executable_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.15.0;
+				MARKETING_VERSION = 1.16.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
@@ -1582,10 +1586,12 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_AL",
 					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_CHEATS",
@@ -1618,6 +1624,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_NETPLAYDISCOVERY_NSNET",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_ONLINE_UPDATER",
@@ -1640,6 +1647,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
+					"-DHAVE_SSL",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_THREADS",
@@ -1687,7 +1695,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.15.0;
+				CURRENT_PROJECT_VERSION = 1.16.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1717,7 +1725,7 @@
 					"@executable_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.15.0;
+				MARKETING_VERSION = 1.16.0;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
 					"-DDONT_WANT_ARM_OPTIMIZATIONS",
@@ -1725,10 +1733,12 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_AL",
 					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_CHEATS",
@@ -1761,6 +1771,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_NETPLAYDISCOVERY_NSNET",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_ONLINE_UPDATER",
@@ -1783,6 +1794,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
+					"-DHAVE_SSL",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_THREADS",
@@ -1849,7 +1861,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.15.0;
+				CURRENT_PROJECT_VERSION = 1.16.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1887,7 +1899,7 @@
 					"$(PROJECT_DIR)/tvOS/modules",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.15.0;
+				MARKETING_VERSION = 1.16.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
@@ -1896,10 +1908,12 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_AL",
 					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_CHEATS",
@@ -1927,6 +1941,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_NETPLAYDISCOVERY_NSNET",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_ONLINE_UPDATER",
@@ -1948,6 +1963,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
+					"-DHAVE_SSL",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_THREADS",
@@ -2009,7 +2025,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.15.0;
+				CURRENT_PROJECT_VERSION = 1.16.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -2047,7 +2063,7 @@
 					"$(PROJECT_DIR)/tvOS/modules",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.15.0;
+				MARKETING_VERSION = 1.16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
@@ -2056,10 +2072,12 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_AL",
 					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_BUILTINGLSLANG",
+					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_CHEATS",
@@ -2087,6 +2105,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_NETPLAYDISCOVERY",
+					"-DHAVE_NETPLAYDISCOVERY_NSNET",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_ONLINE_UPDATER",
@@ -2108,6 +2127,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
+					"-DHAVE_SSL",
 					"-DHAVE_STB_FONT",
 					"-DHAVE_STB_VORBIS",
 					"-DHAVE_THREADS",
@@ -2173,7 +2193,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.15.0;
+				CURRENT_PROJECT_VERSION = 1.16.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2195,7 +2215,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.15.0;
+				MARKETING_VERSION = 1.16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2243,7 +2263,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.15.0;
+				CURRENT_PROJECT_VERSION = 1.16.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2265,7 +2285,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.15.0;
+				MARKETING_VERSION = 1.16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;

@@ -208,7 +208,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                   char entry_name[128];
                   fill_pathname_base(entry_name, entry->path, sizeof(entry_name));
                   path_remove_extension(entry_name);
-                  strlcat(task_title, entry_name, sizeof(task_title));
+                  strlcpy(task_title + _len, entry_name, sizeof(task_title) - _len);
                }
                
                task_set_title(task, strdup(task_title));
@@ -392,8 +392,8 @@ static void pl_manager_validate_core_association(
       core_info_t *core_info = NULL;
       
       /* Search core info */
-      if (core_info_find(core_path, &core_info) &&
-          !string_is_empty(core_info->display_name))
+      if (    core_info_find(core_path, &core_info)
+          && !string_is_empty(core_info->display_name))
          strlcpy(core_display_name, core_info->display_name,
                sizeof(core_display_name));
       else

@@ -1353,7 +1353,7 @@ static DRFLAC_INLINE drflac_bool32 drflac__read_uint32(drflac_bs* bs, unsigned i
         if (!drflac__reload_cache(bs))
             return DRFLAC_FALSE;
 
-        *pResultOut = (drflac_uint32)(resultHi << bitCountLo) | DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountLo);
+        *pResultOut = (drflac_uint32)(resultHi << bitCountLo) | (drflac_uint32)DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountLo);
         bs->consumedBits += bitCountLo;
         bs->cache <<= bitCountLo;
         return DRFLAC_TRUE;

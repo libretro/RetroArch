@@ -142,6 +142,7 @@ static enum IIRFilter str_to_type(const char *str)
 
    return LPF; /* Fallback. */
 }
+#undef CHECK
 
 static void make_poly_from_roots(
       const double *roots, unsigned num_roots, float *poly)

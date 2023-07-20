@@ -31,6 +31,14 @@
 #define MAX_MFI_CONTROLLERS 4
 #endif
 
+#if TARGET_OS_IOS
+#include "../../configuration.h"
+#define IPHONE_RUMBLE_AVAIL API_AVAILABLE(ios(14.0))
+static CHHapticEngine *deviceHapticEngine IPHONE_RUMBLE_AVAIL;
+static id<CHHapticPatternPlayer> deviceWeakPlayer IPHONE_RUMBLE_AVAIL;
+static id<CHHapticPatternPlayer> deviceStrongPlayer IPHONE_RUMBLE_AVAIL;
+#endif
+
 enum
 {
     GCCONTROLLER_PLAYER_INDEX_UNSET = -1,
@@ -180,13 +188,12 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
     /* Don't let tvOS or iOS do anything with **our** buttons!!
      * iOS will start a screen recording if you hold or doubleclick  
      * the OPTIONS button, we don't want that. */
-    if (@available(iOS 14.0, tvOS 14.0, macOS 10.15, *))
+    if (@available(iOS 14.0, tvOS 14.0, macOS 11, *))
     {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
         gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
         gp.buttonMenu.preferredSystemGestureState    = GCSystemGestureStateDisabled;
-        if (@available(macOS 11, *))
-            gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
+        gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
     }
 #endif
     
@@ -483,10 +490,102 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
     }
 }
 
+#if TARGET_OS_IOS
+static void apple_gamecontroller_device_haptics_setup() IPHONE_RUMBLE_AVAIL
+{
+    if (!CHHapticEngine.capabilitiesForHardware.supportsHaptics)
+        return;
+
+    if (deviceHapticEngine)
+        return;
+
+    NSError *error;
+    CHHapticEngine *engine = [[CHHapticEngine alloc] initAndReturnError:&error];
+    if (error)
+        return;
+    [engine startAndReturnError:&error];
+    if (error)
+        return;
+    deviceHapticEngine = engine;
+
+    deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason)
+    {
+        deviceWeakPlayer = nil;
+        deviceStrongPlayer = nil;
+        deviceHapticEngine = nil;
+    };
+    deviceHapticEngine.resetHandler = ^{
+        if (!deviceHapticEngine)
+            return;
+        [deviceHapticEngine startAndReturnError:nil];
+    };
+}
+
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_create_player(float sharpness) IPHONE_RUMBLE_AVAIL
+{
+    if (!CHHapticEngine.capabilitiesForHardware.supportsHaptics)
+        return nil;
+
+    apple_gamecontroller_device_haptics_setup();
+    if (!deviceHapticEngine)
+        return nil;
+
+    CHHapticEventParameter *sharp, *intense;
+    CHHapticEvent *event;
+    CHHapticPattern *pattern;
+    NSError *error;
+
+    sharp   = [[CHHapticEventParameter alloc]
+               initWithParameterID:CHHapticEventParameterIDHapticSharpness
+               value:sharpness];
+    intense = [[CHHapticEventParameter alloc]
+               initWithParameterID:CHHapticEventParameterIDHapticIntensity
+               value:1.0f];
+    event   = [[CHHapticEvent alloc]
+               initWithEventType:CHHapticEventTypeHapticContinuous
+               parameters:[NSArray arrayWithObjects:sharp, intense, nil]
+               relativeTime:0
+               duration:GCHapticDurationInfinite];
+    pattern = [[CHHapticPattern alloc]
+               initWithEvents:[NSArray arrayWithObject:event]
+               parameters:[[NSArray alloc] init]
+               error:&error];
+
+    if (error)
+        return nil;
+
+    id<CHHapticPatternPlayer> player = [deviceHapticEngine createPlayerWithPattern:pattern error:&error];
+    if (error)
+        return nil;
+    [player stopAtTime:0 error:&error];
+    return player;
+}
+
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_strong_player() IPHONE_RUMBLE_AVAIL
+{
+    if (!deviceStrongPlayer)
+        deviceStrongPlayer = apple_gamecontroller_device_haptics_create_player(1.0f);
+    return deviceStrongPlayer;
+}
+
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player() IPHONE_RUMBLE_AVAIL
+{
+    if (!deviceStrongPlayer)
+        deviceStrongPlayer = apple_gamecontroller_device_haptics_create_player(0.5f);
+    return deviceStrongPlayer;
+}
+#endif
+
 void *apple_gamecontroller_joypad_init(void *data)
 {
    if (mfi_inited)
       return (void*)-1;
+
+#if TARGET_OS_IOS
+   if (@available(iOS 14, *))
+      apple_gamecontroller_device_haptics_setup();
+#endif
+
    if (!apple_gamecontroller_available())
       return NULL;
    mfiControllers = [[NSMutableArray alloc] initWithCapacity:MAX_MFI_CONTROLLERS];
@@ -588,6 +687,37 @@ static int16_t apple_gamecontroller_joypad_state(
 static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
+#if TARGET_OS_IOS
+    settings_t *settings            = config_get_ptr();
+    bool enable_device_vibration    = settings->bools.enable_device_vibration;
+
+    if (@available(iOS 14, *)) {
+        if (enable_device_vibration && pad == 0)
+        {
+            NSError *error;
+            id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG ?
+                                                apple_gamecontroller_device_haptics_strong_player() :
+                                                apple_gamecontroller_device_haptics_weak_player());
+            if (player)
+            {
+                if (strength == 0)
+                    [player stopAtTime:0 error:&error];
+                else
+                {
+                    float str = (float)strength / 65535.0f;
+                    CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
+                                                       initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
+                                                       value:str
+                                                       relativeTime:0];
+                    [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
+                    if (!error)
+                        [player startAtTime:0 error:&error];
+                }
+            }
+        }
+    }
+#endif
+
     if (pad < MAX_MFI_CONTROLLERS)
     {
        if (@available(iOS 14, tvOS 14, macOS 11, *))

@@ -49,6 +49,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_altserver._tcp</string>
+		<string>_ra_netplay._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RetroArch uses the local network to find and communicate with AltServer to enable JIT.</string>

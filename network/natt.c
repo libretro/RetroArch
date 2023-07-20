@@ -244,17 +244,17 @@ static bool build_control_url(rxml_node_t *control_url,
       /* We don't have a full url.
          Build one using the desc url. */
       char *control_path;
-
-      strlcpy(device->control, device->desc,
+      size_t _len = strlcpy(device->control, device->desc,
          sizeof(device->control));
 
-      control_path = (char *) strchr(device->control +
+      control_path = (char *)strchr(device->control +
          STRLEN_CONST("http://"), '/');
 
       if (control_path)
          *control_path = '\0';
       if (control_url->data[0] != '/')
-         strlcat(device->control, "/", sizeof(device->control));
+         strlcpy(device->control + _len, "/",
+               sizeof(device->control) - _len);
       /* Make sure the control URL isn't too long. */
       if (strlcat(device->control, control_url->data,
          sizeof(device->control)) >= sizeof(device->control))

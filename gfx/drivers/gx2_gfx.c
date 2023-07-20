@@ -186,7 +186,11 @@ static bool gx2_set_shader(void *data,
 
       for (i = 0; i < wiiu->shader_preset->luts; i++)
       {
-         struct texture_image image = {};
+         struct texture_image image;
+         image.pixels               = NULL;
+         image.width                = 0;
+         image.height               = 0;
+         image.supports_rgba        = false;
 
          if (image_texture_load(&image, wiiu->shader_preset->lut[i].path))
          {

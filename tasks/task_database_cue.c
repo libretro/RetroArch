@@ -638,7 +638,8 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (pre_game_id[0] == 'T' && pre_game_id[1] == '-')
+   if (     pre_game_id[0] == 'T' 
+         && pre_game_id[1] == '-')
    {
       if (region_id == 'U' || region_id == 'J')
       {
@@ -661,7 +662,8 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (pre_game_id[0] == 'G' && pre_game_id[1] == '-')
+   else if (pre_game_id[0] == 'G' 
+         && pre_game_id[1] == '-')
    {
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
          return false;

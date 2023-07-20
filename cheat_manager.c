@@ -709,15 +709,15 @@ static bool cheat_manager_get_game_specific_filename(
       bool saving)
 {
    char s1[PATH_MAX_LENGTH];
-   struct retro_system_info system_info;
+   struct retro_system_info sysinfo;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *core_name       = NULL;
    const char *game_name       = NULL;
 
-   if (!core_get_system_info(&system_info))
+   if (!core_get_system_info(&sysinfo))
       return false;
 
-   core_name = system_info.library_name;
+   core_name = sysinfo.library_name;
    game_name = path_basename_nocompression(runloop_st->name.cheatfile);
 
    if (     string_is_empty(path_cheat_database)
@@ -786,7 +786,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
    unsigned i;
    retro_ctx_memory_info_t meminfo;
    bool is_search_initialization          = (setting != NULL);
-   rarch_system_info_t *system            = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info          = &runloop_state_get_ptr()->system;
    unsigned offset                        = 0;
    cheat_manager_t              *cheat_st = &cheat_manager_state;
 #ifdef HAVE_MENU
@@ -809,14 +809,14 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
       cheat_st->memory_size_list = NULL;
    }
 
-   if (system && system->mmaps.num_descriptors > 0)
+   if (sys_info && sys_info->mmaps.num_descriptors > 0)
    {
-      for (i = 0; i < system->mmaps.num_descriptors; i++)
+      for (i = 0; i < sys_info->mmaps.num_descriptors; i++)
       {
-         if ((system->mmaps.descriptors[i].core.flags 
-                  & RETRO_MEMDESC_SYSTEM_RAM) != 0 &&
-               system->mmaps.descriptors[i].core.ptr &&
-               system->mmaps.descriptors[i].core.len > 0)
+         if ((sys_info->mmaps.descriptors[i].core.flags 
+                  & RETRO_MEMDESC_SYSTEM_RAM) != 0
+               && sys_info->mmaps.descriptors[i].core.ptr
+               && sys_info->mmaps.descriptors[i].core.len > 0)
          {
             cheat_st->num_memory_buffers++;
 
@@ -839,12 +839,12 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
                   cheat_st->memory_size_list = val;
             }
 
-            cheat_st->memory_buf_list[cheat_st->num_memory_buffers - 1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
-            cheat_st->memory_size_list[cheat_st->num_memory_buffers - 1] = (unsigned)system->mmaps.descriptors[i].core.len;
-            cheat_st->total_memory_size += system->mmaps.descriptors[i].core.len;
+            cheat_st->memory_buf_list[cheat_st->num_memory_buffers  - 1] = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
+            cheat_st->memory_size_list[cheat_st->num_memory_buffers - 1] = (unsigned)sys_info->mmaps.descriptors[i].core.len;
+            cheat_st->total_memory_size += sys_info->mmaps.descriptors[i].core.len;
 
             if (!cheat_st->curr_memory_buf)
-               cheat_st->curr_memory_buf = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
+               cheat_st->curr_memory_buf = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
          }
       }
    }

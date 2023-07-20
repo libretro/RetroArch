@@ -71,13 +71,9 @@ static int action_start_audio_mixer_stream_volume(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
-
-   if (offset >= AUDIO_MIXER_MAX_STREAMS)
-      return 0;
-
-   audio_driver_mixer_set_stream_volume(offset, 1.0f);
-
+   unsigned offset = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
+   if (offset < AUDIO_MIXER_MAX_STREAMS)
+      audio_driver_mixer_set_stream_volume(offset, 1.0f);
    return 0;
 }
 #endif
@@ -90,11 +86,11 @@ static int action_start_remap_file_info(
    settings_t *settings                  = config_get_ptr();
    const char *directory_input_remapping = settings ?
          settings->paths.directory_input_remapping : NULL;
-   rarch_system_info_t *system           = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
 
    input_remapping_deinit(false);
    input_remapping_set_defaults(false);
-   config_load_remap(directory_input_remapping, system);
+   config_load_remap(directory_input_remapping, sys_info);
 
    /* Refresh menu */
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -108,8 +104,8 @@ static int action_start_override_file_info(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st      = menu_state_get_ptr();
-   rarch_system_info_t *system     = &runloop_state_get_ptr()->system;
-   config_load_override(system);
+   rarch_system_info_t *sys_info   = &runloop_state_get_ptr()->system;
+   config_load_override(sys_info);
    /* Refresh menu */
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
@@ -244,32 +240,29 @@ static int action_start_input_desc(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned user_idx;
-   unsigned btn_idx;
-   unsigned mapped_port;
-   settings_t *settings        = config_get_ptr();
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   settings_t *settings          = config_get_ptr();
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-   if (!settings || !system)
-      return 0;
-
-   user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
-   mapped_port = settings->uints.input_remap_ports[user_idx];
-
-   if ((user_idx >= MAX_USERS) ||
-       (mapped_port >= MAX_USERS) ||
-       (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
-      return 0;
-
-   /* Check whether core has defined this input */
-   if (!string_is_empty(system->input_desc_btn[mapped_port][btn_idx]))
+   if (settings && sys_info)
    {
-      const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
-      settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
+      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+
+      if (     (user_idx    >= MAX_USERS)
+            || (mapped_port >= MAX_USERS)
+            || (btn_idx     >= RARCH_CUSTOM_BIND_LIST_END))
+         return 0;
+
+      /* Check whether core has defined this input */
+      if (!string_is_empty(sys_info->input_desc_btn[mapped_port][btn_idx]))
+      {
+         const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
+         settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
+      }
+      else
+         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
    }
-   else
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
 
    return 0;
 }
@@ -279,22 +272,18 @@ static int action_start_input_desc_kbd(
       unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings = config_get_ptr();
-   unsigned user_idx;
-   unsigned btn_idx;
 
-   (void)label;
+   if (settings)
+   {
+      unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
+      unsigned btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
-   if (!settings)
-      return 0;
+      if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+         return 0;
 
-   user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
-   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
-
-   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
-      return 0;
-
-   /* By default, inputs are unmapped */
-   settings->uints.input_keymapper_ids[user_idx][btn_idx] = RETROK_FIRST;
+      /* By default, inputs are unmapped */
+      settings->uints.input_keymapper_ids[user_idx][btn_idx] = RETROK_FIRST;
+   }
 
    return 0;
 }
@@ -674,10 +663,10 @@ static int action_start_core_updater_entry(
 
    /* If specified core is installed, go to core
     * information menu */
-   if (core_list &&
-       core_updater_list_get_filename(core_list, path, &entry) &&
-       !string_is_empty(entry->local_core_path) &&
-       path_is_valid(entry->local_core_path))
+   if (   core_list
+       && core_updater_list_get_filename(core_list, path, &entry)
+       && !string_is_empty(entry->local_core_path) 
+       && path_is_valid(entry->local_core_path))
       return action_ok_push_core_information_list(
             entry->local_core_path, label, type, idx, entry_idx);
 
@@ -752,54 +741,53 @@ static int action_start_core_set_standalone_exempt(
       unsigned type, size_t idx, size_t entry_idx)
 {
    const char *core_path = path;
-   int ret               = 0;
 
    if (string_is_empty(core_path))
       return -1;
 
    /* Core should not be exempt by default
     * > If it is currently 'not exempt', do nothing */
-   if (!core_info_get_core_standalone_exempt(core_path))
-      return ret;
-
-   /* ...Otherwise, attempt to unset the exempt flag */
-   if (!core_info_set_core_standalone_exempt(core_path, false))
+   if (core_info_get_core_standalone_exempt(core_path))
    {
-      size_t _len;
-      const char *core_name  = NULL;
-      core_info_t *core_info = NULL;
-      char msg[128];
+      /* ...Otherwise, attempt to unset the exempt flag */
+      if (!core_info_set_core_standalone_exempt(core_path, false))
+      {
+         size_t _len;
+         const char *core_name  = NULL;
+         core_info_t *core_info = NULL;
+         char msg[128];
 
-      /* Need to fetch core name for error message */
+         /* Need to fetch core name for error message */
 
-      /* If core is found, use display name */
-      if (core_info_find(core_path, &core_info) &&
-          core_info->display_name)
-         core_name = core_info->display_name;
-      /* If not, use core file name */
-      else
-         core_name = path_basename_nocompression(core_path);
+         /* If core is found, use display name */
+         if (core_info_find(core_path, &core_info) &&
+               core_info->display_name)
+            core_name = core_info->display_name;
+         /* If not, use core file name */
+         else
+            core_name = path_basename_nocompression(core_path);
 
-      /* Build error message */
-      _len = strlcpy(msg,
-            msg_hash_to_str(MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED),
-            sizeof(msg));
+         /* Build error message */
+         _len = strlcpy(msg,
+               msg_hash_to_str(MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED),
+               sizeof(msg));
 
-      if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         if (!string_is_empty(core_name))
+            strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
-      /* Generate log + notification */
-      RARCH_ERR("%s\n", msg);
+         /* Generate log + notification */
+         RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(
-         msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(
+               msg,
+               1, 100, true,
+               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-      ret = -1;
+         return -1;
+      }
    }
 
-   return ret;
+   return 0;
 }
 
 static int action_start_lookup_setting(
@@ -927,7 +915,7 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (     type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       BIND_ACTION_START(cbs, action_start_shader_action_parameter);
@@ -939,8 +927,8 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    }
    else
 #endif
-   if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
-         type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+   if (     type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
+         && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_core);
    }
@@ -954,13 +942,13 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_START(cbs, action_start_input_desc_kbd);
    }
-   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
-         type <= MENU_SETTINGS_PERF_COUNTERS_END)
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+         && type <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       BIND_ACTION_START(cbs, action_start_performance_counters_frontend);
    }
-   else if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
-            (type < MENU_SETTINGS_CHEEVOS_START))
+   else if (   (type >= MENU_SETTINGS_CORE_OPTION_START)
+            && (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_START(cbs, action_start_core_setting);
    }

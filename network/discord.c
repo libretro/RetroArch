@@ -451,6 +451,7 @@ void discord_update(enum presence presence)
 
 void discord_init(const char *discord_app_id, char *args)
 {
+   size_t _len;
    DiscordEventHandlers handlers;
 #ifdef _WIN32
    char full_path[PATH_MAX_LENGTH];
@@ -478,7 +479,6 @@ void discord_init(const char *discord_app_id, char *args)
       strlcpy(command, args, sizeof(command));
    else
    {
-      size_t _len;
       path_basedir(full_path);
       _len = strlcpy(command, full_path, sizeof(command));
       strlcpy(command       + _len,
@@ -486,14 +486,8 @@ void discord_init(const char *discord_app_id, char *args)
             sizeof(command) - _len);
    }
 #else
-   command[0] = 's';
-   command[1] = 'h';
-   command[2] = ' ';
-   command[3] = '-';
-   command[4] = 'c';
-   command[5] = ' ';
-   command[6] = '\0';
-   strlcat(command, args, sizeof(command));
+   _len = strlcpy(command, "sh -c ", sizeof(command));
+   strlcpy(command + _len, args, sizeof(command) - _len);
 #endif
    Discord_Register(discord_app_id, command);
 #ifdef DISCORD_DISABLE_IO_THREAD

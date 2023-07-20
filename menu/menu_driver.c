@@ -289,8 +289,6 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* update_thumbnail_path */
   NULL,  /* update_thumbnail_image */
   NULL,  /* refresh_thumbnail_image */
-  NULL,  /* set_thumbnail_system */
-  NULL,  /* get_thumbnail_system */
   NULL,  /* set_thumbnail_content */
   NULL,  /* osk_ptr_at_pos */
   NULL,  /* update_savestate_thumbnail_path */
@@ -2469,10 +2467,13 @@ static void menu_cbs_init(
       const menu_ctx_driver_t *menu_driver_ctx,
       file_list_t *list,
       menu_file_list_cbs_t *cbs,
-      const char *path, const char *label,
+      const char *path,
+      const char *label,
+      size_t lbl_len,
       unsigned type, size_t idx)
 {
-   const char *menu_label         = NULL;
+   size_t menu_lbl_len;
+   const char *menu_lbl           = NULL;
    file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
 #ifdef DEBUG_LOG
    menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
@@ -2481,10 +2482,12 @@ static void menu_cbs_init(
 #endif
 
    if (menu_list && menu_list->size)
-      menu_label = menu_list->list[menu_list->size - 1].label;
+      menu_lbl = menu_list->list[menu_list->size - 1].label;
 
-   if (!label || !menu_label)
+   if (!label || !menu_lbl)
       return;
+
+   menu_lbl_len = strlen(menu_lbl);
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");
@@ -2495,7 +2498,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_ok.c, then map this callback to the entry. */
-   menu_cbs_init_bind_ok(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_ok(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_cancel.c, then map this callback to the entry. */
@@ -2519,11 +2522,11 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_left.c, then map this callback to the entry. */
-   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_left(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_right.c, then map this callback to the entry. */
-   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label);
+   menu_cbs_init_bind_right(cbs, path, label, lbl_len, type, idx, menu_lbl, menu_lbl_len);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_deferred_push.c, then map this callback to the entry. */
@@ -2531,7 +2534,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_get_string_representation.c, then map this callback to the entry. */
-   menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
+   menu_cbs_init_bind_get_string_representation(cbs, path, label, lbl_len, type, idx);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_title.c, then map this callback to the entry. */
@@ -2543,7 +2546,7 @@ static void menu_cbs_init(
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_sublabel.c, then map this callback to the entry. */
-   menu_cbs_init_bind_sublabel(cbs, path, label, type, idx);
+   menu_cbs_init_bind_sublabel(cbs, path, label, lbl_len, type, idx);
 
    if (menu_driver_ctx && menu_driver_ctx->bind_init)
       menu_driver_ctx->bind_init(
@@ -2590,8 +2593,8 @@ static void menu_driver_set_last_shader_path_int(
    /* If parent directory is empty, then file name
     * is only valid if 'shader_path' refers to an
     * existing file in the root of the file system */
-   if (string_is_empty(shader_dir) &&
-       !path_is_valid(shader_path))
+   if (    string_is_empty(shader_dir)
+       && !path_is_valid(shader_path))
       return;
 
    /* Cache file name */
@@ -3015,12 +3018,12 @@ static bool menu_shader_manager_operate_auto_preset(
    char file[PATH_MAX_LENGTH];
    settings_t *settings                           = config_get_ptr();
    bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
-   struct retro_system_info *system               = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
    static enum rarch_shader_type shader_types[]   =
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
-   const char *core_name            = system ? system->library_name : NULL;
+   const char *core_name            = sysinfo ? sysinfo->library_name : NULL;
    const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
    const char *auto_preset_dirs[3]  = {0};
    bool has_content                 = !string_is_empty(rarch_path_basename);
@@ -3695,6 +3698,10 @@ static bool rarch_menu_init(
    bool config_save_on_exit    = settings->bools.config_save_on_exit;
 #endif
 
+   /* thumbnail initialization */
+   if (!(menu_st->thumbnail_path_data = gfx_thumbnail_path_init()))
+      return false;
+
    /* Ensure that menu pointer input is correctly
     * initialised */
    memset(menu_input, 0, sizeof(menu_input_t));
@@ -4168,7 +4175,7 @@ bool menu_entries_append(
 {
    menu_ctx_list_t list_info;
    size_t i;
-   size_t idx;
+   size_t idx, lbl_len;
    const char *menu_path       = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
    struct menu_state  *menu_st = &menu_driver_state;
@@ -4248,9 +4255,11 @@ bool menu_entries_append(
          cbs->setting                 = menu_setting_find_enum(enum_idx);
    }
 
+   lbl_len  = strlen(label);
+
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
-         list, cbs, path, label, type, idx);
+         list, cbs, path, label, lbl_len, type, idx);
 
    return true;
 }
@@ -4260,6 +4269,7 @@ void menu_entries_prepend(file_list_t *list,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
+   size_t lbl_len;
    menu_ctx_list_t list_info;
    size_t i;
    size_t idx                  = 0;
@@ -4331,9 +4341,11 @@ void menu_entries_prepend(file_list_t *list,
 
    list->list[idx].actiondata      = cbs;
 
+   lbl_len  = strlen(label);
+
    menu_cbs_init(menu_st,
          menu_st->driver_ctx,
-         list, cbs, path, label, type, idx);
+         list, cbs, path, label, lbl_len, type, idx);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
@@ -4528,14 +4540,14 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
  * (shown at the top of the UI). */
 void menu_entries_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info *system  = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
    const char *core_name             = 
-       (system && !string_is_empty(system->library_name))
-      ? system->library_name
+       (sysinfo && !string_is_empty(sysinfo->library_name))
+      ? sysinfo->library_name
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    const char *core_version          = 
-      (system && system->library_version) 
-      ? system->library_version 
+      (sysinfo && sysinfo->library_version) 
+      ? sysinfo->library_version 
       : "";
    size_t _len = strlcpy(s, PACKAGE_VERSION, len);
 #if defined(_MSC_VER)
@@ -5065,10 +5077,11 @@ unsigned menu_event(
       bool display_kb)
 {
    /* Used for key repeat */
+   static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
    static float delay_count                        = 0.0f;
-   static bool initial_held                        = true;
-   static bool first_held                          = false;
+   static bool hold_initial                        = true;
+   static bool hold_reset                          = true;
    static unsigned ok_old                          = 0;
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
@@ -5257,21 +5270,25 @@ unsigned menu_event(
 
    if (navigation_current)
    {
-      if (!first_held)
+      float delta_time              = (float)(menu_st->current_time_us - last_time_us) / 1000;
+
+      last_time_us                  = menu_st->current_time_us;
+
+      /* Store first direction in order to block "diagonals" */
+      if (!navigation_initial)
+         navigation_initial         = navigation_current;
+
+      if (hold_reset)
       {
-         /* Store first direction in order to block "diagonals" */
-         if (!navigation_initial)
-            navigation_initial      = navigation_current;
-
-         /* don't run anything first frame, only capture held inputs
-          * for old_input_state. */
-
-         first_held                 = true;
+         /* Don't run anything first frame */
+         hold_reset                 = false;
+         delay_timer                = (hold_initial) ? menu_scroll_delay : 33.33f;
          delay_count                = 0;
-         if (initial_held)
-            delay_timer             = menu_scroll_delay;
-         else
-            delay_timer             = menu_scroll_delay / 8;
+      }
+      else
+      {
+         hold_initial               = false;
+         delay_count               += delta_time;
       }
 
       if (delay_count >= delay_timer)
@@ -5280,25 +5297,17 @@ unsigned menu_event(
          for (i = 0; i < 6; i++)
             BIT32_SET(input_repeat, navigation_buttons[i]);
 
-         set_scroll                 = true;
-         first_held                 = false;
          p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
-         new_scroll_accel           = menu_st->scroll.acceleration;
-
-         if (menu_scroll_fast)
-            new_scroll_accel        = MIN(new_scroll_accel + 1, 25);
-         else
-            new_scroll_accel        = MIN(new_scroll_accel + 1, 5);
+         set_scroll                 = true;
+         hold_reset                 = true;
+         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, (menu_scroll_fast) ? 25 : 5);
       }
-
-      initial_held                  = false;
-      delay_count                  += anim_get_ptr()->delta_time;
    }
    else
    {
       set_scroll                    = true;
-      first_held                    = false;
-      initial_held                  = true;
+      hold_reset                    = true;
+      hold_initial                  = true;
       navigation_initial            = 0;
    }
 
@@ -6310,7 +6319,7 @@ void retroarch_menu_running(void)
 
 #ifdef HAVE_OVERLAY
    if (input_overlay_hide_in_menu)
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 #endif
 }
 
@@ -6489,9 +6498,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (frontend_driver_has_fork())
 #endif
             {
-               rarch_system_info_t *system = &runloop_state_get_ptr()->system;
-               libretro_free_system_info(&system->info);
-               memset(&system->info, 0, sizeof(struct retro_system_info));
+               rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+               libretro_free_system_info(&sys_info->info);
+               memset(&sys_info->info, 0, sizeof(struct retro_system_info));
             }
 
             gfx_animation_deinit();
@@ -6500,7 +6509,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_entries_settings_deinit(menu_st);
             if (menu_st->entries.list)
                menu_list_free(menu_st->driver_ctx, menu_st->entries.list);
-            menu_st->entries.list          = NULL;
+            menu_st->entries.list           = NULL;
+
+            if (menu_st->thumbnail_path_data)
+               free(menu_st->thumbnail_path_data);
+            menu_st->thumbnail_path_data    = NULL;
 
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);
@@ -7897,4 +7910,20 @@ bool menu_is_nonrunning_quick_menu(void)
    menu_entry_get(&entry, 0, 0, NULL, true);
 
    return string_is_equal(entry.label, "collection");
+}
+
+void menu_driver_set_thumbnail_system(void *data, char *s, size_t len)
+{
+   struct menu_state               *menu_st = &menu_driver_state;
+   gfx_thumbnail_set_system(
+         menu_st->thumbnail_path_data, s, playlist_get_cached());
+}
+
+size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len)
+{
+   const char *system         = NULL;
+   struct menu_state *menu_st = &menu_driver_state;
+   if (!gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
+      return 0;
+   return strlcpy(s, system, len);
 }

@@ -24,10 +24,15 @@
 
 #ifdef __MACH__
 #include <TargetConditionals.h>
+#include <Availability.h>
 #if TARGET_IPHONE_SIMULATOR
 #include <stdio.h>
 #else
+#if __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
+#include <os/log.h>
+#else
 #include <asl.h>
+#endif
 #endif
 #endif
 
@@ -282,6 +287,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
+#elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
+   int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
+   char buffer[sz];
+   vsnprintf(buffer, sz, fmt, ap);
+   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
    static aslclient asl_client;
    static int asl_initialized = 0;
@@ -304,12 +314,14 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
+#if !TARGET_OS_TV
    if (fp)
    {
       fprintf(fp, "%s ", tag_v);
       vfprintf(fp, fmt, ap);
       fflush(fp);
    }
+#endif
 #if defined(HAVE_LIBNX)
    mutexUnlock(&g_verbosity->mtx);
 #endif
@@ -450,14 +462,12 @@ void rarch_log_file_init(
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
-      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
-      strlcat(timestamped_log_file_name, ".log",
-            sizeof(timestamped_log_file_name));
+      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
    }
 
    /* If nothing has changed, do nothing */
-   if ((!log_to_file && !logging_to_file) ||
-       (log_to_file && logging_to_file))
+   if (  (!log_to_file && !logging_to_file)
+       || (log_to_file &&  logging_to_file))
       return;
 
    /* If we are currently logging to file and wish to stop,

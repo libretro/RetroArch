@@ -188,8 +188,8 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
    unsigned i;
    int result;
    struct retro_memory_map mmap;
-   rarch_system_info_t* system                 = &runloop_state_get_ptr()->system;
-   rarch_memory_map_t* mmaps                   = &system->mmaps;
+   rarch_system_info_t *sys_info               = &runloop_state_get_ptr()->system;
+   rarch_memory_map_t *mmaps                   = &sys_info->mmaps;
    struct retro_memory_descriptor *descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
    if (!descriptors)
       return 0;
@@ -1152,13 +1152,13 @@ void rcheevos_validate_config_settings(void)
 {
    int i;
    const rc_disallowed_setting_t 
-      *disallowed_settings          = NULL;
-   core_option_manager_t* coreopts  = NULL;
-   struct retro_system_info *system = 
+      *disallowed_settings           = NULL;
+   core_option_manager_t* coreopts   = NULL;
+   struct retro_system_info *sysinfo = 
       &runloop_state_get_ptr()->system.info;
    const settings_t* settings = config_get_ptr();
 
-   if (!system->library_name || !rcheevos_locals.hardcore_active)
+   if (!sysinfo->library_name || !rcheevos_locals.hardcore_active)
       return;
 
    if (!settings->bools.video_frame_delay_auto && settings->uints.video_frame_delay != 0) {
@@ -1172,7 +1172,7 @@ void rcheevos_validate_config_settings(void)
    }
 
    if (!(disallowed_settings 
-            = rc_libretro_get_disallowed_settings(system->library_name)))
+            = rc_libretro_get_disallowed_settings(sysinfo->library_name)))
       return;
 
    if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
@@ -1197,14 +1197,14 @@ void rcheevos_validate_config_settings(void)
    }
 
    if (rcheevos_locals.game.console_id &&
-      !rc_libretro_is_system_allowed(system->library_name, rcheevos_locals.game.console_id))
+      !rc_libretro_is_system_allowed(sysinfo->library_name, rcheevos_locals.game.console_id))
    {
       char buffer[256];
       buffer[0] = '\0';
       /* TODO/FIXME - localize */
       snprintf(buffer, sizeof(buffer),
             "Hardcore paused. You cannot earn hardcore achievements for %s using %s",
-            rc_console_name(rcheevos_locals.game.console_id), system->library_name);
+            rc_console_name(rcheevos_locals.game.console_id), sysinfo->library_name);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
       rcheevos_pause_hardcore();
 
@@ -2045,11 +2045,10 @@ static void rcheevos_identify_game_callback(void* userdata)
 
 static int rcheevos_get_image_path(unsigned index, char* buffer, size_t buffer_size)
 {
-   rarch_system_info_t* system = &runloop_state_get_ptr()->system;
-   if (!system->disk_control.cb.get_image_path)
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   if (!sys_info->disk_control.cb.get_image_path)
       return 0;
-
-   return system->disk_control.cb.get_image_path(index, buffer, buffer_size);
+   return sys_info->disk_control.cb.get_image_path(index, buffer, buffer_size);
 }
 
 static bool rcheevos_identify_game(const struct retro_game_info* info)

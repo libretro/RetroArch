@@ -58,13 +58,11 @@ CocoaView *cocoaview_get(void);
 
 static uint32_t cocoa_vk_gfx_ctx_get_flags(void *data)
 {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    uint32_t flags = 0;
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-   return flags;
-#else
-   return 0;
 #endif
+   return flags;
 }
 
 static void cocoa_vk_gfx_ctx_set_flags(void *data, uint32_t flags) { }
@@ -364,7 +362,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_get_metrics,
    NULL, /* translate_aspect */
 #ifdef OSX
-   cocoa_update_title,
+   video_driver_update_title,
 #else
    NULL, /* update_title */
 #endif

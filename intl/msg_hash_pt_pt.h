@@ -2442,6 +2442,9 @@ MSG_HASH(
    "Seleciona uma camada de sobreposição do explorador de ficheiros."
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 

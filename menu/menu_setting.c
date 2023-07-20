@@ -288,11 +288,13 @@ enum settings_list_type
    SETTINGS_LIST_INPUT,
    SETTINGS_LIST_INPUT_TURBO_FIRE,
    SETTINGS_LIST_INPUT_HOTKEY,
+   SETTINGS_LIST_INPUT_RETROPAD_BINDS,
    SETTINGS_LIST_RECORDING,
    SETTINGS_LIST_FRAME_THROTTLING,
    SETTINGS_LIST_FRAME_TIME_COUNTER,
    SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
    SETTINGS_LIST_OVERLAY,
+   SETTINGS_LIST_OSK_OVERLAY,
    SETTINGS_LIST_MENU,
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
@@ -5405,20 +5407,20 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
 {
    unsigned types                           = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_system_info_t              *system = &runloop_state_get_ptr()->system;
+   rarch_system_info_t            *sys_info = &runloop_state_get_ptr()->system;
 
    devices[types++]                         = RETRO_DEVICE_NONE;
    devices[types++]                         = RETRO_DEVICE_JOYPAD;
 
-   if (system)
+   if (sys_info)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an
        * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!system->ports.size)
+      if (!sys_info->ports.size)
          devices[types++] = RETRO_DEVICE_ANALOG;
 
-      if (port < system->ports.size)
-         desc = &system->ports.data[port];
+      if (port < sys_info->ports.size)
+         desc = &sys_info->ports.data[port];
    }
 
    if (desc)
@@ -6473,8 +6475,8 @@ static void setting_get_string_representation_uint_libretro_device(
 {
    unsigned index_offset, device;
    const struct retro_controller_description *desc = NULL;
-   const char *name            = NULL;
-   rarch_system_info_t *system = &runloop_state_get_ptr()->system;
+   const char *name              = NULL;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
    if (!setting)
       return;
@@ -6482,11 +6484,11 @@ static void setting_get_string_representation_uint_libretro_device(
    index_offset                = setting->index_offset;
    device                      = input_config_get_device(index_offset);
 
-   if (system)
+   if (sys_info)
    {
-      if (index_offset < system->ports.size)
+      if (index_offset < sys_info->ports.size)
          desc = libretro_find_controller_description(
-               &system->ports.data[index_offset],
+               &sys_info->ports.data[index_offset],
                device);
    }
 
@@ -8188,12 +8190,12 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
             video_viewport_t vp;
-            rarch_system_info_t *system          = &runloop_state_get_ptr()->system;
+            rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
             video_driver_state_t *video_st       = video_state_get_ptr();
             struct retro_system_av_info *av_info = &video_st->av_info;
             video_viewport_t *custom_vp          = &settings->video_viewport_custom;
 
-            if (system)
+            if (sys_info)
             {
                unsigned int rotation             = retroarch_get_rotation();
                struct retro_game_geometry  *geom = (struct retro_game_geometry*)
@@ -8201,7 +8203,7 @@ static void general_write_handler(rarch_setting_t *setting)
 
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
-                      system->rotation) % 4);
+                      sys_info->rotation) % 4);
 
                /* Update Custom Aspect Ratio values */
                video_driver_get_viewport_info(&vp);
@@ -8665,48 +8667,18 @@ static void preempt_change_handler(rarch_setting_t *setting)
 #ifdef HAVE_OVERLAY
 static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-   settings_t *settings  = config_get_ptr();
-   bool input_overlay_hide_in_menu = settings ? settings->bools.input_overlay_hide_in_menu : false;
+   (void)setting;
 
-   if (!setting)
-      return;
-
-   if (input_overlay_hide_in_menu)
-   {
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-      return;
-   }
-
-   if (setting->value.target.boolean)
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   else
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   /* Force a re-init to apply updates */
+   command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+   command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 }
 
-static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
+static void overlay_show_mouse_cursor_change_handler(rarch_setting_t *setting)
 {
-   settings_t *settings  = config_get_ptr();
+   (void)setting;
 
-   if (!setting || !settings)
-      return;
-
-   /* This is very simple...
-    * The menu is currently active, so if:
-    * - Overlays are enabled
-    * - Overlays are not hidden in menus
-    * ...we just need to de-initialise then
-    * initialise the current overlay and the
-    * auto-rotate setting will be applied
-    * (i.e. There's no need to explicitly
-    * call the internal 'rotate overlay'
-    * function - saves having to expose it
-    * via the API) */
-   if (settings->bools.input_overlay_enable &&
-       !settings->bools.input_overlay_hide_in_menu)
-   {
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
+   input_overlay_check_mouse_cursor();
 }
 #endif
 
@@ -8906,7 +8878,7 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
-   rarch_system_info_t *system                = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
    const struct retro_keybind* const defaults = (user == 0)
          ? retro_keybinds_1 : retro_keybinds_rest;
    const char *temp_value                     = msg_hash_to_str
@@ -9165,9 +9137,9 @@ static bool setting_append_list_input_player_options(
                && (i != RARCH_TURBO_ENABLE)
             )
          {
-            if (system->input_desc_btn[user][i])
+            if (sys_info->input_desc_btn[user][i])
                strlcpy(label       + _len,
-                     system->input_desc_btn[user][i],
+                     sys_info->input_desc_btn[user][i],
                      sizeof(label) - _len);
             else
             {
@@ -10022,6 +9994,15 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
                MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -14811,6 +14792,14 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
+                  
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
 
             CONFIG_ACTION(
                   list, list_info,
@@ -16204,6 +16193,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         (*list)[list_info->index - 1].change_handler = overlay_show_mouse_cursor_change_handler;
 
          CONFIG_BOOL(
                list, list_info,
@@ -16220,7 +16210,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         (*list)[list_info->index - 1].change_handler = overlay_auto_rotate_toggle_change_handler;
+         (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
          CONFIG_BOOL(
                list, list_info,
@@ -16519,9 +16509,74 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-         START_SUB_GROUP(list, list_info, "Onscreen Keyboard Overlay", &group_info, &subgroup_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
+         case SETTINGS_LIST_OSK_OVERLAY:
+#ifdef HAVE_OVERLAY
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_PATH(
+               list, list_info,
+               settings->paths.path_osk_overlay,
+               sizeof(settings->paths.path_osk_overlay),
+               MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+               settings->paths.directory_osk_overlay,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "cfg");
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_INIT);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_osk_overlay_auto_scale,
+               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+               DEFAULT_INPUT_OVERLAY_AUTO_SCALE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_osk_overlay_opacity,
+               MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+               DEFAULT_INPUT_OVERLAY_OPACITY,
+               "%.2f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          END_SUB_GROUP(list, list_info, parent_group);
+
          END_GROUP(list, list_info, parent_group);
 #endif
          break;
@@ -22212,6 +22267,21 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
+
+         CONFIG_DIR(
+               list, list_info,
+               settings->paths.directory_osk_overlay,
+               sizeof(settings->paths.directory_osk_overlay),
+               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+               g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 #endif
 
          CONFIG_DIR(
@@ -22856,6 +22926,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_FRAME_TIME_COUNTER,
       SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
       SETTINGS_LIST_OVERLAY,
+      SETTINGS_LIST_OSK_OVERLAY,
       SETTINGS_LIST_MENU,
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,

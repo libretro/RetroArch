@@ -1274,7 +1274,7 @@ static bool manual_content_scan_get_playlist_content_path(
          /* Build path to file inside archive */
          s[  _len] = '#';
          s[++_len] = '\0';
-         strlcat(s, archive_file, len);
+         strlcpy(s + _len, archive_file, len - _len);
       }
 
       string_list_free(archive_list);

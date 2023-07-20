@@ -75,7 +75,6 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
 {
    struct fb_var_screeninfo vinfo;
    int fd                = open("/dev/fb0", O_RDWR);
-
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
    if (!mali || ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0)
@@ -106,25 +105,25 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
    }
    else
    {
+      char tmp[32];
       /* Workaround to retrieve current refresh rate if no info is available from IOCTL.
          If this fails as well, 60Hz is assumed... */
-      int j=0;
-      float k=60.0;
-      char temp[32];
+      int j     = 0;
+      float k   = 60.0f;
       RFILE *fr = filestream_open("/sys/class/display/mode", RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
       if (fr)
       {
-         if (filestream_gets(fr, temp, sizeof(temp)))
+         if (filestream_gets(fr, tmp, sizeof(tmp)))
          {
             int i;
-            for (i=0;i<sizeof(temp);i++)
+            for (i = 0; i < sizeof(tmp); i++)
             {
-               if (*(temp+i)=='p' || *(temp+i)=='i')
-                  j=i;
-               else if (*(temp+i)=='h')
-                  *(temp+i)='\0';
+               if (*(tmp + i) == 'p' || *(tmp + i) == 'i')
+                  j = i;
+               else if (*(tmp + i) == 'h')
+                  *(tmp + i) = '\0';
             }
-            k = j ? atof(temp + j + 1) : k;
+            k = j ? atof(tmp + j + 1) : k;
          }
          filestream_close(fr);
       }
@@ -205,7 +204,9 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    }
    else
    {
-      if ((mali_flags & GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER) || (bool)(mali_flags & GFX_CTX_MALI_FBDEV_FLAG_WAS_THREADED)!=*video_driver_get_threaded())
+      if (           (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_HW_CTX_TRIGGER) 
+            || (bool)(mali_flags & GFX_CTX_MALI_FBDEV_FLAG_WAS_THREADED) 
+            != *video_driver_get_threaded())
       {
          gfx_ctx_mali_fbdev_destroy_really();
          mali_flags |= GFX_CTX_MALI_FBDEV_FLAG_RESTART_PENDING;

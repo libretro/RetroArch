@@ -1625,7 +1625,10 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    for (i = 0; i < d3d11->shader_preset->luts; i++)
    {
-      struct texture_image image = { 0 };
+      struct texture_image image;
+      image.pixels               = NULL;
+      image.width                = 0;
+      image.height               = 0;
       image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d11->shader_preset->lut[i].path))
@@ -3305,7 +3308,7 @@ static bool d3d11_gfx_frame(
    d3d11->flags &= ~D3D11_ST_FLAG_SPRITES_ENABLE;
 
 #if defined(_WIN32) && !defined(__WINRT__)
-   win32_update_title();
+   video_driver_update_title(NULL);
 #endif
 
 #ifdef HAVE_DXGI_HDR

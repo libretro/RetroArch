@@ -1754,7 +1754,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       IDirect3DDevice9_EndScene(d3d->dev);
    }
 
-   win32_update_title();
+   video_driver_update_title(NULL);
    IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
 
    return true;
