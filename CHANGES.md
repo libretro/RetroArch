@@ -89,6 +89,7 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - LIBRETRO: Add API to check JIT availability on iOS
 - LIBRETRO: Allow RETRO_ENVIRONMENT_SET_MEMORY_MAPS also after core startup. Change the comment in libretro.h about the removed limit and handle the environment call during core runtime in RetroArch.
 - LIBRETRO/MICROPHONE: Add new API for microphone support.
+- LIBRETRO: Add new API for querying the device's power state.
 - LINUX: Input driver fix 8+ joypads. It was reported that controllers beyond 8 worked only partially (analogs yes, but not buttons), and the found fix was also confirmed.
 - MENU: Start directory browsing from current value
 - MENU: Fix menu toggle combo hold with same 'enable_hotkey'
