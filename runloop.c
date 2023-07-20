@@ -3526,22 +3526,22 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                case FRONTEND_POWERSTATE_ON_POWER_SOURCE: /* on battery power */
                   status->state = RETRO_POWERSTATE_DISCHARGING;
                   status->percent = (int8_t)percent;
-                  status->seconds_remaining = seconds;
+                  status->seconds = seconds;
                   break;
                case FRONTEND_POWERSTATE_CHARGING /* battery available, charging */:
                   status->state = RETRO_POWERSTATE_CHARGING;
                   status->percent = (int8_t)percent;
-                  status->seconds_remaining = RETRO_POWERSTATE_NO_ESTIMATE;
+                  status->seconds = RETRO_POWERSTATE_NO_ESTIMATE;
                   break;
                case FRONTEND_POWERSTATE_CHARGED: /* on AC, battery is full */
                   status->state = RETRO_POWERSTATE_CHARGED;
                   status->percent = 100;
-                  status->seconds_remaining = RETRO_POWERSTATE_NO_ESTIMATE;
+                  status->seconds = RETRO_POWERSTATE_NO_ESTIMATE;
                   break;
                case FRONTEND_POWERSTATE_NO_SOURCE: /* on AC, no battery available */
                   status->state = RETRO_POWERSTATE_PLUGGED_IN;
                   status->percent = RETRO_POWERSTATE_NO_ESTIMATE;
-                  status->seconds_remaining = RETRO_POWERSTATE_NO_ESTIMATE;
+                  status->seconds = RETRO_POWERSTATE_NO_ESTIMATE;
                   break;
                default:
                   /* The frontend driver supports power status queries,

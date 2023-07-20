@@ -4235,7 +4235,7 @@ struct retro_device_power
     * Will be set to \c RETRO_POWERSTATE_NO_ESTIMATE if \c state does not equal \c RETRO_POWERSTATE_DISCHARGING.
     * May still be set to \c RETRO_POWERSTATE_NO_ESTIMATE if the frontend is unable to provide an estimate.
     */
-   int seconds_remaining;
+   int seconds;
 
    /**
     * The approximate percentage of battery life remaining,
