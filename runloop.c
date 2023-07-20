@@ -3528,7 +3528,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   status->percent = (int8_t)percent;
                   status->seconds_remaining = seconds;
                   break;
-               case FRONTEND_POWERSTATE_CHARGING:
+               case FRONTEND_POWERSTATE_CHARGING /* battery available, charging */:
                   status->state = RETRO_POWERSTATE_CHARGING;
                   status->percent = (int8_t)percent;
                   status->seconds_remaining = RETRO_POWERSTATE_NO_ESTIMATE;
