@@ -222,6 +222,7 @@ enum camera_driver_enum
    CAMERA_RWEBCAM,
    CAMERA_ANDROID,
    CAMERA_AVFOUNDATION,
+   CAMERA_FFMPEG,
    CAMERA_NULL
 };
 
@@ -699,6 +700,8 @@ static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
+#elif defined(HAVE_FFMPEG)
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_FFMPEG;
 #else
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
@@ -1275,6 +1278,8 @@ const char *config_get_default_camera(void)
          return "android";
       case CAMERA_AVFOUNDATION:
          return "avfoundation";
+      case CAMERA_FFMPEG:
+         return "ffmpeg";
       case CAMERA_NULL:
          break;
    }

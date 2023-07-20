@@ -18,3 +18,40 @@
 
 #include "../camera_driver.h"
 #include "../../retroarch.h"
+
+void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+{
+   return NULL;
+}
+
+void ffmpeg_camera_free(void *data)
+{
+
+}
+
+bool ffmpeg_camera_start(void *data)
+{
+   return false;
+}
+
+void ffmpeg_camera_stop(void *data)
+{
+
+}
+
+bool ffmpeg_camera_poll(
+   void *data,
+   retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+   retro_camera_frame_opengl_texture_t frame_gl_cb)
+{
+
+}
+
+camera_driver_t camera_ffmpeg = {
+   ffmpeg_camera_init,
+   ffmpeg_camera_free,
+   ffmpeg_camera_start,
+   ffmpeg_camera_stop,
+   ffmpeg_camera_poll,
+   "ffmpeg",
+};
