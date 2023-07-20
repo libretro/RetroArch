@@ -3519,9 +3519,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (frontend->get_powerstate == NULL)
                return false;
 
-            enum frontend_powerstate powerstate = frontend->get_powerstate(&seconds, &percent);
-
-            switch (powerstate)
+            switch (frontend->get_powerstate(&seconds, &percent))
             {
                case FRONTEND_POWERSTATE_ON_POWER_SOURCE: /* on battery power */
                   status->state = RETRO_POWERSTATE_DISCHARGING;
