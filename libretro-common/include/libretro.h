@@ -4171,7 +4171,7 @@ struct retro_microphone_interface
 
 /**
  * Describes how a device is being powered.
- * @see RETRO_ENVIRONMENT_GET_POWER_STATUS
+ * @see RETRO_ENVIRONMENT_GET_DEVICE_POWER
  */
 enum retro_power_state
 {
@@ -4179,7 +4179,7 @@ enum retro_power_state
     * Indicates that the frontend cannot report its power usage at this time,
     * most likely due to a lack of support.
     *
-    * \c RETRO_ENVIRONMENT_GET_CURRENT_POWER_STATE will not return this value;
+    * \c RETRO_ENVIRONMENT_GET_DEVICE_POWER will not return this value;
     * instead, the environment callback will return \c false.
     */
    RETRO_POWERSTATE_UNKNOWN = 0,
