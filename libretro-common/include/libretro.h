@@ -1833,8 +1833,8 @@ enum retro_mod
                                             * input devices does not need to take any action on its own.
                                             */
 
-#define RETRO_ENVIRONMENT_GET_POWER_STATUS (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_device_power_status * --
+#define RETRO_ENVIRONMENT_GET_DEVICE_POWER (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_device_power * --
                                             * Returns the device's current power state as reported by the frontend.
                                             * This is useful for cores that emulate battery levels in handheld consoles,
                                             * such as the Game Boy or Nintendo DS.
@@ -4217,9 +4217,9 @@ enum retro_power_state
 
 /**
  * Describes the power state of the device running the frontend.
- * @see RETRO_ENVIRONMENT_GET_POWER_STATUS
+ * @see RETRO_ENVIRONMENT_GET_DEVICE_POWER
  */
-struct retro_device_power_status
+struct retro_device_power
 {
    /**
     * The current state of the frontend's power usage.

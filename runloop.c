@@ -3500,9 +3500,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          return false;
 #endif
 
-      case RETRO_ENVIRONMENT_GET_POWER_STATUS:
+      case RETRO_ENVIRONMENT_GET_DEVICE_POWER:
          {
-            struct retro_device_power_status *status = (struct retro_device_power_status*)data;
+            struct retro_device_power *status = (struct retro_device_power *)data;
             frontend_ctx_driver_t *frontend = frontend_get_ptr();
             int seconds = 0;
             int percent = 0;
