@@ -3523,7 +3523,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             switch (powerstate)
             {
-               case FRONTEND_POWERSTATE_NO_SOURCE: /* running on battery */
+               case FRONTEND_POWERSTATE_ON_POWER_SOURCE: /* on battery power */
                   status->state = RETRO_POWERSTATE_DISCHARGING;
                   status->percent = (int8_t)percent;
                   status->seconds_remaining = seconds;
@@ -3538,7 +3538,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   status->percent = 100;
                   status->seconds_remaining = RETRO_POWERSTATE_NO_ESTIMATE;
                   break;
-               case FRONTEND_POWERSTATE_ON_POWER_SOURCE: /* on AC, no battery available */
+               case FRONTEND_POWERSTATE_NO_SOURCE: /* on AC, no battery available */
                   status->state = RETRO_POWERSTATE_PLUGGED_IN;
                   status->percent = RETRO_POWERSTATE_NO_ESTIMATE;
                   status->seconds_remaining = RETRO_POWERSTATE_NO_ESTIMATE;
