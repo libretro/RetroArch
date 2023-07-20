@@ -1836,8 +1836,8 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_DEVICE_POWER (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_device_power * --
                                             * Returns the device's current power state as reported by the frontend.
-                                            * This is useful for cores that emulate battery levels in handheld consoles,
-                                            * such as the Game Boy or Nintendo DS.
+                                            * This is useful for emulating the battery level in handheld consoles,
+                                            * or for reducing power consumption when on battery power.
                                             *
                                             * The return value indicates whether the frontend can provide this information,
                                             * even if the parameter is NULL.
@@ -4176,7 +4176,7 @@ struct retro_microphone_interface
 enum retro_power_state
 {
    /**
-    * Indicates that the frontend cannot report its power usage at this time,
+    * Indicates that the frontend cannot report its power state at this time,
     * most likely due to a lack of support.
     *
     * \c RETRO_ENVIRONMENT_GET_DEVICE_POWER will not return this value;
@@ -4185,7 +4185,7 @@ enum retro_power_state
    RETRO_POWERSTATE_UNKNOWN = 0,
 
    /**
-    * Indicates that the device is running on a battery that is not being charged.
+    * Indicates that the device is running on its battery.
     * Usually applies to portable devices such as handhelds, laptops, and smartphones.
     */
    RETRO_POWERSTATE_DISCHARGING,
@@ -4197,7 +4197,7 @@ enum retro_power_state
 
    /**
     * Indicates that the device is connected to a power source
-    * and that its battery is fully charged.
+    * and that its battery has finished charging.
     */
    RETRO_POWERSTATE_CHARGED,
 
@@ -4210,7 +4210,7 @@ enum retro_power_state
 };
 
 /**
- * Indicates that an estimate is not available for the current power status,
+ * Indicates that an estimate is not available for the battery level or time remaining,
  * even if the actual power state is known.
  */
 #define RETRO_POWERSTATE_NO_ESTIMATE (-1)
@@ -4238,12 +4238,13 @@ struct retro_device_power
    int seconds;
 
    /**
-    * The approximate percentage of battery life remaining,
+    * The approximate percentage of battery charge,
     * ranging from 0 to 100 (inclusive).
     * The device may power off before this reaches 0.
     *
-    * Will be set to 100 if \c state equals \c RETRO_POWERSTATE_PLUGGED_IN.
-    * Will be set to \c RETRO_POWERSTATE_NO_ESTIMATE if \c state equals \c RETRO_POWERSTATE_PLUGGED_IN.
+    * The user might have configured their device
+    * to stop charging before the battery is full,
+    * so do not assume that this will be 100 in the \c RETRO_POWERSTATE_CHARGED state.
     */
    int8_t percent;
 };
