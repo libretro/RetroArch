@@ -859,6 +859,7 @@ typedef struct
 
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
+   char window_title_prev[512];
    char gpu_device_string[128];
    char gpu_api_version_string[128];
    char title_buf[64];

@@ -4593,16 +4593,24 @@ bool runloop_event_init_core(
          video_st->title_buf,
          msg_hash_to_str(MSG_PROGRAM),
          sizeof(video_st->title_buf));
-   video_st->title_buf[  len] = ' ';
-   video_st->title_buf[++len] = '\0';
-   len += strlcpy(video_st->title_buf + len,
-         sys_info->info.library_name,
-         sizeof(video_st->title_buf)  - len);
-   video_st->title_buf[  len] = ' ';
-   video_st->title_buf[++len] = '\0';
-   strlcpy(video_st->title_buf        + len,
-         sys_info->info.library_version,
-         sizeof(video_st->title_buf)  - len);
+
+   if (!string_is_empty(sys_info->info.library_name))
+   {
+      video_st->title_buf[  len] = ' ';
+      video_st->title_buf[++len] = '\0';
+      len += strlcpy(video_st->title_buf + len,
+            sys_info->info.library_name,
+            sizeof(video_st->title_buf)  - len);
+   }
+
+   if (!string_is_empty(sys_info->info.library_version))
+   {
+      video_st->title_buf[  len] = ' ';
+      video_st->title_buf[++len] = '\0';
+      strlcpy(video_st->title_buf        + len,
+            sys_info->info.library_version,
+            sizeof(video_st->title_buf)  - len);
+   }
 
    strlcpy(sys_info->valid_extensions,
          sys_info->info.valid_extensions ?
