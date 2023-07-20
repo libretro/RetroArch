@@ -3167,20 +3167,12 @@ MSG_HASH(
    "레트로패드 바인딩"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다. 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 사용할 필요가 없습니다.\n참고: 코어별 입력 변경의 경우 빠른 메뉴의 '컨트롤' 하위 메뉴를 대신 사용하세요."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
    "Libretro는 '레트로패드'로 알려진 가상 게임패드 가상화를 사용하여 프론트엔드 (예: RetroArch) 에서 코어로 또는 그 반대로 통신합니다. 이 메뉴는 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식과 이러한 장치가 차지하는 가상 입력 포트를 결정합니다. 물리적 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 전혀 사용할 필요가 없으며, 코어별 입력 변[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "%u번 포트 입력 설정"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "이 가상 포트에 대한 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

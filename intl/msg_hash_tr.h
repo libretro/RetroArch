@@ -3135,20 +3135,12 @@ MSG_HASH(
    "RetroPad Bağları"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "Sanal retropad ile fiziksel bir giriş cihazının nasıl eşlendiğini değiştirin. Bir giriş cihazı doğru bir şekilde tanınır ve otomatik olarak yapılandırılırsa, kullanıcıların bu menüyü kullanması gerekmez.\nNot: çekirdeğe özel giriş değişiklikleri için bunun yerine Hızlı Menü 'Kontrolcüler' alt menüsünü kullanın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
    "Libretro, ön uçlardan (RetroArch gibi) çekirdeklere ve tersi yönde iletişim kurmak için 'RetroPad' olarak bilinen sanal bir oyun kumandası soyutlaması kullanır. Bu menü, sanal RetroPad'in fiziksel giriş aygıtlarıyla nasıl eşlendiğini ve bu aygıtların hangi sanal giriş bağlantı noktalarını işgal ettiğini belirler. Fiziksel bir giriş cihazı doğru bir şekilde tanınır ve otomatik olarak yapılandırılırsa, kullanıcıların muhtemelen bu menüyü kullanması gerekmez[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Port %u Denetimleri"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Bu sanal bağlantı noktası için sanal retropad ile fiziksel giriş cihazının nasıl eşlendiğini değiştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,

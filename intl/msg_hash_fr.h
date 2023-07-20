@@ -3111,6 +3111,10 @@ MSG_HASH(
    "Change la façon dont la RetroManette virtuelle est mappée à votre périphérique d'entrée physique pour ce port virtuel."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Change les mappages de touche spécifiques au cœur."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Solution à la déconnexion pour Android"
    )
