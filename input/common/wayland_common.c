@@ -332,9 +332,9 @@ static void wl_touch_handle_down(void *data,
             wl->active_touch_positions[wl->num_active_touches].active = true;
             wl->active_touch_positions[wl->num_active_touches].id     = id;
             wl->active_touch_positions[wl->num_active_touches].x      = (unsigned)
-               wl_fixed_to_int(x);
+               wl_fixed_to_int(x * (wl_fixed_t)wl->buffer_scale);
             wl->active_touch_positions[wl->num_active_touches].y      = (unsigned)
-               wl_fixed_to_int(y);
+               wl_fixed_to_int(y * (wl_fixed_t)wl->buffer_scale);
             wl->num_active_touches++;
             break;
          }
@@ -415,8 +415,10 @@ static void wl_touch_handle_motion(void *data,
       if (  wl->active_touch_positions[i].active &&
             wl->active_touch_positions[i].id == id)
       {
-         wl->active_touch_positions[i].x = (unsigned) wl_fixed_to_int(x);
-         wl->active_touch_positions[i].y = (unsigned) wl_fixed_to_int(y);
+         wl->active_touch_positions[i].x = (unsigned) wl_fixed_to_int(
+            x * (wl_fixed_t)wl->buffer_scale);
+         wl->active_touch_positions[i].y = (unsigned) wl_fixed_to_int(
+            y * (wl_fixed_t)wl->buffer_scale);
       }
    }
 }
