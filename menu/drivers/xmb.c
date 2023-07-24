@@ -1342,6 +1342,7 @@ static void xmb_refresh_thumbnail_image(void *data, unsigned i)
 static void xmb_unload_thumbnail_textures(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
+
    if (!xmb)
       return;
 
@@ -1357,6 +1358,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    xmb_handle_t *xmb          = (xmb_handle_t*)data;
    struct menu_state *menu_st = menu_state_get_ptr();
    size_t selection           = menu_st->selection_ptr;
+
    if (!xmb)
       return;
 
@@ -1469,6 +1471,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    settings_t *settings = config_get_ptr();
    unsigned thumbnail_upscale_threshold
                         = settings->uints.gfx_thumbnail_upscale_threshold;
+
    if (!xmb || xmb->skip_thumbnail_reset)
       return;
 
@@ -1686,7 +1689,7 @@ static void xmb_selection_pointer_changed(
 static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
-   unsigned i, height = 0;
+   unsigned i, height;
    int        threshold = xmb->icon_size    * 10;
    size_t           end = list ? list->size : 0;
 
@@ -1708,7 +1711,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 
       real_y = node->y + xmb->margins_screen_top;
 
-      if (real_y < -threshold || real_y > height+threshold)
+      if (real_y < -threshold || real_y > height + threshold)
       {
          node->alpha       = ia;
          node->label_alpha = 0;
@@ -1744,15 +1747,14 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   unsigned xmb_system_tab         = 0;
    size_t skip                     = 0;
    int threshold                   = xmb->icon_size * 10;
    size_t end                      = list ? list->size : 0;
    settings_t *settings            = config_get_ptr();
    struct menu_state *menu_st      = menu_state_get_ptr();
    bool savestate_thumbnail_enable = settings
-                           ? settings->bools.savestate_thumbnail_enable 
-                           : false;
+         ? settings->bools.savestate_thumbnail_enable
+         : false;
 
    video_driver_get_size(NULL, &height);
 
@@ -1821,22 +1823,21 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    }
 
    menu_st->entries.begin = skip;
-   xmb_system_tab         = xmb_get_system_tab(xmb,
-         (unsigned)xmb->categories_selection_ptr);
 
-   if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS && xmb->depth > xmb->old_depth)
+   if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+         || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
    {
-      if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-            || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+      if (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_explore_list)
       {
-         if (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_explore_list)
-         {
-            if (!(xmb->is_db_manager_list && xmb->depth > 4))
-               xmb_unload_thumbnail_textures(xmb);
+         if (     !(xmb->is_db_manager_list && xmb->depth > 4)
+               && !xmb->skip_thumbnail_reset)
+            xmb_unload_thumbnail_textures(xmb);
 
-            xmb_set_thumbnail_content(xmb, NULL);
-            xmb_update_thumbnail_image(xmb);
-         }
+         xmb_set_thumbnail_content(xmb, NULL);
+         xmb_update_thumbnail_image(xmb);
+
+         if (!xmb->is_explore_list)
+            xmb->skip_thumbnail_reset = false;
       }
    }
 
@@ -2673,12 +2674,18 @@ static void xmb_populate_entries(void *data,
    bool show_entry_idx                = settings
          ? settings->bools.playlist_show_entry_idx : false;
    bool was_db_manager_list           = false;
-   static unsigned depth_prev         = 0;
-   unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   int depth                          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+
    if (!xmb)
       return;
+
+   xmb->skip_thumbnail_reset          = false;
+   if (xmb->is_quick_menu && depth < xmb->old_depth)
+      xmb->skip_thumbnail_reset       = true;
+
    xmb_system_tab       = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    xmb_horizontal_type  = (xmb_system_tab == UINT_MAX ? xmb_get_horizontal_selection_type(xmb) : 0);
+
    /* Determine whether this is a playlist */
    xmb->is_playlist     =
             (depth == 1
@@ -2716,7 +2723,6 @@ static void xmb_populate_entries(void *data,
    was_db_manager_list     = xmb->is_db_manager_list && depth >= 4;
    xmb->is_db_manager_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
 
-   xmb->skip_thumbnail_reset    = false;
    if (was_db_manager_list)
    {
       xmb->is_db_manager_list   = true;
@@ -2752,12 +2758,11 @@ static void xmb_populate_entries(void *data,
    {
       /* Quick Menu under Explore list must also be Quick Menu */
       xmb->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
+
       if (!menu_explore_is_content_list() || xmb->is_quick_menu)
          xmb->is_explore_list = false;
-      else if (!xmb->is_quick_menu && depth < depth_prev)
+      else if (!xmb->is_quick_menu && depth < xmb->old_depth)
          xmb->skip_thumbnail_reset = true;
-      else
-         xmb->skip_thumbnail_reset = false;
 
       /* 'is_playlist' must be cleared for 'xmb_set_thumbnail_content' */
       if (xmb->is_explore_list)
@@ -2779,8 +2784,6 @@ static void xmb_populate_entries(void *data,
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
-
-   depth_prev = depth;
 
    xmb_set_title(xmb);
    if (menu_dynamic_wallpaper_enable)
@@ -6848,6 +6851,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 {
    if (!xmb)
       return;
+
    video_driver_texture_unload(&xmb->textures.bg);
    gfx_display_deinit_white_texture();
 }
@@ -7433,12 +7437,14 @@ static void xmb_context_reset(void *data, bool is_threaded)
 
    if (xmb)
       xmb_context_reset_internal(xmb, is_threaded, true);
+
    video_driver_monitor_reset();
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
 {
    xmb_handle_t  *xmb  = (xmb_handle_t*)data;
+
    if (!pending_push)
       xmb_selection_pointer_changed(xmb, true);
 }

@@ -5839,6 +5839,11 @@ static int action_ok_delete_entry(const char *path,
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_st->selection_ptr = new_selection_ptr;
 
+   /* Thumbnail must be refreshed */
+   if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)
+      menu_st->driver_ctx->refresh_thumbnail_image(
+            menu_st->userdata, new_selection_ptr);
+
    return 0;
 }
 

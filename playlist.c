@@ -1195,7 +1195,7 @@ bool playlist_content_path_is_valid(const char *path)
 
 /**
  * playlist_push:
- * @playlist        	   : Playlist handle.
+ * @playlist           : Playlist handle.
  *
  * Push entry to top of playlist.
  **/
@@ -2054,7 +2054,7 @@ void playlist_free(playlist_t *playlist)
 
 /**
  * playlist_clear:
- * @playlist        	   : Playlist handle.
+ * @playlist           : Playlist handle.
  *
  * Clears all playlist entries in playlist.
  **/
@@ -2076,7 +2076,7 @@ void playlist_clear(playlist_t *playlist)
 
 /**
  * playlist_size:
- * @playlist        	   : Playlist handle.
+ * @playlist           : Playlist handle.
  *
  * Gets size of playlist.
  * Returns: size of playlist.
@@ -2090,7 +2090,7 @@ size_t playlist_size(playlist_t *playlist)
 
 /**
  * playlist_capacity:
- * @playlist        	   : Playlist handle.
+ * @playlist           : Playlist handle.
  *
  * Gets maximum capacity of playlist.
  * Returns: maximum capacity of playlist.
@@ -2488,10 +2488,10 @@ static bool playlist_read_file(playlist_t *playlist)
     *   non-whitespace ASCII character */
    do
    {
-	   /* Read error or EOF (end of file) */
+      /* Read error or EOF (end of file) */
       if ((test_char = intfstream_getc(file)) == EOF)
          goto end;
-   }while (!isgraph(test_char) || test_char > 0x7F);
+   } while (!isgraph(test_char) || test_char > 0x7F);
 
    playlist->old_format = (test_char != '{');
 
@@ -2780,7 +2780,7 @@ bool playlist_init_cached(const playlist_config_t *config)
 
 /**
  * playlist_init:
- * @config            	: Playlist configuration object.
+ * @config            : Playlist configuration object.
  *
  * Creates and initializes a playlist.
  *
@@ -3173,8 +3173,8 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
           * (i.e. ignore history/favourites) */
          if (
                   !string_is_empty(conf_path_basename)
-               && !string_ends_with_size(conf_path_basename, "_history.lpl",
-                        strlen(conf_path_basename), STRLEN_CONST("_history.lpl"))
+               && !string_is_equal(conf_path_basename,
+                        FILE_PATH_CONTENT_HISTORY)
                && !string_is_equal(conf_path_basename,
                         FILE_PATH_CONTENT_FAVORITES)
             )

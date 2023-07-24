@@ -3828,6 +3828,20 @@ static int menu_displaylist_parse_horizontal_content_actions(
                break;
          }
 
+         /* Remove 'Remove' from Explore lists for now since it does not work correctly */
+         if (remove_entry_enabled)
+         {
+            struct menu_state *menu_st  = menu_state_get_ptr();
+            menu_list_t *menu_list      = menu_st->entries.list;
+            file_list_t *menu_stack     = MENU_LIST_GET(menu_list, 0);
+            struct item_file *stack_top = menu_stack->list;
+            size_t depth                = menu_stack->size;
+            unsigned current_type       = (depth > 0 ? stack_top[depth - 1].type : 0);
+
+            if (current_type)
+               remove_entry_enabled = false;
+         }
+
          if (remove_entry_enabled)
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
