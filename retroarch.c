@@ -3503,7 +3503,7 @@ bool command_event(enum event_command cmd, void *data)
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_ADD_TO_FAVORITES_FAILED), 1, 180, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-               return false;
+               return true;
             }
 
             if (str_list)
@@ -3533,11 +3533,12 @@ bool command_event(enum event_command cmd, void *data)
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites);
-                     runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                }
             }
-
             break;
          }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
@@ -3567,7 +3568,9 @@ bool command_event(enum event_command cmd, void *data)
                      menu_st->userdata, i);
 #endif
 
-            runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
          }
       case CMD_EVENT_RESTART_RETROARCH:
