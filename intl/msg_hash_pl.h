@@ -2707,6 +2707,10 @@ MSG_HASH(
    "Zmień sposób mapowania wirtualnego RetroPada na fizyczne urządzenie wejściowe dla tego wirtualnego portu."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Zmień mapowanie wejściowe specyficzne dla rdzenia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Potwierdź wyjście"
    )
