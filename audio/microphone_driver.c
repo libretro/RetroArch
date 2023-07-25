@@ -268,7 +268,6 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!settings->bools.microphone_enable)
    { /* If the user has mic support turned off... */
       mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
-      RARCH_DBG("[Microphone]: Refused to initialize microphone driver because it's disabled in the settings.\n");
       return false;
    }
 
