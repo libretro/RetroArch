@@ -361,6 +361,7 @@ const char *playlist_get_scan_dat_file_path(playlist_t *playlist);
 bool playlist_get_scan_search_recursively(playlist_t *playlist);
 bool playlist_get_scan_search_archives(playlist_t *playlist);
 bool playlist_get_scan_filter_dat_content(playlist_t *playlist);
+bool playlist_get_scan_overwrite_playlist(playlist_t *playlist);
 bool playlist_scan_refresh_enabled(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
@@ -375,6 +376,7 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
 void playlist_set_scan_search_recursively(playlist_t *playlist, bool search_recursively);
 void playlist_set_scan_search_archives(playlist_t *playlist, bool search_archives);
 void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_content);
+void playlist_set_scan_overwrite_playlist(playlist_t *playlist, bool overwrite_playlist);
 
 /* Returns true if specified entry has a valid
  * core association (i.e. a non-empty string
