@@ -4535,6 +4535,12 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
          ((video_st->av_info.timing.fps > 0.0) ?
                video_st->av_info.timing.fps : 60.0);
 
+   RARCH_LOG("[Core]: Geometry: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
+         video_st->av_info.geometry.base_width, video_st->av_info.geometry.base_height,
+         video_st->av_info.geometry.aspect_ratio,
+         video_st->av_info.timing.fps,
+         video_st->av_info.timing.sample_rate);
+
    return true;
 }
 
