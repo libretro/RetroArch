@@ -513,6 +513,7 @@ enum manual_content_scan_playlist_refresh_status
    bool search_recursively      = false;
    bool search_archives         = false;
    bool filter_dat_content      = false;
+   bool overwrite_playlist      = false;
 #ifdef HAVE_LIBRETRODB
    struct string_list *rdb_list = NULL;
 #endif
@@ -542,6 +543,7 @@ enum manual_content_scan_playlist_refresh_status
    search_recursively = playlist_get_scan_search_recursively(playlist);
    search_archives    = playlist_get_scan_search_archives(playlist);
    filter_dat_content = playlist_get_scan_filter_dat_content(playlist);
+   overwrite_playlist = playlist_get_scan_overwrite_playlist(playlist);
 
    /* Determine system name (playlist basename
     * without extension) */
@@ -712,11 +714,10 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.search_recursively = search_recursively;
    scan_settings.search_archives    = search_archives;
    scan_settings.filter_dat_content = filter_dat_content;
+   scan_settings.overwrite_playlist = overwrite_playlist;
    /* When refreshing a playlist:
-    * > We never overwrite the existing file
     * > We always validate entries in the
     *   existing file */
-   scan_settings.overwrite_playlist = false;
    scan_settings.validate_entries   = true;
 
 end:

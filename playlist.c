@@ -58,6 +58,7 @@ typedef struct
    bool search_recursively;
    bool search_archives;
    bool filter_dat_content;
+   bool overwrite_playlist;
 } playlist_manual_scan_record_t;
 
 struct content_playlist
@@ -1836,6 +1837,17 @@ void playlist_write_file(playlist_t *playlist)
          }
          rjsonwriter_raw(writer, ",", 1);
          rjsonwriter_raw(writer, "\n", 1);
+
+         rjsonwriter_add_spaces(writer, 2);
+         rjsonwriter_add_string(writer, "scan_overwrite_playlist");
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         {
+            bool value = playlist->scan_record.overwrite_playlist;
+            rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
+         }
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
       }
 
       rjsonwriter_add_spaces(writer, 2);
@@ -2429,6 +2441,8 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.search_archives;
             else if (string_is_equal(pValue, "scan_filter_dat_content"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.filter_dat_content;
+            else if (string_is_equal(pValue, "scan_overwrite_playlist"))
+               pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.overwrite_playlist;
             else if (string_is_equal(pValue, "sort_mode"))
                pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
             break;
@@ -3267,6 +3281,13 @@ bool playlist_get_scan_filter_dat_content(playlist_t *playlist)
    return playlist->scan_record.filter_dat_content;
 }
 
+bool playlist_get_scan_overwrite_playlist(playlist_t *playlist)
+{
+   if (!playlist)
+      return false;
+   return playlist->scan_record.overwrite_playlist;
+}
+
 bool playlist_scan_refresh_enabled(playlist_t *playlist)
 {
    if (!playlist)
@@ -3472,6 +3493,15 @@ void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_
    if (playlist && playlist->scan_record.filter_dat_content != filter_dat_content)
    {
       playlist->scan_record.filter_dat_content = filter_dat_content;
+      playlist->modified = true;
+   }
+}
+
+void playlist_set_scan_overwrite_playlist(playlist_t *playlist, bool overwrite_playlist)
+{
+   if (playlist && playlist->scan_record.overwrite_playlist != overwrite_playlist)
+   {
+      playlist->scan_record.overwrite_playlist = overwrite_playlist;
       playlist->modified = true;
    }
 }

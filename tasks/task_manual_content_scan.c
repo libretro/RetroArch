@@ -273,6 +273,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->task_config->search_archives);
             playlist_set_scan_filter_dat_content(manual_scan->playlist,
                   manual_scan->task_config->filter_dat_content);
+            playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+                  manual_scan->task_config->overwrite_playlist);
 
             /* All good - can start iterating
              * > If playlist has content and 'validate
