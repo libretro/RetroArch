@@ -6195,7 +6195,7 @@ static bool retroarch_parse_input_and_config(
                   const char *directory_playlist = settings->paths.directory_playlist;
                   const char *path_content_db    = settings->paths.path_content_database;
                   int reinit_flags               = DRIVERS_CMD_ALL &
-                        ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
+                        ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
 
                   drivers_init(settings, reinit_flags, 0, false);
                   retroarch_init_task_queue();
