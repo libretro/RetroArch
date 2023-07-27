@@ -2971,7 +2971,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
-         midi_driver_set_all_sounds_off();
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
          if (     settings->bools.audio_enable_menu
                && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
@@ -3702,7 +3701,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
-         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
 #ifdef HAVE_NETWORKING
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro
@@ -3711,30 +3709,17 @@ bool command_event(enum event_command cmd, void *data)
             bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
 #endif
             if (menu_pause_libretro)
-            { /* If entering the menu pauses the game... */
-               command_event(CMD_EVENT_AUDIO_STOP, NULL);
+            {
 #ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
             }
             else
             {
-               command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
             }
-         }
-         else
-         {
-#ifdef HAVE_NETWORKING
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro
-               && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-#else
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
-#endif
-            if (menu_pause_libretro)
-               command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif
          break;

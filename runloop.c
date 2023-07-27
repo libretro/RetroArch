@@ -4709,11 +4709,11 @@ void runloop_pause_checks(void)
 #ifdef HAVE_PRESENCE
    presence_userdata_t userdata;
 #endif
+   video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
    bool is_idle                   = runloop_st->flags & RUNLOOP_FLAG_IDLE;
 #if defined(HAVE_GFX_WIDGETS)
-   video_driver_state_t *video_st = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
    if (widgets_active)
@@ -4736,6 +4736,8 @@ void runloop_pause_checks(void)
 
       if (!is_idle)
          video_driver_cached_frame();
+
+      midi_driver_set_all_sounds_off();
 
 #ifdef HAVE_PRESENCE
       userdata.status = PRESENCE_GAME_PAUSED;
@@ -4764,6 +4766,9 @@ void runloop_pause_checks(void)
 
    /* Signal/reset paused rewind to take the initial step */
    runloop_st->run_frames_and_pause = -1;
+
+   /* Ignore frame delay target temporarily */
+   video_st->frame_delay_pause      = true;
 }
 
 struct string_list *path_get_subsystem_list(void)
