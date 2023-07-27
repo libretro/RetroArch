@@ -257,7 +257,7 @@ static int binsearch(const void *buff, const void *item,
 {
    int mid            = (int)(count / 2);
    int item_size      = field_size + sizeof(uint64_t);
-   uint8_t *current   = (buff + (mid * item_size));
+   uint8_t *current   = ((uint8_t *)buff + (mid * item_size));
    int rv             = memcmp(current, item, field_size);
 
    if (rv == 0)
@@ -479,7 +479,6 @@ int libretrodb_create_index(libretrodb_t *db,
 
       /* Field not found in item? */
       if (!(field = rmsgpack_dom_value_map_value(&item, &key)))
-        //goto clean;
         continue;
 
       /* Field is not binary? */
@@ -501,7 +500,7 @@ int libretrodb_create_index(libretrodb_t *db,
 
       memcpy(buff, field->val.binary.buff, field_size);
 
-      buff_u64 = (uint64_t *)(buff + field_size);
+      buff_u64 = (uint64_t *)((uint8_t *)buff + field_size);
 
       memcpy(buff_u64, &item_loc, sizeof(uint64_t));
 
