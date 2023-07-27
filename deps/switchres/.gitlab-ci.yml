@@ -1,0 +1,59 @@
+# This file is a template, and might need editing before it works on your project.
+# use the official gcc image, based on debian
+# can use verions as well, like gcc:5.2
+# see https://hub.docker.com/_/gcc/
+image: gcc:latest
+
+before_script:
+  - apt update
+  - apt -y install make
+
+.pre_requisites_linux: &prerequisiteslinux
+  before_script:
+    - apt update
+    - apt -y install make
+
+.pre_requisites_win32: &prerequisiteswin32
+  image: "ubuntu:rolling"
+  before_script:
+    - apt update
+    - apt -y install make mingw-w64
+
+
+linux:x86_64:standalone:
+  stage: build
+  <<: *prerequisiteslinux
+  script:
+    - make
+
+linux:x86_64:lib:
+  stage: build
+  <<: *prerequisiteslinux
+  script:
+    - make libswitchres
+
+win32:x86_64:standalone:
+  stage: build
+  <<: *prerequisiteswin32
+  script:
+    - make PLATFORM=NT CROSS_COMPILE=x86_64-w64-mingw32-
+  
+win32:x86_64:lib:
+  stage: build
+  <<: *prerequisiteswin32
+  script:
+    - make PLATFORM=NT CROSS_COMPILE=x86_64-w64-mingw32- libswitchres
+  
+
+win32:i686:standalone:
+  stage: build
+  <<: *prerequisiteswin32
+  script:
+    - make PLATFORM=NT CROSS_COMPILE=i686-w64-mingw32-
+  
+
+win32:i686:lib:
+  stage: build
+  <<: *prerequisiteswin32
+  script:
+    - make PLATFORM=NT CROSS_COMPILE=i686-w64-mingw32- libswitchres
