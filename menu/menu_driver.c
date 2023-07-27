@@ -6107,7 +6107,6 @@ void menu_driver_toggle(
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
    bool pause_libretro                = false;
-   bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = runloop_st->flags &
@@ -6125,9 +6124,6 @@ void menu_driver_toggle(
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
       pause_libretro                  = settings->bools.menu_pause_libretro;
-#endif
-#ifdef HAVE_AUDIOMIXER
-      audio_enable_menu               = settings->bools.audio_enable_menu;
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6197,13 +6193,10 @@ void menu_driver_toggle(
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
       if (pause_libretro)
-      { /* If the menu pauses the game... */
+      {
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
-
-         if (!audio_enable_menu) /* If the menu shouldn't have audio... */
-            command_event(CMD_EVENT_AUDIO_STOP, NULL);
       }
 
       /* Override keyboard callback to redirect to menu instead.
@@ -6230,15 +6223,9 @@ void menu_driver_toggle(
          driver_set_nonblock_state();
 
       if (pause_libretro)
-      { /* If the menu pauses the game... */
-
-         if (!audio_enable_menu) /* ...and the menu doesn't have audio... */
-            command_event(CMD_EVENT_AUDIO_START, NULL);
-            /* ...then re-enable the audio driver (which we shut off earlier) */
-
+      {
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
-         /* Start the microphone, if it was paused beforehand */
 #endif
       }
 
