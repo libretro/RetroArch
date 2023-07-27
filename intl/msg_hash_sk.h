@@ -201,6 +201,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Ukončiť program."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Ukončiť RetroArch. Ukončenie programu akýmkoľvek tvrdým spôsobom (SIGKILL atď) ukončí RetroArch bez uloženia konfigurácie a pod. V systémoch podobných Unixu umožňuje použitie signálov SIGINT/SIGTERM ukončenie programu čistou deinicializáciou."
+   )
 
 /* Main Menu > Load Core */
 
@@ -534,6 +538,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Zabráňte úprave aktuálne nainštalovaného jadra. Môže sa použiť na zabránenie nechceným aktualizáciám, keď obsah vyžaduje špecifickú verziu jadra (napr. Sady Arcade ROM)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Zabrániť zobrazeniu tohto jadra na karte/ponuke 'Jadrá bez obsahu'. Platí iba v prípade, že je režim zobrazenia nastavený na 'Vlastný'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1016,6 +1024,10 @@ MSG_HASH(
    "Načítať konfiguráciu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "Načítať aktuálnu konfiguráciu a nahradiť aktuálne hodnoty."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Uložiť Aktuálne Nastavenia"
    )
@@ -1209,8 +1221,32 @@ MSG_HASH(
    "Čistý súbor."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Video. Jeho výberom otvoríte tento súbor pomocou videoprehrávača."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Hudba. Jeho výberom otvoríte tento súbor v prehrávači hudby."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    "Súbor obrázku."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "Obrázok. Jeho výberom otvoríte tento súbor v prehliadači obrázkov."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Jadro Libretro. Výberom tejto možnosti bude toto jadro priradené k hre."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Jadro Libretro. Ak tento súbor vyberiete, RetroArch toto jadro načíta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "Adresár. Jeho výberom tento adresár otvoríte."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -1344,6 +1380,10 @@ MSG_HASH(
    )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Zmeniť nastavenia súvisiace so Steamom."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1404,6 +1444,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "Resamplovač mikrofónu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Snímky mikrofónnych blokov"
    )
 #endif
 MSG_HASH(
