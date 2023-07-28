@@ -181,29 +181,16 @@ task_finished:
       if (tmp && http->cb)
          http->cb(tmp, len);
 
-      if (net_http_error(http->handle) || task_get_cancelled(task))
-      {
+      if (!tmp)
          tmp = (char*)net_http_data(http->handle, &len, true);
 
+      if (task_get_cancelled(task))
+      {
          if (tmp)
             free(tmp);
 
-         if (task_get_cancelled(task))
-            task_set_error(task,
-                  strldup("Task cancelled.", sizeof("Task cancelled.")));
-         else
-         {
-            data         = (http_transfer_data_t*)malloc(sizeof(*data));
-            data->data   = NULL;
-            data->len    = 0;
-            data->status = net_http_status(http->handle);
-
-            task_set_data(task, data);
-
-            if (!task->mute)
-               task_set_error(task, strldup("Download failed.",
-                        sizeof("Download failed.")));
-         }
+         task_set_error(task,
+               strldup("Task cancelled.", sizeof("Task cancelled.")));
       }
       else
       {
@@ -213,6 +200,10 @@ task_finished:
          data->status = net_http_status(http->handle);
 
          task_set_data(task, data);
+
+         if (!task->mute && net_http_error(http->handle))
+            task_set_error(task, strldup("Download failed.",
+               sizeof("Download failed.")));
       }
 
       net_http_delete(http->handle);
