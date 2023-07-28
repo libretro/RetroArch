@@ -46,6 +46,7 @@ RETRO_BEGIN_DECLS
    entry.entry_idx          = 0; \
    entry.idx                = 0; \
    entry.type               = 0; \
+   entry.setting_type       = 0; \
    entry.spacing            = 0; \
    entry.flags              = 0
 
