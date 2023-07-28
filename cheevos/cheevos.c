@@ -55,6 +55,9 @@
 #include "cheevos_client.h"
 #include "cheevos_menu.h"
 #include "cheevos_locals.h"
+#include "webhooks.h"
+#include "webhooks_oauth.h"
+#include "webhooks_game.h"
 
 #include "../network/netplay/netplay.h"
 
@@ -777,6 +780,8 @@ bool rcheevos_unload(void)
 {
    settings_t* settings  = config_get_ptr();
 
+   webhooks_send_game_event(rcheevos_locals.game.id, STOPPED);
+  
    /* Immediately mark the game as unloaded 
       so the ping thread will terminate normally */
    rcheevos_locals.game.id         = -1;
@@ -1287,6 +1292,10 @@ static void rcheevos_runtime_event_handler(
                rcheevos_find_lboard(runtime_event->id),
                runtime_event->value);
          break;
+           
+      case RC_RUNTIME_EVENT_RICHPRESENCE_UPDATED:
+        webhooks_send_presence();
+        break;
 
       default:
          break;
@@ -1817,6 +1826,8 @@ static void rcheevos_start_session_async(retro_task_t* task)
     * to proceed to the next loading state */
    rcheevos_client_start_session(rcheevos_locals.game.id);
 
+   webhooks_send_game_event(rcheevos_locals.game.id, STARTED);
+  
    rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_STARTING_SESSION);
 
    if (needs_runtime)
@@ -2527,4 +2538,9 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
          initial_disc ? rcheevos_identify_initial_disc_callback :
             rcheevos_identify_game_disc_callback, data);
    }
+}
+
+void rcheevos_webhook_oauth_initiate()
+{
+  woauth_initiate();
 }

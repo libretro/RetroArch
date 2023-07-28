@@ -694,8 +694,18 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
     }
   }
 
-  if (self->richpresence && self->richpresence->richpresence)
+  if (self->richpresence && self->richpresence->richpresence) {
+
+    switch (preprocess(self->richpresence->richpresence))
+    {
+      case RC_RICHPRESENCE_CHANGED:
+        runtime_event.type = RC_RUNTIME_EVENT_RICHPRESENCE_UPDATED;
+        event_handler(&runtime_event);
+        break;
+    }
+
     rc_update_richpresence(self->richpresence->richpresence, peek, ud, L);
+  }
 }
 
 void rc_runtime_reset(rc_runtime_t* self) {

@@ -318,6 +318,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_submit, ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_cancel, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_lboard_trackers, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_progress_tracker, MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_webhook_url,                MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_URL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_webhook_code_url,           MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_CODE_URL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_webhook_token_url,          MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_TOKEN_URL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_webhook_start_association,  MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_webhook_code,               MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_CODE)
 
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
@@ -4498,6 +4503,21 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_start_active);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_URL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_webhook_url);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE_URL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_webhook_code_url);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN_URL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_webhook_token_url);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_webhook_start_association);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_webhook_code);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_appearance_settings);

@@ -308,6 +308,7 @@ enum settings_list_type
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CHEEVOS_APPEARANCE,
    SETTINGS_LIST_CHEEVOS_VISIBILITY,
+   SETTINGS_LIST_CHEEVOS_WEBHOOK,
    SETTINGS_LIST_CORE_UPDATER,
    SETTINGS_LIST_NETPLAY,
    SETTINGS_LIST_LAKKA_SERVICES,
@@ -7315,9 +7316,10 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
 
    if (!setting)
       return NULL;
+
    for (; setting->type != ST_NONE; (*list = *list + 1))
    {
-      if (  setting->enum_idx == enum_idx &&
+      if (setting->enum_idx == enum_idx &&
             setting->type <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
@@ -10206,6 +10208,14 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_USER_SETTINGS,
                MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -20711,6 +20721,108 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
 #endif
          break;
+
+      case SETTINGS_LIST_CHEEVOS_WEBHOOK:
+#ifdef HAVE_CHEEVOS
+        START_GROUP(list, list_info, &group_info,
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS),
+          parent_group);
+        parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS);
+        START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+        CONFIG_STRING(
+          list, list_info,
+          settings->arrays.cheevos_webhook_url,
+          sizeof(settings->arrays.cheevos_webhook_url),
+          MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_URL,
+          MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_URL,
+          "",
+          &group_info,
+          &subgroup_info,
+          parent_group,
+          general_write_handler,
+          general_read_handler
+        );
+        SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+        (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+        (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+        CONFIG_STRING(
+           list, list_info,
+           settings->arrays.cheevos_webhook_code_url,
+           sizeof(settings->arrays.cheevos_webhook_code_url),
+           MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE_URL,
+           MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE_URL,
+           "",
+           &group_info,
+           &subgroup_info,
+           parent_group,
+           general_write_handler,
+           general_read_handler
+        );
+        SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+        (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+        (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+       CONFIG_STRING(
+           list, list_info,
+           settings->arrays.cheevos_webhook_token_url,
+           sizeof(settings->arrays.cheevos_webhook_token_url),
+           MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN_URL,
+           MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_TOKEN_URL,
+           "",
+           &group_info,
+           &subgroup_info,
+           parent_group,
+           general_write_handler,
+           general_read_handler
+       );
+       SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+       (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+       (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+       CONFIG_STRING(
+          list, list_info,
+          settings->arrays.cheevos_webhook_usercode,
+          sizeof(settings->arrays.cheevos_webhook_usercode),
+          MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE,
+          MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE,
+          "",
+          &group_info,
+          &subgroup_info,
+          parent_group,
+          general_write_handler,
+          general_read_handler
+        );
+        SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+        (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+        (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+        /*
+        CONFIG_STRING(
+          list, list_info,
+          settings->arrays.cheevos_webhook_token,
+          sizeof(settings->arrays.cheevos_webhook_token),
+          MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN,
+          MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_TOKEN,
+          "",
+          &group_info,
+          &subgroup_info,
+          parent_group,
+          general_write_handler,
+          general_read_handler
+         );
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+        */
+        END_SUB_GROUP(list, list_info, parent_group);
+        END_GROUP(list, list_info, parent_group);
+#endif
+          break;
+
+
+
       case SETTINGS_LIST_CHEEVOS_VISIBILITY:
 #ifdef HAVE_CHEEVOS
          START_GROUP(list, list_info, &group_info,
@@ -22942,6 +23054,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CHEEVOS_APPEARANCE,
       SETTINGS_LIST_CHEEVOS_VISIBILITY,
+      SETTINGS_LIST_CHEEVOS_WEBHOOK,
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
       SETTINGS_LIST_LAKKA_SERVICES,

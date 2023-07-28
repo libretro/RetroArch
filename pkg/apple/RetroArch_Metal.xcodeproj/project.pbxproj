@@ -1831,6 +1831,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
 			};
 			name = Debug;
 		};
@@ -1838,6 +1840,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
 			};
 			name = Release;
 		};

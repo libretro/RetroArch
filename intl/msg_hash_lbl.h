@@ -626,6 +626,38 @@ MSG_HASH(
    "cheevos_start_active"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,
+   "cheevos_webhook_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_URL,
+   "cheevos_webhook_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE_URL,
+   "cheevos_webhook_code_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN_URL,
+   "cheevos_webhook_token_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
+   "cheevos_webhook_start_association"
+   )
+//MSG_HASH(
+//   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_STOP_ASSOCIATION,
+//   "cheevos_webhook_stop_association"
+//   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE,
+   "cheevos_webhook_code"
+   )
+//MSG_HASH(
+//   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN,
+//   "cheevos_webhook_token"
+//   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "cheevos_challenge_indicators"
    )
@@ -1392,6 +1424,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST,
    "deferred_cheevos_visibility_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CHEEVOS_WEBHOOK_SETTINGS_LIST,
+   "deferred_cheevos_webhook_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST,

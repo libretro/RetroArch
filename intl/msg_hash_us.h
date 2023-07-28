@@ -6772,6 +6772,73 @@ MSG_HASH(
    "Shows additional diagnostic and error messages."
    )
 
+/* Settings > Achievements > Webhook */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS,
+   "Webhook"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_SETTINGS,
+   "Enable pushing data to a 3rd party provider"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_URL,
+   "URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_URL,
+   "URL of the 3rd party website"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE_URL,
+   "OAuth2 Device Code URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_CODE_URL,
+   "URL where to get the device code using OAuth2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_TOKEN_URL,
+   "OAuth2 Token URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_TOKEN_URL,
+   "URL where to get an access token using OAuth2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_START_ASSOCIATION,
+   "Start association with website"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
+   "Start a secure association between the emulator and the 3rd party website"
+   )
+//MSG_HASH(
+//   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_STOP_ASSOCIATION,
+//   "Cancel association with website"
+//   )
+//MSG_HASH(
+//   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_STOP_ASSOCIATION,
+//   "Cancel the operation of securing the association between the emulator and the 3rd party website"
+//   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE,
+   "Code"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_CODE,
+   "Code to enter when linking the emulator to the 3rd party website."
+   )
+//MSG_HASH(
+//   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_TOKEN,
+//   "Token"
+//  )
+//MSG_HASH(
+//   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_TOKEN,
+//   "Token passed along with the data to authenticate the user"
+//  )
+
 /* Settings > Network */
 
 MSG_HASH(

@@ -415,6 +415,12 @@ void rc_update_richpresence(rc_richpresence_t* richpresence, rc_peek_t peek, voi
 int rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
 void rc_reset_richpresence(rc_richpresence_t* self);
 
+/* Return values for rc_update_richpresence. */
+enum {
+    RC_RICHPRESENCE_CHANGED,
+    RC_RICHPRESENCE_UNCHANGED
+};
+
 #ifdef __cplusplus
 }
 #endif

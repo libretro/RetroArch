@@ -4459,6 +4459,9 @@ bool command_event(enum event_command cmd, void *data)
                                                         : MSG_VRR_RUNLOOP_DISABLED),
                1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
+     case CMD_EVENT_WEBHOOK_START_ASSOCIATION:
+        rcheevos_webhook_oauth_initiate();
+        break;
       case CMD_EVENT_NONE:
          return false;
 

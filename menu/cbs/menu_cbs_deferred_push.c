@@ -203,6 +203,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_power_management_settings_list, DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_cheevos_appearance_settings_list,DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_cheevos_visibility_settings_list,DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cheevos_webhook_settings_list,  DISPLAYLIST_CHEEVOS_WEBHOOK_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_bluetooth_settings_list,        DISPLAYLIST_BLUETOOTH_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
@@ -730,6 +731,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST, deferred_push_retro_achievements_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST, deferred_push_cheevos_appearance_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST, deferred_push_cheevos_visibility_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CHEEVOS_WEBHOOK_SETTINGS_LIST, deferred_push_cheevos_webhook_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST, deferred_push_updater_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST, deferred_push_network_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST, deferred_push_subsystem_settings_list},
@@ -1280,7 +1282,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheevos_visibility_settings_list);
             break;
-         case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
+        case MENU_ENUM_LABEL_DEFERRED_CHEEVOS_WEBHOOK_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheevos_webhook_settings_list);
+            break;
+        case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
             break;
 #if defined(HAVE_OVERLAY)

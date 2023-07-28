@@ -101,6 +101,18 @@ QWidget *AchievementsPage::widget()
    }
    file_list_free(visibilityList);
 
+  menu_displaylist_build_list(visibilityList, settings,
+                              DISPLAYLIST_CHEEVOS_WEBHOOK_SETTINGS_LIST, true);
+
+  for (i = 0; i < visibilityList->size; i++)
+  {
+    menu_file_list_cbs_t* cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(visibilityList, i);
+
+    m_visibilityGroup->add(cbs->enum_idx);
+  }
+  file_list_free(visibilityList);
+
    connect(enabledCheckBox, SIGNAL(stateChanged(int)),
            this,            SLOT(onAchievementEnabledChanged(int)));
 
