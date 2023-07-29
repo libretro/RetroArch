@@ -3991,6 +3991,18 @@ void get_current_menu_value(struct menu_state *menu_st,
    strlcpy(s, entry_label, len);
 }
 
+static void get_current_menu_type(struct menu_state *menu_st,
+      uint8_t *setting_type)
+{
+   menu_entry_t     entry;
+
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags    = MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+   *setting_type  = entry.setting_type;
+}
+
 #ifdef HAVE_ACCESSIBILITY
 static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
@@ -5407,6 +5419,39 @@ unsigned menu_event(
    }
    else
    {
+      static uint8_t switch_old = 0;
+      uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      uint8_t switch_trigger    = switch_current & ~switch_old;
+
+      switch_old                = switch_current;
+
+      /* Prevent holding down left/right with boolean settings */
+      if (switch_current)
+      {
+         uint8_t setting_type   = 0;
+
+         get_current_menu_type(menu_st, &setting_type);
+
+         if (setting_type == ST_BOOL)
+         {
+            char value[8];
+
+            get_current_menu_value(menu_st, value, sizeof(value));
+
+            /* Ignore direction if switch is already in that position */
+            if (     (  string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
+                     && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+                  || (  string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+                     && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+               )
+               switch_trigger   = 0;
+         }
+         else
+            /* Always allow repeat direction */
+            switch_trigger      = 1;
+      }
+
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
@@ -5417,12 +5462,14 @@ unsigned menu_event(
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
             ret = MENU_ACTION_DOWN;
       }
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+            && switch_trigger)
       {
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
             ret = MENU_ACTION_LEFT;
       }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT)
+            && switch_trigger)
       {
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
             ret = MENU_ACTION_RIGHT;
