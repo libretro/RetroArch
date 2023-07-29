@@ -3683,8 +3683,8 @@ bool runloop_init_libretro_symbols(
                   const char* content_path = path_get(RARCH_PATH_CONTENT);
                   if (!string_is_empty(content_path))
                   {
-                     bool core_loaded = auto_load_core(content_path);
-                     if (!core_loaded) {
+                     /* Attempt to automatically load a supported core. */
+                     if (!auto_load_core(content_path)) {
                         struct menu_state* menu_state = menu_state_get_ptr();
 
                         CORE_SYMBOLS(SYMBOL_DUMMY);
