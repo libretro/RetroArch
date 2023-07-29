@@ -3618,7 +3618,7 @@ static bool auto_load_core(const char* content_path)
          core_info_t* current_core = NULL;
          core_info_get_current_core(&current_core);
 
-         /*we already have path for libretro core */
+         /* Iterate through each supported core. */
          for (i = 0; i < list_size; i++)
          {
             const core_info_t* info = (const core_info_t*)&core_info[i];
