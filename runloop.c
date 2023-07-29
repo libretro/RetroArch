@@ -3638,7 +3638,7 @@ static bool auto_load_core(const char* content_path)
          /* Poll for cores for current rom since none exist. */
          if (list_size == 1)
          {
-            /*pick core that only exists and is bound to work. Ish. */
+            /* If there is only one core available, use it. */
             const core_info_t* info = (const core_info_t*)&core_info[0];
 
             if (info)
