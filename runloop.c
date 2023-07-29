@@ -3695,7 +3695,6 @@ bool runloop_init_libretro_symbols(
                         /* Init the menu driver early to add to the menu stack - the video threading argument will be set to the proper value on the regular init */
                         menu_driver_init(false);
 
-
                         strlcpy(menu_state->driver_data->deferred_path, content_path, sizeof(menu_state->driver_data->deferred_path));
                         /*
                         detect_content_path is filled only in the case there's menu stack to read from
