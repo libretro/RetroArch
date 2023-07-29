@@ -3634,7 +3634,6 @@ static bool auto_load_core(const char* content_path)
                return true;
             }
          }
-         
 
          /* Poll for cores for current rom since none exist. */
          if (list_size == 1)
