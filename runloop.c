@@ -3625,7 +3625,7 @@ static bool auto_load_core(const char* content_path)
 
             if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
             {
-               /* Our previous core supports the current rom */
+               /* The core supports the loaded content. */
                task_push_load_content_with_current_core_from_companion_ui(
                   NULL,
                   &content_info,
