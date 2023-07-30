@@ -757,9 +757,9 @@ static int setting_bind_action_start(rarch_setting_t *setting)
       def_binds     = (struct retro_keybind*)retro_keybinds_rest;
 
    bind_type        = setting->bind_type;
-   keybind->key     = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
-   keybind->mbutton = NO_BTN;
+   keybind->key     = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+   keybind->mbutton = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].mbutton;
 
    /* Store new mapping bit */
    input_keyboard_mapping_bits(1, keybind->key);
@@ -9143,7 +9143,10 @@ static bool setting_append_list_input_player_options(
                      sizeof(label) - _len);
             else
             {
-               strlcpy(label + _len, value_na, sizeof(label) - _len);
+               snprintf(label, sizeof(label), "%s (%s)",
+                     input_config_bind_map_get_desc(i),
+                     value_na);
+
                if (settings->bools.input_descriptor_hide_unbound)
                   continue;
             }
