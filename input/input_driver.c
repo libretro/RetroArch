@@ -1760,11 +1760,11 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
-                        desc->updated = 0;
+                        desc->touch_mask = 0;
                         return false;
                      }
 
-                     desc->updated    = 1;
+                     desc->touch_mask   |= (1 << OVERLAY_MAX_TOUCH);
                   }
 
                   bank_mask >>= 1;
@@ -1772,7 +1772,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                }
             }
 
-            return (desc->updated != 0);
+            return (desc->touch_mask != 0);
          }
 
       case OVERLAY_TYPE_ANALOG_LEFT:
@@ -1780,9 +1780,9 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
          if (ol_state)
          {
             unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-            desc->updated        |= (
+            desc->touch_mask     |= (
                    ol_state->analog[index_offset]
-                 | ol_state->analog[index_offset + 1]);
+                 | ol_state->analog[index_offset + 1]) << OVERLAY_MAX_TOUCH;
          }
          else
          {
@@ -1805,7 +1805,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 
       case OVERLAY_TYPE_DPAD_AREA:
       case OVERLAY_TYPE_ABXY_AREA:
-         return (desc->updated != 0);
+         return (desc->touch_mask != 0);
 
       case OVERLAY_TYPE_KEYBOARD:
          {
@@ -1821,7 +1821,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 
             if (tmp)
             {
-               desc->updated = 1;
+               desc->touch_mask |= (1 << OVERLAY_MAX_TOUCH);
                return true;
             }
          }
@@ -1978,6 +1978,7 @@ static INLINE void input_overlay_get_eightway_state(
  * @desc                  : Overlay descriptor handle.
  * @x                     : X coordinate value.
  * @y                     : Y coordinate value.
+ * @use_range_mod         : Set true to use range_mod hitbox
  *
  * Check whether the given @x and @y coordinates of the overlay
  * descriptor @desc is inside the overlay descriptor's hitbox.
@@ -1985,22 +1986,36 @@ static INLINE void input_overlay_get_eightway_state(
  * Returns: true (1) if X, Y coordinates are inside a hitbox,
  * otherwise false (0).
  **/
-static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc, float x, float y)
+static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
+      float x, float y, bool use_range_mod)
 {
+   float range_x, range_y;
+
+   if (use_range_mod)
+   {
+      range_x = desc->range_x_mod;
+      range_y = desc->range_y_mod;
+   }
+   else
+   {
+      range_x = desc->range_x_hitbox;
+      range_y = desc->range_y_hitbox;
+   }
+
    switch (desc->hitbox)
    {
       case OVERLAY_HITBOX_RADIAL:
       {
          /* Ellipse. */
-         float x_dist  = (x - desc->x_hitbox) / desc->range_x_mod;
-         float y_dist  = (y - desc->y_hitbox) / desc->range_y_mod;
+         float x_dist  = (x - desc->x_hitbox) / range_x;
+         float y_dist  = (y - desc->y_hitbox) / range_y;
          float sq_dist = x_dist * x_dist + y_dist * y_dist;
          return (sq_dist <= 1.0f);
       }
       case OVERLAY_HITBOX_RECT:
          return
-               (fabs(x - desc->x_hitbox) <= desc->range_x_mod)
-            && (fabs(y - desc->y_hitbox) <= desc->range_y_mod);
+               (fabs(x - desc->x_hitbox) <= range_x)
+            && (fabs(y - desc->y_hitbox) <= range_y);
       case OVERLAY_HITBOX_NONE:
          break;
    }
@@ -2010,23 +2025,26 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc, 
 /**
  * input_overlay_poll:
  * @out                   : Polled output data.
- * @ptr_idx               : Input pointer index.
+ * @touch_idx             : Touch pointer index.
  * @norm_x                : Normalized X coordinate.
  * @norm_y                : Normalized Y coordinate.
+ * @touch_scale           : Overlay scale.
  *
- * Polls input overlay.
+ * Polls input overlay for a single touch pointer.
  *
  * @norm_x and @norm_y are the result of
- * input_translate_coord_viewport().
+ * video_driver_translate_coord_viewport().
  **/
 static void input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      unsigned ptr_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
+      int touch_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
 {
    size_t i, j;
    struct overlay_desc *descs = ol->active->descs;
    unsigned int highest_prio  = 0;
+   int old_touch_idx          = input_driver_st.old_touch_index_lut[touch_idx];
+   bool use_range_mod;
 
    /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
     * like RETRO_DEVICE_POINTER. */
@@ -2048,13 +2066,17 @@ static void input_overlay_poll(
       unsigned int desc_prio    = 0;
       struct overlay_desc *desc = &descs[i];
 
-      if (!desc || !input_overlay_coords_inside_hitbox(desc, x, y))
+      /* Use range_mod if this touch pointer contributed
+       * to desc's touch_mask in the previous poll */
+      use_range_mod = (old_touch_idx != -1)
+            && BIT32_GET(desc->old_touch_mask, old_touch_idx);
+
+      if (!input_overlay_coords_inside_hitbox(desc, x, y, use_range_mod))
          continue;
 
       /* Check for exclusive hitbox, which blocks other input.
        * range_mod_exclusive has priority over exclusive. */
-      if ((desc->flags & OVERLAY_DESC_RANGE_MOD_EXCLUSIVE)
-            && desc->range_x_mod != desc->range_x_hitbox)
+      if (use_range_mod && (desc->flags & OVERLAY_DESC_RANGE_MOD_EXCLUSIVE))
          desc_prio = 2;
       else if (desc->flags & OVERLAY_DESC_EXCLUSIVE)
          desc_prio = 1;
@@ -2067,10 +2089,10 @@ static void input_overlay_poll(
          highest_prio = desc_prio;
          memset(out, 0, sizeof(*out));
          for (j = 0; j < i; j++)
-            BIT16_CLEAR(descs[j].updated, ptr_idx);
+            BIT32_CLEAR(descs[j].touch_mask, touch_idx);
       }
 
-      BIT16_SET(desc->updated, ptr_idx);
+      BIT32_SET(desc->touch_mask, touch_idx);
       x_dist = x - desc->x_shift;
       y_dist = y - desc->y_shift;
 
@@ -2150,8 +2172,7 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
  * input_overlay_post_poll:
  *
  * Called after all the input_overlay_poll() calls to
- * update the range modifiers for pressed/unpressed regions
- * and alpha mods.
+ * update alpha mods for pressed/unpressed controls
  **/
 static void input_overlay_post_poll(
       enum overlay_visibility *visibility,
@@ -2166,25 +2187,16 @@ static void input_overlay_post_poll(
    {
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      desc->range_x_mod = desc->range_x_hitbox;
-      desc->range_y_mod = desc->range_y_hitbox;
-
-      if (desc->updated != 0)
-      {
-         /* If pressed this frame, change the hitbox. */
-         desc->range_x_mod *= desc->range_mod;
-         desc->range_y_mod *= desc->range_mod;
-
-         if (show_input && desc->image.pixels)
-         {
-            if (ol->iface->set_alpha)
-               ol->iface->set_alpha(ol->iface_data, desc->image_index,
-                     desc->alpha_mod * opacity);
-         }
-      }
+      if (     desc->touch_mask != 0
+            && show_input && desc->image.pixels
+            && ol->iface->set_alpha)
+         ol->iface->set_alpha(ol->iface_data, desc->image_index,
+               desc->alpha_mod * opacity);
 
       input_overlay_update_desc_geom(ol, desc);
-      desc->updated = 0;
+
+      desc->old_touch_mask = desc->touch_mask;
+      desc->touch_mask     = 0;
    }
 }
 
@@ -2206,8 +2218,8 @@ static void input_overlay_desc_init_hitbox(struct overlay_desc *desc)
          (desc->range_y * desc->reach_down +
           desc->range_y * desc->reach_up) / 2.0f;
 
-   desc->range_x_mod    = desc->range_x_hitbox;
-   desc->range_y_mod    = desc->range_y_hitbox;
+   desc->range_x_mod    = desc->range_x_hitbox * desc->range_mod;
+   desc->range_y_mod    = desc->range_y_hitbox * desc->range_mod;
 }
 
 /**
@@ -2483,9 +2495,8 @@ static void input_overlay_poll_clear(
    {
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      desc->range_x_mod = desc->range_x_hitbox;
-      desc->range_y_mod = desc->range_y_hitbox;
-      desc->updated     = 0;
+      desc->old_touch_mask      = desc->touch_mask;
+      desc->touch_mask          = 0;
 
       input_overlay_update_desc_geom(ol, desc);
    }
@@ -2652,6 +2663,62 @@ void input_overlay_auto_rotate_(
    }
 }
 
+/**
+ * input_overlay_track_touch_inputs
+ * @state : Overlay input state for this poll
+ * @old_state : Overlay input state for previous poll
+ *
+ * Matches current touch inputs to previous poll's, based on distance.
+ * Updates old_touch_index_lut and assigns -1 to any new inputs.
+ */
+static void input_overlay_track_touch_inputs(
+      input_overlay_state_t *state, input_overlay_state_t *old_state)
+{
+   int *const old_index_lut = input_driver_st.old_touch_index_lut;
+   int i, j, t, new_idx;
+   float x_dist, y_dist, sq_dist, outlier;
+   float min_sq_dist[OVERLAY_MAX_TOUCH];
+
+   memset(old_index_lut, -1, sizeof(int) * OVERLAY_MAX_TOUCH);
+
+   /* Compute (squared) distances and match new indexes to old */
+   for (i = 0; i < state->touch_count; i++)
+   {
+      min_sq_dist[i] = 1e10f;
+
+      for (j = 0; j < old_state->touch_count; j++)
+      {
+         x_dist  = state->touch[i].x - old_state->touch[j].x;
+         y_dist  = state->touch[i].y - old_state->touch[j].y;
+
+         sq_dist = x_dist * x_dist + y_dist * y_dist;
+
+         if (sq_dist < min_sq_dist[i])
+         {
+            min_sq_dist[i]   = sq_dist;
+            old_index_lut[i] = j;
+         }
+      }
+   }
+
+   /* If touch_count increased, find the outliers and assign -1 */
+   for (t = old_state->touch_count; t < state->touch_count; t++)
+   {
+      new_idx = OVERLAY_MAX_TOUCH - 1;
+      outlier = 0;
+
+      for (i = 0; i < state->touch_count; i++)
+         if (     min_sq_dist[i] > outlier
+               && old_index_lut[i] != -1)
+         {
+            outlier = min_sq_dist[i];
+            new_idx = i;
+         }
+
+      old_index_lut[new_idx] = -1;
+   }
+}
+
 /*
  * input_poll_overlay:
  *
@@ -2681,8 +2748,6 @@ static void input_poll_overlay(
    unsigned input_overlay_show_inputs_port = settings->uints.input_overlay_show_inputs_port;
    float touch_scale                       = (float)settings->uints.input_touch_scale;
    bool osk_state_changed                  = false;
-   unsigned touch_count                    = 0;
-   static unsigned old_touch_count;
 
    if (!ol_state)
       return;
@@ -2711,6 +2776,7 @@ static void input_poll_overlay(
       joypad_info.auto_binds          = NULL;
       joypad_info.axis_threshold      = 0.0f;
 
+      /* Get driver input */
       for (i = 0;
             current_input->input_state(
                input_data,
@@ -2722,11 +2788,11 @@ static void input_poll_overlay(
                0,
                device,
                i,
-               RETRO_DEVICE_ID_POINTER_PRESSED);
+               RETRO_DEVICE_ID_POINTER_PRESSED)
+                  && i < OVERLAY_MAX_TOUCH;
             i++)
       {
-         input_overlay_state_t polled_data;
-         int16_t x = current_input->input_state(
+         ol_state->touch[i].x = current_input->input_state(
                input_data,
                joypad,
                sec_joypad,
@@ -2737,7 +2803,7 @@ static void input_poll_overlay(
                device,
                i,
                RETRO_DEVICE_ID_POINTER_X);
-         int16_t y = current_input->input_state(
+         ol_state->touch[i].y = current_input->input_state(
                input_data,
                joypad,
                sec_joypad,
@@ -2748,11 +2814,21 @@ static void input_poll_overlay(
                device,
                i,
                RETRO_DEVICE_ID_POINTER_Y);
+      }
+      ol_state->touch_count = i;
 
+      /* Update lookup table of new to old touch indexes */
+      input_overlay_track_touch_inputs(ol_state, &old_ol_state);
+
+      /* Poll overlay */
+      for (i = 0; i < ol_state->touch_count; i++)
+      {
+         input_overlay_state_t polled_data;
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
          if (ol->flags & INPUT_OVERLAY_ENABLE)
-            input_overlay_poll(ol, &polled_data, i, x, y, touch_scale);
+            input_overlay_poll(ol, &polled_data, i,
+                  ol_state->touch[i].x, ol_state->touch[i].y, touch_scale);
          else
             ol->flags &= ~INPUT_OVERLAY_BLOCKED;
 
@@ -2769,8 +2845,6 @@ static void input_poll_overlay(
             if (polled_data.analog[j])
                ol_state->analog[j] = polled_data.analog[j];
       }
-
-      touch_count = i;
    }
 
    if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
@@ -2868,7 +2942,7 @@ static void input_poll_overlay(
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
 
-   if (button_pressed || touch_count)
+   if (button_pressed || ol_state->touch_count)
       input_overlay_post_poll(overlay_visibility, ol,
             button_pressed, opacity);
    else
@@ -2878,7 +2952,8 @@ static void input_poll_overlay(
     * unless touch_count decreased. */
    if (     current_input->keypress_vibrate
          && settings->bools.vibrate_on_keypress
-         && touch_count && touch_count >= old_touch_count
+         && ol_state->touch_count
+         && ol_state->touch_count >= old_ol_state.touch_count
          && !(ol->flags & INPUT_OVERLAY_BLOCKED))
    {
       if (     osk_state_changed
@@ -2889,8 +2964,6 @@ static void input_poll_overlay(
          )
          current_input->keypress_vibrate();
    }
-
-   old_touch_count = touch_count;
 }
 #endif
 

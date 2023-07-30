@@ -519,6 +519,9 @@ typedef struct
    enum overlay_visibility *overlay_visibility;
    float overlay_eightway_dpad_slopes[2];
    float overlay_eightway_abxy_slopes[2];
+
+   /* touch pointer indexes from previous poll */
+   int old_touch_index_lut[OVERLAY_MAX_TOUCH];
 #endif
    uint16_t flags;
 #ifdef HAVE_NETWORKGAMEPAD
