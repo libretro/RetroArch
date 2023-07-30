@@ -34,6 +34,8 @@
 
 #define CUSTOM_BINDS_U32_COUNT ((RARCH_CUSTOM_BIND_LIST_END - 1) / 32 + 1)
 
+#define OVERLAY_MAX_TOUCH 16
+
 RETRO_BEGIN_DECLS
 
 enum overlay_hitbox
@@ -223,8 +225,9 @@ struct overlay_desc
 
    char next_index_name[64];
 
-   /* Nonzero if pressed. One bit per input pointer */
-   uint16_t updated;
+   /* Nonzero if pressed. Lower bits used for pointer indexes */
+   uint32_t touch_mask;
+   uint32_t old_touch_mask;
 
    uint8_t flags;
 };
@@ -291,6 +294,14 @@ typedef struct input_overlay_state
    int16_t analog[4];
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons;
+
+   /* Input pointers from input_state */
+   struct
+   {
+      int16_t x;
+      int16_t y;
+   } touch[OVERLAY_MAX_TOUCH];
+   int touch_count;
 } input_overlay_state_t;
 
 struct input_overlay
