@@ -5874,10 +5874,11 @@ static enum runloop_state_enum runloop_check_state(
 #else
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
 #endif
-         bool libretro_running       = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-               && !menu_pause_libretro
-               && runloop_is_inited
-               && (runloop_st->current_core_type != CORE_TYPE_DUMMY);
+         bool libretro_running       =
+                  runloop_is_inited
+               && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+               && (  !menu_pause_libretro
+                  && runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
 
          if (menu)
          {
