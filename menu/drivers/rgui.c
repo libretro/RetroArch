@@ -5954,7 +5954,7 @@ static void rgui_update_menu_viewport(
       else
       {
          delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-         rgui->menu_video_settings.viewport.height = (unsigned)(2.0 * vp.full_height * delta);
+         rgui->menu_video_settings.viewport.height = (unsigned)(2.0f * (float)vp.full_height * delta);
          rgui->menu_video_settings.viewport.width  = vp.full_width;
       }
 #else
@@ -6173,6 +6173,23 @@ static bool rgui_set_aspect_ratio(
                   (5.0f / 3.0f) * (float)rgui->frame_buf.height);
             base_term_width       = RGUI_ROUND_FB_WIDTH(
                   ( 4.0f / 3.0f)  * (float)rgui->frame_buf.height);
+         }
+         break;
+      case RGUI_ASPECT_RATIO_AUTO:
+         {
+            /* Use 4:3 as base, and adjust width according to core geometry */
+            video_driver_state_t *video_st = video_state_get_ptr();
+
+            if (rgui->frame_buf.height == 240)
+               rgui->frame_buf.width = 320;
+            else
+               rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                     (4.0f / 3.0f) * (float)rgui->frame_buf.height);
+            base_term_width = rgui->frame_buf.width;
+
+            if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
+               rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                     rgui->frame_buf.height * video_st->av_info.geometry.aspect_ratio);
          }
          break;
       default:
@@ -7776,6 +7793,10 @@ static void rgui_toggle(void *userdata, bool menu_on)
          rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
          /* Apply menu video settings */
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, false);
+      }
+      else if (rgui->menu_aspect_ratio == RGUI_ASPECT_RATIO_AUTO)
+      {
+         rgui_set_aspect_ratio(rgui, p_disp, false);
       }
    }
    else
