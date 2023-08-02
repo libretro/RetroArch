@@ -427,6 +427,7 @@ typedef struct settings
       char wifi_driver[32];
       char led_driver[32];
       char location_driver[32];
+      char cloud_sync_driver[32];
       char menu_driver[32];
       char cheevos_username[32];
       char cheevos_password[256];
@@ -898,6 +899,10 @@ typedef struct settings
       /* Steam */
       bool steam_rich_presence_enable;
 #endif
+
+      /* Cloud Sync */
+      bool cloud_sync_enable;
+      bool cloud_sync_destructive;
 
       /* Misc. */
       bool discord_enable;

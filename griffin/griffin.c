@@ -1621,3 +1621,11 @@ STEAM INTEGRATION USING MIST
 #ifdef HAVE_PRESENCE
 #include "../network/presence.c"
 #endif
+
+/*============================================================
+CLOUD SYNC
+============================================================ */
+#ifdef HAVE_CLOUDSYNC
+#include "../tasks/task_cloudsync.c"
+#include "../network/cloud_sync_driver.c"
+#endif

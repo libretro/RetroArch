@@ -1490,6 +1490,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("bluetooth_driver",         settings->arrays.bluetooth_driver, false, NULL, true);
    SETTING_ARRAY("wifi_driver",              settings->arrays.wifi_driver,    false, NULL, true);
    SETTING_ARRAY("location_driver",          settings->arrays.location_driver,false, NULL, true);
+   SETTING_ARRAY("cloud_sync_driver",        settings->arrays.cloud_sync_driver, false, NULL, true);
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",              settings->arrays.menu_driver,    false, NULL, true);
 #endif
@@ -1848,6 +1849,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("core_updater_show_experimental_cores", &settings->bools.network_buildbot_show_experimental_cores, true, DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES, false);
    SETTING_BOOL("core_updater_auto_backup",      &settings->bools.core_updater_auto_backup, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP, false);
    SETTING_BOOL("camera_allow",                  &settings->bools.camera_allow, true, false, false);
+   SETTING_BOOL("cloud_sync_enable",             &settings->bools.cloud_sync_enable, true, false, false);
+   SETTING_BOOL("cloud_sync_destructive",        &settings->bools.cloud_sync_destructive, true, false, false);
    SETTING_BOOL("discord_allow",                 &settings->bools.discord_enable, true, false, false);
 #if defined(VITA)
    SETTING_BOOL("input_backtouch_enable",        &settings->bools.input_backtouch_enable, false, DEFAULT_INPUT_BACKTOUCH_ENABLE, false);
