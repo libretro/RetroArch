@@ -1628,4 +1628,5 @@ CLOUD SYNC
 #ifdef HAVE_CLOUDSYNC
 #include "../tasks/task_cloudsync.c"
 #include "../network/cloud_sync_driver.c"
+#include "../network/cloud_sync/webdav.c"
 #endif

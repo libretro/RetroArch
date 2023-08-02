@@ -27,6 +27,7 @@ static cloud_sync_driver_t cloud_sync_null = {
 };
 
 const cloud_sync_driver_t *cloud_sync_drivers[] = {
+   &cloud_sync_webdav,
    &cloud_sync_null,
    NULL
 };

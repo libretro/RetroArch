@@ -33,6 +33,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <string.h>
+#include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
@@ -63,6 +64,7 @@ struct http_socket_state_t
 struct http_t
 {
    char *data;
+   struct string_list *headers;
    struct http_socket_state_t sock_state; /* ptr alignment */
    size_t pos;
    size_t len;
@@ -81,10 +83,11 @@ struct http_connection_t
    char *scan;
    char *methodcopy;
    char *contenttypecopy;
-   char *postdatacopy;
+   void *postdatacopy;
    char *useragentcopy;
    char *headerscopy;
    struct http_socket_state_t sock_state; /* ptr alignment */
+   size_t contentlength;
    int port;
 };
 
@@ -530,7 +533,10 @@ struct http_connection_t *net_http_connection_new(const char *url,
       conn->methodcopy     = strdup(method);
 
    if (data)
+   {
       conn->postdatacopy   = strdup(data);
+      conn->contentlength  = strlen(data);
+   }
 
    if (!(conn->urlcopy = strdup(url)))
       goto error;
@@ -703,6 +709,25 @@ void net_http_connection_set_headers(
    conn->headerscopy = headers ? strdup(headers) : NULL;
 }
 
+void net_http_connection_set_content(
+      struct http_connection_t *conn, const char *content_type,
+      size_t content_length, const void *content)
+
+{
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
+
+   conn->contenttypecopy = content_type ? strdup(content_type) : NULL;
+   conn->contentlength = content_length;
+   if (content_length)
+   {
+      conn->postdatacopy = malloc(content_length);
+      memcpy(conn->postdatacopy, content, content_length);
+   }
+}
+
 const char *net_http_connection_url(struct http_connection_t *conn)
 {
    return conn->urlcopy;
@@ -767,8 +792,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (conn->headerscopy)
       net_http_send_str(&conn->sock_state, &error, conn->headerscopy,
             strlen(conn->headerscopy));
-   /* This is not being set anywhere yet */
-   else if (conn->contenttypecopy)
+   if (conn->contenttypecopy)
    {
       net_http_send_str(&conn->sock_state, &error, "Content-Type: ",
             STRLEN_CONST("Content-Type: "));
@@ -778,12 +802,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
             STRLEN_CONST("\r\n"));
    }
 
-   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
+   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST") || string_is_equal(conn->methodcopy, "PUT")))
    {
       size_t post_len, len;
       char *len_str        = NULL;
 
-      if (!conn->postdatacopy)
+      if (!conn->postdatacopy && !string_is_equal(conn->methodcopy, "PUT"))
          goto err;
 
       if (!conn->headerscopy)
@@ -799,7 +823,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       net_http_send_str(&conn->sock_state, &error, "Content-Length: ",
             STRLEN_CONST("Content-Length: "));
 
-      post_len = strlen(conn->postdatacopy);
+      post_len = conn->contentlength;
 #ifdef _WIN32
       len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
@@ -836,9 +860,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    net_http_send_str(&conn->sock_state, &error, "\r\n",
          STRLEN_CONST("\r\n"));
 
-   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
+   if (conn->postdatacopy && conn->contentlength)
       net_http_send_str(&conn->sock_state, &error, conn->postdatacopy,
-            strlen(conn->postdatacopy));
+            conn->contentlength);
 
    if (!error)
    {
@@ -854,7 +878,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       state->buflen        = 512;
 
       if ((state->data = (char*)malloc(state->buflen)))
-         return state;
+      {
+         if ((state->headers = string_list_new()) &&
+             string_list_initialize(state->headers))
+            return state;
+         string_list_free(state->headers);
+      }
       free(state);
    }
 
@@ -865,6 +894,8 @@ err:
          free(conn->methodcopy);
       if (conn->contenttypecopy)
          free(conn->contenttypecopy);
+      if (conn->postdatacopy)
+         free(conn->postdatacopy);
       conn->methodcopy           = NULL;
       conn->contenttypecopy      = NULL;
       conn->postdatacopy         = NULL;
@@ -981,12 +1012,24 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
                if (string_is_equal_case_insensitive(state->data, "Transfer-Encoding: chunked"))
                   state->bodytype = T_CHUNK;
 
-               /* TODO: save headers somewhere */
                if (state->data[0]=='\0')
                {
-                  state->part = P_BODY;
-                  if (state->bodytype == T_CHUNK)
-                     state->part = P_BODY_CHUNKLEN;
+                  if (state->status == 100)
+                  {
+                     state->part = P_HEADER_TOP;
+                  }
+                  else
+                  {
+                     state->part = P_BODY;
+                     if (state->bodytype == T_CHUNK)
+                        state->part = P_BODY_CHUNKLEN;
+                  }
+               }
+               else
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  string_list_append(state->headers, state->data, attr);
                }
             }
 
@@ -1007,7 +1050,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          {
             if (state->error)
                newlen = -1;
-            else
+            else if (state->len)
             {
 #ifdef HAVE_SSL
                if (state->sock_state.ssl && state->sock_state.ssl_ctx)
@@ -1156,6 +1199,26 @@ int net_http_status(struct http_t *state)
    if (!state)
       return -1;
    return state->status;
+}
+
+/**
+ * net_http_headers:
+ *
+ * Leaf function.
+ *
+ * @return the response headers. The returned buffer is owned by the
+ * caller of net_http_new; it is not freed by net_http_delete().
+ * If the status is not 20x and accept_error is false, it returns NULL.
+ **/
+struct string_list *net_http_headers(struct http_t *state)
+{
+   if (!state)
+      return NULL;
+
+   if (state->error)
+      return NULL;
+
+   return state->headers;
 }
 
 /**

@@ -461,6 +461,10 @@ typedef struct settings
 
       char translation_service_url[2048];
 
+      char webdav_url[255];
+      char webdav_username[255];
+      char webdav_password[255];
+
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
       char facebook_stream_key[PATH_MAX_LENGTH];
