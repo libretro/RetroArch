@@ -94,6 +94,7 @@ RetroArch has been ported to the following platforms:
    - PlayStation Portable
    - PlayStation Vita
    - Raspberry Pi
+   - ReactOS
    - RetroFW
    - RS90
    - SerenityOS
