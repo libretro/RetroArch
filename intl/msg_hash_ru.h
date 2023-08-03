@@ -1137,6 +1137,10 @@ MSG_HASH(
    "Аудио"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Настройки ввода/вывода звука."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Ввод"
    )
@@ -1601,6 +1605,26 @@ MSG_HASH(
    "Драйвер Jack Audio Connection Kit."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Микрофон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Используемый драйвер микрофона."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Ресемплер микрофона"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Используемый драйвер ресемплера микрофона."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Фреймов в аудиоблоке микрофона"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1899,6 +1923,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Выберите подходящую настройку площадки строчного гасящего импульса для изменения размеров изображения."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Меню высокого разрешения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -2428,6 +2456,14 @@ MSG_HASH(
    "Настройка параметров вывода звука."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Микрофон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Настройки ввода звука."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2488,6 +2524,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Автоматически заглушать звук при ускоренной перемотке."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Ускорять при перемотке вперёд"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Ускорять звук при перемотке вперёд. Предотвращает треск, но изменяет высоту звука."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2600,8 +2644,24 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Микрофон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Включить ввод звука в поддерживаемых ядрах. Не повышает нагрузку, если ядро не использует микрофон."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Устройство"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Изменить стандартное устройство ввода, используемое драйвером микрофона. Зависит от драйвера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Изменить стандартное устройство ввода, используемое драйвером микрофона. Зависит от драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -14236,7 +14296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "Блокировка фреймов"
+   "Фреймов в блоке"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,

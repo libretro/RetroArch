@@ -3091,6 +3091,10 @@ MSG_HASH(
    "Turbó mód"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "A turbó tűz beállítása. \nMegjegyzés: a turbó funkcióhoz be kell állítani egy turbó gombot a megfelelő csatlakozó kezelőszerveinél."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Tapintható visszajelzés / rezgés"
    )
@@ -3111,8 +3115,32 @@ MSG_HASH(
    "Gyorsbillentyűk"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "A gyorsbillentyűk kiosztása és beállításai, például a játék közbeni menü előhívásához."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "RetroPad párosítások"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "A virtuális RetroPad leképezése a fizikai bemeneti eszközre. Ha a bemeneti eszköz felismerése és automatikus beállítása sikeres, vélhetően nincs szükség itt módosításra. \nFigyelem: magspecifikus beállításokhoz a gyorsmenü Irányítás almenüje használható e helyett."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "A Libretro rendszer egy RetroPad nevű virtuális gamepadet használ a frontend (RetroArch) és a magok közti kommunikációhoz. Ebben a menüben lehet meghatározni, hogy melyik virtuális RetroPad melyik fizikai bemeneti eszközhöz tartozik, és melyik bemeneti csatlakozóhoz van rendelve. Ha a fizikai bemeneti eszköz felismerése és automatikus beállítása sikeres, itt vélhetően nincs szükség módosításra, magspecifikus beállításokhoz pedig e helyett a Gyorsmenü Irányítás a[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "%u. csatlakozó kezelőszervei"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "A virtuális RetroPad és a fizikai bemeneti eszköz leképezése ennél a csatlakozónál."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Magspecifikus bemeneti hozzárendelések."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -4931,6 +4959,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "A billentyűzet rátét eredeti képarányának alkalmazása. Kikapcsolva a képernyőhöz igazodik."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Billentyűzet rátét átlátszatlansága"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "A billentyűzet rátét összes elemének átlátszatlansága."
    )
 
 /* Settings > On-Screen Display > Video Layout */
