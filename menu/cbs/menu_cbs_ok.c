@@ -366,6 +366,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST;
       case ACTION_OK_DL_SAVING_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST;
+      case ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST;
       case ACTION_OK_DL_LOGGING_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST;
       case ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST:
@@ -1672,6 +1674,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST:
       case ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST:
       case ACTION_OK_DL_SAVING_SETTINGS_LIST:
+      case ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST:
       case ACTION_OK_DL_LOGGING_SETTINGS_LIST:
       case ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST:
       case ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST:
@@ -5924,6 +5927,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_parent_directory_push, ACTION_OK_DL_PARE
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_PUSH)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATIONS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cloud_sync_list, ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_kick_list, ACTION_OK_DL_NETPLAY_KICK_LIST)
@@ -8568,6 +8572,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SUBSYSTEM_LOAD,                      action_ok_subsystem_add_load},
          {MENU_ENUM_LABEL_CONFIGURATIONS,                      action_ok_configurations_list},
          {MENU_ENUM_LABEL_SAVING_SETTINGS,                     action_ok_saving_list},
+         {MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,                 action_ok_cloud_sync_list},
          {MENU_ENUM_LABEL_LOGGING_SETTINGS,                    action_ok_logging_list},
          {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,             action_ok_frame_throttle_list},
          {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,         action_ok_frame_time_counter_list},

@@ -1410,6 +1410,10 @@ MSG_HASH(
    "deferred_saving_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
+   "deferred_cloud_sync_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
    "deferred_thumbnails_updater_list"
    )
@@ -3482,6 +3486,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
    "saving_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
+   "cloud_sync_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,
+   "cloud_sync_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "cloud_sync_destructive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
+   "cloud_sync_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_URL,
+   "cloud_sync_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,
+   "cloud_sync_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,
+   "cloud_sync_password"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_DIRECTORY,

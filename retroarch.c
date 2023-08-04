@@ -1621,6 +1621,17 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
+      case STRING_LIST_CLOUD_SYNC_DRIVERS:
+#ifdef HAVE_CLOUDSYNC
+         for (i = 0; cloud_sync_drivers[i]; i++)
+         {
+            const char *opt  = cloud_sync_drivers[i]->ident;
+            *len            += STRLEN_CONST(cloud_sync_drivers[i]->ident) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+#endif
+         break;
 #ifdef HAVE_LAKKA
       case STRING_LIST_TIMEZONES:
          {
