@@ -164,6 +164,9 @@
 #ifdef HAVE_WIFI
 #include "network/wifi_driver.h"
 #endif
+#ifdef HAVE_CLOUDSYNC
+#include "network/cloud_sync_driver.h"
+#endif
 #endif
 
 #ifdef HAVE_THREADS
@@ -496,6 +499,18 @@ static const void *find_driver_nonempty(
 
          strlcpy(s, ident, len);
          return wifi_drivers[i];
+      }
+   }
+#endif
+#ifdef HAVE_CLOUDSYNC
+   else if (string_is_equal(label, "cloud_sync_driver"))
+   {
+      if (cloud_sync_drivers[i])
+      {
+         const char *ident = cloud_sync_drivers[i]->ident;
+
+         strlcpy(s, ident, len);
+         return cloud_sync_drivers[i];
       }
    }
 #endif
@@ -1605,6 +1620,17 @@ struct string_list *string_list_new_special(enum string_list_type type,
 
             string_list_append(s, opt, attr);
          }
+         break;
+      case STRING_LIST_CLOUD_SYNC_DRIVERS:
+#ifdef HAVE_CLOUDSYNC
+         for (i = 0; cloud_sync_drivers[i]; i++)
+         {
+            const char *opt  = cloud_sync_drivers[i]->ident;
+            *len            += STRLEN_CONST(cloud_sync_drivers[i]->ident) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+#endif
          break;
 #ifdef HAVE_LAKKA
       case STRING_LIST_TIMEZONES:
@@ -2795,6 +2821,9 @@ bool command_event(enum event_command cmd, void *data)
                      input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
                }
             }
+#endif
+#ifdef HAVE_CLOUDSYNC
+            task_push_cloud_sync();
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             runloop_st->runtime_shader_preset_path[0] = '\0';
@@ -4883,6 +4912,9 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
    ui_companion_driver_init_first();
+#if HAVE_CLOUDSYNC
+   task_push_cloud_sync();
+#endif
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)
    {
@@ -6519,6 +6551,10 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 #ifdef HAVE_WIFI
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
+#endif
+#ifdef HAVE_CLOUDSYNC
+   cloud_sync_find_driver(settings,
+         "cloud sync driver", verbosity_enabled);
 #endif
    location_driver_find_driver(settings,
          "location driver", verbosity_enabled);

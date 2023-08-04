@@ -177,6 +177,7 @@ task_finished:
    {
       size_t len = 0;
       char  *tmp = (char*)net_http_data(http->handle, &len, false);
+      struct string_list *headers = net_http_headers(http->handle);
 
       if (tmp && http->cb)
          http->cb(tmp, len);
@@ -188,16 +189,18 @@ task_finished:
       {
          if (tmp)
             free(tmp);
+         string_list_free(headers);
 
          task_set_error(task,
                strldup("Task cancelled.", sizeof("Task cancelled.")));
       }
       else
       {
-         data         = (http_transfer_data_t*)malloc(sizeof(*data));
-         data->data   = tmp;
-         data->len    = len;
-         data->status = net_http_status(http->handle);
+         data          = (http_transfer_data_t*)malloc(sizeof(*data));
+         data->data    = tmp;
+         data->headers = headers;
+         data->len     = len;
+         data->status  = net_http_status(http->handle);
 
          task_set_data(task, data);
 
@@ -219,6 +222,7 @@ static void task_http_transfer_cleanup(retro_task_t *task)
    http_transfer_data_t* data = (http_transfer_data_t*)task_get_data(task);
    if (data)
    {
+      string_list_free(data->headers);
       if (data->data)
          free(data->data);
       free(data);
@@ -344,6 +348,112 @@ void* task_push_http_transfer(const char *url, bool mute,
             net_http_connection_new(url, "GET", NULL),
             url, mute, type, cb, user_data);
    return NULL;
+}
+
+void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, "OPTIONS", NULL)))
+      return NULL;
+
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+
+   return task_push_http_transfer_generic(conn, url, mute, NULL, cb, user_data);
+}
+
+void* task_push_webdav_mkdir(const char *url, bool mute,
+      const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, "MKCOL", NULL)))
+      return NULL;
+
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+
+   return task_push_http_transfer_generic(conn, url, mute, NULL, cb, user_data);
+}
+
+void* task_push_webdav_put(const char *url,
+      const void *put_data, size_t len, bool mute,
+      const char *headers, retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+   char                      expect[1024];
+   size_t                    _len;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, "PUT", NULL)))
+      return NULL;
+
+   _len = strlcpy(expect, "Expect: 100-continue\r\n", sizeof(expect));
+   if (headers)
+   {
+      strlcpy(expect + _len, headers, sizeof(expect) - _len);
+      net_http_connection_set_headers(conn, expect);
+   }
+
+   if (put_data)
+      net_http_connection_set_content(conn, NULL, len, put_data);
+
+   return task_push_http_transfer_generic(conn, url, mute, NULL, cb, user_data);
+}
+
+void* task_push_webdav_delete(const char *url, bool mute,
+      const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, "DELETE", NULL)))
+      return NULL;
+
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+
+   return task_push_http_transfer_generic(conn, url, mute, NULL, cb, user_data);
+}
+
+void *task_push_webdav_move(const char *url,
+      const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata)
+{
+   struct http_connection_t *conn;
+   char dest_header[PATH_MAX_LENGTH + 512];
+   size_t len;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, "MOVE", NULL)))
+      return NULL;
+
+   len = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
+   len += strlcpy(dest_header + len, dest, sizeof(dest_header) - len);
+   len += strlcpy(dest_header + len, "\r\n", sizeof(dest_header) - len);
+
+   if (headers)
+      strlcpy(dest_header + len, headers, sizeof(dest_header) - len);
+
+   net_http_connection_set_headers(conn, dest_header);
+
+   return task_push_http_transfer_generic(conn, url, mute, NULL, cb, userdata);
 }
 
 void* task_push_http_transfer_file(const char* url, bool mute,

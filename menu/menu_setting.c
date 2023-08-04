@@ -93,6 +93,7 @@
 #endif
 #include "../midi_driver.h"
 #include "../location_driver.h"
+#include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
@@ -275,6 +276,7 @@ enum settings_list_type
    SETTINGS_LIST_CONFIGURATION,
    SETTINGS_LIST_LOGGING,
    SETTINGS_LIST_SAVING,
+   SETTINGS_LIST_CLOUD_SYNC,
    SETTINGS_LIST_REWIND,
    SETTINGS_LIST_CHEAT_DETAILS,
    SETTINGS_LIST_CHEAT_SEARCH,
@@ -2936,8 +2938,8 @@ static void setting_get_string_representation_max_users(rarch_setting_t *setting
       snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
-#ifdef HAVE_CHEEVOS
-static void setting_get_string_representation_cheevos_password(
+#if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
+static void setting_get_string_representation_password(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -11099,10 +11101,128 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
          }
 
+         break;
+      case SETTINGS_LIST_CLOUD_SYNC:
+#ifdef HAVE_CLOUDSYNC
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS),
+               parent_group);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS);
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_enable,
+               MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_destructive,
+               MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->arrays.cloud_sync_driver,
+               sizeof(settings->arrays.cloud_sync_driver),
+               MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+               "null",
+               config_get_cloud_sync_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
+         (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.webdav_url,
+               sizeof(settings->arrays.webdav_url),
+               MENU_ENUM_LABEL_CLOUD_SYNC_URL,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.webdav_username,
+               sizeof(settings->arrays.webdav_username),
+               MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.webdav_password,
+               sizeof(settings->arrays.webdav_password),
+               MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_password;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+#endif
          break;
       case SETTINGS_LIST_FRAME_TIME_COUNTER:
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS), parent_group);
@@ -21994,7 +22114,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_cheevos_password;
+            &setting_get_string_representation_password;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
@@ -22917,6 +23037,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CONFIGURATION,
       SETTINGS_LIST_LOGGING,
       SETTINGS_LIST_SAVING,
+      SETTINGS_LIST_CLOUD_SYNC,
       SETTINGS_LIST_REWIND,
       SETTINGS_LIST_CHEAT_DETAILS,
       SETTINGS_LIST_CHEAT_SEARCH,

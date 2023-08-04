@@ -10142,6 +10142,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,      PARSE_ONLY_BOOL, true},
+#if HAVE_CLOUDSYNC
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,                PARSE_ACTION,    true},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10163,6 +10166,26 @@ unsigned menu_displaylist_build_list(
             {
                if (build_list[i].checked &&
                      MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+      case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,      PARSE_ONLY_BOOL           },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE, PARSE_ONLY_BOOL           },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,      PARSE_ONLY_STRING_OPTIONS },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,         PARSE_ONLY_STRING         },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,    PARSE_ONLY_STRING         },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,    PARSE_ONLY_STRING         },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
@@ -13637,6 +13660,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
 #endif
          case DISPLAYLIST_SAVING_SETTINGS_LIST:
+         case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
          case DISPLAYLIST_DRIVER_SETTINGS_LIST:
          case DISPLAYLIST_LOGGING_SETTINGS_LIST:
          case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
