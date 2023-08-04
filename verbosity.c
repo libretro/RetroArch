@@ -28,7 +28,7 @@
 #if TARGET_IPHONE_SIMULATOR
 #include <stdio.h>
 #else
-#if __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
 #include <os/log.h>
 #else
 #include <asl.h>
@@ -287,13 +287,17 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    OutputDebugStringA(buffer);
 #endif
 #else /* !HAVE_QT && !__WINRT__ */
-#if TARGET_OS_IPHONE
-#if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
-#elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
-   int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
-   char buffer[sz]; /* TODO/FIXME - VLA - C89 backwards compatibility */
-   vsnprintf(buffer, sz, fmt, ap);
+#if TARGET_OS_MAC /* any apple variant: macOS, iOS, tvOS, ... */
+   char buffer[2048];
+   va_list ap_cp;
+   va_copy(ap_cp, ap);
+   vsnprintf(buffer, sizeof(buffer), fmt, ap_cp);
+#if TARGET_OS_OSX /* really OSX, actually a mac */
+   printf("%s %s", tag_v, buffer);
+#elif TARGET_OS_IPHONE /* iOS, tvOS, ... */
+#if TARGET_OS_SIMULATOR
+   fprintf(stderr, "%s %s", tag_v, buffer);
+#elif __IPHONE_OS_VERSION_MIN_REQUIRED >= 100000 || __TV_OS_VERSION_MIN_REQUIRED >= 100000
    os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
    static aslclient asl_client;
@@ -314,6 +318,12 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    asl_free(msg);
 #endif
 #endif
+   if (fp)
+   {
+      fprintf(fp, "%s %s", tag_v, buffer);
+      fflush(fp);
+   }
+#else
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
@@ -327,6 +337,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    mutexUnlock(&g_verbosity->mtx);
 #endif
 
+#endif
 #endif
 #endif
 }
