@@ -1897,7 +1897,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
       d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
             &d3d10->blend_enable);
 
-      blend_desc.SrcBlend  = D3D10_BLEND_ONE;
+      blend_desc.SrcBlend  = D3D10_BLEND_DEST_COLOR;
       blend_desc.DestBlend = D3D10_BLEND_ONE;
       d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
             &d3d10->blend_pipeline);

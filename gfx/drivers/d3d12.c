@@ -2035,7 +2035,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
                D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
          };
 
-         desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_ONE;
+         desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_DEST_COLOR;
          desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
          desc.PrimitiveTopologyType                = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
          desc.InputLayout.pInputElementDescs       = inputElementDesc;
