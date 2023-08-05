@@ -370,7 +370,7 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    } while (count < 3 && *path != '\0');
 
    response = webdav_create_digest_response(method, path);
-   snprintf(nonceCount, sizeof(nonceCount), "%08x", webdav_st->nc);
+   snprintf(nonceCount, sizeof(nonceCount), "%08x", webdav_st->nc++);
 
    len  = strlen("Authorization: Digest ");
    len += strlen("username=\"") + strlen(webdav_st->username) + strlen("\", ");
@@ -593,7 +593,7 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
    {
       *webdav_mkdir_st->last_slash = '\0';
       task_push_webdav_mkdir(webdav_mkdir_st->url, true,
-                             webdav_get_auth_header("MVCOL", webdav_mkdir_st->url),
+                             webdav_get_auth_header("MKCOL", webdav_mkdir_st->url),
                              webdav_mkdir_cb, webdav_mkdir_st);
    }
    else
