@@ -5124,8 +5124,8 @@ static void xmb_draw_bg(
 
       if (dispctx->draw)
          dispctx->draw(&draw, userdata, video_width, video_height);
-#endif
    }
+#endif
 
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
