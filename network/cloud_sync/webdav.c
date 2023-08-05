@@ -152,7 +152,7 @@ static bool webdav_create_digest_auth(char *digest)
 {
    webdav_state_t *webdav_st = webdav_state_get_ptr();
    settings_t     *settings  = config_get_ptr();
-   char           *ptr       = digest + strlen("WWW-Authenticate: Digest ");
+   char           *ptr       = digest + STRLEN_CONST("WWW-Authenticate: Digest ");
    char           *end       = ptr + strlen(ptr);
    size_t          sz;
 
@@ -174,7 +174,7 @@ static bool webdav_create_digest_auth(char *digest)
 
       if (string_starts_with(ptr, "realm=\""))
       {
-         ptr += strlen("realm=\"");
+         ptr += STRLEN_CONST("realm=\"");
          sz = strchr(ptr, '"') + 1 - ptr;
          webdav_st->realm = malloc(sz);
          strlcpy(webdav_st->realm, ptr, sz);
@@ -185,7 +185,7 @@ static bool webdav_create_digest_auth(char *digest)
       else if (string_starts_with(ptr, "qop=\""))
       {
          char *tail;
-         ptr += strlen("qop=\"");
+         ptr += STRLEN_CONST("qop=\"");
          tail = strchr(ptr, '"');
          while (ptr < tail)
          {
@@ -208,7 +208,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "nonce=\""))
       {
-         ptr += strlen("nonce=\"");
+         ptr += STRLEN_CONST("nonce=\"");
          sz = strchr(ptr, '"') + 1 - ptr;
          webdav_st->nonce = malloc(sz);
          strlcpy(webdav_st->nonce, ptr, sz);
@@ -216,7 +216,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "algorithm="))
       {
-         ptr += strlen("algorithm=");
+         ptr += STRLEN_CONST("algorithm=");
          sz = strchr(ptr, ',') + 1 - ptr;
          webdav_st->algo = malloc(sz);
          strlcpy(webdav_st->algo, ptr, sz);
@@ -224,7 +224,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "opaque=\""))
       {
-         ptr += strlen("opaque=\"");
+         ptr += STRLEN_CONST("opaque=\"");
          sz = strchr(ptr, '"') + 1 - ptr;
          webdav_st->opaque = malloc(sz);
          strlcpy(webdav_st->opaque, ptr, sz);
@@ -334,7 +334,7 @@ static char *webdav_create_digest_response(const char *method, const char *path)
       MD5_Update(&md5, ":", 1);
       MD5_Update(&md5, webdav_st->cnonce, strlen(webdav_st->cnonce));
       MD5_Update(&md5, ":", 1);
-      MD5_Update(&md5, "auth", strlen("auth"));
+      MD5_Update(&md5, "auth", STRLEN_CONST("auth"));
    }
    MD5_Update(&md5, ":", 1);
    MD5_Update(&md5, ha2, 32);
@@ -372,18 +372,18 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    response = webdav_create_digest_response(method, path);
    snprintf(nonceCount, sizeof(nonceCount), "%08x", webdav_st->nc++);
 
-   len  = strlen("Authorization: Digest ");
-   len += strlen("username=\"") + strlen(webdav_st->username) + strlen("\", ");
-   len += strlen("realm=\"") + strlen(webdav_st->realm) + strlen("\", ");
-   len += strlen("nonce=\"") + strlen(webdav_st->nonce) + strlen("\", ");
-   len += strlen("uri=\"") + strlen(path) + strlen("\", ");
-   len += strlen("nc=\"") + strlen(nonceCount) + strlen("\", ");
-   len += strlen("cnonce=\"") + strlen(webdav_st->cnonce) + strlen("\", ");
+   len  = STRLEN_CONST("Authorization: Digest ");
+   len += STRLEN_CONST("username=\"") + strlen(webdav_st->username) + STRLEN_CONST("\", ");
+   len += STRLEN_CONST("realm=\"") + strlen(webdav_st->realm) + STRLEN_CONST("\", ");
+   len += STRLEN_CONST("nonce=\"") + strlen(webdav_st->nonce) + STRLEN_CONST("\", ");
+   len += STRLEN_CONST("uri=\"") + strlen(path) + STRLEN_CONST("\", ");
+   len += STRLEN_CONST("nc=\"") + strlen(nonceCount) + STRLEN_CONST("\", ");
+   len += STRLEN_CONST("cnonce=\"") + strlen(webdav_st->cnonce) + STRLEN_CONST("\", ");
    if (webdav_st->qop_auth)
-      len += strlen("qop=\"auth\", ");
+      len += STRLEN_CONST("qop=\"auth\", ");
    if (webdav_st->opaque)
-      len += strlen("opaque=\"") + strlen(webdav_st->opaque) + strlen("\", ");
-   len += strlen("response=\"") + strlen(response) + strlen("\"\r\n");
+      len += STRLEN_CONST("opaque=\"") + strlen(webdav_st->opaque) + STRLEN_CONST("\", ");
+   len += STRLEN_CONST("response=\"") + strlen(response) + STRLEN_CONST("\"\r\n");
    len += 1;
 
    total = len;
