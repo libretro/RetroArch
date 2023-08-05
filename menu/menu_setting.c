@@ -17597,7 +17597,7 @@ static bool setting_append_list(
                   sizeof(settings->paths.path_menu_xmb_font),
                   MENU_ENUM_LABEL_XMB_FONT,
                   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-                  "",
+                  settings->paths.directory_assets,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -17664,6 +17664,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_xmb_layout;
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
@@ -17681,6 +17682,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_xmb_icon_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_ICON_THEME_LAST - 1, 1, true, true);
