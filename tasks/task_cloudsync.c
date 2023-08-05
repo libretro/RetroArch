@@ -426,25 +426,31 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
 
    sync_state->waiting = false;
 
-   task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, true);
-   /* no need to mark need_manifest_uploaded, nothing changed */
-
-   if (!success)
-   {
-      /* on failure, don't add it to local manifest, that will cause a fetch again next time */
-      RARCH_WARN(CSPFX "failed to fetch %s\n", path);
-      sync_state->failures = true;
-      return;
-   }
-
-   if (file)
+   if (success && file)
    {
       hash = task_cloud_sync_md5_rfile(file);
       filestream_close(file);
       RARCH_LOG(CSPFX "successfully fetched %s\n", path);
+      task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, true);
+      task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, false);
+      /* no need to mark need_manifest_uploaded, nothing changed */
    }
-
-   task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, false);
+   else
+   {
+      /* on failure, don't add it to local manifest, that will cause a fetch again next time */
+      size_t idx;
+      if (file_list_search(sync_state->server_manifest, path, &idx))
+      {
+         struct item_file *server_file = &sync_state->server_manifest->list[idx];
+         task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(server_file), true);
+      }
+      if (!success)
+         RARCH_WARN(CSPFX "failed to fetch %s\n", path);
+      else
+         RARCH_WARN(CSPFX "failed to write file from server: %s\n", path);
+      sync_state->failures = true;
+      return;
+   }
 }
 
 static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state)
@@ -453,6 +459,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char       *key = CS_FILE_KEY(server_file);
    const char       *path = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
+   const char        directory[PATH_MAX_LENGTH];
    settings_t       *settings = config_get_ptr();
 
    RARCH_LOG(CSPFX "fetching %s\n", key);
@@ -477,6 +484,8 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
          task_cloud_sync_backup_file(&sync_state->current_manifest->list[idx]);
    }
 
+   fill_pathname_basedir(directory, filename, sizeof(directory));
+   path_mkdir(directory);
    if (cloud_sync_read(key, filename, task_cloud_sync_fetch_cb, sync_state))
       sync_state->waiting = true;
    else
@@ -563,8 +572,12 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
    if (!cloud_sync_update(path, file, task_cloud_sync_upload_cb, sync_state))
    {
       /* if the upload fails, try to resurrect the hash from the last sync */
-      struct item_file *local_file = &sync_state->local_manifest->list[sync_state->local_idx];
-      task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(local_file), false);
+      size_t idx;
+      if (file_list_search(sync_state->local_manifest, path, &idx))
+      {
+         struct item_file *local_file = &sync_state->local_manifest->list[idx];
+         task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(local_file), false);
+      }
       filestream_close(file);
       sync_state->waiting = false;
       sync_state->failures = true;
