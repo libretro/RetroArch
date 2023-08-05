@@ -1005,6 +1005,14 @@ MSG_HASH(
    "تنظیمات ذخیره کردن را تغییر دهید."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "نام کاربری"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "گذرواژه"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "ثبت گزارش‌ها"
    )

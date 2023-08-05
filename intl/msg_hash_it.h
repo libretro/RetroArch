@@ -1149,6 +1149,10 @@ MSG_HASH(
    "Modifica le impostazioni per i salvataggi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Nome utente"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Registro log"
    )
