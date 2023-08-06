@@ -42,7 +42,7 @@
 #include "webhooks.h"
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 
-static void end_webhook_http_request
+static void wrp_end_http_request
 (
   richpresence_async_io_request* request
 )
@@ -63,7 +63,7 @@ static void end_webhook_http_request
   //free(request);
 }
 
-static void handle_webhook_http_callback
+static void wrp_handle_http_callback
 (
   retro_task_t* task,
   void* task_data,
@@ -145,10 +145,10 @@ static void handle_webhook_http_callback
     CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
   }
 
-  end_webhook_http_request(request);
+  wrp_end_http_request(request);
 }
 
-static void begin_webhook_http_request
+static void wrp_begin_http_request
 (
   richpresence_async_io_request* request
 )
@@ -160,12 +160,12 @@ static void begin_webhook_http_request
     true,
     "POST",
     request->headers,
-    handle_webhook_http_callback,
+    wrp_handle_http_callback,
     request
   );
 }
 
-static void prepare_http_request
+static void wrp_prepare_http_request
 (
   richpresence_async_io_request* request
 )
@@ -189,17 +189,17 @@ static void prepare_http_request
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
-static void async_send_presence
+static void wrp_send_presence
 (
   richpresence_async_io_request* request
 )
 {
-  prepare_http_request(request);
+  wrp_prepare_http_request(request);
 
-  begin_webhook_http_request(request);
+  wrp_begin_http_request(request);
 }
 
-void update_presence()
+void wrp_update_presence()
 {
   richpresence_async_io_request *request = (richpresence_async_io_request*) calloc(1, sizeof(richpresence_async_io_request));
 
@@ -242,5 +242,5 @@ void update_presence()
   request->headers = headers;
   request->failure_message = "Error sending webhook data";
 
-  async_send_presence(request);
+  wrp_send_presence(request);
 }

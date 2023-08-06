@@ -46,7 +46,7 @@
 
 void webhooks_send_presence()
 {
-  update_presence();
+  wrp_update_presence();
 }
 
 void webhooks_send_game_event(int game_id, enum game_event_t game_event)

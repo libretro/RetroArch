@@ -44,6 +44,6 @@ typedef struct richpresence_async_io_request
    char type;
 } richpresence_async_io_request;
 
-void update_presence();
+void wrp_update_presence();
 
 #endif /* __WEBHOOKS_RICH_PRESENCE_H */

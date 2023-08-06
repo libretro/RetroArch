@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RETRO_ARCH_WEBHOOK_OAUTH_H
-#define RETRO_ARCH_WEBHOOK_OAUTH_H
+#ifndef WEBHOOKS_OAUTH_H
+#define WEBHOOKS_OAUTH_H
 
 #include "rc_api_request.h"
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
@@ -23,4 +23,4 @@ void woauth_initiate();
 
 const char* woauth_get_accesstoken();
 
-#endif //RETRO_ARCH_WEBHOOK_OAUTH_H
+#endif //WEBHOOKS_OAUTH_H
