@@ -459,7 +459,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char       *key = CS_FILE_KEY(server_file);
    const char       *path = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
-   const char        directory[PATH_MAX_LENGTH];
+   char              directory[PATH_MAX_LENGTH];
    settings_t       *settings = config_get_ptr();
 
    RARCH_LOG(CSPFX "fetching %s\n", key);
