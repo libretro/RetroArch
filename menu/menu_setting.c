@@ -15643,16 +15643,16 @@ static bool setting_append_list(
                sizeof(settings->paths.path_font),
                MENU_ENUM_LABEL_VIDEO_FONT_PATH,
                MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-               "",
+               settings->paths.directory_assets,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
          MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
-         (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
 
          CONFIG_FLOAT(
                list, list_info,
@@ -17603,10 +17603,11 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
-            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
+            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
+            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,

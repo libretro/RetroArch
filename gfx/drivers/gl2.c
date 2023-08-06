@@ -556,7 +556,7 @@ static void gfx_display_gl2_draw_pipeline(
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         glBlendFunc(GL_ONE, GL_ONE);
+         glBlendFunc(GL_DST_COLOR, GL_ONE);
          break;
       default:
          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

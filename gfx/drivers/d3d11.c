@@ -2512,9 +2512,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
       blend_desc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
       blend_desc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
       blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-      d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
+      d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
+            &d3d11->blend_enable);
 
-      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_DEST_COLOR;
       blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_ONE;
       d3d11->device->lpVtbl->CreateBlendState(d3d11->device, &blend_desc,
             &d3d11->blend_pipeline);

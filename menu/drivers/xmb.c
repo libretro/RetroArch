@@ -690,30 +690,30 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
    };
 
    static float gradient_dark[16]            = {
-      0.1, 0.1, 0.1, 1.00,
-      0.1, 0.1, 0.1, 1.00,
-      0.0, 0.0, 0.0, 1.00,
-      0.0, 0.0, 0.0, 1.00,
+      0.05, 0.05, 0.05, 1.00,
+      0.05, 0.05, 0.05, 1.00,
+      0.05, 0.05, 0.05, 1.00,
+      0.05, 0.05, 0.05, 1.00,
    };
 
    static float gradient_light[16]           = {
-      1.0, 1.0, 1.0, 1.00,
-      1.0, 1.0, 1.0, 1.00,
-      1.0, 1.0, 1.0, 1.00,
-      1.0, 1.0, 1.0, 1.00,
+      0.5, 0.5, 0.5, 1.00,
+      0.5, 0.5, 0.5, 1.00,
+      0.5, 0.5, 0.5, 1.00,
+      0.5, 0.5, 0.5, 1.00,
    };
 
    static float gradient_morning_blue[16]    = {
       221/255.0, 241/255.0, 254/255.0, 1.00,
       135/255.0, 206/255.0, 250/255.0, 1.00,
-      1.0, 1.0, 1.0, 1.00,
+      0.7, 0.7, 0.7, 1.00,
       170/255.0, 200/255.0, 252/255.0, 1.00,
    };
 
    static float gradient_sunbeam[16]         = {
       20/255.0,  13/255.0,  20/255.0, 1.0,
       30/255.0,  72/255.0, 114/255.0, 1.0,
-      1.0, 1.0, 1.0, 1.00,
+      0.7, 0.7, 0.7, 1.00,
       0.1, 0.0, 0.1, 1.00,
    };
 
@@ -5055,109 +5055,78 @@ static void xmb_draw_bg(
    draw.pipeline_id          = 0;
    draw.pipeline_active      = (menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER) ? false : true;
 
+   if (!video_width || !video_height)
+      return;
+
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
-#ifdef HAVE_SHADERPIPELINE
-   if (menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
-         &&
-         (xmb_color_theme != XMB_THEME_WALLPAPER))
+   /* Draw background wallpaper */
+   if (xmb_color_theme == XMB_THEME_WALLPAPER)
    {
-      draw.color = xmb_gradient_ident(xmb_color_theme);
+      if (draw.texture)
+         draw.color          = &coord_white[0];
 
-      if (libretro_running)
-         gfx_display_set_alpha(draw.color, coord_black[3]);
-      else
-         gfx_display_set_alpha(draw.color, coord_white[3]);
+      gfx_display_set_alpha(draw.color, coord_white[3]);
+      gfx_display_draw_bg(p_disp, &draw, userdata, true, menu_wallpaper_opacity);
 
-      /* Draw gradient */
-      draw.texture       = 0;
-      draw.x             = 0;
-      draw.y             = 0;
+      if (dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
+   }
+   /* Draw empty color theme gradient */
+   else
+   {
+      draw.color   = xmb_gradient_ident(xmb_color_theme);
+      draw.texture = 0;
 
-      gfx_display_draw_bg(p_disp, &draw, userdata, false,
-            menu_wallpaper_opacity);
-      if (draw.height > 0 && draw.width > 0)
-         if (dispctx->draw)
-            dispctx->draw(&draw, userdata, video_width, video_height);
+      gfx_display_set_alpha(draw.color, coord_white[3]);
+      gfx_display_draw_bg(p_disp, &draw, userdata, true, alpha);
 
-      draw.pipeline_id = VIDEO_SHADER_MENU_2;
+      if (dispctx && dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
+   }
 
+#ifdef HAVE_SHADERPIPELINE
+   /* Draw pipeline */
+   if (menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER)
+   {
       switch (menu_shader_pipeline)
       {
+         default:
+         case XMB_SHADER_PIPELINE_WALLPAPER:
+            draw.pipeline_id = VIDEO_SHADER_STOCK_BLEND;
+            break;
          case XMB_SHADER_PIPELINE_RIBBON:
-            draw.pipeline_id  = VIDEO_SHADER_MENU;
+            draw.pipeline_id = VIDEO_SHADER_MENU;
+            break;
+         case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
+            draw.pipeline_id = VIDEO_SHADER_MENU_2;
             break;
 #if !defined(VITA)
          case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            draw.pipeline_id  = VIDEO_SHADER_MENU_3;
+            draw.pipeline_id = VIDEO_SHADER_MENU_3;
             break;
          case XMB_SHADER_PIPELINE_SNOW:
-            draw.pipeline_id  = VIDEO_SHADER_MENU_4;
+            draw.pipeline_id = VIDEO_SHADER_MENU_4;
             break;
          case XMB_SHADER_PIPELINE_BOKEH:
-            draw.pipeline_id  = VIDEO_SHADER_MENU_5;
+            draw.pipeline_id = VIDEO_SHADER_MENU_5;
             break;
          case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            draw.pipeline_id  = VIDEO_SHADER_MENU_6;
+            draw.pipeline_id = VIDEO_SHADER_MENU_6;
             break;
 #endif
-         default:
-            break;
       }
 
       if (dispctx->draw_pipeline)
          dispctx->draw_pipeline(&draw, p_disp,
                userdata, video_width, video_height);
-   }
-   else
-#endif
-   {
-      uintptr_t texture           = draw.texture;
 
-      if (xmb_color_theme != XMB_THEME_WALLPAPER)
-         draw.color = xmb_gradient_ident(xmb_color_theme);
-
-      if (libretro_running)
-         gfx_display_set_alpha(draw.color, coord_black[3]);
-      else
-         gfx_display_set_alpha(draw.color, coord_white[3]);
-
-      if (xmb_color_theme != XMB_THEME_WALLPAPER)
-      {
-         /* Draw gradient */
-         draw.texture       = 0;
-         draw.x             = 0;
-         draw.y             = 0;
-
-         gfx_display_draw_bg(p_disp, &draw, userdata, true,
-               menu_wallpaper_opacity);
-         if (draw.height > 0 && draw.width > 0)
-            if (dispctx && dispctx->draw)
-               dispctx->draw(&draw, userdata, video_width, video_height);
-      }
-
-      {
-         bool add_opacity       = false;
-
-         draw.texture           = texture;
-         gfx_display_set_alpha(draw.color, coord_white[3]);
-
-         if (draw.texture)
-            draw.color          = &coord_white[0];
-
-         if (     libretro_running 
-               || xmb_color_theme == XMB_THEME_WALLPAPER)
-            add_opacity         = true;
-
-         gfx_display_draw_bg(p_disp, &draw, userdata,
-               add_opacity, menu_wallpaper_opacity);
-      }
-   }
-
-   if (dispctx->draw)
-      if (draw.height > 0 && draw.width > 0)
+      if (dispctx->draw)
          dispctx->draw(&draw, userdata, video_width, video_height);
+   }
+#endif
+
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
 }
@@ -5767,7 +5736,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb_color_theme,
             menu_wallpaper_opacity,
             libretro_running,
-            xmb->alpha,
+            xmb_alpha_factor / 100,
             xmb->textures.bg,
             xmb_coord_black,
             xmb_coord_white);
@@ -6451,9 +6420,9 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->items_active_alpha       = 1.0;
    xmb->items_passive_alpha      = 0.85;
 
-   xmb->shadow_offset            = 2.0;
-   if (scale_factor < 1)
-      xmb->shadow_offset        *= scale_factor * 1.5;
+   xmb->shadow_offset            = 3.0 * scale_factor;
+   if (xmb->shadow_offset < 1.0)
+      xmb->shadow_offset         = 1.0;
    if (xmb->shadow_offset > 2.0)
       xmb->shadow_offset         = 2.0;
 
@@ -6501,7 +6470,12 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->items_active_alpha       = 1.0;
    xmb->items_passive_alpha      = 0.85;
 
-   xmb->shadow_offset            = 1.0;
+   xmb->shadow_offset            = 3.0 * scale_factor;
+   if (xmb->shadow_offset < 1.0)
+      xmb->shadow_offset         = 1.0;
+   if (xmb->shadow_offset > 2.0)
+      xmb->shadow_offset         = 2.0;
+
    xmb->font_size                = new_font_size;
    xmb->font2_size               = 22.0           * scale_factor;
    xmb->cursor_size              = 64.0;

@@ -2454,7 +2454,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       {
          case 0:
          case 1:
-            blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
             blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
             break;
          default:
