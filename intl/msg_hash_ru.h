@@ -3124,7 +3124,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "Настройка привязок виртуального RetroPad к физическому устройству ввода. Если устройство ввода корректно распознано и преднастроено, использование данного меню не требуется.\nПримечание: для изменения привязок ввода в отдельных ядрах используйте пункт 'Управление' в Быстро[...]"
+   "Настройка привязок виртуального RetroPad к физическому устройству ввода. Если устройство ввода корректно распознано и преднастроено, использование данного меню не требуется. Для изменения привязок ввода отдельных ядер используйте пункт 'Управление' в быстром меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -6207,10 +6207,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Масштаб меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "Изменяет размер элементов пользовательского интерфейса."
    )
@@ -6231,10 +6227,6 @@ MSG_HASH(
    "Настройка видимости фонового изображения."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Непрозрачность меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Настройка видимости стандартного фона меню."
    )
@@ -6248,7 +6240,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Эскиз"
+   "Основной эскиз"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -10004,10 +9996,6 @@ MSG_HASH(
    "Изменять размер и положение элементов меню для оптимального использования места. Отключите, чтобы использовать стандартный макет в два столбца фиксированной ширины."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Линейный фильтр меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Добавляет небольшое размытие в меню для сглаживания пикселей."
    )
@@ -10021,39 +10009,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Формат изображения меню"
+   "Соотношение сторон"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Выбор соотношения сторон меню. Широкоэкранные форматы повышают горизонтальное разрешение интерфейса. Может потребоваться перезагрузка, если включено 'Запрет изменения формата меню'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Запрет изменения формата меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Обеспечивает отображение меню с правильным соотношением сторон. Если выключено, быстрое меню будет растянуто в соответствие с загруженным контентом."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Цветовая тема меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Выбор цветовой темы. Значение 'Пользовательский' позволяет загружать пресеты оформления меню."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Пользовательская тема меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Загрузка темы меню из браузера файлов."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Прозрачность меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10359,7 +10331,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Миниатюра слева"
+   "Дополнительный эскиз"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10406,40 +10378,12 @@ MSG_HASH(
    "Эффект анимации при переходе в подменю."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Непрозрачность меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Шрифт меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Выбрать основной шрифт для меню интерфейса."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Цвет шрифта меню (красный)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Цвет шрифта меню (зелёный)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Цвет шрифта меню (синий)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Макет меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Выбор другого макета для интерфейса XMB."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Тема значков меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10455,31 +10399,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Отрисовка теней"
+   "Эффекты тени"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    "Включить отбрасывание теней для значков, миниатюр и букв. Незначительно влияет на производительность."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Шейдер меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Выбор эффекта анимации фона. В зависимости от установки может существенно нагружать GPU. В случае низкой производительности отключите или выберите менее сложный эффект."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Цветовая тема меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Выберите другую тему цветового градиента."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Вертикальное расположение миниатюр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10672,10 +10604,6 @@ MSG_HASH(
    "Плейлисты будут пересортированы в алфавитном порядке после удаления названий компаний."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Цветовая тема меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Выбор другой цветовой темы."
    )
@@ -10756,7 +10684,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Значки интерфейса"
+   "Эскизы"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10803,16 +10731,8 @@ MSG_HASH(
    "Автоматически перемещать панель навигации в правую часть экрана при использовании ландшафтной ориентации."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Цветовая тема меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "Выберите другую тему цветового градиента."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Анимация переходов в меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

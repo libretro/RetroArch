@@ -2779,12 +2779,8 @@ MSG_HASH(
    "Непразрыстасць фону"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Непразрыстасць меню"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Мініяцюры"
+   "Першасная мініяцяюра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -4364,6 +4360,10 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Суадносіны бакоў"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Эфекты ценю"
    )
@@ -4546,6 +4546,10 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Другарадная мініяцюра"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Дынамічны фон"
    )
@@ -4554,32 +4558,12 @@ MSG_HASH(
    "Гарызантальная анімацыя"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Шрыфт меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Колер шрыфту меню (чырвоны)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Колер шрыфту меню (зялёны)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Колер шрыфту меню (сіні)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Тэма значкоў меню"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    "Значкі пераключальніка"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Колеравая тэма меню"
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Эфекты ценю"
    )
 
 /* XMB: Settings Options */
@@ -4656,10 +4640,6 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Колеравая тэма меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Выбраць іншую колеравую тэму."
    )
@@ -4685,14 +4665,14 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Другая мініяцюра"
+   "Другарадная мініяцюра"
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Значкі меню"
+   "Значкі"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
@@ -4705,14 +4685,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    "Паказваць панэль навігацыі"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Колеравая тэма меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Анімацыя пераходаў меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,

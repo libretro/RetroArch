@@ -6275,10 +6275,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Facteur de mise à l'échelle du menu "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "Mettre à l'échelle les éléments de l'interface utilisateur dans le menu."
    )
@@ -6299,10 +6295,6 @@ MSG_HASH(
    "Modifier l'opacité de l'image d'arrière-plan."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacité du menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Modifie l'opacité de l'arrière-plan du menu par défaut."
    )
@@ -6316,7 +6308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Miniatures"
+   "Miniature principale"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -10092,10 +10084,6 @@ MSG_HASH(
    "Redimensionner et positionner les entrées du menu pour utiliser au mieux l'espace disponible à l'écran. Désactiver cette option pour utiliser une disposition classique à deux colonnes de largeur fixe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Filtre linéaire dans le menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Ajoute un léger flou au menu pour atténuer le contour des pixels bruts."
    )
@@ -10109,39 +10097,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Rapport d'aspect du menu"
+   "Rapport d'aspect"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Sélectionner le rapport d'aspect du menu. Les rapports d'écran large augmentent la résolution horizontale de l'interface de menu. (Peut nécessiter un redémarrage si 'Verrouiller le rapport d'aspect du menu' est désactivé)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Verrouiller le rapport d'aspect du menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "S'assure que le menu est toujours affiché avec le bon rapport d'aspect. Si cette option est désactivée, le menu rapide sera étiré pour correspondre au contenu actuellement chargé."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Selectionner un thème de couleur différent. Choisir 'Personnalisé' permet l'utilisation de fichiers de préréglages de thème du menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Préréglages de thème du menu personnalisés"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Selectionner un fichier de préréglages de thème du menu depuis le navigateur de fichiers."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Transparence du menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10435,7 +10407,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Miniature de gauche"
+   "Miniature secondaire"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10482,40 +10454,12 @@ MSG_HASH(
    "L'animation qui se lance lors de l'ouverture d'un sous-menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Opacité du menu "
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Police du menu "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Sélectionner une police principale différente à utiliser pour le menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Valeur de rouge (Police du menu)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Valeur de vert (Police du menu)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Valeur de bleu (Police du menu)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Mise en page du menu "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Sélectionner une mise en page différente pour l'interface XMB."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Thème d'icônes du menu "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10531,31 +10475,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Afficher les ombres"
+   "Effet d'ombres"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    "Ajouter des ombres portées pour les icônes, les miniatures et les lettres. Cette option aura un impact mineur sur les performances."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Pipeline de shader du menu (fond animé) "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Sélectionner un effet d'arrière-plan animé. Peut être gourmand en processeur graphique selon l'effet. Si les performances ne sont pas satisfaisantes, veuillez le désactiver ou revenir à un effet plus simple."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Sélectionner un autre thème de couleur pour le menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Disposition des miniatures à la verticale"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10760,10 +10692,6 @@ MSG_HASH(
    "Les listes de lecture seront re-triées par ordre alphabétique après avoir supprimé le composant fabricant de leurs noms."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Sélectionner un thème de couleur différent."
    )
@@ -10840,7 +10768,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Icônes du menu"
+   "Par icônes"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10887,16 +10815,8 @@ MSG_HASH(
    "Déplace automatiquement la barre de navigation vers le côté droit de l'écran lors de l'utilisation d'une orientation d'écran en mode paysage."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "Sélectionner un autre thème de couleur pour le menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Animation de transition vers le menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

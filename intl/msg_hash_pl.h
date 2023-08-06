@@ -5491,10 +5491,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Współczynnik skali menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "Skaluj rozmiar elementów interfejsu użytkownika w menu."
    )
@@ -5515,10 +5511,6 @@ MSG_HASH(
    "Modyfikuj przezroczystość obrazu tła."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Przezroczystość menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Modyfikuj przezroczystość tła menu domyślnego."
    )
@@ -5532,7 +5524,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Miniatury"
+   "Pierwsza miniatura"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -9020,10 +9012,6 @@ MSG_HASH(
    "Zmień rozmiar i pozycję wpisów menu, aby jak najlepiej wykorzystać dostępną przestrzeń ekranu. Wyłącz to, aby użyć klasycznego układu dwóch kolumn o stałej szerokości."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Menu filtra liniowego"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Dodaje lekkie rozmycie w menu, aby złagodzić twarde krawędzie pikseli."
    )
@@ -9037,39 +9025,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Współczynnik proporcji menu"
+   "Współczynnik proporcji"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Wybierz współczynnik proporcji menu. Współczynniki panoramiczne zwiększają poziomą rozdzielczość interfejsu menu. (Może wymagać ponownego uruchomienia, jeśli opcja „Zablokuj proporcje menu” jest wyłączona)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Zablokuj współczynnik proporcji menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Gwarantuje, że menu jest zawsze wyświetlane z właściwym współczynnikiem kształtu. Jeśli wyłączone, szybkie menu zostanie rozciągnięte, aby dopasować się do aktualnie załadowanej zawartości."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Motyw koloru menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Wybierz inny motyw koloru. Wybranie opcji „Niestandardowe” umożliwia korzystanie z plików predefiniowanych kompozycji menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Niestandardowe ustawienia motywu menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Wybierz predefiniowany motyw menu z przeglądarki plików."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Przezroczystość menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -9355,7 +9327,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Miniatury po lewej stornie"
+   "Drugorzędna miniatura"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -9402,40 +9374,12 @@ MSG_HASH(
    "Animacja, która wyzwala podczas otwierania podmenu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Menu czynnika alfa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Czcionka menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Wybierz inną główną czcionkę, która ma być używana w menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Kolor czcionki czerwony"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Kolor czcionki zielony"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Kolor czcionki niebieski"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Układ menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Wybierz inny układ interfejsu XMB."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Motyw ikon menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -9451,27 +9395,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Rysuj Cienie"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Potok shadera menu (animowane tło)"
+   "Efekty cienia"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Wybierz animowany efekt tła. Może być intensywnie wykorzystujący GPU w zależności od efektu. Jeśli wydajność jest niezadowalająca, wyłącz to lub powróć do prostszego efektu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Kolor menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Wybierz inny motyw gradientu tła."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Miniatury dyspozycji pionowej"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -9656,10 +9588,6 @@ MSG_HASH(
    "Listy odtwarzania zostaną ponownie posortowane w kolejności alfabetycznej po usunięciu składnika producenta ich nazw."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Kolor menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Wybierz inny motyw koloru."
    )
@@ -9709,7 +9637,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Druga miniatura"
+   "Drugorzędna miniatura"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
@@ -9732,7 +9660,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Ikony menu"
+   "Ikony"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -9779,16 +9707,8 @@ MSG_HASH(
    "Automatycznie przesuń pasek nawigacji na prawą stronę ekranu, gdy używasz orientacji wyświetlania w poziomie."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Kolor menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "Wybierz inny motyw gradientu tła."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Animacja przejścia menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

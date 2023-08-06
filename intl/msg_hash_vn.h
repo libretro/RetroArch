@@ -1710,10 +1710,6 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Thumbnails Danh mục"
-   )
 
 /* Settings > AI Service */
 

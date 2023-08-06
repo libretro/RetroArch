@@ -2030,10 +2030,6 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "تصاویر بندانگشتی"
-   )
 
 /* Settings > AI Service */
 
@@ -2435,6 +2431,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "نسبت تصویر"
+   )
 
 /* RGUI: Settings Options */
 

@@ -6311,10 +6311,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "메뉴 크기 배율"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "메뉴상의 사용자 인터페이스 크기를 조절합니다."
    )
@@ -6335,10 +6331,6 @@ MSG_HASH(
    "배경화면의 투명도를 변경합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "메뉴 투명도"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "기본 메뉴 배경화면의 투명도를 변경합니다."
    )
@@ -6352,7 +6344,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "미리보기"
+   "첫 번째 미리보기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -10096,10 +10088,6 @@ MSG_HASH(
    "메뉴가 화면 영역을 최대한으로 활용하도록 크기를 조절합니다. 이전의 고정폭 레이아웃을 사용하려면 비활성하십시오."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "메뉴 선형 필터"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "메뉴에 약간의 흐림 효과를 추가해서 픽셀 경계를 부드럽게 해줍니다."
    )
@@ -10113,39 +10101,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "메뉴 화면비"
+   "화면비"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "메뉴 화면비를 선택하십시오. 와이드스크린 비율은 메뉴의 수평 해상도를 높여줍니다. (메뉴 화면비율 잠금이 해제돼있을 경우 재시작 필요)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "메뉴 화면비 고정"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "메뉴가 항상 올바른 화면비로 표시되도록 해주비다. 해제하면 빠른 메뉴가 현재 콘텐츠에 맞춰 늘려져서 표시됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "메뉴 색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "컬러 테마를 선택합니다. '사용자' 설정을 선택하면 메뉴 테마 프리셋 파일을 사용할 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "사용자 메뉴 테마 프리셋"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "파일 탐색기에서 테마 프리셋을 선택하십시오."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "반투명 메뉴"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10483,7 +10455,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "왼쪽 미리보기"
+   "두 번째 미리보기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10530,40 +10502,12 @@ MSG_HASH(
    "메뉴를 열때 발생하는 애니메이션입니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "메뉴 알파 요소"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "메뉴 폰트"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "메뉴에 사용할 기본 폰트를 선택합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "메뉴 폰트 빨강"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "메뉴 폰트 초록"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "메뉴 폰트 파랑"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "메뉴 형태"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "XMB 인터페이스의 레이아웃을 선택합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "메뉴 아이콘 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10579,31 +10523,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "그림자 그리기"
+   "그림자 효과"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    "아이콘, 섬네일, 글자 아래에 그림자를 그립니다. 성능에 약간의 영향을 줄 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "메뉴 셰이더 파이프라인"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "애니메이션 배경 효과를 선택합니다. 선택한 효과에 따라 GPU에 부하를 줄 수 있습니다. 성능에 영향을 주는 경우 기능을 끄거나 간단한 효과로 되돌리십시오."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "메뉴 색상 테마"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "배경색 그라데이션 테마를 선택합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "미리보기 수직 배치"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10828,10 +10760,6 @@ MSG_HASH(
    "이름에서 제조사 항목을 삭제한 후 실행목록을 알파벳 순으로 다시 정렬합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "메뉴 테마 색상"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "다른 색깔 테마를 설정해주세요."
    )
@@ -10916,7 +10844,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "메뉴 아이콘"
+   "아이콘"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10963,16 +10891,8 @@ MSG_HASH(
    "화면을 가로로 사용할 경우 내비게이션 바를 오른쪽에 표시합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "메뉴 테마 색상"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "배경색 그라데이션 테마를 선택합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "메뉴 전환 애니메이션"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

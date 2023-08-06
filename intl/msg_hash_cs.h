@@ -6143,10 +6143,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Menu Měřítka Prvků"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "Měřítko velikosti prvků uživatelského rozhraní v nabídce."
    )
@@ -6167,10 +6163,6 @@ MSG_HASH(
    "Upravte neprůhlednost obrázku na pozadí."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Neprůhlednost menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Úprava neprůhlednosti výchozího pozadí menu."
    )
@@ -6184,7 +6176,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Miniatury"
+   "Primární Miniatura"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -9924,10 +9916,6 @@ MSG_HASH(
    "Změňte velikost a umístění položek nabídky, abyste co nejlépe využili dostupné místo na obrazovce. Pokud chcete použít klasické dvousloupcové rozvržení s pevnou šířkou, tuto funkci zakažte."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Lineární Filtr Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Přidá do nabídky mírné rozostření, které zmírní tvrdé okraje pixelů."
    )
@@ -9941,39 +9929,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Poměr Stran Menu"
+   "Poměr Stran"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Vyberte poměr stran nabídky. Širokoúhlý poměr zvyšuje horizontální rozlišení rozhraní nabídky. (Může vyžadovat restart, pokud je funkce 'Zamknout poměr stran nabídky' vypnutá)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Uzamčení Poměru Stran Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Zajišťuje, aby se nabídka vždy zobrazovala se správným poměrem stran. Pokud je vypnuta, rychlá nabídka se roztáhne tak, aby odpovídala aktuálně načtenému obsahu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Barevné Téma Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Vyberte jiný barevný motiv. Výběr možnosti 'Vlastní' umožňuje použití souborů s přednastavenými motivy nabídek."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Vlastní Téma Motivu Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "V prohlížeči souborů vyberte předvolbu motivu nabídky."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Průhlednost Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10239,7 +10211,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Levá Miniatura"
+   "Druhá Miniatura"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10286,40 +10258,12 @@ MSG_HASH(
    "Animace, která se spustí při otevření podnabídky."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Alfa Faktor Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Písmo Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Vyberte jiné hlavní písmo, které má být použito v nabídce."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Barva Písma Menu (Červená)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Barva Písma Menu (Zelená)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Barva Písma Menu (Modrá)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Rozložení Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Vyberte jiné rozložení rozhraní XMB."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Ikona Téma Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10335,7 +10279,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Vykreslovat Stíny"
+   "Efekty Stínů"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -10346,16 +10290,8 @@ MSG_HASH(
    "Vyberte efekt animovaného pozadí. V závislosti na efektu může být náročný na GPU. Pokud je výkon neuspokojivý, vypněte jej nebo se vraťte k jednoduššímu efektu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Barevné Téma Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Vyberte jiný motiv barevného gradientu pozadí."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Vertikální Dispozice Miniatury"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10528,10 +10464,6 @@ MSG_HASH(
    "Playlisty budou po odstranění složky výrobce z jejich názvu seřazeny podle abecedy."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Barevné Téma Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Vyberte Jiný Barevný Motiv."
    )
@@ -10596,7 +10528,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Ikony Menu"
+   "Ikony"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10643,16 +10575,8 @@ MSG_HASH(
    "Automatické přesunutí navigačního panelu na pravou stranu obrazovky při orientaci displeje na šířku."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Barevné Téma Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "Vyberte jiný motiv barevného gradientu pozadí."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Přechodová Animace Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

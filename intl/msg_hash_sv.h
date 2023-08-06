@@ -3787,6 +3787,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Bildförhållande"
+   )
 
 /* RGUI: Settings Options */
 
@@ -3873,10 +3877,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Dynamisk bakgrund"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Menyteckensnitt"
-   )
 
 /* XMB: Settings Options */
 
@@ -3924,7 +3924,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Menyikoner"
+   "Ikoner"
    )
 
 /* MaterialUI: Settings Options */

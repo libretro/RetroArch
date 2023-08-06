@@ -2327,6 +2327,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Størrelsesforhold"
+   )
 
 /* RGUI: Settings Options */
 

@@ -6255,10 +6255,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Menüméret szorzója"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "A felhasználói felület elemeinek méretezése a menüben."
    )
@@ -6279,10 +6275,6 @@ MSG_HASH(
    "A háttérkép átlátszatlansága."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Menü átlátszatlansága"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Az alapértelmezett menüháttér átlátszatlansága."
    )
@@ -6296,7 +6288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Bélyegképek"
+   "Elsődleges bélyegkép"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -10112,10 +10104,6 @@ MSG_HASH(
    "A menübejegyzések átméretezése és mozgatása az elérhető képernyőterület jobb kihasználásának érdekében. Kikapcsolt állapotban a klasszikus fix méretű kétoszlopos elrendezés lép életbe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Lineáris szűrő a menüben"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Enyhe elmosást ad a menühöz a pixelek élének elsimítása érdekében."
    )
@@ -10129,39 +10117,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Menü képaránya"
+   "Képarány"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "A menü képaránya. A széles képernyőhöz használt arányok megnövelik a menüfelület felbontását. (Újraindítást igényelhet, ha a menü képarány rögzítése nincs bekapcsolva.)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Menü képarány rögzítése"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "A menüt mindig a megfelelő képaránnyal jeleníti meg. Kikapcsolva a gyorsmenü a futó tartalomhoz igazodik."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "A menü színösszeállítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Más színösszeállítás választása. Az \"Egyedi\" lehetőségnél külön fájlból lehet betölteni a színösszeállítást."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Egyedi színösszeállítás"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Egyedi színösszeállítás fájl kiválasztása a fájlböngészővel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Menü átlátszósága"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10359,7 +10331,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Bal bélyegkép"
+   "Másodlagos bélyegkép"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10406,40 +10378,12 @@ MSG_HASH(
    "Az almenübe lépéskor lejátszott animáció."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Menü átlátszóság szorzója"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Menü betűtípusa"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Más betűtípus választása a menühöz."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "A menü betűtípusának színe (piros)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "A menü betűtípusának színe (zöld)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "A menü betűtípusának színe (kék)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Menü elrendezése"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Az XMB felület más elrendezése."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "A menü ikontémája"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10455,31 +10399,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Árnyékok megjelenítése"
+   "Árnyék effekt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    "Az ikonok, bélyegképek, és betűk árnyékot vetnek. Kisebb hatása van a teljesítményre."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Shader feldolgozó a menühöz"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Animált effekt a háttérben. Az effekttől függően GPU-igényes lehet, ha a teljesítmény nem megfelelő, ki kell kapcsolni vagy egyszerűbb effektet választani."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "A menü színösszeállítása"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "A háttérben látható színátmenet lecserélése."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Bélyegképek függőleges elrendezése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10604,10 +10536,6 @@ MSG_HASH(
    "A játéklisták a gyártó neve nélküli betűrend szerint lesznek ábécésorrendben."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "A menü színösszeállítása"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "A színösszeállítás lecserélése."
    )
@@ -10625,7 +10553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Második bélyegkép"
+   "Másodlagos bélyegkép"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
@@ -10652,7 +10580,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Ikonok a menüben"
+   "Ikonok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10699,16 +10627,8 @@ MSG_HASH(
    "Fekvő elrendezésű képernyőn a navigációs sáv automatikusan átkerül a képernyő jobb szélére."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "A menü színösszeállítása"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "A háttérben látható színátmenet lecserélése."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Menüátmenet animációja"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

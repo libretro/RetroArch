@@ -3105,15 +3105,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Relació d'aspecte del menú"
+   "Relació d'aspecte"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Selecciona la relació d'aspecte del menú. Una relació panoràmica incrementarà la resolució horitzontal de la interfície del menú (podria caldre reiniciar si l'opció \"Fixar relació d'aspecte del menú\" es troba desactivada)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Fixar relació d'aspecte del menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,

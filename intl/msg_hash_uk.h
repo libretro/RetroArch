@@ -3935,10 +3935,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Коефіцієнт масштабування меню"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
    "Зображення тла"
    )
@@ -3955,10 +3951,6 @@ MSG_HASH(
    "Зміна непрозорості зображення тла."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Прозорість Меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Змінити непрозорість тла меню за замовчуванням."
    )
@@ -3968,7 +3960,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Мініатюри"
+   "Основна мініатюра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -5677,39 +5669,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Співвідношення сторін меню"
+   "Співвідношення сторін"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Виберіть співвідношення сторін меню. Широкоекранні співвідношення збільшують горизонтальну роздільну здатність інтерфейсу меню. (Може знадобитися перезапуск, якщо вимкнено функцію «Зафіксувати співвідношення сторін Меню»)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Зафіксувати співвідношення сторін Меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Запевнює, що меню завжди відображається з правильним співвідношенням сторін. Якщо вимкнено, швидке меню буде розтягнуто для відповідності завантаженому вмісту."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Колірна тема меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Виберіть іншу тему кольору. Вибравши \"Користувацький\", ви можете використовувати файли пресетів теми меню."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Користувацький пресет теми меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Виберіть пресет теми меню з менеджера файлів."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Прозорість Меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -6006,6 +5982,10 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Додаткова мініатюра"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Динамічне тло"
    )
@@ -6026,22 +6006,6 @@ MSG_HASH(
    "Анімація, що запускається при переміщенні вгору або вниз."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Коефіцієнт прозорості меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Шрифт меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Макет меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Тема значків для меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Виберіть іншу тему значків для RetroArch."
    )
@@ -6050,12 +6014,12 @@ MSG_HASH(
    "Використовувати значки замість тексту УВІМК/ВИМК для відображення перемикачів у меню."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-   "Виберіть ефект анімації фону. Може впливати на продуктивність ГП залежно від ефекту. Якщо продуктивність незадовільна, вимкніть це або поверніться до більш простого ефекту."
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Ефект тіні"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Кольорова тема меню"
+   MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+   "Виберіть ефект анімації фону. Може впливати на продуктивність ГП залежно від ефекту. Якщо продуктивність незадовільна, вимкніть це або поверніться до більш простого ефекту."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
@@ -6240,10 +6204,6 @@ MSG_HASH(
    "Нехай ліва бічна панель завжди буде згорнутою."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Кольорова тема меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Виберіть іншу колірну тему."
    )
@@ -6296,7 +6256,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Значки меню"
+   "Значки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
@@ -6311,16 +6271,8 @@ MSG_HASH(
    "Показувати панель навігації"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Кольорова тема меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "Виберіть іншу кольорову тему для фону."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Анімація переходу в меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

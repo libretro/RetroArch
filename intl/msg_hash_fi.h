@@ -5627,10 +5627,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Valikon skaalauskerroin"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "Skaalaa käyttöliittymän valikon elementtien koko."
    )
@@ -5651,10 +5647,6 @@ MSG_HASH(
    "Muokkaa taustakuvan läpinäkyvyyttä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Valikon peittävyys"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Muokkaa valikon oletustaustan peittävyyttä."
    )
@@ -5668,7 +5660,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Esikatselukuvat"
+   "Ensisijainen esikatselukuva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -9244,10 +9236,6 @@ MSG_HASH(
    "Muuta valikon kokoa ja sijaintia niin, että käytettävissä olevaa näytön tilaa voidaan hyödyntää parhaalla mahdollisella tavalla. Poista tämä käytöstä käyttämällä klassista kiinteälevyistä kahden sarakkeen asettelua."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Valikon lineaarinen suodatin"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Lisää hieman sumennusta valikkoon kovien pikselien reunojen pehmentämiseksi."
    )
@@ -9261,39 +9249,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Valikon kuvasuhde"
+   "Kuvasuhde"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Valitse valikon kuvasuhde. Laajakuvan kuvasuhteet lisäävät valikon käyttöliittymän vaakasuoraa resoluutiota. (Voi vaatia uudelleenkäynnistyksen, jos \"Lukitse valikon kuvasuhde\" on pois päältä)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Lukitse valikon kuvasuhde"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Varmistaa, että valikko esitetään aina oikealla kuvasuhteella. Jos tämä ei ole käytössä, pikavalikko venytetään vastaamaan tällä hetkellä ladattua sisältöä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Valikon väriteema"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Valitse eri väriteema. Valitsemalla \"Mukautettu\" valikkoteemojen esiasetustiedostojen käyttö on mahdollista."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Mukautettu valikon teeman esiasetus"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Valitse valikon teeman esiasetus tiedostoselaimesta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Valikon läpinäkyvyys"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -9595,7 +9567,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Vasen esikatselukuva"
+   "Toissijainen esikatselukuva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -9642,40 +9614,12 @@ MSG_HASH(
    "Animaatio, joka näytetään kun avaat alavalikon."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Valikon läpinäkyvyys"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Valikon fontti"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Valitse eri fontti valikossa käytettäväksi."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Valikon fontin väri (punainen)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Valikon fontin väri (vihreä)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Valikon fontin väri (sininen)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Valikon asettelu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Valitse eri asettelu XMB-käyttöliittymälle."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Valikon kuvaketeema"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -9691,31 +9635,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Piirrä varjot"
+   "Varjotehosteet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    "Piirrä varjot kuvakkeille, pikkukuville ja kirjaimille. Tällä on pieni vaikutus suorituskykyyn."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Valikon varjostimen liukuhihna"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Valitse animoitu taustatehoste. Voi olla intensiivinen näytönohjaimelle riippuen tehosteesta. Jos suorituskyky ei ole tyydyttävä, poista joko käytöstä tai palaa yksinkertaisempaan tehosteeseen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Valikon väriteema"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Valitse taustan eri liukuväriteema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Esikatselukuvan pystysuuntainen sijoitus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -9908,10 +9840,6 @@ MSG_HASH(
    "Soittolistat järjestetään uudelleen aakkosjärjestykseen sen jälkeen, kun valmistajan nimi soittolistojen nimistä on poistettu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Valikon väriteema"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Valitse eri väriteema."
    )
@@ -9965,7 +9893,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Toinen esikatselukuva"
+   "Toissijainen esikatselukuva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
@@ -9992,7 +9920,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Valikon kuvakkeet"
+   "Kuvakkeet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10039,16 +9967,8 @@ MSG_HASH(
    "Siirrä navigointipalkki automaattisesti näytön oikealle puolelle, kun käytetään vaakasuuntaista näytön suuntausta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Valikon väriteema"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
    "Valitse taustan eri liukuväriteema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Valikon siirtymän animaatio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

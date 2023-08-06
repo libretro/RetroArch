@@ -4491,10 +4491,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Miniatures"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
    "Recordar selecció al canviar entre seccions"
    )
@@ -6213,15 +6209,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Relació d’aspecte del menú"
+   "Relació d'aspecte"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Seleccioneu la relació d’aspecte del menú. Les relacions de pantalla panoràmica incrementen la resolució horitzontal de la interfície del menú. (Pot caldre reiniciar si l’opció «Bloqueja la relació d’aspecte del menú» està desactivada)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Bloqueja la relació d’aspecte del menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
@@ -6374,10 +6366,6 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Miniatura esquerra"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Tipus de miniatura que es mostrarà a l’esquerra."
    )
@@ -6398,36 +6386,12 @@ MSG_HASH(
    "Activa l’animació horitzontal pel menú. Això afectarà el rendiment."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Factor alfa del menú"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Tipus de lletra del menú"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Seleccioneu un altre tipus de lletra principal pel menú."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Color del text del menú (vermell)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Color del text del menú (verd)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Color del text del menú (blau)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Seleccioneu un tema de degradat de color de fons diferent."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Disposició vertical de les miniatures"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -6628,10 +6592,6 @@ MSG_HASH(
    "Gris clar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Segona miniatura"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    "Substitueix el plafó de metadades per una altra miniatura."
    )
@@ -6646,10 +6606,6 @@ MSG_HASH(
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Icones del menú"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "Mostra icones a l’esquerra de les entrades del menú."
