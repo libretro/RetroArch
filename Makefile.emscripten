@@ -90,6 +90,7 @@ endif
 ifeq ($(HAVE_AL), 1)
    LDFLAGS += -lopenal
    DEFINES += -DHAVE_AL
+   ASYNC = 1
 endif
 
 ifneq ($(PTHREAD), 0)
