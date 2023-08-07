@@ -439,6 +439,16 @@ static char *webdav_get_auth_header(const char *method, const char *url)
    return webdav_st->digest_auth_header;
 }
 
+static void webdav_log_http_failure(const char *path, http_transfer_data_t *data)
+{
+    int i;
+    RARCH_WARN("webdav failed: %s: HTTP %d\n", path, data->status);
+    for (i = 0; data->headers && i < data->headers->size; i++)
+        RARCH_WARN("%s\n", data->headers->elems[i].data);
+    if (data->data)
+        RARCH_WARN("%s\n", data->data);
+}
+
 static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    webdav_state_t       *webdav_st    = webdav_state_get_ptr();
@@ -465,8 +475,13 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
                                   webdav_stat_cb, webdav_cb_st);
             return;
          }
+         else
+            RARCH_WARN("failure creating WWW-Authenticate: Digest header\n");
       }
    }
+
+   if (!success && data)
+       webdav_log_http_failure(webdav_st->url, data);
 
    webdav_cb_st->cb(webdav_cb_st->user_data, NULL, success, NULL);
    free(webdav_cb_st);
@@ -477,6 +492,7 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    settings_t        *settings  = config_get_ptr();
    const char        *url       = settings->arrays.webdav_url;
    webdav_state_t    *webdav_st = webdav_state_get_ptr();
+   size_t             len       = 0;
    const char        *auth_header;
 
    if (string_is_empty(url))
@@ -484,7 +500,9 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 
    // TODO: LOCK?
 
-   strlcpy(webdav_st->url, url, sizeof(webdav_st->url));
+   if (!strstr(url, "://"))
+       len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
+   strlcpy(webdav_st->url + len, url, sizeof(webdav_st->url) - len);
    fill_pathname_slash(webdav_st->url, sizeof(webdav_st->url));
 
    /* url/username/password may have changed, redo auth check */
@@ -529,8 +547,11 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
    success = (data &&
               ((data->status >= 200 && data->status < 300) || data->status == 404));
 
+   if (!success && data)
+       webdav_log_http_failure(webdav_cb_st->path, data);
+
    // TODO: it's possible we get a 401 here and need to redo the auth check with this request
-   if (data && data->data && webdav_cb_st)
+   if (success && data->data && webdav_cb_st)
    {
       // TODO: it would be better if writing to the file happened during the network reads
       file = filestream_open(webdav_cb_st->file,
@@ -582,6 +603,8 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
    // TODO: it's possible we get a 401 here and need to redo the auth check with this request
    if (!data || data->status < 200 || data->status >= 400)
    {
+      if (data)
+         webdav_log_http_failure(webdav_mkdir_st->url, data);
       webdav_mkdir_st->cb(false, webdav_mkdir_st->cb_st);
       free(webdav_mkdir_st);
       return;
@@ -626,6 +649,9 @@ static void webdav_update_cb(retro_task_t *task, void *task_data, void *user_dat
    webdav_cb_state_t    *webdav_cb_st = (webdav_cb_state_t *)user_data;
    http_transfer_data_t *data         = (http_transfer_data_t*)task_data;
    bool                  success      = (data && data->status >= 200 && data->status < 300);
+
+   if (!success && data)
+       webdav_log_http_failure(webdav_cb_st->path, data);
 
    // TODO: it's possible we get a 401 here and need to redo the auth check with this request
    if (webdav_cb_st)
@@ -697,6 +723,9 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data, void *user_dat
    http_transfer_data_t *data         = (http_transfer_data_t*)task_data;
    bool                  success      = (data != NULL && data->status >= 200 && data->status < 300);
 
+   if (!success && data)
+       webdav_log_http_failure(webdav_cb_st->path, data);
+
    // TODO: it's possible we get a 401 here and need to redo the auth check with this request
    if (webdav_cb_st)
    {
@@ -710,6 +739,9 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data, void *user_dat
    webdav_cb_state_t    *webdav_cb_st = (webdav_cb_state_t *)user_data;
    http_transfer_data_t *data         = (http_transfer_data_t*)task_data;
    bool                  success      = (data != NULL && data->status >= 200 && data->status < 300);
+
+   if (!success && data)
+       webdav_log_http_failure(webdav_cb_st->path, data);
 
    // TODO: it's possible we get a 401 here and need to redo the auth check with this request
    if (webdav_cb_st)

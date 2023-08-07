@@ -274,9 +274,33 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
    }
 }
 
+static struct string_list *task_cloud_sync_directory_map(void)
+{
+   static struct string_list *list = NULL;
+   if (!list)
+   {
+      union string_list_elem_attr attr = {0};
+      char  dir[PATH_MAX_LENGTH];
+      list = string_list_new();
+
+      string_list_append(list, "config", attr);
+      fill_pathname_application_special(dir,
+            sizeof(dir), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+      list->elems[list->size - 1].userdata = strdup(dir);
+
+      string_list_append(list, "saves", attr);
+      list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVEFILE));
+
+      string_list_append(list, "states", attr);
+      list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVESTATE));
+   }
+   return list;
+}
+
 static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync_state)
 {
-   char config_dir[PATH_MAX_LENGTH];
+   struct string_list *dirlist = task_cloud_sync_directory_map();
+   int i;
 
    sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t));
    if (!sync_state->current_manifest)
@@ -297,13 +321,9 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
       return;
    }
 
-   fill_pathname_application_special(config_dir,
-         sizeof(config_dir),
-         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-
-   task_cloud_sync_manifest_append_dir(sync_state->current_manifest, config_dir, "config");
-   task_cloud_sync_manifest_append_dir(sync_state->current_manifest, dir_get_ptr(RARCH_DIR_SAVEFILE), "saves");
-   task_cloud_sync_manifest_append_dir(sync_state->current_manifest, dir_get_ptr(RARCH_DIR_SAVESTATE), "states");
+   for (i = 0; i < dirlist->size; i++)
+      task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
+                                          dirlist->elems[i].userdata, dirlist->elems[i].data);
 
    file_list_sort_on_alt(sync_state->current_manifest);
    sync_state->phase = CLOUD_SYNC_PHASE_DIFF;
@@ -431,19 +451,11 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
       hash = task_cloud_sync_md5_rfile(file);
       filestream_close(file);
       RARCH_LOG(CSPFX "successfully fetched %s\n", path);
-      task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, true);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, false);
-      /* no need to mark need_manifest_uploaded, nothing changed */
    }
    else
    {
       /* on failure, don't add it to local manifest, that will cause a fetch again next time */
-      size_t idx;
-      if (file_list_search(sync_state->server_manifest, path, &idx))
-      {
-         struct item_file *server_file = &sync_state->server_manifest->list[idx];
-         task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(server_file), true);
-      }
       if (!success)
          RARCH_WARN(CSPFX "failed to fetch %s\n", path);
       else
@@ -455,27 +467,34 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
 
 static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state)
 {
-   char              filename[PATH_MAX_LENGTH];
-   struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
-   const char       *key = CS_FILE_KEY(server_file);
-   const char       *path = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
-   char              directory[PATH_MAX_LENGTH];
-   settings_t       *settings = config_get_ptr();
+   struct string_list *dirlist     = task_cloud_sync_directory_map();
+   struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
+   const char         *key         = CS_FILE_KEY(server_file);
+   const char         *path        = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
+   char                directory[PATH_MAX_LENGTH];
+   char                filename[PATH_MAX_LENGTH];
+   settings_t         *settings = config_get_ptr();
+   int                 i;
 
    RARCH_LOG(CSPFX "fetching %s\n", key);
+   /* we're just fetching a file the server has, we can update this now */
+   task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
+   /* no need to mark need_manifest_uploaded, nothing changed */
 
-   if (string_starts_with(key, "config"))
+   filename[0] = '\0';
+   for (i = 0; i < dirlist->size; i++)
    {
-      char config_dir[PATH_MAX_LENGTH];
-      fill_pathname_application_special(config_dir,
-                                        sizeof(config_dir),
-                                        APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-      fill_pathname_join_special(filename, config_dir, path, sizeof(filename));
+      if (!string_starts_with(key, dirlist->elems[i].data))
+         continue;
+      fill_pathname_join_special(filename, dirlist->elems[i].userdata, path, sizeof(filename));
+      break;
    }
-   else if (string_starts_with(key, "saves"))
-      fill_pathname_join_special(filename, dir_get_ptr(RARCH_DIR_SAVEFILE), path, sizeof(filename));
-   else if (string_starts_with(key, "states"))
-      fill_pathname_join_special(filename, dir_get_ptr(RARCH_DIR_SAVESTATE), path, sizeof(filename));
+   if (string_is_empty(filename))
+   {
+      /* how did this end up here? we don't know where to put it... */
+      RARCH_WARN(CSPFX "don't know where to put %s!\n", key);
+      return;
+   }
 
    if (!settings->bools.cloud_sync_destructive && path_is_valid(filename))
    {
@@ -492,8 +511,6 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    {
       RARCH_WARN(CSPFX "wanted to fetch %s but failed\n", key);
       sync_state->failures = true;
-      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
-      /* no need to mark need_manifest_uploaded, nothing changed */
    }
 }
 
