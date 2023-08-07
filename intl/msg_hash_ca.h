@@ -6390,10 +6390,6 @@ MSG_HASH(
    "Seleccioneu un altre tipus de lletra principal pel menú."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Seleccioneu un tema de degradat de color de fons diferent."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "Mostra la minatura de l’esquerra a sota de la de la dreta, al costat dret de la pantalla."
    )
@@ -6513,10 +6509,6 @@ MSG_HASH(
    "Blau de mitjanit"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Pla"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
    "Submarí"
    )
@@ -6609,10 +6601,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
    "Mostra icones a l’esquerra de les entrades del menú."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Seleccioneu un tema de degradat de color de fons diferent."
    )
 
 /* MaterialUI: Settings Options */

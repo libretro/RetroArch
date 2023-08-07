@@ -1165,12 +1165,60 @@ MSG_HASH(
    "Změna nastavení ukládání."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Cloudová synchronizace"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Změna nastavení cloudové synchronizace."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Povolit cloudovou synchronizaci"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "Pokus o synchronizaci konfigurací, sram a stavů s poskytovatelem cloudového úložiště."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Destruktivní cloudová synchronizace"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Pokud je tato funkce vypnuta, jsou soubory před přepsáním nebo odstraněním přesunuty do záložní složky."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Backend cloudové synchronizace"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "Který síťový protokol cloudového úložiště použít."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "Adresa URL cloudového úložiště"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "Adresa URL pro vstupní bod API do služby cloudového úložiště."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Uživatelské jméno"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Vaše uživatelské jméno pro účet cloudového úložiště."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "Heslo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Vaše heslo k účtu cloudového úložiště."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -3067,12 +3115,24 @@ MSG_HASH(
    "Vazby RetroPad"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Změna způsobu mapování virtuálního zařízení RetroPad na fyzické vstupní zařízení. Pokud je vstupní zařízení rozpoznáno a automaticky nakonfigurováno správně, uživatelé pravděpodobně nebudou muset tuto nabídku používat.\nPoznámka: pro změny vstupů specifických pro jádro použijte raději podnabídku \"Ovládací prvky\" v rychlém menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
    "Libretro používá abstrakci virtuálního gamepadu známou jako \"RetroPad\" pro komunikaci z frontendů (jako je RetroArch) do jader a naopak. Tato nabídka určuje, jak je virtuální RetroPad mapován na fyzická vstupní zařízení a které virtuální vstupní porty tato zařízení obsazují. Pokud je fyzické vstupní zařízení rozpoznáno a automaticky nakonfigurováno správně, uživatelé pravděpodobně nebudou muset tuto nabídku vůbec používat a pro změny vstupů specifick[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Port %u Ovládání"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Změňte způsob mapování virtuálního zařízení RetroPad na fyzické vstupní zařízení pro tento virtuální port."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Změna vstupních mapování specifických pro jádro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3558,6 +3618,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
    "Zapne/vypne zobrazení technických statistik na obrazovce."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Překrytí klávesnice (přepínání)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Zapnutí/vypnutí překrytí klávesnice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4861,9 +4929,41 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Vertikální posun překryvu při použití orientace displeje na výšku. Kladné hodnoty posouvají překrytí nahoru, záporné hodnoty dolů."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Překrytí klávesnice"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Výběr a nastavení překryvu klávesnice."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Předvolba překrytí klávesnice"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "V prohlížeči souborů vyberte překryv klávesnice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Překrytí klávesnice v automatickém měřítku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Překrytí klávesnice upravte na původní poměr stran. Zakázat roztažení na obrazovku."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Překrytí klávesnice Neprůhlednost"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "Neprůhlednost všech prvků uživatelského rozhraní překryvu klávesnice."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -6143,6 +6243,10 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+   "Faktor měřítka"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "Měřítko velikosti prvků uživatelského rozhraní v nabídce."
    )
@@ -6161,6 +6265,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    "Upravte neprůhlednost obrázku na pozadí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Neprůhlednost"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
@@ -7390,6 +7498,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "Překryvy jsou uloženy v tomto adresáři."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Překryvy klávesnice"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "V tomto adresáři jsou uloženy překryvy klávesnice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -9916,6 +10032,10 @@ MSG_HASH(
    "Změňte velikost a umístění položek nabídky, abyste co nejlépe využili dostupné místo na obrazovce. Pokud chcete použít klasické dvousloupcové rozvržení s pevnou šířkou, tuto funkci zakažte."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   "Lineární filtr"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Přidá do nabídky mírné rozostření, které zmírní tvrdé okraje pixelů."
    )
@@ -9936,16 +10056,32 @@ MSG_HASH(
    "Vyberte poměr stran nabídky. Širokoúhlý poměr zvyšuje horizontální rozlišení rozhraní nabídky. (Může vyžadovat restart, pokud je funkce 'Zamknout poměr stran nabídky' vypnutá)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Uzamknout poměr stran"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Zajišťuje, aby se nabídka vždy zobrazovala se správným poměrem stran. Pokud je vypnuta, rychlá nabídka se roztáhne tak, aby odpovídala aktuálně načtenému obsahu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "Barevný motiv"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Vyberte jiný barevný motiv. Výběr možnosti 'Vlastní' umožňuje použití souborů s přednastavenými motivy nabídek."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Vlastní předvolba motivu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "V prohlížeči souborů vyberte předvolbu motivu nabídky."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Průhlednost"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10258,12 +10394,40 @@ MSG_HASH(
    "Animace, která se spustí při otevření podnabídky."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Barevné téma Faktor alfa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   "Písmo"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Vyberte jiné hlavní písmo, které má být použito v nabídce."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Barva písma (červená)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Barva písma (zelená)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Barva písma (modrá)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   "Rozložení"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Vyberte jiné rozložení rozhraní XMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "Motiv ikony"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10286,12 +10450,24 @@ MSG_HASH(
    "Kreslení kapkových stínů pro ikony, miniatury a písmena. To bude mít menší dopad na výkon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+   "Potrubí shaderů"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Vyberte efekt animovaného pozadí. V závislosti na efektu může být náročný na GPU. Pokud je výkon neuspokojivý, vypněte jej nebo se vraťte k jednoduššímu efektu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "Barevný motiv"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Vyberte jiný motiv barevného gradientu pozadí."
+   "Vyberte jiný barevný motiv pozadí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Miniatura Vertikální dispozice"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10402,7 +10578,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Obyčejný"
+   "Obrázek na Pozadí"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -10462,6 +10638,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Playlisty budou po odstranění složky výrobce z jejich názvu seřazeny podle abecedy."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Barevný motiv"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -10575,8 +10755,16 @@ MSG_HASH(
    "Automatické přesunutí navigačního panelu na pravou stranu obrazovky při orientaci displeje na šířku."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "Barevný motiv"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Vyberte jiný motiv barevného gradientu pozadí."
+   "Vyberte jiný barevný motiv pozadí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Přechodová animace"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -12627,6 +12815,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Nepodařilo se načíst překrytí."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "Překrytí klávesnice není nastaveno."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,

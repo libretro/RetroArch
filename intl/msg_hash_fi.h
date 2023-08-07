@@ -1177,6 +1177,22 @@ MSG_HASH(
    "Muuta tallennusasetuksia."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Pilvisynkronointi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Muuta pilvisynkronoinnin asetuksia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Ota pilvisynkronointi käyttöön"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Pilvisynkronoinnin taustaosa"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Käyttäjänimi"
    )
@@ -9256,8 +9272,16 @@ MSG_HASH(
    "Valitse valikon kuvasuhde. Laajakuvan kuvasuhteet lisäävät valikon käyttöliittymän vaakasuoraa resoluutiota. (Voi vaatia uudelleenkäynnistyksen, jos \"Lukitse valikon kuvasuhde\" on pois päältä)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Lukitse kuvasuhde"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Varmistaa, että valikko esitetään aina oikealla kuvasuhteella. Jos tämä ei ole käytössä, pikavalikko venytetään vastaamaan tällä hetkellä ladattua sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "Väriteema"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -9266,6 +9290,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Valitse valikon teeman esiasetus tiedostoselaimesta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Läpinäkyvyys"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -9614,12 +9642,36 @@ MSG_HASH(
    "Animaatio, joka näytetään kun avaat alavalikon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   "Fontti"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Valitse eri fontti valikossa käytettäväksi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Fontin väri (punainen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Fontin väri (vihreä)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Fontin väri (sininen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   "Asettelu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Valitse eri asettelu XMB-käyttöliittymälle."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "Kuvaketeema"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -9646,8 +9698,12 @@ MSG_HASH(
    "Valitse animoitu taustatehoste. Voi olla intensiivinen näytönohjaimelle riippuen tehosteesta. Jos suorituskyky ei ole tyydyttävä, poista joko käytöstä tai palaa yksinkertaisempaan tehosteeseen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "Väriteema"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Valitse taustan eri liukuväriteema."
+   "Valitse eri väriteema taustalle."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -9778,7 +9834,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Pelkistetty"
+   "Taustakuva"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -9838,6 +9894,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Soittolistat järjestetään uudelleen aakkosjärjestykseen sen jälkeen, kun valmistajan nimi soittolistojen nimistä on poistettu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Väriteema"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -9967,8 +10027,12 @@ MSG_HASH(
    "Siirrä navigointipalkki automaattisesti näytön oikealle puolelle, kun käytetään vaakasuuntaista näytön suuntausta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "Väriteema"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Valitse taustan eri liukuväriteema."
+   "Valitse eri väriteema taustalle."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

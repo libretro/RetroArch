@@ -6230,10 +6230,6 @@ MSG_HASH(
    "حدد تأثير الخلفية المتحركة. يمكن أن يكون GPU كثيفا اعتمادا على التأثير. وإذا كان الأداء غير مرضٍ، إما أن يوقف ذلك أو يعود إلى أثر أبسط من ذي قبل."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "حدد سمة ترتيب لون خلفية مختلفة."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "عرض الصورة المصغرة اليسرى تحت اليمين، على الجانب الأيمن من الشاشة."
    )
@@ -6355,10 +6351,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
    "أزرق منتصف الليل"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "السهول"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -6485,10 +6477,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    "نقل شريط التنقل تلقائياً إلى الجانب الأيمن من الشاشة عند استخدام توجيهات العرض الأفقي."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "حدد سمة ترتيب لون خلفية مختلفة."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

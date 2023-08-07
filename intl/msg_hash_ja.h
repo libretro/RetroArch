@@ -8190,10 +8190,6 @@ MSG_HASH(
    "背景アニメーション効果を選択します. 効果によってはGPUに大きな負荷をかけます. パフォーマンスが不足する場合, 効果をオフにするか, より単純な効果を選択してください. "
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "異なる背景色グラデーションテーマを選択します。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "左側サムネイルを右側サムネイルの下に表示し, 両方ともスクリーンの右側に配置します。"
    )
@@ -8318,7 +8314,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "プレーン"
+   "背景画像"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -8429,10 +8425,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    "横長画面表示中に, ナビゲーションバーを画面の右側に自動的に移動します."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "異なる背景色グラデーションテーマを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

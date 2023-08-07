@@ -2374,7 +2374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Использовать пользовательский интервал подкачки для VSync. Уменьшает частоту обновления монитора на заданный коэффициент. В режиме 'Авто' коэффициент устанавливается в зависимости от частоты обновления, сообщаемой ядром, улучшая распределение кадров при запуске контента [...]"
+   "Пользовательский интервал подкачки для VSync. Уменьшает частоту обновления экрана на указанный коэффициент. Режим 'Авто' задаёт коэффициент исходя из частоты обновления, сообщаемой ядром, улучшая распределение кадров для контента в 30 fps на дисплее 60 Гц или контента в 60 fps на [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -2680,6 +2680,22 @@ MSG_HASH(
    "Низкие значения повышают производительность/снижают задержку, но ухудшают качество звука. Высокие улучшают качество звука, но снижают производительность/увеличивают отставание."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Частота звука по умолчанию (Гц)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Частота дискретизации, используемая, если ядро не запрашивает определённое значение."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Задержка звука (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Желаемая задержка звука в миллисекундах. Может не учитываться, если драйвер микрофона не поддерживает заданное значение."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "Эксклюзивный режим WASAPI"
    )
@@ -2763,7 +2779,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "Устанавливает устройство ввода (зависит от драйвера). При значении 'ВЫКЛ' ввод MIDI будет отключен. Также может быть задано имя устройства."
+   "Выбор устройства вывода (зависит от драйвера). Значение 'ВЫКЛ' отключает вывод MIDI. Также может быть указано имя устройства."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -2775,7 +2791,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
-   "Устанавливает устройство вывода (зависит от драйвера). При значении 'ВЫКЛ' вывод MIDI будет отключен. Также может быть задано имя устройства.\nЕсли включено и приложение/игра поддерживает вывод MIDI, некоторые звуки (в зависимости от игры/приложения) будут генерироваться MIDI-уст[...]"
+   "Выбор устройства вывода (зависит от драйвера). Если выкл., вывод MIDI будет неактивен. Также можно указать имя устройства.\nЕсли включено и вывод MIDI поддерживается приложением/игрой, некоторые звуки (зависит от игры/приложения) будут генерироваться MIDI-устройством. Значение 'nul[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -3084,7 +3100,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Режим удерживания. Цикл нажать-отпустить для выбранной кнопки будет активен пока зажата кнопка Турбо.\nКнопка Турбо может быть назначена в Настройки/Ввод/Порт 1 привязки.\nДля эмуляции автоматического огня в стиле эпохи домашних компьютеров, назначьте кнопки Турбо и дейст[...]"
+   "Режим удерживания. Цикл нажать-отпустить для выбранной кнопки активен пока зажата кнопка Турбо.\nКнопку Турбо можно назначить в Настройки/Ввод/Привязки порта.\nДля эмуляции автострельбы в стиле эпохи домашних компьютеров, назначьте кнопки Турбо и действия на одну кнопку с[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3097,6 +3113,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турбо-кнопки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Настройки турбо-кнопок.\nПримечание: для работы функции требуется привязать турбо-кнопку к устройству ввода в соответствующем меню 'Привязки порта X'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3119,6 +3139,10 @@ MSG_HASH(
    "Горячие клавиши"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "Настройки и привязки горячих клавиш, таких как вызов меню во время игры."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    "Привязки RetroPad"
    )
@@ -3128,7 +3152,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   "Порт %u привязки"
+   "Привязки порта %u"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3225,7 +3249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "После привязки кнопку 'Активатор горячих клавиш' необходимо удерживать нажатой для срабатывания горячих клавиш. Позволяет назначать на кнопки контроллера горячие клавиши, не влияя на стандартные действия. Привязка модификатора только к контроллеру не затрагивает сочет[...]"
+   "После привязки кнопку 'Активатор горячих клавиш' нужно удерживать для срабатывания горячих клавиш. Позволяет назначать на кнопки геймпада горячие клавиши, не влияя на стандартные действия. Привязка модификатора только к контроллеру не затрагивает сочетания клавиатуры и[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -3956,11 +3980,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   "Отдельный аппаратный контекст"
+   "Общий аппаратный контекст"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-   "Предоставлять частный контекст ядрам с аппаратным рендерингом. Отменяет необходимость определять состояние устройства между кадрами."
+   "Предоставлять частный контекст для ядер с аппаратной отрисовкой. Снимает необходимость предугадывать изменения состояния устройства между кадрами."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
@@ -3976,7 +4000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Загрузка заглушки предотвращает закрытие RetroArch, если ядро прекратило работу."
+   "Загрузка фиктивного ядра для предотвращения выхода из RetroArch при остановке ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
@@ -4020,7 +4044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Определяет, игнорировать ли возможности быстрых сохранений в сведениях о ядре, позволяя экспериментировать со связанными функциями (забегание, обратная перемотка и т.д.)."
+   "Разрешат обходить возможности быстрых сохранений в информации о ядре, позволяя экспериментировать со связанными функциями (забегание, обратная перемотка и т.д.)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -5325,7 +5349,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   "Предохраняет систему, скрывая доступ к настройкам конфигурации."
+   "Защищает настройку, скрывая доступ ко всем параметрам конфигурации."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
@@ -5381,7 +5405,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
-   "Если открыто меню, показывать заставку после заданного периода бездействия."
+   "Если открыто меню, после заданного периода бездействия будет запускаться хранитель экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
@@ -6383,7 +6407,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Отключает чит-коды, перемотку, замедление и загрузку сохранений. Достижения, полученные в режиме хардкора имеют уникальный маркер, чтобы другие пользователи могли видеть ваши возможности без использования вспомогательных функций эмулятора. Переключение данной настройк[...]"
+   "Отключает чит-коды, перемотку, замедление и загрузку сохранений. Достижения, полученные в режиме хардкора имеют уникальный маркер, чтобы другие игроки могли видеть ваш прогресс без использования вспомогательных функций. Переключение настройки во время игры приведёт к её[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -6427,7 +6451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
-   "Автоматически делать снимок экрана при получении достижения."
+   "Автоматически сохранять снимок экрана при получении достижения."
    )
 MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
@@ -6435,7 +6459,7 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "Запустить игру со всеми действующими достижениями (включая открытые ранее)."
+   "Начать игру со всеми доступными достижениями (включая открытые ранее)."
    )
 
 /* Settings > Achievements > Appearance */
@@ -7106,7 +7130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
-   "Если включено и задан путь к каталогу 'Браузер файлов', значение параметра 'Браузер файлов' сохраняется в плейлисте. При загрузке плейлиста на другой системе, где также включена данная опция, значение параметра 'Браузер файлов' сравнивается со значением в плейлисте. Если он[...]"
+   "Если вкл., а также указан путь к каталогу 'Браузер файлов', значение настройки 'Браузер файлов' сохраняется в плейлисте. При загрузке плейлиста на другой системе с включенной опцией, значение настройки 'Браузер файлов' сравнивается со значением в плейлисте и в случае отличи[...]"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -10020,12 +10044,20 @@ MSG_HASH(
    "Обеспечивает отображение меню с правильным соотношением сторон. Если выключено, быстрое меню будет растянуто в соответствие с загруженным контентом."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "Цветовая тема"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Выбор цветовой темы. Значение 'Пользовательский' позволяет загружать пресеты оформления меню."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Загрузка темы меню из браузера файлов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Прозрачность"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10378,12 +10410,36 @@ MSG_HASH(
    "Эффект анимации при переходе в подменю."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   "Шрифт"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Выбрать основной шрифт для меню интерфейса."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Цвет шрифта (красный)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Цвет шрифта (зелёный)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Цвет шрифта (синий)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   "Макет"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Выбор другого макета для интерфейса XMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "Тема значков"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10406,12 +10462,24 @@ MSG_HASH(
    "Включить отбрасывание теней для значков, миниатюр и букв. Незначительно влияет на производительность."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+   "Пайплайн шейдера"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Выбор эффекта анимации фона. В зависимости от установки может существенно нагружать GPU. В случае низкой производительности отключите или выберите менее сложный эффект."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "Цветовая тема"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Выберите другую тему цветового градиента."
+   "Выбор цветовой темы заднего фона."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Вертикальное расположение миниатюр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10419,7 +10487,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   "Степень масштабирования миниатюр"
+   "Коэффициент масштабирования миниатюр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
@@ -10538,7 +10606,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Простая"
+   "Фоновое изображение"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -10602,6 +10670,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Плейлисты будут пересортированы в алфавитном порядке после удаления названий компаний."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Цветовая тема"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -10669,11 +10741,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Если включено, метаданные в правой части плейлиста (привязка ядра, время работы) будут занимать одну строку; записи больше ширины боковой панели будут отображены бегущей строкой. Если выключено, все метаданные будут отображаться статически, занимая необходимое число стро[...]"
+   "Если включено, метаданные в правой части плейлиста (привязка ядра, время работы) занимают одну строку; записи больше ширины боковой панели будут отображены бегущей строкой. Если выкл., все метаданные будут отображены статически, занимая необходимое число строк."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Степень масштабирования миниатюр"
+   "Коэффициент масштабирования миниатюр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
@@ -10731,8 +10803,16 @@ MSG_HASH(
    "Автоматически перемещать панель навигации в правую часть экрана при использовании ландшафтной ориентации."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "Цветовая тема"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Выберите другую тему цветового градиента."
+   "Выбор цветовой темы заднего фона."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Анимация переходов"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

@@ -2845,6 +2845,10 @@ MSG_HASH(
    "Azul nocherniego"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
+   "Imaxe del fondu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
    "Coloráu volcánico"
    )

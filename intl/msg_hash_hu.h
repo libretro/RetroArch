@@ -1165,12 +1165,60 @@ MSG_HASH(
    "A mentések beállításai."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Szinkronizálás felhőbe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "A felhőbe szinkronizálás beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Felhőbe szinkronizálás engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "A konfiguráció, az SRAM és a játékállások szinkronizálása egy felhőalapú tárhelyszolgáltatóhoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Destruktív szinkronizálás a felhőbe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Kikapcsolt állapotban a fájlok egy tartalék könyvtárba kerülnek felülírás vagy törlés előtt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "A felhőszinkronizálás háttértára"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "A felhőszinkronizáláshoz használt protokoll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "A felhő alapú tárhely URL-je"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "A felhő alapú tárhelyszolgáltató API hozzáférésének URL-je."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Felhasználónév"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "A felhő alapú tárhelyszolgáltatóhoz használt felhasználónév."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "Jelszó"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "A felhő alapú tárhelyszolgáltatóhoz használt jelszó."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -6255,6 +6303,10 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+   "Méret szorzója"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "A felhasználói felület elemeinek méretezése a menüben."
    )
@@ -6273,6 +6325,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    "A háttérkép átlátszatlansága."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Átlátszatlanság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
@@ -10104,6 +10160,10 @@ MSG_HASH(
    "A menübejegyzések átméretezése és mozgatása az elérhető képernyőterület jobb kihasználásának érdekében. Kikapcsolt állapotban a klasszikus fix méretű kétoszlopos elrendezés lép életbe."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   "Lineáris szűrő"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "Enyhe elmosást ad a menühöz a pixelek élének elsimítása érdekében."
    )
@@ -10124,16 +10184,32 @@ MSG_HASH(
    "A menü képaránya. A széles képernyőhöz használt arányok megnövelik a menüfelület felbontását. (Újraindítást igényelhet, ha a menü képarány rögzítése nincs bekapcsolva.)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Képarány rögzítése"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "A menüt mindig a megfelelő képaránnyal jeleníti meg. Kikapcsolva a gyorsmenü a futó tartalomhoz igazodik."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "Színösszeállítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Más színösszeállítás választása. Az \"Egyedi\" lehetőségnél külön fájlból lehet betölteni a színösszeállítást."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Egyedi színösszeállítás"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Egyedi színösszeállítás fájl kiválasztása a fájlböngészővel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Átlátszóság"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10378,12 +10454,40 @@ MSG_HASH(
    "Az almenübe lépéskor lejátszott animáció."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "A színösszeállítás alfa értéke"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   "Betűtípus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Más betűtípus választása a menühöz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Betűszín, piros komponens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Betűszín, zöld komponens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Betűszín, kék komponens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   "Elrendezés"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "Az XMB felület más elrendezése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "Ikontéma"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10406,12 +10510,24 @@ MSG_HASH(
    "Az ikonok, bélyegképek, és betűk árnyékot vetnek. Kisebb hatása van a teljesítményre."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+   "Shader feldolgozó"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Animált effekt a háttérben. Az effekttől függően GPU-igényes lehet, ha a teljesítmény nem megfelelő, ki kell kapcsolni vagy egyszerűbb effektet választani."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "Színösszeállítás"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "A háttérben látható színátmenet lecserélése."
+   "Más színösszeállítás választása a háttérhez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Bélyegképek függőleges elrendezése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -10506,7 +10622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Egyszerű"
+   "Háttérkép"
    )
 
 /* Ozone: Settings > User Interface > Appearance */
@@ -10534,6 +10650,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "A játéklisták a gyártó neve nélküli betűrend szerint lesznek ábécésorrendben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Színösszeállítás"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -10627,8 +10747,16 @@ MSG_HASH(
    "Fekvő elrendezésű képernyőn a navigációs sáv automatikusan átkerül a képernyő jobb szélére."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "Színösszeállítás"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "A háttérben látható színátmenet lecserélése."
+   "Más színösszeállítás választása a háttérhez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Átmenet animációja"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

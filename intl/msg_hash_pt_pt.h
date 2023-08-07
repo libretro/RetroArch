@@ -3657,10 +3657,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Selecionar um efeito de fundo animado. Isto poderá aumentar significativamente a utilização do processador, de acordo com o efeito. Se o desempenho não for satisfatório, desative este efeito ou altere para um mais simples."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Selecionar um tema com um gradiente de fundo diferente."
-   )
 
 /* XMB: Settings Options */
 
@@ -3741,10 +3737,6 @@ MSG_HASH(
    "Azul meia-noite"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Plano"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
    "Submarino"
    )
@@ -3758,10 +3750,6 @@ MSG_HASH(
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Selecionar um tema com um gradiente de fundo diferente."
-   )
 
 /* MaterialUI: Settings Options */
 

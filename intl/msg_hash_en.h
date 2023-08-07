@@ -1663,7 +1663,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Select a different background colour gradient theme."
+   "Select a different background colour theme."
    )
 
 /* XMB: Settings Options */
@@ -1704,7 +1704,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Select a different background colour gradient theme."
+   "Select a different background colour theme."
    )
 
 /* MaterialUI: Settings Options */

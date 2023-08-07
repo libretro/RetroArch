@@ -10534,10 +10534,6 @@ MSG_HASH(
    "애니메이션 배경 효과를 선택합니다. 선택한 효과에 따라 GPU에 부하를 줄 수 있습니다. 성능에 영향을 주는 경우 기능을 끄거나 간단한 효과로 되돌리십시오."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "배경색 그라데이션 테마를 선택합니다."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "왼쪽 미리보기를 오른쪽 미리보기의 아래에 표시합니다."
    )
@@ -10694,7 +10690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "단순"
+   "배경 이미지"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -10889,10 +10885,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    "화면을 가로로 사용할 경우 내비게이션 바를 오른쪽에 표시합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "배경색 그라데이션 테마를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
