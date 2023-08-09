@@ -2444,13 +2444,8 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
    int i = 0;
    DXGIAdapter adapter = NULL;
 #ifdef DEBUG
-#ifdef __WINRT__
-   if (SUCCEEDED(D3D12GetDebugInterface(uuidof(ID3D12Debug), (void**)&d3d12->debugController)))
-      d3d12->debugController->lpVtbl->EnableDebugLayer(&d3d12->debugController);
-#else
    if (SUCCEEDED(D3D12GetDebugInterface(uuidof(ID3D12Debug), (void**)&d3d12->debugController)))
       d3d12->debugController->lpVtbl->EnableDebugLayer(d3d12->debugController);
-#endif
 #endif
 
 #ifdef __WINRT__
