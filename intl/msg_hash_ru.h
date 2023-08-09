@@ -3155,6 +3155,14 @@ MSG_HASH(
    "Привязки порта %u"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Настройка привязок виртуального RetroPad к физическому устройству ввода для данного порта."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Изменение привязок ввода для текущего ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Исправление потери связи на Android"
    )
@@ -3515,7 +3523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
-   "Включает/останавливает запись текущего сеанса в локальный видеофайл."
+   "Запускает/останавливает запись текущего сеанса в локальный видеофайл."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
@@ -3523,7 +3531,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
-   "Включает/останавливает трансляцию текущего сеанса на онлайн-платформе."
+   "Запускает/останавливает трансляцию текущего сеанса на онлайн-платформе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
@@ -3638,6 +3646,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
    "Включает/выключает отображение на экране технических данных."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Оверлей клавиатуры (переключение)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Включает/отключает оверлей клавиатуры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4016,7 +4032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "Перед загрузкой контента проверять наличие необходимых микропрограмм."
+   "Проверять перед загрузкой контента наличие всех требуемых микропрограмм."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
@@ -4036,15 +4052,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
-   "Хранить в локальном кэше данные об установленных ядрах. Существенно ускоряет загрузку на платформах с медленным доступом к памяти."
+   "Хранить файлы с информацией о ядрах в локальном кэше. Существенно ускоряет загрузку на платформах с медленным доступом к памяти."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "Обходить возможности сохранений в сведениях о ядре"
+   "Обход возможностей сохранений в свойствах ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Разрешат обходить возможности быстрых сохранений в информации о ядре, позволяя экспериментировать со связанными функциями (забегание, обратная перемотка и т.д.)."
+   "Разрешает обходить возможности быстрых сохранений в свойствах ядра, позволяя экспериментировать со связанными функциями (забегание, обратная перемотка и т.д.)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4945,6 +4961,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Смещение оверлея по вертикали в портретном режиме экрана. Положительные значения сдвигают оверлей вверх, отрицательные - вниз."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Оверлей клавиатуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Выбор и подстройка оверлея клавиатуры."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -5373,7 +5397,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Останавливать запущенный контент при вызове меню."
+   "Приостанавливать запущенный контент при вызове меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -5385,7 +5409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Возобновлять контент после смены диска"
+   "Возобновлять контент при смене диска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -5465,7 +5489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Останавливать контент при потере фокуса окна RetroArch."
+   "Приостанавливать контент при потере фокуса окна RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -6307,6 +6331,10 @@ MSG_HASH(
    "Запоминать выбор при смене вкладок"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   "Запоминать позицию курсора на вкладках. RGUI не имеет вкладок, но Плейлисты и Настройки ведут себя как таковые."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "Всегда"
    )
@@ -6351,7 +6379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
-   "Останавливать ядро при переводе текста на экране."
+   "Приостанавливать ядро во время перевода экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
@@ -7130,7 +7158,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
-   "Если вкл., а также указан путь к каталогу 'Браузер файлов', значение настройки 'Браузер файлов' сохраняется в плейлисте. При загрузке плейлиста на другой системе с включенной опцией, значение настройки 'Браузер файлов' сравнивается со значением в плейлисте и в случае отличи[...]"
+   "Если вкл. и задан путь к каталогу 'Браузер файлов', значение сохраняется в плейлисте. При загрузке плейлиста на другой системе с включенной опцией, значение параметра 'Браузер файлов' сравнивается со значением в плейлисте и если они отличаются, пути в плейлисте автоматичес[...]"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -7216,7 +7244,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Введите имя пользователя, которое будет использоваться для сетевой игры и пр."
+   "Введите имя пользователя, используемое для сеансов сетевой игры и т.д."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -7266,7 +7294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Данные для входа в учётную запись RetroAchievements. Посетите retroachievements.org для создания бесплатной учётной записи.\nПосле завершения регистрации введите имя пользователя и пароль в RetroArch."
+   "Данные для входа в учётную запись RetroAchievements. Для создания бесплатной учётной записи посетите retroachievements.org.\nПосле завершения регистрации введите имя пользователя и пароль в RetroArch."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
