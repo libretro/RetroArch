@@ -46,45 +46,46 @@
 
 struct node_iter_ctx
 {
-	libretrodb_t *db;
-	libretrodb_index_t *idx;
+   libretrodb_t *db;
+   libretrodb_index_t *idx;
 };
 
 struct libretrodb
 {
-	RFILE *fd;
+   RFILE *fd;
    char *path;
-	uint64_t root;
-	uint64_t count;
-	uint64_t first_index_offset;
+   bool can_write;
+   uint64_t root;
+   uint64_t count;
+   uint64_t first_index_offset;
 };
 
 struct libretrodb_index
 {
-	char name[50];
-	uint64_t key_size;
-	uint64_t next;
-	uint64_t count;
+   char name[50];
+   uint64_t key_size;
+   uint64_t next;
+   uint64_t count;
 };
 
 typedef struct libretrodb_metadata
 {
-	uint64_t count;
+   uint64_t count;
 } libretrodb_metadata_t;
 
 typedef struct libretrodb_header
 {
-	char magic_number[sizeof(MAGIC_NUMBER)];
-	uint64_t metadata_offset;
+   char magic_number[sizeof(MAGIC_NUMBER)];
+   uint64_t metadata_offset;
 } libretrodb_header_t;
 
 struct libretrodb_cursor
 {
    RFILE *fd;
-	libretrodb_query_t *query;
-	libretrodb_t *db;
-	int is_valid;
-	int eof;
+   libretrodb_query_t *query;
+   libretrodb_t *db;
+   int is_valid;
+   int eof;
 };
 
 static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
@@ -187,9 +188,17 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    RFILE *fd = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
+   db->can_write = true;
    if (!fd)
-      return -1;
+   {
+     /* Try to reopen in readonly mode */
+     fd = filestream_open(path,
+                          RETRO_VFS_FILE_ACCESS_READ,
+                          RETRO_VFS_FILE_ACCESS_HINT_NONE);
+     db->can_write = false;
+   }
+   if (!fd)
+     return -1;
 
    if (!string_is_empty(db->path))
       free(db->path);
@@ -456,8 +465,13 @@ int libretrodb_create_index(libretrodb_t *db,
    uint64_t item_count              = 0;
    int rval                         = -1;
    
-   if (libretrodb_find_index(db, name, &idx) >= 0) {
+   if (libretrodb_find_index(db, name, &idx) >= 0)
+   {
      return 1;
+   }
+   if (!db->can_write)
+   {
+     return -1;
    }
 
    tree = bintree_new(node_compare, &field_size);
