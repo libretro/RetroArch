@@ -717,7 +717,7 @@ static int database_cursor_open(libretrodb_t *db,
    const char *error     = NULL;
    libretrodb_query_t *q = NULL;
 
-   if ((libretrodb_open(path, db)) != 0)
+   if ((libretrodb_open(path, db, false)) != 0)
       return -1;
 
    if (query)

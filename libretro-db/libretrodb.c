@@ -181,22 +181,14 @@ void libretrodb_close(libretrodb_t *db)
    db->fd   = NULL;
 }
 
-int libretrodb_open(const char *path, libretrodb_t *db)
+int libretrodb_open(const char *path, libretrodb_t *db, bool write)
 {
    libretrodb_header_t header;
    libretrodb_metadata_t md;
    RFILE *fd = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING,
+         write ? RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING : RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   db->can_write = true;
-   if (!fd)
-   {
-     /* Try to reopen in readonly mode */
-     fd = filestream_open(path,
-                          RETRO_VFS_FILE_ACCESS_READ,
-                          RETRO_VFS_FILE_ACCESS_HINT_NONE);
-     db->can_write = false;
-   }
+   db->can_write = write;
    if (!fd)
      return -1;
 
