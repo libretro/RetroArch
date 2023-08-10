@@ -583,7 +583,7 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
                ext_path[3] = 'b';
             }
 
-            if (libretrodb_open(tmp, newrdb.handle) != 0)
+            if (libretrodb_open(tmp, newrdb.handle, false) != 0)
             {
                /* Invalid RDB file */
                libretrodb_free(newrdb.handle);
