@@ -86,6 +86,10 @@ void libretro_dummy_retro_init(void)
          case RGUI_ASPECT_RATIO_16_10_CENTRE:
             frame_buf_width = 384;
             break;
+         case RGUI_ASPECT_RATIO_21_9:
+         case RGUI_ASPECT_RATIO_21_9_CENTRE:
+            frame_buf_width = 559;
+            break;
          default:
             /* 4:3 */
             frame_buf_width = 320;
