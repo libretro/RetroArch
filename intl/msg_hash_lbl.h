@@ -1892,10 +1892,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_BIND_MODE,
-   "input_bind_mode"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
    "input_bind_timeout"
    )

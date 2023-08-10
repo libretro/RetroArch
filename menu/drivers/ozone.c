@@ -2406,13 +2406,13 @@ static uintptr_t ozone_entries_icon_get_texture(
          if (type == (input_id + 3))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_R];
          if (type == (input_id + 4))
-            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R];
-         if (type == (input_id + 5))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D];
+         if (type == (input_id + 5))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R];
          if (type == (input_id + 6))
-            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U];
-         if (type == (input_id + 7))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L];
+         if (type == (input_id + 7))
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U];
          if (type == (input_id + 8))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT];
          if (type == (input_id + 9))

@@ -97,10 +97,10 @@ const unsigned input_config_bind_order[24] = {
    RETRO_DEVICE_ID_JOYPAD_DOWN,
    RETRO_DEVICE_ID_JOYPAD_LEFT,
    RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_A,
    RETRO_DEVICE_ID_JOYPAD_B,
-   RETRO_DEVICE_ID_JOYPAD_X,
+   RETRO_DEVICE_ID_JOYPAD_A,
    RETRO_DEVICE_ID_JOYPAD_Y,
+   RETRO_DEVICE_ID_JOYPAD_X,
    RETRO_DEVICE_ID_JOYPAD_SELECT,
    RETRO_DEVICE_ID_JOYPAD_START,
    RETRO_DEVICE_ID_JOYPAD_L,
@@ -3024,18 +3024,20 @@ void input_config_get_bind_string(
 
    if      (bind      && bind->joykey  != NO_BTN)
       input_config_get_bind_string_joykey(
-            input_descriptor_label_show, buf, "", bind, size);
+            input_descriptor_label_show,
+            buf, "", bind, size);
    else if (bind      && bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
             buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
       input_config_get_bind_string_joykey(
-            input_descriptor_label_show, buf, "Auto: ", auto_bind, size);
+            input_descriptor_label_show,
+            buf, "(Auto)", auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "Auto: ", auto_bind, size);
+            buf, "(Auto)", auto_bind, size);
 
    if (*buf)
       delim = 1;
@@ -3118,7 +3120,7 @@ void input_config_get_bind_string(
 
 void input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
-      char *buf, const char *prefix,
+      char *buf, const char *suffix,
       const struct retro_keybind *bind, size_t size)
 {
    if (GET_HAT_DIR(bind->joykey))
@@ -3127,39 +3129,32 @@ void input_config_get_bind_string_joykey(
             && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
-         size_t len = fill_pathname_join_delim(buf, prefix,
-               bind->joykey_label, ' ', size);
-         strlcpy(buf + len, " (hat)", size - len);
+         size_t len = fill_pathname_join_delim(buf,
+               bind->joykey_label, suffix, ' ', size);
       }
       else
       {
-         size_t len = strlcpy(buf, prefix, size);
-         len       += snprintf(buf + len, size - len, "Hat #%u ",
-               (unsigned)GET_HAT(bind->joykey));
+         size_t len  = snprintf(buf, size,
+               "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
 
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               len += strlcpy(buf + len, "up (",    size - len);
+               len += strlcpy(buf + len, "Up",    size - len);
                break;
             case HAT_DOWN_MASK:
-               len += strlcpy(buf + len, "down (",  size - len);
+               len += strlcpy(buf + len, "Down",  size - len);
                break;
             case HAT_LEFT_MASK:
-               len += strlcpy(buf + len, "left (",  size - len);
+               len += strlcpy(buf + len, "Left",  size - len);
                break;
             case HAT_RIGHT_MASK:
-               len += strlcpy(buf + len, "right (", size - len);
+               len += strlcpy(buf + len, "Right", size - len);
                break;
             default:
-               len += strlcpy(buf + len, "? (",     size - len);
+               len += strlcpy(buf + len, "?",     size - len);
                break;
          }
-         len       += strlcpy(buf + len,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                             size - len);
-         buf[  len] =  ')';
-         buf[++len] = '\0';
       }
    }
    else
@@ -3168,43 +3163,35 @@ void input_config_get_bind_string_joykey(
             !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
       {
-         size_t len = fill_pathname_join_delim(buf, prefix,
-               bind->joykey_label, ' ', size);
-         strlcpy(buf + len, " (btn)", size - len);
+         size_t len = fill_pathname_join_delim(buf,
+               bind->joykey_label, suffix, ' ', size);
       }
       else
-         snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         snprintf(buf, size, "%s%u",
+               "Button ", (unsigned)bind->joykey);
    }
 }
 
 void input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
-      char *buf, const char *prefix,
+      char *buf, const char *suffix,
       const struct retro_keybind *bind, size_t size)
 {
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
    {
-      size_t len = fill_pathname_join_delim(buf, prefix,
-            bind->joyaxis_label, ' ', size);
-      strlcpy(buf + len, " (axis)", size - len);
+      size_t len = fill_pathname_join_delim(buf,
+            bind->joyaxis_label, suffix, ' ', size);
    }
    else
    {
       if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-      {
-         unsigned axis = AXIS_NEG_GET(bind->joyaxis);
-         snprintf(buf, size, "%s-%u (%s)", prefix, axis,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-      }
+         snprintf(buf, size, "%s-%u",
+               "Axis ", (unsigned)AXIS_NEG_GET(bind->joyaxis));
       else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-      {
-         unsigned axis = AXIS_POS_GET(bind->joyaxis);
-         snprintf(buf, size, "%s+%u (%s)", prefix, axis,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-      }
+         snprintf(buf, size, "%s+%u",
+               "Axis ", (unsigned)AXIS_POS_GET(bind->joyaxis));
    }
 }
 
