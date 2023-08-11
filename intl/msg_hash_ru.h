@@ -3151,6 +3151,10 @@ MSG_HASH(
    "Настройка привязок виртуального RetroPad к физическому устройству ввода. Если устройство ввода корректно распознано и преднастроено, использование данного меню не требуется. Для изменения привязок ввода отдельных ядер используйте пункт 'Управление' в быстром меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro использует виртуальную абстракцию геймпада, называемую 'RetroPad' для связи фронтендов (например RetroArch) с ядрами и наоборот. Данное меню позволяет настроить привязки виртуального RetroPad к физическим устройствам ввода и сопоставить им виртуальные порты ввода. Если устройст[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Привязки порта %u"
    )
@@ -4972,6 +4976,22 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Пресет оверлея клавиатуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Выбор оверлея клавиатуры в браузере файлов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Автомасштаб оверлея клавиатуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Подстройка оверлея клавиатуры под исходный формат. Отключите для растягивания на весь экран."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -7474,6 +7494,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "Каталог хранения оверлеев."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Оверлеи клавиатур"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "Каталог хранения оверлеев клавиатур."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
