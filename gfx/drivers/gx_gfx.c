@@ -529,7 +529,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       case RGUI_ASPECT_RATIO_21_9:
       case RGUI_ASPECT_RATIO_21_9_CENTRE:
          if (new_fb_height == 240)
-            new_fb_width = 556;
+            new_fb_width = 560;
          else
             new_fb_width = (unsigned)((21.0f / 9.0f) * (float)new_fb_height) & ~3;
          break;
@@ -541,8 +541,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
             new_fb_width = (unsigned)((4.0f / 3.0f) * (float)new_fb_height) & ~3;
          break;
    }
-   if (new_fb_width > 556)
-      new_fb_width = 556;
+   if (new_fb_width > 560)
+      new_fb_width = 560;
 
    new_fb_pitch = new_fb_width * 2;
 

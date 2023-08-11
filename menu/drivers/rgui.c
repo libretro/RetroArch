@@ -83,7 +83,7 @@
 
 #define RGUI_MIN_FB_HEIGHT 192
 #define RGUI_MIN_FB_WIDTH 256
-#define RGUI_MAX_FB_WIDTH 559
+#define RGUI_MAX_FB_WIDTH 560
 
 #if defined(DINGUX)
 #if defined(RS90) && !defined(MIYOO)
