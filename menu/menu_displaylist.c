@@ -7770,15 +7770,10 @@ unsigned menu_displaylist_build_list(
 
                for (i = 0; i < interfaces.size; i++)
                {
-                  char host_trimmed[64];
                   struct net_ifinfo_entry *entry = &interfaces.entries[i];
 
-                  /* Trim "%"-suffix from host */
-                  strlcpy(host_trimmed, entry->host, sizeof(host_trimmed));
-                  host_trimmed[string_index_last_occurance(host_trimmed, '%')] = '\0';
-
                   snprintf(buf + _len, sizeof(buf) - _len, " (%s): %s\n",
-                        entry->name, host_trimmed);
+                        entry->name, entry->host);
 
                   if (menu_entries_append(list, buf, entry->name,
                         MENU_ENUM_LABEL_NETWORK_INFO_ENTRY,
