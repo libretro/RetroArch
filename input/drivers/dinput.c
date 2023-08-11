@@ -407,9 +407,9 @@ static void dinput_poll(void *data)
 static bool dinput_mouse_button_pressed(
       struct dinput_input *di, unsigned port, unsigned key)
 {
-	bool result = false;
+   bool result = false;
 
-	switch (key)
+   switch (key)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return (di->flags & DINP_FLAG_MOUSE_L_BTN);
@@ -439,7 +439,7 @@ static bool dinput_mouse_button_pressed(
          break;
    }
 
-	return result;
+   return result;
 }
 
 static int16_t dinput_lightgun_aiming_state(
@@ -564,7 +564,7 @@ static int16_t dinput_input_state(
    settings_t *settings;
    struct dinput_input *di    = (struct dinput_input*)data;
 
-	if (port < MAX_USERS)
+   if (port < MAX_USERS)
    {
       switch (device)
       {
@@ -665,7 +665,7 @@ static int16_t dinput_input_state(
             break;
          case RARCH_DEVICE_MOUSE_SCREEN:
             settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[ port ] != 0)
+            if (settings->uints.input_mouse_index[port] != 0)
                break;
 
             switch (id)
@@ -689,9 +689,9 @@ static int16_t dinput_input_state(
                   case RETRO_DEVICE_ID_MOUSE_Y:
                      return di->mouse_rel_y;
                   case RETRO_DEVICE_ID_MOUSE_LEFT:
-                     return (di->flags & DINP_FLAG_MOUSE_L_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                     return (di->flags & DINP_FLAG_MOUSE_R_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_R_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                      if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
                      {
@@ -725,11 +725,11 @@ static int16_t dinput_input_state(
                      di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
                      break;
                   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                     return (di->flags & DINP_FLAG_MOUSE_M_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_M_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                     return (di->flags & DINP_FLAG_MOUSE_B4_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_B4_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                     return (di->flags & DINP_FLAG_MOUSE_B5_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_B5_BTN) > 0;
                }
             }
             break;
