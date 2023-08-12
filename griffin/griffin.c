@@ -1167,11 +1167,6 @@ RETROARCH
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
-#ifdef HAVE_LANGEXTRA
-#include "../intl/msg_hash_chs.c"
-#include "../intl/msg_hash_pt_br.c"
-#endif
-
 #include "../intl/msg_hash_us.c"
 
 /*============================================================
