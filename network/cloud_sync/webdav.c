@@ -601,7 +601,8 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
       return;
 
    // TODO: it's possible we get a 401 here and need to redo the auth check with this request
-   if (!data || data->status < 200 || data->status >= 400)
+   /* HTTP 405 on MKCOL means it's already there */
+   if (!data || data->status < 200 || (data->status >= 400 && data->status != 405))
    {
       if (data)
          webdav_log_http_failure(webdav_mkdir_st->url, data);
