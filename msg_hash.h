@@ -4044,12 +4044,6 @@ enum msg_hash_enums
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
-const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg);
-int msg_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len);
-
-const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
-int msg_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
-
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 
@@ -4087,7 +4081,6 @@ void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
  *   be found by passing said pointer to the current font
  *   rendering implementation */
 const char *msg_hash_get_wideglyph_str(void);
-const char *msg_hash_get_wideglyph_str_chs(void);
 
 uint32_t msg_hash_calculate(const char *s);
 
