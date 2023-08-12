@@ -509,15 +509,11 @@ void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
          len);
    s[_len  ]   = ' ';
-   s[_len+1]   = '\0';
    if (runtime_log)
    {
-      char t[64];
-      t[0]  = '\0';
-      snprintf(t, sizeof(t), "%02u:%02u:%02u",
+      snprintf(s + _len + 1, len - _len - 1, "%02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
-      strlcpy(s + _len + 1, t, len - _len - 1);
    }
    else
    {
