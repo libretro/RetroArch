@@ -3492,6 +3492,55 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          return false;
 #endif
 
+      case RETRO_ENVIRONMENT_GET_DEVICE_POWER:
+         {
+            struct retro_device_power *status = (struct retro_device_power *)data;
+            frontend_ctx_driver_t *frontend = frontend_get_ptr();
+            int seconds = 0;
+            int percent = 0;
+
+            /* If the frontend driver is unavailable... */
+            if (!frontend)
+               return false;
+
+            /* If the core just wants to query support for this environment call... */
+            if (!status)
+               return frontend->get_powerstate != NULL;
+
+            /* If the frontend driver doesn't support reporting the powerstate... */
+            if (frontend->get_powerstate == NULL)
+               return false;
+
+            switch (frontend->get_powerstate(&seconds, &percent))
+            {
+               case FRONTEND_POWERSTATE_ON_POWER_SOURCE: /* on battery power */
+                  status->state = RETRO_POWERSTATE_DISCHARGING;
+                  status->percent = (int8_t)percent;
+                  status->seconds = seconds == 0 ? RETRO_POWERSTATE_NO_ESTIMATE : seconds;
+                  break;
+               case FRONTEND_POWERSTATE_CHARGING /* battery available, charging */:
+                  status->state = RETRO_POWERSTATE_CHARGING;
+                  status->percent = (int8_t)percent;
+                  status->seconds = seconds == 0 ? RETRO_POWERSTATE_NO_ESTIMATE : seconds;
+                  break;
+               case FRONTEND_POWERSTATE_CHARGED: /* on AC, battery is full */
+                  status->state = RETRO_POWERSTATE_CHARGED;
+                  status->percent = (int8_t)percent;
+                  status->seconds = RETRO_POWERSTATE_NO_ESTIMATE;
+                  break;
+               case FRONTEND_POWERSTATE_NO_SOURCE: /* on AC, no battery available */
+                  status->state = RETRO_POWERSTATE_PLUGGED_IN;
+                  status->percent = RETRO_POWERSTATE_NO_ESTIMATE;
+                  status->seconds = RETRO_POWERSTATE_NO_ESTIMATE;
+                  break;
+               default:
+                  /* The frontend driver supports power status queries,
+                   * but it still gave us bad information for whatever reason. */
+                  return false;
+                  break;
+            }
+         }
+         break;
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
