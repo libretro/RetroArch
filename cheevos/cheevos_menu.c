@@ -13,9 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <features/features_cpu.h>
+#include <retro_assert.h>
+
 #include "cheevos_locals.h"
 
 #include "../gfx/gfx_display.h"
+#include "../file_path_special.h"
 
 #ifdef HAVE_MENU
 
@@ -23,12 +27,8 @@
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 
-#include "../file_path_special.h"
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
-
-#include <features/features_cpu.h>
-#include <retro_assert.h>
 
 enum rcheevos_menuitem_bucket
 {
@@ -98,7 +98,7 @@ static void rcheevos_menu_update_buckets(void)
 {
    const rcheevos_locals_t *rcheevos_locals = get_rcheevos_locals();
    rcheevos_racheevo_t     *cheevo          = rcheevos_locals->game.achievements;
-   rcheevos_racheevo_t     *stop            = cheevo + 
+   rcheevos_racheevo_t     *stop            = cheevo +
       rcheevos_locals->game.achievement_count;
 
    while (cheevo < stop)
@@ -261,7 +261,7 @@ static void rcheevos_menu_update_badge(rcheevos_racheevo_t* cheevo)
          cheevo->menu_badge_texture   = new_badge_texture;
          cheevo->menu_badge_grayscale = badge_grayscale;
       }
-      /* menu_badge_grayscale is overloaded such 
+      /* menu_badge_grayscale is overloaded such
        * that any value greater than 1 indicates
        * the server default image is being used */
       else if (cheevo->menu_badge_grayscale < 2)
@@ -594,7 +594,7 @@ void rcheevos_menu_populate(void* data)
       unsigned idx                  = 0;
       /* convert to menu entries */
       rcheevos_menuitem_t* menuitem = rcheevos_locals->menuitems;
-      rcheevos_menuitem_t* stop     = menuitem + 
+      rcheevos_menuitem_t* stop     = menuitem +
          rcheevos_locals->menuitem_count;
 
       do
@@ -671,7 +671,7 @@ uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked)
       _len  = strlcpy(badge_file, badge, sizeof(badge_file));
       _len += strlcpy(badge_file + _len, locked ? "_lock" : "",
             sizeof(badge_file)   - _len);
-      strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION,
+      strlcpy(badge_file + _len, ".png",
             sizeof(badge_file)   - _len);
 
       fill_pathname_application_special(fullpath, sizeof(fullpath),

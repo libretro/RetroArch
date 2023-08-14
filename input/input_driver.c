@@ -1787,7 +1787,7 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
          else
          {
             unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
-               ? RETRO_DEVICE_INDEX_ANALOG_RIGHT 
+               ? RETRO_DEVICE_INDEX_ANALOG_RIGHT
                : RETRO_DEVICE_INDEX_ANALOG_LEFT;
             int16_t analog_x      = input_state_internal(input_st, settings, port, RETRO_DEVICE_ANALOG,
                   index, RETRO_DEVICE_ID_ANALOG_X);
@@ -1849,8 +1849,8 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
       button_pressed       |= input_overlay_add_inputs_inner(
             desc, input_st,
             settings,
-            show_touched 
-            ? ol_state 
+            show_touched
+            ? ol_state
             : NULL,
             port);
    }
@@ -3240,7 +3240,7 @@ void osk_update_last_codepoint(
 /* combine 3 korean elements. make utf8 character */
 static unsigned get_kr_utf8( int c1,int c2,int c3)
 {
-   int  uv = c1 * (28 * 21) + c2 * 28 + c3 + 0xac00; 
+   int  uv = c1 * (28 * 21) + c2 * 28 + c3 + 0xac00;
    int  tv = (uv >> 12) | ((uv & 0x0f00) << 2) | ((uv & 0xc0) << 2) | ((uv & 0x3f) << 16);
    return  (tv | 0x8080e0);
 }
@@ -3250,9 +3250,9 @@ static unsigned get_kr_composition( char* pcur, char* padd)
 {
    size_t _len;
    static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
-   static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};    
+   static char cc2[] = {"ㅗㅏㅘ ㅗㅐㅙ ㅗㅣㅚ ㅜㅓㅝ ㅜㅔㅞ ㅜㅣㅟ ㅡㅣㅢ"};
    static char cc3[] = {"ㄱㄱㄲ ㄱㅅㄳ ㄴㅈㄵ ㄴㅎㄶ ㄹㄱㄺ ㄹㅁㄻ ㄹㅂㄼ ㄹㅅㄽ ㄹㅌㄾ ㄹㅍㄿ ㄹㅎㅀ ㅂㅅㅄ ㅅㅅㅆ"};
-   static char s1[]  = {"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣㆍㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"}; 
+   static char s1[]  = {"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣㆍㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"};
    char *tmp1        = NULL;
    char *tmp2        = NULL;
    int c1            = -1;
@@ -3279,17 +3279,17 @@ static unsigned get_kr_composition( char* pcur, char* padd)
    strlcpy(utf8 + _len, padd, sizeof(utf8) - _len);
 
    if ((tmp2 = strstr(cc1, utf8)))
-   {   
+   {
       *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
       return 0;
    }
    else if ((tmp2 = strstr(cc2, utf8)))
-   {   
+   {
       *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
       return 0;
    }
    if (tmp2 && tmp2 < cc2 + sizeof(cc2) - 10)
-   {  
+   {
       *((unsigned*)padd) = *((unsigned*)(tmp2 + 6)) & 0xffffff;
       return 0;
    }
@@ -3310,7 +3310,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
 
    if (c1 == -1 && c2 == -1 && c3 == 0)
       return ret;
-   
+
    if (c2 == -1 && c3 == 0)
    {
       /* 2nd element attach */
@@ -3334,7 +3334,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             strlcpy(utf8, s1 + (19 + c2) * 3, 4);
             utf8[3] = 0;
             strlcat(utf8, padd, sizeof(utf8));
-            if (    !(tmp2 = strstr(cc2, utf8)) 
+            if (    !(tmp2 = strstr(cc2, utf8))
                   || (tmp2 >= cc2 + sizeof(cc2) - 10))
                return ret;
             strlcpy(utf8, tmp2 + 6, 4);
@@ -3347,13 +3347,13 @@ static unsigned get_kr_composition( char* pcur, char* padd)
       else
          if (c3 > 0)
          {
-            strlcpy(utf8, s1 + (19 + 21 + c3) * 3, 4); 
+            strlcpy(utf8, s1 + (19 + 21 + c3) * 3, 4);
             utf8[3] = 0;
             if (nv < 19)
             {
                /* 3rd element transform */
                strlcat(utf8, padd, sizeof(utf8));
-               if (    !(tmp2 = strstr(cc3, utf8)) 
+               if (    !(tmp2 = strstr(cc3, utf8))
                      || (tmp2 >= cc3 + sizeof(cc3) - 10))
                      return ret;
                strlcpy(utf8, tmp2 + 6, 4);
@@ -3363,7 +3363,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
                c3 = (int)((tmp1 - s1) / 3 - 19 - 21);
             }
             else
-            {   
+            {
                int tv = 0;
                if ((tmp2 = strstr(cc3, utf8)))
                   tv = (tmp2 - cc3) % 10;
@@ -3420,23 +3420,23 @@ static bool input_keyboard_line_event(
    /* reset composition, when edit box is opened. */
    if (state->size == 0)
       composition = 0;
-   /* reset composition, when 1 byte(=english) input */ 
+   /* reset composition, when 1 byte(=english) input */
    if (character && character < 0xff)
       composition = 0;
    if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character))
    {
       size_t len = strlen((char*)&composition);
       if (composition && state->buffer && state->size >= len && state->ptr >= len)
-      {              
+      {
          memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, len + 1);
          state->ptr  -= len;
          state->size -= len;
       }
       if (IS_COMPOSITION_KR(character) && composition)
-      {  
+      {
          unsigned new_comp;
          character   = character & 0xffffff;
-         new_comp    = get_kr_composition((char*)&composition, (char*)&character); 
+         new_comp    = get_kr_composition((char*)&composition, (char*)&character);
          if (new_comp)
             input_keyboard_line_append(state, (char*)&new_comp, 3);
          composition = character;
@@ -3444,13 +3444,13 @@ static bool input_keyboard_line_event(
       else
       {
          if (IS_END_COMPOSITION(character))
-            composition = 0; 
+            composition = 0;
          else
             composition = character & 0xffffff;
          character     &= 0xffffff;
       }
       if (len && composition == 0)
-         word = state->buffer;  
+         word = state->buffer;
       if (character)
          input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
       word = state->buffer;
@@ -4595,7 +4595,9 @@ static void input_overlay_loaded(retro_task_t *task,
    input_driver_state_t *input_st = &input_driver_st;
    bool enable_overlay            = !input_overlay_want_hidden()
          && settings->bools.input_overlay_enable;
+#ifdef HAVE_MENU
    uint16_t overlay_types;
+#endif
 
    if (err)
       return;
@@ -4609,7 +4611,9 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->flags      |= INPUT_OVERLAY_ALIVE;
    if (data->flags & OVERLAY_LOADER_IS_OSK)
       ol->flags   |= INPUT_OVERLAY_IS_OSK;
+#ifdef HAVE_MENU
    overlay_types   = data->overlay_types;
+#endif
 
    free(data);
 
@@ -5317,8 +5321,8 @@ bool replay_set_serialized_data(void* buf)
    bool recording                 = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
 
    /* If there is no current replay, ignore this entirely.
-      TODO/FIXME: Later, consider loading up the replay 
-      and allow the user to continue it? 
+      TODO/FIXME: Later, consider loading up the replay
+      and allow the user to continue it?
       Or would that be better done from the replay hotkeys?
     */
    if (!(playback || recording))
@@ -5369,7 +5373,7 @@ bool replay_set_serialized_data(void* buf)
 
             This can truncate the current recording, so beware!
 
-            TODO/FIXME: Figure out what to do about rewinding across load 
+            TODO/FIXME: Figure out what to do about rewinding across load
          */
          if (loaded_len > handle_idx)
          {
@@ -5391,7 +5395,7 @@ bool replay_set_serialized_data(void* buf)
                                    1, 180, true,
                                    NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             RARCH_ERR("[Replay] %s.\n", str);
-            return false;            
+            return false;
          }
 
          if (playback)

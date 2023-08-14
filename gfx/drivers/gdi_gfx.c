@@ -35,6 +35,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../gfx_display.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -60,7 +61,7 @@ HDC          win32_gdi_hdc;
 static void *dinput_gdi;
 
 /*
- * DISPLAY DRIVER 
+ * DISPLAY DRIVER
  */
 
 static const float *gfx_display_gdi_get_default_vertices(void)
@@ -162,7 +163,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
 };
 
 /*
- * FONT DRIVER 
+ * FONT DRIVER
  */
 
 typedef struct
@@ -341,7 +342,7 @@ font_renderer_t gdi_font = {
 };
 
 /*
- * VIDEO DRIVER 
+ * VIDEO DRIVER
  */
 
 static void gfx_ctx_gdi_get_video_size(
@@ -932,7 +933,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gdi_unload_texture(void *data, 
+static void gdi_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    struct gdi_texture *texture = (struct gdi_texture*)handle;

@@ -1152,7 +1152,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
          connection->nick);
 
    RARCH_LOG("[Netplay] %s\n", msg);
-   /* Useful notification to the client in figuring out 
+   /* Useful notification to the client in figuring out
       if a connection was successfully made before an error,
       but not as useful to the server.
       Let it be optional if server. */
@@ -1546,7 +1546,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    {
       if (!netplay->is_server)
       {
-         const char *dmsg = 
+         const char *dmsg =
             msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
          RARCH_ERR("[Netplay] %s\n", dmsg);
          runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
@@ -1570,7 +1570,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    cmd_size = ntohl(info_buf.cmd[1]);
    if (cmd_size != sizeof(info_buf) - sizeof(info_buf.cmd))
    {
-      /* Either the host doesn't have anything loaded, 
+      /* Either the host doesn't have anything loaded,
          or this is just screwy */
       if (cmd_size)
       {
@@ -2276,8 +2276,8 @@ bool netplay_send(
 
    if (buf_remaining(sbuf) < len)
    {
-      /* Can only be that this is simply too big 
-       * for our buffer, in which case we just 
+      /* Can only be that this is simply too big
+       * for our buffer, in which case we just
        * need to do a blocking send */
       if (!socket_send_all_blocking(sockfd, buf, len, true))
          return false;
@@ -2485,7 +2485,7 @@ copy:
 /**
  * netplay_recv_reset
  *
- * Reset our recv buffer so that future netplay_recvs 
+ * Reset our recv buffer so that future netplay_recvs
  * will read the same data again.
  */
 void netplay_recv_reset(struct socket_buffer *sbuf)
@@ -2669,7 +2669,7 @@ static void netplay_update_unread_ptr(netplay_t *netplay)
          }
       }
 
-      if ( !netplay->is_server && 
+      if ( !netplay->is_server &&
             netplay->server_frame_count < new_unread_frame_count)
       {
          new_unread_ptr              = netplay->server_ptr;
@@ -2699,7 +2699,7 @@ static void netplay_update_unread_ptr(netplay_t *netplay)
 netplay_input_state_t netplay_device_client_state(netplay_t *netplay,
       struct delta_frame *simframe, uint32_t device, uint32_t client)
 {
-   uint32_t                 dsize = 
+   uint32_t                 dsize =
       netplay_expected_input_size(netplay, 1 << device);
    netplay_input_state_t simstate =
       netplay_input_state_for(
@@ -3543,7 +3543,7 @@ static struct netplay_connection *allocate_connection(netplay_t *netplay)
       memset(connection, 0, sizeof(*connection));
    else if (!netplay->connections_size)
    {
-      netplay->connections = 
+      netplay->connections =
          (struct netplay_connection*)calloc(1, sizeof(*netplay->connections));
       if (!netplay->connections)
          return NULL;
@@ -4058,7 +4058,7 @@ static void remote_unpaused(netplay_t *netplay,
     for (i = 0; i < netplay->connections_size; i++)
     {
        struct netplay_connection *sc = &netplay->connections[i];
-       if (sc->flags &  
+       if (sc->flags &
                  ((NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)
              ==   (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)))
        {
@@ -4155,8 +4155,8 @@ static void netplay_hangup(netplay_t *netplay,
          uint32_t client_num = (uint32_t)
             (connection - netplay->connections + 1);
 
-         /* This special mode keeps the connection object 
-            alive long enough to send the disconnection 
+         /* This special mode keeps the connection object
+            alive long enough to send the disconnection
             message at the correct time */
          connection->mode         = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
          connection->delay_frame  = netplay->read_frame_count[client_num];
@@ -4178,7 +4178,7 @@ static void netplay_hangup(netplay_t *netplay,
 /**
  * netplay_delayed_state_change:
  *
- * Handle any pending state changes which are ready 
+ * Handle any pending state changes which are ready
  * as of the beginning of the current frame.
  */
 static void netplay_delayed_state_change(netplay_t *netplay)
@@ -4547,7 +4547,7 @@ static void announce_play_spectate(netplay_t *netplay,
          }
          else
          {
-            /* Multiple devices, so step one is to make the 
+            /* Multiple devices, so step one is to make the
                device string listing them all */
             pdevice_str = device_str;
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
@@ -4968,55 +4968,6 @@ bool netplay_cmd_mode(netplay_t *netplay,
       cmd, payload, cmd_size);
 }
 
-static bool chat_check(netplay_t *netplay)
-{
-   if (!netplay)
-      return false;
-
-   /* Do nothing if we don't have a nickname. */
-   if (string_is_empty(netplay->nick))
-      return false;
-
-   /* Do nothing if we are not playing. */
-   if (netplay->self_mode != NETPLAY_CONNECTION_PLAYING &&
-         netplay->self_mode != NETPLAY_CONNECTION_SLAVE)
-      return false;
-
-   /* If we are the server,
-      check if someone is able to read us. */
-   if (netplay->is_server)
-   {
-      size_t i;
-
-      for (i = 0; i < netplay->connections_size; i++)
-      {
-         struct netplay_connection *connection = &netplay->connections[i];
-
-         if (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
-            continue;
-
-         if (     (connection->mode == NETPLAY_CONNECTION_PLAYING)
-               || (connection->mode == NETPLAY_CONNECTION_SLAVE))
-         {
-            REQUIRE_PROTOCOL_VERSION(connection, 6)
-               return true;
-         }
-      }
-   }
-   /* Otherwise, just check whether our connection is active
-      and the server is running protocol 6+. */
-   else
-   {
-      if (netplay->connections[0].flags & NETPLAY_CONN_FLAG_ACTIVE)
-      {
-         REQUIRE_PROTOCOL_VERSION(&netplay->connections[0], 6)
-            return true;
-      }
-   }
-
-   return false;
-}
-
 static void relay_chat(netplay_t *netplay, const char *nick, const char *msg)
 {
    size_t i;
@@ -5086,6 +5037,55 @@ static void show_chat(netplay_t *netplay, const char *nick, const char *msg)
 }
 
 #ifdef HAVE_MENU
+static bool chat_check(netplay_t *netplay)
+{
+   if (!netplay)
+      return false;
+
+   /* Do nothing if we don't have a nickname. */
+   if (string_is_empty(netplay->nick))
+      return false;
+
+   /* Do nothing if we are not playing. */
+   if (   netplay->self_mode != NETPLAY_CONNECTION_PLAYING
+       && netplay->self_mode != NETPLAY_CONNECTION_SLAVE)
+      return false;
+
+   /* If we are the server,
+      check if someone is able to read us. */
+   if (netplay->is_server)
+   {
+      size_t i;
+
+      for (i = 0; i < netplay->connections_size; i++)
+      {
+         struct netplay_connection *connection = &netplay->connections[i];
+
+         if (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
+            continue;
+
+         if (     (connection->mode == NETPLAY_CONNECTION_PLAYING)
+               || (connection->mode == NETPLAY_CONNECTION_SLAVE))
+         {
+            REQUIRE_PROTOCOL_VERSION(connection, 6)
+               return true;
+         }
+      }
+   }
+   /* Otherwise, just check whether our connection is active
+      and the server is running protocol 6+. */
+   else
+   {
+      if (netplay->connections[0].flags & NETPLAY_CONN_FLAG_ACTIVE)
+      {
+         REQUIRE_PROTOCOL_VERSION(&netplay->connections[0], 6)
+            return true;
+      }
+   }
+
+   return false;
+}
+
 static void send_chat(void *userdata, const char *line)
 {
    char msg[NETPLAY_CHAT_MAX_SIZE];
@@ -5150,7 +5150,7 @@ static bool handle_chat(netplay_t *netplay,
       const char *nick, const char *msg)
 {
    if (    (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
-         || string_is_empty(nick) 
+         || string_is_empty(nick)
          || string_is_empty(msg))
       return false;
 
@@ -5412,7 +5412,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             if (cmd_size != sizeof(frame))
             {
-               RARCH_ERR("[Netplay] NETPLAY_CMD_NOINPUT received" 
+               RARCH_ERR("[Netplay] NETPLAY_CMD_NOINPUT received"
                      " an unexpected payload size.\n");
                return netplay_cmd_nak(netplay, connection);
             }
@@ -7188,7 +7188,7 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
 
       netplay->allow_pausing =
          settings->bools.netplay_allow_pausing;
-      netplay->input_latency_frames_min = 
+      netplay->input_latency_frames_min =
          settings->uints.netplay_input_latency_frames_min;
       if (settings->bools.run_ahead_enabled)
          netplay->input_latency_frames_min -=
@@ -7284,7 +7284,7 @@ static void netplay_send_savestate(netplay_t *netplay,
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
-      if (  (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE)) 
+      if (  (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
           ||  (connection->mode  < NETPLAY_CONNECTION_CONNECTED)
           ||  (connection->compression_supported != cx))
          continue;
@@ -7324,7 +7324,7 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->flags &  
+      if (connection->flags &
                 ((NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)
             ==  (NETPLAY_CONN_FLAG_ACTIVE | NETPLAY_CONN_FLAG_PAUSED)))
          paused_ct++;
@@ -8912,7 +8912,7 @@ static bool kick_client_by_id(netplay_t *netplay, int client_id, bool ban)
 
    connection = &netplay->connections[client_id];
    /* We can only kick connected clients. */
-   if (    (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE)) 
+   if (    (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
          ||  (connection->mode < NETPLAY_CONNECTION_CONNECTED))
       return false;
 
@@ -9133,7 +9133,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
       case RARCH_NETPLAY_CTL_IS_CONNECTED:
-         ret = (     netplay 
+         ret = (     netplay
                && (!(netplay->is_server))
                &&   (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED));
          break;
@@ -9180,7 +9180,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
 
       case RARCH_NETPLAY_CTL_PAUSE:
-         if (       netplay 
+         if (       netplay
                && (!(netplay->local_paused)))
             netplay_frontend_paused(netplay, true);
          break;
@@ -9594,7 +9594,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
       formatted_nick_len = (size_t)snprintf(
             formatted_nick, sizeof(formatted_nick),
             "%s: ", nick);
-      strlcpy(formatted_msg, msg, sizeof(formatted_msg) 
+      strlcpy(formatted_msg, msg, sizeof(formatted_msg)
             - formatted_nick_len);
       formatted_nick_width = font_driver_get_message_width(
          font->font, formatted_nick, formatted_nick_len, 1.0f);

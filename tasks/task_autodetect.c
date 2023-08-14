@@ -41,6 +41,8 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#include "../runloop.h"
+
 enum autoconfig_handle_flags
 {
    AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
@@ -115,7 +117,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    uint16_t config_pid = 0;
    bool pid_match      = false;
    unsigned affinity   = 0;
-   struct config_entry_list 
+   struct config_entry_list
       *entry           = NULL;
 
    /* Parse config file */

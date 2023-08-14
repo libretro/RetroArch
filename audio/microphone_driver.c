@@ -14,18 +14,21 @@
  */
 
 #include <math.h>
+#include <memalign.h>
+#include <audio/conversion/s16_to_float.h>
+#include <audio/conversion/float_to_s16.h>
+#include <retro_assert.h>
+#include <string/stdstring.h>
+#include <audio/conversion/dual_mono.h>
+
 #include "microphone_driver.h"
+#include "audio_defines.h"
+
 #include "../configuration.h"
 #include "../driver.h"
-#include "../verbosity.h"
-#include "../runloop.h"
-#include "memalign.h"
-#include "audio/conversion/s16_to_float.h"
-#include "audio/conversion/float_to_s16.h"
 #include "../list_special.h"
-#include "retro_assert.h"
-#include "string/stdstring.h"
-#include "audio/conversion/dual_mono.h"
+#include "../runloop.h"
+#include "../verbosity.h"
 
 static microphone_driver_state_t mic_driver_st;
 
