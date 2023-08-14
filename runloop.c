@@ -3472,7 +3472,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
 #if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
-            *(bool*)data             = jb_has_debugger_attached();
+            *(bool*)data             = jit_available();
 #else
             *(bool*)data             = true;
 #endif
