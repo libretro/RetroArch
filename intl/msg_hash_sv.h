@@ -489,7 +489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Stöd för Snabbsparning"
+   "Stöd för Status-snabbsparning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -2573,6 +2573,14 @@ MSG_HASH(
    "Sänk volym"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "Spara status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "Sparar din status till det nuvarande spelet och lagrar det i minnesplatsen."
+   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2665,11 +2673,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för savestates."
+   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för sparad status."
    )
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Kringgå kärninformationens funktioner för sparad status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Specificerar om kärninformationens möjligheter för sparad status ska ignoreras, vilket gör det möjligt att experimentera med relaterade funktioner (köra framåt, spola tillbaka osv)."
+   )
 #ifndef HAVE_DYNAMIC
 #endif
 MSG_HASH(
@@ -2710,6 +2726,66 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Sortera sparad status i mappar efter kärnnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   "Sortera sparad status i mappar med namn efter den använda kärnan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Sortera sparad status i mappar efter innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Sortera sparad status i mappar med namn efter den katalog där innehållet finns."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Öka sparstatus-index automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+   "Innan en sparad status skapas, ökas sparstatus-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Automatiskt-ökande sparstatusar med maximalt antal att behålla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Begränsa antalet sparstatusar som kommer att skapas när \"Öka statusindex automatiskt\" är aktiverat. Om gränsen överskrids vid sparande av en ny status kommer den befintliga statusen med lägst index att raderas. Ett värde av \"0\" innebär att obegränsade statusar kommer att sparas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Spara din status automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Sparar din status automatiskt när innehållet avslutas. RetroArch kommer kunna ladda in status filen automatiskt om \"Spara din status automatiskt\" är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   "Laddar automatiskt upp den sparade statusen vid spelstart."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Miniatyr för sparad status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Visa miniatyrer av sparstatusar i menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Komprimera din sparstatus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   "Lagrar dina sparade statusfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och laddningstider."
+   )
 
 /* Settings > Logging */
 
@@ -4538,7 +4614,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Kärnan har inget stöd för savestates."
+   "Kärnan har inget stöd för sparad status."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -4670,7 +4746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Run-Ahead har inaktiverats eftersom denna kärna saknar stöd för savestates."
+   "Run-Ahead har inaktiverats eftersom denna kärna saknar stöd för sparad status."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,

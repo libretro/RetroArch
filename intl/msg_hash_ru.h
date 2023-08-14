@@ -10054,7 +10054,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
-   "Назад"
+   "Как давно"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
