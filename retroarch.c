@@ -729,7 +729,7 @@ static void driver_adjust_system_rates(
             if (video_st->current_video->set_nonblock_state)
                video_st->current_video->set_nonblock_state(
                      video_st->data, true,
-                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) 
+                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
                      && video_adaptive_vsync,
                      video_swap_interval);
          }
@@ -895,7 +895,7 @@ void drivers_init(
       bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
       bool windowed_fullscreen             = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
       bool all_fullscreen                  = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
-   
+
       /* Making a switch from PC standard 60 Hz to NTSC 59.94 is excluded by the last condition. */
       if (     (refresh_rate > 0.0f)
             && !settings->uints.crt_switch_resolution
@@ -909,9 +909,9 @@ void drivers_init(
              || ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN)       && all_fullscreen))
          {
             bool video_switch_refresh_rate = false;
-   
+
             video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
-   
+
             if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
             {
                int reinit_flags = DRIVER_AUDIO_MASK;
@@ -1173,7 +1173,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    input_driver_state_t *input_st  = input_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
    camera_driver_state_t *camera_st= camera_state_get_ptr();
-   location_driver_state_t 
+   location_driver_state_t
       *location_st                 = location_state_get_ptr();
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
 #if defined(HAVE_GFX_WIDGETS)
@@ -1262,12 +1262,12 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
          {
             float *hz                     = (float*)data;
-            audio_driver_state_t 
+            audio_driver_state_t
                *audio_st                  = audio_state_get_ptr();
             settings_t *settings          = config_get_ptr();
             runloop_state_t *runloop_st   = runloop_state_get_ptr();
             video_driver_state_t*video_st = video_state_get_ptr();
-            unsigned 
+            unsigned
                audio_output_sample_rate   = settings->uints.audio_output_sample_rate;
             bool vrr_runloop_enable       = settings->bools.vrr_runloop_enable;
             float video_refresh_rate      = settings->floats.video_refresh_rate;
@@ -3356,7 +3356,7 @@ bool command_event(enum event_command cmd, void *data)
             audio_st->callback.callback  = NULL;
             audio_st->callback.set_state = NULL;
 
-            if (     !type 
+            if (     !type
                   || !runloop_event_init_core(settings, input_st, *type,
                      p_rarch->dir_savefile, p_rarch->dir_savestate))
             {
@@ -3555,7 +3555,7 @@ bool command_event(enum event_command cmd, void *data)
                         playlist_get_sort_mode(g_defaults.content_favorites);
 
                      /* New addition - need to resort if option is enabled */
-                     if (     (playlist_sort_alphabetical 
+                     if (     (playlist_sort_alphabetical
                            && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
                            || (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
                         playlist_qsort(g_defaults.content_favorites);
@@ -3590,7 +3590,7 @@ bool command_event(enum event_command cmd, void *data)
 
 #ifdef HAVE_MENU
             /* Update playlist metadata */
-            if (     menu_st->driver_ctx 
+            if (     menu_st->driver_ctx
                   && menu_st->driver_ctx->refresh_thumbnail_image)
                menu_st->driver_ctx->refresh_thumbnail_image(
                      menu_st->userdata, i);
@@ -4235,7 +4235,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
             bool video_fullscreen                         =
-                  settings->bools.video_fullscreen 
+                  settings->bools.video_fullscreen
                || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
             input_driver_state_t
@@ -4676,11 +4676,11 @@ static void global_free(struct rarch_state *p_rarch)
                         | RUNLOOP_FLAG_USE_SRAM);
 #ifdef HAVE_PATCH
    p_rarch->flags    &= ~(
-                         RARCH_FLAGS_BPS_PREF 
+                         RARCH_FLAGS_BPS_PREF
                        | RARCH_FLAGS_IPS_PREF
                        | RARCH_FLAGS_UPS_PREF);
    runloop_st->flags &= ~RUNLOOP_FLAG_PATCH_BLOCKED;
-      
+
 #endif
 #ifdef HAVE_CONFIGFILE
    p_rarch->flags    &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
@@ -5491,7 +5491,7 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
       path_stats = path_stat(tmp_path);
 
-      if (   (path_stats & RETRO_VFS_STAT_IS_VALID)     != 0 
+      if (   (path_stats & RETRO_VFS_STAT_IS_VALID)     != 0
           && (path_stats & RETRO_VFS_STAT_IS_DIRECTORY) == 0)
       {
          core_path         = tmp_path;
@@ -5546,7 +5546,7 @@ end:
 }
 #endif
 
-#ifdef HAVE_LIBRETRODB
+#if defined(HAVE_LIBRETRODB) && defined(HAVE_MENU)
 void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
@@ -6217,8 +6217,10 @@ static bool retroarch_parse_input_and_config(
                   drivers_init(settings, reinit_flags, 0, false);
                   retroarch_init_task_queue();
 
+#ifdef HAVE_MENU
                   if (explicit_menu)
                      cb_task_dbscan = handle_dbscan_finished;
+#endif
 
                   task_push_dbscan(
                         directory_playlist,
@@ -7148,7 +7150,7 @@ bool retroarch_main_quit(void)
 
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
-   if (video_st->video_refresh_rate_original) 
+   if (video_st->video_refresh_rate_original)
    {
       RARCH_DBG("[Video]: Restoring original refresh rate: %f Hz\n", video_st->video_refresh_rate_original);
       /* Set the av_info fps also to the original refresh rate */
