@@ -1984,7 +1984,7 @@ static void ram_state_to_file(void)
 
 enum rarch_content_type path_is_media_type(const char *path)
 {
-   char ext_lower[128];
+   char ext_lower[16];
    strlcpy(ext_lower, path_get_extension(path), sizeof(ext_lower));
 
    string_to_lower(ext_lower);
