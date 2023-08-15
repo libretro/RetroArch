@@ -224,7 +224,7 @@ static bool audio_driver_free_devices_list(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    if (
-            !audio_st->current_audio 
+            !audio_st->current_audio
          || !audio_st->current_audio->device_list_free
          || !audio_st->context_audio_data)
       return false;
@@ -274,7 +274,7 @@ static void audio_driver_deinit_resampler(void)
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (     audio_st->current_audio 
+   if (     audio_st->current_audio
          && audio_st->current_audio->free)
    {
       if (audio_st->context_audio_data)
@@ -412,7 +412,7 @@ static void audio_driver_flush(
    struct resampler_data src_data;
    float audio_volume_gain           = (audio_st->mute_enable ||
          (audio_fastforward_mute && is_fastforward))
-               ? 0.0f 
+               ? 0.0f
                : audio_st->volume_gain;
 
    src_data.data_out                 = NULL;
@@ -462,7 +462,7 @@ static void audio_driver_flush(
    {
       /* Readjust the audio input rate. */
       int      half_size             = (int)(audio_st->buffer_size / 2);
-         
+
       int      avail               =
           (int)audio_st->current_audio->write_avail(
                audio_st->context_audio_data);
@@ -526,7 +526,7 @@ static void audio_driver_flush(
 
       audio_st->last_flush_time = flush_time;
    }
- 
+
    audio_st->resampler->process(
          audio_st->resampler_data, &src_data);
 
@@ -542,7 +542,7 @@ static void audio_driver_flush(
          if (audio_st->mixer_volume_gain == 1.0f)
             override                      = false;
          mixer_gain                       = audio_st->mixer_volume_gain;
-            
+
       }
       audio_mixer_mix(audio_st->output_samples_buf,
             src_data.output_frames, mixer_gain, override);
@@ -710,7 +710,7 @@ bool audio_driver_init_internal(
             audio_driver_st.context_audio_data))
       audio_driver_st.flags |=  AUDIO_FLAG_USE_FLOAT;
 
-   if (     !audio_sync 
+   if (     !audio_sync
          && (audio_driver_st.flags & AUDIO_FLAG_ACTIVE))
    {
       if (     (audio_driver_st.flags & AUDIO_FLAG_ACTIVE)
@@ -948,9 +948,8 @@ bool audio_driver_dsp_filter_init(const char *device)
    retro_dsp_filter_t *audio_driver_dsp = NULL;
    struct string_list *plugs            = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char ext_name[32];
+   char ext_name[16];
    char basedir[256];
-   ext_name[0]             = '\0';
    fill_pathname_basedir(basedir, device, sizeof(basedir));
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return false;
@@ -1242,7 +1241,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
           * so have to do it here */
          free(buf);
          buf = NULL;
-         break; 
+         break;
       case AUDIO_MIXER_TYPE_OGG:
          handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);
          break;
@@ -1627,12 +1626,12 @@ bool audio_driver_callback(void)
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool core_paused            = runloop_paused ||
-      (    settings->bools.menu_pause_libretro 
+      (    settings->bools.menu_pause_libretro
        && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
        &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL));
 #else
    bool core_paused            = runloop_paused ||
-     (settings->bools.menu_pause_libretro 
+     (settings->bools.menu_pause_libretro
       && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #endif
 #else
@@ -1667,7 +1666,7 @@ bool audio_driver_start(bool is_shutdown)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    if (
-            !audio_st->current_audio 
+            !audio_st->current_audio
          || !audio_st->current_audio->start
          || !audio_st->context_audio_data)
       goto error;

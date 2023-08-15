@@ -860,7 +860,7 @@ static int setting_uint_action_left_default(
       {
          settings_t *settings = config_get_ptr();
 
-         if (settings && 
+         if (settings &&
              settings->bools.menu_navigation_wraparound_enable)
          {
             float max = setting->max;
@@ -1040,7 +1040,7 @@ void setting_generic_handle_change(rarch_setting_t *setting)
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (       setting->cmd_trigger_idx 
+   if (       setting->cmd_trigger_idx
          && !(setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
       command_event(setting->cmd_trigger_idx, NULL);
 }
@@ -1078,7 +1078,7 @@ static int setting_fraction_action_left_default(
    if (!setting)
       return -1;
 
-   *setting->value.target.fraction = 
+   *setting->value.target.fraction =
       *setting->value.target.fraction - setting->step;
 
    if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
@@ -1218,7 +1218,7 @@ static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, *setting->value.target.boolean 
+      strlcpy(s, *setting->value.target.boolean
             ? setting->boolean.on_label
             : setting->boolean.off_label,
             len);
@@ -1247,7 +1247,7 @@ static void setting_get_string_representation_st_dir(rarch_setting_t *setting,
    if (setting)
       strlcpy(s,
              *setting->value.target.string
-            ? setting->value.target.string 
+            ? setting->value.target.string
             : setting->dir.empty_path,
             len);
 }
@@ -2546,7 +2546,7 @@ static int setting_action_ok_bind_defaults(
       return -1;
 
    target                         =  &input_config_binds[setting->index_offset][0];
-   def_binds                      =  (setting->index_offset) 
+   def_binds                      =  (setting->index_offset)
                                     ? retro_keybinds_rest
                                     : retro_keybinds_1;
    binds->begin                   = MENU_SETTINGS_BIND_BEGIN;
@@ -5656,7 +5656,7 @@ static int setting_uint_action_left_custom_viewport_height(
       custom->height = setting->min;
    else if (settings->bools.video_scale_integer)
    {
-      struct retro_game_geometry *geom = 
+      struct retro_game_geometry *geom =
          (struct retro_game_geometry*)&av_info->geometry;
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
@@ -7110,7 +7110,7 @@ static void menu_settings_list_current_add_range(
 
    if ((*list)[idx].type == ST_FLOAT)
       (*list)[idx].ui_type        = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
-                                  
+
    (*list)[idx].min               = min;
    (*list)[idx].step              = step;
    (*list)[idx].max               = max;
@@ -8052,9 +8052,9 @@ static void general_write_handler(rarch_setting_t *setting)
 #if defined(DINGUX) && defined(DINGUX_BETA)
       case MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE:
          {
-            enum dingux_refresh_rate 
+            enum dingux_refresh_rate
                current_refresh_rate      = DINGUX_REFRESH_RATE_60HZ;
-            enum dingux_refresh_rate 
+            enum dingux_refresh_rate
                target_refresh_rate       =
                   (enum dingux_refresh_rate)settings->uints.video_dingux_refresh_rate;
             bool refresh_rate_valid                       = false;
@@ -8102,7 +8102,7 @@ static void general_write_handler(rarch_setting_t *setting)
          settings->modified               = true;
          settings->bools.video_hdr_enable = *setting->value.target.boolean;
 
-         rarch_cmd = CMD_EVENT_REINIT;            
+         rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
          {
@@ -8971,10 +8971,10 @@ static bool setting_append_list_input_player_options(
       strlcpy(label_mouse_index[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
             sizeof(label_mouse_index[user]));
-      strlcpy(label_bind_all[user], 
+      strlcpy(label_bind_all[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
             sizeof(label_bind_all[user]));
-      strlcpy(label_bind_defaults[user], 
+      strlcpy(label_bind_defaults[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL),
             sizeof(label_bind_defaults[user]));
       strlcpy(label_bind_all_save_autoconfig[user],
@@ -9132,8 +9132,8 @@ static bool setting_append_list_input_player_options(
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
          size_t _len = 0;
-         i           =  (j < RARCH_ANALOG_BIND_LIST_END) 
-            ? input_config_bind_order[j] 
+         i           =  (j < RARCH_ANALOG_BIND_LIST_END)
+            ? input_config_bind_order[j]
             : j;
 
          if (input_config_bind_map_get_meta(i))
@@ -9230,7 +9230,7 @@ static bool setting_append_list_input_libretro_device_options(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
             user + 1);
 
-      strlcpy(label_device_type[user], 
+      strlcpy(label_device_type[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE),
             sizeof(label_device_type[user]));
 
@@ -9296,7 +9296,7 @@ static bool setting_append_list_input_remap_port_options(
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_PORT),
                user + 1);
 
-      strlcpy(label_port[user], 
+      strlcpy(label_port[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT),
             sizeof(label_port[user]));
 
@@ -9489,10 +9489,7 @@ static bool setting_append_list(
          if (frontend_driver_has_fork())
 #endif
          {
-            char ext_name[255];
-
-            ext_name[0] = '\0';
-
+            char ext_name[16];
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             {
                CONFIG_ACTION(
@@ -9504,7 +9501,7 @@ static bool setting_append_list(
                      parent_group);
                (*list)[list_info->index - 1].size                = (uint32_t)path_get_realsize(RARCH_PATH_CORE);
                (*list)[list_info->index - 1].value.target.string = path_get_ptr(RARCH_PATH_CORE);
-               (*list)[list_info->index - 1].values       = ext_name;
+               (*list)[list_info->index - 1].values              = ext_name;
                MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_LOAD_CORE);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_BROWSER_ACTION);
             }
@@ -11527,7 +11524,7 @@ static bool setting_append_list(
                   &setting_get_string_representation_hex_and_uint,
                   0,
                   (cheat_manager_state.total_memory_size == 0)
-                  ? 0 
+                  ? 0
                   : (cheat_manager_state.total_memory_size - 1),
                   1);
 
@@ -13267,7 +13264,7 @@ static bool setting_append_list(
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                   menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
-               }  
+               }
             }
 #endif
             END_SUB_GROUP(list, list_info, parent_group);
@@ -13412,7 +13409,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].offset_by     = 0;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_range(list, list_info, -20, 20, 1.0, true, true);
-         
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.crt_switch_custom_refresh_enable,
@@ -14386,7 +14383,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler, 
+                  general_read_handler,
                   SD_FLAG_NONE
                   );
             CONFIG_BOOL(
@@ -14401,7 +14398,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler, 
+                  general_read_handler,
                   SD_FLAG_NONE
                   );
             CONFIG_BOOL(
@@ -14416,7 +14413,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler, 
+                  general_read_handler,
                   SD_FLAG_NONE
                   );
             CONFIG_BOOL(
@@ -14431,7 +14428,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler, 
+                  general_read_handler,
                   SD_FLAG_NONE
                   );
             CONFIG_BOOL(
@@ -14446,7 +14443,7 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler, 
+                  general_read_handler,
                   SD_FLAG_NONE
                   );
 #endif
@@ -14933,7 +14930,7 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-                  
+
             CONFIG_ACTION(
                   list, list_info,
                   MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,
@@ -22000,7 +21997,7 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK,
                &group_info,
                &subgroup_info,
-               parent_group);         
+               parent_group);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -22089,7 +22086,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
-         break;         
+         break;
       case SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
@@ -23114,7 +23111,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    if (!list)
       return NULL;
 
-   root                                 = 
+   root                                 =
       msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
 
    for (i = 0; i < (unsigned)list_info->size; i++)

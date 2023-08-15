@@ -86,7 +86,7 @@ static bool core_backup_get_backup_dir(
     *   core directory as a base */
    fill_pathname_join_special(tmp,
          string_is_empty(dir_core_assets)
-         ? dir_libretro 
+         ? dir_libretro
          : dir_core_assets,
                "core_backups", sizeof(tmp));
 
@@ -174,11 +174,9 @@ bool core_backup_get_backup_path(
 /* Returns detected type of specified core backup file */
 enum core_backup_type core_backup_get_backup_type(const char *backup_path)
 {
+   char core_ext[16];
    const char *backup_ext            = NULL;
    struct string_list *metadata_list = NULL;
-   char core_ext[255];
-
-   core_ext[0] = '\0';
 
    if (string_is_empty(backup_path) || !path_is_valid(backup_path))
       goto error;
@@ -224,7 +222,7 @@ enum core_backup_type core_backup_get_backup_type(const char *backup_path)
 
       string_list_free(metadata_list);
       metadata_list = NULL;
-   
+
       return CORE_BACKUP_TYPE_ARCHIVE;
    }
 
@@ -487,7 +485,7 @@ core_backup_list_t *core_backup_list_init(
    char core_dir[PATH_MAX_LENGTH];
    char backup_dir[PATH_MAX_LENGTH];
 
-   core_dir[0]   = '\0'; 
+   core_dir[0]   = '\0';
    backup_dir[0] = '\0';
 
    /* Get core filename and parent directory */

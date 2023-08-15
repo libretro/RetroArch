@@ -5099,7 +5099,7 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    size_t _len;
    QString path;
    QByteArray pathArray;
-   char core_ext[32];
+   char core_ext[16];
    char filters[128];
    const char *pathData          = NULL;
    settings_t *settings          = config_get_ptr();

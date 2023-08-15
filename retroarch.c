@@ -1368,7 +1368,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char ext_shaders[255];
 #endif
-   char ext_name[255];
+   char ext_name[16];
    const char *exts                  = NULL;
    bool recursive                    = false;
 
@@ -1378,11 +1378,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
          exts = filter;
          break;
       case DIR_LIST_CORES:
-         ext_name[0]         = '\0';
-
          if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             return NULL;
-
          exts = ext_name;
          break;
       case DIR_LIST_RECURSIVE:
@@ -3256,13 +3253,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_INFO_INIT:
          {
-            char ext_name[255];
+            char ext_name[16];
             const char *dir_libretro       = settings->paths.directory_libretro;
             const char *path_libretro_info = settings->paths.path_libretro_info;
             bool show_hidden_files         = settings->bools.show_hidden_files;
             bool core_info_cache_enable    = settings->bools.core_info_cache_enable;
-
-            ext_name[0]                    = '\0';
 
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
@@ -5473,10 +5468,7 @@ static void retroarch_parse_input_libretro_path(const char *path)
 
    if (!string_is_empty(path_ext))
    {
-      char core_ext[255];
-
-      core_ext[0] = '\0';
-
+      char core_ext[16];
       if (    string_is_empty(settings->paths.directory_libretro)
           || !frontend_driver_get_core_extension(core_ext,
                sizeof(core_ext))

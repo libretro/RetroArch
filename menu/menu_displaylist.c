@@ -257,7 +257,7 @@ static int filebrowser_parse(
                   filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, show_hidden_files, true, false);
       }
-      else if ((type_default == FILE_TYPE_MANUAL_SCAN_DAT) 
+      else if ((type_default == FILE_TYPE_MANUAL_SCAN_DAT)
             || (type_default == FILE_TYPE_SIDELOAD_CORE))
          ret = dir_list_initialize(&str_list, path,
                exts, true, show_hidden_files, false, false);
@@ -1574,9 +1574,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
        *      selection of this core
        *   3) Hope that the user does not attempt to
        *      load unsupported content... */
-      char exts[32];
-      exts[0] = '\0';
-
+      char exts[16];
       /* Attempt to identify 'broken' platforms by fetching
        * the core file extension - if there is none, then
        * it is impossible for RetroArch to populate a
@@ -1926,7 +1924,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
             if (memory_used != 0 && memory_total != 0)
             {
-               _len = strlcpy(entry, 
+               _len = strlcpy(entry,
                      msg_hash_to_str(MSG_MEMORY), sizeof(entry));
                snprintf(entry + _len, sizeof(entry) - _len, ": %" PRIu64 "/%" PRIu64 " MB",
                      BYTES_TO_MB(memory_used), BYTES_TO_MB(memory_total));
@@ -1989,7 +1987,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       gfx_ctx_ident_t ident_info;
       video_context_driver_get_ident(&ident_info);
-      
+
       /* Video Context Driver */
       snprintf(entry, sizeof(entry), "%s: %s",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
@@ -2000,7 +1998,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
          count++;
-      
+
       {
          gfx_ctx_metrics_t metrics;
          float val = 0.0f;
@@ -6742,7 +6740,7 @@ unsigned menu_displaylist_build_list(
                   count++;
 
             if (    string_is_equal(current_input->ident, "android")
-                || (string_is_equal(current_input->ident, "cocoa") 
+                || (string_is_equal(current_input->ident, "cocoa")
                 &&  string_is_equal(os_ver, "iOS")))
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
@@ -10380,8 +10378,8 @@ unsigned menu_displaylist_build_list(
 #ifdef _3DS
             u8 device_model = 0xFF;
             CFGU_GetSystemModel(&device_model);
-            if (     (device_model == 2) 
-                  || (device_model == 4) 
+            if (     (device_model == 2)
+                  || (device_model == 4)
                   || (device_model == 5))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -12200,7 +12198,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char mixer_stream_str[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
                size_t _len                 = strlcpy(mixer_stream_str, "mixer_stream_", sizeof(mixer_stream_str));
-               
+
                lbl[0]                      = '\0';
 
                snprintf(mixer_stream_str + _len, sizeof(mixer_stream_str) - _len, "%d", id);
@@ -13122,7 +13120,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
                         FILE_TYPE_NONE, 0, 0, NULL);
 
-               if (     (count     != prev_count) 
+               if (     (count     != prev_count)
                      || (selection >= count))
                {
                   info->flags |= MD_FLAG_NEED_REFRESH
@@ -14626,8 +14624,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   break;
                case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
                   {
-                     char ext_names[NAME_MAX_LENGTH];
-                     ext_names[0] = '\0';
+                     char ext_names[32];
 
                      info->type_default = FILE_TYPE_SIDELOAD_CORE;
 
@@ -14682,9 +14679,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             {
                char ext_name[16];
-
-               ext_name[0] = '\0';
-
                filebrowser_clear_type();
                info->type_default = FILE_TYPE_PLAIN;
                if (frontend_driver_get_core_extension(

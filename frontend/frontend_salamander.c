@@ -164,15 +164,12 @@ static void salamander_init(char *s, size_t len)
 
    if (!config_valid)
    {
-      char executable_name[PATH_MAX_LENGTH];
-
-      executable_name[0] = '\0';
-
+      char core_ext[16];
       /* No config file - search filesystem for
        * first available core */
       frontend_driver_get_core_extension(
-            executable_name, sizeof(executable_name));
-      find_and_set_first_file(s, len, executable_name);
+            core_ext, sizeof(core_ext));
+      find_and_set_first_file(s, len, core_ext);
 
       /* Save result to new config file */
       if (!string_is_empty(s))
