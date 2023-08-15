@@ -2488,8 +2488,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
                      2, 180, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-               command_event(CMD_EVENT_RECORD_INIT, NULL);
+               if (recording_st->streaming_enable)
+               {
+                  command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
+                  command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
+               }
+               else
+               {
+                  command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+                  command_event(CMD_EVENT_RECORD_INIT, NULL);
+               }
             }
 
             /* Hide mouse cursor in fullscreen mode */
@@ -2690,8 +2698,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
                      2, 180, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-               command_event(CMD_EVENT_RECORD_INIT, NULL);
+               if (recording_st->streaming_enable)
+               {
+                  command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
+                  command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
+               }
+               else
+               {
+                  command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+                  command_event(CMD_EVENT_RECORD_INIT, NULL);
+               }
             }
 
             /* Hide mouse cursor in fullscreen after
