@@ -3056,8 +3056,8 @@ const char *video_shader_get_current_shader_preset(void)
    bool video_shader_enable       = settings->bools.video_shader_enable;
    unsigned video_shader_delay    = settings->uints.video_shader_delay;
    bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable        = video_st->flags &
-      VIDEO_FLAG_CLI_SHADER_DISABLE;
+   bool cli_shader_disable        = (video_st->flags &
+      VIDEO_FLAG_CLI_SHADER_DISABLE) ? true : false;
 
    if (!video_shader_enable)
       return NULL;

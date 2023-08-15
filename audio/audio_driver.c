@@ -1625,13 +1625,13 @@ bool audio_driver_callback(void)
    bool runloop_paused         = runloop_flags & RUNLOOP_FLAG_PAUSED;
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
-   bool core_paused            = runloop_paused ||
-      (    settings->bools.menu_pause_libretro
+   bool core_paused            = runloop_paused
+       || (settings->bools.menu_pause_libretro
        && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
        &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL));
 #else
-   bool core_paused            = runloop_paused ||
-     (settings->bools.menu_pause_libretro
+   bool core_paused            = runloop_paused
+      || (settings->bools.menu_pause_libretro
       && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #endif
 #else

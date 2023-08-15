@@ -2586,9 +2586,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = p_dispwidget;
-   video_info->widgets_is_paused           = video_st->flags & VIDEO_FLAG_WIDGETS_PAUSED;
-   video_info->widgets_is_fast_forwarding  = video_st->flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD;
-   video_info->widgets_is_rewinding        = video_st->flags & VIDEO_FLAG_WIDGETS_REWINDING;
+   video_info->widgets_is_paused           = (video_st->flags & VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
+   video_info->widgets_is_fast_forwarding  = (video_st->flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD) ? true : false;
+   video_info->widgets_is_rewinding        = (video_st->flags & VIDEO_FLAG_WIDGETS_REWINDING) ? true : false;
 #else
    video_info->widgets_userdata            = NULL;
    video_info->widgets_is_paused           = false;
@@ -2599,7 +2599,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->width                       = video_st->width;
    video_info->height                      = video_st->height;
 
-   video_info->use_rgba                    = video_st->flags & VIDEO_FLAG_USE_RGBA;
+   video_info->use_rgba                    = (video_st->flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    video_info->hdr_enable                  = settings->bools.video_hdr_enable;
 
    video_info->libretro_running            = false;
@@ -2609,8 +2609,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->memory_update_interval      = settings->uints.memory_update_interval;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive               = menu_st->flags & MENU_ST_FLAG_ALIVE;
-   video_info->menu_screensaver_active     = menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+   video_info->menu_is_alive               = (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false;
+   video_info->menu_screensaver_active     = (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) ? true : false;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
@@ -2645,8 +2645,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
 
    video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
-   video_info->runloop_is_paused           = runloop_st->flags & RUNLOOP_FLAG_PAUSED;
-   video_info->runloop_is_slowmotion       = runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION;
+   video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
+   video_info->runloop_is_slowmotion       = (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
 
 #ifdef _WIN32
@@ -2663,7 +2663,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
 
    video_info->input_driver_nonblock_state   = input_st ? (input_st->flags & INP_FLAG_NONBLOCKING) : false;
-   video_info->input_driver_grab_mouse_state = (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
+   video_info->input_driver_grab_mouse_state = (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
    video_info->disp_userdata                 = disp_get_ptr();
 
    video_info->userdata                      = VIDEO_DRIVER_GET_PTR_INTERNAL(video_st);
@@ -3378,7 +3378,7 @@ void video_driver_frame(const void *data, unsigned width,
    const enum retro_pixel_format
       video_driver_pix_fmt        = video_st->pix_fmt;
    bool runloop_idle              = (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false;
-   bool video_driver_active       = (video_st->flags & VIDEO_FLAG_ACTIVE) ? true : false;
+   bool video_driver_active       = (video_st->flags   & VIDEO_FLAG_ACTIVE) ? true : false;
 #if defined(HAVE_GFX_WIDGETS)
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
