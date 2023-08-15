@@ -54,7 +54,7 @@
 #include <defines/d3d_defines.h>
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
-#include "../video_coord_array.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
@@ -91,7 +91,7 @@ typedef struct hlsl_renderchain
    struct shader_pass stock_shader;
 } hlsl_renderchain_t;
 
-/* 
+/*
  * DISPLAY DRIVER
  */
 
@@ -123,7 +123,7 @@ static void *gfx_display_d3d9_hlsl_get_default_mvp(void *data)
 {
    static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 1.0f, 0.0f,
                                  0.0f, 0.0f, 0.0f, 1.0f
                                };
    return &id;
@@ -387,7 +387,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    gfx_display_d3d9_hlsl_scissor_end
 };
 
-/* 
+/*
  * VIDEO DRIVER
  */
 
@@ -596,7 +596,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    int i;
    struct shader_pass pass       = { 0 };
    unsigned fmt                  =
-        (_fmt == RETRO_PIXEL_FORMAT_RGB565) 
+        (_fmt == RETRO_PIXEL_FORMAT_RGB565)
       ? D3D9_RGB565_FORMAT
       : D3D9_XRGB8888_FORMAT;
 
@@ -844,8 +844,8 @@ static void hlsl_d3d9_renderchain_render_pass(
       struct shader_pass *pass,
       unsigned pass_index)
 {
-   /* Currently we override the passes shader program 
-      with the stock shader as at least the last pass 
+   /* Currently we override the passes shader program
+      with the stock shader as at least the last pass
       is not setup correctly */
 #if 0
    d3d9_hlsl_bind_program(chain->chain.dev, pass);
@@ -856,8 +856,8 @@ static void hlsl_d3d9_renderchain_render_pass(
    IDirect3DDevice9_SetTexture(chain->chain.dev, 0,
          (IDirect3DBaseTexture9*)pass->tex);
 
-   /* D3D8 sets the sampler address modes - 
-      I've left them out for the time being 
+   /* D3D8 sets the sampler address modes -
+      I've left them out for the time being
       but maybe this is a bug in d3d9 */
 #if 0
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
@@ -1019,7 +1019,7 @@ static void hlsl_d3d9_renderchain_render(
             chain->chain.frame_count, 0);
 
       hlsl_d3d9_renderchain_render_pass(chain,
-            from_pass, 
+            from_pass,
             i + 1);
 
       current_width  = out_width;
@@ -1186,7 +1186,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
             d3d, (hlsl_renderchain_t*)d3d->renderchain_data,
             d3d->dev, &d3d->final_viewport, &link_info,
             rgb32
-            ? RETRO_PIXEL_FORMAT_XRGB8888 
+            ? RETRO_PIXEL_FORMAT_XRGB8888
             : RETRO_PIXEL_FORMAT_RGB565
             )
       )
@@ -1234,8 +1234,8 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
                   chain,
                   d3d->shader.lut[i].id,
                   d3d->shader.lut[i].path,
-                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
-                  ? video_smooth 
+                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC
+                  ? video_smooth
                   : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          {
             RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
@@ -1452,10 +1452,10 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    windowed_full         = settings->bools.video_windowed_fullscreen;
 
    full_x                = (windowed_full || info->width  == 0)
-      ? (unsigned)(mon_rect.right  - mon_rect.left) 
+      ? (unsigned)(mon_rect.right  - mon_rect.left)
       : info->width;
    full_y                = (windowed_full || info->height == 0)
-      ? (unsigned)(mon_rect.bottom - mon_rect.top)  
+      ? (unsigned)(mon_rect.bottom - mon_rect.top)
       : info->height;
 #else
    d3d9_get_video_size(d3d, &full_x, &full_y);
@@ -1488,7 +1488,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 #ifndef _XBOX_
    d3d9_hlsl_fake_context.get_metrics = win32_get_metrics;
 #endif
-   video_context_driver_set(&d3d9_hlsl_fake_context); 
+   video_context_driver_set(&d3d9_hlsl_fake_context);
    {
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -1673,12 +1673,12 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
          pitch, d3d->dev_rotation);
-   
+
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       unsigned n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n) 
-      {   
+      for (n = 0; n < video_info->black_frame_insertion; ++n)
+      {
 #ifdef _XBOX
         bool ret = true;
         IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
@@ -1691,7 +1691,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
         IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
               0, 1, 0);
       }
-   }   
+   }
 
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)

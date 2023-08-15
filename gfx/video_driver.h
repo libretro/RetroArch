@@ -44,7 +44,6 @@
 #include "video_crt_switch.h"
 #endif
 
-#include "video_coord_array.h"
 #include "video_shader_parse.h"
 #include "video_filter.h"
 
@@ -659,7 +658,7 @@ typedef struct video_poke_interface
          unsigned width, unsigned height, float alpha);
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-   void (*set_osd_msg)(void *data, 
+   void (*set_osd_msg)(void *data,
          const char *msg,
          const struct font_params *params, void *font);
 
@@ -672,11 +671,11 @@ typedef struct video_poke_interface
    bool (*get_hw_render_interface)(void *data,
          const struct retro_hw_render_interface **iface);
 
-   /* hdr settings */ 
+   /* hdr settings */
    void (*set_hdr_max_nits)(void *data, float max_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
    void (*set_hdr_contrast)(void *data, float contrast);
-   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);         
+   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -1273,6 +1272,11 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
 void video_driver_update_title(void *data);
+
+bool video_coord_array_append(video_coord_array_t *ca,
+      const video_coords_t *coords, unsigned count);
+
+void video_coord_array_free(video_coord_array_t *ca);
 
 extern const video_driver_t *video_drivers[];
 

@@ -48,7 +48,7 @@
 #include "../common/d3d9_common.h"
 #include "../include/Cg/cg.h"
 #include "../include/Cg/cgD3D9.h"
-#include "../video_coord_array.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
@@ -133,7 +133,7 @@ static void *gfx_display_d3d9_cg_get_default_mvp(void *data)
 {
    static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 1.0f, 0.0f,
                                  0.0f, 0.0f, 0.0f, 1.0f
                                };
    return &id;
@@ -263,7 +263,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
-  
+
    IDirect3DDevice9_SetVertexShaderConstantF(dev,
          0, (const float*)&m1, 4);
 
@@ -1657,8 +1657,8 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
          if (!d3d9_renderchain_add_lut(
                   d3d->renderchain_data,
                   d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
-                  ? video_smooth 
+                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC
+                  ? video_smooth
                   : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          {
             RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
@@ -1905,7 +1905,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 
    d3d9_cg_fake_context.get_flags   = d3d9_cg_get_flags;
    d3d9_cg_fake_context.get_metrics = win32_get_metrics;
-   video_context_driver_set(&d3d9_cg_fake_context); 
+   video_context_driver_set(&d3d9_cg_fake_context);
    {
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -2087,12 +2087,12 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation);
-   
+
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       int n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n) 
-      {   
+      for (n = 0; n < video_info->black_frame_insertion; ++n)
+      {
         bool ret = (IDirect3DDevice9_Present(d3d->dev,
                  NULL, NULL, NULL, NULL) != D3DERR_DEVICELOST);
         if (!ret || d3d->needs_restore)
@@ -2100,7 +2100,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
         IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
               0, 1, 0);
       }
-   }   
+   }
 
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)

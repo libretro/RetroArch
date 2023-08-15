@@ -321,7 +321,6 @@ OBJ += \
        gfx/gfx_animation.o \
        gfx/gfx_thumbnail_path.o \
        gfx/gfx_thumbnail.o \
-       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \

@@ -32,7 +32,6 @@
 #include <formats/image.h>
 
 #include "../video_driver.h"
-#include "../video_coord_array.h"
 
 RETRO_BEGIN_DECLS
 

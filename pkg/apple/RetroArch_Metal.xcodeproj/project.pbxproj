@@ -388,7 +388,6 @@
 		05A8C67720DB72F000FF7857 /* video_crt_switch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_crt_switch.c; sourceTree = "<group>"; };
 		05A8C70E20DB72F000FF7857 /* video_shader_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_shader_parse.h; sourceTree = "<group>"; };
 		05A8C71320DB72F000FF7857 /* video_filter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_filter.h; sourceTree = "<group>"; };
-		05A8C73820DB72F100FF7857 /* video_coord_array.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_coord_array.h; sourceTree = "<group>"; };
 		05A8C73920DB72F100FF7857 /* font_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = font_driver.c; sourceTree = "<group>"; };
 		05A8C73C20DB72F100FF7857 /* vulkan_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_common.c; sourceTree = "<group>"; };
 		05A8C74420DB72F100FF7857 /* metal_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_common.h; sourceTree = "<group>"; };
@@ -427,7 +426,6 @@
 		05A8C7A020DB72F100FF7857 /* video_thread_wrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_thread_wrapper.h; sourceTree = "<group>"; };
 		05A8C7A720DB72F100FF7857 /* font_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = font_driver.h; sourceTree = "<group>"; };
 		05A8C7A820DB72F100FF7857 /* video_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_defines.h; sourceTree = "<group>"; };
-		05A8C7A920DB72F100FF7857 /* video_coord_array.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_coord_array.c; sourceTree = "<group>"; };
 		05A8C7AB20DB72F100FF7857 /* freetype.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = freetype.c; sourceTree = "<group>"; };
 		05A8C7AC20DB72F100FF7857 /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		05A8C7AD20DB72F100FF7857 /* coretext.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = coretext.c; sourceTree = "<group>"; };
@@ -982,8 +980,6 @@
 				05A8C78E20DB72F100FF7857 /* drivers_shader */,
 				05A8C73920DB72F100FF7857 /* font_driver.c */,
 				05A8C7A720DB72F100FF7857 /* font_driver.h */,
-				05A8C7A920DB72F100FF7857 /* video_coord_array.c */,
-				05A8C73820DB72F100FF7857 /* video_coord_array.h */,
 				05A8C67720DB72F000FF7857 /* video_crt_switch.c */,
 				05A8C79D20DB72F100FF7857 /* video_crt_switch.h */,
 				05A8C7A820DB72F100FF7857 /* video_defines.h */,

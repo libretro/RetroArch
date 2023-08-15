@@ -48,6 +48,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../common/metal_common.h"
 
@@ -59,8 +60,6 @@
 #include "../../state_manager.h"
 #endif
 #include "../../verbosity.h"
-
-#include "../video_coord_array.h"
 
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"

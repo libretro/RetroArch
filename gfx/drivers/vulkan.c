@@ -42,6 +42,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../common/vulkan_common.h"
 
@@ -50,11 +51,9 @@
 #include "../../state_manager.h"
 #endif
 
+#include "../../record/record_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../record/record_driver.h"
-
-#include "../video_coord_array.h"
 
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
 
