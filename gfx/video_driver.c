@@ -3377,8 +3377,8 @@ void video_driver_frame(const void *data, unsigned width,
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt        = video_st->pix_fmt;
-   bool runloop_idle              = runloop_st->flags & RUNLOOP_FLAG_IDLE;
-   bool video_driver_active       = video_st->flags & VIDEO_FLAG_ACTIVE;
+   bool runloop_idle              = (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false;
+   bool video_driver_active       = (video_st->flags & VIDEO_FLAG_ACTIVE) ? true : false;
 #if defined(HAVE_GFX_WIDGETS)
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
