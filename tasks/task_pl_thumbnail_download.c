@@ -160,7 +160,7 @@ static bool get_thumbnail_paths(
    if (!gfx_thumbnail_get_sub_directory(pl_thumb->type_idx, &sub_dir))
       return false;
    
-   /* Dermine system name */
+   /* Determine system name */
    if (string_is_empty(db_name))
    {
       if (string_is_empty(system))
@@ -253,6 +253,13 @@ void cb_http_task_download_pl_thumbnail(
       goto finish;
    }
 
+   /* Skip if data can't be good */
+   if (data->status != 200)
+   {
+      err = "File not found.";
+      goto finish;
+   }
+
    /* Write thumbnail file to disk */
    if (!filestream_write_file(transf->path, data->data, data->len))
    {
@@ -262,12 +269,12 @@ void cb_http_task_download_pl_thumbnail(
 
 finish:
 
-   /* Log any error messages */
    if (!string_is_empty(err))
-   {
-      RARCH_ERR("Download of '%s' failed: %s\n",
-            (transf ? transf->path: "unknown"), err);
-   }
+      RARCH_ERR("[Thumbnail]: Download \"%s\" failed: %s\n",
+            (transf ? transf->path : "unknown"), err);
+   else
+      RARCH_LOG("[Thumbnail]: Download \"%s\".\n",
+            (transf ? transf->path : "unknown"));
 
    if (transf)
       free(transf);
