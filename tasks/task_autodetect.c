@@ -854,7 +854,7 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    input_driver_state_t *input_st         = input_state_get_ptr();
    bool notification_show_autoconfig      = settings ? settings->bools.notification_show_autoconfig : true;
    bool pause_on_disconnect               = settings ? settings->bools.pause_on_disconnect : true;
-   bool core_is_running                   = runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING;
+   bool core_is_running                   = (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING) ? true : false;
 
    if (port >= MAX_INPUT_DEVICES)
       goto error;
@@ -903,7 +903,7 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    {
 #ifdef HAVE_MENU
       bool menu_pause_libretro = settings->bools.menu_pause_libretro;
-      bool menu_is_alive       = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+      bool menu_is_alive       = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
       if (menu_pause_libretro && !menu_is_alive)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
