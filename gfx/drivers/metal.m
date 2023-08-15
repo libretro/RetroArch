@@ -527,7 +527,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    for (;;)
    {
       const char *delim  = strchr(msg, '\n');
-      NSUInteger msg_len = delim ? (unsigned)(delim - msg) : strlen(msg);
+      size_t     msg_len = delim ? (unsigned)(delim - msg) : strlen(msg);
 
       /* Draw the line */
       [self _renderLine:msg
@@ -604,7 +604,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    @autoreleasepool
    {
-      NSUInteger max_glyphs    = strlen(msg);
+      size_t max_glyphs        = strlen(msg);
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
@@ -792,9 +792,9 @@ font_renderer_t metal_raster_font = {
 
       if (mode.width == 0 || mode.height == 0)
       {
-         /* 0 indicates full screen, so we'll use the view's dimensions, 
+         /* 0 indicates full screen, so we'll use the view's dimensions,
           * which should already be full screen
-          * If this turns out to be the wrong assumption, we can use NSScreen 
+          * If this turns out to be the wrong assumption, we can use NSScreen
           * to query the dimensions */
          CGSize size = view.frame.size;
          mode.width  = (unsigned int)size.width;
@@ -997,11 +997,11 @@ font_renderer_t metal_raster_font = {
       int msg_width         =
          font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
       float font_size       = settings->floats.video_font_size;
-      unsigned bgcolor_red 
+      unsigned bgcolor_red
                             = settings->uints.video_msg_bgcolor_red;
       unsigned bgcolor_green
                             = settings->uints.video_msg_bgcolor_green;
-      unsigned bgcolor_blue 
+      unsigned bgcolor_blue
                             = settings->uints.video_msg_bgcolor_blue;
       float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
       float x               = settings->floats.video_msg_pos_x;
@@ -1374,7 +1374,7 @@ typedef struct MTLALIGN(16)
       {simd_make_float3(l, t, 0), simd_make_float2(0, 0)},
       {simd_make_float3(r, t, 0), simd_make_float2(1, 0)},
    };
-   
+
    _frame      = frame;
    memcpy(_v, v, sizeof(_v));
 }
@@ -1717,7 +1717,7 @@ typedef struct MTLALIGN(16)
 
       MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
       if (   (i      != (_shader->passes - 1))
-          || (width  != _viewport->width) 
+          || (width  != _viewport->width)
           || (height != _viewport->height)
           || fmt != MTLPixelFormatBGRA8Unorm)
       {
@@ -1800,8 +1800,8 @@ typedef struct MTLALIGN(16)
 
       for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
-         matrix_float4x4 *mvp = (i == shader->passes-1) 
-            ? &_context.uniforms->projectionMatrix 
+         matrix_float4x4 *mvp = (i == shader->passes-1)
+            ? &_context.uniforms->projectionMatrix
             : &_engine.mvp;
 
          /* clang-format off */
@@ -2213,7 +2213,7 @@ static bool metal_ctx_get_metrics(
           break;
        case UIUserInterfaceIdiomPhone:
             if (max_size >= 2208.0)
-                /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max, 
+                /* Larger iPhones: iPhone Plus, X, XR, XS, XS Max,
                  * 11, 12, 13, 14, etc */
                 dpi = 81 * scale;
             else
@@ -2416,7 +2416,7 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
    return (uintptr_t)(__bridge_retained void *)(t);
 }
 
-static void metal_unload_texture(void *data, 
+static void metal_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    if (!handle)
