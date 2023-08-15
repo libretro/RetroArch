@@ -327,9 +327,9 @@ QWidget *UserBindsPage::widget()
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 20; retro_id++)
       {
          char descriptor[300];
-         const struct retro_keybind *keybind   = 
+         const struct retro_keybind *keybind   =
             &input_config_binds[p][retro_id];
-         const struct retro_keybind *auto_bind = 
+         const struct retro_keybind *auto_bind =
             (const struct retro_keybind*)
             input_config_get_bind_auto(p, retro_id);
 
@@ -555,7 +555,7 @@ QGroupBox *NetplayPage::createMitmServerGroup()
 
 void NetplayPage::onRadioButtonClicked(int id)
 {
-   rarch_setting_t *setting = 
+   rarch_setting_t *setting =
       menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
    if (!setting)
@@ -617,11 +617,12 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y);
+   /* TODO/FIXME - localize */
    notificationsGroup->addRow("Notification Color: ", new FloatColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE));
-
+   /* TODO/FIXME - localize */
    bgGroup->addRow("Notification Background Color: ", new UIntColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -999,8 +1000,8 @@ QWidget *ViewsPage::widget()
          menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
             file_list_get_actiondata_at_offset(list, i);
 
-         if (cbs->enum_idx == (kiosk_mode 
-                  ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS 
+         if (cbs->enum_idx == (kiosk_mode
+                  ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS
                   : MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE))
          {
             tabs_begin = i;
@@ -1106,8 +1107,8 @@ QWidget *AppearancePage::widget()
    menu_displaylist_build_list(
          list, settings, DISPLAYLIST_MENU_SETTINGS_LIST, true);
 
-   /* TODO/FIXME - we haven't yet figured out how to 
-    * put a radio button setting next to another radio 
+   /* TODO/FIXME - we haven't yet figured out how to
+    * put a radio button setting next to another radio
     * button on the same row */
 
    for (i = 0; i < list->size; i++)
@@ -1117,12 +1118,13 @@ QWidget *AppearancePage::widget()
 
       switch (cbs->enum_idx)
       {
-         /* TODO/FIXME - this is a dirty hack - if we 
+         /* TODO/FIXME - this is a dirty hack - if we
           * detect this setting, we instead replace it with a
-          * color button and ignore the other two font color 
+          * color button and ignore the other two font color
           * settings since they are already covered by this one
           * color button */
          case MENU_ENUM_LABEL_MENU_FONT_COLOR_RED:
+            /* TODO/FIXME - localize */
             layout->addUIntColorButton("Menu Font Color: ",
                   MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
                   MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
@@ -1209,13 +1211,13 @@ AccountsPage::AccountsPage(QObject *parent) :
 
 QWidget *AccountsPage::widget()
 {
-   QWidget *widget             = new QWidget;
-   QVBoxLayout *layout         = new QVBoxLayout;
-   SettingsGroup *youtubeGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
-   SettingsGroup *twitchGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
+   QWidget *widget              = new QWidget;
+   QVBoxLayout *layout          = new QVBoxLayout;
+   SettingsGroup *youtubeGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
+   SettingsGroup *twitchGroup   = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
    SettingsGroup *facebookGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK));
 #ifdef HAVE_CHEEVOS
-   SettingsGroup *cheevosGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
+   SettingsGroup *cheevosGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
 
    cheevosGroup->add(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
    cheevosGroup->add(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
@@ -1369,7 +1371,7 @@ QWidget *VideoPage::widget()
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
    windowedGroup->add(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
-   
+
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
@@ -1572,7 +1574,7 @@ void CrtSwitchresPage::onCrtSuperResolutionComboIndexChanged(int index)
    settings_t *settings = config_get_ptr();
    Q_UNUSED(index)
 
-   settings->uints.crt_switch_resolution_super = 
+   settings->uints.crt_switch_resolution_super =
    m_crtSuperResolutionCombo->currentData().value<unsigned>();
 }
 
