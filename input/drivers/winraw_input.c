@@ -364,7 +364,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
-   bool swap_mouse_buttons = g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
+   bool swap_mouse_buttons = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
 
    /* Used for fixing coordinates after switching resolutions */
    GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);

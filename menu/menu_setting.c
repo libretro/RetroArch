@@ -7859,8 +7859,8 @@ static enum event_command write_handler_get_cmd(rarch_setting_t *setting)
          if (*setting->value.target.boolean)
             *setting->value.target.boolean = false;
 
-      if (  (flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED) ||
-            (flags & SD_FLAG_CMD_APPLY_AUTO))
+      if (     (flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED)
+            || (flags & SD_FLAG_CMD_APPLY_AUTO))
          return setting->cmd_trigger_idx;
    }
    return CMD_EVENT_NONE;

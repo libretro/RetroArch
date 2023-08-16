@@ -363,8 +363,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    if (!list)
       return;
-  
-   path_enabled               = entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED;
+
+   path_enabled               = (entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED) ? true : false;
 
    path                       = list->list[i].path;
    entry_label                = list->list[i].label;
@@ -375,7 +375,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
 
-   if (    (entry_flags & MENU_ENTRY_FLAG_LABEL_ENABLED) 
+   if (    (entry_flags & MENU_ENTRY_FLAG_LABEL_ENABLED)
          && !string_is_empty(entry_label))
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 
@@ -421,16 +421,16 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             path_enabled = true;
       }
 
-      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED)) &&
-          cbs->action_get_value &&
-          use_representation)
+      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED))
+          && cbs->action_get_value
+          && use_representation)
       {
          cbs->action_get_value(list,
                &entry->spacing, entry->type,
                (unsigned)i, label,
                entry->value,
                (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED)
-               ? sizeof(entry->value) 
+               ? sizeof(entry->value)
                : 0,
                path,
                newpath,
@@ -496,7 +496,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                 cbs
             &&  cbs->setting
             &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
-            && !(cbs->setting->flags 
+            && !(cbs->setting->flags
                & SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION))
          strlcpy(entry->path,
                msg_hash_to_str(cbs->setting->enum_value_idx),
@@ -1054,7 +1054,7 @@ int menu_entries_get_title(char *s, size_t len)
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
-  
+
       if (list->size)
       {
          path      = list->list[list->size - 1].path;
@@ -3347,7 +3347,7 @@ static void menu_input_key_bind_poll_bind_state(
    {
       /* Poll mouse (on the relevant port)
        *
-       * Check if key was being pressed by 
+       * Check if key was being pressed by
        * user with mouse number 'port'
        *
        * NOTE: We start iterating on 2 (RETRO_DEVICE_ID_MOUSE_LEFT),
@@ -4553,13 +4553,13 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
 void menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-   const char *core_name             = 
+   const char *core_name             =
        (sysinfo && !string_is_empty(sysinfo->library_name))
       ? sysinfo->library_name
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   const char *core_version          = 
-      (sysinfo && sysinfo->library_version) 
-      ? sysinfo->library_version 
+   const char *core_version          =
+      (sysinfo && sysinfo->library_version)
+      ? sysinfo->library_version
       : "";
    size_t _len = strlcpy(s, PACKAGE_VERSION, len);
 #if defined(_MSC_VER)
@@ -4738,7 +4738,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    binds->timer_hold.timeout_end    = current_usec + input_bind_hold_us;
    binds->timer_timeout.timeout_us  = input_bind_timeout_us;
    binds->timer_timeout.current     = current_usec;
-   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us; 
+   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us;
 
    return (binds->begin <= binds->last);
 }
@@ -4752,7 +4752,7 @@ bool menu_input_key_bind_set_mode(
    input_driver_state_t *input_st      = input_state_get_ptr();
    struct menu_state *menu_st          = &menu_driver_state;
    menu_handle_t       *menu           = menu_st->driver_data;
-   const input_device_driver_t 
+   const input_device_driver_t
       *joypad                          = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
@@ -4789,7 +4789,7 @@ bool menu_input_key_bind_set_mode(
          settings->floats.input_axis_threshold,
          settings->uints.input_joypad_index[binds->port],
          binds, false,
-         input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false);
 
    current_usec                        = cpu_features_get_time_usec();
 
@@ -4898,7 +4898,7 @@ static bool menu_input_key_bind_iterate(
             settings->floats.input_axis_threshold,
             settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out,
-            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false);
 
 #ifdef ANDROID
       /* Keep resetting bind during the hold period,
@@ -4917,7 +4917,7 @@ static bool menu_input_key_bind_iterate(
 
          /* Run hold timer*/
          new_binds.timer_hold.current    = current_time;
-         new_binds.timer_hold.timeout_us = 
+         new_binds.timer_hold.timeout_us =
             new_binds.timer_hold.timeout_end - current_time;
 
          /* TODO/FIXME - localize */
@@ -5018,7 +5018,7 @@ bool menu_input_dialog_get_display_kb(void)
    /* swkbd only works on "real" titles */
    if (     __nx_applet_type != AppletType_Application
          && __nx_applet_type != AppletType_SystemApplication)
-      return (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY);
+      return ((menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) > 0);
 
    if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
       return false;
@@ -5111,7 +5111,7 @@ unsigned menu_event(
    gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_handle_t *menu                             = menu_st->driver_data;
-   bool keyboard_mapping_blocked                   = input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED;
+   bool keyboard_mapping_blocked                   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
@@ -5122,7 +5122,7 @@ unsigned menu_event(
    unsigned menu_scroll_delay                      = settings->uints.menu_scroll_delay;
 #ifdef HAVE_OVERLAY
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
-   bool overlay_active                             = input_overlay_enable 
+   bool overlay_active                             = input_overlay_enable
          && (input_st->overlay_ptr)
          && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
@@ -5754,7 +5754,7 @@ static int menu_input_post_iterate(
                          (dy_start_abs <  dpi_threshold_press_direction_tangent))
                      {
                         press_direction = (dx_start > 0)
-                              ? MENU_INPUT_PRESS_DIRECTION_RIGHT 
+                              ? MENU_INPUT_PRESS_DIRECTION_RIGHT
                               : MENU_INPUT_PRESS_DIRECTION_LEFT;
 
                         /* Get effective amplitude of press direction offset */
@@ -5767,7 +5767,7 @@ static int menu_input_post_iterate(
                               && (dx_start_abs <  dpi_threshold_press_direction_tangent))
                      {
                         press_direction = (dy_start > 0)
-                              ? MENU_INPUT_PRESS_DIRECTION_DOWN 
+                              ? MENU_INPUT_PRESS_DIRECTION_DOWN
                               : MENU_INPUT_PRESS_DIRECTION_UP;
 
                         /* Get effective amplitude of press direction offset */
@@ -6156,8 +6156,8 @@ void menu_driver_toggle(
    bool pause_libretro                = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
-   bool runloop_shutdown_initiated    = runloop_st->flags &
-      RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+   bool runloop_shutdown_initiated    = (runloop_st->flags &
+      RUNLOOP_FLAG_SHUTDOWN_INITIATED) ? true : false;
 #ifdef HAVE_OVERLAY
    bool input_overlay_hide_in_menu    = false;
    bool input_overlay_enable          = false;
@@ -6179,7 +6179,7 @@ void menu_driver_toggle(
       video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
    }
 
-   if (on) 
+   if (on)
    {
 #ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
@@ -6310,7 +6310,7 @@ void retroarch_menu_running(void)
             menu,
             menu_input,
             settings,
-            menu_st->flags & MENU_ST_FLAG_ALIVE,
+            (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false,
 #ifdef HAVE_OVERLAY
                 input_st->overlay_ptr
             && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
@@ -6599,7 +6599,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            video_driver_state_t 
+            video_driver_state_t
                *video_st              = video_state_get_ptr();
             unsigned width            = video_st->width;
             unsigned height           = video_st->height;
@@ -6791,7 +6791,7 @@ clear:
  *
  * combine current shader with a shader preset on disk
  **/
-bool menu_shader_manager_append_preset(struct video_shader *shader, 
+bool menu_shader_manager_append_preset(struct video_shader *shader,
       const char* preset_path, const bool prepend)
 {
    bool ret                      = false;
@@ -7220,7 +7220,7 @@ static int generic_menu_iterate(
       {
          bool        audio_enable_menu = settings->bools.audio_enable_menu;
          bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
-         if (audio_enable_menu && audio_enable_menu_notice && 
+         if (audio_enable_menu && audio_enable_menu_notice &&
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
             audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
       }
@@ -7647,10 +7647,10 @@ int generic_menu_entry_action(
    if (   (menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
        || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
    {
-      const char *content_path  = (menu_st->flags &
-            MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH) ?
-            menu_st->pending_env_shutdown_content_path :
-            path_get(RARCH_PATH_CONTENT);
+      const char *content_path  = (menu_st->flags
+            & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH)
+            ? menu_st->pending_env_shutdown_content_path
+            : path_get(RARCH_PATH_CONTENT);
       const char *deferred_path = menu ? menu->deferred_path : NULL;
       const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       size_t stack_offset       = 1;

@@ -1919,7 +1919,7 @@ bool video_driver_supports_rgba(void)
    bool tmp;
    video_driver_state_t *video_st       = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   tmp = video_st->flags & VIDEO_FLAG_USE_RGBA;
+   tmp = (video_st->flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    VIDEO_DRIVER_UNLOCK(video_st);
    return tmp;
 }
@@ -1945,7 +1945,7 @@ bool video_driver_supports_hdr(void)
    bool tmp;
    video_driver_state_t *video_st       = &video_driver_st;
    VIDEO_DRIVER_LOCK(video_st);
-   tmp = video_st->flags & VIDEO_FLAG_HDR_SUPPORT;
+   tmp = (video_st->flags & VIDEO_FLAG_HDR_SUPPORT) ? true : false;
    VIDEO_DRIVER_UNLOCK(video_st);
    return tmp;
 }
@@ -2625,7 +2625,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity      = settings->floats.menu_wallpaper_opacity;
    video_info->menu_framebuffer_opacity    = settings->floats.menu_framebuffer_opacity;
    video_info->overlay_behind_menu         = settings->bools.input_overlay_behind_menu;
-   video_info->libretro_running            = runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED;
+   video_info->libretro_running            = (runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED) ? true : false;
 #else
    video_info->menu_is_alive               = false;
    video_info->menu_screensaver_active     = false;
@@ -2709,7 +2709,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+            (runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT) ? true : false,
             settings,
             data,
             gfx_ctx_gl_drivers[i], ident,
@@ -2725,7 +2725,7 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+               (runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT) ? true : false,
                settings,
                data,
                gfx_ctx_gl_drivers[i], ident,

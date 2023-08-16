@@ -2621,10 +2621,10 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       return;
    }
 
-   inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
-   inotify_data->fd = fd;
+   inotify_data            = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
+   inotify_data->fd        = fd;
 
-   inotify_data->wd_list = int_vector_list_new();
+   inotify_data->wd_list   = int_vector_list_new();
    inotify_data->path_list = string_list_new();
 
    /* handle other flags here as new ones are added */

@@ -388,7 +388,7 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
 static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
-   win32_common_state_t 
+   win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
 
    win32_monitor_all[g_win32->monitor_count++] = hMonitor;
@@ -442,7 +442,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    MONITORINFOEX *mon    = (MONITORINFOEX*)data;
    HMONITOR *hm_to_use   = (HMONITOR*)hm_data;
    unsigned fs_monitor   = settings->uints.video_monitor_index;
-   win32_common_state_t 
+   win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
 
    if (!win32_monitor_last)
@@ -899,16 +899,16 @@ static void win32_save_position(void)
             && !(video_st_flags & VIDEO_FLAG_FORCE_FULLSCREEN)
             && !(video_st_flags & VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE))
       {
-         bool ui_menubar_enable = settings->bools.ui_menubar_enable;
-         bool window_show_decor = settings->bools.video_window_show_decorations;
-         settings->uints.window_position_x      = g_win32->pos_x;
-         settings->uints.window_position_y      = g_win32->pos_y;
-         settings->uints.window_position_width  = g_win32->pos_width;
-         settings->uints.window_position_height = g_win32->pos_height;
+         bool ui_menubar_enable                     = settings->bools.ui_menubar_enable;
+         bool window_show_decor                     = settings->bools.video_window_show_decorations;
+         settings->uints.window_position_x          = g_win32->pos_x;
+         settings->uints.window_position_y          = g_win32->pos_y;
+         settings->uints.window_position_width      = g_win32->pos_width;
+         settings->uints.window_position_height     = g_win32->pos_height;
          if (window_show_decor)
          {
-            int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
-            int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
+            int border_thickness                    = GetSystemMetrics(SM_CXSIZEFRAME);
+            int title_bar_height                    = GetSystemMetrics(SM_CYCAPTION);
             settings->uints.window_position_width  -= border_thickness * 2;
             settings->uints.window_position_height -= border_thickness * 2;
             settings->uints.window_position_height -= title_bar_height;
@@ -1320,7 +1320,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                }
             }
             ImmReleaseContext(hwnd, hIMC);
-            return 0;   
+            return 0;
          }
          break;
       case WM_KEYUP:                /* Key released */
@@ -1375,7 +1375,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                return 0;
 
             if (
-                     wparam == VK_F10 
+                     wparam == VK_F10
                   || wparam == VK_MENU
                   || wparam == VK_RSHIFT
                )
@@ -1661,7 +1661,7 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       }
 
 #ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message 
+      if (     g_win32->taskbar_message
             && message == g_win32->taskbar_message)
          g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
@@ -1704,7 +1704,7 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       }
 
 #ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message 
+      if (     g_win32->taskbar_message
             && message == g_win32->taskbar_message)
          g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
@@ -1746,7 +1746,7 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       }
 
 #ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message 
+      if (     g_win32->taskbar_message
             && message == g_win32->taskbar_message)
          g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
@@ -1803,7 +1803,7 @@ bool win32_window_create(void *data, unsigned style,
    window_accelerators = LoadAcceleratorsA(GetModuleHandleA(NULL), MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
 #ifdef HAVE_TASKBAR
-   g_win32->taskbar_message            = 
+   g_win32->taskbar_message            =
       RegisterWindowMessage("TaskbarButtonCreated");
 
    memset(&notification_filter, 0, sizeof(notification_filter));
@@ -1893,7 +1893,7 @@ bool win32_get_metrics(void *data,
 void win32_monitor_init(void)
 {
 #if !defined(_XBOX)
-   win32_common_state_t 
+   win32_common_state_t
       *g_win32            = (win32_common_state_t*)&win32_st;
    g_win32->monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
@@ -1918,7 +1918,7 @@ void win32_check_window(void *data,
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
-   *quit                  = g_win32_flags & WIN32_CMN_FLAG_QUIT;
+   *quit                  = (g_win32_flags & WIN32_CMN_FLAG_QUIT) ? true : false;
 
    if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
    {
@@ -2040,7 +2040,7 @@ static unsigned int menu_id_to_meta_key(unsigned int menu_id)
 }
 
 /* Given a short key (meta key), get its name as a string */
-/* For single character results, may return same pointer 
+/* For single character results, may return same pointer
  * with different data inside (modifying the old result) */
 static const char *win32_meta_key_to_name(unsigned int meta_key)
 {
@@ -2067,7 +2067,7 @@ static const char *win32_meta_key_to_name(unsigned int meta_key)
    return NULL;
 }
 
-/* Replaces Menu Item text with localized menu text, 
+/* Replaces Menu Item text with localized menu text,
  * and displays the current shortcut key */
 static void win32_localize_menu(HMENU menu)
 {
@@ -2121,13 +2121,13 @@ static void win32_localize_menu(HMENU menu)
          /* specific replacements:
             Load Content = "Ctrl+O"
             Fullscreen = "Alt+Enter" */
-         if (label_enum == 
+         if (label_enum ==
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
          {
             meta_key_name = "Ctrl+O";
             len2          = STRLEN_CONST("Ctrl+O");
          }
-         else if (label_enum == 
+         else if (label_enum ==
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
          {
             meta_key_name = "Alt+Enter";
@@ -2327,7 +2327,7 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
    devmode.dmFields           = DM_PELSWIDTH
-                              | DM_PELSHEIGHT 
+                              | DM_PELSHEIGHT
                               | DM_DISPLAYFREQUENCY;
    return win32_change_display_settings(dev_name, &devmode,
          CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
@@ -2506,7 +2506,7 @@ bool win32_set_video_mode(void *data,
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (  !(g_win32_flags & WIN32_CMN_FLAG_INITED) 
+   while (  !(g_win32_flags & WIN32_CMN_FLAG_INITED)
          && !(g_win32_flags & WIN32_CMN_FLAG_QUIT)
          && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
@@ -2540,7 +2540,7 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass("RetroArch", 
+   UnregisterClass("RetroArch",
          GetModuleHandle(NULL));
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
@@ -2689,8 +2689,8 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
 {
    memset(dm, 0, len);
    dm->dmSize  = len;
-   if (WIN32_GET_VIDEO_OUTPUT((mode == -1) 
-            ? ENUM_CURRENT_SETTINGS 
+   if (WIN32_GET_VIDEO_OUTPUT((mode == -1)
+            ? ENUM_CURRENT_SETTINGS
             : (DWORD)mode,
             dm) == 0)
       return false;
@@ -2732,7 +2732,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
 #if _WIN32_WINNT >= 0x0501
-   /* Use the language set in the config for the menubar... 
+   /* Use the language set in the config for the menubar...
     * also changes the console language. */
    SetThreadUILanguage(win32_get_langid_from_retro_lang(
             (enum retro_language)

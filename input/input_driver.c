@@ -1219,8 +1219,8 @@ static int16_t input_state_device(
                    && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, id))
                {
 #ifdef HAVE_MENU
-                  bool menu_driver_alive        = menu_state_get_ptr()->flags &
-                        MENU_ST_FLAG_ALIVE;
+                  bool menu_driver_alive        = (menu_state_get_ptr()->flags &
+                        MENU_ST_FLAG_ALIVE) ? true : false;
 #else
                   bool menu_driver_alive        = false;
 #endif
@@ -1591,7 +1591,7 @@ static int16_t input_state_internal(
             sec_joypad,
             &joypad_info,
             (*input_st->libretro_input_binds),
-            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
             mapped_port, device, idx, id);
 
       if (   (device == RETRO_DEVICE_ANALOG)
@@ -2377,8 +2377,8 @@ static void input_overlay_parse_layout(
    /* > Portrait display orientations */
    else
    {
-      float scale         = layout_desc->scale_portrait;
-      float aspect_adjust = layout_desc->aspect_adjust_portrait;
+      float scale              = layout_desc->scale_portrait;
+      float aspect_adjust      = layout_desc->aspect_adjust_portrait;
 
       overlay_layout->x_offset = layout_desc->x_offset_portrait;
       overlay_layout->y_offset = layout_desc->y_offset_portrait * -1.0f;
@@ -4791,7 +4791,7 @@ static void input_keys_pressed(
             sec_joypad,
             joypad_info,
             binds,
-            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
             port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
       {
@@ -4825,7 +4825,7 @@ static void input_keys_pressed(
                sec_joypad,
                joypad_info,
                binds,
-               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                port, RETRO_DEVICE_JOYPAD, 0,
                RARCH_GAME_FOCUS_TOGGLE))
             input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
@@ -4847,7 +4847,7 @@ static void input_keys_pressed(
                sec_joypad,
                joypad_info,
                binds,
-               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -4879,7 +4879,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key);
 
@@ -4893,7 +4893,7 @@ static void input_keys_pressed(
                         sec_joypad,
                         joypad_info,
                         binds,
-                        input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                        (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                         port, RETRO_DEVICE_JOYPAD, 0, i);
 
             if (
@@ -4947,7 +4947,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
                {
@@ -4965,7 +4965,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
                {
@@ -4991,7 +4991,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
                {
@@ -5010,7 +5010,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
                {
@@ -5042,7 +5042,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i);
 
@@ -5317,8 +5317,8 @@ bool replay_set_serialized_data(void* buf)
 {
    uint8_t *buffer                = buf;
    input_driver_state_t *input_st = &input_driver_st;
-   bool playback                  = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK;
-   bool recording                 = input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING;
+   bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
+   bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
 
    /* If there is no current replay, ignore this entirely.
       TODO/FIXME: Later, consider loading up the replay
@@ -5465,7 +5465,7 @@ void input_driver_poll(void)
                sec_joypad,
                &joypad_info[i],
                (*input_st->libretro_input_binds),
-               input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                (unsigned)i,
                RETRO_DEVICE_JOYPAD,
                0,
@@ -5473,8 +5473,8 @@ void input_driver_poll(void)
    }
 
 #ifdef HAVE_OVERLAY
-   if (input_st->overlay_ptr &&
-         (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
+   if (      input_st->overlay_ptr
+         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
    {
       unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[0];
       float input_overlay_opacity     = (input_st->overlay_ptr->flags & INPUT_OVERLAY_IS_OSK)
@@ -5502,7 +5502,7 @@ void input_driver_poll(void)
       }
 
       input_poll_overlay(
-            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
             settings,
             input_st->overlay_ptr,
             input_st->overlay_visibility,
@@ -5568,7 +5568,7 @@ void input_driver_poll(void)
                         sec_joypad,
                         &joypad_info[i],
                         (*input_st->libretro_input_binds),
-                        input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                        (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -6172,8 +6172,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #endif
 #ifdef HAVE_MENU
    bool display_kb                     = menu_input_dialog_get_display_kb();
-   bool menu_is_alive                  = menu_state_get_ptr()->flags &
-         MENU_ST_FLAG_ALIVE;
+   bool menu_is_alive                  = (menu_state_get_ptr()->flags &
+         MENU_ST_FLAG_ALIVE) ? true : false;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
@@ -6325,7 +6325,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      sec_joypad,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
-                     input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
                BIT256_SET_PTR(current_bits, ids[i][1]);
