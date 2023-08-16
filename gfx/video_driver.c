@@ -2584,22 +2584,16 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_width        = custom_vp->full_width;
    video_info->custom_vp_full_height       = custom_vp->full_height;
 
+   video_info->video_st_flags              = video_st->flags;
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = p_dispwidget;
-   video_info->widgets_is_paused           = (video_st->flags & VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
-   video_info->widgets_is_fast_forwarding  = (video_st->flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD) ? true : false;
-   video_info->widgets_is_rewinding        = (video_st->flags & VIDEO_FLAG_WIDGETS_REWINDING) ? true : false;
 #else
    video_info->widgets_userdata            = NULL;
-   video_info->widgets_is_paused           = false;
-   video_info->widgets_is_fast_forwarding  = false;
-   video_info->widgets_is_rewinding        = false;
 #endif
 
    video_info->width                       = video_st->width;
    video_info->height                      = video_st->height;
 
-   video_info->use_rgba                    = (video_st->flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    video_info->hdr_enable                  = settings->bools.video_hdr_enable;
 
    video_info->libretro_running            = false;

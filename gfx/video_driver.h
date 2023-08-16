@@ -450,6 +450,7 @@ typedef struct video_frame_info
       bool full_screen;
    } osd_stat_params;
 
+   uint32_t video_st_flags;
    uint16_t menu_st_flags;
 
    char stat_text[1024];
@@ -457,9 +458,6 @@ typedef struct video_frame_info
    bool widgets_active;
    bool notifications_hidden;
    bool menu_mouse_enable;
-   bool widgets_is_paused;
-   bool widgets_is_fast_forwarding;
-   bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
@@ -476,7 +474,6 @@ typedef struct video_frame_info
    bool windowed_fullscreen;
    bool fullscreen;
    bool font_enable;
-   bool use_rgba;
    bool hdr_support;
    bool libretro_running;
    bool xmb_shadows_enable;

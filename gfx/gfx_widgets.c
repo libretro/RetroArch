@@ -1486,9 +1486,9 @@ void gfx_widgets_frame(void *data)
    void *userdata                   = video_info->userdata;
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
-   bool widgets_is_paused           = video_info->widgets_is_paused;
-   bool widgets_is_fastforwarding   = video_info->widgets_is_fast_forwarding;
-   bool widgets_is_rewinding        = video_info->widgets_is_rewinding;
+   bool widgets_is_paused           = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
+   bool widgets_is_fastforwarding   = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD) ? true : false;
+   bool widgets_is_rewinding        = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_REWINDING) ? true : false;
    bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
 #ifdef HAVE_MENU
    bool menu_screensaver_active     = (video_info->menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) ? true : false;
