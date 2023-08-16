@@ -3128,10 +3128,8 @@ void input_config_get_bind_string_joykey(
       if (      bind->joykey_label
             && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-      {
-         size_t len = fill_pathname_join_delim(buf,
+         fill_pathname_join_delim(buf,
                bind->joykey_label, suffix, ' ', size);
-      }
       else
       {
          size_t len  = snprintf(buf, size,
@@ -3140,32 +3138,30 @@ void input_config_get_bind_string_joykey(
          switch (GET_HAT_DIR(bind->joykey))
          {
             case HAT_UP_MASK:
-               len += strlcpy(buf + len, "Up",    size - len);
+               strlcpy(buf + len, "Up",    size - len);
                break;
             case HAT_DOWN_MASK:
-               len += strlcpy(buf + len, "Down",  size - len);
+               strlcpy(buf + len, "Down",  size - len);
                break;
             case HAT_LEFT_MASK:
-               len += strlcpy(buf + len, "Left",  size - len);
+               strlcpy(buf + len, "Left",  size - len);
                break;
             case HAT_RIGHT_MASK:
-               len += strlcpy(buf + len, "Right", size - len);
+               strlcpy(buf + len, "Right", size - len);
                break;
             default:
-               len += strlcpy(buf + len, "?",     size - len);
+               strlcpy(buf + len, "?",     size - len);
                break;
          }
       }
    }
    else
    {
-      if (bind->joykey_label &&
-            !string_is_empty(bind->joykey_label)
+      if (      bind->joykey_label
+            && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-      {
-         size_t len = fill_pathname_join_delim(buf,
+         fill_pathname_join_delim(buf,
                bind->joykey_label, suffix, ' ', size);
-      }
       else
          snprintf(buf, size, "%s%u",
                "Button ", (unsigned)bind->joykey);
@@ -3177,13 +3173,11 @@ void input_config_get_bind_string_joyaxis(
       char *buf, const char *suffix,
       const struct retro_keybind *bind, size_t size)
 {
-   if (bind->joyaxis_label &&
-         !string_is_empty(bind->joyaxis_label)
+   if (      bind->joyaxis_label
+         && !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
-   {
-      size_t len = fill_pathname_join_delim(buf,
+      fill_pathname_join_delim(buf,
             bind->joyaxis_label, suffix, ' ', size);
-   }
    else
    {
       if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
