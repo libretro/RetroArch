@@ -5845,7 +5845,7 @@ static int action_ok_delete_entry(const char *path,
    /* Thumbnail must be refreshed */
    if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)
       menu_st->driver_ctx->refresh_thumbnail_image(
-            menu_st->userdata, new_selection_ptr);
+            menu_st->userdata, (unsigned)new_selection_ptr);
 
    return 0;
 }

@@ -410,7 +410,7 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    }
    len += strlcpy(header + len, "\", response=\"", total - len);
    len += strlcpy(header + len, response, total - len);
-   len += strlcpy(header + len, "\"\r\n", total - len);
+          strlcpy(header + len, "\"\r\n", total - len);
 
    free(response);
 

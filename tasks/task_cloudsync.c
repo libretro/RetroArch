@@ -138,12 +138,10 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
    file_list_t  *list = NULL;
    rjson_t      *json = NULL;
 
-   list = (file_list_t *)calloc(1, sizeof(file_list_t));
-   if (!list)
+   if (!(list = (file_list_t *)calloc(1, sizeof(file_list_t))))
       return NULL;
 
-   json = rjson_open_rfile(file);
-   if (!json)
+   if (!(json = rjson_open_rfile(file)))
       return NULL;
 
    rjson_parse(json, list,
@@ -178,7 +176,7 @@ static void task_cloud_sync_manifest_filename(char *path, size_t len, bool serve
 }
 
 static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
-                                             bool success, RFILE *file)
+      bool success, RFILE *file)
 {
    task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)user_data;
 
@@ -190,7 +188,7 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
    {
       RARCH_WARN(CSPFX "server manifest fetch failed\n");
       sync_state->failures = true;
-      sync_state->phase = CLOUD_SYNC_PHASE_END;
+      sync_state->phase    = CLOUD_SYNC_PHASE_END;
       return;
    }
 
@@ -229,7 +227,7 @@ static void task_cloud_sync_read_local_manifest(task_cloud_sync_state_t *sync_st
    if (path_is_valid(manifest_path))
    {
       RFILE *rfile = filestream_open(manifest_path,
-                                     RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
       if (rfile)
       {
          RARCH_WARN(CSPFX "opened local manifest\n");
@@ -242,11 +240,11 @@ static void task_cloud_sync_read_local_manifest(task_cloud_sync_state_t *sync_st
 }
 
 static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
-                                                const char *dir_fullpath, char *dir_name)
+      const char *dir_fullpath, char *dir_name)
 {
+   int i;
    struct string_list *dir_list;
    char                dir_fullpath_slash[PATH_MAX_LENGTH];
-   int                 i;
    bool                is_config = string_is_equal(dir_name, "config");
 
    strlcpy(dir_fullpath_slash, dir_fullpath, sizeof(dir_fullpath_slash));
@@ -302,20 +300,19 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    struct string_list *dirlist = task_cloud_sync_directory_map();
    int i;
 
-   sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t));
-   if (!sync_state->current_manifest)
+   if (!(sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
    {
       sync_state->phase = CLOUD_SYNC_PHASE_END;
       return;
    }
-   sync_state->updated_server_manifest = (file_list_t *)calloc(1, sizeof(file_list_t));
-   if (!sync_state->updated_server_manifest)
+
+   if (!(sync_state->updated_server_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
    {
       sync_state->phase = CLOUD_SYNC_PHASE_END;
       return;
    }
-   sync_state->updated_local_manifest = (file_list_t *)calloc(1, sizeof(file_list_t));
-   if (!sync_state->updated_local_manifest)
+
+   if (!(sync_state->updated_local_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
    {
       sync_state->phase = CLOUD_SYNC_PHASE_END;
       return;
@@ -323,7 +320,7 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
 
    for (i = 0; i < dirlist->size; i++)
       task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
-                                          dirlist->elems[i].userdata, dirlist->elems[i].data);
+            dirlist->elems[i].userdata, dirlist->elems[i].data);
 
    file_list_sort_on_alt(sync_state->current_manifest);
    sync_state->phase = CLOUD_SYNC_PHASE_DIFF;
@@ -357,8 +354,7 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
 static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
 {
    file_list_t *list = server ? sync_state->updated_server_manifest : sync_state->updated_local_manifest;
-   size_t       idx;
-   idx = list->size;
+   size_t       idx  = list->size;
    file_list_append(list, NULL, NULL, 0, 0, 0);
    file_list_set_alt_at_offset(list, idx, key);
    list->list[idx].userdata = hash;
@@ -412,14 +408,14 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
 /* don't pass a server/local item_file to this, only current has ->path set */
 static void task_cloud_sync_backup_file(struct item_file *file)
 {
-   settings_t *settings = config_get_ptr();
-   const char *path_dir_core_assets = settings->paths.directory_core_assets;
+   struct tm   tm_;
+   size_t      len;
    char        backup_dir[PATH_MAX_LENGTH];
    char        new_path[PATH_MAX_LENGTH];
    char        new_dir[PATH_MAX_LENGTH];
-   size_t      len;
-   struct tm   tm_;
-   time_t      cur_time = time(NULL);
+   settings_t *settings             = config_get_ptr();
+   const char *path_dir_core_assets = settings->paths.directory_core_assets;
+   time_t      cur_time             = time(NULL);
    rtime_localtime(&cur_time, &tm_);
 
    fill_pathname_join_special(backup_dir,
@@ -617,14 +613,13 @@ static void task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_st
 
 static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_state, bool include_local)
 {
+   bool server_changed, current_changed;
    struct item_file *server_file  = &sync_state->server_manifest->list[sync_state->server_idx];
-   struct item_file *local_file;
+   struct item_file *local_file   = NULL;
    struct item_file *current_file = &sync_state->current_manifest->list[sync_state->current_idx];
    const char       *filename     = current_file->path;
-   RFILE            *file = filestream_open(filename,
+   RFILE            *file         = filestream_open(filename,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   bool              server_changed;
-   bool              current_changed;
 
    if (!file)
       return;
@@ -636,7 +631,7 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
    {
       task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(current_file), CS_FILE_HASH(current_file), true);
       task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(current_file), CS_FILE_HASH(current_file), false);
-      /* no need to mark need_manifest_uploaded, nothing changed */
+      /* No need to mark need_manifest_uploaded, nothing changed */
       return;
    }
 
@@ -646,7 +641,7 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
       return;
    }
 
-   local_file = &sync_state->local_manifest->list[sync_state->local_idx];
+   local_file      = &sync_state->local_manifest->list[sync_state->local_idx];
    server_changed  = !string_is_equal(CS_FILE_HASH(local_file), CS_FILE_HASH(server_file));
    current_changed = !string_is_equal(CS_FILE_HASH(local_file), CS_FILE_HASH(current_file));
 
@@ -717,18 +712,21 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 
 static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
 {
+   int server_local_key_cmp;
+   int server_current_key_cmp;
+   int current_local_key_cmp;
    struct item_file *server_file  = NULL;
    struct item_file *local_file   = NULL;
    struct item_file *current_file = NULL;
 
-   if (sync_state->server_manifest &&
-       sync_state->server_idx < sync_state->server_manifest->size)
+   if (   sync_state->server_manifest
+       && sync_state->server_idx < sync_state->server_manifest->size)
       server_file = &sync_state->server_manifest->list[sync_state->server_idx];
-   if (sync_state->local_manifest &&
-       sync_state->local_idx < sync_state->local_manifest->size)
+   if (   sync_state->local_manifest
+       && sync_state->local_idx < sync_state->local_manifest->size)
       local_file = &sync_state->local_manifest->list[sync_state->local_idx];
-   if (sync_state->current_manifest &&
-       sync_state->current_idx < sync_state->current_manifest->size)
+   if (   sync_state->current_manifest
+       && sync_state->current_idx < sync_state->current_manifest->size)
       current_file = &sync_state->current_manifest->list[sync_state->current_idx];
 
    if (!server_file && !local_file && !current_file)
@@ -738,12 +736,9 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       return;
    }
 
-   /* doing a three-way diff of sorted lists of files. grab the first one from
+   /* Doing a three-way diff of sorted lists of files. grab the first one from
     * each, resolve any difference, move on. */
-
-   int server_local_key_cmp = task_cloud_sync_key_cmp(server_file, local_file);
-   int server_current_key_cmp;
-   int current_local_key_cmp;
+   server_local_key_cmp = task_cloud_sync_key_cmp(server_file, local_file);
 
    if (server_local_key_cmp < 0)
    {
@@ -852,16 +847,14 @@ static void task_cloud_sync_update_manifest_cb(void *user_data, const char *path
 
 static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char *path)
 {
-   RFILE         *file   = NULL;
    rjsonwriter_t *writer = NULL;
    size_t         idx    = 0;
-
-   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *file           = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return NULL;
 
-   writer = rjsonwriter_open_rfile(file);
-   if (!writer)
+   if (!(writer = rjsonwriter_open_rfile(file)))
    {
       filestream_close(file);
       return NULL;
@@ -938,15 +931,14 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
 {
    retro_task_t            *task       = (retro_task_t *)user_data;
    task_cloud_sync_state_t *sync_state = NULL;
-   char                     title[512];
-   size_t                   len        = 0;
 
    if (!task)
       return;
 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
-      len  = strlcpy(title + len, "Cloud Sync finished", sizeof(title) - len);
+      char title[512];
+      size_t len = strlcpy(title + len, "Cloud Sync finished", sizeof(title) - len);
       if (sync_state->failures || sync_state->conflicts)
          len += strlcpy(title + len, " with ", sizeof(title) - len);
       if (sync_state->failures)
@@ -954,7 +946,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
       if (sync_state->failures && sync_state->conflicts)
          len += strlcpy(title + len, " and ", sizeof(title) - len);
       if (sync_state->conflicts)
-         len += strlcpy(title + len, "conflicts", sizeof(title) - len);
+         strlcpy(title + len, "conflicts", sizeof(title) - len);
       task_set_title(task, strdup(title));
    }
 
@@ -1024,7 +1016,7 @@ task_finished:
 }
 
 static void task_cloud_sync_cb(retro_task_t *task, void *task_data,
-                          void *user_data, const char *error)
+      void *user_data, const char *error)
 {
    task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)task_data;
 
@@ -1066,7 +1058,8 @@ void task_push_cloud_sync(void)
       return;
 
    find_data.func = task_cloud_sync_task_finder;
-   if (task_queue_find(&find_data)) {
+   if (task_queue_find(&find_data))
+   {
       RARCH_LOG(CSPFX "already in progress\n");
       return;
    }
@@ -1075,8 +1068,8 @@ void task_push_cloud_sync(void)
    if (!sync_state)
       return;
 
-   task = task_init();
-   if (!task) {
+   if (!(task = task_init()))
+   {
       free(sync_state);
       return;
    }
