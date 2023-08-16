@@ -1022,14 +1022,13 @@ static void save_state_to_file(void *data)
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 
-static void bottom_menu_control(void* data, bool lcd_bottom)
+static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
 {
    touchPosition state_tmp_touch;
    uint32_t state_tmp   = 0;
    ctr_video_t *ctr     = (ctr_video_t*)data;
    settings_t *settings = config_get_ptr();
    int config_slot      = settings->ints.state_slot;
-   uint32_t flags       = runloop_get_flags();
 
    if (!ctr->init_bottom_menu)
    {
@@ -1080,9 +1079,9 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
       if (ctr->bottom_is_idle)
       {
-         ctr->bottom_is_idle   = false;
-         ctr->bottom_is_fading = false;
-         fade_count            = 256;
+         ctr->bottom_is_idle    = false;
+         ctr->bottom_is_fading  = false;
+         fade_count             = 256;
          ctr_set_bottom_screen_enable(true,true);
       }
       else if (ctr->bottom_check_idle)
@@ -1913,7 +1912,7 @@ static bool ctr_frame(void* data, const void* frame,
       else
          ctr_bottom_screen_enabled = lcd_bottom;
    }
-   bottom_menu_control(data, lcd_bottom);
+   ctr_bottom_menu_control(data, lcd_bottom, flags);
 
    if (ctr->p3d_event_pending)
    {
