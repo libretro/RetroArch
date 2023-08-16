@@ -1253,10 +1253,11 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
                | (((vk->flags & VK_FLAG_DISPLAY_BLEND) > 0) << 0);
             call.pipeline     = vk->display.pipelines[disp_pipeline];
             call.texture      = texture;
-            call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP) ?
-               vk->samplers.mipmap_linear :
-               ((texture->flags & VK_TEX_FLAG_DEFAULT_SMOOTH) ? vk->samplers.linear
-                : vk->samplers.nearest);
+            call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP)
+               ? vk->samplers.mipmap_linear
+               : ((texture->flags & VK_TEX_FLAG_DEFAULT_SMOOTH)
+               ? vk->samplers.linear
+               : vk->samplers.nearest);
             call.uniform      = draw->matrix_data
                ? draw->matrix_data : &vk->mvp_no_rot;
             call.uniform_size = sizeof(math_matrix_4x4);
@@ -1902,7 +1903,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    if (i >= 0)
    {
       const gfx_ctx_driver_t *ctx = video_context_driver_init(
-            runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+            (runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT) ? true : false,
             settings,
             data,
             gfx_ctx_vk_drivers[i], ident,
@@ -1918,7 +1919,7 @@ static const gfx_ctx_driver_t *vk_context_driver_init_first(
    {
       const gfx_ctx_driver_t *ctx =
          video_context_driver_init(
-               runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT,
+               (runloop_flags & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT) ? true : false,
                settings,
                data,
                gfx_ctx_vk_drivers[i], ident,
@@ -4296,8 +4297,8 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Upload menu texture. */
    if (vk->flags & VK_FLAG_MENU_ENABLE)
    {
-       if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE ||
-           vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
+       if (   vk->menu.textures[vk->menu.last_index].image  != VK_NULL_HANDLE
+           || vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
        {
            struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
            struct vk_texture *texture = &vk->menu.textures[vk->menu.last_index];
@@ -4385,11 +4386,11 @@ static bool vulkan_frame(void *data, const void *frame,
                quad.texture = optimal;
 
             if (menu_linear_filter)
-               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP) ?
-                  vk->samplers.mipmap_linear : vk->samplers.linear;
+               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
+                  ? vk->samplers.mipmap_linear : vk->samplers.linear;
             else
-               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP) ?
-                  vk->samplers.mipmap_nearest : vk->samplers.nearest;
+               quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
+                  ? vk->samplers.mipmap_nearest : vk->samplers.nearest;
 
             quad.mvp        = &vk->mvp_no_rot;
             quad.color.r    = 1.0f;
@@ -5594,7 +5595,7 @@ static bool vulkan_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    int i;
-   bool old_enabled;
+   bool old_enabled                   = false;
    const struct texture_image *images =
       (const struct texture_image*)image_data;
    vk_t *vk                           = (vk_t*)data;
@@ -5612,13 +5613,14 @@ static bool vulkan_overlay_load(void *data,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
-   old_enabled        = vk->flags & VK_FLAG_OVERLAY_ENABLE;
+   if (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+      old_enabled           = true;
    vulkan_overlay_free(vk);
 
    if (!(vk->overlay.images = (struct vk_texture*)
             calloc(num_images, sizeof(*vk->overlay.images))))
       goto error;
-   vk->overlay.count  = num_images;
+   vk->overlay.count        = num_images;
 
    if (!(vk->overlay.vertex = (struct vk_vertex*)
       calloc(4 * num_images, sizeof(*vk->overlay.vertex))))

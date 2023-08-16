@@ -91,7 +91,7 @@ void *glkitview_init(void);
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
 #endif
-    
+
 #if defined(OSX)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
@@ -114,15 +114,15 @@ void *glkitview_init(void);
 - (bool)menuIsAtTop
 {
     struct menu_state *menu_st = menu_state_get_ptr();
-    if (!(menu_st->flags & MENU_ST_FLAG_ALIVE)) // content
+    if (!(menu_st->flags & MENU_ST_FLAG_ALIVE)) /* content */
         return false;
-    if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) // search
+    if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) /* search */
         return false;
-    if (menu_st->selection_ptr != 0) // not the first item
+    if (menu_st->selection_ptr != 0) /* not the first item */
         return false;
-    if (menu_st->entries.list->menu_stack[0]->size != 1) // submenu
+    if (menu_st->entries.list->menu_stack[0]->size != 1) /* submenu */
         return false;
-    if (!string_is_equal(menu_st->entries.list->menu_stack[0]->list->label, // not on the main menu
+    if (!string_is_equal(menu_st->entries.list->menu_stack[0]->list->label, /* not on the main menu */
                          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
         return false;
     return true;
@@ -134,7 +134,7 @@ void *glkitview_init(void);
     if ([controllers count] == 1)
         return !controllers[0].extendedGamepad;
 
-    // are these presses that controllers send?
+    /* Are these presses that controllers send? */
     if (@available(tvOS 14.3, *))
         if (type == UIPressTypePageUp || type == UIPressTypePageDown)
             return true;
@@ -216,7 +216,7 @@ void *glkitview_init(void);
 {
     for (UIPress *press in presses)
     {
-        // if we're at the top it doesn't matter who pressed it, we want to leave
+        /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
         else if ([self didMicroGamepadPress:press.type])
@@ -368,7 +368,7 @@ void *glkitview_init(void);
 
 -(void)adjustViewFrameForSafeArea
 {
-   /* This is for adjusting the view frame to account for 
+   /* This is for adjusting the view frame to account for
     * the notch in iPhone X phones */
    if (@available(iOS 11, *))
    {
@@ -424,7 +424,7 @@ void *glkitview_init(void);
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
    unsigned orientation_flags = apple_frontend_settings.orientation_flags;
-   
+
    switch (interfaceOrientation)
    {
       case UIInterfaceOrientationPortrait:
@@ -583,7 +583,7 @@ void *glkitview_init(void);
         [servers appendString:@"\n\n"];
     if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
-    
+
 #if TARGET_OS_TV || TARGET_OS_IOS
     settings_t *settings = config_get_ptr();
     if (!settings->bools.gcdwebserver_alert)
@@ -626,9 +626,9 @@ void *cocoa_screen_get_chosen(void)
     NSArray *screens     = [RAScreen screens];
     if (!screens || !settings)
         return NULL;
-    
+
     monitor_index        = settings->uints.video_monitor_index;
-    
+
     if (monitor_index >= screens.count)
         return (BRIDGE void*)screens;
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
@@ -693,14 +693,14 @@ float cocoa_screen_get_native_scale(void)
     SEL selector;
     static CGFloat ret   = 0.0f;
     RAScreen *screen     = NULL;
-    
+
     if (ret != 0.0f)
         return ret;
     if (!(screen = (BRIDGE RAScreen*)cocoa_screen_get_chosen()))
         return 0.0f;
-    
+
     selector            = NSSelectorFromString(BOXSTRING("nativeScale"));
-    
+
     if ([screen respondsToSelector:selector])
         ret                 = (float)get_from_selector(
               [screen class], screen, selector, &ret);
@@ -711,7 +711,7 @@ float cocoa_screen_get_native_scale(void)
         if ([screen respondsToSelector:selector])
             ret              = screen.scale;
     }
-    
+
     return ret;
 }
 #endif
