@@ -67,8 +67,6 @@ enum {
 };
 #endif
 
-#define AINPUT_SOURCE_TOUCHSCREEN_OR_MOUSE AINPUT_SOURCE_TOUCHSCREEN|AINPUT_SOURCE_MOUSE
-
 /* If using an SDK lower than 24 then add missing relative axis codes */
 #ifndef AMOTION_EVENT_AXIS_RELATIVE_X
 #define AMOTION_EVENT_AXIS_RELATIVE_X 27
@@ -1564,7 +1562,7 @@ static void android_input_poll_input_default(android_input_t *android)
                else if ((source & AINPUT_SOURCE_STYLUS) == AINPUT_SOURCE_STYLUS)
                   android_input_poll_event_type_motion_stylus(android, event,
                         port, source);
-               else if ((source & AINPUT_SOURCE_TOUCHSCREEN_OR_MOUSE) == AINPUT_SOURCE_TOUCHSCREEN_OR_MOUSE)
+               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
                         port, source);
                else
