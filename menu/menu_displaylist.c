@@ -1248,8 +1248,8 @@ static unsigned menu_displaylist_parse_core_option_override_list(file_list_t *li
    uint32_t flags               = runloop_get_flags();
    bool core_has_options        = !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
                                && (runloop_st->core_options);
-   bool game_options_active     = flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
-   bool folder_options_active   = flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
+   bool game_options_active     = (flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE)   ? true : false;
+   bool folder_options_active   = (flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE) ? true : false;
    bool show_core_options_flush = settings ?
          settings->bools.quick_menu_show_core_options_flush : false;
 
@@ -1341,9 +1341,9 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list
    unsigned count                = 0;
    uint32_t flags                = runloop_get_flags();
    bool has_content              = !string_is_empty(path_get(RARCH_PATH_CONTENT));
-   bool core_remap_active        = flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE;
-   bool content_dir_remap_active = flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE;
-   bool game_remap_active        = flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE;
+   bool core_remap_active        = (flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE) ? true : false;
+   bool content_dir_remap_active = (flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE) ? true : false;
+   bool game_remap_active        = (flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE) ? true : false;
    bool remap_save_on_exit       = settings->bools.remap_save_on_exit;
 
    /* Sanity check - cannot handle remap files

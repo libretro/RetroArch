@@ -3729,9 +3729,9 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
    }
 
    /* Only relevant if we're connected and not in a desynching operation */
-   if ((netplay->is_server && (netplay->connected_players<=1)) ||
-       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED)     ||
-       (netplay->desync))
+   if (   (netplay->is_server && (netplay->connected_players<=1))
+       || (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED)
+       || (netplay->desync))
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr         = netplay->self_ptr;
@@ -3740,7 +3740,7 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->catch_up)
       {
          netplay->catch_up             = false;
-	 input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
+         input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
          driver_set_nonblock_state();
       }
       return;

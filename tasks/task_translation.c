@@ -91,7 +91,7 @@ task_finished:
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
-      bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
+      bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
       command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    }
    if (task->user_data)
@@ -617,7 +617,7 @@ finish:
    {
       if (string_is_equal(auto_str, "auto"))
       {
-         bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
+         bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
          if (     (access_st->ai_service_auto != 0)
                && !settings->bools.ai_service_pause)
             call_auto_translate_task(settings, &was_paused);

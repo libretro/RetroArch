@@ -1412,8 +1412,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
    recording_state_t *recording_st        = recording_state_get_ptr();
    settings_t         *settings           = config_get_ptr();
    rarch_system_info_t *sys_info          = &runloop_st->system;
-   bool ignore_environment_cb             = runloop_st->flags &
-      RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
+   bool ignore_environment_cb             = (runloop_st->flags &
+      RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB) ? true : false;
 
    if (ignore_environment_cb)
       return false;
@@ -1549,7 +1549,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
+                     (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) ? true : false,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
                runloop_st->flags           &=
@@ -1578,7 +1578,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
+                     (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) ? true : false,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
                runloop_st->flags                &=
@@ -1614,7 +1614,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
+                     (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) ? true : false,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
                runloop_st->flags                &=
@@ -1650,7 +1650,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
+                     (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) ? true : false,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
                runloop_st->flags                &=
@@ -1691,7 +1691,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (runloop_st->core_options)
             {
                runloop_deinit_core_options(
-                     runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
+                     (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) ? true : false,
                      path_get(RARCH_PATH_CORE_OPTIONS),
                      runloop_st->core_options);
                runloop_st->flags                &=
@@ -3872,7 +3872,7 @@ static void uninit_libretro_symbols(
    if (runloop_st->core_options)
    {
       runloop_deinit_core_options(
-            runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE,
+            (runloop_st->flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) ? true : false,
             path_get(RARCH_PATH_CORE_OPTIONS),
             runloop_st->core_options);
       runloop_st->flags                &=
@@ -5292,7 +5292,7 @@ void runloop_msg_queue_push(const char *msg,
             prio,
             flush,
 #ifdef HAVE_MENU
-            menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE
+            (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) ? true : false
 #else
             false
 #endif
@@ -5444,8 +5444,8 @@ static enum runloop_state_enum runloop_check_state(
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   bool menu_driver_binding_state      = menu_st->flags & MENU_ST_FLAG_IS_BINDING;
-   bool menu_is_alive                  = menu_st->flags & MENU_ST_FLAG_ALIVE;
+   bool menu_driver_binding_state      = (menu_st->flags & MENU_ST_FLAG_IS_BINDING) ? true : false;
+   bool menu_is_alive                  = (menu_st->flags & MENU_ST_FLAG_ALIVE)      ? true : false;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
@@ -5875,7 +5875,7 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Check whether menu screensaver should be enabled */
       if (     (screensaver_timeout > 0)
-            && (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED)
+            && (menu_st->flags   & MENU_ST_FLAG_SCREENSAVER_SUPPORTED)
             && (!(menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
             && ((menu_st->current_time_us - menu_st->input_last_time_us)
              > ((retro_time_t)screensaver_timeout * 1000000)))
@@ -5926,7 +5926,7 @@ static enum runloop_state_enum runloop_check_state(
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
-         bool runloop_is_inited      = runloop_st->flags & RUNLOOP_FLAG_IS_INITED;
+         bool runloop_is_inited      = (runloop_st->flags & RUNLOOP_FLAG_IS_INITED) ? true : false;
 #ifdef HAVE_NETWORKING
          bool menu_pause_libretro    = settings->bools.menu_pause_libretro
             && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
@@ -5971,7 +5971,7 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         video_st->width,
                         video_st->height,
-                        runloop_st->flags & RUNLOOP_FLAG_IDLE);
+                        (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false);
             }
 
             if (      (menu_st->flags & MENU_ST_FLAG_ALIVE)
@@ -6828,7 +6828,7 @@ int runloop_iterate(void)
             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
-   bool core_paused                             = (runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+   bool core_paused                             = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
 #endif
    float slowmotion_ratio                       = settings->floats.slowmotion_ratio;
 #ifdef HAVE_CHEEVOS
@@ -7373,7 +7373,7 @@ void runloop_task_msg_queue_push(
             prio,
             flush,
 #ifdef HAVE_MENU
-            menu_st->flags & MENU_ST_FLAG_ALIVE
+            (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false
 #else
             false
 #endif

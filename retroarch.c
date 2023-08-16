@@ -674,7 +674,7 @@ static void driver_adjust_system_rates(
     * switching is enabled */
    runloop_set_video_swap_interval(
          vrr_runloop_enable,
-         video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE,
+         (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
          video_swap_interval,
          audio_max_timing_skew,
          video_refresh_rate,
@@ -4963,8 +4963,8 @@ void emscripten_mainloop(void)
    bool input_driver_nonblock_state       = input_st ?
       (input_st->flags & INP_FLAG_NONBLOCKING) : false;
    uint32_t runloop_flags                 = runloop_get_flags();
-   bool runloop_is_slowmotion             = runloop_flags & RUNLOOP_FLAG_SLOWMOTION;
-   bool runloop_is_paused                 = runloop_flags & RUNLOOP_FLAG_PAUSED;
+   bool runloop_is_slowmotion             = (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
+   bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
 
 #ifdef HAVE_RWEBAUDIO
    RWebAudioRecalibrateTime();
@@ -6605,11 +6605,9 @@ bool retroarch_main_init(int argc, char *argv[])
             input_remapping_restore_global_config(true);
 
 #ifdef HAVE_CONFIGFILE
+         /* Reload the original config */
          if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-         {
-            /* Reload the original config */
             config_unload_override();
-         }
 #endif
 
 #ifdef HAVE_DYNAMIC

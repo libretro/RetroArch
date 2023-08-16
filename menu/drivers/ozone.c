@@ -5336,7 +5336,7 @@ static void ozone_compute_entries_position(
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone);
    float scale_factor            = ozone->last_scale_factor;
-   bool want_thumbnail_bar       = ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR;
+   bool want_thumbnail_bar       = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    bool show_thumbnail_bar       = ozone->show_thumbnail_bar;
 
    if (show_thumbnail_bar != want_thumbnail_bar)
@@ -7697,8 +7697,8 @@ static bool ozone_help_available(ozone_handle_t *ozone, size_t current_selection
       return false;
 
    return !(
-            (ozone->flags & OZONE_FLAG_IS_PLAYLIST) ||
-            (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
+               (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
+            || (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
          );
 }
 
@@ -7979,10 +7979,9 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
+            char playlist_path[PATH_MAX_LENGTH];
             struct menu_state *menu_st = menu_state_get_ptr();
             size_t new_selection       = 0;
-            char playlist_path[PATH_MAX_LENGTH];
-
             /* If cursor is active, ensure we target
              * an on screen category */
             size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
@@ -8055,8 +8054,8 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          if (       (ozone->flags  & OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE)
                && (!(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS))
-               && ( (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT) ||
-                    (ozone->is_quick_menu && !string_is_empty(ozone->savestate_thumbnail_file_path))))
+               && ( (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT)
+               ||   (ozone->is_quick_menu && !string_is_empty(ozone->savestate_thumbnail_file_path))))
          {
             ozone_show_fullscreen_thumbnails(ozone);
             ozone->flags2 |= OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
@@ -8874,7 +8873,7 @@ static void ozone_update_thumbnail_image(void *data)
             : OZONE_PENDING_THUMBNAIL_LEFT;
 
    show_thumbnail_bar = ozone->show_thumbnail_bar;
-   want_thumbnail_bar = ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR;
+   want_thumbnail_bar = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    if (show_thumbnail_bar != want_thumbnail_bar)
       ozone->flags |= OZONE_FLAG_NEED_COMPUTE;
 }
@@ -11211,8 +11210,8 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          /* Filebrowser image updates */
          else if (ozone->flags & OZONE_FLAG_IS_FILE_LIST)
          {
-            if ((entry_type == FILE_TYPE_IMAGEVIEWER) ||
-                (entry_type == FILE_TYPE_IMAGE))
+            if (   (entry_type == FILE_TYPE_IMAGEVIEWER)
+                || (entry_type == FILE_TYPE_IMAGE))
             {
                ozone_set_thumbnail_content(ozone, "imageviewer");
                update_thumbnails                      = true;
@@ -11516,7 +11515,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          MENU_LIST_GET_SELECTION(menu_list, 0),
          ozone->animations.list_alpha,
          ozone->animations.scroll_y,
-         ozone->flags & OZONE_FLAG_IS_PLAYLIST,
+         (ozone->flags & OZONE_FLAG_IS_PLAYLIST) ? true : false,
          &mymat
          );
 
@@ -11534,7 +11533,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             &ozone->selection_buf_old,
             ozone->animations.list_alpha,
             ozone->scroll_old,
-            ozone->flags & OZONE_FLAG_IS_PLAYLIST_OLD,
+            (ozone->flags & OZONE_FLAG_IS_PLAYLIST_OLD) ? true : false,
             &mymat
       );
 
@@ -12049,21 +12048,21 @@ static void ozone_populate_entries(
     * playlists, database manager lists, file lists
     * and savestate slots */
    if (
-            ((ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR))
+            (   (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR))
          && (  ((ozone->flags & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 4))
             || ((ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST) && (ozone->depth >= 4))
-            || (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
-            || (ozone->flags & OZONE_FLAG_IS_FILE_LIST)
-            || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
-            || (ozone->is_quick_menu)
+            ||  (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
+            ||  (ozone->flags & OZONE_FLAG_IS_FILE_LIST)
+            ||  (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
+            ||  (ozone->is_quick_menu)
             )
       )
       ozone->flags |=  OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
    else
       ozone->flags &= ~OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
 
-   fs_thumbnails_available = ozone->flags & OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
-   want_thumbnail_bar      = ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR;
+   fs_thumbnails_available = (ozone->flags & OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE) ? true : false;
+   want_thumbnail_bar      = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
 
    if (fs_thumbnails_available != want_thumbnail_bar)
    {
