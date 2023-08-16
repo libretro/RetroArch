@@ -3180,12 +3180,13 @@ void input_config_get_bind_string_joyaxis(
             bind->joyaxis_label, suffix, ' ', size);
    else
    {
+      size_t _len = strlcpy(buf, "Axis ", size);
       if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf, size, "%s-%u",
-               "Axis ", (unsigned)AXIS_NEG_GET(bind->joyaxis));
+         snprintf(buf + _len, size - _len, "-%u",
+               (unsigned)AXIS_NEG_GET(bind->joyaxis));
       else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf, size, "%s+%u",
-               "Axis ", (unsigned)AXIS_POS_GET(bind->joyaxis));
+         snprintf(buf + _len, size - _len, "+%u",
+               (unsigned)AXIS_POS_GET(bind->joyaxis));
    }
 }
 
