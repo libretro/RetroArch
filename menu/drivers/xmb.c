@@ -1025,11 +1025,13 @@ static void xmb_render_messagebox_internal(
             (int)video_width - (xmb->margins_dialog * 8)) < 1)
       return;
 
+   usable_width = (usable_width < 300) ? 300 : usable_width;
+
    /* Split message into lines */
    (xmb->word_wrap)(
          wrapped_message, sizeof(wrapped_message),
          message, strlen(message),
-         usable_width / (xmb->font_size * 0.6f),
+         usable_width / (xmb->font_size * 0.85f),
          xmb->wideglyph_width, 0);
 
    string_list_initialize(&list);
@@ -1043,7 +1045,7 @@ static void xmb_render_messagebox_internal(
    }
 
    input_dialog_display_kb = menu_input_dialog_get_display_kb();
-   line_height             = xmb->font->size * 1.2;
+   line_height             = xmb->font->size * 1.30f;
    y_position              = video_height / 2;
    if (input_dialog_display_kb)
       y_position           = video_height / 4;
@@ -1057,10 +1059,12 @@ static void xmb_render_messagebox_internal(
 
       if (!string_is_empty(msg))
       {
-         int width     = font_driver_get_message_width(
+         int width    = font_driver_get_message_width(
                xmb->font, msg, strlen(msg), 1.0f);
          if (width > longest_width)
             longest_width = width;
+         if (longest_width > (int)usable_width)
+            longest_width = usable_width;
       }
    }
 
@@ -1090,7 +1094,7 @@ static void xmb_render_messagebox_internal(
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - longest_width/2.0,
-               y + (i+0.75) * line_height,
+               y + (i + 0.85) * line_height,
                video_width, video_height, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
@@ -6427,7 +6431,12 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
       xmb->shadow_offset         = 2.0;
 
    xmb->font_size                = new_font_size;
-   xmb->font2_size               = 24.0           * scale_factor;
+   xmb->font2_size               = 22.0           * scale_factor;
+
+   /* Limit minimum font size */
+   xmb->font_size                = (xmb->font_size  < 7) ? 7 : xmb->font_size;
+   xmb->font2_size               = (xmb->font2_size < 6) ? 6 : xmb->font2_size;
+
    xmb->cursor_size              = 64.0           * scale_factor;
    xmb->icon_size                = 128.0          * scale_factor;
    xmb->icon_spacing_horizontal  = 200.0          * scale_factor;
@@ -6444,8 +6453,8 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins_label_top        = new_font_size / 3.0;
 
    xmb->margins_setting_left     = 670.0          * scale_factor * xmb_scale_mod[6];
-   xmb->margins_dialog           = 48             * scale_factor;
-   xmb->margins_slice            = 16             * scale_factor;
+   xmb->margins_dialog           = new_font_size * 2.0;
+   xmb->margins_slice            = new_font_size / 2.0;
 }
 
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
@@ -6478,7 +6487,12 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 
    xmb->font_size                = new_font_size;
    xmb->font2_size               = 22.0           * scale_factor;
-   xmb->cursor_size              = 64.0;
+
+   /* Limit minimum font size */
+   xmb->font_size                = (xmb->font_size  < 7) ? 7 : xmb->font_size;
+   xmb->font2_size               = (xmb->font2_size < 6) ? 6 : xmb->font2_size;
+
+   xmb->cursor_size              = 64.0           * scale_factor;
    xmb->icon_size                = 128.0          * scale_factor;
    xmb->icon_spacing_horizontal  = 250.0          * scale_factor;
    xmb->icon_spacing_vertical    = 108.0          * scale_factor;
@@ -6494,8 +6508,8 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins_label_top        = new_font_size / 3.0;
 
    xmb->margins_setting_left     = 540.0          * scale_factor * xmb_scale_mod[6];
-   xmb->margins_dialog           = 48             * scale_factor;
-   xmb->margins_slice            = 16             * scale_factor;
+   xmb->margins_dialog           = new_font_size * 2.0;
+   xmb->margins_slice            = new_font_size / 2.0;
 }
 
 static void xmb_init_scale_mod(void)

@@ -40,7 +40,14 @@ static unsigned uint_user_language;
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   return msg_hash_get_help_us_enum(msg, s, len);
+   int ret = msg_hash_get_help_us_enum(msg, s, len);
+   /* Replace line-breaks with "empty line-breaks" for readability */
+   const char *temp = string_replace_substring(s,
+         "\n",    STRLEN_CONST("\n"),
+         "\n \n", STRLEN_CONST("\n \n"));
+
+   strlcpy(s, temp, len);
+   return ret;
 }
 
 const char *get_user_language_iso639_1(bool limit)
