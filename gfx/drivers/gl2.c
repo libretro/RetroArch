@@ -3440,7 +3440,7 @@ static bool gl2_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
 #ifdef HAVE_MENU
-   bool menu_is_alive                  = video_info->menu_is_alive;
+   bool menu_is_alive                  = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;

@@ -2609,8 +2609,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->memory_update_interval      = settings->uints.memory_update_interval;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive               = (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false;
-   video_info->menu_screensaver_active     = (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) ? true : false;
+   video_info->menu_st_flags               = menu_st->flags;
    video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
    video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
    video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
@@ -2627,8 +2626,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->overlay_behind_menu         = settings->bools.input_overlay_behind_menu;
    video_info->libretro_running            = (runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED) ? true : false;
 #else
-   video_info->menu_is_alive               = false;
-   video_info->menu_screensaver_active     = false;
+   video_info->menu_st_flags               = 0;
    video_info->menu_footer_opacity         = 0.0f;
    video_info->menu_header_opacity         = 0.0f;
    video_info->materialui_color_theme      = 0;
@@ -3428,7 +3426,7 @@ void video_driver_frame(const void *data, unsigned width,
     *   that the next frame update is captured) */
    if (   video_info.input_driver_nonblock_state
        && video_info.fastforward_frameskip
-       &&  !(video_info.menu_is_alive
+       &&  !((video_info.menu_st_flags & MENU_ST_FLAG_ALIVE)
        ||   (last_frame_duped && !!data)))
    {
       retro_time_t frame_time_accumulator_prev = frame_time_accumulator;
@@ -3739,7 +3737,7 @@ void video_driver_frame(const void *data, unsigned width,
                   msg_entry.category,
                   msg_entry.prio,
                   false,
-                  video_info.menu_is_alive
+                  (video_info.menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false
             );
       }
       /* ...otherwise, just output message via
@@ -3901,7 +3899,8 @@ void video_driver_frame(const void *data, unsigned width,
       if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
-               video_info.menu_screensaver_active || video_info.notifications_hidden ? "" : video_driver_msg,
+                  ((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) > 0)
+               || video_info.notifications_hidden ? "" : video_driver_msg,
                &video_info))
          video_st->flags |=  VIDEO_FLAG_ACTIVE;
       else
@@ -3916,7 +3915,7 @@ void video_driver_frame(const void *data, unsigned width,
           || video_info.memory_show
           || video_info.core_status_msg_show
          )
-       && !video_info.menu_screensaver_active
+       && !((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
        && !video_info.notifications_hidden
       )
    {

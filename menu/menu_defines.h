@@ -25,6 +25,54 @@ RETRO_BEGIN_DECLS
 
 #define MENU_SETTINGS_AUDIO_MIXER_MAX_STREAMS        (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1)
 
+enum menu_state_flags
+{
+   MENU_ST_FLAG_ALIVE                       = (1 << 0),
+   MENU_ST_FLAG_IS_BINDING                  = (1 << 1),
+   MENU_ST_FLAG_INP_DLG_KB_DISPLAY          = (1 << 2),
+   /* When enabled, on next iteration the 'Quick Menu'
+    * list will be pushed onto the stack */
+   MENU_ST_FLAG_PENDING_QUICK_MENU          = (1 << 3),
+   MENU_ST_FLAG_PREVENT_POPULATE            = (1 << 4),
+   /* The menu driver owns the userdata */
+   MENU_ST_FLAG_DATA_OWN                    = (1 << 5),
+   /* Flagged when menu entries need to be refreshed */
+   MENU_ST_FLAG_ENTRIES_NEED_REFRESH        = (1 << 6),
+   MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH = (1 << 7),
+   /* 'Close Content'-hotkey menu resetting */
+   MENU_ST_FLAG_PENDING_CLOSE_CONTENT       = (1 << 8),
+   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
+    * requiring the menu to be flushed on the next iteration */
+   MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH  = (1 << 9),
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
+   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
+};
+
+enum menu_scroll_mode
+{
+   MENU_SCROLL_PAGE = 0,
+   MENU_SCROLL_START_LETTER
+};
+
+enum contentless_core_runtime_status
+{
+   CONTENTLESS_CORE_RUNTIME_UNKNOWN = 0,
+   CONTENTLESS_CORE_RUNTIME_MISSING,
+   CONTENTLESS_CORE_RUNTIME_VALID
+};
+
+enum action_iterate_type
+{
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_BIND
+};
+
+
 enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
@@ -309,7 +357,7 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_SNOW,
    XMB_SHADER_PIPELINE_BOKEH,
    XMB_SHADER_PIPELINE_SNOWFLAKE
-#endif   
+#endif
 };
 
 enum rgui_thumbnail_scaler

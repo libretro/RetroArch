@@ -476,9 +476,9 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    char title[128];
-   sdl2_video_t *vid     = (sdl2_video_t*)data;
+   sdl2_video_t *vid  = (sdl2_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive    = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)

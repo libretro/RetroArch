@@ -597,7 +597,7 @@ static bool gdi_frame(void *data, const void *frame,
    unsigned bits                    = gdi->video_bits;
    HWND hwnd                        = win32_get_window();
 #ifdef HAVE_MENU
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    /* FIXME: Force these settings off as they interfere with the rendering */
@@ -612,9 +612,9 @@ static bool gdi_frame(void *data, const void *frame,
       menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  gdi->video_width  != frame_width  ||
-         gdi->video_height != frame_height ||
-         gdi->video_pitch  != pitch)
+   if (     (gdi->video_width  != frame_width)
+         || (gdi->video_height != frame_height)
+         || (gdi->video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {

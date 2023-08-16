@@ -624,21 +624,18 @@ static bool vita2d_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    void *tex_p;
-   vita_video_t *vita     = (vita_video_t *)data;
+   vita_video_t *vita                     = (vita_video_t *)data;
    unsigned temp_width                    = PSP_FB_WIDTH;
    unsigned temp_height                   = PSP_FB_HEIGHT;
    vita2d_video_mode_data video_mode_data = {0};
 #ifdef HAVE_MENU
-   bool menu_is_alive     = video_info->menu_is_alive;
+   bool menu_is_alive                     = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_active    = video_info->widgets_active;
+   bool widgets_active                    = video_info->widgets_active;
 #endif
-   bool statistics_show   = video_info->statistics_show;
-   struct font_params
-      *osd_params         = (struct font_params*)
-      &video_info->osd_stat_params;
-
+   bool statistics_show                   = video_info->statistics_show;
+   struct font_params *osd_params         = (struct font_params*)&video_info->osd_stat_params;
 
    if (frame)
    {

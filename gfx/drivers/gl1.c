@@ -15,13 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* OpenGL 1.x driver. 
+/* OpenGL 1.x driver.
  *
  * Minimum version : OpenGL 1.1 (1997)
  *
- * We are targeting a minimum of OpenGL 1.1 and the Microsoft 
+ * We are targeting a minimum of OpenGL 1.1 and the Microsoft
  * "GDI Generic" * software GL implementation.
- * Any additional features added for later 1.x versions should only be 
+ * Any additional features added for later 1.x versions should only be
  * enabled if they are detected at runtime. */
 
 #include <stddef.h>
@@ -260,7 +260,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
                sizeof(float) * 2);
          vertices3[i * 3 + 2]  = 0.0f;
       }
-      glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+      glVertexPointer(3, GL_FLOAT, 0, vertices3);
    }
 #else
    glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
@@ -503,7 +503,7 @@ static void gl1_raster_font_draw_vertices(
          vertices3[i*3+2] = 0.0f;
       }
    }
-   glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+   glVertexPointer(3, GL_FLOAT, 0, vertices3);
 #else
    glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
 #endif
@@ -1171,7 +1171,7 @@ static void *gl1_init(const video_info_t *video,
 
    memcpy(gl1->tex_info.coord, gl1_tex_coords, sizeof(gl1->tex_info.coord));
    gl1->vertex_ptr            = hwr->bottom_left_origin
-                              ? gl1_vertexes 
+                              ? gl1_vertexes
                               : gl1_vertexes_flipped;
    gl1->textures              = 4;
    gl1->white_color_ptr       = gl1_white_color;
@@ -1347,14 +1347,14 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
    float norm_width       = (1.0f / (float)pot_width) * (float)width;
    float norm_height      = (1.0f / (float)pot_height) * (float)height;
-   
+
    float texcoords[]      = {
       0.0f, 0.0f,
       0.0f, 0.0f,
       0.0f, 0.0f,
       0.0f, 0.0f
    };
-   
+
    texcoords[1] = texcoords[5] = norm_height;
    texcoords[4] = texcoords[6] = norm_width;
 
@@ -1447,17 +1447,17 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
    if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
-   
+
    glEnableClientState(GL_COLOR_ARRAY);
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   
+
    glColorPointer(4, GL_FLOAT, 0, colors);
    glVertexPointer(3, GL_FLOAT, 0, vertices);
    glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   
+
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
@@ -1500,7 +1500,7 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
 #ifdef HAVE_MENU
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive               = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
@@ -1539,7 +1539,7 @@ static bool gl1_frame(void *data, const void *frame,
          && (frame_width < width && frame_height < height))
       )
       draw = false;
-   
+
    do_swap = frame || draw;
 
    if (     (gl1->video_width  != frame_width)
@@ -1554,7 +1554,7 @@ static bool gl1_frame(void *data, const void *frame,
 
          pot_width         = GET_POT(frame_width);
          pot_height        = GET_POT(frame_height);
-         
+
          if (draw)
          {
             if (gl1->video_buf)
@@ -1606,7 +1606,7 @@ static bool gl1_frame(void *data, const void *frame,
    {
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   
+
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy);
@@ -1730,22 +1730,22 @@ static bool gl1_frame(void *data, const void *frame,
          video_info->black_frame_insertion
          && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
-         && !video_info->runloop_is_paused 
+         && !video_info->runloop_is_paused
          && !(gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE))
    {
         int n;
         for (n = 0; n < (int)video_info->black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);			
+          glClear(GL_COLOR_BUFFER_BIT);
 
           if (gl1->ctx_driver->swap_buffers)
             gl1->ctx_driver->swap_buffers(gl1->ctx_data);
-        }  
-   }   
-#endif 
+        }
+   }
+#endif
 
-   /* check if we are fast forwarding or in menu, 
+   /* check if we are fast forwarding or in menu,
       if we are ignore hard sync */
    if (      hard_sync
          && !video_info->input_driver_nonblock_state
@@ -1962,9 +1962,9 @@ static void gl1_set_texture_frame(void *data,
          if (gl1->menu_frame)
             free(gl1->menu_frame);
 
-         /* FIXME? We have to assume the pitch has no 
-          * extra padding in it because that will 
-          * mess up the POT calculation when we don't 
+         /* FIXME? We have to assume the pitch has no
+          * extra padding in it because that will
+          * mess up the POT calculation when we don't
           * know how many bpp there are. */
          gl1->menu_frame = (unsigned char*)malloc(pitch * height);
       }
@@ -2062,20 +2062,20 @@ static void gl1_load_texture_data(
 
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         (use_rgba || !rgb32) 
-         ? GL_RGBA 
+         (use_rgba || !rgb32)
+         ? GL_RGBA
          : RARCH_GL1_INTERNAL_FORMAT32,
          width,
          height,
          0,
-         (use_rgba || !rgb32) 
-         ? GL_RGBA 
+         (use_rgba || !rgb32)
+         ? GL_RGBA
          : RARCH_GL1_TEXTURE_TYPE32,
 #ifdef MSB_FIRST
          GL_UNSIGNED_INT_8_8_8_8_REV,
 #else
          rgb32
-         ? RARCH_GL1_FORMAT32 
+         ? RARCH_GL1_FORMAT32
          : GL_UNSIGNED_BYTE,
 #endif
          frame);
@@ -2155,7 +2155,7 @@ static void gl1_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       gl1->flags |= (GL1_FLAG_KEEP_ASPECT | GL1_FLAG_SHOULD_RESIZE);
 }
 
-static void gl1_unload_texture(void *data, 
+static void gl1_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;

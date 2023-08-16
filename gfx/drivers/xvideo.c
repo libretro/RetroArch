@@ -1017,19 +1017,18 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
    bool rgb32                = video_info->use_rgba;
-
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive        = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
    menu_driver_frame(menu_is_alive, video_info);
 
    if (menu_is_alive && xv->tex_frame)
    {
-      frame = xv->tex_frame;
-      width = xv->tex_width;
+      frame  = xv->tex_frame;
+      width  = xv->tex_width;
       height = xv->tex_height;
-      pitch = xv->tex_pitch;
-      rgb32 = xv->tex_rgb32;
+      pitch  = xv->tex_pitch;
+      rgb32  = xv->tex_rgb32;
    }
 #endif
 

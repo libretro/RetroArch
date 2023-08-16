@@ -450,6 +450,8 @@ typedef struct video_frame_info
       bool full_screen;
    } osd_stat_params;
 
+   uint16_t menu_st_flags;
+
    char stat_text[1024];
 
    bool widgets_active;
@@ -483,8 +485,6 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool menu_is_alive;
-   bool menu_screensaver_active;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;

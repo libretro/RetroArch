@@ -4072,7 +4072,7 @@ static bool vulkan_frame(void *data, const void *frame,
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
 #ifdef HAVE_MENU
-   bool menu_is_alive                            = video_info->menu_is_alive;
+   bool menu_is_alive                            = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                           = video_info->widgets_active;

@@ -1062,7 +1062,7 @@ font_renderer_t metal_raster_font = {
 
 - (void)_drawMenu:(video_frame_info_t *)video_info
 {
-   bool menu_is_alive = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
    if (!_menu.enabled)
       return;

@@ -2519,7 +2519,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool runloop_is_slowmotion              = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state        = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
-   bool menu_is_alive                      = video_info->menu_is_alive;
+   bool menu_is_alive                      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                     = video_info->widgets_active;
