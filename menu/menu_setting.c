@@ -8034,6 +8034,8 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_CHEEVOS
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
+      case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
+      case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
          rcheevos_validate_config_settings();
          break;
 #endif
