@@ -1153,8 +1153,44 @@ void rcheevos_validate_config_settings(void)
    if (!sysinfo->library_name || !rcheevos_locals.hardcore_active)
       return;
 
+   /* this adds a sleep to every frame. if the value is high enough that a
+    * single frame takes more than 1/60th of a second to evaluate, render,
+    * and sleep, then the real framerate is less than 60fps. with vsync on,
+    * it'll wait for the next vsync event, effectively halfing the fps. the
+    * auto setting should achieve the most accurate frame rate anyway, so
+    * disallow any manual values */
    if (!settings->bools.video_frame_delay_auto && settings->uints.video_frame_delay != 0) {
       const char* error = "Hardcore paused. Manual video frame delay setting not allowed.";
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      rcheevos_pause_hardcore();
+
+      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
+
+   /* this specifies how many vsync events should occur for each rendered
+    * frame. if vsync is on for a 60Hz monitor and swap_interval is 2 (only
+    * update every other vsync), only 30fps will be generated. for a 144Hz
+    * monitor, a value of 2 will generate 72fps, which is still faster than
+    * the expected 60fps, so the user should really be using auto (0).
+    * allow 1 even though that could be potentially abused on monitors
+    * running at less than 60Hz because 1 is the default value - many users
+    * wouldn't know how to change it to auto. */
+   if (settings->uints.video_swap_interval > 1) {
+      const char* error = "Hardcore paused. vsync swap interval above 1 not allowed.";
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      rcheevos_pause_hardcore();
+
+      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
+
+   /* this causes N blank frames to be rendered between real frames, thus
+    * slowing down the actual number of rendered frames per second. */
+   if (settings->uints.video_black_frame_insertion > 0) {
+      const char* error = "Hardcore paused. Black frame insertion not allowed.";
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
       rcheevos_pause_hardcore();
 
