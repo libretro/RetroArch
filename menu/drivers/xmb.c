@@ -3554,13 +3554,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       else if (type == (input_id + 3))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_R];
       else if (type == (input_id + 4))
-         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R];
-      else if (type == (input_id + 5))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
+      else if (type == (input_id + 5))
+         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R];
       else if (type == (input_id + 6))
-         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U];
-      else if (type == (input_id + 7))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_L];
+      else if (type == (input_id + 7))
+         return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U];
       else if (type == (input_id + 8))
          return xmb->textures.list[XMB_TEXTURE_INPUT_SELECT];
       else if (type == (input_id + 9))

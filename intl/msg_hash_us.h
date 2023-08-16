@@ -3163,6 +3163,22 @@ MSG_HASH(
    "Amount of seconds to hold an input to bind it."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Press keyboard, mouse or controller"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Release keys and buttons!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Timeout"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Hold"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo Period"
    )
@@ -10550,7 +10566,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Key: %s)"
+   "Key %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,

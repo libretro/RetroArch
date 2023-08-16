@@ -156,7 +156,8 @@ enum input_driver_state_flags
    INP_FLAG_OLD_ANALOG_DPAD_MODE_SET = (1 << 7),
    INP_FLAG_OLD_LIBRETRO_DEVICE_SET  = (1 << 8),
    INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 9),
-   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10)
+   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10),
+   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 11)
 };
 
 #ifdef HAVE_BSV_MOVIE

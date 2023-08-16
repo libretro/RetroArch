@@ -2049,13 +2049,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
       {
-         static const char *libretro_btn_desc[]    = {
-            "B (bottom)", "Y (left)", "Select", "Start",
-            "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
-            "A (right)", "X (up)",
-            "L", "R", "L2", "R2", "L3", "R3",
-         };
-
          if (sys_info)
          {
             unsigned retro_id;
@@ -2156,15 +2149,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   {
                      unsigned mapped_port = settings->uints.input_remap_ports[p];
 
+                     RARCH_DBG("   %s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+
                      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
                      {
-                        const char *description = sys_info->input_desc_btn[mapped_port][retro_id];
+                        unsigned bind_index     = input_config_bind_order[retro_id];
+                        const char *description = sys_info->input_desc_btn[mapped_port][bind_index];
 
                         if (!description)
                            continue;
 
-                        RARCH_DBG("   RetroPad, Port %u, Button \"%s\" => \"%s\"\n",
-                              p + 1, libretro_btn_desc[retro_id], description);
+                        RARCH_DBG("      \"%s\" => \"%s\"\n",
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index),
+                              description);
                      }
                   }
                }
@@ -2802,10 +2799,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (log_level != RETRO_LOG_DEBUG)
                continue;
 
-            RARCH_DBG("   Controller port: %u\n", i + 1);
+            RARCH_DBG("   %s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), i + 1);
 
             for (j = 0; j < info[i].num_types; j++)
-               RARCH_DBG("      %s (ID: %u)\n", info[i].types[j].desc,
+               if (info[i].types[j].desc)
+                  RARCH_DBG("      \"%s\" (%u)\n",
+                        info[i].types[j].desc,
                      info[i].types[j].id);
          }
 
