@@ -7658,8 +7658,9 @@ unsigned menu_displaylist_build_list(
          {
             bool accessibility_enable      = settings->bools.accessibility_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,                                             PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,                               PARSE_ONLY_UINT, false  },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,               PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, PARSE_ONLY_UINT, false },
+               {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,                 PARSE_ACTION,    true },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -8454,6 +8455,18 @@ unsigned menu_displaylist_build_list(
                }
             }
 
+#ifdef HAVE_ONLINE_UPDATER
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_UPDATER_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+                  PARSE_ONLY_BOOL, false) == 0)
+               count++;
+#endif
+
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
                if (!build_list[i].checked && !include_everything)
@@ -8512,18 +8525,6 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
                count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                  PARSE_ONLY_BOOL, false) == 0)
-               count++;
-
-#ifdef HAVE_ONLINE_UPDATER
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_UPDATER_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-               count++;
-#endif
          }
          break;
       case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
@@ -8938,6 +8939,8 @@ unsigned menu_displaylist_build_list(
 #endif
 
             menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,                             PARSE_ACTION,      true},
+               {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,                            PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_DRIVER,                                           PARSE_ONLY_STRING_OPTIONS, true},
@@ -8977,6 +8980,12 @@ unsigned menu_displaylist_build_list(
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_onscreen_display;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
+                     build_list[i].checked = settings->bools.settings_show_file_browser;
+                     break;
                   case MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD:
                      if (kiosk_mode_enable)
                         build_list[i].checked = true;
@@ -10223,39 +10232,36 @@ unsigned menu_displaylist_build_list(
             bool settings_show_ai_service = settings->bools.settings_show_ai_service;
 #endif
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_DRIVER_SETTINGS,             PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,     PARSE_ACTION, true},
                {MENU_ENUM_LABEL_VIDEO_SETTINGS,              PARSE_ACTION, true},
                {MENU_ENUM_LABEL_AUDIO_SETTINGS,              PARSE_ACTION, true},
                {MENU_ENUM_LABEL_INPUT_SETTINGS,              PARSE_ACTION, true},
                {MENU_ENUM_LABEL_LATENCY_SETTINGS,            PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_CORE_SETTINGS,               PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,      PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_SAVING_SETTINGS,             PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_LOGGING_SETTINGS,            PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,     PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_DRIVER_SETTINGS,             PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CORE_SETTINGS,               PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,           PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_SAVING_SETTINGS,             PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RECORDING_SETTINGS,          PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,     PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,         PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, true},
-#ifdef HAVE_CHEEVOS
-               {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, PARSE_ACTION, true},
-#endif
                {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,          PARSE_ACTION, true},
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_WIFI_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETWORK_SETTINGS,            PARSE_ACTION, true},
                {MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, true},
 #endif
-               {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,           PARSE_ACTION, true},
+#ifdef HAVE_CHEEVOS
+               {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, PARSE_ACTION},
+#endif
                {MENU_ENUM_LABEL_USER_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,          PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},
 #ifdef HAVE_MIST
                {MENU_ENUM_LABEL_STEAM_SETTINGS,              PARSE_ACTION, true},
 #endif
+               {MENU_ENUM_LABEL_LOGGING_SETTINGS,            PARSE_ACTION, true},
             };
 
 
@@ -10297,17 +10303,11 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_LOGGING_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_logging;
                      break;
-                  case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
-                     build_list[i].checked = settings->bools.settings_show_file_browser;
-                     break;
                   case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_frame_throttle;
                      break;
                   case MENU_ENUM_LABEL_RECORDING_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_recording;
-                     break;
-                  case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-                     build_list[i].checked = settings->bools.settings_show_onscreen_display;
                      break;
                   case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_user_interface;
@@ -10468,31 +10468,37 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_VIDEO,            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_AUDIO,            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY,          PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,             PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING,           PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING,          PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,       PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_ACCESSIBILITY,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS,     PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,          PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,             PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING,           PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION,    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_ACCESSIBILITY,    PARSE_ONLY_BOOL},
+#ifdef HAVE_TRANSLATE
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE,       PARSE_ONLY_BOOL},
+#endif
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_POWER_MANAGEMENT, PARSE_ONLY_BOOL},
+#ifdef HAVE_NETWORKING
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK,          PARSE_ONLY_BOOL},
+#endif
+#ifdef HAVE_CHEEVOS
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_ACHIEVEMENTS,     PARSE_ONLY_BOOL},
+#endif
                {MENU_ENUM_LABEL_SETTINGS_SHOW_USER,             PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY,        PARSE_ONLY_BOOL},
 #ifdef HAVE_MIST
                {MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM,            PARSE_ONLY_BOOL},
 #endif
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING,          PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
