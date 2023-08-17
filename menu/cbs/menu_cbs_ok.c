@@ -4671,6 +4671,7 @@ static void cb_decompressed(retro_task_t *task,
       switch (enum_idx)
       {
          case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
             generic_action_ok_command(CMD_EVENT_REINIT);
             break;
          default:
@@ -5120,13 +5121,19 @@ void cb_generic_download(retro_task_t *task,
 finish:
    if (err)
    {
-      RARCH_ERR("Download of '%s' failed: %s\n",
-            (transf ? transf->path: msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)), err);
+      RARCH_ERR("[Updater]: Download of \"%s\" failed: %s\n",
+            (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)), err);
    }
+   else
+   {
+      RARCH_LOG("[Updater]: Download \"%s\".\n",
+            (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
+
 #ifdef HAVE_DISCORD
-   else if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
-      discord_avatar_set_ready(true);
+      if (transf && transf->enum_idx == MENU_ENUM_LABEL_CB_DISCORD_AVATAR)
+         discord_avatar_set_ready(true);
 #endif
+   }
 
    if (transf)
       free(transf);
