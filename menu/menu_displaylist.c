@@ -6666,6 +6666,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,       PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,             PARSE_ONLY_BOOL, true},
+#ifdef HAVE_NETWORKING
+               {MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,        PARSE_ONLY_BOOL, true},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -8454,18 +8457,6 @@ unsigned menu_displaylist_build_list(
                      break;
                }
             }
-
-#ifdef HAVE_ONLINE_UPDATER
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_UPDATER_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-               count++;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                  MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                  PARSE_ONLY_BOOL, false) == 0)
-               count++;
-#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -10600,6 +10591,15 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_CORE_MANAGER_LIST,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
+
+#ifdef HAVE_ONLINE_UPDATER
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS),
+                     MENU_ENUM_LABEL_UPDATER_SETTINGS,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -13891,6 +13891,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
+               if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+                        msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+               if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+                        msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
+                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
                if (settings->bools.menu_show_legacy_thumbnail_updater)
                {
                   if (menu_entries_append(info->list,
@@ -13900,20 +13914,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
                }
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
-                        msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-                        msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
 
 #elif defined(HAVE_NETWORKING)
 #ifdef HAVE_UPDATE_CORES
@@ -13957,7 +13957,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            count++;
                   }
                }
-#endif
+#endif /* HAVE_UPDATE_CORES */
 
 #if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
                if (menu_entries_append(info->list,
@@ -13975,12 +13975,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
-#ifdef HAVE_NETWORKING
+#ifdef HAVE_ONLINE_UPDATER
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                        MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                        PARSE_ONLY_BOOL, false) != -1)
+                     MENU_ENUM_LABEL_UPDATER_SETTINGS,
+                     PARSE_ACTION, false) == 0)
                   count++;
 #endif
+
+               if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+                        msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
+                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
 
                if (settings->bools.menu_show_legacy_thumbnail_updater)
                {
@@ -13992,12 +13999,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
 
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
-                        msg_hash_to_str(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST),
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
+#ifdef HAVE_NETWORKING
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                        MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+                        PARSE_ONLY_BOOL, false) != -1)
                   count++;
+#endif
 
 #ifdef HAVE_COMPRESSION
 #ifdef HAVE_UPDATE_CORE_INFO
@@ -14044,7 +14051,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 #endif
-#endif
+#endif /* HAVE_LIBRETRODB */
 #if !defined(_3DS)
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS),
@@ -14084,8 +14091,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
 #endif
-#endif
-#endif
+#endif /* !defined(_3DS) */
+#endif /* HAVE_COMPRESSION */
 #endif
             }
 
