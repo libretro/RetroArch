@@ -239,13 +239,31 @@ static void task_cloud_sync_read_local_manifest(task_cloud_sync_state_t *sync_st
    sync_state->phase = CLOUD_SYNC_PHASE_BUILD_CURRENT_MANIFEST;
 }
 
+/* takes the filename in manifest format, e.g. "config/retroarch.cfg" */
+static bool task_cloud_sync_should_ignore_file(const char *filename)
+{
+   if (string_starts_with(filename, "config/"))
+   {
+      const char *path = filename + STRLEN_CONST("config/");
+
+      /* need to exclude FILE_PATH_MAIN_CONFIG, those don't get sync'd */
+      if (string_is_equal(path, FILE_PATH_MAIN_CONFIG))
+         return true;
+
+      /* ignore playlist files */
+      if (string_starts_with(path, "content_") && string_ends_with(path, FILE_PATH_LPL_EXTENSION))
+         return true;
+   }
+
+   return false;
+}
+
 static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       const char *dir_fullpath, char *dir_name)
 {
    int i;
    struct string_list *dir_list;
    char                dir_fullpath_slash[PATH_MAX_LENGTH];
-   bool                is_config = string_is_equal(dir_name, "config");
 
    strlcpy(dir_fullpath_slash, dir_fullpath, sizeof(dir_fullpath_slash));
    fill_pathname_slash(dir_fullpath_slash, sizeof(dir_fullpath_slash));
@@ -261,13 +279,12 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       char        alt[PATH_MAX_LENGTH];
 
       path_relative_to(relative_path, full_path, dir_fullpath_slash, sizeof(relative_path));
+      fill_pathname_join_special(alt, dir_name, relative_path, sizeof(alt));
 
-      /* need to exclude FILE_PATH_MAIN_CONFIG, those don't get sync'd */
-      if (is_config && string_is_equal(relative_path, FILE_PATH_MAIN_CONFIG))
+      if (task_cloud_sync_should_ignore_file(alt))
          continue;
 
       file_list_append(manifest, full_path, NULL, 0, 0, 0);
-      fill_pathname_join_special(alt, dir_name, relative_path, sizeof(alt));
       file_list_set_alt_at_offset(manifest, idx, alt);
    }
 }
@@ -472,10 +489,17 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    settings_t         *settings = config_get_ptr();
    int                 i;
 
-   RARCH_LOG(CSPFX "fetching %s\n", key);
    /* we're just fetching a file the server has, we can update this now */
    task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
    /* no need to mark need_manifest_uploaded, nothing changed */
+
+   if (task_cloud_sync_should_ignore_file(key))
+   {
+      /* don't fetch a file we're supposed to ignore, even if the server has it */
+      RARCH_LOG(CSPFX "ignoring %s\n", key);
+      return;
+   }
+   RARCH_LOG(CSPFX "fetching %s\n", key);
 
    filename[0] = '\0';
    for (i = 0; i < dirlist->size; i++)
@@ -570,9 +594,16 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
    struct item_file *item     = &sync_state->current_manifest->list[sync_state->current_idx];
    const char       *path     = CS_FILE_KEY(item);
    const char       *filename = item->path;
-   RFILE            *file     = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE            *file;
 
+   if (task_cloud_sync_should_ignore_file(path))
+   {
+      RARCH_LOG(CSPFX "ignoring %s, not uploading\n", path);
+      return;
+   }
+
+   file = filestream_open(filename,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return;
 
@@ -618,9 +649,16 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
    struct item_file *local_file   = NULL;
    struct item_file *current_file = &sync_state->current_manifest->list[sync_state->current_idx];
    const char       *filename     = current_file->path;
-   RFILE            *file         = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE            *file;
 
+   if (task_cloud_sync_should_ignore_file(CS_FILE_KEY(server_file)))
+   {
+      RARCH_LOG(CSPFX "ignoring %s (despite possible conflict)\n", CS_FILE_KEY(server_file));
+      return;
+   }
+
+   file = filestream_open(filename,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return;
 
@@ -691,6 +729,12 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 {
    struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char       *key = CS_FILE_KEY(server_file);
+
+   if (task_cloud_sync_should_ignore_file(key))
+   {
+      RARCH_LOG(CSPFX "ignoring %s, instead of removing from server\n", key);
+      return;
+   }
 
    RARCH_LOG(CSPFX "deleting %s\n", key);
 
@@ -938,7 +982,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
       char title[512];
-      size_t len = strlcpy(title + len, "Cloud Sync finished", sizeof(title) - len);
+      size_t len = strlcpy(title, "Cloud Sync finished", sizeof(title));
       if (sync_state->failures || sync_state->conflicts)
          len += strlcpy(title + len, " with ", sizeof(title) - len);
       if (sync_state->failures)
