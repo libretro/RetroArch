@@ -347,21 +347,20 @@ size_t fill_pathname(char *out_path, const char *in_path,
  * @size               : size of path
  *
  * Find last slash in path. Tries to find
- * a backslash on Windows too which takes precedence
- * over regular slash.
+ * a backslash as used for Windows paths,
+ * otherwise checks for a regular slash.
 
  * @return pointer to last slash/backslash found in @str.
  **/
 char *find_last_slash(const char *str)
 {
    const char *slash     = strrchr(str, '/');
-#ifdef _WIN32
    const char *backslash = strrchr(str, '\\');
 
    if (!slash || (backslash > slash))
       return (char*)backslash;
-#endif
-   return (char*)slash;
+   else
+      return (char*)slash;
 }
 
 /**
