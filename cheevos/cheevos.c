@@ -1939,8 +1939,7 @@ static void rcheevos_initialize_runtime_callback(void* userdata)
 
 static void rcheevos_fetch_game_data(void)
 {
-   if (     rcheevos_locals.load_info.state
-         == RCHEEVOS_LOAD_STATE_NETWORK_ERROR)
+   if (rcheevos_load_aborted())
    {
       rcheevos_locals.game.hash = NULL;
       rcheevos_pause_hardcore();

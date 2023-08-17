@@ -531,7 +531,7 @@ static void rcheevos_async_end_request(rcheevos_async_io_request* request)
 {
    rc_api_destroy_request(&request->request);
 
-   if (request->callback && !rcheevos_load_aborted())
+   if (request->callback)
       request->callback(request->callback_data);
 
    /* rich presence request will be reused on next ping - reset the attempt
