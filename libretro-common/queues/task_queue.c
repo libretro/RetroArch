@@ -68,7 +68,7 @@ static slock_t *property_lock               = NULL;
 static slock_t *queue_lock                  = NULL;
 static scond_t *worker_cond                 = NULL;
 static sthread_t *worker_thread             = NULL;
-static bool worker_continue                 = true; 
+static bool worker_continue                 = true;
 /* use running_lock when touching it */
 #endif
 
@@ -132,11 +132,11 @@ static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 
    if (queue->front)
    {
-      /* Make sure to insert in order - the queue is 
+      /* Make sure to insert in order - the queue is
        * sorted by 'when' so items that aren't scheduled
-       * to run immediately are at the back of the queue. 
+       * to run immediately are at the back of the queue.
        * Items with the same 'when' are inserted after
-       * all the other items with the same 'when'. 
+       * all the other items with the same 'when'.
        * This primarily affects items with a 'when' of 0.
        */
       if (queue->back)
@@ -234,7 +234,7 @@ static void retro_task_regular_gather(void)
       if (task->finished)
          task_queue_put(&tasks_finished, task);
       else
-         retro_task_regular_push_running(task);
+         task_queue_put(&tasks_running, task);
    }
 
    retro_task_internal_gather();
@@ -468,18 +468,14 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
 {
    /* Protect access to running tasks */
    slock_lock(running_lock);
-
    /* Call regular retrieve function */
    retro_task_regular_retrieve(data);
-
    /* Release access to running tasks */
    slock_unlock(running_lock);
 }
 
 static void threaded_worker(void *userdata)
 {
-   (void)userdata;
-
    for (;;)
    {
       retro_task_t *task  = NULL;
@@ -522,13 +518,13 @@ static void threaded_worker(void *userdata)
       if (!finished)
       {
          /* Move the task to the back of the queue */
-         /* mimics retro_task_threaded_push_running, 
+         /* mimics retro_task_threaded_push_running,
           * but also includes a task_queue_remove */
          slock_lock(running_lock);
          slock_lock(queue_lock);
 
          /* do nothing if only item in queue */
-         if (task->next) 
+         if (task->next)
          {
             task_queue_remove(&tasks_running, task);
             task_queue_put(&tasks_running, task);
@@ -734,16 +730,13 @@ void task_queue_cancel_task(void *task)
 
 void *task_queue_retriever_info_next(task_retriever_info_t **link)
 {
-   void *data = NULL;
-
    /* Grab data and move to next link */
    if (*link)
    {
-      data  = (*link)->data;
       *link = (*link)->next;
+      return (*link)->data;
    }
-
-   return data;
+   return NULL;
 }
 
 void task_queue_retriever_info_free(task_retriever_info_t *list)

@@ -2000,7 +2000,7 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    gfx_animation_t *p_anim        = &anim_st;
    const char *wideglyph_str      = NULL;
    int wideglyph_width            = 100;
-   void (*word_wrap_func)(char *dst, size_t dst_size,
+   size_t (*word_wrap_func)(char *dst, size_t dst_size,
          const char *src, size_t src_len,
          int line_width, int wideglyph_width, unsigned max_lines);
 
@@ -2008,10 +2008,10 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    if (!line_ticker)
       return false;
 
-   if (!line_ticker->font ||
-       string_is_empty(line_ticker->src_str) ||
-       (line_ticker->field_width < 1) ||
-       (line_ticker->field_height < 1))
+   if (  !line_ticker->font
+       || string_is_empty(line_ticker->src_str)
+       || (line_ticker->field_width < 1)
+       || (line_ticker->field_height < 1))
       goto end;
 
    /* Get font dimensions */

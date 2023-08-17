@@ -468,7 +468,7 @@ struct ozone_handle
       font_data_impl_t sidebar;
    } fonts;
 
-   void (*word_wrap)(
+   size_t (*word_wrap)(
          char *dst, size_t dst_size,
          const char *src, size_t src_len,
          int line_width, int wideglyph_width, unsigned max_lines);
