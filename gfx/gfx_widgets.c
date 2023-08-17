@@ -201,6 +201,7 @@ void gfx_widgets_msg_queue_push(
       if (!msg_widget)
       {
          const char *title                      = msg;
+         size_t title_length                    = strlen(title);
 
          msg_widget                             = (disp_widget_msg_t*)malloc(sizeof(*msg_widget));
 
@@ -242,7 +243,7 @@ void gfx_widgets_msg_queue_push(
          {
             title = msg_widget->msg             = strdup(task->title);
             msg_widget->msg_new                 = strdup(title);
-            msg_widget->msg_len                 = strlen(title);
+            msg_widget->msg_len                 = title_length;
 
             if (!string_is_empty(task->error))
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
@@ -271,7 +272,6 @@ void gfx_widgets_msg_queue_push(
             /* Compute rect width, wrap if necessary */
             /* Single line text > two lines text > two lines
              * text with expanded width */
-            size_t title_length                 = strlen(title);
             char *msg                           = NULL;
             size_t msg_len                      = 0;
             unsigned width                      = menu_is_alive
@@ -303,17 +303,17 @@ void gfx_widgets_msg_queue_push(
                      100, 2);
 
                msg_widget->text_height *= 2;
+               msg_widget->msg_len      = strlen(msg);
             }
             else
             {
-               width                            = text_width;
-               strlcpy(msg, title, msg_len);
+               width                    = text_width;
+               msg_widget->msg_len      = strlcpy(msg, title, msg_len);
             }
 
-            msg_widget->msg                     = msg;
-            msg_widget->msg_len                 = strlen(msg);
-            msg_widget->width                   = width +
-               p_dispwidget->simple_widget_padding / 2;
+            msg_widget->msg             = msg;
+            msg_widget->width           = width
+               + p_dispwidget->simple_widget_padding / 2;
          }
 
          fifo_write(&p_dispwidget->msg_queue,
@@ -1104,8 +1104,7 @@ static int gfx_widgets_draw_indicator(
 
       width = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            txt,
-            strlen(txt), 1.0f)
+            txt, strlen(txt), 1.0f)
          + p_dispwidget->simple_widget_padding * 2;
 
       gfx_display_draw_quad(
@@ -1620,23 +1619,22 @@ void gfx_widgets_frame(void *data)
          || core_status_msg_show
          )
    {
-      const char *text      = *p_dispwidget->gfx_widgets_status_text == '\0'
+      const char *txt      = *p_dispwidget->gfx_widgets_status_text == '\0'
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
          : p_dispwidget->gfx_widgets_status_text;
 
-      int text_width        = font_driver_get_message_width(
+      int txt_width        = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            text,
-            strlen(text), 1.0f);
-      int total_width       = text_width
+            txt, strlen(txt), 1.0f);
+      int total_width       = txt_width
          + p_dispwidget->simple_widget_padding * 2;
 
-      int status_text_x     = top_right_x_advance
-         - p_dispwidget->simple_widget_padding - text_width;
+      int status_txt_x     = top_right_x_advance
+         - p_dispwidget->simple_widget_padding - txt_width;
       /* Ensure that left hand side of text does
        * not bleed off the edge of the screen */
-      if (status_text_x < 0)
-         status_text_x      = 0;
+      if (status_txt_x < 0)
+         status_txt_x      = 0;
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1645,7 +1643,8 @@ void gfx_widgets_frame(void *data)
             userdata,
             video_width,
             video_height,
-            top_right_x_advance - total_width, 0,
+            top_right_x_advance - total_width,
+            0,
             total_width,
             p_dispwidget->simple_widget_height,
             video_width,
@@ -1655,8 +1654,8 @@ void gfx_widgets_frame(void *data)
             );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-            text,
-            status_text_x,
+            txt,
+            status_txt_x,
             p_dispwidget->simple_widget_height / 2.0f
             + p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
             video_width, video_height,
@@ -1887,7 +1886,6 @@ static void gfx_widgets_context_reset(
    /* Load textures */
    /* Icons */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
-   {
       gfx_display_reset_textures_list(
             gfx_widgets_icons_names[i],
             p_dispwidget->monochrome_png_path,
@@ -1895,7 +1893,6 @@ static void gfx_widgets_context_reset(
             TEXTURE_FILTER_MIPMAP_LINEAR,
             NULL,
             NULL);
-   }
 
    /* Message queue */
    gfx_display_reset_textures_list(

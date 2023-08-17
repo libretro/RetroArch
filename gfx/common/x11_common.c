@@ -193,10 +193,8 @@ static void x11_set_window_pid(Display *dpy, Window win)
     if (gethostname(hostname, scret + 1) == -1)
         RARCH_WARN("Failed to get hostname.\n");
     else
-    {
         XChangeProperty(dpy, win, XA_WM_CLIENT_MACHINE, XA_STRING, 8,
             PropModeReplace, (unsigned char *)hostname, strlen(hostname));
-    }
     free(hostname);
 }
 
@@ -209,10 +207,10 @@ void x11_set_window_attr(Display *dpy, Window win)
 static void xdg_screensaver_inhibit(Window wnd)
 {
    int  ret;
+   size_t _len;
    char cmd[64];
    char title[128];
 
-   cmd[0]   = '\0';
    title[0] = '\0';
 
    RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
@@ -230,7 +228,8 @@ static void xdg_screensaver_inhibit(Window wnd)
             8, PropModeReplace, (const unsigned char*) title, title_len);
    }
 
-   snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
+   _len = strlcpy(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
+   snprintf(cmd + _len, sizeof(cmd) - _len, "%x", (int)wnd);
 
    if ((ret = system(cmd)) == -1)
    {

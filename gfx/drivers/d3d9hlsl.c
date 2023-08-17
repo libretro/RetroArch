@@ -483,19 +483,20 @@ static bool d3d9_hlsl_load_program(
       struct shader_pass *pass,
       const char *prog)
 {
-   ID3DXBuffer *listing_f                    = NULL;
-   ID3DXBuffer *listing_v                    = NULL;
-   ID3DXBuffer *code_f                       = NULL;
-   ID3DXBuffer *code_v                       = NULL;
+   ID3DXBuffer *listing_f = NULL;
+   ID3DXBuffer *listing_v = NULL;
+   ID3DXBuffer *code_f    = NULL;
+   ID3DXBuffer *code_v    = NULL;
+   size_t prog_len        = strlen(prog);
 
-   if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
+   if (!d3d9x_compile_shader(prog, prog_len, NULL, NULL,
             "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
             &pass->ftable ))
    {
       RARCH_ERR("Could not compile stock fragment shader..\n");
       goto error;
    }
-   if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
+   if (!d3d9x_compile_shader(prog, prog_len, NULL, NULL,
             "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
             &pass->vtable ))
    {
