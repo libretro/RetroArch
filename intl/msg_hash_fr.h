@@ -3059,6 +3059,22 @@ MSG_HASH(
    "Nombre de secondes à maintenir une touche avant qu'elle ne soit assignée."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Appuyer sur la touche du clavier, de la souris ou de la manette"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Relâcher les touches !"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Délai dépassé"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Maintenir"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Délai d'activation du turbo "
    )
@@ -9914,7 +9930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Touche : %s)"
+   "Touche %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,

@@ -5525,10 +5525,6 @@ MSG_HASH(
    "Правий стік (Примусово)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Клавіша: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Миша 1"
    )

@@ -3087,6 +3087,22 @@ MSG_HASH(
    "Ennyi másodpercig kell nyomni a gombot, hogy a párosítást elfogadja."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Nyomj meg egy gombot a billentyűzeten, egéren vagy kontrolleren"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Engedd el a billentyűket és gombokat!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Időkorlát"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Tartás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbó periódus"
    )
@@ -9966,7 +9982,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Billentyű: %s)"
+   "%s billentyű"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -10341,6 +10357,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
    "16:10 (középre igazított)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (középre igazított)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,

@@ -7781,10 +7781,6 @@ MSG_HASH(
    "右のアナログ"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(キー: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "マウス ボタン1(左)"
    )

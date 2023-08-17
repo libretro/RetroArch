@@ -9981,10 +9981,6 @@ MSG_HASH(
    "Sağ Analog (Zorunlu)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Tuş: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Fare 1"
    )

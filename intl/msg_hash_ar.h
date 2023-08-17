@@ -5733,10 +5733,6 @@ MSG_HASH(
    "Analog الأيمن"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(المفتاح: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "الماوس 1"
    )

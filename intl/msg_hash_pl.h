@@ -2667,6 +2667,22 @@ MSG_HASH(
    "Ilość sekund na utrzymanie wejścia w celu powiązania go."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Naciśnij klawiaturę, mysz lub kontroler"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Zwolnij klawisze i przyciski!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Limit czasu"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Przytrzymaj"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Okres turbo"
    )
@@ -8826,7 +8842,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Klucz: %s)"
+   "Klawisz %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,

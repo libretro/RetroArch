@@ -9917,10 +9917,6 @@ MSG_HASH(
    "右方向模拟（强制）"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(%s 键)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "鼠标 1"
    )

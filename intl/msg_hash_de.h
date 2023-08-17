@@ -9761,10 +9761,6 @@ MSG_HASH(
    "Analog rechts (Erzwungen)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Taste: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Maus 1"
    )

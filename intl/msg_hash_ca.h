@@ -6093,10 +6093,6 @@ MSG_HASH(
    "Analògic dret (forçat)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Tecla: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Ratolí 1"
    )

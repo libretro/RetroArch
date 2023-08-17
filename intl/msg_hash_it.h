@@ -9853,10 +9853,6 @@ MSG_HASH(
    "Analogico Destro (forzato)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Tasto: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
    "Ruota Del Mouse Su"
    )

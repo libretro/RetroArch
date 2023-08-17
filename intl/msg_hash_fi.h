@@ -9061,10 +9061,6 @@ MSG_HASH(
    "Oikea Analogi (Pakotettu)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Näppäin: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Hiiri 1"
    )

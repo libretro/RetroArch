@@ -9897,10 +9897,6 @@ MSG_HASH(
    "Правый аналоговый стик (принудительно)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Клавиша: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Кнопка мыши 1"
    )
@@ -10170,6 +10166,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    "Показывать миниатюры в плейлистах"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Включает отображение сжатых эскизов при просмотре плейлистов. Переключение осуществляется кнопкой RetroPad Select. Если выкл., просмотр миниатюр всё равно доступен кнопкой RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -11091,7 +11091,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
-   "Исключая миниатюры"
+   "Исключая плейлисты"
    )
 
 /* Qt (Desktop Menu) */

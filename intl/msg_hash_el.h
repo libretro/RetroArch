@@ -3901,10 +3901,6 @@ MSG_HASH(
    "Δεξί Αναλογικό"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Κουμπί: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Ποντίκι 1"
    )

@@ -9897,10 +9897,6 @@ MSG_HASH(
    "右類比搖桿 (強制)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(%s鍵)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "滑鼠 1"
    )

@@ -9997,10 +9997,6 @@ MSG_HASH(
    "우 아날로그 (강제)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(키: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "마우스 1"
    )
