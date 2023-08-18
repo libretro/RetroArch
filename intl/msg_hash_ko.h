@@ -3179,10 +3179,6 @@ MSG_HASH(
    "가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다. 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 사용할 필요가 없습니다.\n참고: 코어별로 입력을 변경하려면 빠른 메뉴의 '컨트롤' 하위 메뉴를 대신 사용하세요."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro는 '레트로패드'로 알려진 가상 게임패드 가상화를 사용하여 프론트엔드 (예: RetroArch) 에서 코어로 또는 그 반대로 통신합니다. 이 메뉴는 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식과 이러한 장치가 차지하는 가상 입력 포트를 결정합니다. 물리적 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 전혀 사용할 필요가 없으며, 코어별 입력 변[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "%u번 포트 입력 설정"
    )
@@ -4329,10 +4325,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    "콘텐츠가 종료되면 자동으로 상태저장 파일을 생성합니다. 자동 상태 불러오기가 활성화 되어 있으면 다음 시작시 해당 상태저장을 자동으로 불러옵니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "상태저장 자동으로 불러오기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6973,10 +6965,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "실행목록을 볼 때 미리보기가 없을 경우 자동으로 다운로드합니다. 퍼포먼스에 큰 영향을 줄 수 있습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "업데이트"
    )
 
 /* Settings > Network > Updater */
@@ -11647,10 +11635,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "업데이터"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "계정 도전과제"

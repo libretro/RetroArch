@@ -3035,6 +3035,18 @@ MSG_HASH(
    "Quantità di secondi per tenere premuto un pulsante per collegarlo."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Premere tastiera, mouse o gamepad"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Rilascia tasti e pulsanti!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Tieni"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Periodo Turbo"
    )
@@ -3132,7 +3144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro utilizza un gamepad virtuale astrazione noto come il 'RetroPad' per comunicare dai frontend (come RetroArch) ai core e viceversa. Questo menu determina come viene mappato il RetroPad virtuale sui dispositivi di input fisici e quali porte di input virtuali occupano questi dispositivi. Se un dispositivo di input fisico è riconosciuto e auto-configurato correttamente, probabilmente gli utenti non hanno bisogno di usare questo menu a tutti, e per le modifiche di input specifiche del core, [...]"
+   "Libretro utilizza un gamepad virtuale astrazione noto come il 'RetroPad' per comunicare dai frontend (come RetroArch) ai core e viceversa. Questo menu determina come viene mappato il RetroPad virtuale sui dispositivi di input fisici e quali porte di input virtuali occupano questi dispositivi.\nSe un dispositivo di input fisico è riconosciuto e auto-configurato correttamente, probabilmente gli utenti non hanno bisogno di usare questo menu a tutti, e per le modifiche di input specifiche del core,[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4280,7 +4292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Carica Stato Automaticamente"
+   "Carica automaticamente i salvataggi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6905,10 +6917,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Scarica automaticamente le copertine mancanti durante la navigazione delle playlist. Ha un forte impatto sulle prestazioni."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Aggiorna"
    )
 
 /* Settings > Network > Updater */
@@ -9853,6 +9861,10 @@ MSG_HASH(
    "Analogico Destro (forzato)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   "Tasto %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
    "Ruota Del Mouse Su"
    )
@@ -11539,10 +11551,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Aggiorna"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cheevos Account"

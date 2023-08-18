@@ -3172,7 +3172,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro utilise une abstraction de manette virtuelle connue sous le nom de 'RetroManette' pour communiquer des interfaces (comme RetroArch) aux cœurs et vice versa. Ce menu détermine comment la RetroManette virtuelle est mappée aux périphériques d'entrée physiques et quels ports d'entrée virtuels ces périphériques occupent. Si un périphérique d'entrée physique est reconnu et configuré correctement automatiquement, les utilisateurs n'ont probablement pas besoin d'utiliser ce menu du[...]"
+   "Libretro utilise une abstraction de manette virtuelle connue sous le nom de 'RetroManette' pour communiquer des interfaces (comme RetroArch) aux cœurs et vice versa. Ce menu détermine comment la RetroManette virtuelle est mappée aux périphériques d'entrée physiques et quels ports d'entrée virtuels ces périphériques occupent.\nSi un périphérique d'entrée physique est reconnu et configuré correctement automatiquement, les utilisateurs n'ont probablement pas besoin d'utiliser ce menu d[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -6957,10 +6957,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Télécharge automatiquement les miniatures manquantes lors de la navigation dans les listes de lecture. Affecte grandement les performances."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Mise à jour"
    )
 
 /* Settings > Network > Updater */
@@ -11655,10 +11651,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Mise à jour"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Comptes Cheevos"

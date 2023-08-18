@@ -3415,10 +3415,6 @@ MSG_HASH(
    "コンテンツを閉じるときに自動的にステートセーブを行います. '自動的にステートをロード'が有効の場合, RetroArchは自動的にこのセーブステートをロードします."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "自動的にステートをロード"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "起動時に自動ステートセーブを自動的にロードします."
    )
@@ -5425,10 +5421,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "再生リストの閲覧中に, 欠落しているサムネイルを自動的にダウンロードします. パフォーマンスに大きな影響を与えます. "
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "アップデータ"
    )
 
 /* Settings > Network > Updater */
@@ -9111,10 +9103,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "アップデータ"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cheevosアカウント"

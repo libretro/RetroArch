@@ -3119,10 +3119,6 @@ MSG_HASH(
    "Změna způsobu mapování virtuálního zařízení RetroPad na fyzické vstupní zařízení. Pokud je vstupní zařízení rozpoznáno a automaticky nakonfigurováno správně, uživatelé pravděpodobně nebudou muset tuto nabídku používat.\nPoznámka: pro změny vstupů specifických pro jádro použijte raději podnabídku \"Ovládací prvky\" v rychlém menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro používá abstrakci virtuálního gamepadu známou jako \"RetroPad\" pro komunikaci z frontendů (jako je RetroArch) do jader a naopak. Tato nabídka určuje, jak je virtuální RetroPad mapován na fyzická vstupní zařízení a které virtuální vstupní porty tato zařízení obsazují. Pokud je fyzické vstupní zařízení rozpoznáno a automaticky nakonfigurováno správně, uživatelé pravděpodobně nebudou muset tuto nabídku vůbec používat a pro změny vstupů specifick[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Port %u Ovládání"
    )
@@ -4265,10 +4261,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    "Automatické vytvoření pozice uložení při zavření obsahu. Pokud je povolena volba 'Automaticky načíst pozici', RetroArch tuto pozici uložení automaticky načte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Automaticky Načíst Pozici"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6901,10 +6893,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Automatické stahování chybějících miniatur při procházení seznamů skladeb. Má závažný dopad na výkon."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Aktualizátor"
    )
 
 /* Settings > Network > Updater */
@@ -11515,10 +11503,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Aktualizátor"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Účty Cheevos"

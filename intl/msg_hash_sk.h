@@ -2927,10 +2927,6 @@ MSG_HASH(
    "Automaticky uložiť stav"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Automaticky načítať stav"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    "Uložiť miniatúru stavu"
    )
@@ -3969,10 +3965,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
    "Sieťové príkazy"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Aktualizátor"
    )
 
 /* Settings > Network > Updater */
@@ -6087,10 +6079,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Aktualizátor"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
    "Nezistil sa disk"

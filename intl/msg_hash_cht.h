@@ -4227,10 +4227,6 @@ MSG_HASH(
    "「關閉」和「結束復古電玩」時, 自動儲存即時存檔, 儲存的編號為自動(.state.auto)。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "自動載入即時存檔"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "「執行」時自動載入即時存檔, 載入的編號為自動(.state.auto)。"
    )
@@ -6841,10 +6837,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "瀏覽列表時自動下載缺少的預覽縮圖, 開啟此選項會嚴重影響效能。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "更新設定"
    )
 
 /* Settings > Network > Updater */
@@ -11683,10 +11675,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "更新設定"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cheevos 帳號"

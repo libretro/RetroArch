@@ -2787,6 +2787,18 @@ MSG_HASH(
    "Syötteen pohjassapidon sekuntien määrä, jolloin se määritetään."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Paina näppäimistöä, hiirtä tai ohjainta"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Vapauta näppäimet ja painikkeet!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Aikakatkaisu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbon jakso"
    )
@@ -3817,10 +3829,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    "Luo tilatallennus automaattisesti kun suljet sisällön. RetroArch lataa automaattisesti tämän tilatallennuksen, jos \"Lataa tilatallennus automaattisesti\" on käytössä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Lataa tilatallennus automaattisesti"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6209,10 +6217,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Lataa automaattisesti puuttuvat esikatselukuvat selatessasi soittolistoja. Vaikuttaa suorituskykyyn suuresti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Päivitin"
    )
 
 /* Settings > Network > Updater */
@@ -10795,10 +10799,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Päivitin"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Saavutustilit"

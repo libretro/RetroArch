@@ -3099,6 +3099,22 @@ MSG_HASH(
    "Bir girişi bağlamak için tutulan saniye miktarı."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Klavye, fare veya kontrolcüye basın"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Tuşları ve düğmeleri serbest bırakın!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Zaman aşımı"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Bekleme"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo Aralığı"
    )
@@ -3196,7 +3212,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro, ön uçlardan (RetroArch gibi) çekirdeklere ve tersi yönde iletişim kurmak için 'RetroPad' olarak bilinen sanal bir oyun kumandası soyutlaması kullanır. Bu menü, sanal RetroPad'in fiziksel giriş aygıtlarıyla nasıl eşlendiğini ve bu aygıtların hangi sanal giriş bağlantı noktalarını işgal ettiğini belirler. Fiziksel bir giriş cihazı doğru bir şekilde tanınır ve otomatik olarak yapılandırılırsa, kullanıcıların muhtemelen bu menüyü kullanması gerekmez[...]"
+   "Libretro, ön uçlardan (RetroArch gibi) çekirdeklere ve tersi yönde iletişim kurmak için 'RetroPad' olarak bilinen sanal bir oyun kumandası soyutlaması kullanır. Bu menü, sanal RetroPad'in fiziksel giriş aygıtlarıyla nasıl eşlendiğini ve bu aygıtların hangi sanal giriş bağlantı noktalarını işgal ettiğini belirler.\nFiziksel bir giriş cihazı doğru bir şekilde tanınır ve otomatik olarak yapılandırılırsa, kullanıcıların muhtemelen bu menüyü kullanması gerekme[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4344,7 +4360,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Durumu Otomatik Olarak Yükle"
+   "Otomatik Durum Yükle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6992,7 +7008,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Güncelleyici"
+   "Güncelleyici Ayarları"
    )
 
 /* Settings > Network > Updater */
@@ -9981,6 +9997,10 @@ MSG_HASH(
    "Sağ Analog (Zorunlu)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   "Tuş %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Fare 1"
    )
@@ -11789,7 +11809,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Güncelleyici"
+   "Çekirdek Güncelleyici Ayarları"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,

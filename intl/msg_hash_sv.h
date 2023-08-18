@@ -3142,10 +3142,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
    "Nätverkskommandon"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Uppdaterare"
-   )
 
 /* Settings > Network > Updater */
 
@@ -4495,10 +4491,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Uppdaterare"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
    "Ingen skiva vald"

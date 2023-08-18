@@ -2835,10 +2835,6 @@ MSG_HASH(
    "حفظ تلقائي للحالة"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "تحميل الحالة تلقائياً"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "تحميل حالة الحفظ التلقائي تلقائيا عند بدء التشغيل."
    )
@@ -3861,10 +3857,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    "التنزيلات المصغرة عند الطلب"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "المحدّث"
    )
 
 /* Settings > Network > Updater */
@@ -7227,10 +7219,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "المحدّث"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "حسابات Cheevos"

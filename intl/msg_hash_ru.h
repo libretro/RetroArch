@@ -3055,6 +3055,22 @@ MSG_HASH(
    "Период ожидания (в секундах) для привязки нажатой кнопки."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Нажмите кнопку геймпада, мыши или клавиатуры"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Отпустите клавиши и кнопки!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Таймаут"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Удерживайте"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Период турбо"
    )
@@ -3149,10 +3165,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    "Настройка привязок виртуального RetroPad к физическому устройству ввода. Если устройство ввода корректно распознано и преднастроено, использование данного меню не требуется. Для изменения привязок ввода отдельных ядер используйте пункт 'Управление' в быстром меню."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro использует виртуальную абстракцию геймпада, называемую 'RetroPad' для связи фронтендов (например RetroArch) с ядрами и наоборот. Данное меню позволяет настроить привязки виртуального RetroPad к физическим устройствам ввода и сопоставить им виртуальные порты ввода. Если устройст[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4301,10 +4313,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    "Автоматически создавать сохранение при закрытии контента. RetroArch будет автоматически загружать данное сохранение, если включена 'Автозагрузка сохранений'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Автозагрузка сохранений"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6921,10 +6929,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Автоматическая загрузка миниатюр при просмотре плейлистов. Существенно влияет на производительность."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Обновления"
    )
 
 /* Settings > Network > Updater */
@@ -9897,6 +9901,10 @@ MSG_HASH(
    "Правый аналоговый стик (принудительно)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   "Кнопка %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Кнопка мыши 1"
    )
@@ -11643,10 +11651,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Обновление"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Аккаунт Cheevos"

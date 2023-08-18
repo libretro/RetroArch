@@ -3363,10 +3363,6 @@ MSG_HASH(
    "Crea un desat ràpid automàticament quan es tanca el contingut. El RetroArch carregarà automàticament aquest desat ràpid si l’opció «Carrega el desat ràpid automàticament» està activada."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Carrega el desat ràpid automàticament"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Carrega automàticament el desat ràpid automàtic a l’inici."
    )
@@ -6879,10 +6875,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Actualitzador"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
    "Turbo/zona morta"

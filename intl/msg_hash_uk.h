@@ -3414,10 +3414,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Автозбереження стану"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Автоматично завантажувати стан"
-   )
 
 /* Settings > Logging */
 
@@ -4189,10 +4185,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Автоматично завантажувати відсутні ескізи під час перегляду списків відтворення. Має серйозний вплив на продуктивність."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Оновлювач"
    )
 
 /* Settings > Network > Updater */
@@ -6875,10 +6867,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Оновлювач"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "РетроДосягнення"

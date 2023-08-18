@@ -4275,10 +4275,6 @@ MSG_HASH(
    "关闭游戏时自动保存状态。如果启用了「自动加载状态」，下次打开游戏时，全能模拟器将自动加载此状态。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "自动加载状态"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "开始游戏时，自动加载最近自动保存的状态。"
    )
@@ -6889,10 +6885,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "在浏览列表时自动下载缺失的缩略图图像。有严重的性能影响。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "更新程序"
    )
 
 /* Settings > Network > Updater */
@@ -11507,10 +11499,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "更新程序"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cheevos 账户设置"

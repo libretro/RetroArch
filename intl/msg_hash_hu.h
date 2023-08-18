@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Tartalom böngészése. Tartalom betöltéséhez kell egy \"mag\", és egy tartalom fájl. A böngészés a \"Fájlböngésző könyvtára\" beállításnál megadott helyről indul, na ez nincs beállítva, akkor a gyökérből.\nA böngésző csak a \"Mag betöltése\" menüben kiválasztott mag által támogatott kiterjesztéseket mutatja, és azt használja a tartalom betöltéséhez."
+   "Tartalom böngészése. Tartalom betöltéséhez kell egy \"mag\", és egy tartalom fájl. A böngészés a \"Fájlböngésző könyvtára\" beállításnál megadott helyről indul, ha ez nincs beállítva, akkor a gyökérből.\nA böngésző csak a \"Mag betöltése\" menüben kiválasztott mag által támogatott kiterjesztéseket mutatja, és azt használja a tartalom betöltéséhez."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -1661,6 +1661,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
    "A mikrofonhoz használt újramintavételező illesztő."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Mikrofon keretek blokkonként"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -3200,7 +3204,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "A Libretro rendszer egy RetroPad nevű virtuális gamepadet használ a frontend (RetroArch) és a magok közti kommunikációhoz. Ebben a menüben lehet meghatározni, hogy melyik virtuális RetroPad melyik fizikai bemeneti eszközhöz tartozik, és melyik bemeneti csatlakozóhoz van rendelve. Ha a fizikai bemeneti eszköz felismerése és automatikus beállítása sikeres, itt vélhetően nincs szükség módosításra, magspecifikus beállításokhoz pedig e helyett a Gyorsmenü Irányítás a[...]"
+   "A Libretro rendszer egy RetroPad nevű virtuális gamepadet használ a frontend (RetroArch) és a magok közti kommunikációhoz. Ebben a menüben lehet meghatározni, hogy melyik virtuális RetroPad melyik fizikai bemeneti eszközhöz tartozik, és melyik bemeneti csatlakozóhoz van rendelve.\nHa a fizikai bemeneti eszköz felismerése és automatikus beállítása sikeres, itt vélhetően nincs szükség módosításra, magspecifikus beállításokhoz pedig e helyett a Gyorsmenü Irányítás [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4352,7 +4356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Játékállás automatikus betöltése"
+   "Automatikus játékállás betöltés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6989,10 +6993,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "A hiányzó bélyegképek automatikus letöltése listák böngészése közben. Nagy hatása van a teljesítményre."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Frissítő"
    )
 
 /* Settings > Network > Updater */
@@ -11471,10 +11471,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Frissítő"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "RetroAchievements fiók"

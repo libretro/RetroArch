@@ -2075,10 +2075,6 @@ MSG_HASH(
    "Аўтаматычнае захаванне стану"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Аўтаматычнае загрузка стану"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Аўтаматычна загружаць стан аўтаматычнага захавання пры запуску."
    )
@@ -2913,10 +2909,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
    "Камандны інтэрфейс stdin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Абнаўляльнік"
    )
 
 /* Settings > Network > Updater */
@@ -5131,10 +5123,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Абнаўляльнік"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
    "Лічыльнікі ядра"
