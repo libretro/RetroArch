@@ -5488,12 +5488,29 @@ unsigned menu_event(
                   strlen(input_st->osk_grid[input_st->osk_ptr]));
       }
 
+      /* Cancel: Send backspace if buffer is not empty, otherwise close window */
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
-         input_keyboard_event(true, '\x7f', '\x7f',
-               0, RETRO_DEVICE_KEYBOARD);
+      {
+         if (input_st->keyboard_line.size)
+            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         else
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+      }
 
-      /* send return key to close keyboard input window */
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+      /* Select: Clear and close the keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+      {
+         input_keyboard_line_clear(input_st);
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+      }
+
+      /* Scan: Clear the keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         input_keyboard_line_clear(input_st);
+
+      /* Start + Search: Send return key to close keyboard input window */
+      if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START)
+            || BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
 #ifdef HAVE_MIST
@@ -7849,14 +7866,7 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
 
-   if (input_st->keyboard_line.buffer)
-      free(input_st->keyboard_line.buffer);
-   input_st->keyboard_line.buffer          = NULL;
-   input_st->keyboard_line.ptr             = 0;
-   input_st->keyboard_line.size            = 0;
-   input_st->keyboard_line.cb              = NULL;
-   input_st->keyboard_line.userdata        = NULL;
-   input_st->keyboard_line.enabled         = false;
+   input_keyboard_line_free(input_st);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -7910,14 +7920,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    menu_st->input_dialog_kb_type   = line->type;
    menu_st->input_dialog_kb_idx    = line->idx;
 
-   if (input_st->keyboard_line.buffer)
-      free(input_st->keyboard_line.buffer);
-   input_st->keyboard_line.buffer                    = NULL;
-   input_st->keyboard_line.ptr                       = 0;
-   input_st->keyboard_line.size                      = 0;
-   input_st->keyboard_line.cb                        = NULL;
-   input_st->keyboard_line.userdata                  = NULL;
-   input_st->keyboard_line.enabled                   = false;
+   input_keyboard_line_free(input_st);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(

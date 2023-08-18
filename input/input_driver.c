@@ -1050,6 +1050,27 @@ void input_keyboard_line_append(
    keyboard_line->buffer        = newbuf;
 }
 
+void input_keyboard_line_clear(input_driver_state_t *input_st)
+{
+   if (input_st->keyboard_line.buffer)
+      free(input_st->keyboard_line.buffer);
+   input_st->keyboard_line.buffer       = NULL;
+   input_st->keyboard_line.ptr          = 0;
+   input_st->keyboard_line.size         = 0;
+}
+
+void input_keyboard_line_free(input_driver_state_t *input_st)
+{
+   if (input_st->keyboard_line.buffer)
+      free(input_st->keyboard_line.buffer);
+   input_st->keyboard_line.buffer       = NULL;
+   input_st->keyboard_line.ptr          = 0;
+   input_st->keyboard_line.size         = 0;
+   input_st->keyboard_line.cb           = NULL;
+   input_st->keyboard_line.userdata     = NULL;
+   input_st->keyboard_line.enabled      = false;
+}
+
 const char **input_keyboard_start_line(
       void *userdata,
       struct input_keyboard_line *keyboard_line,
@@ -6313,6 +6334,23 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                BIT256_SET_PTR(current_bits, ids[i][1]);
          }
       }
+      else if (display_kb
+            && current_input
+            && current_input->input_state)
+      {
+         /* Set RetroPad Select bit when pressing Escape while keyboard
+          * is open in order to clear the input window and close it */
+         if (current_input->input_state(
+                  input_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  (const retro_keybind_set *)input_config_binds,
+                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  0,
+                  RETRO_DEVICE_KEYBOARD, 0, RETROK_ESCAPE))
+            BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      }
    }
    else
 #endif /* HAVE_MENU */
@@ -6552,14 +6590,7 @@ void input_keyboard_event(bool down, unsigned code,
          return;
 
       /* Line is complete, can free it now. */
-      if (input_st->keyboard_line.buffer)
-         free(input_st->keyboard_line.buffer);
-      input_st->keyboard_line.buffer       = NULL;
-      input_st->keyboard_line.ptr          = 0;
-      input_st->keyboard_line.size         = 0;
-      input_st->keyboard_line.cb           = NULL;
-      input_st->keyboard_line.userdata     = NULL;
-      input_st->keyboard_line.enabled      = false;
+      input_keyboard_line_free(input_st);
 
       /* Unblock all hotkeys. */
       input_st->flags                     &= ~INP_FLAG_KB_MAPPING_BLOCKED;
