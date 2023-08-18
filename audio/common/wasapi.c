@@ -337,13 +337,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       buffer_duration = minimum_period;
 
    wasapi_set_format(&wf, *float_fmt, *rate, channels);
-   RARCH_LOG("[WASAPI]: Requesting format: %u-bit %u-channel client with %s samples at %uHz\n",
+   RARCH_DBG("[WASAPI]: Requesting format: %u-bit %u-channel client with %s samples at %uHz\n",
       wf.Format.wBitsPerSample,
       wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
 
    if (wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels))
    {
-      RARCH_LOG("[WASAPI]: Using format: %u-bit %u-channel client with %s samples at %uHz\n",
+      RARCH_DBG("[WASAPI]: Using format: %u-bit %u-channel client with %s samples at %uHz\n",
          wf.Format.wBitsPerSample,
          wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
    }
@@ -358,11 +358,11 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
    if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
    {
-      RARCH_WARN("[WASAPI] Unaligned buffer size: %s\n", hresult_name(hr));
+      RARCH_WARN("[WASAPI]: Unaligned buffer size: %s\n", hresult_name(hr));
       hr = _IAudioClient_GetBufferSize(client, &buffer_length);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to get buffer size of client: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: Failed to get buffer size of client: %s\n", hresult_name(hr));
          goto error;
       }
 
@@ -372,7 +372,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s\n", hresult_name(hr));
          return NULL;
       }
 
@@ -415,7 +415,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
 
-   RARCH_LOG("[WASAPI]: Initialized exclusive %s client at %uHz, latency %ums\n",
+   RARCH_DBG("[WASAPI]: Initialized exclusive %s client at %uHz, latency %ums\n",
       *float_fmt ? "float" : "pcm", *rate, latency);
 
    return client;
@@ -447,7 +447,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels))
    {
-      RARCH_LOG("[WASAPI]: Requesting %u-channel shared-mode client with %s samples at %uHz.\n",
+      RARCH_DBG("[WASAPI]: Requesting %u-channel shared-mode client with %s samples at %uHz.\n",
          wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
    }
    else
@@ -486,7 +486,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
 
-   RARCH_LOG("[WASAPI]: Initialized shared %s client at %uHz.\n",
+   RARCH_DBG("[WASAPI]: Initialized shared %s client at %uHz.\n",
       wave_format_name(&wf), *rate);
 
    return client;
@@ -507,13 +507,9 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
    const char *data_flow_name      = wasapi_data_flow_name(data_flow);
 
    if (id)
-   {
-      RARCH_LOG("[WASAPI]: Initializing %s device \"%s\"..\n", data_flow_name, id);
-   }
+      RARCH_DBG("[WASAPI]: Initializing %s device \"%s\"..\n", data_flow_name, id);
    else
-   {
-      RARCH_LOG("[WASAPI]: Initializing default %s device..\n", data_flow_name);
-   }
+      RARCH_DBG("[WASAPI]: Initializing default %s device..\n", data_flow_name);
 
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
@@ -677,7 +673,7 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       hr = _IAudioClient_GetDevicePeriod(client, NULL, &device_period);
       if (SUCCEEDED(hr))
       {
-         RARCH_LOG("[WASAPI]: Minimum exclusive-mode device period is %uns (%.1fms).\n",
+         RARCH_DBG("[WASAPI]: Minimum exclusive-mode device period is %uns (%.1fms).\n",
             device_period * 100, (double)device_period * 100 / 1e6);
       }
       /* device_period is in 100ns units */
@@ -687,7 +683,7 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       hr = _IAudioClient_GetDevicePeriod(client, &device_period, NULL);
       if (SUCCEEDED(hr))
       {
-         RARCH_LOG("[WASAPI]: Default shared-mode device period is %uns (%.1fms).\n",
+         RARCH_DBG("[WASAPI]: Default shared-mode device period is %uns (%.1fms).\n",
             device_period * 100, (double)device_period * 100 / 1e6);
       }
    }
@@ -702,7 +698,7 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       hr = _IAudioClient_GetStreamLatency(client, &stream_latency);
       if (SUCCEEDED(hr))
       {
-         RARCH_LOG("[WASAPI]: Shared stream latency is %uns (%.1fms).\n",
+         RARCH_DBG("[WASAPI]: Shared stream latency is %uns (%.1fms).\n",
             stream_latency * 100, (double)stream_latency * 100 / 1e6);
       }
       else
@@ -716,7 +712,7 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    {
       size_t num_samples = buffer_length * channels;
       size_t num_bytes = num_samples * (*float_fmt ? sizeof(float) : sizeof(int16_t));
-      RARCH_LOG("[WASAPI]: Endpoint buffer size is %u frames (%u samples, %u bytes).\n",
+      RARCH_DBG("[WASAPI]: Endpoint buffer size is %u frames (%u samples, %u bytes).\n",
          buffer_length, num_samples, num_bytes);
    }
    else
@@ -727,14 +723,30 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    if (*exclusive)
       latency_res = (double)buffer_length * 1000.0 / (*rate);
    else
-      latency_res = (double)(stream_latency + device_period) / 10000.0;
+   {
+      settings_t *settings = config_get_ptr();
+      int sh_buffer_length = settings->ints.audio_wasapi_sh_buffer_length;
+
+      if (sh_buffer_length < 0)
+      {
+#ifdef USE_CLIENT_BUFFER
+         latency_res = (double)buffer_length * 1000.0 / (*rate);
+#else
+         latency_res = (double)(stream_latency + device_period) / 10000.0;
+#endif
+      }
+      else if (sh_buffer_length > 0)
+         latency_res = sh_buffer_length * 1000.0 / (*rate);
+      else
+         latency_res = 0;
+   }
 
    RARCH_LOG("[WASAPI]: Client initialized (%s, %s, %uHz, %.1fms).\n",
          *exclusive ? "exclusive" : "shared",
          *float_fmt ? "float" : "pcm",
          *rate, latency_res);
 
-   RARCH_LOG("[WASAPI]: Client's buffer length is %u frames (%.1fms).\n",
+   RARCH_LOG("[WASAPI]: Client buffer length is %u frames (%.1fms).\n",
          buffer_length, (double)buffer_length * 1000.0 / (*rate));
 
    RARCH_LOG("[WASAPI]: Device period is %lld frames (%.1fms).\n",

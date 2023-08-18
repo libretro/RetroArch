@@ -27,9 +27,6 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
-/* Get automatic buffer size from client buffer instead of device period */
-#define USE_CLIENT_BUFFER
-
 typedef struct
 {
    HANDLE write_event;
@@ -112,9 +109,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
             sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate);
    }
    else
-   {
       RARCH_LOG("[WASAPI]: Intermediate buffer is off. \n");
-   }
 
    w->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
    if (!w->write_event)
@@ -408,9 +403,6 @@ static bool wasapi_alive(void *wh)
 static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 {
    wasapi_t *w = (wasapi_t*)wh;
-
-   if (w->nonblock != nonblock)
-      RARCH_DBG("[WASAPI]: Sync %s.\n", nonblock ? "off" : "on");
 
    w->nonblock = nonblock;
 }
