@@ -903,11 +903,15 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
+
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = undo_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    task_queue_push(task);
 
@@ -1467,6 +1471,8 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
 
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
@@ -1571,6 +1577,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
 
    task->state                   = state;
    task->type                    = TASK_TYPE_BLOCKING;
@@ -1780,12 +1788,15 @@ bool content_load_state(const char *path,
    if (settings->bools.savestate_file_compression)
       state->flags             |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags             |= SAVE_TASK_FLAG_MUTE;
 
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->mute                   = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    task_queue_push(task);
 
