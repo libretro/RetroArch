@@ -26,6 +26,9 @@
 #include "../common/mmdevice_common_inline.h"
 #include "boolean.h"
 
+/* Get automatic buffer size from client buffer instead of device period */
+#define USE_CLIENT_BUFFER
+
 const char *hresult_name(HRESULT hr);
 const char* wasapi_error(DWORD error);
 IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow);
