@@ -4240,7 +4240,9 @@ static void ozone_tab_set_selection(void *data)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
 
-   if (ozone)
+   /* Do not set tab selection when using pointer */
+   if (     ozone
+         && !(ozone->flags2 & OZONE_FLAG2_LAST_POINTER_IN_SIDEBAR))
    {
       size_t tab_selection = ozone->tab_selection[ozone->categories_selection_ptr];
       if (tab_selection)
@@ -11153,8 +11155,8 @@ static void ozone_draw_footer(
 
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 {
-	struct menu_state *menu_st = menu_state_get_ptr();
-	menu_list_t *menu_list     = menu_st->entries.list;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t new_selection       = menu_st->selection_ptr;
    ozone_node_t *node         = (ozone_node_t*)selection_buf->list[new_selection].userdata;
