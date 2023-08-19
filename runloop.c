@@ -6097,6 +6097,10 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #ifdef HAVE_CHEEVOS
+   /* Make sure not to evaluate this before calling menu_driver_iterate
+    * as that may change its value */
+   cheevos_hardcore_active = rcheevos_hardcore_active();
+
    if (!cheevos_hardcore_active)
 #endif
    {
@@ -6235,10 +6239,6 @@ static enum runloop_state_enum runloop_check_state(
          pause_pressed             |= BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
 
 #ifdef HAVE_CHEEVOS
-      /* Make sure not to evaluate this before calling menu_driver_iterate
-       * as that may change its value */
-      cheevos_hardcore_active = rcheevos_hardcore_active();
-
       if (cheevos_hardcore_active)
       {
          static int unpaused_frames = 0;
@@ -6301,7 +6301,11 @@ static enum runloop_state_enum runloop_check_state(
          if (!frameadvance_trigger)
 #endif
             focused = false;
+#ifdef HAVE_CHEEVOS
+         else if (!cheevos_hardcore_active)
+#else
          else
+#endif
             runloop_paused = false;
 
          /* Drop to RUNLOOP_STATE_POLLED_AND_SLEEP if frameadvance is triggered */
