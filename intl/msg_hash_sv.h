@@ -3142,6 +3142,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
    "Nätverkskommandon"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "Inställningar för uppdaterare"
+   )
 
 /* Settings > Network > Updater */
 

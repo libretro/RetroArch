@@ -7002,6 +7002,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Descarga automáticamente las miniaturas que falten mientras se navega por las listas de reproducción. Afectará gravemente al rendimiento."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "Ajustes del actualizador"
+   )
 
 /* Settings > Network > Updater */
 
@@ -11707,6 +11711,10 @@ MSG_HASH(
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   "Ajustes del actualizador de núcleos"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cuenta de logros"
