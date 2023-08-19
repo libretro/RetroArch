@@ -6939,6 +6939,10 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
          video_driver_cached_frame();
+#if defined(HAVE_COCOATOUCH)
+         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+#endif
+            retro_sleep(10);
          return 1;
       case RUNLOOP_STATE_END:
 #ifdef HAVE_NETWORKING
@@ -6950,12 +6954,20 @@ int runloop_iterate(void)
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #endif
+#if defined(HAVE_COCOATOUCH)
+         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+#endif
+            retro_sleep(10);
          goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
+#if defined(HAVE_COCOATOUCH)
+         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+#endif
+            retro_sleep(10);
          return 0;
       case RUNLOOP_STATE_ITERATE:
          runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
