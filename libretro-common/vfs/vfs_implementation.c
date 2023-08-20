@@ -738,37 +738,40 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 
 int retro_vfs_file_remove_impl(const char *path)
 {
-#if defined(_WIN32) && !defined(_XBOX)
-   /* Win32 (no Xbox) */
-   if (!path || !*path)
-      return -1;
+   if (path && *path)
    {
+      int ret          = -1;
+#if defined(_WIN32) && !defined(_XBOX)
+      /* Win32 (no Xbox) */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-      char *path_local    = NULL;
+      char *path_local = NULL;
       if ((path_local = utf8_to_local_string_alloc(path)))
       {
-         int ret = remove(path_local);
+         /* We need to check if path is a directory */
+         if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+            ret = _rmdir(path_local);
+         else
+            ret = remove(path_local);
          free(path_local);
-
-         if (ret == 0)
-            return 0;
       }
 #else
-      wchar_t *path_wide  = NULL;
+      wchar_t *path_wide = NULL;
       if ((path_wide = utf8_to_utf16_string_alloc(path)))
       {
-         int ret = _wremove(path_wide);
+         /* We need to check if path is a directory */
+         if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+            ret = _wrmdir(path_wide);
+         else
+            ret = _wremove(path_wide);
          free(path_wide);
-
-         if (ret == 0)
-            return 0;
       }
 #endif
-   }
 #else
-   if (remove(path) == 0)
-      return 0;
+      ret = remove(path);
 #endif
+      if (ret == 0)
+         return 0;
+   }
    return -1;
 }
 
