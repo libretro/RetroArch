@@ -10481,9 +10481,9 @@ static bool setting_append_list(
          {
             unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
-            struct bool_entry bool_entries[10];
+            struct bool_entry bool_entries[11];
 #else
-            struct bool_entry bool_entries[9];
+            struct bool_entry bool_entries[10];
 #endif
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -10526,6 +10526,13 @@ static bool setting_append_list(
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
             bool_entries[listing].default_value  = DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.systemfiles_in_content_dir;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_SYSTEMFILES_IN_CONTENT_DIR;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
@@ -10837,7 +10844,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_SAVING:
          {
             uint8_t i, listing = 0;
-            struct bool_entry bool_entries[13];
+            struct bool_entry bool_entries[12];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
@@ -10919,13 +10926,6 @@ static bool setting_append_list(
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE;
             bool_entries[listing].default_value  = DEFAULT_SAVESTATES_IN_CONTENT_DIR;
-            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
-            listing++;
-
-            bool_entries[listing].target         = &settings->bools.systemfiles_in_content_dir;
-            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SYSTEMFILES_IN_CONTENT_DIR;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
