@@ -5493,6 +5493,33 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
       if (find_last_slash(path))
          goto end;
 
+      /* First check for built-in cores */
+      if (string_is_equal(path, "ffmpeg"))
+      {
+         runloop_set_current_core_type(CORE_TYPE_FFMPEG, true);
+         return;
+      }
+      else if (string_is_equal(path, "mpv"))
+      {
+         runloop_set_current_core_type(CORE_TYPE_MPV, true);
+         return;
+      }
+      else if (string_is_equal(path, "imageviewer"))
+      {
+         runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, true);
+         return;
+      }
+      if (string_is_equal(path, "netretropad"))
+      {
+         runloop_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
+         return;
+      }
+      else if (string_is_equal(path, "videoprocessor"))
+      {
+         runloop_set_current_core_type(CORE_TYPE_VIDEO_PROCESSOR, true);
+         return;
+      }
+
       command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
 
       _len = strlcpy(tmp_path, path, sizeof(tmp_path));
