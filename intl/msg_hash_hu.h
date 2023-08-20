@@ -5227,6 +5227,14 @@ MSG_HASH(
    "Üzenet megjelenítése az M3U lejátszási listákból betöltött többlemezes tartalmak utoljára használt lemezének automatikus visszaállításáról."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Játékállás mentés értesítései"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Üzenet megjelenítése játékállás mentésekor és betöltésekor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
    "Értesítés a gyorsításról"
    )
@@ -5670,11 +5678,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "\"Online frissítés\" látható"
+   "\"Online frissítő\" látható"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   "Az \"Online frissítés\" lehetőség jelenjen meg a főmenüben."
+   "Az \"Online frissítő\" lehetőség jelenjen meg a főmenüben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
@@ -6994,12 +7002,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "A hiányzó bélyegképek automatikus letöltése listák böngészése közben. Nagy hatása van a teljesítményre."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "A frissítő beállításai"
+   )
 
 /* Settings > Network > Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "Buildbot magok URL-je"
+   "Buildbot URL a magokhoz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
@@ -7007,7 +7019,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "Buildbot beépített médiafájlok URL-je"
+   "Buildbot URL a beépített médiafájlokhoz"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
@@ -7150,59 +7162,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
-   "másodperc"
+   "másodperccel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
-   "másodperc"
+   "másodperccel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
-   "perc"
+   "perccel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
-   "perc"
+   "perccel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
-   "óra"
+   "órával"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
-   "óra"
+   "órával"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
-   "nap"
+   "nappal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
-   "nap"
+   "nappal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
-   "hét"
+   "héttel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
-   "hét"
+   "héttel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
-   "hónap"
+   "hónappal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
-   "hónap"
+   "hónappal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
-   "év"
+   "évvel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
-   "év"
+   "évvel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
@@ -11471,6 +11483,10 @@ MSG_HASH(
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   "A magfrissítő beállításai"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "RetroAchievements fiók"

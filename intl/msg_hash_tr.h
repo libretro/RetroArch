@@ -5239,6 +5239,14 @@ MSG_HASH(
    "M3U çalma listeleri aracılığıyla yüklenen son kullanılan çoklu diskin açılışında otomatik olarak geri yükleme sırasında bir ekran mesajı görüntüler."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Durum Kaydı Bildirimleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Durum kayıtları kaydedilirken ve yüklenirken ekranda bir mesaj görüntüleyin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
    "Hızlı İleri Sarma Bildirimleri"
    )
