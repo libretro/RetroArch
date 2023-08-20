@@ -868,7 +868,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       /* Lowlevel Lv2 */
       sysFSStat stat_buf;
 
-      if (sysFsStat(path, &buf) < 0)
+      if (sysFsStat(path, &stat_buf) < 0)
          return 0;
 
       if (size)
