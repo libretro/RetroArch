@@ -1027,6 +1027,7 @@ typedef struct settings
       bool log_to_file_timestamp;
 
       bool scan_without_core_match;
+      bool scan_serial_and_crc;
 
       bool ai_service_enable;
       bool ai_service_pause;
