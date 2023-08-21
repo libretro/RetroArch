@@ -5222,7 +5222,8 @@ bool config_save_file(const char *path)
  *
  * Returns: true (1) on success, (-1) if nothing to write, otherwise returns false (0).
  **/
-int8_t config_save_overrides(enum override_type type, void *data, bool remove)
+int8_t config_save_overrides(enum override_type type,
+      void *data, bool remove, const char *path)
 {
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
@@ -5507,6 +5508,13 @@ int8_t config_save_overrides(enum override_type type, void *data, bool remove)
                   FILE_PATH_CONFIG_EXTENSION,
                   sizeof(override_path));
             break;
+         case OVERRIDE_AS:
+            fill_pathname_join_special_ext(override_path,
+                  config_directory, core_name,
+                  path,
+                  FILE_PATH_CONFIG_EXTENSION,
+                  sizeof(override_path));
+            break;
          case OVERRIDE_NONE:
          default:
             break;
@@ -5758,11 +5766,15 @@ bool input_remapping_save_file(const char *path)
    bool ret;
    unsigned i, j;
    char remap_file_dir[PATH_MAX_LENGTH];
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
-      "b", "y", "select", "start",
-      "up", "down", "left", "right",
-      "a", "x", "l", "r", "l2", "r2",
-      "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
+   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   {
+      "b",      "y",      "select", "start",
+      "up",     "down",   "left",   "right",
+      "a",      "x",      "l",      "r",
+      "l2",     "r2",     "l3",     "r3",
+      "l_x+",   "l_x-",   "l_y+",   "l_y-",
+      "r_x+",   "r_x-",   "r_y+",   "r_y-"
+   };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    settings_t        *settings = config_st;

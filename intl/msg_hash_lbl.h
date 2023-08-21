@@ -3238,6 +3238,10 @@ MSG_HASH(
    "remap_file_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS,
+   "remap_file_save_as"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
    "remap_file_save_core"
    )
@@ -3426,6 +3430,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,
    "override_file_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,
+   "override_file_save_as"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
