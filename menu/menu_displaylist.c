@@ -1368,6 +1368,14 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list
          MENU_SETTING_ACTION_REMAP_FILE_LOAD, 0, 0, NULL))
       count++;
 
+   /* Save as */
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS),
+            MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS,
+            MENU_SETTING_ACTION_REMAP_FILE_SAVE_AS, 0, 0, NULL))
+      count++;
+
    if (!game_remap_active)
    {
       /* Save remap files */
@@ -6543,6 +6551,15 @@ unsigned menu_displaylist_build_list(
 
             if (!settings->bools.kiosk_mode_enable)
             {
+               /* Save as */
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS),
+                        MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+               /* Save/Remove game/content_dir/core */
                if (has_content)
                {
                   if (settings->bools.quick_menu_show_save_game_overrides)

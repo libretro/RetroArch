@@ -82,6 +82,7 @@ enum crt_switch_type
 enum override_type
 {
    OVERRIDE_NONE = 0,
+   OVERRIDE_AS,
    OVERRIDE_CORE,
    OVERRIDE_CONTENT_DIR,
    OVERRIDE_GAME
@@ -1202,7 +1203,8 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, (-1) if nothing to write, otherwise returns false (0).
  **/
-int8_t config_save_overrides(enum override_type type, void *data, bool remove);
+int8_t config_save_overrides(enum override_type type,
+      void *data, bool remove, const char *path);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state

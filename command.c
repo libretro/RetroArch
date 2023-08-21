@@ -1850,7 +1850,7 @@ void command_event_save_current_config(enum override_type type)
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
          {
-            int8_t ret = config_save_overrides(type, &runloop_st->system, false);
+            int8_t ret = config_save_overrides(type, &runloop_st->system, false, NULL);
             char msg[256];
 
             msg[0] = '\0';
@@ -1904,7 +1904,7 @@ void command_event_remove_current_config(enum override_type type)
 
             msg[0] = '\0';
 
-            if (config_save_overrides(type, &runloop_st->system, true))
+            if (config_save_overrides(type, &runloop_st->system, true, NULL))
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
             else
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
