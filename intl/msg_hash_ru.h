@@ -469,7 +469,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "Категории"
+   "Категория"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
@@ -533,7 +533,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Заблокировать ядро"
+   "Блокировать ядро"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,

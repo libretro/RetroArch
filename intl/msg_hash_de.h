@@ -5132,7 +5132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
-   "Zeigt auf dem Bildschirm eine Nachricht an beim Speichern und Laden von Savestates."
+   "Zeigt auf dem Bildschirm eine Nachricht beim Speichern und Laden von Savestates an."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
