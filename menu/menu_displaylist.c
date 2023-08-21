@@ -11572,7 +11572,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            size_t _len        = strlcpy(desc_label,
                                  msg_hash_to_str(keyptr->enum_idx),
                                  sizeof(desc_label));
-                           desc_label[  _len] = ' ';
+                           desc_label[  _len] = ',';
+                           desc_label[++_len] = ' ';
                            desc_label[++_len] = '\0';
                            strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
                            strlcpy(descriptor, desc_label, sizeof(descriptor));
@@ -11624,7 +11625,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            size_t _len        = strlcpy(desc_label,
                                  msg_hash_to_str(keyptr->enum_idx),
                                  sizeof(desc_label));
-                           desc_label[  _len] = ' ';
+                           desc_label[  _len] = ',';
+                           desc_label[++_len] = ' ';
                            desc_label[++_len] = '\0';
                            strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
                            strlcpy(descriptor, desc_label, sizeof(descriptor));
