@@ -50,6 +50,7 @@ extension CocoaView: HelperBarActionDelegate {
    }
    
    func orientationLockButtonTapped() {
+      #if TARGET_OS_IPHONE
       shouldLockCurrentInterfaceOrientation.toggle()
       if shouldLockCurrentInterfaceOrientation {
          let currentOrientation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation ?? UIInterfaceOrientation.portrait
@@ -58,6 +59,7 @@ extension CocoaView: HelperBarActionDelegate {
       if #available(iOS 16, *) {
          setNeedsUpdateOfSupportedInterfaceOrientations()
       }
+      #endif
    }
    
    var isKeyboardEnabled: Bool {
