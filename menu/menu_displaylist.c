@@ -10130,7 +10130,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          {
             bool savestate_auto_index = settings->bools.savestate_auto_index;
-            bool replay_auto_index = settings->bools.replay_auto_index;
+            bool replay_auto_index    = settings->bools.replay_auto_index;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,              PARSE_ONLY_BOOL, true},
@@ -10141,10 +10141,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,  PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,                PARSE_ONLY_BOOL, true},
@@ -10252,8 +10252,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_LATENCY_SETTINGS,            PARSE_ACTION, true},
                {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,     PARSE_ACTION, true},
                {MENU_ENUM_LABEL_DRIVER_SETTINGS,             PARSE_ACTION, true},
-               {MENU_ENUM_LABEL_CORE_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,           PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CORE_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_SAVING_SETTINGS,             PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RECORDING_SETTINGS,          PARSE_ACTION, true},
                {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,      PARSE_ACTION, true},
