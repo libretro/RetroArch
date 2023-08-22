@@ -1862,6 +1862,37 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
          case MENU_ENUM_LABEL_WIFI_DRIVER:
          case MENU_ENUM_LABEL_MENU_DRIVER:
+         case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
+         case MENU_ENUM_LABEL_UPDATE_ASSETS:
+         case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+         case MENU_ENUM_LABEL_UPDATE_CHEATS:
+         case MENU_ENUM_LABEL_UPDATE_DATABASES:
+         case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
+         case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
+         case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
+         case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+         case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
+         case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
+         case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
+         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
+         case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
+         case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
+         case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME:
+         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+         case MENU_ENUM_LABEL_OVERRIDE_UNLOAD:
+         case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
+         case MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN:
+         case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+         case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
 #ifdef HAVE_LAKKA
          case MENU_ENUM_LABEL_TIMEZONE:
 #endif
@@ -1942,32 +1973,30 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
                   menu_action_setting_disp_set_label_core_options);
             break;
          case MENU_ENUM_LABEL_PLAYLISTS_TAB:
+         case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          case MENU_ENUM_LABEL_FAVORITES:
          case MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST:
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
+         case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-         case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
          case MENU_ENUM_LABEL_FRONTEND_COUNTERS:
          case MENU_ENUM_LABEL_CORE_COUNTERS:
          case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
          case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-         case MENU_ENUM_LABEL_RESTART_CONTENT:
-         case MENU_ENUM_LABEL_CLOSE_CONTENT:
-         case MENU_ENUM_LABEL_RESUME_CONTENT:
-         case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          case MENU_ENUM_LABEL_CORE_INFORMATION:
          case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
-         case MENU_ENUM_LABEL_SAVE_STATE:
-         case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
             break;
@@ -2120,6 +2149,11 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          MENU_SETTINGS_INPUT_DESC_KBD_END,
          menu_action_setting_disp_set_label_input_desc_kbd
       },
+      {
+         MENU_SETTINGS_REMAPPING_PORT_BEGIN,
+         MENU_SETTINGS_REMAPPING_PORT_END,
+         menu_action_setting_disp_set_label_menu_more
+      },
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -2214,15 +2248,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 #endif
          break;
       case MENU_SETTING_SUBGROUP:
-      case MENU_SETTINGS_CUSTOM_BIND_ALL:
-      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
       case MENU_SETTING_ACTION:
-      case MENU_SETTING_ACTION_LOADSTATE:
-      case 7:   /* Run */
-      case MENU_SETTING_ACTION_DELETE_ENTRY:
+      case MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST:
+      case MENU_SETTING_ACTION_REMAP_FILE_LOAD:
       case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
+      case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND:
       case MENU_EXPLORE_TAB:
       case MENU_CONTENTLESS_CORES_TAB:
+      case MENU_PLAYLISTS_TAB:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_more);
          break;
@@ -2272,16 +2305,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   if (  string_starts_with_size(
-            label, "input_player", STRLEN_CONST("input_player"))
-         && string_ends_with_size(label, "joypad_index", lbl_len,
-               STRLEN_CONST("joypad_index"))
-      )
-   {
-      BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
-      return 0;
-   }
-
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -2291,11 +2314,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheevos_entry);
 #endif
-            return 0;
-         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_more);
             return 0;
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
@@ -2307,6 +2325,18 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_netplay_mitm_server);
 #endif
+            return 0;
+         case MENU_ENUM_LABEL_RESTART_RETROARCH:
+         case MENU_ENUM_LABEL_QUIT_RETROARCH:
+         case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
+         case MENU_ENUM_LABEL_REBOOT:
+         case MENU_ENUM_LABEL_SHUTDOWN:
+         case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
+         case MENU_ENUM_LABEL_START_NET_RETROPAD:
+         case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
             return 0;
          default:
             break;
