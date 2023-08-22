@@ -359,6 +359,7 @@ typedef struct settings
       float placeholder;
       float video_aspect_ratio;
       float video_refresh_rate;
+      float video_autoswitch_pal_threshold;
       float crt_video_refresh_rate;
       float video_font_size;
       float video_msg_pos_x;

@@ -11049,7 +11049,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_replay_checkpoint_interval;
-            menu_settings_list_current_add_range(list, list_info, 0, 3600, 60, true, false);
+            menu_settings_list_current_add_range(list, list_info, 0, 3600, 60, true, true);
 #endif
 
             CONFIG_BOOL(
@@ -12241,6 +12241,21 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_video_autoswitch_refresh_rate;
             menu_settings_list_current_add_range(list, list_info, 0, AUTOSWITCH_REFRESH_RATE_LAST - 1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.video_autoswitch_pal_threshold,
+                  MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+                  DEFAULT_AUTOSWITCH_PAL_THRESHOLD,
+                  "%.3f Hz",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 50, 56, 0.1, true, true);
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
