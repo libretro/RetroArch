@@ -243,6 +243,13 @@ void cb_http_task_download_pl_thumbnail(
    if (!data || !data->data || string_is_empty(transf->path))
       goto finish;
 
+   /* Skip if data can't be good */
+   if (data->status != 200)
+   {
+      err = "File not found.";
+      goto finish;
+   }
+
    /* Create output directory, if required */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
    path_basedir_wrapper(output_dir);
@@ -250,13 +257,6 @@ void cb_http_task_download_pl_thumbnail(
    if (!path_mkdir(output_dir))
    {
       err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
-   }
-
-   /* Skip if data can't be good */
-   if (data->status != 200)
-   {
-      err = "File not found.";
       goto finish;
    }
 
