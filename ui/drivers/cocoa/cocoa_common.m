@@ -105,8 +105,11 @@ void *glkitview_init(void);
     */
    self.controllerUserInteractionEnabled = YES;
 #endif
-
+  
+#if TARGET_OS_IOS
   self.shouldLockCurrentInterfaceOrientation = NO;
+#endif
+
    return self;
 }
 
