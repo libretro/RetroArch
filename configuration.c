@@ -2199,6 +2199,7 @@ static struct config_float_setting *populate_settings_float(
 
    SETTING_FLOAT("video_aspect_ratio",           &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
    SETTING_FLOAT("video_refresh_rate",           &settings->floats.video_refresh_rate, true, DEFAULT_REFRESH_RATE, false);
+   SETTING_FLOAT("video_autoswitch_pal_threshold", &settings->floats.video_autoswitch_pal_threshold, true, DEFAULT_AUTOSWITCH_PAL_THRESHOLD, false);
    SETTING_FLOAT("crt_video_refresh_rate",       &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);
    SETTING_FLOAT("video_message_pos_x",          &settings->floats.video_msg_pos_x, true, DEFAULT_MESSAGE_POS_OFFSET_X, false);
    SETTING_FLOAT("video_message_pos_y",          &settings->floats.video_msg_pos_y, true, DEFAULT_MESSAGE_POS_OFFSET_Y, false);

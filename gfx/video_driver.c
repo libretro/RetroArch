@@ -1232,6 +1232,7 @@ void video_switch_refresh_rate_maybe(
 
    float refresh_rate                 = *refresh_rate_suggest;
    float video_refresh_rate           = settings->floats.video_refresh_rate;
+   float pal_threshold                = settings->floats.video_autoswitch_pal_threshold;
    unsigned crt_switch_resolution     = settings->uints.crt_switch_resolution;
    unsigned autoswitch_refresh_rate   = settings->uints.video_autoswitch_refresh_rate;
    unsigned video_swap_interval       = runloop_get_video_swap_interval(
@@ -1243,7 +1244,7 @@ void video_switch_refresh_rate_maybe(
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
    /* Roundings to PAL & NTSC standards */
-   if      (refresh_rate > 49.00 && refresh_rate < 54.50)
+   if      (refresh_rate > 49.00 && refresh_rate <= pal_threshold)
       refresh_rate       = 50.00f;
    else if (refresh_rate > 54.00 && refresh_rate < 60.00)
       refresh_rate       = 59.94f;

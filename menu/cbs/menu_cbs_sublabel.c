@@ -680,6 +680,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_force_srgb_enable,       MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_fullscreen,              MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_windowed_fullscreen,     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_autoswitch_refresh_rate, MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_autoswitch_pal_threshold,MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_record,              MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_auto_index,          MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_block_sram_overwrite,          MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE)
@@ -4046,6 +4047,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_autoswitch_refresh_rate);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_autoswitch_pal_threshold);
             break;
          case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_force_srgb_enable);
