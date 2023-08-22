@@ -8635,28 +8635,64 @@ MSG_HASH(
    "Yeniden Yapılandırma Dosyasını Yükle"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "Mevcut giriş eşlemelerini yükleyin ve değiştirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Yeniden Eşleme Dosyasını Farklı Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Mevcut giriş eşlemelerini yeni bir yeniden eşleme dosyası olarak kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "Çekirdek Yapılandırma Dosyasını Kaydet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Bu çekirdeğe yüklenen tüm içerik için geçerli olacak bir yeniden eşleme dosyası kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "Çekirdek Yeniden Yapılandırma Dosyasını Sil"
+   "Çekirdek Yeniden Eşleme Dosyasını Kaldır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Bu çekirdeğe yüklenen tüm içerik için geçerli olacak yeniden eşleme dosyasını silin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "İçerik Dizini Yeniden Yapılandırma Dosyasını Kaydet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Mevcut dosyayla aynı dizinden yüklenen tüm içerik için geçerli olacak bir yeniden eşleme dosyası kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Oyun İçerik Dizini Yeniden Yapılandırma Dosyasını Sil"
+   "Oyun İçerik Dizini Yeniden Yapılandırma Dosyasını Kaldır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Mecvut dosyayla aynı dizinden yüklenen tüm içerik için geçerli olacak yeniden eşleme dosyasını silin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Oyun Yeniden Yapılandırma Dosyasını Kaydet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Yalnızca mevcut içerik için geçerli olacak bir yeniden eşleme dosyası kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "Oyun Yeniden Yapılandırma Dosyasını Sil"
+   "Oyun Yeniden Yapılandırma Dosyasını Kaldır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Yalnızca mevcut içerik için geçerli olacak yeniden eşleme dosyasını silin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9307,6 +9343,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
    "Mevcut yapılandırmayı yükleyin ve değiştirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "Özelleştirmeyi Farklı Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Mevcut yapılandırmayı yeni bir özelleştirme dosyası olarak kaydedin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -13319,6 +13363,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
    "Önceden Ayarlanmış Dosya Adı Gir"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Giriş Özelleştirmesi Dosya Adı"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "Yeniden Eşleme Dosya Adı"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,

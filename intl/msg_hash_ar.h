@@ -4711,24 +4711,12 @@ MSG_HASH(
    "حفظ ملف تعيينات نواة"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "حذف ملف تعيينات نواة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "حفظ ملف تعيينات مجلد المحتوى"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "حذف ملف تعيينات محتوى اللعبة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "حفظ ملف تعيينات اللعبة"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "حذف ملف تعيينات اللعبة"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */

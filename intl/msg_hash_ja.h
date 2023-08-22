@@ -6671,24 +6671,12 @@ MSG_HASH(
    "コアリマップファイルを保存"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "コアのリマップファイルを削除"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "コンテンツフォルダのゲームリマップファイルを保存"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "コンテンツフォルダのゲームリマップファイルを削除"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "ゲームリマップファイルを保存"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "ゲームのリマップファイルを削除"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
