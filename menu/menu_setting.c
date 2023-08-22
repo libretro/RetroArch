@@ -1199,10 +1199,7 @@ static int setting_generic_action_start_default(rarch_setting_t *setting)
 static void setting_get_string_representation_default(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   s[0] = '.';
-   s[1] = '.';
-   s[2] = '.';
-   s[3] = '\0';
+   s[0] = '\0';
 }
 
 /**
