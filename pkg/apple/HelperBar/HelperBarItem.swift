@@ -9,10 +9,15 @@
 protocol HelperBarItem {
    var image: UIImage? { get }
    var selectedImage: UIImage? { get }
+   var tintColorOnSelection: UIColor? { get }
    var isSelected: Bool { get }
    var shortDescription: String { get }
    var longDescription: String? { get }
    func action()
+}
+
+extension HelperBarItem {
+   var tintColorOnSelection: UIColor? { nil }
 }
 
 struct KeyboardBarItem: HelperBarItem {
@@ -51,5 +56,23 @@ struct MouseBarItem: HelperBarItem {
 
    func action() {
       actionDelegate?.mouseButtonTapped()
+   }
+}
+
+struct LockOrientationBarItem: HelperBarItem {
+   let image = UIImage(systemName: "lock.rotation")
+   let selectedImage = UIImage(systemName: "lock.rotation")
+   var tintColorOnSelection: UIColor? { .red }
+   var isSelected: Bool { actionDelegate?.isOrientationLocked ?? false }
+   let shortDescription = NSLocalizedString("Lock the current screen orientation", comment: "Description for orientation lock item on helper bar")
+   var longDescription: String? { nil }
+   weak var actionDelegate: HelperBarActionDelegate?
+   
+   init(actionDelegate: HelperBarActionDelegate?) {
+      self.actionDelegate = actionDelegate
+   }
+
+   func action() {
+      actionDelegate?.orientationLockButtonTapped()
    }
 }

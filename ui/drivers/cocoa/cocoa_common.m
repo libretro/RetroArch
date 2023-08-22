@@ -53,7 +53,6 @@ void *glkitview_init(void);
 ,EmulatorTouchMouseHandlerDelegate
 #endif
 >
-
 @end
 #endif
 
@@ -105,6 +104,10 @@ void *glkitview_init(void);
     * (buttonB), and only when the cancel button wouldn't do anything.
     */
    self.controllerUserInteractionEnabled = YES;
+#endif
+  
+#if TARGET_OS_IOS
+  self.shouldLockCurrentInterfaceOrientation = NO;
 #endif
 
    return self;
@@ -417,7 +420,23 @@ void *glkitview_init(void);
 /* NOTE: This version runs on iOS6+. */
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-   return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+  if (@available(iOS 16, *)) {
+    if (self.shouldLockCurrentInterfaceOrientation) {
+      return 1 << self.lockInterfaceOrientation;
+    } else {
+      return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+    }
+  } else {
+    return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+  }
+}
+
+/* NOTE: This does not run on iOS 16+ */
+-(BOOL)shouldAutorotate {
+  if (self.shouldLockCurrentInterfaceOrientation) {
+    return NO;
+  }
+  return YES;
 }
 
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */

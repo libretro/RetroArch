@@ -68,6 +68,9 @@
 @property(nonatomic,strong) UIView *helperBarView;
 #endif
 
+@property(readwrite) BOOL shouldLockCurrentInterfaceOrientation;
+@property(readwrite) UIInterfaceOrientation lockInterfaceOrientation;
+
 + (CocoaView*)get;
 @end
 
