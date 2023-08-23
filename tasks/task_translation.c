@@ -1546,7 +1546,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
                                    && video_st->poke->unload_texture;
 #endif
       
-   _len  = strlcpy(buffer, service_url, length);
+   _len = strlcpy(buffer, service_url, length);
    
    token[1] = '\0';
    if (strrchr(buffer, '?'))
@@ -1561,7 +1561,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_source))
       {
-         _len += strlcpy(buffer, token, length - _len);
+         _len += strlcpy(buffer + _len, token, length - _len);
          _len += strlcpy(buffer + _len, "source_lang=", length - _len);
          strlcpy(buffer + _len, lang_source, length - _len);
          token[0] = '&';
@@ -1575,14 +1575,14 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_target))
       {
-         _len  = strlcpy(buffer, token, length);
+         _len  = strlcpy(buffer + _len, token, length - _len);
          _len += strlcpy(buffer + _len, "target_lang=", length - _len);
          strlcpy(buffer + _len, lang_target, length - _len);
          token[0] = '&';
       }
    }
    
-   _len += strlcpy(buffer, token, length - _len);
+   _len += strlcpy(buffer + _len, token, length - _len);
    _len += strlcpy(buffer + _len, "output=", length - _len);
    switch (ai_service_mode)
    {
