@@ -812,13 +812,13 @@ static void translation_response_image_direct(
    unsigned vp_width;
    unsigned vp_height;
    
-   void *image_body                                   = NULL;
-   uint8_t *raw_output_data                           = NULL;
-   size_t raw_output_size                             = 0;
-   const void *dummy_data                             = NULL;
-   struct scaler_ctx *scaler                          = NULL;
-   video_driver_state_t *video_st                     = video_state_get_ptr();
-   const enum retro_pixel_format video_driver_pix_fmt = video_st->pix_fmt;
+   void *image_body                                    = NULL;
+   uint8_t *raw_output_data                            = NULL;
+   size_t raw_output_size                              = 0;
+   const void *dummy_data                              = NULL;
+   struct scaler_ctx *scaler                           = NULL;
+   video_driver_state_t *video_st                      = video_state_get_ptr();
+   const enum retro_pixel_format video_driver_pix_fmt  = video_st->pix_fmt;
    
    if (!(translation_get_image_body(
          image, image_size, image_type, image_body, &width, &height)))
@@ -827,10 +827,10 @@ static void translation_response_image_direct(
    if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
       goto finish;
    
-   dummy_data    = video_st->frame_cache_data;
-   vp_width      = video_st->frame_cache_width;
-   vp_height     = video_st->frame_cache_height;
-   pitch         = video_st->frame_cache_pitch;
+   dummy_data  = video_st->frame_cache_data;
+   vp_width    = video_st->frame_cache_width;
+   vp_height   = video_st->frame_cache_height;
+   pitch       = video_st->frame_cache_pitch;
 
    if (!vp_width || !vp_height)
       goto finish;
@@ -1215,10 +1215,10 @@ static access_frame_t* translation_grab_frame()
    if (!(frame = (access_frame_t*)malloc(sizeof(access_frame_t))))
       goto finish;
    
-   data       = video_st->frame_cache_data;
-   frame->width      = video_st->frame_cache_width;
-   frame->height     = video_st->frame_cache_height;
-   pitch      = video_st->frame_cache_pitch;
+   data           = video_st->frame_cache_data;
+   frame->width   = video_st->frame_cache_width;
+   frame->height  = video_st->frame_cache_height;
+   pitch          = video_st->frame_cache_pitch;
 
    if (!data)
       goto finish;
