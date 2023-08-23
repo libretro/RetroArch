@@ -5916,12 +5916,14 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->setting                  = NULL;
 }
 
-typedef struct menu_displaylist_build_info {
+typedef struct menu_displaylist_build_info 
+{
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
 } menu_displaylist_build_info_t;
 
-typedef struct menu_displaylist_build_info_selective {
+typedef struct menu_displaylist_build_info_selective 
+{
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool checked;
@@ -6661,7 +6663,8 @@ unsigned menu_displaylist_build_list(
             bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
             bool history_list_enable     = settings->bools.history_list_enable;
             bool truncate_playlist       = settings->bools.ozone_truncate_playlist_name;
-            menu_displaylist_build_info_selective_t build_list[] = {
+            menu_displaylist_build_info_selective_t build_list[] = 
+            {
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,              PARSE_ONLY_INT,  true},

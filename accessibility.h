@@ -39,12 +39,6 @@
 
 typedef struct
 {
-   /* 1 if the automatic mode has been enabled, 0 otherwise */
-   int ai_service_auto;
-   
-   /* Text-to-speech narrator override flag */
-   bool enabled;
-   
    /* The last request task, used to prepare and send the translation */
    retro_task_t *request_task;
    
@@ -53,10 +47,16 @@ typedef struct
    
    /* Timestamp of the last translation request */
    retro_time_t last_call;
-   
+
    /* Frame captured during the last call to the translation service */
-   int last_image_size;
    uint8_t *last_image;
+   int last_image_size;
+
+   /* 1 if the automatic mode has been enabled, 0 otherwise */
+   int ai_service_auto;
+   
+   /* Text-to-speech narrator override flag */
+   bool enabled;
    
 #ifdef HAVE_THREADS
    /* Necessary because last_image is manipulated by task handlers */

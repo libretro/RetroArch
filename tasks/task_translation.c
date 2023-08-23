@@ -53,16 +53,19 @@
 
 #include "tasks_internal.h"
 
-static const char* ACCESS_INPUT_LABELS[] = { 
+static const char* ACCESS_INPUT_LABELS[] = 
+{ 
    "b", "y", "select", "start", "up", "down", "left", "right", 
    "a", "x", "l", "r", "l2", "r2", "l3", "r3" 
 };
 
-static const char* ACCESS_RESPONSE_KEYS[] = { 
+static const char* ACCESS_RESPONSE_KEYS[] = 
+{ 
    "image", "sound", "text", "error", "auto", "press", "text_position"
 };
 
-typedef struct {
+typedef struct 
+{
    uint8_t *data;
    unsigned size;
    unsigned width;
@@ -76,18 +79,21 @@ typedef struct {
    unsigned viewport_height;
 } access_frame_t;
 
-typedef struct {
-   int length;
+typedef struct 
+{
    char *data;
+   int length;
    char format[4];
 } access_base64_t;
 
-typedef struct {
-   bool paused;
+typedef struct 
+{
    char *inputs;
+   bool paused;
 } access_request_t;
 
-typedef struct {
+typedef struct 
+{
    char *image;
    int image_size;
 #ifdef HAVE_AUDIOMIXER
@@ -96,9 +102,9 @@ typedef struct {
 #endif
    char *error;
    char *text;
-   int text_position;
    char *recall;
    char *input;
+   int text_position;
 } access_response_t;
 
 /* UTILITIES ---------------------------------------------------------------- */
