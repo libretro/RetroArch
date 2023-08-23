@@ -273,7 +273,7 @@ static bool win32_display_server_set_resolution(void *data,
          continue;
       if (dm.dmBitsPerPel != curr_bpp)
          continue;
-      if (dm.dmDisplayFrequency != int_hz)
+      if (dm.dmDisplayFrequency != (DWORD)int_hz)
          continue;
 #if _WIN32_WINNT >= 0x0500
       if (dm.dmDisplayOrientation != curr_orientation)
@@ -459,10 +459,10 @@ void win32_display_server_set_screen_orientation(void *data,
 
             if ((       dm.dmDisplayOrientation == DMDO_90 
                      || dm.dmDisplayOrientation == DMDO_270)
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 
@@ -475,10 +475,10 @@ void win32_display_server_set_screen_orientation(void *data,
 
             if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
                      || dm.dmDisplayOrientation == DMDO_180) 
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 
@@ -491,10 +491,10 @@ void win32_display_server_set_screen_orientation(void *data,
 
             if ((       dm.dmDisplayOrientation == DMDO_90 
                      || dm.dmDisplayOrientation == DMDO_270)
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 
@@ -507,10 +507,10 @@ void win32_display_server_set_screen_orientation(void *data,
 
             if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
                      || dm.dmDisplayOrientation == DMDO_180)
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 

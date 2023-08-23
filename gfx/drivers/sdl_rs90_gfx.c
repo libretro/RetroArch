@@ -69,6 +69,8 @@
 typedef struct sdl_rs90_video sdl_rs90_video_t;
 struct sdl_rs90_video
 {
+   retro_time_t last_frame_time;
+   retro_time_t ff_frame_time_min;
    SDL_Surface *screen;
    void (*scale_frame16)(sdl_rs90_video_t *vid,
          uint16_t *src, unsigned width, unsigned height,
@@ -76,6 +78,7 @@ struct sdl_rs90_video
    void (*scale_frame32)(sdl_rs90_video_t *vid,
          uint32_t *src, unsigned width, unsigned height,
          unsigned src_pitch);
+   bitmapfont_lut_t *osd_font;
    /* Scaling/padding/cropping parameters */
    unsigned content_width;
    unsigned content_height;
@@ -85,24 +88,21 @@ struct sdl_rs90_video
    unsigned frame_padding_y;
    unsigned frame_crop_x;
    unsigned frame_crop_y;
-   bool rgb32;
-   bool menu_active;
-   bool was_in_menu;
-   bool mode_valid;
-   retro_time_t last_frame_time;
-   retro_time_t ff_frame_time_min;
    enum dingux_rs90_softfilter_type softfilter_type;
 #if defined(DINGUX_BETA)
    enum dingux_refresh_rate refresh_rate;
 #endif
+   uint32_t font_colour32;
+   uint16_t font_colour16;
+   uint16_t menu_texture[SDL_RS90_WIDTH * SDL_RS90_HEIGHT];
    bool vsync;
    bool keep_aspect;
    bool scale_integer;
    bool quitting;
-   bitmapfont_lut_t *osd_font;
-   uint32_t font_colour32;
-   uint16_t font_colour16;
-   uint16_t menu_texture[SDL_RS90_WIDTH * SDL_RS90_HEIGHT];
+   bool rgb32;
+   bool menu_active;
+   bool was_in_menu;
+   bool mode_valid;
 };
 
 /* Image interpolation START */
@@ -1069,6 +1069,9 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_rs90_video_t* vid = (sdl_rs90_video_t*)data;
+#ifdef HAVE_MENU
+   bool menu_is_alive    = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#endif
 
    /* Return early if:
     * - Input sdl_rs90_video_t struct is NULL
@@ -1100,7 +1103,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info->menu_is_alive, video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (likely(!vid->menu_active))
@@ -1387,9 +1390,9 @@ static uint32_t sdl_rs90_get_flags(void *data)
 
 static const video_poke_interface_t sdl_rs90_poke_interface = {
    sdl_rs90_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    sdl_rs90_get_refresh_rate,
    sdl_rs90_set_filtering,
    NULL, /* get_video_output_size */
@@ -1397,13 +1400,13 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL,
+   NULL, /* set_aspect_ratio */
    sdl_rs90_apply_state_changes,
    sdl_rs90_set_texture_frame,
    sdl_rs90_set_texture_enable,
-   NULL,
-   NULL, /* sdl_show_mouse */
-   NULL, /* sdl_grab_mouse_toggle */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
@@ -1435,13 +1438,17 @@ video_driver_t video_sdl_rs90 = {
    sdl_rs90_gfx_set_shader,
    sdl_rs90_gfx_free,
    "sdl_rs90",
-   NULL,
+   NULL, /* set_viewport */
    NULL, /* set_rotation */
    sdl_rs90_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   NULL, /* get_overlay_interface */
 #endif
-   sdl_rs90_get_poke_interface
+   sdl_rs90_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

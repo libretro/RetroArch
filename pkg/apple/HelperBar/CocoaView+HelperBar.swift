@@ -10,8 +10,10 @@ protocol HelperBarActionDelegate: AnyObject {
    func keyboardButtonTapped()
    func mouseButtonTapped()
    func helpButtonTapped()
+   func orientationLockButtonTapped()
    var isKeyboardEnabled: Bool { get }
    var isMouseEnabled: Bool { get }
+   var isOrientationLocked: Bool { get }
 }
 
 extension CocoaView {
@@ -47,11 +49,28 @@ extension CocoaView: HelperBarActionDelegate {
    func helpButtonTapped() {
    }
    
+   func orientationLockButtonTapped() {
+      #if TARGET_OS_IOS
+      shouldLockCurrentInterfaceOrientation.toggle()
+      if shouldLockCurrentInterfaceOrientation {
+         let currentOrientation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation ?? UIInterfaceOrientation.portrait
+         self.lockInterfaceOrientation = currentOrientation
+      }
+      if #available(iOS 16, *) {
+         setNeedsUpdateOfSupportedInterfaceOrientations()
+      }
+      #endif
+   }
+   
    var isKeyboardEnabled: Bool {
       !keyboardController.view.isHidden
    }
    
    var isMouseEnabled: Bool {
       mouseHandler.enabled
+   }
+   
+   var isOrientationLocked: Bool {
+      shouldLockCurrentInterfaceOrientation
    }
 }

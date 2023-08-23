@@ -207,13 +207,16 @@ static void handle_discord_join(const char *secret)
 
    if ((room_id = (int)strtol(secret, NULL, 10)))
    {
+      size_t _len;
       discord_state_t *discord_st = &discord_state_st;
       snprintf(discord_st->peer_party_id,
             sizeof(discord_st->peer_party_id),
             "%d", room_id);
 
-      strlcpy(url, FILE_PATH_LOBBY_LIBRETRO_URL, sizeof(url));
-      strlcat(url, discord_st->peer_party_id, sizeof(url));
+      _len = strlcpy(url, FILE_PATH_LOBBY_LIBRETRO_URL, sizeof(url));
+      strlcpy(url       + _len,
+            discord_st->peer_party_id,
+            sizeof(url) - _len);
 
       task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
    }
@@ -448,6 +451,7 @@ void discord_update(enum presence presence)
 
 void discord_init(const char *discord_app_id, char *args)
 {
+   size_t _len;
    DiscordEventHandlers handlers;
 #ifdef _WIN32
    char full_path[PATH_MAX_LENGTH];
@@ -476,18 +480,14 @@ void discord_init(const char *discord_app_id, char *args)
    else
    {
       path_basedir(full_path);
-      strlcpy(command, full_path, sizeof(command));
-      strlcat(command, args,      sizeof(command));
+      _len = strlcpy(command, full_path, sizeof(command));
+      strlcpy(command       + _len,
+            args,
+            sizeof(command) - _len);
    }
 #else
-   command[0] = 's';
-   command[1] = 'h';
-   command[2] = ' ';
-   command[3] = '-';
-   command[4] = 'c';
-   command[5] = ' ';
-   command[6] = '\0';
-   strlcat(command, args, sizeof(command));
+   _len = strlcpy(command, "sh -c ", sizeof(command));
+   strlcpy(command + _len, args, sizeof(command) - _len);
 #endif
    Discord_Register(discord_app_id, command);
 #ifdef DISCORD_DISABLE_IO_THREAD

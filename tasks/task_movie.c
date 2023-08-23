@@ -24,6 +24,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <retro_endianness.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -84,16 +85,16 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-   /*
+#if 0
    if (swap_if_big32(header[VERSION_INDEX]) > REPLAY_FORMAT_VERSION)
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-   */
+#endif
 
-   state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   identifier_loc = (int64_t *)(header+IDENTIFIER_INDEX);
+   state_size         = swap_if_big32(header[STATE_SIZE_INDEX]);
+   identifier_loc     = (int64_t *)(header+IDENTIFIER_INDEX);
    handle->identifier = swap_if_big64(*identifier_loc);
 
 #if 0
@@ -107,7 +108,7 @@ static bool bsv_movie_init_playback(
 
    if (state_size)
    {
-      retro_ctx_size_info_t info;
+      size_t info_size;
       retro_ctx_serialize_info_t serial_info;
       uint8_t *buf       = (uint8_t*)malloc(state_size);
 
@@ -122,13 +123,13 @@ static bool bsv_movie_init_playback(
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
       }
-      core_serialize_size( &info);
+      info_size              = core_serialize_size();
       /* For cores like dosbox, the reported size is not always
          correct. So we just give a warning if they don't match up. */
       serial_info.data_const = handle->state;
       serial_info.size       = state_size;
       core_unserialize(&serial_info);
-      if (info.size != state_size)
+      if (info_size != state_size)
       {
          RARCH_WARN("%s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
@@ -143,7 +144,7 @@ static bool bsv_movie_init_playback(
 static bool bsv_movie_init_record(
       bsv_movie_t *handle, const char *path)
 {
-   retro_ctx_size_info_t info;
+   size_t info_size;
    time_t t                     = time(NULL);
    time_t time_lil              = swap_if_big64(t);
    uint32_t state_size          = 0;
@@ -167,9 +168,9 @@ static bool bsv_movie_init_record(
    header[VERSION_INDEX]    = REPLAY_FORMAT_VERSION;
    header[CRC_INDEX]        = swap_if_big32(content_crc);
 
-   core_serialize_size(&info);
+   info_size                = core_serialize_size();
 
-   state_size               = (unsigned)info.size;
+   state_size               = (unsigned)info_size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
    handle->identifier = (int64_t)t;
@@ -247,9 +248,10 @@ error:
 
 static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 {
+   size_t _len;
    char msg[8192];
    bsv_movie_t *state                       = NULL;
-   const char *movie_rec_str                = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
+   const char *movie_rec_str                = NULL;
 
    /* this should trigger a start recording task which on failure or
       success prints a message and on success sets the
@@ -267,10 +269,9 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 
    input_st->bsv_movie_state_handle         = state;
    input_st->bsv_movie_state.flags         |= BSV_FLAG_MOVIE_RECORDING;
-   snprintf(msg, sizeof(msg),
-            "%s \"%s\".", movie_rec_str,
-            path);
-
+   movie_rec_str                            = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
+   _len = strlcpy(msg, movie_rec_str, sizeof(msg));
+   snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
    runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s \"%s\".\n", movie_rec_str, path);
 
@@ -418,10 +419,12 @@ bool movie_stop(input_driver_state_t *input_st)
 bool movie_start_playback(input_driver_state_t *input_st, char *path)
 {
   retro_task_t       *task      = task_init();
-  moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
-  bool file_exists = filestream_exists(path);
+  moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
+  bool file_exists              = filestream_exists(path);
+
   if (!task || !state || !file_exists)
     goto error;
+
   *state                        = input_st->bsv_movie_state;
   strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
   task->type                    = TASK_TYPE_NONE;
@@ -441,20 +444,23 @@ error:
 
    return false;
 }
+
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
+   size_t _len;
    char msg[8192];
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
-   moviectl_task_state_t *state  = (moviectl_task_state_t *) calloc(1, sizeof(*state));
+   moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
+
    if (!task || !state)
       goto error;
 
    *state                        = input_st->bsv_movie_state;
    strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
 
-   msg[0]                        = '\0';
-   snprintf(msg, sizeof(msg), "%s \"%s\".", movie_rec_str, path);
+   _len                          = strlcpy(msg, movie_rec_str, sizeof(msg));
+   snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
 
    task->type                    = TASK_TYPE_NONE;
    task->state                   = state;
@@ -476,5 +482,4 @@ error:
 
    return false;
 }
-
 #endif

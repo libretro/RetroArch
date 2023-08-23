@@ -129,16 +129,13 @@ void disk_control_set_ext_callback(
 bool disk_control_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
-      return false;
-
-   if (disk_control->cb.set_eject_state &&
-       disk_control->cb.get_eject_state &&
-       disk_control->cb.get_image_index &&
-       disk_control->cb.set_image_index &&
-       disk_control->cb.get_num_images)
+   if (     disk_control
+         && disk_control->cb.set_eject_state
+         && disk_control->cb.get_eject_state
+         && disk_control->cb.get_image_index
+         && disk_control->cb.set_image_index
+         && disk_control->cb.get_num_images)
       return true;
-
    return false;
 }
 
@@ -155,7 +152,7 @@ bool disk_control_append_enabled(
       disk_control_interface_t *disk_control)
 {
    if (     disk_control
-         && disk_control->cb.replace_image_index 
+         && disk_control->cb.replace_image_index
          && disk_control->cb.add_image_index)
       return true;
    return false;
@@ -166,7 +163,7 @@ bool disk_control_append_enabled(
  *
  * Leaf function.
  *
- * @return true if core supports image labels 
+ * @return true if core supports image labels
  * - get_image_label
  **/
 bool disk_control_image_label_enabled(
@@ -187,7 +184,7 @@ bool disk_control_image_label_enabled(
 bool disk_control_initial_image_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (     disk_control 
+   if (     disk_control
          && disk_control->cb.set_initial_image
          && disk_control->cb.get_image_path)
       return true;
@@ -309,7 +306,7 @@ static void disk_control_get_index_set_msg(
    if (index < num_images)
    {
       size_t _len = strlcpy(msg,
-            success 
+            success
             ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY)
             : msg_hash_to_str(MSG_FAILED_TO_SET_DISK), len);
       if (has_label)
@@ -324,7 +321,7 @@ static void disk_control_get_index_set_msg(
    else
       strlcpy(
             msg,
-            success 
+            success
             ? msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY)
             : msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
             len);
@@ -351,7 +348,7 @@ bool disk_control_set_eject_state(
    if (disk_control->cb.set_eject_state(eject))
       strlcpy(
             msg,
-            eject 
+            eject
             ? msg_hash_to_str(MSG_DISK_EJECTED)
             : msg_hash_to_str(MSG_DISK_CLOSED),
               sizeof(msg));
@@ -360,7 +357,7 @@ bool disk_control_set_eject_state(
       error = true;
       strlcpy(
             msg,
-            eject 
+            eject
             ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT)
             : msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_CLOSE),
               sizeof(msg));
@@ -419,9 +416,9 @@ bool disk_control_set_index(
    if (!disk_control)
       return false;
 
-   if (!disk_control->cb.get_eject_state ||
-       !disk_control->cb.get_num_images ||
-       !disk_control->cb.set_image_index)
+   if (   !disk_control->cb.get_eject_state
+       || !disk_control->cb.get_num_images
+       || !disk_control->cb.set_image_index)
       return false;
 
    /* Ensure that disk is currently ejected */
@@ -460,8 +457,8 @@ bool disk_control_set_index(
     * index record (if enabled) */
    if (!error && disk_control->record_enabled)
    {
-      if (disk_control->cb.get_image_index &&
-          disk_control->cb.get_image_path)
+      if (   disk_control->cb.get_image_index
+          && disk_control->cb.get_image_path)
       {
          char new_image_path[PATH_MAX_LENGTH] = {0};
          /* Get current image index + path */
@@ -498,8 +495,8 @@ bool disk_control_set_index_next(
    if (!disk_control)
       return false;
 
-   if (!disk_control->cb.get_num_images ||
-       !disk_control->cb.get_image_index)
+   if (   !disk_control->cb.get_num_images
+       || !disk_control->cb.get_image_index)
       return false;
 
    num_images  = disk_control->cb.get_num_images();
@@ -538,8 +535,8 @@ bool disk_control_set_index_prev(
    if (!disk_control)
       return false;
 
-   if (!disk_control->cb.get_num_images ||
-       !disk_control->cb.get_image_index)
+   if (   !disk_control->cb.get_num_images
+       || !disk_control->cb.get_image_index)
       return false;
 
    num_images       = disk_control->cb.get_num_images();
@@ -584,11 +581,11 @@ bool disk_control_append_image(
    if (!disk_control)
       return false;
 
-   if (!disk_control->cb.get_image_index ||
-       !disk_control->cb.get_num_images ||
-       !disk_control->cb.add_image_index ||
-       !disk_control->cb.replace_image_index ||
-       !disk_control->cb.get_eject_state)
+   if (   !disk_control->cb.get_image_index
+       || !disk_control->cb.get_num_images
+       || !disk_control->cb.add_image_index
+       || !disk_control->cb.replace_image_index
+       || !disk_control->cb.get_eject_state)
       return false;
 
    if (string_is_empty(image_path))
@@ -634,10 +631,10 @@ bool disk_control_append_image(
 
    /* Display log */
    _len        = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg));
-   msg[_len  ] = ':';
-   msg[_len+1] = ' ';
-   msg[_len+2] = '\0';
-   strlcat(msg, image_filename, sizeof(msg));
+   msg[  _len] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
+   strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    RARCH_LOG("[Disc]: %s\n", msg);
    /* This message should always be displayed, since
@@ -664,10 +661,10 @@ error:
 
    _len        = strlcpy(msg,
          msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg));
-   msg[_len  ] = ':';
-   msg[_len+1] = ' ';
-   msg[_len+2] = '\0';
-   strlcat(msg, image_filename, sizeof(msg));
+   msg[  _len] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
+   strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    runloop_msg_queue_push(
          msg, 0, 180,
@@ -705,10 +702,10 @@ bool disk_control_set_initial_index(
       goto error;
 
    /* Check that 'initial index' functionality is enabled */
-   if (!disk_control->cb.set_initial_image ||
-       !disk_control->cb.get_num_images ||
-       !disk_control->cb.get_image_index ||
-       !disk_control->cb.get_image_path)
+   if (   !disk_control->cb.set_initial_image
+       || !disk_control->cb.get_num_images
+       || !disk_control->cb.get_image_index
+       || !disk_control->cb.get_image_path)
       goto error;
 
    /* Attempt to initialise disk index record (reading
@@ -719,10 +716,10 @@ bool disk_control_set_initial_index(
 
    /* If record is enabled and initial index is *not*
     * zero, notify current core */
-   if (disk_control->record_enabled &&
-       (disk_control->index_record.image_index != 0))
+   if (    disk_control->record_enabled
+       && (disk_control->index_record.image_index != 0))
    {
-      if (!disk_control->cb.set_initial_image(
+      if ( !disk_control->cb.set_initial_image(
             disk_control->index_record.image_index,
             disk_control->index_record.image_path))
       {
@@ -773,10 +770,10 @@ bool disk_control_verify_initial_index(
       return false;
 
    /* Check that 'initial index' functionality is enabled */
-   if (!disk_control->cb.set_initial_image ||
-       !disk_control->cb.get_num_images ||
-       !disk_control->cb.get_image_index ||
-       !disk_control->cb.get_image_path)
+   if (   !disk_control->cb.set_initial_image
+       || !disk_control->cb.get_num_images
+       || !disk_control->cb.get_image_index
+       || !disk_control->cb.get_image_path)
       return false;
 
    /* Cache initial number of images
@@ -798,10 +795,10 @@ bool disk_control_verify_initial_index(
        *   read here (since this corresponds to a
        *   'first run', where no existing disk index
        *   file was present) */
-      if ((image_index == disk_control->index_record.image_index) &&
-          (string_is_equal(image_path, disk_control->index_record.image_path) ||
-               ((disk_control->index_record.image_index == 0) &&
-                string_is_empty(disk_control->index_record.image_path))))
+      if (   (image_index == disk_control->index_record.image_index)
+          && (string_is_equal(image_path, disk_control->index_record.image_path)
+          ||   ((disk_control->index_record.image_index == 0)
+          &&  string_is_empty(disk_control->index_record.image_path))))
          success = true;
    }
 

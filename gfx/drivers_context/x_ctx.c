@@ -123,26 +123,26 @@ static const unsigned long retroarch_icon_data[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
-static int GLXExtensionSupported(Display *dpy, const char *extension)
+static int GLXExtensionSupported(Display *dpy, const char *ext)
 {
-   const char *extensionsString  = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   const char *ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
    const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
-   const char *pos               = strstr(extensionsString, extension);
-   size_t pos_ext_len            = strlen(extension);
+   const char *pos               = strstr(ext_string, ext);
+   size_t pos_ext_len            = strlen(ext);
 
-   if (  pos &&
-         (pos == extensionsString || pos[-1] == ' ') &&
-         (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
+   if (      pos
+         && (pos == ext_string       || pos[-1] == ' ')
+         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
       )
       return 1;
 
-   pos                           = strstr(client_extensions, extension);
-   pos_ext_len                   = strlen(extension);
+   pos                           = strstr(client_extensions, ext);
+   pos_ext_len                   = strlen(ext);
 
    if (
-         pos &&
-         (pos == extensionsString || pos[-1] == ' ') &&
-         (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
+             pos
+         && (pos == ext_string       || pos[-1] == ' ')
+         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
       )
       return 1;
 
@@ -175,11 +175,13 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
             if (x->ctx)
             {
                uint32_t video_st_flags;
+               video_driver_state_t *video_st = video_state_get_ptr();
+
                glXSwapBuffers(g_x11_dpy, x->glx_win);
                gl_finish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-               video_st_flags = video_driver_get_st_flags();
+               video_st_flags = video_st->flags;
                if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
                {
                   if (x->hw_ctx)
@@ -291,9 +293,8 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 
 static void gfx_ctx_x_swap_buffers(void *data)
 {
-   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
    if (x->is_double)
       glXSwapBuffers(g_x11_dpy, x->glx_win);
 #endif
@@ -311,7 +312,8 @@ static bool gfx_ctx_x_set_resize(void *data,
     * X11 loses focus on monitor/resolution swap and exits fullscreen.
     * Set window on top again to maintain both fullscreen and resolution.
     */
-   if (x->is_fullscreen) {
+   if (x->is_fullscreen)
+   {
       XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[GLX]: Resized fullscreen resolution to %dx%d.\n", width, height);
    }
@@ -422,8 +424,8 @@ static void *gfx_ctx_x_init(void *data)
             x->adaptive_vsync = true;
          }
 
-         if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
-               GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
+         if (     GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control")
+               && GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
             )
             x->swap_mode         = 1;
 #endif
@@ -463,7 +465,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    Atom net_wm_icon          = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
    Atom cardinal             = XInternAtom(g_x11_dpy, "CARDINAL", False);
    settings_t *settings      = config_get_ptr();
-   unsigned opacity          = settings->uints.video_window_opacity 
+   unsigned opacity          = settings->uints.video_window_opacity
       * ((unsigned)-1 / 100.0);
    bool disable_composition  = settings->bools.video_disable_composition;
    bool show_decorations     = settings->bools.video_window_show_decorations;
@@ -591,7 +593,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    if (!show_decorations)
    {
-      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead, 
+      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead,
        * but that removes the window from any taskbar/panel,
        * so we are forced to use the old motif hints method. */
       Hints hints;
@@ -621,7 +623,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
@@ -812,7 +814,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
                         break;
                      }
-                     else if (versions[i][0] == g_major && versions[i][1] == g_minor)
+                     else if (versions[i][0] == (int)g_major && versions[i][1] == (int)g_minor)
                      {
                         /* The requested version was tried and is not supported, go ahead and fail since everything else will be lower than that. */
                         break;
@@ -964,18 +966,6 @@ static void gfx_ctx_x_input_driver(void *data,
    *input_data  = x_input;
 }
 
-static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-
-   return true;
-}
-
 static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)
 {
    switch (x_api)
@@ -1039,11 +1029,6 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
    }
 
    return false;
-}
-
-static void gfx_ctx_x_show_mouse(void *data, bool state)
-{
-   x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
 static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
@@ -1184,14 +1169,14 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    x11_check_window,
    gfx_ctx_x_set_resize,
    x11_has_focus,
-   gfx_ctx_x_suppress_screensaver,
+   x11_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_x_swap_buffers,
    gfx_ctx_x_input_driver,
    gfx_ctx_x_get_proc_address,
    NULL,
    NULL,
-   gfx_ctx_x_show_mouse,
+   x11_show_mouse,
    "x",
    gfx_ctx_x_get_flags,
    gfx_ctx_x_set_flags,

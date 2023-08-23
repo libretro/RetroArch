@@ -34,38 +34,10 @@
 
 #include "configuration.h"
 
-RETRO_BEGIN_DECLS
-
 #define MAX_CMD_DRIVERS              3
 #define DEFAULT_NETWORK_CMD_PORT 55355
 
-struct cmd_map
-{
-   const char *str;
-   unsigned id;
-};
-
-struct command_handler;
-
-typedef void (*command_poller_t)(struct command_handler *cmd);
-typedef void (*command_replier_t)(struct command_handler *cmd, const char * data, size_t len);
-typedef void (*command_destructor_t)(struct command_handler *cmd);
-
-struct command_handler
-{
-   /* Interface to poll the driver */
-   command_poller_t poll;
-   /* Interface to reply */
-   command_replier_t replier;
-   /* Interface to delete the underlying command */
-   command_destructor_t destroy;
-   /* Underlying command storage */
-   void *userptr;
-   /* State received */
-   bool state[RARCH_BIND_LIST_END];
-};
-
-typedef struct command_handler command_t;
+RETRO_BEGIN_DECLS
 
 enum event_command
 {
@@ -137,8 +109,8 @@ enum event_command
    CMD_EVENT_STATISTICS_TOGGLE,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
-   /* Deinitializes overlay. */
-   CMD_EVENT_OVERLAY_DEINIT,
+   /* Frees or caches overlay. */
+   CMD_EVENT_OVERLAY_UNLOAD,
    /* Sets current scale factor for overlay. */
    CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
    /* Sets current alpha modulation for overlay. */
@@ -286,16 +258,17 @@ enum event_command
    CMD_EVENT_PRESENCE_UPDATE,
    CMD_EVENT_OVERLAY_NEXT,
    CMD_EVENT_OSK_TOGGLE,
-
+#ifdef HAVE_MICROPHONE
+   /* Stops all enabled microphones. */
+   CMD_EVENT_MICROPHONE_STOP,
+   /* Starts all enabled microphones */
+   CMD_EVENT_MICROPHONE_START,
+   /* Reinitializes microphone driver. */
+   CMD_EVENT_MICROPHONE_REINIT,
+#endif
    /* Deprecated */
    CMD_EVENT_SEND_DEBUG_INFO
 };
-
-typedef struct command_handle
-{
-   command_t *handle;
-   unsigned id;
-} command_handle_t;
 
 enum cmd_source_t
 {
@@ -303,6 +276,40 @@ enum cmd_source_t
    CMD_STDIN,
    CMD_NETWORK
 };
+
+struct cmd_map
+{
+   const char *str;
+   unsigned id;
+};
+
+struct command_handler;
+
+typedef void (*command_poller_t)(struct command_handler *cmd);
+typedef void (*command_replier_t)(struct command_handler *cmd, const char * data, size_t len);
+typedef void (*command_destructor_t)(struct command_handler *cmd);
+
+struct command_handler
+{
+   /* Interface to poll the driver */
+   command_poller_t poll;
+   /* Interface to reply */
+   command_replier_t replier;
+   /* Interface to delete the underlying command */
+   command_destructor_t destroy;
+   /* Underlying command storage */
+   void *userptr;
+   /* State received */
+   bool state[RARCH_BIND_LIST_END];
+};
+
+typedef struct command_handler command_t;
+
+typedef struct command_handle
+{
+   command_t *handle;
+   unsigned id;
+} command_handle_t;
 
 struct rarch_state;
 
@@ -416,13 +423,6 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
-uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* system,
-      unsigned address,
-      unsigned int* max_bytes,
-      int for_write,
-      char *reply_at,
-      size_t len);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

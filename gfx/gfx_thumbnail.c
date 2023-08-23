@@ -112,9 +112,9 @@ static void gfx_thumbnail_init_fade(
    /* A 'fade in' animation is triggered if:
     * - Thumbnail is available
     * - Thumbnail is missing and 'fade_missing' is enabled */
-   if ((thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
-       (p_gfx_thumb->fade_missing &&
-            (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)))
+   if (   (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+       || (p_gfx_thumb->fade_missing
+       && (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)))
    {
       if (p_gfx_thumb->fade_duration > 0.0f)
       {
@@ -447,8 +447,8 @@ void gfx_thumbnail_request_stream(
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
-   if (!thumbnail ||
-       (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN))
+   if (   !thumbnail
+       || (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN))
       return;
 
    /* Check if stream delay timer has elapsed */
@@ -621,9 +621,9 @@ void gfx_thumbnail_process_stream(
          if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
          {
             /* Update thumbnail content */
-            if (!path_data ||
-                !playlist ||
-                !gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
+            if (   !path_data
+                || !playlist
+                || !gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
@@ -714,9 +714,9 @@ void gfx_thumbnail_process_streams(
          if (request_right || request_left)
          {
             /* Update thumbnail content */
-            if (!path_data ||
-                !playlist ||
-                !gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
+            if (   !path_data
+                || !playlist
+                || !gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
@@ -981,8 +981,8 @@ void gfx_thumbnail_draw(
       if (shadow)
       {
          /* Sanity check */
-         if ((shadow->type != GFX_THUMBNAIL_SHADOW_NONE) &&
-               (shadow->alpha > 0.0f))
+         if (     (shadow->type != GFX_THUMBNAIL_SHADOW_NONE)
+               && (shadow->alpha > 0.0f))
          {
             float shadow_width;
             float shadow_height;

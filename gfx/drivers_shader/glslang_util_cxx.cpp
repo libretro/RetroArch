@@ -41,11 +41,7 @@ static std::string build_stage_source(
    size_t i;
    std::string str;
    bool active = true;
-
-   if (!lines)
-      return "";
-
-   if (lines->size < 1)
+   if (!lines || lines->size < 1)
       return "";
    str.reserve(lines->size);
 
@@ -65,15 +61,15 @@ static std::string build_stage_source(
             if (!string_is_empty(stage))
             {
                char expected[128];
-               strlcpy(expected, "#pragma stage ", sizeof(expected));
-               strlcat(expected, stage,            sizeof(expected));
+               size_t _len = strlcpy(expected, "#pragma stage ", sizeof(expected));
+               strlcpy(expected + _len, stage, sizeof(expected) - _len);
                active = string_is_equal(expected, line);
             }
          }
          else if (
-               !strncmp("#pragma name ", line,
-                  STRLEN_CONST("#pragma name ")) ||
-               !strncmp("#pragma format ", line,
+                  !strncmp("#pragma name ", line,
+                  STRLEN_CONST("#pragma name "))
+               || !strncmp("#pragma format ", line,
                   STRLEN_CONST("#pragma format ")))
          {
             /* Ignore */

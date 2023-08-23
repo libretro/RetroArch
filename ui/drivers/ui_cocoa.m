@@ -153,7 +153,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 #endif
    }
 
-#if defined(MAC_OS_X_VERSION_10_5)
+#if defined(MAC_OS_X_VERSION_10_5) && !defined(MAC_OS_X_VERSION_10_6)
    [panel setMessage:BOXSTRING(state->title)];
    if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
       return false;
@@ -467,8 +467,14 @@ static ui_application_t ui_application_cocoa = {
             /* Absolute */
             apple->touches[0].screen_x  = (int16_t)pos.x;
             apple->touches[0].screen_y  = (int16_t)pos.y;
-            apple->window_pos_x         = (int16_t)pos.x;
-            apple->window_pos_y         = (int16_t)pos.y;
+
+            if (apple->mouse_grabbed) {
+               apple->window_pos_x      += (int16_t)delta_x;
+               apple->window_pos_y      += (int16_t)delta_y;
+            } else {
+               apple->window_pos_x       = (int16_t)pos.x;
+               apple->window_pos_y       = (int16_t)pos.y;
+            }
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -834,9 +840,9 @@ static ui_application_t ui_application_cocoa = {
 {
    if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
-      struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-      NSString *__core                 = [filenames objectAtIndex:0];
-      const char *core_name            = system->library_name;
+      struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+      NSString *__core                  = [filenames objectAtIndex:0];
+      const char *core_name             = sysinfo->library_name;
 
       if (core_name)
       {
@@ -872,7 +878,7 @@ static ui_application_t ui_application_cocoa = {
 
 static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
-   rarch_system_info_t *info        = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info    = &runloop_state_get_ptr()->system;
    settings_t           *settings   = config_get_ptr();
    bool set_supports_no_game_enable = 
       settings->bools.set_supports_no_game_enable;
@@ -884,8 +890,8 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
    path_set(RARCH_PATH_CORE, state->result);
    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
-   if (     info
-         && info->load_no_content
+   if (     sys_info
+         && sys_info->load_no_content
          && set_supports_no_game_enable)
    {
       content_ctx_info_t content_info = {0};
@@ -901,8 +907,8 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 static void open_document_handler(
       ui_browser_window_state_t *state, bool result)
 {
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-   const char            *core_name = system ? system->library_name : NULL;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
+   const char            *core_name  = sysinfo ? sysinfo->library_name : NULL;
 
    if (!state || string_is_empty(state->result))
       return;
@@ -1073,7 +1079,6 @@ static void ui_companion_cocoa_deinit(void *data)
 }
 
 static void *ui_companion_cocoa_init(void) { return (void*)-1; }
-static void ui_companion_cocoa_notify_content_loaded(void *data) { }
 static void ui_companion_cocoa_toggle(void *data, bool force) { }
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
@@ -1090,8 +1095,6 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
       break;
    }
 }
-static void ui_companion_cocoa_notify_list_pushed(void *data, file_list_t *a, file_list_t *b) { }
-
 static void *ui_companion_cocoa_get_main_window(void *data)
 {
     return (BRIDGE void *)((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
@@ -1102,8 +1105,6 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_toggle,
    ui_companion_cocoa_event_command,
-   ui_companion_cocoa_notify_content_loaded,
-   ui_companion_cocoa_notify_list_pushed,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */

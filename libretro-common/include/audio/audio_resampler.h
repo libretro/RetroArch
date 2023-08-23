@@ -65,14 +65,43 @@ typedef unsigned resampler_simd_mask_t;
 
 #define RESAMPLER_API_VERSION 1
 
+/**
+ * A struct that groups the input and output of a resampler.
+ */
 struct resampler_data
 {
+   /**
+    * The buffer containing the data to be resampled.
+    */
    const float *data_in;
+
+   /**
+    * The buffer that will be used to store resampled output.
+    * Must be allocated in advance, and must not be the same as data_in.
+    */
    float *data_out;
 
+   /**
+    * The size of ::data_in, in frames (\em not bytes or samples).
+    * For example, 32-bit stereo frames would consist of 8 bytes
+    * (two 4-byte floats per frame).
+    */
    size_t input_frames;
+
+   /**
+    * The number of frames (\em not bytes or samples) that the resampler produced.
+    * This value is set by the resampler.
+    * The resampler may not provide the same number of frames with each use,
+    * so be sure to check this value.
+    */
    size_t output_frames;
 
+   /**
+    * The desired ratio of output_frames to input_frames.
+    * This value is used to determine the number of frames written to \c data_out.
+    * If this value is (almost) equal to 1,
+    * then resampling may be skipped.
+    */
    double ratio;
 };
 

@@ -1081,10 +1081,6 @@ MSG_HASH(
    "Zvuk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Izmeni podešavanja zvuka."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Ulaz"
    )
@@ -1308,6 +1304,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Drajver za zvuk."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Reuzorkovanje zvuka"
@@ -1553,10 +1551,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Prodji kroz ove opcije da podesiš trem da bi promenio veličinu slike."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Koristi visoko-rezolucioni meni"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -1873,6 +1867,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Izmeni podešavanja zvuka."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Sinhronizacija"
@@ -1916,6 +1912,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Traženo kašnjenje zvuka u milisekundama. Neće biti uzeto u obzir ako audio drajver ne može postići traženo kašnjenje."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Uređaj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Dužina WASAPI deljenog bafera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Srednja dužina bafera (u frejmovima) kada se koristi WASAPI drajver u deljenom režimu."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -2029,6 +2041,9 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2280,6 +2295,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Odnos ekrana"
+   )
 
 /* RGUI: Settings Options */
 
@@ -2431,6 +2450,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

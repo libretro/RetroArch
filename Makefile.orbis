@@ -78,7 +78,7 @@ else
 	HAVE_THREAD_ATTR			:= 1
 	HAVE_LIBRETRODB				:= 1
 	HAVE_CC_RESAMPLER			:= 1
-	HAVE_CHEEVOS					:= 1
+	HAVE_CHEEVOS					:= 0
 	HAVE_RUNAHEAD					:= 1
 	RARCH_CONSOLE					:= 1
 	HAVE_MAIN 						:= 1

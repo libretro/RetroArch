@@ -141,10 +141,11 @@ static void gx_devthread(void *a)
          {
             if (!gx_devices[i].interface->isInserted())
             {
+               size_t _len;
                char n[8];
                gx_devices[i].mounted = false;
-               strlcpy(n, gx_devices[i].name, sizeof(n));
-               strlcat(n, ":", sizeof(n));
+               _len = strlcpy(n, gx_devices[i].name, sizeof(n));
+               strlcpy(n + _len, ":", sizeof(n) - _len);
                fatUnmount(n);
             }
          }
@@ -215,13 +216,14 @@ static void frontend_gx_get_env(int *argc, char *argv[],
          /* When using external loaders (Wiiflow, etc),
             getcwd doesn't return the path correctly and as a result,
             the cfg file is not found. */
-         if (  string_starts_with_size(argv[0], "usb1", STRLEN_CONST("usb1")) ||
-               string_starts_with_size(argv[0], "usb2", STRLEN_CONST("usb2")))
+         if (     string_starts_with_size(argv[0], "usb1", STRLEN_CONST("usb1"))
+               || string_starts_with_size(argv[0], "usb2", STRLEN_CONST("usb2")))
          {
-            strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
+            size_t _len = strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-            strlcat(g_defaults.dirs[DEFAULT_DIR_CORE], argv[0] + 4,
-               sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+            strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE]       + _len,
+                  argv[0] + 4,
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]) - _len);
          }
 
          /* Needed on Wii; loaders follow a dumb standard where the path and
@@ -280,6 +282,9 @@ static void frontend_gx_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       g_defaults.dirs[DEFAULT_DIR_CORE], "overlays",
       sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+      g_defaults.dirs[DEFAULT_DIR_CORE], "overlays/keyboards",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
       g_defaults.dirs[DEFAULT_DIR_CORE], "filters/video",
       sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));

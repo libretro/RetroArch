@@ -32,7 +32,7 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
-#include "../common/gl3_common.h"
+#include "../common/gl3_defines.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -2136,7 +2136,7 @@ bool gl3_filter_chain::init_alias()
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
-   for (i = 0; i < passes.size(); i++)
+   for (i = 0; i < (int)passes.size(); i++)
    {
       unsigned j;
       const std::string name = passes[i]->get_name();
@@ -2165,7 +2165,7 @@ bool gl3_filter_chain::init_alias()
          return false;
    }
 
-   for (i = 0; i < common.luts.size(); i++)
+   for (i = 0; i < (int)common.luts.size(); i++)
    {
       unsigned j = (unsigned)(&common.luts[i] - common.luts.data());
       if (!slang_set_unique_map(common.texture_semantic_map,

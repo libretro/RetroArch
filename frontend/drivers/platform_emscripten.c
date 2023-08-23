@@ -106,6 +106,8 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "bundle/info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
          "bundle/overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], base_path,
+         "bundle/overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
          "bundle/shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,

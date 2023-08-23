@@ -965,10 +965,6 @@ MSG_HASH(
    "صدا"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "تنظیمات خروجی صدا را تغییر دهید."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "ورودی"
    )
@@ -1007,6 +1003,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "تنظیمات ذخیره کردن را تغییر دهید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "نام کاربری"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "گذرواژه"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1180,6 +1184,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "درایور صدا برای استفاده."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "بازنمونه‌گیر صدا"
@@ -1347,10 +1353,6 @@ MSG_HASH(
    "مرکز کردن محور X"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "استفاده از گزینگان با تفکیک‌پذیری بالا"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "نرخ تازه‌سازی سفارشی"
    )
@@ -1505,6 +1507,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "تنظیمات خروجی صدا را تغییر دهید."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "بازنمونه‌گیر"
@@ -1572,6 +1576,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "دستگاه"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "دستگاه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "کیفیت بازنمونه‌گیر"
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -1699,16 +1715,8 @@ MSG_HASH(
    "کلیدهای میانبر"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "تنظیمات کلیدهای میانبر را تغییر دهید."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "کنترل‌های درگاه %u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "کنترل‌های این درگاه را تغییر دهید."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -1926,6 +1934,9 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -2019,10 +2030,6 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "تصاویر بندانگشتی"
-   )
 
 /* Settings > AI Service */
 
@@ -2424,6 +2431,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "نسبت تصویر"
+   )
 
 /* RGUI: Settings Options */
 
@@ -2433,6 +2444,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   "خودکار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
    "خودکار"
    )
 MSG_HASH(
@@ -2671,6 +2686,8 @@ MSG_HASH(
    )
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

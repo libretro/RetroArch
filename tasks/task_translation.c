@@ -827,7 +827,11 @@ static void translation_response_image_direct(
    if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
       goto finish;
    
-   video_driver_cached_frame_get(&dummy_data, &vp_width, &vp_height, &pitch);
+   dummy_data    = video_st->frame_cache_data;
+   vp_width      = video_st->frame_cache_width;
+   vp_height     = video_st->frame_cache_height;
+   pitch         = video_st->frame_cache_pitch;
+
    if (!vp_width || !vp_height)
       goto finish;
    
@@ -1211,7 +1215,11 @@ static access_frame_t* translation_grab_frame()
    if (!(frame = (access_frame_t*)malloc(sizeof(access_frame_t))))
       goto finish;
    
-   video_driver_cached_frame_get(&data, &frame->width, &frame->height, &pitch);
+   data       = video_st->frame_cache_data;
+   frame->width      = video_st->frame_cache_width;
+   frame->height     = video_st->frame_cache_height;
+   pitch      = video_st->frame_cache_pitch;
+
    if (!data)
       goto finish;
 
@@ -1236,7 +1244,9 @@ static access_frame_t* translation_grab_frame()
       if (!(bit24_image_prev = (uint8_t*)malloc(vp.width * vp.height * 3)))
          goto finish;
 
-      if (!video_driver_read_viewport(bit24_image_prev, false))
+      if (!(      video_st->current_video->read_viewport
+               && video_st->current_video->read_viewport(
+                  video_st->data, bit24_image_prev, false)))
       {
          translation_user_error("Could not read viewport.");
          translation_release(true);

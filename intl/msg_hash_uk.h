@@ -46,7 +46,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Автономні Ядра"
+   "Ядра без Змісту"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -98,7 +98,7 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Вийняти диск"
+   "Вийняти Диск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
@@ -292,7 +292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Автономні Ядра"
+   "Ядра без Змісту"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -343,7 +343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Завантажте безкоштовний контент для вибраного ядра."
+   "Завантажити безкоштовний зміст для вибраного ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -422,7 +422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Переглянути інформацію про пристрій."
+   "Перегляд інформації, специфічної для пристрою."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -453,7 +453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   "Версія ядра"
+   "Версія Ядра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
@@ -583,6 +583,10 @@ MSG_HASH(
    "Дата збірки"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Версія Arch Retroch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git-версія"
    )
@@ -600,7 +604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Архітектура процесора"
+   "Архітектура ЦП"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
@@ -930,7 +934,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "Налаштування"
+   "Сетинг"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -1125,10 +1129,6 @@ MSG_HASH(
    "Звук"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Змінити налаштування виводу звуку."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Керування"
    )
@@ -1167,6 +1167,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "Змінити параметри збереження."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Ім'я користувача"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "Пароль"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1488,6 +1496,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
    "OpenSL драйвер."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Перетворювач частоти"
@@ -1735,10 +1745,6 @@ MSG_HASH(
    "Оберіть значення, щоб налаштувати параметри імпульсу для зміни розміру зображення."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Меню високої роздільності"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Перемкнутися в режим високої роздільної здатності для меню коли не завантажено жодної гри."
    )
@@ -1836,14 +1842,6 @@ MSG_HASH(
    "Частота оновлення, згідно драйвера дисплея."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Автоматично перемикати Частоту Оновлення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Автоматично перемикати частоту оновлення екрана під час використання вказаного режиму екрана на основі ядра та/або вмісту, що запускається."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Тільки в Ексклюзивному Повноекранному Режимі"
    )
@@ -1937,7 +1935,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Прозорість вікна"
+   "Непрозорість вікна"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
@@ -2020,11 +2018,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Збільшувати цілочисельне масштабування"
+   "Масштаб Цілочисельной Шкали"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Примусово округлювати вверх, а не вниз, при цілочисельному масштабуванні."
+   "Примусово масштабувати ціле число для округлення до наступного більшого цілого числа замість округлення вниз."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2233,6 +2231,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Зміна налаштувань аудіовиходу."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Ресемплер"
@@ -2292,6 +2292,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Автоматично вимикати звук, коли використовується швидка перемотка."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Прискорити Під Час Перемотування Вперед"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Прискорювати звук під час перемотування вперед. Запобігає потріскуванню, але змінює висоту тону."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2380,6 +2388,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Бажана затримка аудіо в мілісекундах. Не може бути відзначено, якщо звуковий драйвер не може забезпечити задану затримку."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Пристрій"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Якість ресемплера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Знизьте це значення, щоб сприяти продуктивності/меншій затримці порівняно з якістю звуку, збільшуйте для кращої якості звуку за рахунок продуктивності/меншої затримки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Ексклюзивний режим WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Формат WASAPI з плаваючою комою"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Довжина спільного буфера WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Проміжна довжина буферу (у кадрах) при використанні драйвера WASAPI в спільному режимі."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -2648,7 +2688,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Зрушення по осі Кнопки Ввода"
+   "Зрушення по Осі Кнопки Вводу"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -2735,10 +2775,6 @@ MSG_HASH(
    "Турбо Кнопки"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Зміна налаштувань Турбо Кнопок."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "Тактильний зворотний зв'язок/вібрація"
    )
@@ -2759,16 +2795,8 @@ MSG_HASH(
    "Гарячі клавіші"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Змінити параметри гарячих клавіш."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Порт %u контроллера"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Змінити кнопки управління для цього порту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3166,15 +3194,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
-   "Кнопка B (нижня)"
+   "Кнопка B (Знизу)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
-   "Кнопка Y (ліва)"
+   "Кнопка Y (Зліва)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
-   "Кнопка Select"
+   "Кнопка Вибрати"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
@@ -3198,11 +3226,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
-   "Кнопка (права)"
+   "Кнопка A (Справа)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
-   "Кнопка X (вгорі)"
+   "Кнопка X (Вгорі)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
@@ -3377,10 +3405,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Автозбереження стану"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Автоматично завантажувати стан"
    )
 
 /* Settings > Logging */
@@ -3621,6 +3645,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
    "Виберіть накладку через менеджер файлів."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -3896,10 +3923,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Коефіцієнт масштабування меню"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
    "Зображення тла"
    )
@@ -3916,10 +3939,6 @@ MSG_HASH(
    "Зміна непрозорості зображення тла."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Прозорість Меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Змінити непрозорість тла меню за замовчуванням."
    )
@@ -3929,7 +3948,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Мініатюри"
+   "Основна мініатюра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -4020,6 +4039,38 @@ MSG_HASH(
 
 /* Settings > Achievements > Visibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Стартове Повідомлення лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Показує опис лідерської дошки, коли вона стає активною."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Надіслані Повідомлення лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Показує повідомлення зі значенням, яке буде надіслано після завершення спроби потрапити до лідерської дошки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Невдалі Повідомлення лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Показує повідомлення, коли спроба потрапити до лідерської дошки закінчується невдачею."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Відстежувачі лідерської дошки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Показує на екрані відстежувачів з поточним значенням активної лідерської дошки."
+   )
 
 /* Settings > Network */
 
@@ -4127,10 +4178,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Автоматично завантажувати відсутні ескізи під час перегляду списків відтворення. Має серйозний вплив на продуктивність."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Оновлювач"
-   )
 
 /* Settings > Network > Updater */
 
@@ -4184,6 +4231,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Керувати списками відтворення"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Керувати"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -5458,10 +5509,6 @@ MSG_HASH(
    "Правий стік (Примусово)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Клавіша: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Миша 1"
    )
@@ -5602,39 +5649,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Співвідношення сторін меню"
+   "Співвідношення сторін"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Виберіть співвідношення сторін меню. Широкоекранні співвідношення збільшують горизонтальну роздільну здатність інтерфейсу меню. (Може знадобитися перезапуск, якщо вимкнено функцію «Зафіксувати співвідношення сторін Меню»)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Зафіксувати співвідношення сторін Меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Запевнює, що меню завжди відображається з правильним співвідношенням сторін. Якщо вимкнено, швидке меню буде розтягнуто для відповідності завантаженому вмісту."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Колірна тема меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Виберіть іншу тему кольору. Вибравши \"Користувацький\", ви можете використовувати файли пресетів теми меню."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Користувацький пресет теми меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    "Виберіть пресет теми меню з менеджера файлів."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Прозорість Меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -5750,6 +5781,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
    "5:3 (По Центру)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "Автоматично"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
@@ -5927,6 +5962,10 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Додаткова мініатюра"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Динамічне тло"
    )
@@ -5947,22 +5986,6 @@ MSG_HASH(
    "Анімація, що запускається при переміщенні вгору або вниз."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Коефіцієнт прозорості меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Шрифт меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Макет меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Тема значків для меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Виберіть іншу тему значків для RetroArch."
    )
@@ -5971,16 +5994,12 @@ MSG_HASH(
    "Використовувати значки замість тексту УВІМК/ВИМК для відображення перемикачів у меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Ефект тіні"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Виберіть ефект анімації фону. Може впливати на продуктивність ГП залежно від ефекту. Якщо продуктивність незадовільна, вимкніть це або поверніться до більш простого ефекту."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Кольорова тема меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Виберіть іншу кольорову тему для фону."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
@@ -6111,7 +6130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Звичайний"
+   "Зображення тла"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -6159,10 +6178,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Нехай ліва бічна панель завжди буде згорнутою."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Кольорова тема меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -6217,7 +6232,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Значки меню"
+   "Значки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
@@ -6230,18 +6245,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    "Показувати панель навігації"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Кольорова тема меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Виберіть іншу кольорову тему для фону."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Анімація переходу в меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -6856,10 +6859,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Оновлювач"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "РетроДосягнення"
@@ -7842,6 +7841,18 @@ MSG_HASH(
    "Знімок екрана збережено"
    )
 MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Розпочалася спроба потрапити до лідерської дошки"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Невдала спроба потрапити до лідерської дошки"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Надіслано %s для %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
    "Увімкнути або вимкнути метадані"
    )
@@ -8040,10 +8051,6 @@ MSG_HASH(
    "Роздільна здатність екрану"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Виберіть режим відображення."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Вимкнути"
    )
@@ -8224,6 +8231,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Налаштування x/y масштабу координат сенсорного екрана для масштабування дисплея на рівні ОС."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

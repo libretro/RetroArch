@@ -28,19 +28,25 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
 
    /* The boot record or primary volume descriptor is always at sector 16 and will contain a "CD001" marker */
    intfstream_seek(track->stream, toc_sector * 2352 + track->first_sector_offset, SEEK_SET);
-   if (intfstream_read(track->stream, buffer, sizeof(buffer)) < sizeof(buffer))
+   if (intfstream_read(track->stream, &buffer, sizeof(buffer)) != (int64_t)sizeof(buffer))
       return;
 
    /* if this is a CDROM-XA data source, the "CD001" tag will be 25 bytes into the sector */
-   if (buffer[25] == 0x43 && buffer[26] == 0x44 &&
-      buffer[27] == 0x30 && buffer[28] == 0x30 && buffer[29] == 0x31)
+   if (  buffer[25] == 0x43 
+      && buffer[26] == 0x44
+      && buffer[27] == 0x30 
+      && buffer[28] == 0x30 
+      && buffer[29] == 0x31)
    {
-      track->stream_sector_size = 2352;
+      track->stream_sector_size        = 2352;
       track->stream_sector_header_size = 24;
    }
    /* otherwise it should be 17 bytes into the sector */
-   else if (buffer[17] == 0x43 && buffer[18] == 0x44 &&
-      buffer[19] == 0x30 && buffer[20] == 0x30 && buffer[21] == 0x31)
+   else if (buffer[17] == 0x43
+      &&    buffer[18] == 0x44
+      &&    buffer[19] == 0x30 
+      &&    buffer[20] == 0x30 
+      &&    buffer[21] == 0x31)
    {
       track->stream_sector_size = 2352;
       track->stream_sector_header_size = 16;
@@ -48,14 +54,24 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
    else
    {
       /* ISO-9660 says the first twelve bytes of a sector should be the sync pattern 00 FF FF FF FF FF FF FF FF FF FF 00 */
-      if (buffer[0] == 0 && buffer[1] == 0xFF && buffer[2] == 0xFF && buffer[3] == 0xFF &&
-         buffer[4] == 0xFF && buffer[5] == 0xFF && buffer[6] == 0xFF && buffer[7] == 0xFF &&
-         buffer[8] == 0xFF && buffer[9] == 0xFF && buffer[10] == 0xFF && buffer[11] == 0)
+      if (
+            buffer[ 0] == 0
+         && buffer[ 1] == 0xFF
+         && buffer[ 2] == 0xFF
+         && buffer[ 3] == 0xFF
+         && buffer[ 4] == 0xFF
+         && buffer[ 5] == 0xFF
+         && buffer[ 6] == 0xFF
+         && buffer[ 7] == 0xFF
+         && buffer[ 8] == 0xFF
+         && buffer[ 9] == 0xFF
+         && buffer[10] == 0xFF 
+         && buffer[11] == 0)
       {
          /* if we didn't find a CD001 tag, this format may predate ISO-9660 */
 
          /* after the 12 byte sync pattern is three bytes identifying the sector and then one byte for the mode (total 16 bytes) */
-         track->stream_sector_size = 2352;
+         track->stream_sector_size        = 2352;
          track->stream_sector_header_size = 16;
       }
    }
@@ -69,19 +85,19 @@ static void cdfs_determine_sector_size_from_file_size(cdfs_track_t* track)
    if ((size % 2352) == 0)
    {
       /* raw tracks use all 2352 bytes and have a 24 byte header */
-      track->stream_sector_size = 2352;
+      track->stream_sector_size        = 2352;
       track->stream_sector_header_size = 24;
    }
    else if ((size % 2048) == 0)
    {
       /* cooked tracks eliminate all header/footer data */
-      track->stream_sector_size = 2048;
+      track->stream_sector_size        = 2048;
       track->stream_sector_header_size = 0;
    }
    else if ((size % 2336) == 0)
    {
       /* MODE 2 format without 16-byte sync data */
-      track->stream_sector_size = 2336;
+      track->stream_sector_size        = 2336;
       track->stream_sector_header_size = 8;
    }
 }
@@ -89,9 +105,9 @@ static void cdfs_determine_sector_size_from_file_size(cdfs_track_t* track)
 static void cdfs_seek_track_sector(cdfs_track_t* track, unsigned int sector)
 {
    intfstream_seek(track->stream,
-         sector * track->stream_sector_size + 
-         track->stream_sector_header_size   + 
-         track->first_sector_offset, SEEK_SET);
+           sector * track->stream_sector_size
+         + track->stream_sector_header_size
+         + track->first_sector_offset, SEEK_SET);
 }
 
 void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
@@ -99,13 +115,13 @@ void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
    /* only allowed if open_file was called with a NULL path */
    if (file->first_sector == 0)
    {
-      if (sector != file->current_sector)
+      if (file->current_sector != (int)sector)
       {
-         file->current_sector      = sector;
+         file->current_sector      = (int)sector;
          file->sector_buffer_valid = 0;
       }
 
-      file->pos                    = file->current_sector * 2048;
+      file->pos                    = sector * 2048;
       file->current_sector_offset  = 0;
    }
 }
@@ -178,12 +194,16 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
 
       /* filename is 33 bytes into the record and 
        * the format is "FILENAME;version" or "DIRECTORY" */
-      if ((tmp[33 + path_length] == ';' || tmp[33 + path_length] == '\0') &&
-         strncasecmp((const char*)(tmp + 33), path, path_length) == 0)
+      if (        (tmp[33 + path_length] == ';' 
+               || (tmp[33 + path_length] == '\0'))
+               &&  strncasecmp((const char*)(tmp + 33), path, path_length) == 0)
       {
          /* the file size is in bytes 10-13 of the record */
-         file->size = tmp[10] | (tmp[11] << 8) 
-            | (tmp[12] << 16) | (tmp[13] << 24);
+         file->size = 
+              (tmp[10])
+            | (tmp[11] << 8) 
+            | (tmp[12] << 16) 
+            | (tmp[13] << 24);
 
          /* the file contents are in the sector identified 
           * in bytes 2-4 of the record */
@@ -207,18 +227,18 @@ int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* track, const char* path)
 
    file->track          = track;
    file->current_sector = -1;
+   file->first_sector   = -1;
 
    if (path)
       file->first_sector = cdfs_find_file(file, path);
    else if (file->track->stream_sector_size)
    {
       file->first_sector = 0;
-      file->size         = (intfstream_get_size(
+      file->size         = (unsigned int)((intfstream_get_size(
                file->track->stream) / file->track->stream_sector_size) 
-         * 2048;
+         * 2048);
+      return 1;
    }
-   else
-      file->first_sector = -1;
 
    return (file->first_sector >= 0);
 }
@@ -252,9 +272,9 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
 
          memcpy(buffer,
                &file->sector_buffer[file->current_sector_offset], remaining);
-         buffer = (char*)buffer + remaining;
+         buffer      = (char*)buffer + remaining;
          bytes_read += remaining;
-         len -= remaining;
+         len        -= remaining;
 
          file->current_sector_offset += remaining;
       }
@@ -279,7 +299,7 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
 
       ++file->current_sector;
 
-      len -= 2048;
+      len        -= 2048;
    }
 
    if (len > 0)
@@ -299,19 +319,17 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
 
 void cdfs_close_file(cdfs_file_t* file)
 {
+   /* Not really anything to do here, just 
+    * clear out the first_sector so 
+    * read() won't do anything */
    if (file)
-   {
-      /* not really anything to do here, just 
-       * clear out the first_sector so read() won't do anything */
       file->first_sector = -1;
-   }
 }
 
 int64_t cdfs_get_size(cdfs_file_t* file)
 {
    if (!file || file->first_sector < 0)
       return 0;
-
    return file->size;
 }
 
@@ -319,7 +337,6 @@ int64_t cdfs_tell(cdfs_file_t* file)
 {
    if (!file || file->first_sector < 0)
       return -1;
-
    return file->pos;
 }
 
@@ -360,7 +377,7 @@ int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence)
    new_sector = file->pos / 2048;
    if (new_sector != file->current_sector)
    {
-      file->current_sector = new_sector;
+      file->current_sector      = new_sector;
       file->sector_buffer_valid = false;
    }
 
@@ -374,7 +391,9 @@ static void cdfs_skip_spaces(const char** ptr)
 }
 
 static cdfs_track_t* cdfs_wrap_stream(
-      intfstream_t* stream, unsigned first_sector_offset, unsigned first_sector_index)
+      intfstream_t* stream,
+      unsigned first_sector_offset,
+      unsigned first_sector_index)
 {
    cdfs_track_t* track = NULL;
 
@@ -442,7 +461,8 @@ static cdfs_track_t* cdfs_open_cue_track(
             while (file_end > file && *file_end != ' ' && *file_end != '\t')
                --file_end;
 
-            if (file[0] == '"' && file_end[-1] == '"')
+            if (     file[0]      == '"' 
+                  && file_end[-1] == '"')
             {
                ++file;
                --file_end;
@@ -484,10 +504,10 @@ static cdfs_track_t* cdfs_open_cue_track(
       }
       else if (!strncasecmp(line, "INDEX", 5))
       {
+         unsigned sector_offset;
          unsigned min = 0, sec = 0, frame = 0;
          unsigned index_number = 0;
-         unsigned sector_offset;
-         const char *index = line + 5;
+         const char *index     = line + 5;
 
          cdfs_skip_spaces(&index);
          sscanf(index, "%u", &index_number);
@@ -496,16 +516,16 @@ static cdfs_track_t* cdfs_open_cue_track(
          cdfs_skip_spaces(&index);
 
          sscanf(index, "%u:%u:%u", &min, &sec, &frame);
-         sector_offset = ((min * 60) + sec) * 75 + frame;
-         sector_offset -= previous_index_sector_offset;
-         track_offset += sector_offset * previous_sector_size;
-         previous_sector_size = sector_size;
+         sector_offset                 = ((min * 60) + sec) * 75 + frame;
+         sector_offset                -= previous_index_sector_offset;
+         track_offset                 += sector_offset * previous_sector_size;
+         previous_sector_size          = sector_size;
          previous_index_sector_offset += sector_offset;
 
          if (found_track && index_number == 1)
          {
-            if (  strstr(current_track_path, "/") || 
-                  strstr(current_track_path, "\\"))
+            if (     strstr(current_track_path, "/")
+                  || strstr(current_track_path, "\\"))
                strncpy(track_path, current_track_path, sizeof(track_path));
             else
             {
@@ -546,10 +566,8 @@ static cdfs_track_t* cdfs_open_cue_track(
 #ifdef HAVE_CHD
 static cdfs_track_t* cdfs_open_chd_track(const char* path, int32_t track_index)
 {
-   intfstream_t* intf_stream;
-   cdfs_track_t* track;
-
-   intf_stream = intfstream_open_chd_track(path,
+   cdfs_track_t *track;
+   intfstream_t *intf_stream = intfstream_open_chd_track(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE,
          track_index);
    if (!intf_stream)
@@ -612,17 +630,17 @@ struct cdfs_track_t* cdfs_open_data_track(const char* path)
 
 cdfs_track_t* cdfs_open_raw_track(const char* path)
 {
-   const char* ext = path_get_extension(path);
-   cdfs_track_t* track = NULL;
+   const char *ext     = path_get_extension(path);
+   cdfs_track_t *track = NULL;
 
-   if (  string_is_equal_noncase(ext, "bin") || 
-         string_is_equal_noncase(ext, "iso"))
+   if (     string_is_equal_noncase(ext, "bin")
+         || string_is_equal_noncase(ext, "iso"))
    {
       intfstream_t* file = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       track = cdfs_wrap_stream(file, 0, 0);
-      if (track != NULL && track->stream_sector_size == 0)
+      if (track && track->stream_sector_size == 0)
       {
          cdfs_determine_sector_size_from_file_size(track);
          if (track->stream_sector_size == 0)

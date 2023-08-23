@@ -781,6 +781,7 @@ static bool content_file_extract_from_archive(
    tmp_path[0]  = '\0';
    msg[0]       = '\0';
 
+   /* TODO/FIXME - localize */
    RARCH_LOG("[Content]: Core requires uncompressed content - "
          "extracting archive to temporary directory.\n");
 
@@ -808,6 +809,7 @@ static bool content_file_extract_from_archive(
    /* Update content path pointer */
    *content_path = tmp_path_ptr;
 
+   /* TODO/FIXME - localize */
    RARCH_LOG("[Content]: Content successfully extracted to: \"%s\".\n",
          tmp_path);
 
@@ -872,7 +874,8 @@ static void content_file_get_path(
                   content_path, sizeof(info_path));
             info_path[_len  ] = '#';
             info_path[_len+1] = '\0';
-            strlcat(info_path, archive_file, sizeof(info_path));
+            _len             += 1;
+            strlcpy(info_path + _len, archive_file, sizeof(info_path) - _len);
 
             /* Update 'content' string_list */
             string_list_set(content, (unsigned)idx, info_path);
@@ -944,7 +947,7 @@ static bool content_file_load(
    retro_ctx_load_content_info_t load_info;
    bool used_vfs_fallback_copy                = false;
 #ifdef __WINRT__
-   rarch_system_info_t *system                = &runloop_state_get_ptr()->system;
+   rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
 #endif
    enum rarch_content_type first_content_type = RARCH_CONTENT_NONE;
 
@@ -1016,8 +1019,8 @@ static bool content_file_load(
 #ifdef __WINRT__
             /* TODO: When support for the 'actual' VFS is added,
              * there will need to be some more logic here */
-            if (!system->supports_vfs &&
-                !is_path_accessible_using_standard_io(content_path))
+            if (   !sys_info->supports_vfs
+                && !is_path_accessible_using_standard_io(content_path))
             {
                /* Try to copy ACL to file first. If successful, this should mean that cores using standard I/O can still access them
                *  It would be better to set the ACL to allow full access for all application packages. However,
@@ -1044,16 +1047,19 @@ static bool content_file_load(
                   else
                      new_basedir[0] = '\0';
 
-                  if (string_is_empty(new_basedir) ||
-                     !path_is_directory(new_basedir) ||
-                     !is_path_accessible_using_standard_io(new_basedir))
+                  if (   string_is_empty  (new_basedir)
+                     || !path_is_directory(new_basedir)
+                     || !is_path_accessible_using_standard_io(new_basedir))
                   {
+                     size_t _len;
                      DWORD basedir_attribs;
                      RARCH_WARN("[Content]: Tried copying to cache directory, "
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
-                     strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcat(new_basedir, "VFSCACHE\\", sizeof(new_basedir));
+                     _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
+                     strlcpy(new_basedir + _len,
+                           "VFSCACHE\\",
+                           sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);
                      if (       (basedir_attribs == INVALID_FILE_ATTRIBUTES) 
                            || (!(basedir_attribs & FILE_ATTRIBUTE_DIRECTORY)))
@@ -1071,7 +1077,7 @@ static bool content_file_load(
                    * (This disclaimer is out dated but I don't want to remove it)*/
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
-                     int err = GetLastError();
+                     /* TODO/FIXME - localize */
                      snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
@@ -1175,6 +1181,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
    if (!special)
    {
+      /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
@@ -1192,6 +1199,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
       if (special->num_roms != subsystem->size)
       {
+         /* TODO/FIXME - localize */
          snprintf(msg, sizeof(msg),
                "Libretro core requires %u content files for "
                "subsystem \"%s\", but %u content files were provided.\n",
@@ -1203,6 +1211,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
    }
    else if (subsystem && subsystem->size)
    {
+      /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",
@@ -1497,7 +1506,7 @@ void menu_content_environment_get(int *argc, char *argv[],
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    runloop_state_t       *runloop_st = runloop_state_get_ptr();
-   rarch_system_info_t *sys_info     = &runloop_st->system;
+   rarch_system_info_t   *sys_info   = &runloop_st->system;
 
    if (!wrap_args)
       return;
@@ -1552,8 +1561,8 @@ static void task_push_to_history_list(
          || (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT))
    {
       char tmp[PATH_MAX_LENGTH];
-      const char *path_content       = path_get(RARCH_PATH_CONTENT);
-      struct retro_system_info *info = &runloop_st->system.info;
+      const char *path_content          = path_get(RARCH_PATH_CONTENT);
+      struct retro_system_info *sysinfo = &runloop_st->system.info;
 
       if (!string_is_empty(path_content))
       {
@@ -1572,7 +1581,7 @@ static void task_push_to_history_list(
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
-      if (info && !string_is_empty(tmp))
+      if (sysinfo && !string_is_empty(tmp))
       {
          const char *core_path      = NULL;
          const char *core_name      = NULL;
@@ -1618,7 +1627,7 @@ static void task_push_to_history_list(
                   core_name         = core_info->display_name;
 
                if (string_is_empty(core_name))
-                  core_name         = info->library_name;
+                  core_name         = sysinfo->library_name;
 
                if (launched_from_companion_ui)
                {
@@ -2138,7 +2147,6 @@ end:
 
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
-   uint16_t rarch_flags;
    content_information_ctx_t content_ctx;
    bool ret                           = true;
    content_state_t *p_content         = content_state_get_ptr();
@@ -2150,20 +2158,22 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    if (!content_info)
       return false;
 
-   rarch_flags                        = retroarch_get_flags();
    content_ctx.flags                  = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
-      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   {
+      uint16_t rarch_flags = retroarch_get_flags();
+      if (rarch_flags & RARCH_FLAGS_IPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_BPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_UPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+      if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
+         content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   }
 #endif
    if (runloop_st->missing_bios)
       content_ctx.flags |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
@@ -2361,7 +2371,6 @@ bool task_push_load_content_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data)
 {
-   uint16_t rarch_flags;
    content_information_ctx_t content_ctx;
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
@@ -2383,20 +2392,22 @@ bool task_push_load_content_with_new_core_from_menu(
             type, cb, user_data);
 #endif
 
-   rarch_flags                        = retroarch_get_flags();
    content_ctx.flags                  = 0;
 
    if (check_firmware_before_loading)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
-   if (rarch_flags & RARCH_FLAGS_IPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_BPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
-   if (rarch_flags & RARCH_FLAGS_UPS_PREF)
-      content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
-   if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
-      content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   {
+      uint16_t rarch_flags = retroarch_get_flags();
+      if (rarch_flags & RARCH_FLAGS_IPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_BPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_BPS_PREF;
+      if (rarch_flags & RARCH_FLAGS_UPS_PREF)
+         content_ctx.flags |= CONTENT_INFO_FLAG_IS_UPS_PREF;
+      if (runloop_st->flags & RUNLOOP_FLAG_PATCH_BLOCKED)
+         content_ctx.flags |= CONTENT_INFO_FLAG_PATCH_IS_BLOCKED;
+   }
 #endif
    if (runloop_st->missing_bios)
       content_ctx.flags                      |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
@@ -2519,19 +2530,19 @@ static bool task_load_content_internal(
 
    if (sys_info)
    {
-      struct retro_system_info *system        = &runloop_st->system.info;
+      struct retro_system_info *sysinfo       = &runloop_st->system.info;
 
       if (set_supports_no_game_enable)
          content_ctx.flags |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
 
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache          = strdup(path_dir_cache);
-      if (!string_is_empty(system->valid_extensions))
-         content_ctx.valid_extensions         = strdup(system->valid_extensions);
+      if (!string_is_empty(sysinfo->valid_extensions))
+         content_ctx.valid_extensions         = strdup(sysinfo->valid_extensions);
 
-      if (system->block_extract)
+      if (sysinfo->block_extract)
          content_ctx.flags |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
-      if (system->need_fullpath)
+      if (sysinfo->need_fullpath)
          content_ctx.flags |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
       content_ctx.subsystem.data              = sys_info->subsystem.data;
@@ -2757,11 +2768,11 @@ void content_set_subsystem(unsigned idx)
    const struct retro_subsystem_info *subsystem = NULL;
    runloop_state_t                  *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content                  = content_state_get_ptr();
-   rarch_system_info_t                  *system = &runloop_st->system;
+   rarch_system_info_t                *sys_info = &runloop_st->system;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem                                 = system->subsystem.data + idx;
+   if (sys_info->subsystem.data)
+      subsystem                                 = sys_info->subsystem.data + idx;
    /* Core not loaded completely, use the data we peeked on load core */
    else
       subsystem                                 = runloop_st->subsystem_data + idx;
@@ -2787,15 +2798,15 @@ void content_set_subsystem(unsigned idx)
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
-   rarch_system_info_t         *system = &runloop_st->system;
+   rarch_system_info_t       *sys_info = &runloop_st->system;
    unsigned i                          = 0;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info 
       *subsystem                       = runloop_st->subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem                        = system->subsystem.data;
+   if (sys_info->subsystem.data)
+      subsystem                        = sys_info->subsystem.data;
 
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
@@ -2813,13 +2824,13 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
 {
    unsigned i                                   = 0;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
-   rarch_system_info_t                  *system = &runloop_st->system;
+   rarch_system_info_t                *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info *subsystem = runloop_st->subsystem_data;
 
    /* Core fully loaded, use the subsystem data */
-   if (system->subsystem.data)
-      subsystem = system->subsystem.data;
+   if (sys_info->subsystem.data)
+      subsystem = sys_info->subsystem.data;
 
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
@@ -3029,7 +3040,7 @@ bool content_init(void)
 
    if (sys_info)
    {
-      struct retro_system_info *system = &runloop_st->system.info;
+      struct retro_system_info *sysinfo = &runloop_st->system.info;
 
       if (set_supports_no_game_enable)
          content_ctx.flags            |= CONTENT_INFO_FLAG_SET_SUPPORTS_NO_GAME_ENABLE;
@@ -3038,12 +3049,12 @@ bool content_init(void)
          content_ctx.directory_system  = strdup(path_dir_system);
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache   = strdup(path_dir_cache);
-      if (!string_is_empty(system->valid_extensions))
-         content_ctx.valid_extensions  = strdup(system->valid_extensions);
+      if (!string_is_empty(sysinfo->valid_extensions))
+         content_ctx.valid_extensions  = strdup(sysinfo->valid_extensions);
 
-      if (system->block_extract)
+      if (sysinfo->block_extract)
          content_ctx.flags            |= CONTENT_INFO_FLAG_BLOCK_EXTRACT;
-      if (system->need_fullpath)
+      if (sysinfo->need_fullpath)
          content_ctx.flags            |= CONTENT_INFO_FLAG_NEED_FULLPATH;
 
       content_ctx.subsystem.data       = sys_info->subsystem.data;

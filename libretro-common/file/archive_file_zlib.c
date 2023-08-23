@@ -25,12 +25,10 @@
 
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
-#include <streams/trans_stream.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
 
-/* Only for MAX_WBITS */
 #include <zlib.h>
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
@@ -40,6 +38,8 @@
 #ifndef END_OF_CENTRAL_DIR_SIGNATURE
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
+
+#define _READ_CHUNK_SIZE   (128*1024)   /* Read 128KiB compressed chunks */
 
 enum file_archive_compression_mode
 {
@@ -53,8 +53,11 @@ typedef struct
    uint8_t *directory;
    uint8_t *directory_entry;
    uint8_t *directory_end;
-   void    *current_stream;
-   uint8_t *compressed_data;
+   uint64_t fdoffset;
+   uint32_t boffset, csize, usize;
+   unsigned cmode;
+   z_stream *zstream;
+   uint8_t *tmpbuf;
    uint8_t *decompressed_data;
 } zip_context_t;
 
@@ -73,20 +76,19 @@ static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
 static void zip_context_free_stream(
       zip_context_t *zip_context, bool keep_decompressed)
 {
-   if (zip_context->current_stream)
+   if (zip_context->zstream)
    {
-      zlib_inflate_backend.stream_free(zip_context->current_stream);
-      zip_context->current_stream = NULL;
+      inflateEnd(zip_context->zstream);
+      free(zip_context->zstream);
+      zip_context->fdoffset = 0;
+      zip_context->csize = 0;
+      zip_context->usize = 0;
+      zip_context->zstream = NULL;
    }
-   if (zip_context->compressed_data)
+   if (zip_context->tmpbuf)
    {
-#ifdef HAVE_MMAP
-      if (!zip_context->state->archive_mmap_data)
-#endif
-      {
-         free(zip_context->compressed_data);
-         zip_context->compressed_data = NULL;
-      }
+      free(zip_context->tmpbuf);
+      zip_context->tmpbuf = NULL;
    }
    if (zip_context->decompressed_data && !keep_decompressed)
    {
@@ -128,51 +130,40 @@ static bool zlib_stream_decompress_data_to_file_init(
    offsetEL = read_le(local_header + 2, 2); /* extra field length */
    offsetData = (int64_t)(size_t)cdata + 26 + 4 + offsetNL + offsetEL;
 
-#ifdef HAVE_MMAP
-   if (state->archive_mmap_data)
+   zip_context->fdoffset = offsetData;
+   zip_context->usize = size;
+   zip_context->csize = csize;
+   zip_context->boffset = 0;
+   zip_context->cmode = cmode;
+   zip_context->decompressed_data = (uint8_t*)malloc(size);
+   zip_context->zstream = NULL;
+   zip_context->tmpbuf = NULL;
+
+   if (cmode == ZIP_MODE_DEFLATED)
    {
-      zip_context->compressed_data = state->archive_mmap_data + (size_t)offsetData;
-   }
-   else
-#endif
-   {
-      /* allocate memory for the compressed data */
-      zip_context->compressed_data = (uint8_t*)malloc(csize);
-      if (!zip_context->compressed_data)
+      /* Initialize the zlib inflate machinery */
+      zip_context->zstream = (z_stream*)malloc(sizeof(z_stream));
+      zip_context->tmpbuf = malloc(_READ_CHUNK_SIZE);
+
+      zip_context->zstream->next_in   = NULL;
+      zip_context->zstream->avail_in  = 0;
+      zip_context->zstream->total_in  = 0;
+      zip_context->zstream->next_out  = zip_context->decompressed_data;
+      zip_context->zstream->avail_out = size;
+      zip_context->zstream->total_out = 0;
+
+      zip_context->zstream->zalloc    = NULL;
+      zip_context->zstream->zfree     = NULL;
+      zip_context->zstream->opaque    = NULL;
+
+      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK) {
+         free(zip_context->zstream);
+         zip_context->zstream = NULL;
          goto error;
-
-      /* skip over name and extra data */
-      filestream_seek(state->archive_file, offsetData, RETRO_VFS_SEEK_POSITION_START);
-      if (filestream_read(state->archive_file, zip_context->compressed_data, csize) != csize)
-         goto error;
+      }
    }
 
-   switch (cmode)
-   {
-      case ZIP_MODE_STORED:
-         handle->data = zip_context->compressed_data;
-         return true;
-
-     case ZIP_MODE_DEFLATED:
-         zip_context->current_stream = zlib_inflate_backend.stream_new();
-         if (!zip_context->current_stream)
-            goto error;
-
-         if (zlib_inflate_backend.define)
-            zlib_inflate_backend.define(zip_context->current_stream, "window_bits", (uint32_t)-MAX_WBITS);
-
-         zip_context->decompressed_data = (uint8_t*)malloc(size);
-
-         if (!zip_context->decompressed_data)
-            goto error;
-
-         zlib_inflate_backend.set_in(zip_context->current_stream,
-               zip_context->compressed_data, csize);
-         zlib_inflate_backend.set_out(zip_context->current_stream,
-               zip_context->decompressed_data, size);
-
-         return true;
-   }
+   return true;
 
 error:
    zip_context_free_stream(zip_context, false);
@@ -183,35 +174,84 @@ static int zlib_stream_decompress_data_to_file_iterate(
       void *context, file_archive_file_handle_t *handle)
 {
    zip_context_t *zip_context = (zip_context_t *)context;
-   bool zstatus;
-   uint32_t rd, wn;
-   enum trans_stream_error terror;
+   struct file_archive_transfer *state = zip_context->state;
+   int64_t rd;
 
-   if (!zip_context->current_stream)
+   if (zip_context->cmode == ZIP_MODE_STORED)
    {
-      /* file was uncompressed or decompression finished before */
-      return 1;
-   }
+      #ifdef HAVE_MMAP
+      if (zip_context->state->archive_mmap_data)
+      {
+         /* Simply copy the data to the output buffer */
+         memcpy(zip_context->decompressed_data,
+                zip_context->state->archive_mmap_data + (size_t)zip_context->fdoffset,
+                zip_context->usize);
+      }
+      else
+      #endif
+      {
+         /* Read the entire file to memory */
+         filestream_seek(state->archive_file, zip_context->fdoffset, RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(state->archive_file,
+                             zip_context->decompressed_data,
+                             zip_context->usize) < 0)
+            return -1;
+      }
 
-   zstatus = zlib_inflate_backend.trans(zip_context->current_stream, false, &rd, &wn, &terror);
-
-   if (zstatus && !terror)
-   {
-      /* successfully decompressed entire file */
-      zip_context_free_stream(zip_context, true);
       handle->data = zip_context->decompressed_data;
       return 1;
    }
-
-   if (!zstatus && terror != TRANS_STREAM_ERROR_BUFFER_FULL)
+   else if (zip_context->cmode == ZIP_MODE_DEFLATED)
    {
-      /* error during stream processing */
-      zip_context_free_stream(zip_context, false);
-      return -1;
+      int to_read = MIN(zip_context->csize - zip_context->boffset, _READ_CHUNK_SIZE);
+      uint8_t *dptr;
+      if (!zip_context->zstream)
+      {
+         /* file was uncompressed or decompression finished before */
+         return 1;
+      }
+
+      #ifdef HAVE_MMAP
+      if (state->archive_mmap_data)
+      {
+         /* Decompress from the mapped file */
+         dptr = state->archive_mmap_data + (size_t)zip_context->fdoffset + zip_context->boffset;
+         rd = to_read;
+      }
+      else
+      #endif
+      {
+         /* Read some compressed data from file to the temp buffer */
+         filestream_seek(state->archive_file, zip_context->fdoffset + zip_context->boffset,
+                         RETRO_VFS_SEEK_POSITION_START);
+         rd = filestream_read(state->archive_file, zip_context->tmpbuf, to_read);
+         if (rd < 0)
+            return -1;
+         dptr = zip_context->tmpbuf;
+      }
+
+      zip_context->boffset           += rd;
+      zip_context->zstream->next_in   = dptr;
+      zip_context->zstream->avail_in  = (uInt)rd;
+
+      if (inflate(zip_context->zstream, 0) < 0)
+         return -1;
+
+      if (zip_context->boffset >= zip_context->csize)
+      {
+         inflateEnd(zip_context->zstream);
+         free(zip_context->zstream);
+         zip_context->zstream = NULL;
+
+         handle->data = zip_context->decompressed_data;
+         return 1;
+      }
+
+      return 0;   /* still more data to process */
    }
 
-   /* still more data to process */
-   return 0;
+   /* No idea what kind of compression this is */
+   return -1;
 }
 
 static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
@@ -238,21 +278,9 @@ static bool zip_file_decompressed_handle(
    {
       ret = transfer->backend->stream_decompress_data_to_file_iterate(
             transfer->context, handle);
+      if (ret < 0)
+         return false;
    }while (ret == 0);
-
-#if 0
-   handle->real_checksum = transfer->backend->stream_crc_calculate(0,
-         handle->data, size);
-
-   if (handle->real_checksum != crc32)
-   {
-      if (handle->data)
-         free(handle->data);
-
-      handle->data   = NULL;
-      return false;
-   }
-#endif
 
    return true;
 }
@@ -314,46 +342,10 @@ static int zip_file_decompressed(
             zip_context_t *zip_context = (zip_context_t *)userdata->transfer->context;
 
             decomp_state->size = 0;
-
-            /* Unlink data buffer from context (otherwise
-             * it will be freed when the stream is deinitialised) */
-            if (handle.data == zip_context->compressed_data)
-            {
-               /* Well this is fun...
-                * If this is 'compressed' data (if the zip
-                * file was created with the '-0   store only'
-                * flag), and the origin file is mmapped, then
-                * the context compressed_data buffer cannot be
-                * reassigned (since it is not a traditional
-                * block of user-assigned memory). We have to
-                * create a copy of it instead... */
-#ifdef HAVE_MMAP
-               if (zip_context->state->archive_mmap_data)
-               {
-                  uint8_t *temp_buf = (uint8_t*)malloc(csize);
-
-                  if (temp_buf)
-                  {
-                     memcpy(temp_buf, handle.data, csize);
-                     *decomp_state->buf        = temp_buf;
-                     decomp_state->size        = csize;
-                  }
-               }
-               else
-#endif
-               {
-                  *decomp_state->buf           = handle.data;
-                  decomp_state->size           = csize;
-                  zip_context->compressed_data = NULL;
-               }
-            }
-            else if (handle.data == zip_context->decompressed_data)
-            {
-               *decomp_state->buf             = handle.data;
-               decomp_state->size             = size;
-               zip_context->decompressed_data = NULL;
-            }
-
+            *decomp_state->buf             = handle.data;
+            decomp_state->size             = size;
+            /* We keep the data, prevent its deallocation during free */
+            zip_context->decompressed_data = NULL;
             handle.data = NULL;
          }
       }
@@ -412,7 +404,7 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    uint8_t footer_buf[1024];
    uint8_t *footer = footer_buf;
    int64_t read_pos = state->archive_size;
-   int64_t read_block = MIN(read_pos, sizeof(footer_buf));
+   int64_t read_block = MIN(read_pos, (ssize_t)sizeof(footer_buf));
    int64_t directory_size, directory_offset;
    zip_context_t *zip_context = NULL;
 
@@ -466,8 +458,8 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    zip_context->directory         = (uint8_t*)(zip_context + 1);
    zip_context->directory_entry   = zip_context->directory;
    zip_context->directory_end     = zip_context->directory + (size_t)directory_size;
-   zip_context->current_stream    = NULL;
-   zip_context->compressed_data   = NULL;
+   zip_context->zstream           = NULL;
+   zip_context->tmpbuf            = NULL;
    zip_context->decompressed_data = NULL;
 
    filestream_seek(state->archive_file, directory_offset, RETRO_VFS_SEEK_POSITION_START);

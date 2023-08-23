@@ -33,6 +33,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <string.h>
+#include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
@@ -63,6 +64,7 @@ struct http_socket_state_t
 struct http_t
 {
    char *data;
+   struct string_list *headers;
    struct http_socket_state_t sock_state; /* ptr alignment */
    size_t pos;
    size_t len;
@@ -81,10 +83,11 @@ struct http_connection_t
    char *scan;
    char *methodcopy;
    char *contenttypecopy;
-   char *postdatacopy;
+   void *postdatacopy;
    char *useragentcopy;
    char *headerscopy;
    struct http_socket_state_t sock_state; /* ptr alignment */
+   size_t contentlength;
    int port;
 };
 
@@ -389,16 +392,15 @@ void net_http_urlencode(char **dest, const char *source)
 void net_http_urlencode_full(char *dest,
       const char *source, size_t size)
 {
+   size_t buf_pos;
    size_t tmp_len;
-   size_t url_domain_len;
    char url_domain[256];
    char url_path[PATH_MAX_LENGTH];
-   size_t buf_pos                    = 0;
    char *tmp                         = NULL;
    int count                         = 0;
 
    strlcpy(url_path, source, sizeof(url_path));
-   tmp = url_path;
+   tmp            = url_path;
 
    while (count < 3 && tmp[0] != '\0')
    {
@@ -408,19 +410,19 @@ void net_http_urlencode_full(char *dest,
    }
 
    tmp_len        = strlen(tmp);
-   url_domain_len = ((strlcpy(url_domain, source, tmp - url_path)) - tmp_len) - 1;
+   buf_pos        = ((strlcpy(url_domain, source, tmp - url_path)) - tmp_len) - 1;
    strlcpy(url_path,
-         source + url_domain_len + 1,
-         tmp_len + 1
+         source  + buf_pos + 1,
+         tmp_len           + 1
          );
 
    tmp             = NULL;
    net_http_urlencode(&tmp, url_path);
    buf_pos         = strlcpy(dest, url_domain, size);
-   dest[buf_pos]   = '/';
-   dest[buf_pos+1] = '\0';
-   strlcat(dest, tmp, size);
-   free (tmp);
+   dest[  buf_pos] = '/';
+   dest[++buf_pos] = '\0';
+   strlcpy(dest + buf_pos, tmp, size - buf_pos);
+   free(tmp);
 }
 
 static int net_http_new_socket(struct http_connection_t *conn)
@@ -531,7 +533,10 @@ struct http_connection_t *net_http_connection_new(const char *url,
       conn->methodcopy     = strdup(method);
 
    if (data)
+   {
       conn->postdatacopy   = strdup(data);
+      conn->contentlength  = strlen(data);
+   }
 
    if (!(conn->urlcopy = strdup(url)))
       goto error;
@@ -704,6 +709,25 @@ void net_http_connection_set_headers(
    conn->headerscopy = headers ? strdup(headers) : NULL;
 }
 
+void net_http_connection_set_content(
+      struct http_connection_t *conn, const char *content_type,
+      size_t content_length, const void *content)
+
+{
+   if (conn->contenttypecopy)
+      free(conn->contenttypecopy);
+   if (conn->postdatacopy)
+      free(conn->postdatacopy);
+
+   conn->contenttypecopy = content_type ? strdup(content_type) : NULL;
+   conn->contentlength = content_length;
+   if (content_length)
+   {
+      conn->postdatacopy = malloc(content_length);
+      memcpy(conn->postdatacopy, content, content_length);
+   }
+}
+
 const char *net_http_connection_url(struct http_connection_t *conn)
 {
    return conn->urlcopy;
@@ -717,16 +741,14 @@ const char* net_http_connection_method(struct http_connection_t* conn)
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
    bool error            = false;
+#ifdef HAVE_SSL
+   if (!conn || (net_http_new_socket(conn)) < 0)
+      return NULL;
+#else
    int fd                = -1;
-   struct http_t *state  = NULL;
-
-   if (!conn)
-      goto error;
-
-   if ((fd = net_http_new_socket(conn)) < 0)
-      goto error;
-
-   error = false;
+   if (!conn || (fd = net_http_new_socket(conn)) < 0)
+      return NULL;
+#endif
 
    /* This is a bit lazy, but it works. */
    if (conn->methodcopy)
@@ -755,12 +777,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (conn->port)
    {
       char portstr[16];
-
-      portstr[0] = '\0';
-
-      snprintf(portstr, sizeof(portstr), ":%i", conn->port);
-      net_http_send_str(&conn->sock_state, &error, portstr,
-            strlen(portstr));
+      size_t _len     = 0;
+      portstr[  _len] = ':';
+      portstr[++_len] = '\0';
+      _len           += snprintf(portstr + _len, sizeof(portstr) - _len,
+            "%i", conn->port);
+      net_http_send_str(&conn->sock_state, &error, portstr, _len);
    }
 
    net_http_send_str(&conn->sock_state, &error, "\r\n",
@@ -770,8 +792,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (conn->headerscopy)
       net_http_send_str(&conn->sock_state, &error, conn->headerscopy,
             strlen(conn->headerscopy));
-   /* This is not being set anywhere yet */
-   else if (conn->contenttypecopy)
+   if (conn->contenttypecopy)
    {
       net_http_send_str(&conn->sock_state, &error, "Content-Type: ",
             STRLEN_CONST("Content-Type: "));
@@ -781,13 +802,13 @@ struct http_t *net_http_new(struct http_connection_t *conn)
             STRLEN_CONST("\r\n"));
    }
 
-   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
+   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST") || string_is_equal(conn->methodcopy, "PUT")))
    {
       size_t post_len, len;
       char *len_str        = NULL;
 
-      if (!conn->postdatacopy)
-         goto error;
+      if (!conn->postdatacopy && !string_is_equal(conn->methodcopy, "PUT"))
+         goto err;
 
       if (!conn->headerscopy)
       {
@@ -802,7 +823,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       net_http_send_str(&conn->sock_state, &error, "Content-Length: ",
             STRLEN_CONST("Content-Length: "));
 
-      post_len = strlen(conn->postdatacopy);
+      post_len = conn->contentlength;
 #ifdef _WIN32
       len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
@@ -839,53 +860,59 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    net_http_send_str(&conn->sock_state, &error, "\r\n",
          STRLEN_CONST("\r\n"));
 
-   if (conn->methodcopy && (string_is_equal(conn->methodcopy, "POST")))
+   if (conn->postdatacopy && conn->contentlength)
       net_http_send_str(&conn->sock_state, &error, conn->postdatacopy,
-            strlen(conn->postdatacopy));
+            conn->contentlength);
 
-   if (error)
-      goto error;
+   if (!error)
+   {
+      struct http_t *state = (struct http_t*)malloc(sizeof(struct http_t));
+      state->sock_state    = conn->sock_state;
+      state->status        = -1;
+      state->data          = NULL;
+      state->part          = P_HEADER_TOP;
+      state->bodytype      = T_FULL;
+      state->error         = false;
+      state->pos           = 0;
+      state->len           = 0;
+      state->buflen        = 512;
 
-   state             = (struct http_t*)malloc(sizeof(struct http_t));
-   state->sock_state = conn->sock_state;
-   state->status     = -1;
-   state->data       = NULL;
-   state->part       = P_HEADER_TOP;
-   state->bodytype   = T_FULL;
-   state->error      = false;
-   state->pos        = 0;
-   state->len        = 0;
-   state->buflen     = 512;
+      if ((state->data = (char*)malloc(state->buflen)))
+      {
+         if ((state->headers = string_list_new()) &&
+             string_list_initialize(state->headers))
+            return state;
+         string_list_free(state->headers);
+      }
+      free(state);
+   }
 
-   if (!(state->data = (char*)malloc(state->buflen)))
-      goto error;
-
-   return state;
-
-error:
+err:
    if (conn)
    {
       if (conn->methodcopy)
          free(conn->methodcopy);
       if (conn->contenttypecopy)
          free(conn->contenttypecopy);
-      conn->methodcopy      = NULL;
-      conn->contenttypecopy = NULL;
-      conn->postdatacopy    = NULL;
-   }
+      if (conn->postdatacopy)
+         free(conn->postdatacopy);
+      conn->methodcopy           = NULL;
+      conn->contenttypecopy      = NULL;
+      conn->postdatacopy         = NULL;
+
 #ifdef HAVE_SSL
-   if (conn && conn->sock_state.ssl_ctx)
-   {
-      ssl_socket_close(conn->sock_state.ssl_ctx);
-      ssl_socket_free(conn->sock_state.ssl_ctx);
-      conn->sock_state.ssl_ctx = NULL;
-   }
-#else
-   if (fd >= 0)
-      socket_close(fd);
+      if (conn->sock_state.ssl_ctx)
+      {
+         ssl_socket_close(conn->sock_state.ssl_ctx);
+         ssl_socket_free(conn->sock_state.ssl_ctx);
+         conn->sock_state.ssl_ctx = NULL;
+      }
 #endif
-   if (state)
-      free(state);
+   }
+
+#ifndef HAVE_SSL
+   socket_close(fd);
+#endif
    return NULL;
 }
 
@@ -912,248 +939,250 @@ int net_http_fd(struct http_t *state)
  **/
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
-   ssize_t newlen = 0;
-
-   if (!state)
-      return true;
-   if (state->error)
+   if (state)
    {
-      state->part   = P_ERROR;
-      state->status = -1;
-      return true;
-   }
-
-   if (state->part < P_BODY)
-   {
+      ssize_t newlen   = 0;
       if (state->error)
-      {
-         state->part   = P_ERROR;
-         state->status = -1;
-         return true;
-      }
+         goto error;
 
-#ifdef HAVE_SSL
-      if (state->sock_state.ssl && state->sock_state.ssl_ctx)
-         newlen = ssl_socket_receive_all_nonblocking(state->sock_state.ssl_ctx, &state->error,
-               (uint8_t*)state->data + state->pos,
-               state->buflen - state->pos);
-      else
-#endif
-         newlen = socket_receive_all_nonblocking(state->sock_state.fd, &state->error,
-               (uint8_t*)state->data + state->pos,
-               state->buflen - state->pos);
-
-      if (newlen < 0)
-      {
-         state->error  = true;
-         state->part   = P_ERROR;
-         state->status = -1;
-         return true;
-      }
-
-      if (state->pos + newlen >= state->buflen - 64)
-      {
-         state->buflen *= 2;
-         state->data    = (char*)realloc(state->data, state->buflen);
-      }
-      state->pos += newlen;
-
-      while (state->part < P_BODY)
-      {
-         char *dataend = state->data + state->pos;
-         char *lineend = (char*)memchr(state->data, '\n', state->pos);
-
-         if (!lineend)
-            break;
-
-         *lineend='\0';
-
-         if (lineend != state->data && lineend[-1]=='\r')
-            lineend[-1]='\0';
-
-         if (state->part == P_HEADER_TOP)
-         {
-            if (strncmp(state->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
-            {
-               state->error  = true;
-               state->part   = P_ERROR;
-               state->status = -1;
-               return true;
-            }
-            state->status    = (int)strtoul(state->data 
-                  + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
-            state->part      = P_HEADER;
-         }
-         else
-         {
-            if (string_starts_with_case_insensitive(state->data, "Content-Length:"))
-            {
-               char* ptr = state->data + STRLEN_CONST("Content-Length:");
-               while (ISSPACE(*ptr))
-                  ++ptr;
-
-               state->bodytype = T_LEN;
-               state->len = strtol(ptr, NULL, 10);
-            }
-            if (string_is_equal_case_insensitive(state->data, "Transfer-Encoding: chunked"))
-               state->bodytype = T_CHUNK;
-
-            /* TODO: save headers somewhere */
-            if (state->data[0]=='\0')
-            {
-               state->part = P_BODY;
-               if (state->bodytype == T_CHUNK)
-                  state->part = P_BODY_CHUNKLEN;
-            }
-         }
-
-         memmove(state->data, lineend + 1, dataend-(lineend+1));
-         state->pos = (dataend-(lineend + 1));
-      }
-
-      if (state->part >= P_BODY)
-      {
-         newlen     = state->pos;
-         state->pos = 0;
-      }
-   }
-
-   if (state->part >= P_BODY && state->part < P_DONE)
-   {
-      if (!newlen)
+      if (state->part < P_BODY)
       {
          if (state->error)
-            newlen = -1;
-         else
-         {
+            goto error;
+
 #ifdef HAVE_SSL
-            if (state->sock_state.ssl && state->sock_state.ssl_ctx)
-               newlen = ssl_socket_receive_all_nonblocking(
-                  state->sock_state.ssl_ctx,
-                  &state->error,
+         if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+            newlen = ssl_socket_receive_all_nonblocking(state->sock_state.ssl_ctx, &state->error,
                   (uint8_t*)state->data + state->pos,
                   state->buflen - state->pos);
-            else
+         else
 #endif
-               newlen = socket_receive_all_nonblocking(
-                  state->sock_state.fd,
-                  &state->error,
+            newlen = socket_receive_all_nonblocking(state->sock_state.fd, &state->error,
                   (uint8_t*)state->data + state->pos,
                   state->buflen - state->pos);
-         }
 
          if (newlen < 0)
          {
-            if (state->bodytype != T_FULL)
-            {
-               state->error  = true;
-               state->part   = P_ERROR;
-               state->status = -1;
-               return true;
-            }
-            state->part      = P_DONE;
-            state->data      = (char*)realloc(state->data, state->len);
-            newlen           = 0;
+            state->error  = true;
+            goto error;
          }
 
          if (state->pos + newlen >= state->buflen - 64)
          {
-            state->buflen   *= 2;
-            state->data      = (char*)realloc(state->data, state->buflen);
+            state->buflen *= 2;
+            state->data    = (char*)realloc(state->data, state->buflen);
          }
-      }
+         state->pos       += newlen;
 
-parse_again:
-      if (state->bodytype == T_CHUNK)
-      {
-         if (state->part == P_BODY_CHUNKLEN)
+         while (state->part < P_BODY)
          {
-            state->pos      += newlen;
+            char *dataend  = state->data + state->pos;
+            char *lineend  = (char*)memchr(state->data, '\n', state->pos);
 
-            if (state->pos - state->len >= 2)
+            if (!lineend)
+               break;
+
+            *lineend       = '\0';
+
+            if (lineend != state->data && lineend[-1]=='\r')
+               lineend[-1] = '\0';
+
+            if (state->part == P_HEADER_TOP)
             {
-               /*
-                * len=start of chunk including \r\n
-                * pos=end of data
-                */
-
-               char *fullend = state->data + state->pos;
-               char *end     = (char*)memchr(state->data + state->len + 2, '\n',
-                     state->pos - state->len - 2);
-
-               if (end)
+               if (strncmp(state->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
                {
-                  size_t chunklen = strtoul(state->data+state->len, NULL, 16);
-                  state->pos      = state->len;
-                  end++;
+                  state->error  = true;
+                  goto error;
+               }
+               state->status    = (int)strtoul(state->data 
+                     + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
+               state->part      = P_HEADER;
+            }
+            else
+            {
+               if (string_starts_with_case_insensitive(state->data, "Content-Length:"))
+               {
+                  char* ptr = state->data + STRLEN_CONST("Content-Length:");
+                  while (ISSPACE(*ptr))
+                     ++ptr;
 
-                  memmove(state->data+state->len, end, fullend-end);
+                  state->bodytype = T_LEN;
+                  state->len = strtol(ptr, NULL, 10);
+               }
+               if (string_is_equal_case_insensitive(state->data, "Transfer-Encoding: chunked"))
+                  state->bodytype = T_CHUNK;
 
-                  state->len      = chunklen;
-                  newlen          = (fullend - end);
-
-                  /*
-                     len=num bytes
-                     newlen=unparsed bytes after \n
-                     pos=start of chunk including \r\n
-                     */
-
-                  state->part = P_BODY;
-                  if (state->len == 0)
+               if (state->data[0]=='\0')
+               {
+                  if (state->status == 100)
                   {
-                     state->part = P_DONE;
-                     state->len  = state->pos;
-                     state->data = (char*)realloc(state->data, state->len);
+                     state->part = P_HEADER_TOP;
                   }
-                  goto parse_again;
+                  else
+                  {
+                     state->part = P_BODY;
+                     if (state->bodytype == T_CHUNK)
+                        state->part = P_BODY_CHUNKLEN;
+                  }
+               }
+               else
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  string_list_append(state->headers, state->data, attr);
                }
             }
+
+            memmove(state->data, lineend + 1, dataend-(lineend+1));
+            state->pos = (dataend-(lineend + 1));
          }
-         else if (state->part == P_BODY)
+
+         if (state->part >= P_BODY)
          {
-            if ((size_t)newlen >= state->len)
-            {
-               state->pos += state->len;
-               newlen     -= state->len;
-               state->len  = state->pos;
-               state->part = P_BODY_CHUNKLEN;
-               goto parse_again;
-            }
-            state->pos += newlen;
-            state->len -= newlen;
+            newlen     = state->pos;
+            state->pos = 0;
          }
       }
-      else
+
+      if (state->part >= P_BODY && state->part < P_DONE)
       {
-         state->pos += newlen;
+         if (!newlen)
+         {
+            if (state->error)
+               newlen = -1;
+            else if (state->len)
+            {
+#ifdef HAVE_SSL
+               if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+                  newlen = ssl_socket_receive_all_nonblocking(
+                        state->sock_state.ssl_ctx,
+                        &state->error,
+                        (uint8_t*)state->data + state->pos,
+                        state->buflen - state->pos);
+               else
+#endif
+                  newlen = socket_receive_all_nonblocking(
+                        state->sock_state.fd,
+                        &state->error,
+                        (uint8_t*)state->data + state->pos,
+                        state->buflen - state->pos);
+            }
 
-         if (state->pos > state->len)
-         {
-            state->error  = true;
-            state->part   = P_ERROR;
-            state->status = -1;
-            return true;
+            if (newlen < 0)
+            {
+               if (state->bodytype != T_FULL)
+               {
+                  state->error  = true;
+                  goto error;
+               }
+               state->part      = P_DONE;
+               state->data      = (char*)realloc(state->data, state->len);
+               newlen           = 0;
+            }
+
+            if (state->pos + newlen >= state->buflen - 64)
+            {
+               state->buflen   *= 2;
+               state->data      = (char*)realloc(state->data, state->buflen);
+            }
          }
-         else if (state->pos == state->len)
+
+parse_again:
+         if (state->bodytype == T_CHUNK)
          {
-            state->part   = P_DONE;
-            state->data   = (char*)realloc(state->data, state->len);
+            if (state->part == P_BODY_CHUNKLEN)
+            {
+               state->pos      += newlen;
+
+               if (state->pos - state->len >= 2)
+               {
+                  /*
+                   * len=start of chunk including \r\n
+                   * pos=end of data
+                   */
+
+                  char *fullend = state->data + state->pos;
+                  char *end     = (char*)memchr(state->data + state->len + 2, '\n',
+                        state->pos - state->len - 2);
+
+                  if (end)
+                  {
+                     size_t chunklen = strtoul(state->data+state->len, NULL, 16);
+                     state->pos      = state->len;
+                     end++;
+
+                     memmove(state->data+state->len, end, fullend-end);
+
+                     state->len      = chunklen;
+                     newlen          = (fullend - end);
+
+                     /*
+                        len=num bytes
+                        newlen=unparsed bytes after \n
+                        pos=start of chunk including \r\n
+                        */
+
+                     state->part = P_BODY;
+                     if (state->len == 0)
+                     {
+                        state->part = P_DONE;
+                        state->len  = state->pos;
+                        state->data = (char*)realloc(state->data, state->len);
+                     }
+                     goto parse_again;
+                  }
+               }
+            }
+            else if (state->part == P_BODY)
+            {
+               if ((size_t)newlen >= state->len)
+               {
+                  state->pos += state->len;
+                  newlen     -= state->len;
+                  state->len  = state->pos;
+                  state->part = P_BODY_CHUNKLEN;
+                  goto parse_again;
+               }
+               state->pos += newlen;
+               state->len -= newlen;
+            }
+         }
+         else
+         {
+            state->pos += newlen;
+
+            if (state->pos > state->len)
+            {
+               state->error  = true;
+               goto error;
+            }
+            else if (state->pos == state->len)
+            {
+               state->part   = P_DONE;
+               state->data   = (char*)realloc(state->data, state->len);
+            }
          }
       }
+
+      if (progress)
+         *progress = state->pos;
+
+      if (total)
+      {
+         if (state->bodytype == T_LEN)
+            *total = state->len;
+         else
+            *total = 0;
+      }
+
+      if (state->part != P_DONE)
+         return false;
    }
-
-   if (progress)
-      *progress = state->pos;
-
-   if (total)
-   {
-      if (state->bodytype == T_LEN)
-         *total = state->len;
-      else
-         *total = 0;
-   }
-
-   return (state->part == P_DONE);
+   return true;
+error:
+   state->part   = P_ERROR;
+   state->status = -1;
+   return true;
 }
 
 /**
@@ -1170,6 +1199,26 @@ int net_http_status(struct http_t *state)
    if (!state)
       return -1;
    return state->status;
+}
+
+/**
+ * net_http_headers:
+ *
+ * Leaf function.
+ *
+ * @return the response headers. The returned buffer is owned by the
+ * caller of net_http_new; it is not freed by net_http_delete().
+ * If the status is not 20x and accept_error is false, it returns NULL.
+ **/
+struct string_list *net_http_headers(struct http_t *state)
+{
+   if (!state)
+      return NULL;
+
+   if (state->error)
+      return NULL;
+
+   return state->headers;
 }
 
 /**

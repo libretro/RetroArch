@@ -40,8 +40,8 @@ void core_run(void);
 
 void core_reset(void);
 
-bool core_serialize_size(retro_ctx_size_info_t *info);
-bool core_serialize_size_special(retro_ctx_size_info_t *info);
+size_t core_serialize_size(void);
+size_t core_serialize_size_special(void);
 
 uint64_t core_serialization_quirks(void);
 

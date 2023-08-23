@@ -192,16 +192,10 @@ float dingux_set_video_refresh_rate(enum dingux_refresh_rate refresh_rate)
    const char *refresh_rate_str = "60";
 
    /* Check filter type */
-   switch (refresh_rate)
+   if (refresh_rate == DINGUX_REFRESH_RATE_50HZ)
    {
-      case DINGUX_REFRESH_RATE_50HZ:
-         refresh_rate_float     = 50.0f;
-         refresh_rate_str       = "50";
-         break;
-      default:
-         /* Refresh rate is already set to 60 Hz
-          * by default */
-         break;
+      refresh_rate_float     = 50.0f;
+      refresh_rate_str       = "50";
    }
 
    if (setenv(DINGUX_VIDEO_REFRESHRATE_ENVAR, refresh_rate_str, 1) != 0)
@@ -215,22 +209,16 @@ float dingux_set_video_refresh_rate(enum dingux_refresh_rate refresh_rate)
 bool dingux_get_video_refresh_rate(enum dingux_refresh_rate *refresh_rate)
 {
    const char *refresh_rate_str = getenv(DINGUX_VIDEO_REFRESHRATE_ENVAR);
-
    /* If environment variable is unset, refresh
     * rate defaults to 60 Hz */
    if (!refresh_rate_str)
-   {
       *refresh_rate = DINGUX_REFRESH_RATE_60HZ;
-      return true;
-   }
-
-   if (string_is_equal(refresh_rate_str, "60"))
+   else if (string_is_equal(refresh_rate_str, "60"))
       *refresh_rate = DINGUX_REFRESH_RATE_60HZ;
    else if (string_is_equal(refresh_rate_str, "50"))
       *refresh_rate = DINGUX_REFRESH_RATE_50HZ;
    else
       return false;
-
    return true;
 }
 #endif
@@ -243,11 +231,13 @@ bool dingux_ipu_reset(void)
    unsetenv(DINGUX_SCALING_MODE_ENVAR);
    unsetenv(DINGUX_SCALING_SHARPNESS_ENVAR);
    unsetenv(DINGUX_VIDEO_REFRESHRATE_ENVAR);
-   return true;
 #else
-   return dingux_ipu_set_scaling_mode(true, false) &&
-          dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC);
+   if (!dingux_ipu_set_scaling_mode(true, false))
+      return false;
+   if (!dingux_ipu_set_filter_type(DINGUX_IPU_FILTER_BICUBIC))
+      return false;
 #endif
+   return true;
 }
 
 #if defined(RETROFW)
@@ -307,7 +297,7 @@ int retrofw_get_battery_level(enum frontend_powerstate *state)
    if (voltage_now > 3520)
       return 20 + (voltage_now - 3520) / 9;
    if (voltage_now > 3330)
-      return 1 + (voltage_now - 3330) * 10;
+      return 1  + (voltage_now - 3330) * 10;
    return 0;
 }
 #else
@@ -319,13 +309,21 @@ static int dingux_read_battery_sys_file(const char *path)
 
    /* Check whether file exists */
    if (!path_is_valid(path))
-      goto error;
+      return -1;
 
    /* Read file */
    if (!filestream_read_file(path, (void**)&file_buf, &file_len) ||
        (file_len == 0) ||
        !file_buf)
-      goto error;
+   {
+      if (file_buf)
+      {
+         free(file_buf);
+         file_buf = NULL;
+      }
+
+      return -1;
+   }
 
    /* Convert to integer */
    sys_file_value = atoi(file_buf);
@@ -333,15 +331,6 @@ static int dingux_read_battery_sys_file(const char *path)
    file_buf = NULL;
 
    return sys_file_value;
-
-error:
-   if (file_buf)
-   {
-      free(file_buf);
-      file_buf = NULL;
-   }
-
-   return -1;
 }
 
 /* Fetches internal battery level */
@@ -368,8 +357,8 @@ int dingux_get_battery_level(void)
    if (voltage_now < 0)
       return -1;
 
-   if ((voltage_max <= voltage_min) ||
-       (voltage_now <  voltage_min))
+   if (   (voltage_max <= voltage_min)
+       || (voltage_now <  voltage_min))
       return -1;
 
    return (int)(((voltage_now - voltage_min) * 100) / (voltage_max - voltage_min));
@@ -443,9 +432,9 @@ void dingux_get_base_path(char *path, size_t len)
          int dir_type         = dir_list->elems[i].attr.i;
 
          /* Skip files and invalid entries */
-         if ((dir_type != RARCH_DIRECTORY) ||
-             string_is_empty(dir_path) ||
-             string_is_equal(dir_path, DINGUX_RS90_DATA_PATH))
+         if (  (dir_type != RARCH_DIRECTORY)
+             || string_is_empty(dir_path)
+             || string_is_equal(dir_path, DINGUX_RS90_DATA_PATH))
             continue;
 
          /* Build 'retroarch' subdirectory path */
@@ -456,8 +445,8 @@ void dingux_get_base_path(char *path, size_t len)
           * - Directory corresponds to an unlabelled
           *   microsd card
           * - Subdirectory already exists */
-         if (string_is_equal(dir_path, DINGUX_RS90_DEFAULT_SD_PATH) ||
-             path_is_directory(path))
+         if (   string_is_equal(dir_path, DINGUX_RS90_DEFAULT_SD_PATH)
+             || path_is_directory(path))
          {
             path_found = true;
             break;

@@ -1,0 +1,12 @@
+//
+//  GitLabCI.xcconfig
+//  RetroArch_Metal
+//
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "Metal.xcconfig"
+// TODO: this does not produce a usable build as it is not properly signed
+CODE_SIGN_IDENTITY[sdk=macosx*] = -

@@ -277,7 +277,7 @@ static void query_raise_unknown_function(
          (uint64_t)where
          );
 
-   if (len < (_len - n - 3))
+   if (len < ((ssize_t)_len - n - 3))
       strncpy(s + n, name, len);
 
    strcpy_literal(s + n + len, "'");

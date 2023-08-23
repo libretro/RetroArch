@@ -181,7 +181,7 @@ static void *gfx_ctx_xegl_init(void *video_driver)
       goto error;
    }
 
-   if (n == 0 || !&xegl->egl.config)
+   if (n == 0 || !xegl->egl.config)
       goto error;
 #endif
 
@@ -398,7 +398,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
@@ -483,16 +483,6 @@ static void gfx_ctx_xegl_input_driver(void *data,
    *input_data  = xinput;
 }
 
-static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
-{
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-
-   return true;
-}
-
 static enum gfx_ctx_api gfx_ctx_xegl_get_api(void *data) { return xegl_api; }
 
 static bool gfx_ctx_xegl_bind_api(void *video_driver,
@@ -525,11 +515,6 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
    }
 
    return false;
-}
-
-static void gfx_ctx_xegl_show_mouse(void *data, bool state)
-{
-   x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
 static void gfx_ctx_xegl_swap_buffers(void *data)
@@ -569,7 +554,6 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
          break;
 #endif
       case GFX_CTX_OPENGL_API:
-         break;
       case GFX_CTX_NONE:
       default:
          break;
@@ -621,14 +605,14 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    x11_check_window,
    NULL, /* set_resize */
    x11_has_focus,
-   gfx_ctx_xegl_suppress_screensaver,
+   x11_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_xegl_swap_buffers,
    gfx_ctx_xegl_input_driver,
    gfx_ctx_xegl_get_proc_address,
    NULL,
    NULL,
-   gfx_ctx_xegl_show_mouse,
+   x11_show_mouse,
    "egl_x",
    gfx_ctx_xegl_get_flags,
    gfx_ctx_xegl_set_flags,

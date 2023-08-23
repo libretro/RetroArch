@@ -40,6 +40,9 @@ enum
    ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
+#ifdef HAVE_MICROPHONE
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE,
+#endif
    ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PARAMETER,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PRESET_PARAMETER,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES,
@@ -74,6 +77,7 @@ enum
    ACTION_OK_DL_AUDIO_DSP_PLUGIN,
    ACTION_OK_DL_VIDEO_FILTER,
    ACTION_OK_DL_OVERLAY_PRESET,
+   ACTION_OK_DL_OSK_OVERLAY_PRESET,
    ACTION_OK_DL_VIDEO_FONT,
    ACTION_OK_DL_SHADER_PASS,
    ACTION_OK_DL_FAVORITES_LIST,
@@ -108,12 +112,15 @@ enum
    ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST,
    ACTION_OK_DL_AUDIO_SETTINGS_LIST,
    ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST,
-   ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST,
+#ifdef HAVE_MICROPHONE
+   ACTION_OK_DL_MICROPHONE_SETTINGS_LIST,
+#endif
    ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,
    ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST,
    ACTION_OK_DL_LATENCY_SETTINGS_LIST,
    ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST,
    ACTION_OK_DL_SAVING_SETTINGS_LIST,
+   ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST,
    ACTION_OK_DL_LOGGING_SETTINGS_LIST,
    ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST,
    ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST,
@@ -125,6 +132,7 @@ enum
 #ifdef HAVE_MIST
    ACTION_OK_DL_CORE_INFORMATION_STEAM_LIST,
 #endif
+   ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST,
    ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST,
    ACTION_OK_DL_RECORDING_SETTINGS_LIST,
    ACTION_OK_DL_PLAYLIST_SETTINGS_LIST,
@@ -177,6 +185,7 @@ enum
    ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST,
+   ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
    ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST,
@@ -241,9 +250,6 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx);
 
-int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
-int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound);
-
 int action_cancel_pop_with_new_pos(const char *path,
       const char *label, unsigned type, size_t idx, size_t new_idx);
 
@@ -254,20 +260,8 @@ int generic_action_ok_displaylist_push(const char *path, const char *new_path,
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound);
 
-int action_ok_push_generic_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int action_ok_directory_push(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
-
-int core_setting_right(unsigned type, const char *label,
-      bool wraparound);
-
-int action_right_cheat(unsigned type, const char *label,
-      bool wraparound);
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);
 
@@ -276,21 +270,27 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, size_t lbl_len,
+      unsigned type, size_t idx);
 
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, size_t lbl_len,
+      unsigned type, size_t idx);
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -302,8 +302,10 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
@@ -324,9 +326,6 @@ int action_scan_directory(const char *path,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 #endif
-
-int bind_right_generic(unsigned type, const char *label,
-       bool wraparound);
 
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);

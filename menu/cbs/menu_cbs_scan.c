@@ -39,11 +39,10 @@
 void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   menu_ctx_environment_t menu_environ;
-   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
-   menu_environ.data = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (menu_st->driver_ctx->environ_cb)
+      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+            NULL, menu_st->userdata);
 }
 
 int action_scan_file(const char *path,
@@ -101,14 +100,16 @@ int action_scan_directory(const char *path,
 int action_switch_thumbnail(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   const char *menu_ident  = menu_driver_ident();
-   settings_t *settings    = config_get_ptr();
-   bool switch_enabled     = true;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
+   const char *menu_ident     = menu_driver_ident();
+   settings_t *settings       = config_get_ptr();
+   bool switch_enabled        = true;
 #ifdef HAVE_RGUI
-   switch_enabled          = !string_is_equal(menu_ident, "rgui");
+   switch_enabled             = !string_is_equal(menu_ident, "rgui");
 #endif
 #ifdef HAVE_MATERIALUI
-   switch_enabled          = switch_enabled && !string_is_equal(menu_ident, "glui");
+   switch_enabled             = switch_enabled && !string_is_equal(menu_ident, "glui");
 #endif
 
    if (!settings)
@@ -163,8 +164,18 @@ int action_switch_thumbnail(const char *path,
                   settings->uints.gfx_thumbnails + 1);
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+      if (menu_st->driver_ctx)
+      {
+         if (menu_st->driver_ctx->update_thumbnail_path)
+         {
+            menu_st->driver_ctx->update_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection, 'L');
+            menu_st->driver_ctx->update_thumbnail_path(
+                  menu_st->userdata, (unsigned)selection, 'R');
+         }
+         if (menu_st->driver_ctx->update_thumbnail_image)
+            menu_st->driver_ctx->update_thumbnail_image(menu_st->userdata);
+      }
    }
 
    return 0;
@@ -243,6 +254,19 @@ static int action_scan_video_font_path(const char *path,
    return 0;
 }
 
+#ifdef HAVE_XMB
+static int action_scan_video_xmb_font(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   strlcpy(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
+   command_event(CMD_EVENT_REINIT, NULL);
+
+   return 0;
+}
+#endif
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
@@ -301,6 +325,13 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
                BIND_ACTION_SCAN(cbs, action_scan_video_font_path);
                return 0;
             }
+#ifdef HAVE_XMB
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT)))
+            {
+               BIND_ACTION_SCAN(cbs, action_scan_video_xmb_font);
+               return 0;
+            }
+#endif
             break;
          default:
          case ST_NONE:

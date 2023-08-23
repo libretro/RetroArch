@@ -21,14 +21,16 @@
 
 #include "../../input/common/wayland_common.h"
 
-typedef struct toplevel_listener {
+typedef struct toplevel_listener
+{
 #ifdef HAVE_LIBDECOR_H
    struct libdecor_frame_interface libdecor_frame_interface;
 #endif
    struct xdg_toplevel_listener xdg_toplevel_listener;
 } toplevel_listener_t;
 
-typedef struct shm_buffer {
+typedef struct shm_buffer
+{
    struct wl_buffer *wl_buffer;
    void *data;
    size_t data_size;
@@ -51,12 +53,12 @@ void libdecor_frame_handle_commit(struct libdecor_frame *frame,
       void *data);
 #endif
 
-void gfx_ctx_wl_get_video_size_common(gfx_ctx_wayland_data_t *wl,
-      unsigned *width, unsigned *height);
+void gfx_ctx_wl_get_video_size_common(void *data, unsigned *width,
+      unsigned *height);
 
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl);
 
-void gfx_ctx_wl_update_title_common(gfx_ctx_wayland_data_t *wl);
+void gfx_ctx_wl_update_title_common(void *data);
 
 bool gfx_ctx_wl_get_metrics_common(void *data,
       enum display_metric_types type, float *value);
@@ -88,4 +90,3 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 #ifdef HAVE_LIBDECOR_H
 extern const struct libdecor_interface libdecor_interface;
 #endif
-

@@ -159,13 +159,11 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            _len                 = strlcpy(cue_filename,
-                                   state->title, sizeof(cue_filename));
-            cue_filename[_len  ] = '.';
-            cue_filename[_len+1] = 'c';
-            cue_filename[_len+2] = 'u';
-            cue_filename[_len+3] = 'e';
-            cue_filename[_len+4] = '\0';
+            _len = strlcpy(cue_filename,
+                  state->title, sizeof(cue_filename));
+            strlcpy(cue_filename       + _len,
+                  ".cue",
+                  sizeof(cue_filename) - _len);
 
             fill_pathname_join_special(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));

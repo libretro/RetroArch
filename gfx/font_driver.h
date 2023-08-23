@@ -21,76 +21,13 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #include "../retroarch.h"
 
 #include "video_defines.h"
 
 RETRO_BEGIN_DECLS
-
-/* All coordinates and offsets are top-left oriented.
- *
- * This is a texture-atlas approach which allows text to
- * be drawn in a single draw call.
- *
- * It is up to the code using this interface to actually
- * generate proper vertex buffers and upload the atlas texture to GPU. */
-
-struct font_glyph
-{
-   unsigned width;
-   unsigned height;
-
-   /* Texel coordinate offset for top-left pixel of this glyph. */
-   unsigned atlas_offset_x;
-   unsigned atlas_offset_y;
-
-   /* When drawing this glyph, apply an offset to
-    * current X/Y draw coordinate. */
-   int draw_offset_x;
-   int draw_offset_y;
-
-   /* Advance X/Y draw coordinates after drawing this glyph. */
-   int advance_x;
-   int advance_y;
-};
-
-struct font_atlas
-{
-   uint8_t *buffer; /* Alpha channel. */
-   unsigned width;
-   unsigned height;
-   bool dirty;
-};
-
-struct font_params
-{
-   /* Drop shadow offset.
-    * If both are 0, no drop shadow will be rendered. */
-   int drop_x, drop_y;
-
-   /* ABGR. Use the macros. */
-   uint32_t color;
-
-   float x;
-   float y;
-   float scale;
-   /* Drop shadow color multiplier. */
-   float drop_mod;
-   /* Drop shadow alpha */
-   float drop_alpha;
-
-   enum text_alignment text_align;
-
-   bool full_screen;
-};
-
-struct font_line_metrics
-{
-   float height;
-   float ascender;
-   float descender;
-};
 
 typedef struct font_renderer
 {
@@ -110,6 +47,8 @@ typedef struct font_renderer
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
 
+/* NOTE: All functions are required to be implemented for font_renderer_driver */
+
 typedef struct font_renderer_driver
 {
    void *(*init)(const char *font_path, float font_size);
@@ -125,7 +64,7 @@ typedef struct font_renderer_driver
 
    const char *ident;
 
-   bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
+   void (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_driver_t;
 
 typedef struct
@@ -135,6 +74,32 @@ typedef struct
    float size;
 } font_data_t;
 
+/* This structure holds all objects + metadata
+ * corresponding to a particular font */
+typedef struct
+{
+   font_data_t *font;
+   video_font_raster_block_t raster_block; /* ptr alignment */
+   unsigned glyph_width;
+   unsigned wideglyph_width;
+   int line_height;
+   int line_ascender;
+   int line_centre_offset;
+} font_data_impl_t;
+
+void font_driver_bind_block(void *font_data, void *block);
+
+static void INLINE font_bind(font_data_impl_t *font_data)
+{
+   font_driver_bind_block(font_data->font, &font_data->raster_block);
+   font_data->raster_block.carr.coords.vertices = 0;
+}
+
+static void INLINE font_unbind(font_data_impl_t *font_data)
+{
+   font_driver_bind_block(font_data->font, NULL);
+}
+
 /* font_path can be NULL for default font. */
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
@@ -142,15 +107,16 @@ int font_renderer_create_default(
       const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(void *data,
-      const char *msg, const void *params, void *font_data);
-
-void font_driver_bind_block(void *font_data, void *block);
+      const char *msg, const struct font_params *params, void *font_data);
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
-void font_driver_flush(unsigned width, unsigned height, void *font_data);
+void font_driver_free(font_data_t *font);
 
-void font_driver_free(void *font_data);
+void font_flush(
+      unsigned video_width,
+      unsigned video_height,
+      font_data_impl_t *font_data);
 
 font_data_t *font_driver_init_first(
       void *video_data,
@@ -162,23 +128,22 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(
       void *video_data,
-      const void *video_info_data,
+      const video_info_t *video_info,
       bool threading_hint,
       bool is_threaded,
       enum font_driver_render_api api);
 
 void font_driver_free_osd(void);
 
-int font_driver_get_line_height(void *font_data, float scale);
-int font_driver_get_line_ascender(void *font_data, float scale);
-int font_driver_get_line_descender(void *font_data, float scale);
-int font_driver_get_line_centre_offset(void *font_data, float scale);
+int font_driver_get_line_height(font_data_t *font, float scale);
+int font_driver_get_line_ascender(font_data_t *font, float scale);
+int font_driver_get_line_descender(font_data_t *font, float scale);
+int font_driver_get_line_centre_offset(font_data_t *font, float scale);
 
 extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
 extern font_renderer_t gl1_raster_font;
-extern font_renderer_t d3d_xdk1_font;
-extern font_renderer_t d3d_win32_font;
+extern font_renderer_t d3d9x_win32_font;
 extern font_renderer_t ps2_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;

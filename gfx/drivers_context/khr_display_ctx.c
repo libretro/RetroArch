@@ -32,6 +32,7 @@ typedef struct
    int swap_interval;
    unsigned width;
    unsigned height;
+   unsigned refresh_rate_x1000;
 } khr_display_ctx_data_t;
 
 static void gfx_ctx_khr_display_destroy(void *data)
@@ -55,6 +56,18 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
    *width                      = khr->width;
    *height                     = khr->height;
 }
+
+static float gfx_ctx_khr_display_get_refresh_rate(void *data)
+{
+   float refresh_rate          = 0.0f;
+   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
+
+   if (khr)
+      refresh_rate = khr->refresh_rate_x1000 / 1000.0f;
+
+   return refresh_rate;
+}
+
 
 static void *gfx_ctx_khr_display_init(void *video_driver)
 {
@@ -82,7 +95,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   *resize                     = khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *resize                     = (khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
    if (khr->width != *width || khr->height != *height)
    {
@@ -126,6 +139,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
    khr_display_ctx_data_t *khr    = (khr_display_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned video_monitor_index   = settings->uints.video_monitor_index;
+   unsigned refresh_rate_x1000    = settings->floats.video_refresh_rate * 1000;
 
    if (!fullscreen)
    {
@@ -136,6 +150,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
    info.width                     = width;
    info.height                    = height;
    info.monitor_index             = video_monitor_index;
+   info.refresh_rate_x1000        = refresh_rate_x1000;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
@@ -147,6 +162,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
 
    khr->width                     = khr->vk.context.swapchain_width;
    khr->height                    = khr->vk.context.swapchain_height;
+   khr->refresh_rate_x1000        = info.refresh_rate_x1000;
 
    return true;
 }
@@ -262,7 +278,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_swap_interval,
    gfx_ctx_khr_display_set_video_mode,
    gfx_ctx_khr_display_get_video_size,
-   NULL,                                        /* get_refresh_rate */
+   gfx_ctx_khr_display_get_refresh_rate,
    NULL,                                        /* get_video_output_size */
    NULL,                                        /* get_video_output_prev */
    NULL,                                        /* get_video_output_next */

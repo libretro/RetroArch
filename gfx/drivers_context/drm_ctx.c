@@ -113,16 +113,16 @@ typedef struct hdmi_timings
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 static drmModeModeInfo gfx_ctx_crt_switch_mode;
-static bool switch_mode = false;
+static bool switch_mode                   = false;
 
 static float mode_vrefresh(drmModeModeInfo *mode)
 {
-   return  mode->clock * 1000.00 / (mode->htotal * mode->vtotal);
+   return  mode->clock * 1000.00f / (mode->htotal * mode->vtotal);
 }
 
 static void dump_mode(drmModeModeInfo *mode, int index)
 {
-   RARCH_LOG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
+   RARCH_DBG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
       index,
       mode->name,
       mode_vrefresh(mode),
@@ -343,38 +343,40 @@ error:
 /* Get the mode from video_state */
 bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
 {
+#ifdef HAVE_CRTSWITCHRES
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (video_st->crt_switch_st.vdisplay < 1)
+   if (video_st->crt_switch_st.vdisplay >= 1)
    {
-      return false;
-   }
-   modeInfo->clock       = video_st->crt_switch_st.clock;
-   modeInfo->hdisplay    = video_st->crt_switch_st.hdisplay;
-   modeInfo->hsync_start = video_st->crt_switch_st.hsync_start;
-   modeInfo->hsync_end   = video_st->crt_switch_st.hsync_end;
-   modeInfo->htotal      = video_st->crt_switch_st.htotal;
-   modeInfo->vdisplay    = video_st->crt_switch_st.vdisplay;
-   modeInfo->vsync_start = video_st->crt_switch_st.vsync_start;
-   modeInfo->vsync_end   = video_st->crt_switch_st.vsync_end;
-   modeInfo->vtotal      = video_st->crt_switch_st.vtotal;
-   modeInfo->flags       = (video_st->crt_switch_st.interlace ? DRM_MODE_FLAG_INTERLACE : 0)
-                           | (video_st->crt_switch_st.doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
-                           | (video_st->crt_switch_st.hsync ? DRM_MODE_FLAG_PHSYNC : DRM_MODE_FLAG_NHSYNC)
-                           | (video_st->crt_switch_st.vsync ? DRM_MODE_FLAG_PVSYNC : DRM_MODE_FLAG_NVSYNC);
-   modeInfo->hskew       = 0;
-   modeInfo->vscan       = 0;
-   modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
-   modeInfo->type        = DRM_MODE_TYPE_USERDEF;
+      modeInfo->clock       = video_st->crt_switch_st.clock;
+      modeInfo->hdisplay    = video_st->crt_switch_st.hdisplay;
+      modeInfo->hsync_start = video_st->crt_switch_st.hsync_start;
+      modeInfo->hsync_end   = video_st->crt_switch_st.hsync_end;
+      modeInfo->htotal      = video_st->crt_switch_st.htotal;
+      modeInfo->vdisplay    = video_st->crt_switch_st.vdisplay;
+      modeInfo->vsync_start = video_st->crt_switch_st.vsync_start;
+      modeInfo->vsync_end   = video_st->crt_switch_st.vsync_end;
+      modeInfo->vtotal      = video_st->crt_switch_st.vtotal;
+      modeInfo->flags       = (video_st->crt_switch_st.interlace ? DRM_MODE_FLAG_INTERLACE : 0)
+         | (video_st->crt_switch_st.doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
+         | (video_st->crt_switch_st.hsync      ? DRM_MODE_FLAG_PHSYNC  : DRM_MODE_FLAG_NHSYNC)
+         | (video_st->crt_switch_st.vsync      ? DRM_MODE_FLAG_PVSYNC  : DRM_MODE_FLAG_NVSYNC);
+      modeInfo->hskew       = 0;
+      modeInfo->vscan       = 0;
+      modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
+      modeInfo->type        = DRM_MODE_TYPE_USERDEF;
 
-   snprintf(modeInfo->name, 45, "RetroArch_CRT-%dx%d@%.02f%s"
+      snprintf(modeInfo->name, 45, "RetroArch_CRT-%dx%d@%.02f%s"
             , video_st->crt_switch_st.hdisplay
             , video_st->crt_switch_st.vdisplay
             , mode_vrefresh(modeInfo)
             , video_st->crt_switch_st.interlace ? "i" : "");
-   dump_mode(modeInfo, 0);
-   /* consider the mode read and removed */
-   video_st->crt_switch_st.vdisplay = 0;
-   return true;
+      dump_mode(modeInfo, 0);
+      /* consider the mode read and removed */
+      video_st->crt_switch_st.vdisplay = 0;
+      return true;
+   }
+#endif
+   return false;
 }
 
 /* Load custom hdmi timings from config */
@@ -383,7 +385,7 @@ static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
    settings_t *settings     = config_get_ptr();
    char *crt_switch_timings = settings->arrays.crt_switch_timings;
 
-   if(modeInfo && !string_is_empty(crt_switch_timings))
+   if (modeInfo && !string_is_empty(crt_switch_timings))
    {
       hdmi_timings_t timings;
       int ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
@@ -568,8 +570,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
    /* Recreate the surface */
-   //*
-   if(switch_mode)
+   if (switch_mode)
    {
       RARCH_DBG("[KMS]: modeswitch detected, doing GBM and EGL stuff\n");
       if (drm->gbm_surface)
@@ -591,9 +592,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
             GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
       if (!drm->gbm_surface)
-      {
          RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
-      }
 
       /* Creates an EGL surface and make it current */
       egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
@@ -615,8 +614,8 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    drm->waiting_for_flip = gfx_ctx_drm_queue_flip(drm);
 
    /* Triple-buffered page flips */
-   if (max_swapchain_images >= 3 &&
-         gbm_surface_has_free_buffers(drm->gbm_surface))
+   if (     max_swapchain_images >= 3
+         && gbm_surface_has_free_buffers(drm->gbm_surface))
       return;
 
    gfx_ctx_drm_wait_flip(drm, true);
@@ -632,6 +631,19 @@ static void gfx_ctx_drm_get_video_size(void *data,
 
    *width  = drm->fb_width;
    *height = drm->fb_height;
+}
+
+static void gfx_ctx_drm_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (!drm)
+      return;
+
+   *width  = drm->fb_width;
+   *height = drm->fb_height;
+
 }
 
 static void free_drm_resources(gfx_ctx_drm_data_t *drm)
@@ -783,6 +795,8 @@ nextgpu:
 
    g_drm_fd                       = fd;
 
+   video_driver_display_type_set(RARCH_DISPLAY_KMS);
+   
    return drm;
 
 error:
@@ -820,25 +834,28 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size,
     * which is not appropriate. */
-   if(gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
+   if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
    {
       RARCH_DBG("[KMS]: New mode detected: %dx%d\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
-      g_drm_mode = &gfx_ctx_crt_switch_mode;
+      g_drm_mode     = &gfx_ctx_crt_switch_mode;
       drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
       drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
-      switch_mode = true;
+      switch_mode    = true;
       /* Let's exit, since modeswitching will happen while swapping buffers */
       return true;
    }
    if ((width == 0 && height == 0) || !fullscreen)
-      g_drm_mode                   = &g_drm_connector->modes[0];
+   {
+      RARCH_WARN("[KMS]: Falling back to mode 0 (default)\n");
+      g_drm_mode     = &g_drm_connector->modes[0];
+   }
    else
    {
       /* check if custom HDMI timings were asked */
       if (gfx_ctx_crt_switch_mode.vdisplay > 0)
       {
-         g_drm_mode                = &gfx_ctx_crt_switch_mode;
          RARCH_LOG("[DRM]: custom mode requested: %s\n", gfx_ctx_crt_switch_mode.name);
+         g_drm_mode  = &gfx_ctx_crt_switch_mode;
       }
       else
       {
@@ -916,6 +933,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
 error:
    gfx_ctx_drm_destroy_resources(drm);
+   RARCH_ERR("[KMS]: Error when switching mode.\n");
 
    if (drm)
       free(drm);
@@ -1074,7 +1092,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_set_video_mode,
    gfx_ctx_drm_get_video_size,
    drm_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   gfx_ctx_drm_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */

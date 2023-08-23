@@ -24,7 +24,6 @@
 
 #include "tasks_internal.h"
 
-#include "../menu/menu_entries.h"
 #include "../menu/menu_driver.h"
 
 typedef struct menu_explore_init_handle
@@ -73,13 +72,12 @@ static void cb_task_menu_explore_init(
 {
    menu_explore_init_handle_t *menu_explore = NULL;
    unsigned menu_type                       = 0;
+   struct menu_state *menu_st               = menu_state_get_ptr();
 
    if (!task)
       return;
 
-   menu_explore = (menu_explore_init_handle_t*)task->state;
-
-   if (!menu_explore)
+   if (!(menu_explore = (menu_explore_init_handle_t*)task->state))
       return;
 
    /* Assign global menu explore state object */
@@ -93,23 +91,25 @@ static void cb_task_menu_explore_init(
    /* check if we are opening a saved view from the horizontal/tabs menu */
    if (menu_type == MENU_SETTING_HORIZONTAL_MENU)
    {
-      menu_ctx_list_t tabs, horizontal;
-      tabs.type = MENU_LIST_TABS;
-      if (menu_driver_list_get_selection(&tabs) && menu_driver_list_get_size(&tabs))
+      const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
+      if (driver_ctx->list_get_entry)
       {
-         horizontal.type = MENU_LIST_HORIZONTAL;
-         horizontal.idx = tabs.selection - (tabs.size + 1);
-         if (menu_driver_list_get_entry(&horizontal))
-            menu_type = ((struct item_file*)horizontal.entry)->type;
+         size_t selection                 = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         size_t size                      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+         if (selection > 0 && size > 0)
+         {
+            struct item_file *item        = NULL;
+            /* Label contains the path and path contains the label */
+            if ((item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
+                        (unsigned)(selection - (size +1)))))
+               menu_type = item->type;
+         }
       }
    }
 
    if (menu_type == MENU_EXPLORE_TAB)
-   {
-      bool refresh_nonblocking = false;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh_nonblocking);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-   }
+      menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                 |  MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
 static void task_menu_explore_init_free(retro_task_t *task)
@@ -130,47 +130,37 @@ static void task_menu_explore_init_free(retro_task_t *task)
 
 static void task_menu_explore_init_handler(retro_task_t *task)
 {
-   menu_explore_init_handle_t *menu_explore = NULL;
-
-   if (!task)
-      goto task_finished;
-
-   menu_explore = (menu_explore_init_handle_t*)task->state;
-
-   if (!menu_explore)
-      goto task_finished;
-
-   if (task_get_cancelled(task))
-      goto task_finished;
-
-   /* TODO/FIXME: It could be beneficial to
-    * initialise the explore menu iteratively,
-    * but this would require a non-trivial rewrite
-    * of the menu_explore code. For now, we will
-    * do it in a single shot (the most important
-    * consideration here is to place this
-    * initialisation on a background thread) */
-   menu_explore->state = menu_explore_build_list(
-         menu_explore->directory_playlist,
-         menu_explore->directory_database);
-
-   task_set_progress(task, 100);
-
-task_finished:
-
    if (task)
+   {
+      menu_explore_init_handle_t *menu_explore = NULL;
+      if ((menu_explore = (menu_explore_init_handle_t*)task->state))
+      {
+         if (!task_get_cancelled(task))
+         {
+            /* TODO/FIXME: It could be beneficial to
+             * initialise the explore menu iteratively,
+             * but this would require a non-trivial rewrite
+             * of the menu_explore code. For now, we will
+             * do it in a single shot (the most important
+             * consideration here is to place this
+             * initialisation on a background thread) */
+            menu_explore->state = menu_explore_build_list(
+                  menu_explore->directory_playlist,
+                  menu_explore->directory_database);
+
+            task_set_progress(task, 100);
+         }
+      }
+
       task_set_finished(task, true);
+   }
 }
 
 static bool task_menu_explore_init_finder(
       retro_task_t *task, void *user_data)
 {
-   if (!task)
-      return false;
-
-   if (task->handler == task_menu_explore_init_handler)
+   if (task && task->handler == task_menu_explore_init_handler)
       return true;
-
    return false;
 }
 
@@ -181,8 +171,8 @@ bool task_push_menu_explore_init(const char *directory_playlist,
    retro_task_t *task                       = NULL;
    menu_explore_init_handle_t *menu_explore = NULL;
 
-   if (string_is_empty(directory_playlist) ||
-       string_is_empty(directory_database))
+   if (   string_is_empty(directory_playlist)
+       || string_is_empty(directory_database))
       goto error;
 
    task         = task_init();

@@ -167,10 +167,10 @@ int system_property_get(const char *command,
    char *curpos                 = NULL;
    size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
 
-   cmd[buf_pos]                 = ' ';
-   cmd[buf_pos+1]               = '\0';
+   cmd[  buf_pos]               = ' ';
+   cmd[++buf_pos]               = '\0';
 
-   buf_pos                      = strlcat(cmd, args, sizeof(cmd));
+   strlcpy(cmd + buf_pos, args, sizeof(cmd) - buf_pos);
 
    if (!(pipe = popen(cmd, "r")))
    {
@@ -203,33 +203,6 @@ int system_property_get(const char *command,
 #ifdef ANDROID
 /* forward declaration */
 bool android_run_events(void *data);
-
-void android_dpi_get_density(char *s, size_t len)
-{
-   static bool inited_once             = false;
-   static bool inited2_once            = false;
-   static char string[PROP_VALUE_MAX]  = {0};
-   static char string2[PROP_VALUE_MAX] = {0};
-   if (!inited_once)
-   {
-      system_property_get("getprop", "ro.sf.lcd_density", string);
-      inited_once = true;
-   }
-
-   if (!string_is_empty(string))
-   {
-      strlcpy(s, string, len);
-      return;
-   }
-
-   if (!inited2_once)
-   {
-      system_property_get("wm", "density", string2);
-      inited2_once = true;
-   }
-
-   strlcpy(s, string2, len);
-}
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
@@ -1582,6 +1555,8 @@ static void frontend_unix_get_env(int *argc,
                   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], app_dir,
                   "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], app_dir,
+                  "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
 
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], app_dir,
                   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -1741,13 +1716,13 @@ static void frontend_unix_get_env(int *argc,
 
    if (xdg)
    {
-      strlcpy(base_path, xdg, sizeof(base_path));
-      strlcat(base_path, "/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
+      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
-      strlcpy(base_path, home, sizeof(base_path));
-      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, home, sizeof(base_path));
+      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
    else
       strlcpy(base_path, "retroarch", sizeof(base_path));
@@ -1885,7 +1860,9 @@ static void frontend_unix_get_env(int *argc,
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
-         "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], base_path,
+         "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
@@ -2255,21 +2232,23 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    if (xdg)
    {
-      strlcpy(base_path, xdg, sizeof(base_path));
-      strlcat(base_path, "/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
+      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
-      strlcpy(base_path, home, sizeof(base_path));
-      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+      size_t _len = strlcpy(base_path, home, sizeof(base_path));
+      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
 #endif
 
-   strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
-   if (user)
    {
-      strlcat(udisks_media_path, "/", sizeof(udisks_media_path));
-      strlcat(udisks_media_path, user, sizeof(udisks_media_path));
+      size_t _len = strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
+      if (user)
+      {
+         _len += strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
+         strlcpy(udisks_media_path + _len, user, sizeof(udisks_media_path) - _len);
+      }
    }
 
    if (!string_is_empty(base_path))
@@ -2642,10 +2621,10 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       return;
    }
 
-   inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
-   inotify_data->fd = fd;
+   inotify_data            = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
+   inotify_data->fd        = fd;
 
-   inotify_data->wd_list = int_vector_list_new();
+   inotify_data->wd_list   = int_vector_list_new();
    inotify_data->path_list = string_list_new();
 
    /* handle other flags here as new ones are added */
@@ -2685,7 +2664,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
    {
       i = 0;
 
-      while (i < length && i < sizeof(buffer))
+      while (i < length && i < (int)sizeof(buffer))
       {
          struct inotify_event *event = (struct inotify_event *)&buffer[i];
 
@@ -2702,7 +2681,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
              * to disk, to make sure that the new data is
              * immediately available when the file is re-read.
              */
-            for (j = 0; j < inotify_data->wd_list->count; j++)
+            for (j = 0; j < (int)inotify_data->wd_list->count; j++)
             {
                if (inotify_data->wd_list->data[j] == event->wd)
                {

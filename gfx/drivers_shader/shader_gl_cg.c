@@ -104,15 +104,15 @@ struct shader_program_cg
 typedef struct cg_shader_data
 {
    struct video_shader *shader;
-   char alias_define[GFX_MAX_SHADERS][128];
-   unsigned active_idx;
-   unsigned attribs_index;
+   CGcontext cgCtx;
    CGparameter attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    CGprofile cgVProf;
    CGprofile cgFProf;
    struct shader_program_cg prg[GFX_MAX_SHADERS];
+   size_t attribs_index;
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   CGcontext cgCtx;
+   unsigned active_idx;
+   char alias_define[GFX_MAX_SHADERS][128];
 } cg_shader_data_t;
 
 struct uniform_cg
@@ -166,7 +166,10 @@ static void gl_cg_set_uniform_parameter(
       }
 
       if (param->lookup.add_prefix)
-         snprintf(ident, sizeof(ident), "IN.%s", param->lookup.ident);
+      {
+         size_t _len = strlcpy(ident, "IN.", sizeof(ident));
+         strlcpy(ident + _len, param->lookup.ident, sizeof(ident) - _len);
+      }
       location = cgGetNamedParameter(prog, param->lookup.add_prefix ? ident : param->lookup.ident);
    }
    else
@@ -235,7 +238,7 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
 
 static void gl_cg_reset_attrib(void *data)
 {
-   int i;
+   size_t i;
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    for (i = 0; i < cg->attribs_index; i++)
       cgGLDisableClientState(cg->attribs_elems[i]);
@@ -747,28 +750,27 @@ static void gl_cg_set_pass_attrib(
       const char *attr)
 {
    char attr_buf[64];
-
-   attr_buf[0] = '\0';
-
-   snprintf(attr_buf, sizeof(attr_buf), "%s.texture", attr);
+   size_t _len = strlcpy(attr_buf, attr, sizeof(attr_buf));
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".texture");
    if (!fbo->tex)
       fbo->tex = cgGetNamedParameter(program->fprg, attr_buf);
 
-   snprintf(attr_buf, sizeof(attr_buf), "%s.video_size", attr);
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".tex_coord");
+   if (!fbo->coord)
+      fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
+
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".video_size");
    if (!fbo->vid_size_v)
       fbo->vid_size_v = cgGetNamedParameter(program->vprg, attr_buf);
    if (!fbo->vid_size_f)
       fbo->vid_size_f = cgGetNamedParameter(program->fprg, attr_buf);
 
-   snprintf(attr_buf, sizeof(attr_buf), "%s.texture_size", attr);
+   snprintf(attr_buf + _len, sizeof(attr_buf) - _len, ".texture_size");
    if (!fbo->tex_size_v)
       fbo->tex_size_v = cgGetNamedParameter(program->vprg, attr_buf);
    if (!fbo->tex_size_f)
       fbo->tex_size_f = cgGetNamedParameter(program->fprg, attr_buf);
 
-   snprintf(attr_buf, sizeof(attr_buf), "%s.tex_coord", attr);
-   if (!fbo->coord)
-      fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
 }
 
 static INLINE void gl_cg_set_shaders(CGprogram frag, CGprogram vert)
@@ -823,10 +825,8 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    if (i > 1)
    {
       char pass_str[64];
-
-      pass_str[0] = '\0';
-
-      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
+      size_t _len = strlcpy(pass_str, "PASSPREV", sizeof(pass_str));
+      snprintf(pass_str + _len, sizeof(pass_str) - _len, "%u", i);
       gl_cg_set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
    }
 

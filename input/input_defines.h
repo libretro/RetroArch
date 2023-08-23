@@ -22,8 +22,6 @@
 
 #include <retro_common_api.h>
 
-RETRO_BEGIN_DECLS
-
 #define MAX_USERS                      16
 
 #define MAX_INPUT_DEVICES              16
@@ -36,6 +34,56 @@ RETRO_BEGIN_DECLS
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
 #define RARCH_UNMAPPED                 1024
+
+/* Specialized _MOUSE that targets the full screen regardless of viewport.
+ */
+#define RARCH_DEVICE_MOUSE_SCREEN      (RETRO_DEVICE_MOUSE | 0x10000)
+
+/* Specialized _POINTER that targets the full screen regardless of viewport.
+ * Should not be used by a libretro implementation as coordinates returned
+ * make no sense.
+ *
+ * It is only used internally for overlays. */
+#define RARCH_DEVICE_POINTER_SCREEN    (RETRO_DEVICE_POINTER | 0x10000)
+
+#define RARCH_DEVICE_ID_POINTER_BACK   (RETRO_DEVICE_ID_POINTER_PRESSED | 0x10000)
+
+/* libretro has 16 buttons from 0-15 (libretro.h)
+ * Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme
+ * internally in RetroArch for simplicity, so they are mapped into [16, 23].
+ */
+
+#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | 0xFFFFU)
+#define AXIS_POS(x)        ((uint32_t)(x) | 0xFFFF0000UL)
+#define AXIS_NONE          0xFFFFFFFFUL
+#define AXIS_DIR_NONE      0xFFFFU
+
+#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & 0xFFFFU)
+#define AXIS_POS_GET(x)    ((uint32_t)(x) & 0xFFFFU)
+
+#define NO_BTN             0xFFFFU
+
+#define HAT_UP_SHIFT       15
+#define HAT_DOWN_SHIFT     14
+#define HAT_LEFT_SHIFT     13
+#define HAT_RIGHT_SHIFT    12
+#define HAT_UP_MASK        (1 << HAT_UP_SHIFT)
+#define HAT_DOWN_MASK      (1 << HAT_DOWN_SHIFT)
+#define HAT_LEFT_MASK      (1 << HAT_LEFT_SHIFT)
+#define HAT_RIGHT_MASK     (1 << HAT_RIGHT_SHIFT)
+#define HAT_MAP(x, hat)    ((x & ((1 << 12) - 1)) | hat)
+
+#define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
+#define GET_HAT_DIR(x)     (x & HAT_MASK)
+#define GET_HAT(x)         (x & (~HAT_MASK))
+
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_PLAYBACK_ON() (input_st->bsv_movie_state_handle && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK) && !(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END))
+#define BSV_MOVIE_IS_RECORDING() (input_st->bsv_movie_state_handle && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING))
+
+#endif
+
+RETRO_BEGIN_DECLS
 
 /* RetroArch specific bind IDs. */
 enum
@@ -195,54 +243,6 @@ enum input_turbo_default_button
    INPUT_TURBO_DEFAULT_BUTTON_R3,
    INPUT_TURBO_DEFAULT_BUTTON_LAST
 };
-
-/* Specialized _MOUSE that targets the full screen regardless of viewport.
- */
-#define RARCH_DEVICE_MOUSE_SCREEN      (RETRO_DEVICE_MOUSE | 0x10000)
-
-/* Specialized _POINTER that targets the full screen regardless of viewport.
- * Should not be used by a libretro implementation as coordinates returned
- * make no sense.
- *
- * It is only used internally for overlays. */
-#define RARCH_DEVICE_POINTER_SCREEN    (RETRO_DEVICE_POINTER | 0x10000)
-
-#define RARCH_DEVICE_ID_POINTER_BACK   (RETRO_DEVICE_ID_POINTER_PRESSED | 0x10000)
-
-/* libretro has 16 buttons from 0-15 (libretro.h)
- * Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme
- * internally in RetroArch for simplicity, so they are mapped into [16, 23].
- */
-
-#define AXIS_NEG(x)        (((uint32_t)(x) << 16) | 0xFFFFU)
-#define AXIS_POS(x)        ((uint32_t)(x) | 0xFFFF0000UL)
-#define AXIS_NONE          0xFFFFFFFFUL
-#define AXIS_DIR_NONE      0xFFFFU
-
-#define AXIS_NEG_GET(x)    (((uint32_t)(x) >> 16) & 0xFFFFU)
-#define AXIS_POS_GET(x)    ((uint32_t)(x) & 0xFFFFU)
-
-#define NO_BTN             0xFFFFU
-
-#define HAT_UP_SHIFT       15
-#define HAT_DOWN_SHIFT     14
-#define HAT_LEFT_SHIFT     13
-#define HAT_RIGHT_SHIFT    12
-#define HAT_UP_MASK        (1 << HAT_UP_SHIFT)
-#define HAT_DOWN_MASK      (1 << HAT_DOWN_SHIFT)
-#define HAT_LEFT_MASK      (1 << HAT_LEFT_SHIFT)
-#define HAT_RIGHT_MASK     (1 << HAT_RIGHT_SHIFT)
-#define HAT_MAP(x, hat)    ((x & ((1 << 12) - 1)) | hat)
-
-#define HAT_MASK           (HAT_UP_MASK | HAT_DOWN_MASK | HAT_LEFT_MASK | HAT_RIGHT_MASK)
-#define GET_HAT_DIR(x)     (x & HAT_MASK)
-#define GET_HAT(x)         (x & (~HAT_MASK))
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_PLAYBACK_ON() (input_st->bsv_movie_state_handle && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK) && !(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END))
-#define BSV_MOVIE_IS_RECORDING() (input_st->bsv_movie_state_handle && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING))
-
-#endif
 
 RETRO_END_DECLS
 

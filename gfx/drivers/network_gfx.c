@@ -52,13 +52,13 @@ enum
 
 typedef struct network
 {
+   int fd;
    unsigned video_width;
    unsigned video_height;
    unsigned screen_width;
    unsigned screen_height;
-   char address[256];
    uint16_t port;
-   int fd;
+   char address[256];
 } network_video_t;
 
 static unsigned char *network_menu_frame = NULL;
@@ -171,7 +171,7 @@ static bool network_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    network_video_t *network  = (network_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)
@@ -181,9 +181,9 @@ static bool network_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  network_video_width  != frame_width  || 
-         network_video_height != frame_height || 
-         network_video_pitch  != pitch)
+   if (     (network_video_width  != frame_width)
+         || (network_video_height != frame_height)
+         || (network_video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -211,9 +211,9 @@ static bool network_gfx_frame(void *data, const void *frame,
       height        = network_video_height;
       pitch         = network_video_pitch;
 
-      if (  frame_width  == 4 && 
-            frame_height == 4 && 
-            (frame_width < width && frame_height < height))
+      if (     (frame_width  == 4)
+            && (frame_height == 4)
+            && (frame_width < width && frame_height < height))
          draw = false;
 
 #ifdef HAVE_MENU
@@ -222,8 +222,8 @@ static bool network_gfx_frame(void *data, const void *frame,
 #endif
    }
 
-   if (     network->video_width != width 
-         || network->video_height != height)
+   if (     (network->video_width  != width)
+         || (network->video_height != height))
    {
       network->video_width  = width;
       network->video_height = height;
@@ -233,8 +233,8 @@ static bool network_gfx_frame(void *data, const void *frame,
 
       network_video_temp_buf = (unsigned*)
          malloc(
-                 network->screen_width 
-               * network->screen_height 
+                 network->screen_width
+               * network->screen_height
                * sizeof(unsigned));
    }
 
@@ -257,14 +257,14 @@ static bool network_gfx_frame(void *data, const void *frame,
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
 
                   /* convert RGBX4444 to RGBX8888 */
-                  unsigned r           = ((pixel & 0xF000) << 8) 
+                  unsigned r           = ((pixel & 0xF000) << 8)
                      | ((pixel & 0xF000) << 4);
-                  unsigned g           = ((pixel & 0x0F00) << 4) 
+                  unsigned g           = ((pixel & 0x0F00) << 4)
                      | ((pixel & 0x0F00) << 0);
-                  unsigned b           = ((pixel & 0x00F0) << 0) 
+                  unsigned b           = ((pixel & 0x00F0) << 0)
                      | ((pixel & 0x00F0) >> 4);
 
-                  network_video_temp_buf[network->screen_width * y + x] 
+                  network_video_temp_buf[network->screen_width * y + x]
                      = 0xFF000000 | b | g | r;
                }
             }
@@ -402,10 +402,10 @@ static void network_set_texture_frame(void *data,
       network_menu_frame = NULL;
    }
 
-   if (  !network_menu_frame           || 
-         network_menu_width  != width  || 
-         network_menu_height != height ||
-         network_menu_pitch  != pitch)
+   if (     !network_menu_frame
+         || (network_menu_width  != width)
+         || (network_menu_height != height)
+         || (network_menu_pitch  != pitch))
       if (pitch && height)
          network_menu_frame = (unsigned char*)malloc(pitch * height);
 
@@ -428,47 +428,48 @@ static void network_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen) { }
 
 static const video_poke_interface_t network_poke_interface = {
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* get_flags */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    network_set_video_mode,
-   NULL,
-   NULL,
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
    network_get_video_output_size,
    network_get_video_output_prev,
    network_get_video_output_next,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
 #if defined(HAVE_MENU)
    network_set_texture_frame,
-   NULL,
+   NULL, /* set_texture_enable */
    font_driver_render_msg,
-   NULL,
+   NULL, /* show_mouse */
 #else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* set_texture_frame */
+   NULL, /* set_texture_enable */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
 #endif
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void network_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &network_poke_interface;
 }
 
 static void network_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+      unsigned viewport_height, bool force_full, bool allow_rotate) { }
 
 bool network_has_menu_frame(void)
 {
@@ -495,5 +496,8 @@ video_driver_t video_network = {
    NULL, /* overlay_interface */
 #endif
    network_gfx_get_poke_interface,
-   NULL /* wrap_type_to_enum */
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

@@ -26,35 +26,6 @@
 
 RETRO_BEGIN_DECLS
 
-/**
- * libretro_free_system_info:
- * @info                         : Pointer to system info information.
- *
- * Frees system information.
- **/
-void libretro_free_system_info(struct retro_system_info *info);
-
-const struct retro_subsystem_info *libretro_find_subsystem_info(
-      const struct retro_subsystem_info *info,
-      unsigned num_info, const char *ident);
-
-/**
- * libretro_find_controller_description:
- * @info                         : Pointer to controller info handle.
- * @id                           : Identifier of controller to search
- *                                 for.
- *
- * Search for a controller of type @id in @info.
- *
- * Leaf function.
- *
- * @return controller description of found controller on success,
- * otherwise NULL.
- **/
-const struct retro_controller_description *
-   libretro_find_controller_description(
-         const struct retro_controller_info *info, unsigned id);
-
 enum retro_core_flags
 {
    RETRO_CORE_FLAG_INITED                    = (1 << 0),
@@ -98,6 +69,36 @@ struct retro_core_t
    unsigned poll_type;
    uint8_t flags;
 };
+
+
+/**
+ * libretro_free_system_info:
+ * @info                         : Pointer to system info information.
+ *
+ * Frees system information.
+ **/
+void libretro_free_system_info(struct retro_system_info *info);
+
+const struct retro_subsystem_info *libretro_find_subsystem_info(
+      const struct retro_subsystem_info *info,
+      unsigned num_info, const char *ident);
+
+/**
+ * libretro_find_controller_description:
+ * @info                         : Pointer to controller info handle.
+ * @id                           : Identifier of controller to search
+ *                                 for.
+ *
+ * Search for a controller of type @id in @info.
+ *
+ * Leaf function.
+ *
+ * @return controller description of found controller on success,
+ * otherwise NULL.
+ **/
+const struct retro_controller_description *
+   libretro_find_controller_description(
+         const struct retro_controller_info *info, unsigned id);
 
 RETRO_END_DECLS
 

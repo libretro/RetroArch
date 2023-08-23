@@ -85,12 +85,9 @@ typedef struct
    char *serial;
    char *description;
    char *genre;
-   int  achievements;
    char *category;
    char *language;
    char *region;
-   int  console_exclusive;
-   int  platform_exclusive;
    char *score;
    char *media;
    char *controls;
@@ -116,6 +113,9 @@ typedef struct
    char *sha1;
    char *md5;
    void *userdata;
+   int achievements;
+   int console_exclusive;
+   int platform_exclusive;
    int analog_supported;
    int rumble_supported;
    int coop_supported;

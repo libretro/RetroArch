@@ -228,7 +228,7 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
    /* Free font */
    if (screensaver->font_data.font)
    {
-      gfx_display_font_free(screensaver->font_data.font);
+      font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
 
@@ -260,7 +260,7 @@ void menu_screensaver_context_destroy(menu_screensaver_t *screensaver)
     * call of menu_screensaver_iterate()) */
    if (screensaver->font_data.font)
    {
-      gfx_display_font_free(screensaver->font_data.font);
+      font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
    }
@@ -428,7 +428,7 @@ static bool menu_screensaver_update_state(
       /* Free any existing font */
       if (screensaver->font_data.font)
       {
-         gfx_display_font_free(screensaver->font_data.font);
+         font_driver_free(screensaver->font_data.font);
          video_coord_array_free(&screensaver->font_data.raster_block.carr);
          screensaver->font_data.font = NULL;
       }
@@ -749,19 +749,23 @@ void menu_screensaver_iterate(
 void menu_screensaver_frame(menu_screensaver_t *screensaver,
       video_frame_info_t *video_info, gfx_display_t *p_disp)
 {
-   void *userdata = NULL;
    unsigned video_width;
    unsigned video_height;
-
+   video_driver_state_t *video_st = video_state_get_ptr();
+   void *userdata                 = NULL;
+   font_data_t *font              = NULL;
    if (!screensaver)
       return;
 
-   video_width  = video_info->width;
-   video_height = video_info->height;
-   userdata     = video_info->userdata;
+   font                           = screensaver->font_data.font;
+   video_width                    = video_info->width;
+   video_height                   = video_info->height;
+   userdata                       = video_info->userdata;
 
    /* Set viewport */
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Draw background */
    gfx_display_draw_quad(
@@ -776,11 +780,10 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
          NULL);
 
    /* Draw particle effect, if required */
-   if ((screensaver->effect != MENU_SCREENSAVER_BLANK) &&
-       screensaver->font_data.font &&
-       screensaver->particles)
+   if (  (screensaver->effect != MENU_SCREENSAVER_BLANK)
+       && font
+       && screensaver->particles)
    {
-      font_data_t *font     = screensaver->font_data.font;
       float y_centre_offset = screensaver->font_data.y_centre_offset;
       float particle_scale  = screensaver->particle_scale;
       size_t i;
@@ -809,12 +812,15 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       /* Flush text and unbind font */
       if (screensaver->font_data.raster_block.carr.coords.vertices != 0)
       {
-         font_driver_flush(video_width, video_height, font);
+         if (font->renderer && font->renderer->flush)
+            font->renderer->flush(video_width, video_height, font->renderer_data);
          screensaver->font_data.raster_block.carr.coords.vertices = 0;
       }
       font_driver_bind_block(font, NULL);
    }
 
    /* Unset viewport */
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }

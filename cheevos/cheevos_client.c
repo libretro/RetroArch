@@ -168,18 +168,18 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
       char *buffer, size_t len)
 {
    char* ptr;
-   struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
 
    /* if we haven't calculated the non-changing portion yet, do so now
     * [retroarch version + os version] */
    if (!locals->user_agent_prefix[0])
    {
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-      int major, minor;
-      char tmp[64];
 
       if (frontend && frontend->get_os)
       {
+         char tmp[64];
+         int major, minor;
          frontend->get_os(tmp, sizeof(tmp), &major, &minor);
          snprintf(locals->user_agent_prefix, sizeof(locals->user_agent_prefix),
             "RetroArch/%s (%s %d.%d)", PACKAGE_VERSION, tmp, major, minor);
@@ -193,7 +193,7 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
    ptr = buffer + strlcpy(buffer, locals->user_agent_prefix, len);
 
    /* if a core is loaded, append its information */
-   if (system && !string_is_empty(system->library_name))
+   if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
       char* stop = buffer + len - 1;
       const char* path = path_get(RARCH_PATH_CORE);
@@ -206,12 +206,12 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
          ptr += strlen(ptr);
       }
       else
-         ptr += append_no_spaces(ptr, stop, system->library_name);
+         ptr += append_no_spaces(ptr, stop, sysinfo->library_name);
 
-      if (system->library_version)
+      if (sysinfo->library_version)
       {
          *ptr++ = '/';
-         ptr += append_no_spaces(ptr, stop, system->library_version);
+         ptr += append_no_spaces(ptr, stop, sysinfo->library_version);
       }
    }
 
@@ -531,7 +531,7 @@ static void rcheevos_async_end_request(rcheevos_async_io_request* request)
 {
    rc_api_destroy_request(&request->request);
 
-   if (request->callback && !rcheevos_load_aborted())
+   if (request->callback)
       request->callback(request->callback_data);
 
    /* rich presence request will be reused on next ping - reset the attempt
@@ -856,15 +856,16 @@ static void rcheevos_client_copy_achievements(
        * we don't need to keep the definition around
        * as it won't be reactivated. Otherwise, 
        * we do have to keep a copy of it. */
-      if ((achievement->active & (RCHEEVOS_ACTIVE_HARDCORE 
+      if ((achievement->active & (
+                    RCHEEVOS_ACTIVE_HARDCORE 
                   | RCHEEVOS_ACTIVE_SOFTCORE)) != 0)
          achievement->memaddr = strdup(definition->definition);
 
       ++achievement;
    }
 
-   rcheevos_locals->game.achievement_count = achievement 
-      - rcheevos_locals->game.achievements;
+   rcheevos_locals->game.achievement_count = (unsigned)(achievement 
+      - rcheevos_locals->game.achievements);
 }
 
 static void rcheevos_client_copy_leaderboards(
@@ -1753,7 +1754,7 @@ static void rcheevos_async_award_achievement_callback(
    if (rcheevos_async_succeeded(result, &api_response.response,
             buffer, buffer_size))
    {
-      if (api_response.awarded_achievement_id != request->id)
+      if ((int)api_response.awarded_achievement_id != request->id)
          snprintf(buffer, buffer_size, "Achievement %u awarded instead",
                api_response.awarded_achievement_id);
       else if (api_response.response.error_message)

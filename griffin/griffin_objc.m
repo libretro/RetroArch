@@ -43,6 +43,8 @@
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
 
+#include "../input/drivers/cocoa_input.m"
+
 #endif
 
 #ifdef HAVE_MFI
@@ -60,6 +62,8 @@
 #ifdef HAVE_METAL
 #import "../gfx/common/metal/metal_renderer.m"
 #import "../gfx/drivers/metal.m"
-#import "../gfx/drivers_display/gfx_display_metal.m"
-#import "../gfx/drivers_font/metal_raster_font.m"
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+#import "../network/netplay/netplay_nsnetservice.m"
 #endif

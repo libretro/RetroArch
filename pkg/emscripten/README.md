@@ -41,12 +41,12 @@ fceumm_libretro.wasm
 
 Most of the magic happens on the browser so nothing really on that regard
 
-I you want a self hosted version you need
+If you want a self hosted version you need
 - A web server, nginx/apache will do, download a build here: 
   https://buildbot.libretro.com/nightly/emscripten/
 - Extract the build somewhere in your web-server 
   - Grab the asset bundle:
-  https://buildbot.libretro.com/assets/frontend/bundle.zip
+  https://buildbot.libretro.com/assets/frontend/assets.zip
 - Unzip it in the same dir you extracted the rest, inside **/assets/frontend/bundle**
 - Create an **assets/cores** dir, you can put game data in that dir so it's available under **downloads**
 - chmod +x the indexer script

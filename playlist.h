@@ -26,12 +26,10 @@
 
 #include "core_info.h"
 
-RETRO_BEGIN_DECLS
-
 /* Default maximum playlist size */
 #define COLLECTION_SIZE 0x7FFFFFFF
 
-typedef struct content_playlist playlist_t;
+RETRO_BEGIN_DECLS
 
 enum playlist_runtime_status
 {
@@ -73,10 +71,6 @@ enum playlist_sort_mode
    PLAYLIST_SORT_MODE_OFF
 };
 
-/* TODO/FIXME - since gfx_thumbnail_path.h has now
- * been divorced from the menu code, perhaps jdgleaver
- * can refactor this? */
-
 /* Note: We already have a left/right enum defined
  * in gfx_thumbnail_path.h - but we can't include
  * menu code here, so have to make a 'duplicate'... */
@@ -85,6 +79,8 @@ enum playlist_thumbnail_id
    PLAYLIST_THUMBNAIL_RIGHT = 0,
    PLAYLIST_THUMBNAIL_LEFT
 };
+
+typedef struct content_playlist playlist_t;
 
 /* Holds all parameters required to uniquely
  * identify a playlist content path */
@@ -365,6 +361,7 @@ const char *playlist_get_scan_dat_file_path(playlist_t *playlist);
 bool playlist_get_scan_search_recursively(playlist_t *playlist);
 bool playlist_get_scan_search_archives(playlist_t *playlist);
 bool playlist_get_scan_filter_dat_content(playlist_t *playlist);
+bool playlist_get_scan_overwrite_playlist(playlist_t *playlist);
 bool playlist_scan_refresh_enabled(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
@@ -379,6 +376,7 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
 void playlist_set_scan_search_recursively(playlist_t *playlist, bool search_recursively);
 void playlist_set_scan_search_archives(playlist_t *playlist, bool search_archives);
 void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_content);
+void playlist_set_scan_overwrite_playlist(playlist_t *playlist, bool overwrite_playlist);
 
 /* Returns true if specified entry has a valid
  * core association (i.e. a non-empty string

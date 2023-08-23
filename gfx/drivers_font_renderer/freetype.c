@@ -157,10 +157,10 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
    slot = handle->face->glyph;
 
-   atlas_slot             = font_renderer_get_slot(handle);
-   atlas_slot->charcode   = charcode;
-   atlas_slot->next       = handle->uc_map[map_id];
-   handle->uc_map[map_id] = atlas_slot;
+   atlas_slot                      = font_renderer_get_slot(handle);
+   atlas_slot->charcode            = charcode;
+   atlas_slot->next                = handle->uc_map[map_id];
+   handle->uc_map[map_id]          = atlas_slot;
 
    /* Some glyphs can be blank. */
    atlas_slot->glyph.width         = slot->bitmap.width;
@@ -216,14 +216,15 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    unsigned i, x, y;
    freetype_atlas_slot_t* slot = NULL;
 
-   unsigned max_width  = round((handle->face->bbox.xMax - handle->face->bbox.xMin) * font_size / handle->face->units_per_EM);
-   unsigned max_height = round((handle->face->bbox.yMax - handle->face->bbox.yMin) * font_size / handle->face->units_per_EM);
+   unsigned max_width          = round((handle->face->bbox.xMax - handle->face->bbox.xMin) 
+         * font_size / handle->face->units_per_EM);
+   unsigned max_height         = round((handle->face->bbox.yMax - handle->face->bbox.yMin) 
+         * font_size / handle->face->units_per_EM);
 
    unsigned atlas_width        = (max_width  + FT_ATLAS_PADDING) * FT_ATLAS_COLS;
    unsigned atlas_height       = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
 
-   uint8_t *atlas_buffer       = (uint8_t*)
-      calloc(atlas_width * atlas_height, 1);
+   uint8_t *atlas_buffer       = (uint8_t*)calloc(atlas_width * atlas_height, 1);
 
    if (!atlas_buffer)
       return false;
@@ -438,15 +439,11 @@ static const char *font_renderer_ft_get_default_font(void)
 #endif
 }
 
-static bool font_renderer_ft_get_line_metrics(
+static void font_renderer_ft_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
-   if (!handle)
-      return false;
-
    *metrics = &handle->line_metrics;
-   return true;
 }
 
 font_renderer_driver_t freetype_font_renderer = {

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _GX2_SHADER_UTILS_H
+#define _GX2_SHADER_UTILS_H
 
 #include <wiiu/gx2/shaders.h>
 
@@ -85,4 +86,6 @@ void gfd_free(GFDFile* gfd);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

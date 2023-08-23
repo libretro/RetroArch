@@ -233,7 +233,6 @@ static bool screenshot_dump(
       bool use_thread,
       unsigned pixel_format_type)
 {
-   struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
    bool history_list_enable       = settings->bools.history_list_enable;
@@ -273,11 +272,9 @@ static bool screenshot_dump(
       {
          size_t len             = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         state->filename[len  ] = '.';
-         state->filename[len+1] = 'p';
-         state->filename[len+2] = 'n';
-         state->filename[len+3] = 'g';
-         state->filename[len+4] = '\0';
+         strlcpy(state->filename       + len,
+               ".png",
+               sizeof(state->filename) - len);
       }
       else
       {
@@ -312,16 +309,17 @@ static bool screenshot_dump(
 
             if (path_is_empty(RARCH_PATH_CONTENT))
             {
-               if (!core_get_system_info(&system_info))
+               struct retro_system_info sysinfo;
+               if (!core_get_system_info(&sysinfo))
                {
                   free(state);
                   return false;
                }
 
-               if (string_is_empty(system_info.library_name))
+               if (string_is_empty(sysinfo.library_name))
                   screenshot_name = "RetroArch";
                else
-                  screenshot_name = system_info.library_name;
+                  screenshot_name = sysinfo.library_name;
             }
             else
                screenshot_name = path_basename_nocompression(name_base);
@@ -331,18 +329,16 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t len             = strlcpy(
-                  state->shotname, path_basename_nocompression(name_base),
+            size_t len = strlcpy(state->shotname, 
+                  path_basename_nocompression(name_base),
                   sizeof(state->shotname));
-            state->shotname[len  ] = '.';
-            state->shotname[len+1] = 'p';
-            state->shotname[len+2] = 'n';
-            state->shotname[len+3] = 'g';
-            state->shotname[len+4] = '\0';
+            strlcpy(state->shotname       + len,
+                  ".png",
+                  sizeof(state->shotname) - len);
          }
 
-         if (  string_is_empty(new_screenshot_dir) || 
-               settings->bools.screenshots_in_content_dir)
+         if (     string_is_empty(new_screenshot_dir)
+               || settings->bools.screenshots_in_content_dir)
             fill_pathname_basedir(new_screenshot_dir, name_base,
                   sizeof(new_screenshot_dir));
 
@@ -418,6 +414,7 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
+   video_driver_state_t *video_st        = video_state_get_ptr();
    uint8_t *buffer                       = NULL;
 
    vp.x                                  = 0;
@@ -434,7 +431,9 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_read_viewport(buffer, runloop_flags & RUNLOOP_FLAG_IDLE))
+   if (!(   video_st->current_video->read_viewport
+         && video_st->current_video->read_viewport(
+            video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
       goto error;
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
@@ -453,15 +452,17 @@ error:
    return false;
 }
 
-static bool take_screenshot_raw(const char *screenshot_dir,
+static bool take_screenshot_raw(
+      video_driver_state_t *video_st,
+      const char *screenshot_dir,
       const char *name_base, void *userbuf,
       bool savestate, uint32_t runloop_flags, bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
-   size_t pitch;
-   unsigned width, height;
-   const void *data                      = NULL;
-   video_driver_cached_frame_get(&data, &width, &height, &pitch);
+   const void *data       = video_st->frame_cache_data;
+   unsigned width         = video_st->frame_cache_width;
+   unsigned height        = video_st->frame_cache_height;
+   size_t pitch           = video_st->frame_cache_pitch;
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
@@ -481,6 +482,7 @@ static bool take_screenshot_raw(const char *screenshot_dir,
 }
 
 static bool take_screenshot_choice(
+      video_driver_state_t *video_st,
       const char *screenshot_dir,
       const char *name_base,
       bool savestate,
@@ -496,7 +498,9 @@ static bool take_screenshot_choice(
    if (supports_viewport_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
-      video_driver_set_texture_enable(false, false);
+      if (video_st->poke && video_st->poke->set_texture_enable)
+         video_st->poke->set_texture_enable(video_st->data,
+               false, false);
       if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
          video_driver_cached_frame();
       return take_screenshot_viewport(screenshot_dir,
@@ -505,29 +509,28 @@ static bool take_screenshot_choice(
    }
 
    if (!has_valid_framebuffer)
-      return take_screenshot_raw(screenshot_dir,
+      return take_screenshot_raw(video_st, screenshot_dir,
             name_base, NULL, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
 
    if (supports_read_frame_raw)
    {
-      size_t old_pitch;
-      unsigned old_width, old_height;
-      void *frame_data            = NULL;
-      const void* old_data        = NULL;
-      video_driver_cached_frame_get(&old_data, &old_width, &old_height,
-            &old_pitch);
-
-      frame_data = video_driver_read_frame_raw(
+      const void *old_data          = video_st->frame_cache_data;
+      unsigned old_width            = video_st->frame_cache_width;
+      unsigned old_height           = video_st->frame_cache_height;
+      size_t old_pitch              = video_st->frame_cache_pitch;
+      void *frame_data              = video_driver_read_frame_raw(
             &old_width, &old_height, &old_pitch);
 
-      video_driver_cached_frame_set(old_data, old_width, old_height,
-            old_pitch);
+      video_st->frame_cache_data    = old_data;
+      video_st->frame_cache_width   = old_width;
+      video_st->frame_cache_height  = old_height;
+      video_st->frame_cache_pitch   = old_pitch;
 
       if (frame_data)
       {
-         video_driver_set_cached_frame_ptr(frame_data);
-         return take_screenshot_raw(screenshot_dir,
+         video_st->frame_cache_data = frame_data;
+         return take_screenshot_raw(video_st, screenshot_dir,
                name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);
       }
@@ -542,17 +545,25 @@ bool take_screenshot(
       bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
 {
-   bool ret                    = false;
-   uint32_t runloop_flags      = runloop_get_flags();
-   settings_t *settings        = config_get_ptr();
-   bool video_gpu_screenshot   = settings->bools.video_gpu_screenshot;
-   bool supports_viewport_read = video_driver_supports_viewport_read();
-   bool prefer_viewport_read   = supports_viewport_read &&
-         video_driver_prefer_viewport_read();
-
-   /* Avoid GPU screenshots with savestates */
-   if (supports_viewport_read && video_gpu_screenshot && !savestate)
-      prefer_viewport_read     = true;
+   bool ret                       = false;
+   uint32_t runloop_flags         = runloop_get_flags();
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr(); 
+   bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
+   bool supports_viewport_read    = video_st->current_video->read_viewport
+         && (video_st->current_video->viewport_info);
+   bool prefer_viewport_read      = false;
+   if (supports_viewport_read)
+   {
+      /* Use VP read screenshots if it's a HW context core
+       * and read_frame_raw is not implemented */
+      if (      video_driver_is_hw_context()
+            && !video_st->current_video->read_frame_raw)
+         prefer_viewport_read     = true;
+      /* Avoid GPU screenshots with savestates */
+      if (video_gpu_screenshot && !savestate)
+         prefer_viewport_read     = true;
+   }
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)
@@ -560,12 +571,17 @@ bool take_screenshot(
       return false;
 
    ret       = take_screenshot_choice(
+		   video_st,
          screenshot_dir,
-         name_base, savestate, runloop_flags,
-         has_valid_framebuffer, fullpath, use_thread,
+         name_base,
+         savestate,
+         runloop_flags,
+         has_valid_framebuffer,
+         fullpath,
+         use_thread,
          prefer_viewport_read,
-         video_driver_supports_read_frame_raw(),
-         video_driver_get_pixel_format()
+         (video_st->current_video->read_frame_raw != NULL),
+         video_st->pix_fmt
          );
 
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)

@@ -38,7 +38,6 @@ enum setting_type
    ST_DIR,
    ST_STRING,
    ST_STRING_OPTIONS,
-   ST_HEX,
    ST_BIND,
    ST_GROUP,
    ST_SUB_GROUP,
@@ -183,8 +182,6 @@ struct rarch_setting
       bool           boolean;
    } original_value;
 
-   uint32_t             flags;
-   uint32_t             free_flags;
    uint32_t             index_offset;
    uint32_t             size;
    unsigned             bind_type;
@@ -197,39 +194,12 @@ struct rarch_setting
    enum msg_hash_enums  enum_value_idx;
    enum setting_type    type;
 
+   uint16_t             flags;
+
    int16_t              offset_by;
+   uint8_t              free_flags;
    uint8_t              index;
 };
-
-/**
- * setting_set_with_string_representation:
- * @setting            : pointer to setting
- * @value              : value for the setting (string)
- *
- * Set a settings' value with a string. It is assumed
- * that the string has been properly formatted.
- **/
-int setting_set_with_string_representation(
-      rarch_setting_t* setting, const char *value);
-
-unsigned setting_get_bind_type(rarch_setting_t *setting);
-
-int setting_string_action_start_generic(rarch_setting_t *setting);
-
-int setting_generic_action_ok_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-
-int setting_generic_action_start_default(rarch_setting_t *setting);
-
-void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
-      char *s, size_t len);
-
-int setting_uint_action_left_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_right_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_left_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_right_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-
-void setting_get_string_representation_uint(rarch_setting_t *setting, char *s, size_t len);
-void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting, char *s, size_t len);
 
 RETRO_END_DECLS
 

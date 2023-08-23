@@ -465,7 +465,7 @@ bool content_undo_load_state(void)
     * the backing up of it and
     * its flushing could all be in their
     * own functions... */
-   if (     config_get_ptr()->bools.block_sram_overwrite 
+   if (     config_get_ptr()->bools.block_sram_overwrite
          && task_save_files
          && task_save_files->size)
    {
@@ -622,13 +622,12 @@ static void task_save_handler_finished(retro_task_t *task,
 
 static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
-   retro_ctx_size_info_t info;
-   core_serialize_size(&info);
-   if (!info.size)
+   size_t info_size = core_serialize_size();
+   if (!info_size)
       return 0;
-   size->coremem_size = info.size;
+   size->coremem_size = info_size;
    /* 8-byte identifier, 8-byte block header, content, 8-byte terminator */
-   size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info.size) + 8;
+   size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
 #ifdef HAVE_CHEEVOS
    /* 8-byte block header + content */
    if ((size->cheevos_size = rcheevos_get_serialize_size()) > 0)
@@ -690,7 +689,9 @@ static bool content_write_serialized_state(void* buffer,
 #else
        bool frame_is_reversed         = false;
 #endif
-       if (!rewind && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK) && !frame_is_reversed)
+       if (    !rewind
+             && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK)
+             && !frame_is_reversed)
        {
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
@@ -825,8 +826,8 @@ static void task_save_handler(retro_task_t *task)
          size_t _len = strlcpy(err,
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
                err_size - 1);
-         err[_len  ] = ' ';
-         err[_len+1] = '\0';
+         err[  _len] = ' ';
+         err[++_len] = '\0';
          strlcat(err, state->path, err_size - 1);
       }
 
@@ -882,6 +883,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
    settings_t     *settings;
    retro_task_t       *task      = task_init();
+   video_driver_state_t *video_st= video_state_get_ptr();
    save_task_state_t *state      = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -895,17 +897,21 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    state->size                   = size;
    state->flags                 |= SAVE_TASK_FLAG_UNDO_SAVE;
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
+
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = undo_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    task_queue_push(task);
 
@@ -1119,7 +1125,7 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 
    while (input < stop)
    {
-      size_t     block_size = ( input[7] << 24 
+      size_t     block_size = ( input[7] << 24
             | input[6] << 16 |  input[5] << 8 | input[4]);
       unsigned char *marker = input;
 
@@ -1287,7 +1293,7 @@ static void content_load_state_cb(retro_task_t *task,
    if (size < 0 || !buf)
       goto error;
 
-   /* This means we're backing up the file in memory, 
+   /* This means we're backing up the file in memory,
     * so content_undo_save_state()
     * can restore it */
    if (load_data->flags & SAVE_TASK_FLAG_LOAD_TO_BACKUP_BUFF)
@@ -1413,7 +1419,7 @@ static void save_state_cb(retro_task_t *task,
 #ifdef HAVE_SCREENSHOTS
    char               *path   = strdup(state->path);
    settings_t     *settings   = config_get_ptr();
-   const char *dir_screenshot = settings->paths.directory_screenshot; 
+   const char *dir_screenshot = settings->paths.directory_screenshot;
 
    if (state->flags & SAVE_TASK_FLAG_THUMBNAIL_ENABLE)
       take_screenshot(dir_screenshot,
@@ -1437,6 +1443,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
+   video_driver_state_t *video_st  = video_state_get_ptr();
    save_task_state_t *state        = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
@@ -1458,19 +1465,21 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
       state->flags               |= SAVE_TASK_FLAG_THUMBNAIL_ENABLE;
    }
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
 
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_SAVING_STATE));
-   task->mute                    = state->flags & SAVE_TASK_FLAG_MUTE;
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    if (!task_queue_push(task))
    {
@@ -1512,7 +1521,7 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    char                  *path = strdup(load_data->path);
    void                  *data = load_data->undo_data;
    size_t                 size = load_data->undo_size;
-   bool               autosave = load_data->flags & SAVE_TASK_FLAG_AUTOSAVE;
+   bool               autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
 
    content_load_state_cb(task, task_data, user_data, error);
 
@@ -1534,9 +1543,10 @@ static void content_load_and_save_state_cb(retro_task_t *task,
 static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
-   retro_task_t      *task     = NULL;
-   settings_t        *settings = config_get_ptr();
-   save_task_state_t *state    = (save_task_state_t*)
+   retro_task_t      *task         = NULL;
+   settings_t        *settings     = config_get_ptr();
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   save_task_state_t *state        = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
    if (!state)
@@ -1561,19 +1571,21 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (load_to_backup_buffer)
       state->flags              |= SAVE_TASK_FLAG_MUTE;
    state->state_slot             = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
 
    task->state                   = state;
    task->type                    = TASK_TYPE_BLOCKING;
    task->handler                 = task_load_handler;
    task->callback                = content_load_and_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_LOADING_STATE));
-   task->mute                    = state->flags & SAVE_TASK_FLAG_MUTE;
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    if (!task_queue_push(task))
    {
@@ -1598,7 +1610,6 @@ static void task_push_load_and_save_state(const char *path, void *data,
 bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 {
    size_t serial_size;
-   retro_ctx_size_info_t info;
    void *data  = NULL;
 
    if (!core_info_current_supports_savestate())
@@ -1608,11 +1619,10 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
       return false;
    }
 
-   core_serialize_size(&info);
+   serial_size = core_serialize_size();
 
-   if (info.size == 0)
+   if (serial_size == 0)
       return false;
-   serial_size = info.size;
 
    if (!save_state_in_background)
    {
@@ -1748,9 +1758,10 @@ void content_wait_for_load_state_task(void)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t       *task     = NULL;
-   save_task_state_t *state     = NULL;
-   settings_t *settings         = config_get_ptr();
+   retro_task_t       *task        = NULL;
+   save_task_state_t *state        = NULL;
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   settings_t *settings            = config_get_ptr();
 
    if (!core_info_current_supports_savestate())
    {
@@ -1771,18 +1782,21 @@ bool content_load_state(const char *path,
    if (autoload)
       state->flags             |= SAVE_TASK_FLAG_AUTOLOAD;
    state->state_slot            = settings->ints.state_slot;
-   if (video_driver_cached_frame_has_valid_framebuffer())
+   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
    if (settings->bools.savestate_file_compression)
       state->flags             |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags             |= SAVE_TASK_FLAG_MUTE;
 
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->mute                   = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    task_queue_push(task);
 
@@ -1812,7 +1826,7 @@ bool content_rename_state(const char *origin, const char *dest)
 /*
 *
 * TODO/FIXME: Figure out when and where this should be called.
-* As it is, when e.g. closing Gambatte, we get the 
+* As it is, when e.g. closing Gambatte, we get the
 * same printf message 4 times.
 */
 void content_reset_savestate_backups(void)
@@ -1938,47 +1952,46 @@ bool content_load_ram_file(unsigned slot)
 static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
-   time_t time_;
-   struct tm tm_;
-   char timebuf[256];
    char path[PATH_MAX_LENGTH + 256 + 32];
-   char application_data[PATH_MAX_LENGTH];
-
-   application_data[0]    = '\0';
    path            [0]    = '\0';
-   timebuf         [0]    = '\0';
 
-   if (!fill_pathname_application_data(application_data,
-            sizeof(application_data)))
-      return false;
+   if (fill_pathname_application_data(path,
+            sizeof(path)))
+   {
+      size_t _len;
+      time_t time_;
+      struct tm tm_;
+      char timebuf[256];
+      timebuf         [0] = '\0';
+      time(&time_);
 
-   time(&time_);
+      rtime_localtime(&time_, &tm_);
 
-   rtime_localtime(&time_, &tm_);
+      strftime(timebuf, 256 * sizeof(char),
+            "%Y-%m-%d-%H-%M-%S", &tm_);
 
-   strftime(timebuf,
-         256 * sizeof(char),
-         "%Y-%m-%d-%H-%M-%S", &tm_);
+      _len = strlcat(path, "/RetroArch-recovery-", sizeof(path));
 
-   snprintf(path, sizeof(path),
-         "%s/RetroArch-recovery-%u%s",
-         application_data, type,
-         timebuf);
+      snprintf(path + _len, sizeof(path) - _len,
+            "%u%s", type, timebuf);
 
-   /* Fallback (emergency) saves are always
-    * uncompressed
-    * > If a regular save fails, then the host
-    *   system is experiencing serious technical
-    *   difficulties (most likely some kind of
-    *   hardware failure)
-    * > In this case, we don't want to further
-    *   complicate matters by introducing zlib
-    *   compression overheads */
-   if (!filestream_write_file(path, data, size))
-      return false;
+      /* Fallback (emergency) saves are always
+       * uncompressed
+       * > If a regular save fails, then the host
+       *   system is experiencing serious technical
+       *   difficulties (most likely some kind of
+       *   hardware failure)
+       * > In this case, we don't want to further
+       *   complicate matters by introducing zlib
+       *   compression overheads */
+      if (filestream_write_file(path, data, size))
+      {
+         RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
+         return true;
+      }
+   }
 
-   RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
-   return true;
+   return false;
 }
 
 /**
@@ -2041,7 +2054,6 @@ bool content_load_state_from_ram(void)
  **/
 bool content_save_state_to_ram(void)
 {
-   retro_ctx_size_info_t info;
    void *data  = NULL;
    size_t serial_size;
 
@@ -2052,11 +2064,10 @@ bool content_save_state_to_ram(void)
       return false;
    }
 
-   core_serialize_size(&info);
+   serial_size = core_serialize_size();
 
-   if (info.size == 0)
+   if (serial_size == 0)
       return false;
-   serial_size = info.size;
 
    if (!save_state_in_background)
    {

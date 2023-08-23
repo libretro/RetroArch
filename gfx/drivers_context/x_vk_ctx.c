@@ -390,7 +390,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
@@ -508,16 +508,6 @@ static void gfx_ctx_x_vk_input_driver(void *data,
    *input_data  = x_input;
 }
 
-static bool gfx_ctx_x_vk_suppress_screensaver(void *data, bool enable)
-{
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
-
-   return true;
-}
-
 static enum gfx_ctx_api gfx_ctx_x_vk_get_api(void *data)
 {
    return GFX_CTX_VULKAN_API;
@@ -525,11 +515,6 @@ static enum gfx_ctx_api gfx_ctx_x_vk_get_api(void *data)
 
 static bool gfx_ctx_x_vk_bind_api(void *data, enum gfx_ctx_api api,
       unsigned major, unsigned minor) { return (api == GFX_CTX_VULKAN_API); }
-
-static void gfx_ctx_x_vk_show_mouse(void *data, bool state)
-{
-   x11_show_mouse(g_x11_dpy, g_x11_win, state);
-}
 
 static void gfx_ctx_x_vk_bind_hw_render(void *data, bool enable) { }
 
@@ -575,14 +560,14 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    gfx_ctx_x_vk_check_window,
    gfx_ctx_x_vk_set_resize,
    x11_has_focus,
-   gfx_ctx_x_vk_suppress_screensaver,
+   x11_suspend_screensaver,
    true, /* has_windowed */
    gfx_ctx_x_vk_swap_buffers,
    gfx_ctx_x_vk_input_driver,
    NULL, /* get_proc_address */
    NULL,
    NULL,
-   gfx_ctx_x_vk_show_mouse,
+   x11_show_mouse,
    "vk_x",
    gfx_ctx_x_vk_get_flags,
    gfx_ctx_x_vk_set_flags,

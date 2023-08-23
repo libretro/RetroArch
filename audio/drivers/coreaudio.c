@@ -52,10 +52,6 @@ typedef struct coreaudio
    bool nonblock;
 } coreaudio_t;
 
-#if TARGET_OS_IOS
-static bool g_interrupted;
-#endif
-
 static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
@@ -123,14 +119,7 @@ static OSStatus audio_write_cb(void *userdata,
    return noErr;
 }
 
-#if TARGET_OS_IPHONE
-static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
-{
-#if TARGET_OS_IOS
-    g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
-#endif
-}
-#else
+#if !TARGET_OS_IPHONE
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
    int i;
@@ -203,9 +192,6 @@ static void *coreaudio_init(const char *device,
 #endif
    AURenderCallbackStruct cb               = {0};
    AudioStreamBasicDescription stream_desc = {0};
-#if TARGET_OS_IOS
-   static bool session_initialized         = false;
-#endif
 #if !HAS_MACOSX_10_12
    ComponentDescription desc               = {0};
 #else
@@ -218,15 +204,6 @@ static void *coreaudio_init(const char *device,
 
    dev->lock = slock_new();
    dev->cond = scond_new();
-
-#if TARGET_OS_IOS
-   if (!session_initialized)
-   {
-      session_initialized = true;
-      AudioSessionInitialize(0, 0, coreaudio_interrupt_listener, 0);
-      AudioSessionSetActive(true);
-   }
-#endif
 
    /* Create AudioComponent */
    desc.componentType         = kAudioUnitType_Output;
@@ -341,11 +318,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written     = 0;
 
-#if TARGET_OS_IOS
-   while (!g_interrupted && size > 0)
-#else
-   while (size > 0)
-#endif
+   while (!dev->is_paused && size > 0)
    {
       size_t write_avail;
 
@@ -368,8 +341,11 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 
 #if TARGET_OS_IOS
       if (write_avail == 0 && !scond_wait_timeout(
-               dev->cond, dev->lock, 3000000))
-         g_interrupted = true;
+               dev->cond, dev->lock, 300000))
+      {
+         slock_unlock(dev->lock);
+         break;
+      }
 #else
       if (write_avail == 0)
          scond_wait(dev->cond, dev->lock);

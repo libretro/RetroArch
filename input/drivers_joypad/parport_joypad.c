@@ -230,23 +230,26 @@ static void parport_free_pad(struct parport_joypad *pad)
 
 static void *parport_joypad_init(void *data)
 {
-   unsigned i, j;
+   size_t i;
+   unsigned j;
+   char path[PATH_MAX_LENGTH];
    bool found_enabled_button             = false;
    bool found_disabled_button            = false;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
    char pin[3 + 1]                       = {0};
+   size_t _len                           = 
+      strlcpy(path, "/dev/parport", sizeof(path));
 
    memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH] = {0};
       struct parport_joypad *pad = &parport_pads[i];
 
       pad->fd    = -1;
       pad->ident = input_config_get_device_name_ptr(i);
 
-      snprintf(path, sizeof(path), "/dev/parport%u", i);
+      snprintf(path + _len, sizeof(path) - _len, "%u", (uint32_t)i);
 
       if (parport_joypad_init_pad(path, pad))
       {
@@ -283,8 +286,8 @@ static void *parport_joypad_init(void *data)
                {
                   if (!pad->button_enable[j])
                   {
-                     snprintf(pin, sizeof(pin), "%d ", j);
-                     strlcat(buf, pin, sizeof(buf));
+                     size_t _len = snprintf(pin, sizeof(pin), "%d ", j);
+                     strlcpy(buf + _len, pin, sizeof(buf) - _len);
                   }
                }
                RARCH_WARN("[Joypad]: Pin(s) %son %s were low"

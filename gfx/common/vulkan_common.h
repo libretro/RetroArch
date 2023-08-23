@@ -52,7 +52,204 @@
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
 
+#define VK_BUFFER_CHAIN_DISCARD(chain) \
+{ \
+   chain->current = chain->head; \
+   chain->offset  = 0; \
+}
+
+#define VULKAN_SYNC_TEXTURE_TO_GPU(device, tex_memory) \
+{ \
+   VkMappedMemoryRange range; \
+   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
+   range.pNext  = NULL; \
+   range.memory = tex_memory; \
+   range.offset = 0; \
+   range.size   = VK_WHOLE_SIZE; \
+   vkFlushMappedMemoryRanges(device, 1, &range); \
+}
+
+#define VULKAN_SYNC_TEXTURE_TO_CPU(device, tex_memory) \
+{ \
+   VkMappedMemoryRange range; \
+   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
+   range.pNext  = NULL; \
+   range.memory = tex_memory; \
+   range.offset = 0; \
+   range.size   = VK_WHOLE_SIZE; \
+   vkInvalidateMappedMemoryRanges(device, 1, &range); \
+}
+
+#define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
+{ \
+   VkImageMemoryBarrier barrier; \
+   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
+   barrier.pNext                           = NULL; \
+   barrier.srcAccessMask                   = src_access; \
+   barrier.dstAccessMask                   = dst_access; \
+   barrier.oldLayout                       = old_layout; \
+   barrier.newLayout                       = new_layout; \
+   barrier.srcQueueFamilyIndex             = src_queue_family_idx; \
+   barrier.dstQueueFamilyIndex             = dst_queue_family_idx; \
+   barrier.image                           = img; \
+   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT; \
+   barrier.subresourceRange.baseMipLevel   = 0; \
+   barrier.subresourceRange.levelCount     = levels; \
+   barrier.subresourceRange.baseArrayLayer = 0; \
+   barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS; \
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
+}
+
+#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, layout, layout, 0, 0, src_stages, dst_stages, src_queue_family, dst_queue_family)
+
+#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED)
+
+#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
+{ \
+   manager->current = manager->head; \
+   manager->count = 0; \
+}
+
+#define VK_MAP_PERSISTENT_TEXTURE(device, texture) \
+{ \
+   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
+}
+
+#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
+{ \
+   VkDescriptorImageInfo image_info; \
+   VkWriteDescriptorSet write; \
+   image_info.sampler         = _sampler; \
+   image_info.imageView       = image_view; \
+   image_info.imageLayout     = image_layout; \
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   write.pNext                = NULL; \
+   write.dstSet               = set; \
+   write.dstBinding           = binding; \
+   write.dstArrayElement      = 0; \
+   write.descriptorCount      = 1; \
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
+   write.pImageInfo           = &image_info; \
+   write.pBufferInfo          = NULL; \
+   write.pTexelBufferView     = NULL; \
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
+}
+
+#define VULKAN_SET_UNIFORM_BUFFER(_device, _set, _binding, _buffer, _offset, _range) \
+{ \
+   VkWriteDescriptorSet write; \
+   VkDescriptorBufferInfo buffer_info; \
+   buffer_info.buffer         = _buffer; \
+   buffer_info.offset         = _offset; \
+   buffer_info.range          = _range; \
+   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
+   write.pNext                = NULL; \
+   write.dstSet               = _set; \
+   write.dstBinding           = _binding; \
+   write.dstArrayElement      = 0; \
+   write.descriptorCount      = 1; \
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; \
+   write.pImageInfo           = NULL; \
+   write.pBufferInfo          = &buffer_info; \
+   write.pTexelBufferView     = NULL; \
+   vkUpdateDescriptorSets(_device, 1, &write, 0, NULL); \
+}
+
+#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
+{ \
+   float r        = (vulkan_color)->r; \
+   float g        = (vulkan_color)->g; \
+   float b        = (vulkan_color)->b; \
+   float a        = (vulkan_color)->a; \
+   pv[0].x        = (_x)     + 0.0f * (_width); \
+   pv[0].y        = (_y)     + 0.0f * (_height); \
+   pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
+   pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[0].color.r  = r; \
+   pv[0].color.g  = g; \
+   pv[0].color.b  = b; \
+   pv[0].color.a  = a; \
+   pv[1].x        = (_x)     + 0.0f * (_width); \
+   pv[1].y        = (_y)     + 1.0f * (_height); \
+   pv[1].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
+   pv[1].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[1].color.r  = r; \
+   pv[1].color.g  = g; \
+   pv[1].color.b  = b; \
+   pv[1].color.a  = a; \
+   pv[2].x        = (_x)     + 1.0f * (_width); \
+   pv[2].y        = (_y)     + 0.0f * (_height); \
+   pv[2].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
+   pv[2].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[2].color.r  = r; \
+   pv[2].color.g  = g; \
+   pv[2].color.b  = b; \
+   pv[2].color.a  = a; \
+   pv[3].x        = (_x)     + 1.0f * (_width); \
+   pv[3].y        = (_y)     + 1.0f * (_height); \
+   pv[3].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
+   pv[3].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[3].color.r  = r; \
+   pv[3].color.g  = g; \
+   pv[3].color.b  = b; \
+   pv[3].color.a  = a; \
+   pv[4].x        = (_x)     + 1.0f * (_width); \
+   pv[4].y        = (_y)     + 0.0f * (_height); \
+   pv[4].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
+   pv[4].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
+   pv[4].color.r  = r; \
+   pv[4].color.g  = g; \
+   pv[4].color.b  = b; \
+   pv[4].color.a  = a; \
+   pv[5].x        = (_x)     + 0.0f * (_width); \
+   pv[5].y        = (_y)     + 1.0f * (_height); \
+   pv[5].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
+   pv[5].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
+   pv[5].color.r  = r; \
+   pv[5].color.g  = g; \
+   pv[5].color.b  = b; \
+   pv[5].color.a  = a; \
+}
+
+/* We don't have to sync against previous TRANSFER,
+ * since we observed the completion by fences.
+ *
+ * If we have a single texture_optimal, we would need to sync against
+ * previous transfers to avoid races.
+ *
+ * We would also need to optionally maintain extra textures due to
+ * changes in resolution, so this seems like the sanest and
+ * simplest solution. */
+#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
+   if (((tex)->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex)->memory != VK_NULL_HANDLE) \
+      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
+
+#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
+   if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
+      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
+
 RETRO_BEGIN_DECLS
+
+enum vk_flags
+{
+   VK_FLAG_VSYNC               = (1 << 0),
+   VK_FLAG_KEEP_ASPECT         = (1 << 1),
+   VK_FLAG_FULLSCREEN          = (1 << 2),
+   VK_FLAG_QUITTING            = (1 << 3),
+   VK_FLAG_SHOULD_RESIZE       = (1 << 4),
+   VK_FLAG_TRACKER_USE_SCISSOR = (1 << 5),
+   VK_FLAG_HW_ENABLE           = (1 << 6),
+   VK_FLAG_HW_VALID_SEMAPHORE  = (1 << 7),
+   VK_FLAG_MENU_ENABLE         = (1 << 8),
+   VK_FLAG_MENU_FULLSCREEN     = (1 << 9),
+   VK_FLAG_HDR_SUPPORT         = (1 << 10),
+   VK_FLAG_DISPLAY_BLEND       = (1 << 11),
+   VK_FLAG_READBACK_PENDING    = (1 << 12),
+   VK_FLAG_READBACK_STREAMED   = (1 << 13),
+   VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
+   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
+};
+
 
 enum vk_texture_type
 {
@@ -89,6 +286,46 @@ enum vulkan_wsi_type
    VULKAN_WSI_MVK_IOS,
 };
 
+enum vulkan_context_flags
+{
+   VK_CTX_FLAG_INVALID_SWAPCHAIN            = (1 << 0),
+   VK_CTX_FLAG_HDR_ENABLE                   = (1 << 1),
+   /* Used by screenshot to get blits with correct colorspace. */
+   VK_CTX_FLAG_SWAPCHAIN_IS_SRGB            = (1 << 2),
+   VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK = (1 << 3),
+   VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4),
+};
+
+enum vulkan_emulated_mailbox_flags
+{
+   VK_MAILBOX_FLAG_ACQUIRED            = (1 << 0),
+   VK_MAILBOX_FLAG_REQUEST_ACQUIRE     = (1 << 1),
+   VK_MAILBOX_FLAG_DEAD                = (1 << 2),
+   VK_MAILBOX_FLAG_HAS_PENDING_REQUEST = (1 << 3)
+};
+
+enum gfx_ctx_vulkan_data_flags
+{
+   /* If set, prefer a path where we use
+    * semaphores instead of fences for vkAcquireNextImageKHR.
+    * Helps workaround certain performance issues on some drivers. */
+   VK_DATA_FLAG_USE_WSI_SEMAPHORE       = (1 << 0),
+   VK_DATA_FLAG_NEED_NEW_SWAPCHAIN      = (1 << 1),
+   VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN   = (1 << 2),
+   VK_DATA_FLAG_EMULATE_MAILBOX         = (1 << 3),
+   VK_DATA_FLAG_EMULATING_MAILBOX       = (1 << 4),
+   /* Used to check if we need to use mailbox emulation or not.
+    * Only relevant on Windows for now. */
+   VK_DATA_FLAG_FULLSCREEN              = (1 << 5)
+};
+
+enum vk_texture_flags
+{
+   VK_TEX_FLAG_DEFAULT_SMOOTH               = (1 << 0),
+   VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT = (1 << 1),
+   VK_TEX_FLAG_MIPMAP                       = (1 << 2)
+};
+
 #ifdef VULKAN_HDR_SWAPCHAIN
 
 #ifndef VKALIGN
@@ -110,16 +347,6 @@ typedef struct VKALIGN(16)
    float             hdr10;            /* 1.0f    */
 } vulkan_hdr_uniform_t;
 #endif /* VULKAN_HDR_SWAPCHAIN */
-
-enum vulkan_context_flags
-{
-   VK_CTX_FLAG_INVALID_SWAPCHAIN            = (1 << 0),
-   VK_CTX_FLAG_HDR_ENABLE                   = (1 << 1),
-   /* Used by screenshot to get blits with correct colorspace. */
-   VK_CTX_FLAG_SWAPCHAIN_IS_SRGB            = (1 << 2),
-   VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK = (1 << 3),
-   VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4),
-};
 
 typedef struct vulkan_context
 {
@@ -164,14 +391,6 @@ typedef struct vulkan_context
    bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
 } vulkan_context_t;
 
-enum vulkan_emulated_mailbox_flags
-{
-   VK_MAILBOX_FLAG_ACQUIRED            = (1 << 0),
-   VK_MAILBOX_FLAG_REQUEST_ACQUIRE     = (1 << 1),
-   VK_MAILBOX_FLAG_DEAD                = (1 << 2),
-   VK_MAILBOX_FLAG_HAS_PENDING_REQUEST = (1 << 3)
-};
-
 struct vulkan_emulated_mailbox
 {
    sthread_t *thread;
@@ -183,21 +402,6 @@ struct vulkan_emulated_mailbox
    unsigned index;
    VkResult result;              /* enum alignment */
    uint8_t flags;
-};
-
-enum gfx_ctx_vulkan_data_flags
-{
-   /* If set, prefer a path where we use
-    * semaphores instead of fences for vkAcquireNextImageKHR.
-    * Helps workaround certain performance issues on some drivers. */
-   VK_DATA_FLAG_USE_WSI_SEMAPHORE       = (1 << 0),
-   VK_DATA_FLAG_NEED_NEW_SWAPCHAIN      = (1 << 1),
-   VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN   = (1 << 2),
-   VK_DATA_FLAG_EMULATE_MAILBOX         = (1 << 3),
-   VK_DATA_FLAG_EMULATING_MAILBOX       = (1 << 4),
-   /* Used to check if we need to use mailbox emulation or not.
-    * Only relevant on Windows for now. */
-   VK_DATA_FLAG_FULLSCREEN              = (1 << 5)
 };
 
 typedef struct gfx_ctx_vulkan_data
@@ -216,6 +420,7 @@ struct vulkan_display_surface_info
    unsigned width;
    unsigned height;
    unsigned monitor_index;
+   unsigned refresh_rate_x1000;
 };
 
 struct vk_color
@@ -236,13 +441,6 @@ struct vk_image
    VkImageView view;             /* ptr alignment */
    VkFramebuffer framebuffer;    /* ptr alignment */
    VkDeviceMemory memory;        /* ptr alignment */
-};
-
-enum vk_texture_flags
-{
-   VK_TEX_FLAG_DEFAULT_SMOOTH               = (1 << 0),
-   VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT = (1 << 1),
-   VK_TEX_FLAG_MIPMAP                       = (1 << 2)
 };
 
 struct vk_texture
@@ -345,26 +543,6 @@ struct vk_draw_triangles
    VkSampler sampler;            /* ptr alignment */
    size_t uniform_size;
    unsigned vertices;
-};
-
-enum vk_flags
-{
-   VK_FLAG_VSYNC               = (1 << 0),
-   VK_FLAG_KEEP_ASPECT         = (1 << 1),
-   VK_FLAG_FULLSCREEN          = (1 << 2),
-   VK_FLAG_QUITTING            = (1 << 3),
-   VK_FLAG_SHOULD_RESIZE       = (1 << 4),
-   VK_FLAG_TRACKER_USE_SCISSOR = (1 << 5),
-   VK_FLAG_HW_ENABLE           = (1 << 6),
-   VK_FLAG_HW_VALID_SEMAPHORE  = (1 << 7),
-   VK_FLAG_MENU_ENABLE         = (1 << 8),
-   VK_FLAG_MENU_FULLSCREEN     = (1 << 9),
-   VK_FLAG_HDR_SUPPORT         = (1 << 10),
-   VK_FLAG_DISPLAY_BLEND       = (1 << 11),
-   VK_FLAG_READBACK_PENDING    = (1 << 12),
-   VK_FLAG_READBACK_STREAMED   = (1 << 13),
-   VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
-   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
 };
 
 typedef struct vk
@@ -496,145 +674,6 @@ typedef struct vk
    uint32_t flags;
 } vk_t;
 
-#define VK_BUFFER_CHAIN_DISCARD(chain) \
-{ \
-   chain->current = chain->head; \
-   chain->offset  = 0; \
-}
-
-#define VULKAN_SYNC_TEXTURE_TO_GPU(device, tex_memory) \
-{ \
-   VkMappedMemoryRange range; \
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
-   range.pNext  = NULL; \
-   range.memory = tex_memory; \
-   range.offset = 0; \
-   range.size   = VK_WHOLE_SIZE; \
-   vkFlushMappedMemoryRanges(device, 1, &range); \
-}
-
-#define VULKAN_SYNC_TEXTURE_TO_CPU(device, tex_memory) \
-{ \
-   VkMappedMemoryRange range; \
-   range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE; \
-   range.pNext  = NULL; \
-   range.memory = tex_memory; \
-   range.offset = 0; \
-   range.size   = VK_WHOLE_SIZE; \
-   vkInvalidateMappedMemoryRanges(device, 1, &range); \
-}
-
-#define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
-{ \
-   VkImageMemoryBarrier barrier; \
-   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; \
-   barrier.pNext                           = NULL; \
-   barrier.srcAccessMask                   = src_access; \
-   barrier.dstAccessMask                   = dst_access; \
-   barrier.oldLayout                       = old_layout; \
-   barrier.newLayout                       = new_layout; \
-   barrier.srcQueueFamilyIndex             = src_queue_family_idx; \
-   barrier.dstQueueFamilyIndex             = dst_queue_family_idx; \
-   barrier.image                           = img; \
-   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT; \
-   barrier.subresourceRange.baseMipLevel   = 0; \
-   barrier.subresourceRange.levelCount     = levels; \
-   barrier.subresourceRange.baseArrayLayer = 0; \
-   barrier.subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS; \
-   vkCmdPipelineBarrier(cmd, src_stages, dst_stages, 0, 0, NULL, 0, NULL, 1, &barrier); \
-}
-
-#define VULKAN_TRANSFER_IMAGE_OWNERSHIP(cmd, img, layout, src_stages, dst_stages, src_queue_family, dst_queue_family) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, layout, layout, 0, 0, src_stages, dst_stages, src_queue_family, dst_queue_family)
-
-#define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages) VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, VK_REMAINING_MIP_LEVELS, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED)
-
-#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
-{ \
-   manager->current = manager->head; \
-   manager->count = 0; \
-}
-
-#define VK_MAP_PERSISTENT_TEXTURE(device, texture) \
-{ \
-   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
-}
-
-#define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
-{ \
-   VkDescriptorImageInfo image_info; \
-   VkWriteDescriptorSet write; \
-   image_info.sampler         = _sampler; \
-   image_info.imageView       = image_view; \
-   image_info.imageLayout     = image_layout; \
-   write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; \
-   write.pNext                = NULL; \
-   write.dstSet               = set; \
-   write.dstBinding           = binding; \
-   write.dstArrayElement      = 0; \
-   write.descriptorCount      = 1; \
-   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; \
-   write.pImageInfo           = &image_info; \
-   write.pBufferInfo          = NULL; \
-   write.pTexelBufferView     = NULL; \
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL); \
-}
-
-#define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
-{ \
-   float r        = (vulkan_color)->r; \
-   float g        = (vulkan_color)->g; \
-   float b        = (vulkan_color)->b; \
-   float a        = (vulkan_color)->a; \
-   pv[0].x        = (_x)     + 0.0f * (_width); \
-   pv[0].y        = (_y)     + 0.0f * (_height); \
-   pv[0].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[0].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[0].color.r  = r; \
-   pv[0].color.g  = g; \
-   pv[0].color.b  = b; \
-   pv[0].color.a  = a; \
-   pv[1].x        = (_x)     + 0.0f * (_width); \
-   pv[1].y        = (_y)     + 1.0f * (_height); \
-   pv[1].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[1].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[1].color.r  = r; \
-   pv[1].color.g  = g; \
-   pv[1].color.b  = b; \
-   pv[1].color.a  = a; \
-   pv[2].x        = (_x)     + 1.0f * (_width); \
-   pv[2].y        = (_y)     + 0.0f * (_height); \
-   pv[2].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[2].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[2].color.r  = r; \
-   pv[2].color.g  = g; \
-   pv[2].color.b  = b; \
-   pv[2].color.a  = a; \
-   pv[3].x        = (_x)     + 1.0f * (_width); \
-   pv[3].y        = (_y)     + 1.0f * (_height); \
-   pv[3].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[3].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[3].color.r  = r; \
-   pv[3].color.g  = g; \
-   pv[3].color.b  = b; \
-   pv[3].color.a  = a; \
-   pv[4].x        = (_x)     + 1.0f * (_width); \
-   pv[4].y        = (_y)     + 0.0f * (_height); \
-   pv[4].tex_x    = (_tex_x) + 1.0f * (_tex_width); \
-   pv[4].tex_y    = (_tex_y) + 0.0f * (_tex_height); \
-   pv[4].color.r  = r; \
-   pv[4].color.g  = g; \
-   pv[4].color.b  = b; \
-   pv[4].color.a  = a; \
-   pv[5].x        = (_x)     + 0.0f * (_width); \
-   pv[5].y        = (_y)     + 1.0f * (_height); \
-   pv[5].tex_x    = (_tex_x) + 0.0f * (_tex_width); \
-   pv[5].tex_y    = (_tex_y) + 1.0f * (_tex_height); \
-   pv[5].color.r  = r; \
-   pv[5].color.g  = g; \
-   pv[5].color.b  = b; \
-   pv[5].color.a  = a; \
-}
-
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain, size_t size,
       struct vk_buffer_range *range);
@@ -652,55 +691,7 @@ uint32_t vulkan_find_memory_type_fallback(
       uint32_t device_reqs, uint32_t host_reqs_first,
       uint32_t host_reqs_second);
 
-struct vk_texture vulkan_create_texture(vk_t *vk,
-      struct vk_texture *old,
-      unsigned width, unsigned height,
-      VkFormat format,
-      const void *initial, const VkComponentMapping *swizzle,
-      enum vk_texture_type type);
-
-void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture);
-
-void vulkan_destroy_texture(
-      VkDevice device,
-      struct vk_texture *tex);
-
-/* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
- * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
- */
-void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
-      struct vk_texture *dynamic, struct vk_texture *staging);
-
-/* We don't have to sync against previous TRANSFER,
- * since we observed the completion by fences.
- *
- * If we have a single texture_optimal, we would need to sync against
- * previous transfers to avoid races.
- *
- * We would also need to optionally maintain extra textures due to
- * changes in resolution, so this seems like the sanest and
- * simplest solution. */
-#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_PTR(vk, tex) \
-   if (((tex)->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex)->memory != VK_NULL_HANDLE) \
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex)->memory) \
-
-#define VULKAN_SYNC_TEXTURE_TO_GPU_COND_OBJ(vk, tex) \
-   if (((tex).flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && (tex).memory != VK_NULL_HANDLE) \
-      VULKAN_SYNC_TEXTURE_TO_GPU(vk->context->device, (tex).memory) \
-
-void vulkan_write_quad_descriptors(
-      VkDevice device,
-      VkDescriptorSet set,
-      VkBuffer buffer,
-      VkDeviceSize offset,
-      VkDeviceSize range,
-      const struct vk_texture *texture,
-      VkSampler sampler);
-
-/* The VBO needs to be written to before calling this.
- * Use vulkan_buffer_chain_alloc.
- */
-void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
+void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 
 struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,
@@ -734,23 +725,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval);
 
-void vulkan_set_uniform_buffer(
-      VkDevice device,
-      VkDescriptorSet set,
-      unsigned binding,
-      VkBuffer buffer,
-      VkDeviceSize offset,
-      VkDeviceSize range);
-
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
-
-static INLINE VkFormat vulkan_remap_to_texture_format(VkFormat fmt)
-{
-   if (fmt == VK_FORMAT_R5G6B5_UNORM_PACK16)
-      return VK_FORMAT_R8G8B8A8_UNORM;
-   return fmt;
-}
 
 RETRO_END_DECLS
 

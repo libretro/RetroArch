@@ -124,6 +124,8 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Video */
 
@@ -161,9 +163,15 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -257,6 +265,9 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -523,6 +534,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

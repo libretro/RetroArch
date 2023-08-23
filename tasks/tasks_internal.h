@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <lists/string_list.h>
 
 #include <queues/task_queue.h>
 #include <gfx/scaler/scaler.h>
@@ -44,6 +45,16 @@
 
 RETRO_BEGIN_DECLS
 
+enum screenshot_task_flags
+{
+   SS_TASK_FLAG_BGR24               = (1 << 0),
+   SS_TASK_FLAG_SILENCE             = (1 << 1),
+   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
+   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
+   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+};
+
 typedef struct nbio_buf
 {
    void *buf;
@@ -51,10 +62,31 @@ typedef struct nbio_buf
    unsigned bufsize;
 } nbio_buf_t;
 
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   uint8_t flags;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[NAME_MAX_LENGTH];
+};
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {
    char *data;
+   struct string_list *headers;
    size_t len;
    int status;
 } http_transfer_data_t;
@@ -78,6 +110,17 @@ void *task_push_http_post_transfer_with_headers(const char *url, const char *pos
    const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
+
+void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_put(const char *url, const void *put_data, size_t len, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_delete(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_move(const char *url, const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb);
 
@@ -113,9 +156,11 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
+#if 0
 bool task_push_update_single_core(
       const char *path_core, bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro, const char *path_dir_core_assets);
+#endif
 #if defined(ANDROID)
 void *task_push_play_feature_delivery_core_install(
       core_updater_list_t* core_list,
@@ -187,11 +232,7 @@ bool task_push_manual_content_scan(
 bool task_push_overlay_load_default(
       retro_task_callback_t cb,
       const char *overlay_path,
-      bool overlay_hide_in_menu,
-      bool overlay_hide_when_gamepad_connected,
-      bool input_overlay_enable,
-      float input_overlay_opacity,
-      overlay_layout_desc_t *layout_desc,
+      bool is_osk,
       void *user_data);
 #endif
 
@@ -220,36 +261,6 @@ void *task_push_decompress(
 
 void task_file_load_handler(retro_task_t *task);
 
-typedef struct screenshot_task_state screenshot_task_state_t;
-
-enum screenshot_task_flags
-{
-   SS_TASK_FLAG_BGR24               = (1 << 0),
-   SS_TASK_FLAG_SILENCE             = (1 << 1),
-   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
-   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
-   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
-   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
-};
-
-struct screenshot_task_state
-{
-   struct scaler_ctx scaler;
-   uint8_t *out_buffer;
-   const void *frame;
-   void *userbuf;
-
-   int pitch;
-   unsigned width;
-   unsigned height;
-   unsigned pixel_format_type;
-
-   uint8_t flags;
-
-   char filename[PATH_MAX_LENGTH];
-   char shotname[NAME_MAX_LENGTH];
-};
-
 bool take_screenshot(
       const char *screenshot_dir,
       const char *path, bool silence,
@@ -266,7 +277,6 @@ void *savefile_ptr_get(void);
 void path_init_savefile_new(void);
 
 /* Autoconfigure tasks */
-extern const char* const input_builtin_autoconfs[];
 void input_autoconfigure_blissbox_override_handler(
       int vid, int pid, char *device_name, size_t len);
 bool input_autoconfigure_connect(
@@ -292,6 +302,11 @@ bool task_push_menu_explore_init(const char *directory_playlist,
 bool menu_explore_init_in_progress(void *data);
 void menu_explore_wait_for_init_task(void);
 #endif
+
+extern const char* const input_builtin_autoconfs[];
+
+/* cloud sync tasks */
+void task_push_cloud_sync(void);
 
 RETRO_END_DECLS
 

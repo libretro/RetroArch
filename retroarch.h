@@ -42,8 +42,6 @@
 #include "runloop.h"
 #include "retroarch_types.h"
 
-RETRO_BEGIN_DECLS
-
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
 
 #define RETRO_ENVIRONMENT_SET_SAVE_STATE_IN_BACKGROUND (2 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
@@ -75,6 +73,7 @@ RETRO_BEGIN_DECLS
 
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
+      | DRIVER_MICROPHONE_MASK \
       | DRIVER_VIDEO_MASK \
       | DRIVER_INPUT_MASK \
       | DRIVER_CAMERA_MASK \
@@ -86,10 +85,32 @@ RETRO_BEGIN_DECLS
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
 
+
+RETRO_BEGIN_DECLS
+
+enum rarch_state_flags
+{
+   RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
+   RARCH_FLAGS_HAS_SET_VERBOSITY            = (1 << 1),
+   RARCH_FLAGS_HAS_SET_LIBRETRO             = (1 << 2),
+   RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   = (1 << 3),
+   RARCH_FLAGS_HAS_SET_SAVE_PATH            = (1 << 4),
+   RARCH_FLAGS_HAS_SET_STATE_PATH           = (1 << 5),
+   RARCH_FLAGS_HAS_SET_UPS_PREF             = (1 << 6),
+   RARCH_FLAGS_HAS_SET_BPS_PREF             = (1 << 7),
+   RARCH_FLAGS_HAS_SET_IPS_PREF             = (1 << 8),
+   RARCH_FLAGS_HAS_SET_LOG_TO_FILE          = (1 << 9),
+   RARCH_FLAGS_UPS_PREF                     = (1 << 10),
+   RARCH_FLAGS_BPS_PREF                     = (1 << 11),
+   RARCH_FLAGS_IPS_PREF                     = (1 << 12),
+   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
+   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14)
+};
+
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
-      char *s, size_t len, size_t _len);
+      char *s, size_t len);
 
 void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data);
 
@@ -141,6 +162,17 @@ void retroarch_favorites_deinit(void);
  **/
 const char* config_get_audio_driver_options(void);
 
+#ifdef HAVE_MICROPHONE
+/**
+ * config_get_microphone_driver_options:
+ *
+ * Get an enumerated list of all microphone driver names, separated by '|'.
+ *
+ * Returns: string listing of all microphone driver names, separated by '|'.
+ **/
+const char* config_get_microphone_driver_options(void);
+#endif
+
 /* Camera */
 
 /*
@@ -162,24 +194,6 @@ bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
 void core_options_reset(void);
 void core_options_flush(void);
-
-enum rarch_state_flags
-{
-   RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
-   RARCH_FLAGS_HAS_SET_VERBOSITY            = (1 << 1),
-   RARCH_FLAGS_HAS_SET_LIBRETRO             = (1 << 2),
-   RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   = (1 << 3),
-   RARCH_FLAGS_HAS_SET_SAVE_PATH            = (1 << 4),
-   RARCH_FLAGS_HAS_SET_STATE_PATH           = (1 << 5),
-   RARCH_FLAGS_HAS_SET_UPS_PREF             = (1 << 6),
-   RARCH_FLAGS_HAS_SET_BPS_PREF             = (1 << 7),
-   RARCH_FLAGS_HAS_SET_IPS_PREF             = (1 << 8),
-   RARCH_FLAGS_HAS_SET_LOG_TO_FILE          = (1 << 9),
-   RARCH_FLAGS_UPS_PREF                     = (1 << 10),
-   RARCH_FLAGS_BPS_PREF                     = (1 << 11),
-   RARCH_FLAGS_IPS_PREF                     = (1 << 12),
-   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13)
-};
 
 /**
  * retroarch_fail:

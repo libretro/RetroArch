@@ -203,14 +203,12 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    data->func               = thread_func;
    data->userdata           = userdata;
 
-#ifdef USE_WIN32_THREADS
    thread->id               = 0;
+#ifdef USE_WIN32_THREADS
    thread->thread           = CreateThread(NULL, 0, thread_wrap,
          data, 0, &thread->id);
    thread_created           = !!thread->thread;
 #else
-   thread->id               = 0;
-
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
@@ -224,23 +222,27 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
       thread_attr_needed = true;
    }
-#endif
 
 #if defined(VITA)
    pthread_attr_setstacksize(&thread_attr , 0x10000 );
    thread_attr_needed = true;
+#elif defined(__APPLE__)
+   /* Default stack size on Apple is 512Kb; 
+    * for PS2 disc scanning and other reasons, we'd like 2MB. */
+   pthread_attr_setstacksize(&thread_attr , 0x200000 );
+   thread_attr_needed = true;
 #endif
 
-#ifdef HAVE_THREAD_ATTR
    if (thread_attr_needed)
       thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
    else
-#endif
       thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 
-#ifdef HAVE_THREAD_ATTR
    pthread_attr_destroy(&thread_attr);
+#else
+   thread_created    = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 #endif
+
 #endif
 
    if (thread_created)

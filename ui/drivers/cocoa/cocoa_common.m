@@ -30,6 +30,7 @@
 #endif
 
 #include "../../../configuration.h"
+#include "../../../paths.h"
 #include "../../../retroarch.h"
 #include "../../../verbosity.h"
 
@@ -52,7 +53,6 @@ void *glkitview_init(void);
 ,EmulatorTouchMouseHandlerDelegate
 #endif
 >
-
 @end
 #endif
 
@@ -90,15 +90,192 @@ void *glkitview_init(void);
    ui_window_cocoa_t cocoa_view;
    cocoa_view.data = (CocoaView*)self;
 #endif
-    
+
 #if defined(OSX)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
+#if TARGET_OS_TV
+   /* This causes all inputs to be handled by both mfi and uikit.
+    *
+    * For "extended gamepads" the only button we want to handle is 'cancel'
+    * (buttonB), and only when the cancel button wouldn't do anything.
+    */
+   self.controllerUserInteractionEnabled = YES;
+#endif
+  
+#if TARGET_OS_IOS
+  self.shouldLockCurrentInterfaceOrientation = NO;
+#endif
+
    return self;
 }
+
+#if TARGET_OS_TV
+- (bool)menuIsAtTop
+{
+    struct menu_state *menu_st = menu_state_get_ptr();
+    if (!(menu_st->flags & MENU_ST_FLAG_ALIVE)) /* content */
+        return false;
+    if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) /* search */
+        return false;
+    if (menu_st->selection_ptr != 0) /* not the first item */
+        return false;
+    if (menu_st->entries.list->menu_stack[0]->size != 1) /* submenu */
+        return false;
+    if (!string_is_equal(menu_st->entries.list->menu_stack[0]->list->label, /* not on the main menu */
+                         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
+        return false;
+    return true;
+}
+
+- (bool)didMicroGamepadPress:(UIPressType)type
+{
+    NSArray<GCController*>* controllers = [GCController controllers];
+    if ([controllers count] == 1)
+        return !controllers[0].extendedGamepad;
+
+    /* Are these presses that controllers send? */
+    if (@available(tvOS 14.3, *))
+        if (type == UIPressTypePageUp || type == UIPressTypePageDown)
+            return true;
+
+    bool microPress = false;
+    bool extendedPress = false;
+    for (GCController *controller in [GCController controllers]) {
+        if (controller.extendedGamepad)
+        {
+            if (type == UIPressTypeUpArrow)
+                extendedPress |= controller.extendedGamepad.dpad.up.pressed
+                              || controller.extendedGamepad.leftThumbstick.up.pressed
+                              || controller.extendedGamepad.rightThumbstick.up.pressed;
+            else if (type == UIPressTypeDownArrow)
+                extendedPress |= controller.extendedGamepad.dpad.down.pressed
+                              || controller.extendedGamepad.leftThumbstick.down.pressed
+                              || controller.extendedGamepad.rightThumbstick.down.pressed;
+            else if (type == UIPressTypeLeftArrow)
+                extendedPress |= controller.extendedGamepad.dpad.left.pressed
+                              || controller.extendedGamepad.leftThumbstick.left.pressed
+                              || controller.extendedGamepad.rightThumbstick.left.pressed;
+            else if (type == UIPressTypeRightArrow)
+                extendedPress |= controller.extendedGamepad.dpad.right.pressed
+                              || controller.extendedGamepad.leftThumbstick.right.pressed
+                              || controller.extendedGamepad.rightThumbstick.right.pressed;
+            else if (type == UIPressTypeSelect)
+                extendedPress |= controller.extendedGamepad.buttonA.pressed;
+            else if (type == UIPressTypeMenu)
+                extendedPress |= controller.extendedGamepad.buttonB.pressed;
+            else if (type == UIPressTypePlayPause)
+                extendedPress |= controller.extendedGamepad.buttonX.pressed;
+
+        }
+        else if (controller.microGamepad)
+        {
+            if (type == UIPressTypeSelect)
+                microPress |= controller.microGamepad.buttonA.pressed;
+            else if (type == UIPressTypePlayPause)
+                microPress |= controller.microGamepad.buttonX.pressed;
+            else if (@available(tvOS 13, *)) {
+                if (type == UIPressTypeMenu)
+                    extendedPress |= controller.microGamepad.buttonMenu.pressed ||
+                    controller.microGamepad.buttonMenu.isPressed;
+            }
+        }
+    }
+
+    return microPress || !extendedPress;
+}
+
+- (void)sendKeyForPress:(UIPressType)type down:(bool)down
+{
+    static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        map = @{
+            @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
+            @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
+            @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
+            @(UIPressTypeRightArrow): @[ @(RETROK_RIGHT),    @( 0 ) ],
+
+            @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
+            @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
+            @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
+
+            @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
+            @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
+        };
+    });
+    NSArray<NSNumber*>* keyvals = map[@(type)];
+    if (!keyvals)
+        return;
+    apple_direct_input_keyboard_event(down, keyvals[0].intValue,
+                                      keyvals[1].intValue, 0, RETRO_DEVICE_KEYBOARD);
+}
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses
+           withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *press in presses)
+    {
+        /* If we're at the top it doesn't matter who pressed it, we want to leave */
+        if (press.type == UIPressTypeMenu && [self menuIsAtTop])
+            [super pressesBegan:presses withEvent:event];
+        else if ([self didMicroGamepadPress:press.type])
+            [self sendKeyForPress:press.type down:true];
+    }
+}
+
+-(void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    for (UIPress *press in presses) {
+        if (press.type == UIPressTypeSelect || press.type == UIPressTypePlayPause)
+            [self sendKeyForPress:press.type down:false];
+        else
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+                [[CocoaView get] sendKeyForPress:press.type down:false];
+            });
+    }
+}
+
+-(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)touchesEstimatedPropertiesUpdated:(NSSet<UITouch *> *)touches
+{
+}
+
+-(void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+}
+
+-(void)handleSiriSwipe:(id)sender
+{
+   UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
+   unsigned code;
+   switch (gestureRecognizer.direction)
+   {
+      case UISwipeGestureRecognizerDirectionUp:    code = RETROK_UP;    break;
+      case UISwipeGestureRecognizerDirectionDown:  code = RETROK_DOWN;  break;
+      case UISwipeGestureRecognizerDirectionLeft:  code = RETROK_LEFT;  break;
+      case UISwipeGestureRecognizerDirectionRight: code = RETROK_RIGHT; break;
+   }
+   apple_direct_input_keyboard_event(true,  code, 0, 0, RETRO_DEVICE_KEYBOARD);
+   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+      apple_direct_input_keyboard_event(false, code, 0, 0, RETRO_DEVICE_KEYBOARD);
+   });
+}
+#endif
 
 #if defined(OSX)
 - (void)setFrame:(NSRect)frameRect
@@ -175,7 +352,7 @@ void *glkitview_init(void);
     if (self.keyboardController.view.isHidden)
         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
     else
-        command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+        command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 #endif
 }
 
@@ -194,7 +371,7 @@ void *glkitview_init(void);
 
 -(void)adjustViewFrameForSafeArea
 {
-   /* This is for adjusting the view frame to account for 
+   /* This is for adjusting the view frame to account for
     * the notch in iPhone X phones */
    if (@available(iOS 11, *))
    {
@@ -243,14 +420,30 @@ void *glkitview_init(void);
 /* NOTE: This version runs on iOS6+. */
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-   return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+  if (@available(iOS 16, *)) {
+    if (self.shouldLockCurrentInterfaceOrientation) {
+      return 1 << self.lockInterfaceOrientation;
+    } else {
+      return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+    }
+  } else {
+    return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+  }
+}
+
+/* NOTE: This does not run on iOS 16+ */
+-(BOOL)shouldAutorotate {
+  if (self.shouldLockCurrentInterfaceOrientation) {
+    return NO;
+  }
+  return YES;
 }
 
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
    unsigned orientation_flags = apple_frontend_settings.orientation_flags;
-   
+
    switch (interfaceOrientation)
    {
       case UIInterfaceOrientationPortrait:
@@ -314,6 +507,23 @@ void *glkitview_init(void);
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
     [self setupHelperBar];
 #endif
+#elif TARGET_OS_TV
+    UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeUp.direction                    = UISwipeGestureRecognizerDirectionUp;
+    siriSwipeUp.delegate                     = self;
+    [self.view addGestureRecognizer:siriSwipeUp];
+    UISwipeGestureRecognizer *siriSwipeDown  = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeDown.direction                  = UISwipeGestureRecognizerDirectionDown;
+    siriSwipeDown.delegate                   = self;
+    [self.view addGestureRecognizer:siriSwipeDown];
+    UISwipeGestureRecognizer *siriSwipeLeft  = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeLeft.direction                  = UISwipeGestureRecognizerDirectionLeft;
+    siriSwipeLeft.delegate                   = self;
+    [self.view addGestureRecognizer:siriSwipeLeft];
+    UISwipeGestureRecognizer *siriSwipeRight = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
+    siriSwipeRight.direction                 = UISwipeGestureRecognizerDirectionRight;
+    siriSwipeRight.delegate                  = self;
+    [self.view addGestureRecognizer:siriSwipeRight];
 #endif
 }
 
@@ -392,7 +602,7 @@ void *glkitview_init(void);
         [servers appendString:@"\n\n"];
     if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
-    
+
 #if TARGET_OS_TV || TARGET_OS_IOS
     settings_t *settings = config_get_ptr();
     if (!settings->bools.gcdwebserver_alert)
@@ -435,9 +645,9 @@ void *cocoa_screen_get_chosen(void)
     NSArray *screens     = [RAScreen screens];
     if (!screens || !settings)
         return NULL;
-    
+
     monitor_index        = settings->uints.video_monitor_index;
-    
+
     if (monitor_index >= screens.count)
         return (BRIDGE void*)screens;
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
@@ -502,14 +712,14 @@ float cocoa_screen_get_native_scale(void)
     SEL selector;
     static CGFloat ret   = 0.0f;
     RAScreen *screen     = NULL;
-    
+
     if (ret != 0.0f)
         return ret;
     if (!(screen = (BRIDGE RAScreen*)cocoa_screen_get_chosen()))
         return 0.0f;
-    
+
     selector            = NSSelectorFromString(BOXSTRING("nativeScale"));
-    
+
     if ([screen respondsToSelector:selector])
         ret                 = (float)get_from_selector(
               [screen class], screen, selector, &ret);
@@ -520,7 +730,7 @@ float cocoa_screen_get_native_scale(void)
         if ([screen respondsToSelector:selector])
             ret              = screen.scale;
     }
-    
+
     return ret;
 }
 #endif
@@ -550,23 +760,6 @@ CocoaView *cocoaview_get(void)
 }
 
 #ifdef OSX
-void cocoa_update_title(void *data)
-{
-   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
-   if (window)
-   {
-      char title[128];
-
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
-         window->set_title((void*)video_driver_display_userdata_get(), title);
-   }
-}
-
 bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value)
@@ -661,3 +854,25 @@ bool cocoa_get_metrics(
    return true;
 }
 #endif
+
+config_file_t *open_userdefaults_config_file(void)
+{
+   config_file_t *conf = NULL;
+   NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
+   if ([backup length] >= 0)
+   {
+      char *str = strdup(backup.UTF8String);
+      conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
+      free(str);
+   }
+   return conf;
+}
+
+void write_userdefaults_config_file(void)
+{
+   NSString *conf = [NSString stringWithContentsOfFile:[NSString stringWithUTF8String:path_get(RARCH_PATH_CONFIG)]
+                                              encoding:NSUTF8StringEncoding
+                                                 error:nil];
+   if (conf)
+      [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
+}

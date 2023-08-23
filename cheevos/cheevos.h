@@ -37,6 +37,7 @@ bool rcheevos_unload(void);
 void rcheevos_test(void);
 
 void rcheevos_reset_game(bool widgets_ready);
+void rcheevos_refresh_memory(void);
 
 void rcheevos_pause_hardcore(void);
 void rcheevos_hardcore_enabled_changed(void);
@@ -45,7 +46,7 @@ bool rcheevos_hardcore_active(void);
 
 void rcheevos_validate_config_settings(void);
 
-void rcheevos_leaderboards_enabled_changed(void);
+void rcheevos_leaderboard_trackers_visibility_changed(void);
 
 void rcheevos_set_support_cheevos(bool state);
 bool rcheevos_get_support_cheevos(void);

@@ -733,10 +733,6 @@ MSG_HASH(
    "Lyd"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Skift indstillinger for lydudgang."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "Skift controller, tastatur og mus indstillinger."
    )
@@ -904,6 +900,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Lyddriver der skal bruges."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Lyd resampler"
@@ -1013,6 +1011,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Skift indstillinger for lydudgang."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
@@ -1020,6 +1020,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "Lyd"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -1121,6 +1125,9 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -1463,6 +1470,8 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else

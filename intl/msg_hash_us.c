@@ -52,6 +52,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
        switch (msg)
        {
+          case MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS), len);
+             break;
           case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
              break;
@@ -244,6 +247,22 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              }
              break;
+#ifdef HAVE_MICROPHONE
+          case MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER:
+             {
+                const char *lbl = settings ? settings->arrays.microphone_resampler : NULL;
+
+                if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_SINC)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_CC)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER_NEAREST)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST), len);
+                else
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+             }
+             break;
+#endif
           case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET), len);
              break;

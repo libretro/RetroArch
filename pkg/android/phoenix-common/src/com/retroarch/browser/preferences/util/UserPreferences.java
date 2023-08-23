@@ -112,7 +112,7 @@ public final class UserPreferences
 
 	/**
 	 * Updates the libretro configuration file
-	 * with new values if settings have changed.
+	 * with new values if version has changed.
 	 * 
 	 * @param ctx the current {@link Context}.
 	 */
@@ -121,10 +121,10 @@ public final class UserPreferences
 		String path = getDefaultConfigPath(ctx);
 		ConfigFile config = new ConfigFile(path);
 
-		Log.i(TAG, "Writing config to: " + path);
-
 		final String dataDir = ctx.getApplicationInfo().dataDir;
 		final String coreDir = dataDir + "/cores/";
+		final String dstPath	= dataDir;
+		final String dstPathSubdir = "assets";
 
 		final SharedPreferences prefs = getPreferences(ctx);
 
@@ -137,16 +137,16 @@ public final class UserPreferences
 
 		try
 		{
-			int version							= ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
-			final String dst_path			= dataDir;
-			final String dst_path_subdir	= "assets";
+			int version      = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
+			int last_version = config.keyExists("bundle_assets_extract_last_version") ?
+					config.getInt("bundle_assets_extract_last_version") : 0;
 
-			Log.i(TAG, "dst dir is: " + dst_path);
-			Log.i(TAG, "dst subdir is: " + dst_path_subdir);
+			if (version == last_version)
+				return;
 
 			config.setString("bundle_assets_src_path", ctx.getApplicationInfo().sourceDir);
-			config.setString("bundle_assets_dst_path", dst_path);
-			config.setString("bundle_assets_dst_path_subdir", dst_path_subdir);
+			config.setString("bundle_assets_dst_path", dstPath);
+			config.setString("bundle_assets_dst_path_subdir", dstPathSubdir);
 			config.setInt("bundle_assets_extract_version_current", version);
 		}
 		catch (NameNotFoundException ignored)
@@ -164,6 +164,9 @@ public final class UserPreferences
 
 		try
 		{
+			Log.i(TAG, "Writing config to: " + path);
+			Log.i(TAG, "dst dir is: " + dstPath);
+			Log.i(TAG, "dst subdir is: " + dstPathSubdir);
 			config.write(path);
 		}
 		catch (IOException e)

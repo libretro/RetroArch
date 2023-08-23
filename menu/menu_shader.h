@@ -41,8 +41,6 @@ enum auto_shader_operation
 
 struct video_shader *menu_shader_get(void);
 
-void menu_shader_manager_free(void);
-
 /**
  * menu_shader_manager_init:
  *
@@ -111,17 +109,6 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
       bool apply);
 
 /**
- * menu_shader_manager_get_type:
- * @shader                   : shader handle
- *
- * Gets type of shader.
- *
- * Returns: type of shader.
- **/
-enum rarch_shader_type menu_shader_manager_get_type(
-      const struct video_shader *shader);
-
-/**
  * menu_shader_manager_apply_changes:
  *
  * Apply shader state changes.
@@ -160,30 +147,6 @@ bool menu_shader_manager_auto_preset_exists(
       enum auto_shader_type type,
       const char *dir_video_shader,
       const char *dir_menu_config);
-
-bool menu_shader_manager_save_preset_internal(
-      bool save_reference,
-      const struct video_shader *shader,
-      const char *basename,
-      const char *dir_video_shader,
-      bool apply,
-      const char **target_dirs,
-      size_t num_target_dirs);
-
-bool menu_shader_manager_operate_auto_preset(
-      struct retro_system_info *system,
-      bool video_shader_preset_save_reference_enable,
-      enum auto_shader_operation op,
-      const struct video_shader *shader,
-      const char *dir_video_shader,
-      const char *dir_menu_config,
-      enum auto_shader_type type, bool apply);
-
-void menu_driver_set_last_shader_path_int(
-      const char *shader_path,
-      enum rarch_shader_type *type,
-      char *shader_dir, size_t dir_len,
-      char *shader_file, size_t file_len);
 
 RETRO_END_DECLS
 

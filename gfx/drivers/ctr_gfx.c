@@ -14,12 +14,15 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <malloc.h>
+#include <math.h>
 
 #include <3ds.h>
 
 #include <retro_inline.h>
+#include <encodings/utf.h>
 #include <retro_math.h>
 #include <compat/strl.h>
 #include <formats/image.h>
@@ -47,14 +50,14 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
-#include "../common/ctr_common.h"
+#include "../common/ctr_defines.h"
 #ifndef HAVE_THREADS
 #include "../../tasks/tasks_internal.h"
 #endif
 
 enum
 {
-   CTR_TEXTURE_BOTTOM_MENU,
+   CTR_TEXTURE_BOTTOM_MENU = 0,
    CTR_TEXTURE_STATE_THUMBNAIL,
    CTR_TEXTURE_LAST
 };
@@ -66,8 +69,15 @@ struct ctr_bottom_texture_data
    ctr_scale_vector_t scale_vector;
 };
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
+typedef struct
+{
+   ctr_texture_t texture;
+   ctr_scale_vector_t scale_vector_top;
+   ctr_scale_vector_t scale_vector_bottom;
+   const font_renderer_driver_t* font_driver;
+   void* font_data;
+} ctr_font_t;
+
 
 /* An annoyance...
  * Have to keep track of bottom screen enable state
@@ -76,7 +86,555 @@ extern uint64_t lifecycle_state;
 static bool ctr_bottom_screen_enabled  = true;
 static int fade_count                  = 256;
 
+/*
+ * FORWARD DECLARATIONS
+ */
+
+/* TODO/FIXME - global referenced outside */
+extern uint64_t lifecycle_state;
+
+#ifdef HAVE_OVERLAY
+static void ctr_render_overlay(ctr_video_t *ctr);
+#endif
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
+
+/*
+ * DISPLAY DRIVER
+ */
+
+static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   ctr_scale_vector_t scale_vector;
+   int colorR, colorG, colorB, colorA;
+   ctr_scale_vector_t *vec          = NULL;
+   ctr_vertex_t *v                  = NULL;
+   struct ctr_texture *texture      = NULL;
+   const float *color               = NULL;
+   ctr_video_t             *ctr     = (ctr_video_t*)data;
+
+   if (!ctr || !draw)
+      return;
+
+   texture            = (struct ctr_texture*)draw->texture;
+   color              = draw->coords->color;
+
+   if (!texture)
+      return;
+
+   vec                = &scale_vector;
+   CTR_SET_SCALE_VECTOR(
+         vec,
+         CTR_TOP_FRAMEBUFFER_WIDTH,
+         CTR_TOP_FRAMEBUFFER_HEIGHT,
+         texture->width,
+         texture->height);
+   GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
+   ctrGuSetVertexShaderFloatUniform(0, (float*)&scale_vector, 1);
+
+   if ((ctr->vertex_cache.size - (ctr->vertex_cache.current
+               - ctr->vertex_cache.buffer)) < 1)
+      ctr->vertex_cache.current = ctr->vertex_cache.buffer;
+
+   v     = ctr->vertex_cache.current++;
+
+   v->x0 = draw->x;
+   v->y0 = 240 - draw->height - draw->y;
+   v->x1 = v->x0 + draw->width;
+   v->y1 = v->y0 + draw->height;
+   v->u0 = 0;
+   v->v0 = 0;
+   v->u1 = texture->active_width;
+   v->v1 = texture->active_height;
+
+   ctrGuSetAttributeBuffers(2,
+         VIRT_TO_PHYS(v),
+         CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
+         CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
+         sizeof(ctr_vertex_t));
+
+   color  = draw->coords->color;
+   colorR = (int)((*color++)*255.f);
+   colorG = (int)((*color++)*255.f);
+   colorB = (int)((*color++)*255.f);
+   colorA = (int)((*color++)*255.f);
+
+   GPU_SetTexEnv(0,
+         GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
+         GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
+         0,
+         0,
+         GPU_MODULATE, GPU_MODULATE,
+         COLOR_ABGR(colorR,colorG,colorB,colorA)
+         );
+
+#if 0
+   GPU_SetTexEnv(0,
+         GPU_TEVSOURCES(GPU_CONSTANT, GPU_CONSTANT, 0),
+         GPU_TEVSOURCES(GPU_CONSTANT, GPU_CONSTANT, 0),
+         0,
+         GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR, 0),
+         GPU_REPLACE, GPU_REPLACE,
+         0x3FFFFFFF);
+#endif
+
+   ctrGuSetTexture(GPU_TEXUNIT0,
+         VIRT_TO_PHYS(texture->data),
+         texture->width,
+         texture->height,
+           GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)
+         | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
+         | GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE)
+         | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+         GPU_RGBA8);
+
+   GPU_SetViewport(NULL,
+         VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+         0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+         ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
+         ? CTR_TOP_FRAMEBUFFER_WIDTH * 2
+         : CTR_TOP_FRAMEBUFFER_WIDTH);
+
+   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+
+   if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+   {
+      GPU_SetViewport(NULL,
+            VIRT_TO_PHYS(ctr->drawbuffers.top.right),
+            0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+            CTR_TOP_FRAMEBUFFER_WIDTH);
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+   }
+
+   GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
+}
+
+gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
+   gfx_display_ctr_draw,
+   NULL,                                     /* draw_pipeline          */
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   FONT_DRIVER_RENDER_CTR,
+   GFX_VIDEO_DRIVER_CTR,
+   "ctr",
+   true,
+   NULL,
+   NULL
+};
+
+/*
+ * FONT DRIVER
+ */
+
+static void* ctr_font_init(void* data, const char* font_path,
+      float font_size, bool is_threaded)
+{
+   int i, j;
+   ctr_scale_vector_t *vec_top    = NULL;
+   ctr_scale_vector_t *vec_bottom = NULL;
+   const uint8_t*     src         = NULL;
+   uint8_t* tmp                   = NULL;
+   const struct font_atlas* atlas = NULL;
+   ctr_font_t* font               = (ctr_font_t*)calloc(1, sizeof(*font));
+   ctr_video_t* ctr               = (ctr_video_t*)data;
+
+   if (!font)
+      return NULL;
+
+   font_size                      = 10;
+   if (!font_renderer_create_default(
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
+   {
+      free(font);
+      return NULL;
+   }
+
+   atlas                = font->font_driver->get_atlas(font->font_data);
+
+   font->texture.width  = next_pow2(atlas->width);
+   font->texture.height = next_pow2(atlas->height);
+#if FONT_TEXTURE_IN_VRAM
+   font->texture.data   = vramAlloc(font->texture.width * font->texture.height);
+   tmp                  = linearAlloc(font->texture.width * font->texture.height);
+#else
+   font->texture.data   = linearAlloc(font->texture.width * font->texture.height);
+   tmp                  = font->texture.data;
+#endif
+
+   src                  = atlas->buffer;
+
+   for (j = 0; (j < atlas->height) && (j < font->texture.height); j++)
+      for (i = 0; (i < atlas->width) && (i < font->texture.width); i++)
+         tmp[ctrgu_swizzle_coords(i, j, font->texture.width)] = src[i + j * atlas->width];
+
+   GSPGPU_FlushDataCache(tmp, font->texture.width * font->texture.height);
+
+#if FONT_TEXTURE_IN_VRAM
+   ctrGuCopyImage(true, tmp, font->texture.width >> 2, font->texture.height, CTRGU_RGBA8, true,
+                  font->texture.data, font->texture.width >> 2, CTRGU_RGBA8,  true);
+
+   linearFree(tmp);
+#endif
+
+   vec_top    = &font->scale_vector_top;
+   vec_bottom = &font->scale_vector_bottom;
+
+   CTR_SET_SCALE_VECTOR(
+         vec_top,
+         CTR_TOP_FRAMEBUFFER_WIDTH,
+         CTR_TOP_FRAMEBUFFER_HEIGHT,
+         font->texture.width,
+         font->texture.height);
+
+   CTR_SET_SCALE_VECTOR(
+         vec_bottom,
+         CTR_BOTTOM_FRAMEBUFFER_WIDTH,
+         CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+         font->texture.width,
+         font->texture.height);
+
+   return font;
+}
+
+static void ctr_font_free(void* data, bool is_threaded)
+{
+   ctr_font_t* font = (ctr_font_t*)data;
+
+   if (!font)
+      return;
+
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+
+#ifdef FONT_TEXTURE_IN_VRAM
+   vramFree(font->texture.data);
+#else
+   linearFree(font->texture.data);
+#endif
+   free(font);
+}
+
+static int ctr_font_get_message_width(void* data, const char* msg,
+      size_t msg_len, float scale)
+{
+   int i;
+   int delta_x = 0;
+   const struct font_glyph* glyph_q = NULL;
+   ctr_font_t* font                 = (ctr_font_t*)data;
+
+   if (!font)
+      return 0;
+
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph* glyph;
+      const char* msg_tmp            = &msg[i];
+      unsigned code                  = utf8_walk(&msg_tmp);
+      unsigned skip                  = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+
+      /* Do something smarter here ... */
+      if (!(glyph =
+               font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      delta_x += glyph->advance_x;
+   }
+
+   return delta_x * scale;
+}
+
+static void ctr_font_render_line(
+      ctr_video_t *ctr,
+      ctr_font_t* font, const char* msg, size_t msg_len,
+      float scale, const unsigned int color, float pos_x,
+      float pos_y,
+      unsigned width, unsigned height, unsigned text_align)
+{
+   unsigned i;
+   const struct font_glyph* glyph_q = NULL;
+   ctr_vertex_t* v  = NULL;
+   int delta_x      = 0;
+   int delta_y      = 0;
+   int x            = roundf(pos_x * width);
+   int y            = roundf((1.0f - pos_y) * height);
+
+   switch (text_align)
+   {
+      case TEXT_ALIGN_RIGHT:
+         x += width - ctr_font_get_message_width(font, msg, msg_len, scale);
+         break;
+
+      case TEXT_ALIGN_CENTER:
+         x += width / 2 -
+            ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
+         break;
+   }
+
+   if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < msg_len)
+      ctr->vertex_cache.current = ctr->vertex_cache.buffer;
+
+   v       = ctr->vertex_cache.current;
+   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+
+   for (i = 0; i < msg_len; i++)
+   {
+      const struct font_glyph* glyph;
+      int off_x, off_y, tex_x, tex_y, width, height;
+      const char* msg_tmp            = &msg[i];
+      unsigned code                  = utf8_walk(&msg_tmp);
+      unsigned skip                  = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+
+      /* Do something smarter here ... */
+      if (!(glyph =
+               font->font_driver->get_glyph(font->font_data, code)))
+         if (!(glyph = glyph_q))
+            continue;
+
+      off_x    = glyph->draw_offset_x;
+      off_y    = glyph->draw_offset_y;
+      tex_x    = glyph->atlas_offset_x;
+      tex_y    = glyph->atlas_offset_y;
+      width    = glyph->width;
+      height   = glyph->height;
+
+      v->x0    = x + (off_x + delta_x) * scale;
+      v->y0    = y + (off_y + delta_y) * scale;
+      v->u0    = tex_x;
+      v->v0    = tex_y;
+      v->x1    = v->x0 + width * scale;
+      v->y1    = v->y0 + height * scale;
+      v->u1    = v->u0 + width;
+      v->v1    = v->v0 + height;
+
+      v++;
+      delta_x += glyph->advance_x;
+      delta_y += glyph->advance_y;
+   }
+
+   if (v == ctr->vertex_cache.current)
+      return;
+
+   GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
+   if (!ctr->render_font_bottom)
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector_top, 1);
+   else
+      ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector_bottom, 1);
+
+   GSPGPU_FlushDataCache(ctr->vertex_cache.current,
+         (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
+   ctrGuSetAttributeBuffers(2,
+                            VIRT_TO_PHYS(ctr->vertex_cache.current),
+                            CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
+                            CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
+                            sizeof(ctr_vertex_t));
+
+   GPU_SetTexEnv(0,
+                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
+                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
+                 0,
+                 GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_ALPHA, 0, 0),
+                 GPU_MODULATE, GPU_MODULATE,
+                 color);
+
+   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(font->texture.data),
+         font->texture.width, font->texture.height,
+         GPU_TEXTURE_MAG_FILTER(GPU_NEAREST)  | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST) |
+         GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
+         GPU_L8);
+
+   if (!ctr->render_font_bottom)
+   {
+      GPU_SetViewport(NULL,
+            VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+            0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+            ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
+            ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
+
+      if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+      {
+         GPU_SetViewport(NULL,
+               VIRT_TO_PHYS(ctr->drawbuffers.top.right),
+               0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+               CTR_TOP_FRAMEBUFFER_WIDTH);
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
+      }
+   }
+   else
+   {
+      GPU_SetViewport(NULL,
+            VIRT_TO_PHYS(ctr->drawbuffers.bottom),
+            0, 0, CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+            CTR_BOTTOM_FRAMEBUFFER_WIDTH);
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, v - ctr->vertex_cache.current);
+   }
+
+   GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
+
+   ctr->vertex_cache.current = v;
+}
+
+static void ctr_font_render_message(
+      ctr_video_t *ctr,
+      ctr_font_t* font, const char* msg, float scale,
+      const unsigned int color, float pos_x, float pos_y,
+      unsigned width, unsigned height, unsigned text_align)
+{
+   float line_height;
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height = (float)line_metrics->height * scale / (float)height;
+
+   for (;;)
+   {
+      const char* delim = strchr(msg, '\n');
+      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+
+      /* Draw the line */
+      ctr_font_render_line(ctr, font, msg, msg_len,
+            scale, color, pos_x, pos_y - (float)lines * line_height,
+            width, height, text_align);
+      if (!delim)
+         break;
+
+      msg += msg_len + 1;
+      lines++;
+   }
+}
+
+static void ctr_font_render_msg(
+      void *userdata,
+      void* data, const char* msg,
+      const struct font_params *params)
+{
+   int drop_x, drop_y;
+   unsigned color, r, g, b, alpha;
+   enum text_alignment text_align;
+   float x, y, scale, drop_mod, drop_alpha;
+   ctr_font_t *font           = (ctr_font_t*)data;
+   ctr_video_t *ctr           = (ctr_video_t*)userdata;
+   unsigned width             = ctr->render_font_bottom ?
+      CTR_BOTTOM_FRAMEBUFFER_WIDTH : CTR_TOP_FRAMEBUFFER_WIDTH;
+   unsigned height            = ctr->render_font_bottom ?
+      CTR_BOTTOM_FRAMEBUFFER_HEIGHT : CTR_TOP_FRAMEBUFFER_HEIGHT;
+
+   if (!font || !msg || !*msg)
+      return;
+
+   if (params)
+   {
+      x                       = params->x;
+      y                       = params->y;
+      scale                   = params->scale;
+      text_align              = params->text_align;
+      drop_x                  = params->drop_x;
+      drop_y                  = params->drop_y;
+      drop_mod                = params->drop_mod;
+      drop_alpha              = params->drop_alpha;
+
+      r                       = FONT_COLOR_GET_RED(params->color);
+      g                       = FONT_COLOR_GET_GREEN(params->color);
+      b                       = FONT_COLOR_GET_BLUE(params->color);
+      alpha                   = FONT_COLOR_GET_ALPHA(params->color);
+
+      color                   = COLOR_ABGR(r, g, b, alpha);
+   }
+   else
+   {
+      settings_t *settings    = config_get_ptr();
+      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
+      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
+      float video_msg_color_r = settings->floats.video_msg_color_r;
+      float video_msg_color_g = settings->floats.video_msg_color_g;
+      float video_msg_color_b = settings->floats.video_msg_color_b;
+      x                       = video_msg_pos_x;
+      y                       = video_msg_pos_y;
+      scale                   = 1.0f;
+      text_align              = TEXT_ALIGN_LEFT;
+
+      r                       = (video_msg_color_r * 255);
+      g                       = (video_msg_color_g * 255);
+      b                       = (video_msg_color_b * 255);
+      alpha                   = 255;
+      color                   = COLOR_ABGR(r, g, b, alpha);
+
+      drop_x                  = 1;
+      drop_y                  = -1;
+      drop_mod                = 0.0f;
+      drop_alpha              = 0.75f;
+   }
+
+   if (drop_x || drop_y)
+   {
+      unsigned r_dark         = r * drop_mod;
+      unsigned g_dark         = g * drop_mod;
+      unsigned b_dark         = b * drop_mod;
+      unsigned alpha_dark     = alpha * drop_alpha;
+      unsigned color_dark     = COLOR_ABGR(r_dark, g_dark,
+            b_dark, alpha_dark);
+      ctr_font_render_message(ctr, font, msg, scale, color_dark,
+                              x + scale * drop_x / width, y +
+                              scale * drop_y / height,
+                              width, height, text_align);
+   }
+
+   ctr_font_render_message(ctr, font, msg, scale,
+                           color, x, y,
+                           width, height, text_align);
+}
+
+static const struct font_glyph* ctr_font_get_glyph(
+   void* data, uint32_t code)
+{
+   ctr_font_t* font = (ctr_font_t*)data;
+   if (font && font->font_driver)
+      return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return NULL;
+}
+
+static bool ctr_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
+{
+   ctr_font_t* font = (ctr_font_t*)data;
+   if (font && font->font_driver && font->font_data)
+   {
+      font->font_driver->get_line_metrics(font->font_data, metrics);
+      return true;
+   }
+   return false;
+}
+
+font_renderer_t ctr_font =
+{
+   ctr_font_init,
+   ctr_font_free,
+   ctr_font_render_msg,
+   "ctr",
+   ctr_font_get_glyph,
+   NULL,                         /* bind_block */
+   NULL,                         /* flush_block */
+   ctr_font_get_message_width,
+   ctr_font_get_line_metrics
+};
+
+/*
+ * VIDEO DRIVER
+ */
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum video_mode)
 {
@@ -169,7 +727,6 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 }
 
 #ifdef HAVE_OVERLAY
-static void ctr_render_overlay(void *data);
 static void ctr_free_overlay(ctr_video_t *ctr)
 {
    int i;
@@ -278,18 +835,15 @@ static const char *ctr_texture_path(unsigned id)
             static char texture_path[PATH_MAX_LENGTH];
             char state_path[PATH_MAX_LENGTH];
 
-            if (!runloop_get_current_savestate_path(state_path, 
+            if (!runloop_get_current_savestate_path(state_path,
                      sizeof(state_path)))
                return NULL;
 
-            _len                 = strlcpy(texture_path,
+            _len = strlcpy(texture_path,
                   state_path, sizeof(texture_path));
-            texture_path[_len  ] = '.';
-            texture_path[_len+1] = 'p';
-            texture_path[_len+2] = 'n';
-            texture_path[_len+3] = 'g';
-            texture_path[_len+4] = '\0';
-
+            strlcpy(texture_path       + _len,
+                  ".png",
+                  sizeof(texture_path) - _len);
             return path_basename_nocompression(texture_path);
          }
       default:
@@ -297,7 +851,7 @@ static const char *ctr_texture_path(unsigned id)
    }
 
    return NULL;
-}   
+}
 
 static void ctr_update_state_date(void *data)
 {
@@ -330,7 +884,7 @@ static bool ctr_update_state_date_from_file(void *data)
 #else
    if (sdmc_getmtime(   state_path + 5, &mtime) != 0)
 	   goto error;
-#endif 
+#endif
 
    ctr->state_data_exist = true;
 
@@ -342,7 +896,7 @@ static bool ctr_update_state_date_from_file(void *data)
 #endif
    snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
-      
+
   return true;
 
 error:
@@ -382,14 +936,14 @@ static void ctr_state_thumbnail_geom(void *data)
    o->frame_coords->v1 = texture->active_height;
 
    x_offset            = 184;
-   y_offset            = 46 + 
+   y_offset            = 46 +
       (target_height - texture->active_height * scale) / 2;
 
    o->frame_coords->x0 = x_offset;
    o->frame_coords->y0 = y_offset;
-   o->frame_coords->x1 =   o->frame_coords->x0 
+   o->frame_coords->x1 =   o->frame_coords->x0
                          + texture->active_width * scale;
-   o->frame_coords->y1 =   o->frame_coords->y0 
+   o->frame_coords->y1 =   o->frame_coords->y0
                          + texture->active_height * scale;
    vec                 = &o->scale_vector;
 
@@ -468,14 +1022,13 @@ static void save_state_to_file(void *data)
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 
-static void bottom_menu_control(void* data, bool lcd_bottom)
+static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
 {
    touchPosition state_tmp_touch;
    uint32_t state_tmp   = 0;
    ctr_video_t *ctr     = (ctr_video_t*)data;
    settings_t *settings = config_get_ptr();
    int config_slot      = settings->ints.state_slot;
-   uint32_t flags       = runloop_get_flags();
 
    if (!ctr->init_bottom_menu)
    {
@@ -504,7 +1057,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
    hidTouchRead(&state_tmp_touch);
    if (!state_tmp)
    {
-      if (     !ctr->bottom_check_idle 
+      if (     !ctr->bottom_check_idle
             && !ctr->bottom_is_idle)
       {
          ctr->idle_timestamp    = svcGetSystemTick();
@@ -526,9 +1079,9 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
 
       if (ctr->bottom_is_idle)
       {
-         ctr->bottom_is_idle   = false;
-         ctr->bottom_is_fading = false;
-         fade_count            = 256;
+         ctr->bottom_is_idle    = false;
+         ctr->bottom_is_fading  = false;
+         fade_count             = 256;
          ctr_set_bottom_screen_enable(true,true);
       }
       else if (ctr->bottom_check_idle)
@@ -551,22 +1104,22 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
             BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             break;
          case CTR_BOTTOM_MENU_SELECT:
-            if (state_tmp_touch.px > 8 &&
-                  state_tmp_touch.px < 164 &&
-                  state_tmp_touch.py > 9 &&
-                  state_tmp_touch.py < 86)
+            if (     (state_tmp_touch.px > 8)
+                  && (state_tmp_touch.px < 164)
+                  && (state_tmp_touch.py > 9)
+                  && (state_tmp_touch.py < 86))
             {
                BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             }
-            else if (state_tmp_touch.px > 8 &&
-                  state_tmp_touch.px < 164 &&
-                  state_tmp_touch.py > 99 &&
-                  state_tmp_touch.py < 230) 
+            else if ((state_tmp_touch.px > 8)
+                  && (state_tmp_touch.px < 164)
+                  && (state_tmp_touch.py > 99)
+                  && (state_tmp_touch.py < 230))
             {
 
                struct ctr_bottom_texture_data *o =
                   &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
-               ctr_texture_t            *texture = 
+               ctr_texture_t            *texture =
                   (ctr_texture_t *) o->texture;
 
                if (texture)
@@ -585,11 +1138,11 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                texture->active_height = ctr->frame_coords->v1;
 
                texture->data          = linearAlloc(
-                     ctr->texture_width * ctr->texture_height * 
+                     ctr->texture_width * ctr->texture_height *
                      (ctr->rgb32? 4:2));
 
-               memcpy(texture->data, ctr->texture_swizzled, 
-                     ctr->texture_width * ctr->texture_height * 
+               memcpy(texture->data, ctr->texture_swizzled,
+                     ctr->texture_width * ctr->texture_height *
                      (ctr->rgb32? 4:2));
 
                ctr_state_thumbnail_geom(ctr);
@@ -604,24 +1157,28 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
                if (settings->bools.savestate_thumbnail_enable)
                {
                   char screenshot_full_path[PATH_MAX_LENGTH];
+                  video_driver_state_t *video_st = video_state_get_ptr();
                   fill_pathname_join_special(screenshot_full_path,
                      dir_get_ptr(RARCH_DIR_SAVESTATE),
                      ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
                      sizeof(screenshot_full_path));
 
-                  take_screenshot(NULL, screenshot_full_path, true,
-                     video_driver_cached_frame_has_valid_framebuffer(),
-                     true, true);
+                  take_screenshot(NULL,
+                        screenshot_full_path,
+                        true,
+                        video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                        true,
+                        true);
                }
 
                BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             }
             else if (
-                     state_tmp_touch.px > 176
-                  && state_tmp_touch.px < 311
-                  && state_tmp_touch.py > 9
-                  && state_tmp_touch.py < 230
-                  && ctr->state_data_exist) 
+                     (state_tmp_touch.px > 176)
+                  && (state_tmp_touch.px < 311)
+                  && (state_tmp_touch.py > 9)
+                  && (state_tmp_touch.py < 230)
+                  && ctr->state_data_exist)
             {
                if (!command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL))
                   command_event(CMD_EVENT_LOAD_STATE, NULL);
@@ -646,7 +1203,7 @@ static void bottom_menu_control(void* data, bool lcd_bottom)
       save_state_to_file(ctr);
 
       ctr->state_slot        = config_slot;
-      o                      = 
+      o                      =
          &ctr->bottom_textures[CTR_TEXTURE_STATE_THUMBNAIL];
       texture                = (ctr_texture_t *)o->texture;
 
@@ -722,6 +1279,7 @@ static void ctr_render_bottom_screen(void *data)
    {
       case CTR_BOTTOM_MENU_NOT_AVAILABLE:
          {
+            size_t _len;
             char str_path[PATH_MAX_LENGTH];
             const char *dir_assets = settings->paths.directory_bottom_assets;
 
@@ -734,7 +1292,10 @@ static void ctr_render_bottom_screen(void *data)
                   msg_hash_to_str(MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND),
                   &params);
 
-            sprintf(str_path, "%s\n/bottom_menu.png", dir_assets);
+            _len = strlcpy(str_path, dir_assets, sizeof(str_path));
+            strlcpy(str_path       + _len,
+                  "\n/bottom_menu.png",
+                  sizeof(str_path) - _len);
 
             params.scale = 1.10f;
             params.y    -= 0.10f;
@@ -776,8 +1337,8 @@ static void ctr_render_bottom_screen(void *data)
                         VIRT_TO_PHYS(texture->data),
                         texture->width,
                         texture->height,
-                          GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) 
-                        | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) 
+                          GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)
+                        | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
                         | GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE)
                         | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                         colorType);
@@ -800,7 +1361,7 @@ static void ctr_render_bottom_screen(void *data)
                {
                   params.x = 0.266f;
                   params.y = 0.64f;
-                  font_driver_render_msg_bottom(ctr, 
+                  font_driver_render_msg_bottom(ctr,
                      msg_hash_to_str(
                         MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL),
                      &params);
@@ -810,14 +1371,14 @@ static void ctr_render_bottom_screen(void *data)
             {
                params.x = 0.266f;
                params.y = 0.64f;
-               font_driver_render_msg_bottom(ctr, 
+               font_driver_render_msg_bottom(ctr,
                   msg_hash_to_str(
                      MSG_3DS_BOTTOM_MENU_NO_STATE_DATA),
                   &params);
             }
 
             /* draw bottom menu */
-            o                      = 
+            o                      =
                &ctr->bottom_textures[CTR_TEXTURE_BOTTOM_MENU];
             texture                = (ctr_texture_t *)o->texture;
 
@@ -825,9 +1386,9 @@ static void ctr_render_bottom_screen(void *data)
                   VIRT_TO_PHYS(texture->data),
                   texture->width,
                   texture->height,
-                    GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) 
+                    GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)
                   | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
-                  | GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) 
+                  | GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE)
                   | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   GPU_RGBA8);
 
@@ -1041,7 +1602,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
             ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
          ctr_set_bottom_screen_enable(true, ctr->bottom_is_idle);
          save_state_to_file(ctr);
-         break;  
+         break;
       case APTHOOK_ONRESTORE:
       case APTHOOK_ONWAKEUP:
          ctr_set_bottom_screen_enable(false, ctr->bottom_is_idle);
@@ -1324,7 +1885,7 @@ static bool ctr_frame(void* data, const void* frame,
    unsigned custom_vp_width       = video_info->custom_vp_width;
    unsigned custom_vp_height      = video_info->custom_vp_height;
 #ifdef HAVE_MENU
-   bool menu_is_alive             = video_info->menu_is_alive;
+   bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
@@ -1351,7 +1912,7 @@ static bool ctr_frame(void* data, const void* frame,
       else
          ctr_bottom_screen_enabled = lcd_bottom;
    }
-   bottom_menu_control(data, lcd_bottom);
+   ctr_bottom_menu_control(data, lcd_bottom, flags);
 
    if (ctr->p3d_event_pending)
    {
@@ -1381,7 +1942,7 @@ static bool ctr_frame(void* data, const void* frame,
       /* If we are running at the display refresh rate,
        * then all is well - just wait on the *current* VBlank0
        * event and carry on.
-       * 
+       *
        * If we are running at below the display refresh rate,
        * then we have problems: frame updates will happen
        * entirely out of sync with VBlank0 events. To elaborate,
@@ -1390,7 +1951,7 @@ static bool ctr_frame(void* data, const void* frame,
        * 'oh good - let's render the current frame', but the next
        * VBlank0 will occur in less time than it takes to draw the
        * current frame, resulting in 'overlap' and screen tearing.
-       * 
+       *
        * This seems to be a consequence of using the GPU directly.
        * Other 3DS homebrew typically uses the ctrulib function
        * gfxSwapBuffers(), which ensures an immediate buffer
@@ -1398,24 +1959,25 @@ static bool ctr_frame(void* data, const void* frame,
        * instead, we use a variant of the ctrulib function
        * gfxSwapBuffersGpu(), which seems to send a notification,
        * and the swap happens when it happens...
-       * 
+       *
        * I don't know how to fix this 'properly' (probably needs
        * some low level rewriting, maybe switching to an implementation
        * based on citro3d), but I can at least implement a hack/workaround
        * that allows 50Hz content to be run without tearing. This involves
        * the following:
-       * 
+       *
        * If content frame rate is more than 10% lower than the 3DS
        * display refresh rate, don't wait on the *current* VBlank0
        * event (because it is 'tainted'), but instead wait on the
        * *next* VBlank0 event (which will ensure we have enough time
        * to write/flush the display buffers).
-       * 
+       *
        * This fixes screen tearing, but it has a significant impact on
        * performance...
        * */
-      bool next_event = false;
-      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+      bool next_event                      = false;
+      video_driver_state_t *video_st       = video_state_get_ptr();
+      struct retro_system_av_info *av_info = &video_st->av_info;
       if (av_info)
          next_event = av_info->timing.fps < video_refresh_rate * 0.9f;
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, next_event);
@@ -1610,8 +2172,8 @@ static bool ctr_frame(void* data, const void* frame,
    GPU_SetViewport(NULL,
                    VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                   ctr->video_mode == CTR_VIDEO_MODE_2D_800X240 
-                   ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 
+                   ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
+                   ? CTR_TOP_FRAMEBUFFER_WIDTH * 2
                    : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    if (ctr->video_mode == CTR_VIDEO_MODE_3D)
@@ -1707,7 +2269,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
 #ifndef CONSOLE_LOG
-   if (     ctr_bottom_screen_enabled 
+   if (     ctr_bottom_screen_enabled
          && (flags & RUNLOOP_FLAG_CORE_RUNNING))
    {
       if (!ctr->bottom_is_idle)
@@ -1797,7 +2359,7 @@ static bool ctr_frame(void* data, const void* frame,
    {
       gfxScreenSwapBuffers(GFX_BOTTOM,false);
    }
-#endif 
+#endif
 #else
    topFramebufferInfo.
       active_framebuf           = ctr->current_buffer_top;
@@ -2048,7 +2610,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    ctr_texture_t *texture      = NULL;
    ctr_video_t            *ctr = (ctr_video_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
-   int size                    = image->width 
+   int size                    = image->width
       * image->height * sizeof(uint32_t);
 
    if ((size * 3) > linearSpaceFree())
@@ -2084,13 +2646,13 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
          {
             ((uint32_t*)texture->data)[ctrgu_swizzle_coords(i, j,
                texture->width)] =
-                    ((*src << 8)  & 0xFF000000) 
+                    ((*src << 8)  & 0xFF000000)
                   | ((*src << 8)  & 0x00FF0000)
                   | ((*src << 8)  & 0x0000FF00)
                   | ((*src >> 24) & 0x000000FF);
             src++;
          }
-      GSPGPU_FlushDataCache(texture->data, texture->width 
+      GSPGPU_FlushDataCache(texture->data, texture->width
             * texture->height * sizeof(uint32_t));
    }
    else
@@ -2099,7 +2661,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
       uint32_t *src = NULL;
       uint32_t *dst = NULL;
 
-      tmpdata       = linearAlloc(image->width 
+      tmpdata       = linearAlloc(image->width
             * image->height * sizeof(uint32_t));
       if (!tmpdata)
       {
@@ -2113,8 +2675,8 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
 
       for (i = 0; i < image->width * image->height; i++)
       {
-         *dst = 
-              ((*src << 8)  & 0xFF000000) 
+         *dst =
+              ((*src << 8)  & 0xFF000000)
             | ((*src << 8)  & 0x00FF0000)
             | ((*src << 8)  & 0x0000FF00)
             | ((*src >> 24) & 0x000000FF);
@@ -2255,8 +2817,8 @@ static bool ctr_overlay_load(void *data,
 
       for (j = 0; j < images[i].width * images[i].height; j++)
       {
-         *dst = 
-              ((*src << 8)  & 0xFF000000) 
+         *dst =
+              ((*src << 8)  & 0xFF000000)
             | ((*src << 8)  & 0x00FF0000)
             | ((*src << 8)  & 0x0000FF00)
             | ((*src >> 24) & 0x000000FF);
@@ -2306,10 +2868,9 @@ static void ctr_overlay_full_screen(void *data, bool enable)
 
 static void ctr_overlay_set_alpha(void *data, unsigned image, float mod){ }
 
-static void ctr_render_overlay(void *data)
+static void ctr_render_overlay(ctr_video_t *ctr)
 {
    int i;
-   ctr_video_t *ctr = (ctr_video_t*)data;
 
    for (i = 0; i < ctr->overlays; i++)
    {
@@ -2357,9 +2918,8 @@ void ctr_overlay_interface(void *data, const video_overlay_interface_t **iface)
 }
 #endif
 
-static void ctr_set_osd_msg(void *data,
-      const char *msg,
-      const void *params, void *font)
+static void ctr_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
@@ -2380,24 +2940,24 @@ static const video_poke_interface_t ctr_poke_interface = {
    ctr_get_flags,
    ctr_load_texture,
    ctr_unload_texture,
-   NULL,
-   NULL,
+   NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
    ctr_set_filtering,
-   NULL,                                  /* get_video_output_size */
-   NULL,                                  /* get_video_output_prev */
-   NULL,                                  /* get_video_output_next */
-   NULL,                                  /* get_current_framebuffer */
-   NULL,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
    ctr_set_aspect_ratio,
    ctr_apply_state_changes,
    ctr_set_texture_frame,
    ctr_set_texture_enable,
-   font_driver_render_msg, /* ctr_set_osd_msg*/
-   NULL,                   /* show_mouse */
-   NULL,                   /* grab_mouse_toggle */
-   NULL,                   /* get_current_shader */
-   NULL,                   /* get_current_software_framebuffer */
-   NULL,                    /* get_hw_render_interface */
+   font_driver_render_msg,
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
@@ -2411,7 +2971,7 @@ static void ctr_get_poke_interface(void* data,
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool ctr_gfx_widgets_enabled(void *data) { return true; }
+static bool ctr_widgets_enabled(void *data) { return true; }
 #endif
 static bool ctr_set_shader(void* data,
       enum rarch_shader_type type, const char* path) { return false; }
@@ -2437,8 +2997,8 @@ video_driver_t video_ctr =
    ctr_overlay_interface,
 #endif
    ctr_get_poke_interface,
-   NULL,
+   NULL, /* wrap_type_to_enum */
 #ifdef HAVE_GFX_WIDGETS
-   ctr_gfx_widgets_enabled
+   ctr_widgets_enabled
 #endif
 };

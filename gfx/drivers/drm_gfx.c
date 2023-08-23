@@ -35,7 +35,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../common/drm_common.h"
@@ -694,7 +693,7 @@ static bool init_drm(void)
    return true;
 }
 
-static void *drm_gfx_init(const video_info_t *video,
+static void *drm_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct drm_video *_drmvars = (struct drm_video*)
@@ -741,17 +740,17 @@ static void *drm_gfx_init(const video_info_t *video,
    return _drmvars;
 }
 
-static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
+static bool drm_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
    struct drm_video *_drmvars = data;
 #ifdef HAVE_MENU
-   bool menu_is_alive         = video_info->menu_is_alive;
+   bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (  ( width != _drmvars->core_width) ||
-         (height != _drmvars->core_height))
+   if (   (width  != _drmvars->core_width)
+       || (height != _drmvars->core_height))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -771,7 +770,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
             _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,
-	    255,
+            255,
             _drmvars->current_aspect,
             3,
             0,
@@ -868,13 +867,11 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    drm_surface_update(_drmvars, frame_output, _drmvars->menu_surface);
 }
 
-static void drm_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static void drm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool drm_alive(void *data) { return true; }
+static bool drm_focus(void *data) { return true; }
 
-static bool drm_gfx_alive(void *data) { return true; }
-
-static bool drm_gfx_focus(void *data) { return true; }
-
-static void drm_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void drm_viewport_info(void *data, struct video_viewport *vp)
 {
    struct drm_video *vid = data;
 
@@ -887,23 +884,9 @@ static void drm_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->core_height;
 }
 
-static bool drm_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static bool drm_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+static bool drm_suppress_screensaver(void *a, bool b) { return false; }
+static bool drm_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 {
@@ -925,8 +908,8 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 
 static const video_poke_interface_t drm_poke_interface = {
    NULL, /* get_flags */
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    drm_get_refresh_rate,
    NULL, /* set_filtering */
@@ -939,22 +922,21 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* drm_apply_state_changes */
    drm_set_texture_frame,
    drm_set_texture_enable,
-   NULL,                         /* drm_set_osd_msg */
-   NULL,                         /* drm_show_mouse */
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* drm_set_osd_msg */
+   NULL, /* drm_show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
-static void drm_gfx_get_poke_interface(void *data,
+static void drm_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &drm_poke_interface;
 }
 
@@ -981,24 +963,27 @@ static void drm_gfx_free(void *data)
 }
 
 video_driver_t video_drm = {
-   drm_gfx_init,
-   drm_gfx_frame,
-   drm_gfx_set_nonblock_state,
-   drm_gfx_alive,
-   drm_gfx_focus,
-   drm_gfx_suppress_screensaver,
+   drm_init,
+   drm_frame,
+   drm_set_nonblock_state,
+   drm_alive,
+   drm_focus,
+   drm_suppress_screensaver,
    NULL, /* has_windowed */
-   drm_gfx_set_shader,
+   drm_set_shader,
    drm_gfx_free,
    "drm",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
-   drm_gfx_viewport_info,
+   drm_viewport_info,
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-   NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-   drm_gfx_get_poke_interface
+   drm_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

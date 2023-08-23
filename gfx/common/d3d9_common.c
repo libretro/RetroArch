@@ -439,36 +439,6 @@ bool d3d9x_compile_shader(
    return false;
 }
 
-void d3d9x_font_draw_text(void *data, void *sprite_data, void *string_data,
-      unsigned count, void *rect_data, unsigned format, unsigned color)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
-            (LPCTSTR)string_data, count, (LPRECT)rect_data,
-            (DWORD)format, (D3DCOLOR)color);
-#endif
-}
-
-void d3d9x_font_release(void *data)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->Release(font);
-#endif
-}
-
-void d3d9x_font_get_text_metrics(void *data, void *metrics)
-{
-#ifdef HAVE_D3DX
-   ID3DXFont *font = (ID3DXFont*)data;
-   if (font)
-      font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
-#endif
-}
-
 bool d3d9x_compile_shader_from_file(
       const char *src,
       const void *pdefines,
@@ -720,7 +690,6 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 #endif
 }
 
-
 void d3d9_log_info(const struct LinkInfo *info)
 {
    RARCH_LOG("[D3D9]: Render pass info:\n");
@@ -872,10 +841,10 @@ static void d3d9_set_font_rect(
       d3d9_video_t *d3d,
       const struct font_params *params)
 {
-   settings_t *settings             = config_get_ptr();
-   float pos_x                      = settings->floats.video_msg_pos_x;
-   float pos_y                      = settings->floats.video_msg_pos_y;
-   float font_size                  = settings->floats.video_font_size;
+   settings_t *settings           = config_get_ptr();
+   float pos_x                    = settings->floats.video_msg_pos_x;
+   float pos_y                    = settings->floats.video_msg_pos_y;
+   float font_size                = settings->floats.video_font_size;
 
    if (params)
    {
@@ -1078,17 +1047,14 @@ void d3d9_apply_state_changes(void *data)
 
 void d3d9_set_osd_msg(void *data,
       const char *msg,
-      const void *params, void *font)
+      const struct font_params *params, void *font)
 {
    d3d9_video_t          *d3d = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9     dev  = d3d->dev;
-   const struct font_params *d3d_font_params = (const
-         struct font_params*)params;
 
-   d3d9_set_font_rect(d3d, d3d_font_params);
+   d3d9_set_font_rect(d3d, params);
    IDirect3DDevice9_BeginScene(dev);
-   font_driver_render_msg(d3d,
-         msg, d3d_font_params, font);
+   font_driver_render_msg(d3d, msg, params, font);
    IDirect3DDevice9_EndScene(dev);
 }
 
@@ -1102,9 +1068,9 @@ void d3d9_set_menu_texture_frame(void *data,
    if (!d3d || !d3d->menu)
       return;
 
-   if (    !d3d->menu->tex            ||
-            d3d->menu->tex_w != width ||
-            d3d->menu->tex_h != height)
+   if (       (!d3d->menu->tex)
+            || (d3d->menu->tex_w != width)
+            || (d3d->menu->tex_h != height))
    {
       IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
@@ -1299,11 +1265,11 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    video_driver_get_size(&width, &height);
 
    if (
-         !d3d9_device_get_render_target(d3dr, 0, (void**)&target)     ||
-         !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
+            !d3d9_device_get_render_target(d3dr, 0, (void**)&target)
+         || !d3d9_device_create_offscreen_plain_surface(d3dr, width, height,
             D3D9_XRGB8888_FORMAT,
-            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
-         !d3d9_device_get_render_target_data(d3dr, target, dest)
+            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL)
+         || !d3d9_device_get_render_target_data(d3dr, target, dest)
          )
    {
       ret = false;
@@ -1386,12 +1352,11 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         video_viewport_t *custom = video_viewport_get_custom();
-
-         *x          = custom->x;
-         *y          = custom->y;
-         *width      = custom->width;
-         *height     = custom->height;
+         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         *x                          = custom_vp->x;
+         *y                          = custom_vp->y;
+         *width                      = custom_vp->width;
+         *height                     = custom_vp->height;
       }
       else
 #endif
@@ -1611,7 +1576,6 @@ static const video_overlay_interface_t d3d9_overlay_interface = {
 void d3d9_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface)
 {
-   (void)data;
    *iface = &d3d9_overlay_interface;
 }
 #endif

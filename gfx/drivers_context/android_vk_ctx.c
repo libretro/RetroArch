@@ -41,6 +41,11 @@ typedef struct
    int swap_interval;
 } android_ctx_data_vk_t;
 
+/* FORWARD DECLARATION */
+bool android_display_get_metrics(void *data,
+	enum display_metric_types type, float *value);
+bool android_display_has_focus(void *data);
+
 static void android_gfx_ctx_vk_destroy(void *data)
 {
    android_ctx_data_vk_t *and         = (android_ctx_data_vk_t*)data;
@@ -63,7 +68,7 @@ static void *android_gfx_ctx_vk_init(void *video_driver)
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)calloc(1, sizeof(*and));
 
    if (!android_app || !and)
-      return false;
+      return NULL;
 
    if (!vulkan_context_init(&and->vk, VULKAN_WSI_ANDROID))
    {
@@ -110,7 +115,7 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
 
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
-   *resize    = and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *resize    = (and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
    new_width  = android_app->content_rect.width;
    new_height = android_app->content_rect.height;
 
@@ -189,59 +194,8 @@ static bool android_gfx_ctx_vk_bind_api(void *data,
    return (api == GFX_CTX_VULKAN_API);
 }
 
-static bool android_gfx_ctx_vk_has_focus(void *data)
-{
-   bool                    focused = false;
-   struct android_app *android_app = (struct android_app*)g_android;
-   if (!android_app)
-      return true;
-
-   slock_lock(android_app->mutex);
-   focused = !android_app->unfocused;
-   slock_unlock(android_app->mutex);
-
-   return focused;
-}
 
 static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { return false; }
-
-static bool android_gfx_ctx_vk_get_metrics(void *data,
-	enum display_metric_types type, float *value)
-{
-   static int dpi = -1;
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_MM_WIDTH:
-      case DISPLAY_METRIC_MM_HEIGHT:
-         return false;
-      case DISPLAY_METRIC_DPI:
-         if (dpi == -1)
-         {
-            char density[PROP_VALUE_MAX];
-            android_dpi_get_density(density, sizeof(density));
-            if (string_is_empty(density))
-               goto dpi_fallback;
-            if ((dpi = atoi(density)) <= 0)
-               goto dpi_fallback;
-         }
-         *value = (float)dpi;
-         break;
-      case DISPLAY_METRIC_NONE:
-      default:
-         *value = 0;
-         return false;
-   }
-
-   return true;
-
-dpi_fallback:
-   /* Add a fallback in case the device doesn't report DPI.
-    * Hopefully fixes issues with the moto G2. */
-   dpi          = 90;
-   *value       = (float)dpi;
-   return true;
-}
 
 static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
@@ -307,12 +261,12 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    NULL,                                     /* get_video_output_size */
    NULL,                                     /* get_video_output_prev */
    NULL,                                     /* get_video_output_next */
-   android_gfx_ctx_vk_get_metrics,
+   android_display_get_metrics,
    NULL,
    NULL,                                     /* update_title */
    android_gfx_ctx_vk_check_window,
    android_gfx_ctx_vk_set_resize,
-   android_gfx_ctx_vk_has_focus,
+   android_display_has_focus,
    android_gfx_ctx_vk_suppress_screensaver,
    false,                                    /* has_windowed */
    android_gfx_ctx_vk_swap_buffers,

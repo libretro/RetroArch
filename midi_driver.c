@@ -22,6 +22,11 @@
 #include "midi_driver.h"
 #include "verbosity.h"
 
+#ifdef HAVE_WASAPI
+#include "audio/audio_driver.h"
+#include "gfx/video_driver.h"
+#endif
+
 #define MIDI_DRIVER_BUF_SIZE 4096
 #define MIDI_DRIVER_OFF "OFF"
 
@@ -90,7 +95,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
 
 const void *midi_driver_find_handle(int index)
 {
-   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
+   if (index < 0 || index >= (int)ARRAY_SIZE(midi_drivers))
       return NULL;
 
    return midi_drivers[index];
@@ -115,6 +120,19 @@ bool midi_driver_set_all_sounds_off(void)
 
    if (!rarch_midi_drv_data || !rarch_midi_drv_output_enabled)
       return false;
+
+#ifdef HAVE_WASAPI
+   /* FIXME: Due to some mysterious reason Frame Delay does not
+    * work with WASAPI unless MIDI output is active, even when
+    * MIDI is not used. Frame Delay also breaks if MIDI sounds
+    * are "set off", which happens on menu toggle, therefore
+    * skip this if WASAPI is used and Frame Delay is active.. */
+   if (string_is_equal(audio_state_get_ptr()->current_audio->ident, "wasapi"))
+   {
+      if (video_state_get_ptr()->frame_delay_target > 0)
+         return false;
+   }
+#endif
 
    event.data       = data;
    event.data_size  = sizeof(data);
@@ -407,7 +425,7 @@ bool midi_driver_output_enabled(void)
 
 bool midi_driver_read(uint8_t *byte)
 {
-   static int i;
+   static int i = 0;
 
    if (!rarch_midi_drv_data || !rarch_midi_drv_input_enabled || !byte)
    {
@@ -422,7 +440,7 @@ bool midi_driver_read(uint8_t *byte)
       return false;
    }
 
-   if (i == rarch_midi_drv_input_event.data_size)
+   if (i == (int)rarch_midi_drv_input_event.data_size)
    {
       rarch_midi_drv_input_event.data_size = MIDI_DRIVER_BUF_SIZE;
       if (!midi_drv->read(rarch_midi_drv_data, &rarch_midi_drv_input_event))
@@ -540,7 +558,7 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
       return false;
    }
 
-   if (rarch_midi_drv_output_event.data_size == event_size)
+   if (event_size == (int)rarch_midi_drv_output_event.data_size)
    {
       if (!midi_drv->write(rarch_midi_drv_data, &rarch_midi_drv_output_event))
          return false;

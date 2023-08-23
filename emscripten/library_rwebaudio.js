@@ -35,6 +35,8 @@ var LibraryRWebAudio = {
                RA.buffers[RA.numBuffers - 1] = buf[0];
                i--;
                RA.bufIndex--;
+            } else if (!RA.startTime) {
+                RA.setStartTime();
             }
          }
       },

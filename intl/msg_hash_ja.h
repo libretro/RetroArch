@@ -72,6 +72,10 @@ MSG_HASH(
    "使用するコアを選択します."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "リブレトロのコア実装を参照します。ブラウザの起動先はCore Directoryのパスに依存します。空白の場合はルートから始まります。\nCore Directory がディレクトリの場合、メニューはそのディレクトリをトップフォルダとして使用します。 Core Directoryがフルパスの場合、ファイルがあるフォルダから起動します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "コンテンツをロード"
    )
@@ -200,6 +204,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "RetroArchを終了します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch を終了します。任意のハードな方法でプログラムを殺す(SIGKILLなど)。 設定を保存せずに RetroArch を終了させます。Unix ライクでは SIGINT/SIGTERM はクリーンな初期化を可能にします。"
    )
 
 /* Main Menu > Load Core */
@@ -585,6 +593,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "ビルド日付"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch バージョン"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1173,6 +1185,14 @@ MSG_HASH(
    "保存に関係する設定を変更します."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "ユーザ名"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "パスワード"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "ログ"
    )
@@ -1187,6 +1207,82 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    "ファイルブラウザの設定を変更します."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "構成ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Unix圧縮アーカイブファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "設定ファイルを作る"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "データベースのカーソル表."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "構成ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "シェーダープリセットファイル。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "シェーダーファイル。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "チートファイル."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "オーバーレイの表示拡大率."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "データベースファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "TrueType フォント ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "絹（普通）"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "画像ファイル"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "リブレトロコア。これを選択すると、このコアがゲームに関連付けられます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretroコア。このコアをRetroArchにロードさせるにはこのファイルを選択してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "ディレクトリ。選択してこのディレクトリを開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1341,6 +1437,14 @@ MSG_HASH(
    "使用する入力ドライバです. 一部のビデオドライバは強制的に異なる入力ドライバを使用します. "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "Linuxraw入力ドライバにはアクティブなTTYが必要です。 キーボードイベントは TTY から直接読み取られ、簡単になりますが、udevほど柔軟ではありません。 マウスなどは全くサポートされていません。このドライバーは古いジョイスティックAPI(/dev/input/js*) を使用しています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "使用する入力ドライバです. 一部のビデオドライバは強制的に異なる入力ドライバを使用します."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "コントローラ"
    )
@@ -1357,6 +1461,86 @@ MSG_HASH(
    "使用するビデオドライバです. "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x ドライバーです。最小バージョン: OpenGL 1.1.1 はシェーダーをサポートしていません。可能であれば、後の OpenGL ドライバーを使用してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x ドライバー。ソフトウェアレンダリングされたコアに加えて、libretro GL コアを使用することができます。 最小バージョン: OpenGL 2.0 または OpenGLES 2.0 をサポートします。 GLSL シェーダーフォーマットをサポートします。 可能であれば代わりにglcore ドライバーを使用します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x ドライバー。ソフトウェアレンダリングされたコアに加えて、libretro GL コアを使用することができます。 最小バージョン: OpenGL 3.2 または OpenGLES 3.0 をサポートします。 GLSL シェーダーフォーマットをサポートします。 可能であれば代わりにglcore ドライバーを使用します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "OpenGL 1.0x ドライバー。ソフトウェアレンダリングされたコアに加えて、libretro GL コアを使用することができます。 最小バージョン: OpenGL または OpenGLES をサポートします。 GLSL シェーダーフォーマットをサポートします。 可能であれば代わりにglcore ドライバーを使用します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2ソフトウェアレンダリングされたドライバ。パフォーマンスは最適ではありません。最後の手段としてのみ使用することを検討してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2ソフトウェアレンダリングドライバ。ソフトウェアレンダリングされたリブレトロコア実装のパフォーマンスは、お客様のプラットフォームSDLの実装によって異なります。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Appleプラットフォーム用のメタルドライバ。Slangシェーダーフォーマットに対応しています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "シェーダーサポートのないDirect3D 8ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "古いCgシェーダー形式をサポートするDirect3D 9ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "古いCgシェーダー形式をサポートするDirect3D 9ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "古いCgシェーダー形式をサポートするDirect3D 10ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "古いCgシェーダー形式をサポートするDirect3D 11ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "古いCgシェーダー形式をサポートするDirect3D 12ドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanXドライバ。ラズベリーパイ0のVideocoer IV GPUにDispmanX APIを使用。3. オーバーレイやシェーダーのサポートはありません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "ブリット操作にSamsung Exynos SoC の G2D ブロックを使用する低レベルの Exynos ビデオドライバー。レンダリングされたコアのパフォーマンスは最適でなければなりません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Plain DRM ビデオドライバ。GPUオーバーレイを使用したハードウェアスケーリングにlibdrmを使用した低レベルビデオドライバです。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Allwinner SoCsのG2Dブロックを使用する、低レベルのSunxiビデオドライバ。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii Uドライバ。スラングシェーダーをサポートしています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "ドライバを切り替えます。GLSLシェーダーフォーマットに対応しています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDIドライバ。旧式のWindowsインターフェースを使用します。推奨されません。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "オーディオのドライバ"
    )
@@ -1364,6 +1548,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "使用するオーディオドライバです. "
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "オーディオリサンプラーのドライバ"
@@ -1611,10 +1797,6 @@ MSG_HASH(
    "これらのオプションを循環させて, ポーチの設定を調整し, 画像サイズを変更します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "高解像度メニューを使用"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "コンテンツが読み込まれていない場合は、高解像度メニューで使用するための高解像度モデルに切り替えます。"
    )
@@ -1702,10 +1884,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "ディスプレイドライバによって提供されたリフレッシュレートです."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "自動的にリフレッシュ率を切り替える"
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -1993,6 +2171,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "オーディオ出力の設定を変更します."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "リサンプラー"
@@ -2136,6 +2316,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "オーディオの遅延時間(ms)です. ドライバ対応に依存します."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "デバイス"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "リサンプラーの音質"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "オーディオ品質よりもパフォーマンス/遅延を優先する場合は値を小さく, パフォーマンス/遅延よりもオーディオ品質を優先する場合は値を大きくします."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI排他モード"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "WASAPI浮動小数点方式"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI共有バッファサイズ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "共有モードでWASAPIドライバを使用するときの中間バッファ長 (フレーム単位). "
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -2431,10 +2643,6 @@ MSG_HASH(
    "ターボ動作"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "ターボ動作の設定を変更します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
    "振動フィードバック"
    )
@@ -2455,16 +2663,8 @@ MSG_HASH(
    "ホットキー"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "ホットキーの設定を変更します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "ポート %u コントロール"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "このポートのコントロールを変更します."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -2762,14 +2962,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
    "'フレーム/秒'状態表示のオン/オフを切り替えます."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "ソフトウェアキーボード (切り替え)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "OSDキーボードのオン/オフを切り替えます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -3217,10 +3409,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
    "コンテンツを閉じるときに自動的にステートセーブを行います. '自動的にステートをロード'が有効の場合, RetroArchは自動的にこのセーブステートをロードします."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "自動的にステートをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -3785,6 +3973,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "縦長画面での垂直オーバーレイオフセット値です. 正の値はオーバーレイを上に移動し, 負の値は下に移動します."
    )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -4621,10 +4812,6 @@ MSG_HASH(
    "'巻き戻し'を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "'巻き戻し'オプションを表示します."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    "'チート'を表示"
    )
@@ -4852,10 +5039,6 @@ MSG_HASH(
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "メニューの倍率"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
    "メニュー内でのユーザインタフェース部品のサイズを調整します."
    )
@@ -4885,7 +5068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "サムネイル"
+   "1番目のサムネイル"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -5021,10 +5204,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "ランキング"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "ゲーム固有のリーダーボードです. ハードコアモードが無効のときには効果ありません."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -5238,10 +5417,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "再生リストの閲覧中に, 欠落しているサムネイルを自動的にダウンロードします. パフォーマンスに大きな影響を与えます. "
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "アップデータ"
    )
 
 /* Settings > Network > Updater */
@@ -6492,24 +6667,12 @@ MSG_HASH(
    "コアリマップファイルを保存"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "コアのリマップファイルを削除"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "コンテンツフォルダのゲームリマップファイルを保存"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "コンテンツフォルダのゲームリマップファイルを削除"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "ゲームリマップファイルを保存"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "ゲームのリマップファイルを削除"
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -7594,10 +7757,6 @@ MSG_HASH(
    "右のアナログ"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(キー: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "マウス ボタン1(左)"
    )
@@ -7765,10 +7924,6 @@ MSG_HASH(
    "メニュー項目のサイズ変更と配置を行うことで, 画面を最大限に活用します. 無効にすると, 古典的な固定幅の 2 列レイアウトを使用します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "メニューのリニアフィルタ"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "ピクセルの角を取るため, メニューにわずかなぼかしを追加します."
    )
@@ -7778,31 +7933,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "メニューのアスペクト比"
+   "アスペクト比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "メニューのアスペクト比を選択します. ワイドスクリーン比率はメニューインタフェースの水平解像度を上げます. ('メニューアスペクト比をロック'が無効になっている場合は再起動が必要です)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "メニューのアスペクト比をロック"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "メニューが常に正しいアスペクト比で表示されるようにします. 無効にすると, クイックメニューは現在読み込まれているコンテンツと一致するように表示されます."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "メニューの色テーマ"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "別のカラーテーマを選択します. 'カスタム'を選択すると, メニューのテーマプリセットファイルを使用できます."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "メニューの透明度"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -7839,10 +7982,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "上のサムネイル"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "プレイリストの右上に表示するサムネイルの種類です. このサムネイルは, レトロパッドのYボタンでフルスクリーンに切り替えることができます."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -7920,6 +8059,10 @@ MSG_HASH(
    "5:3 (中央)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "自動"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    "オフ"
    )
@@ -7948,7 +8091,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "左のサムネイル"
+   "２番目のサムネイル"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -7995,40 +8138,12 @@ MSG_HASH(
    "サブメニューを開いたときのアニメーション. "
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "メニューの不透明度"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "メニューのフォント"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "メニューの使用するフォントを選択します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "メニューフォントの赤色値"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "メニューフォントの緑色値"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "メニューフォントの青色値"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "メニュー配置"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    "XMBインタフェースに異なるレイアウトを選択します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "メニューのアイコンテーマ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -8039,24 +8154,12 @@ MSG_HASH(
    "オン/オフ文字列の代わりにアイコンを使用して, '切り替え' メニュー設定項目を表します."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "メニューのシェーダパイプライン"
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "影のエフェクト"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "背景アニメーション効果を選択します. 効果によってはGPUに大きな負荷をかけます. パフォーマンスが不足する場合, 効果をオフにするか, より単純な効果を選択してください. "
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "メニューの色テーマ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "異なる背景色グラデーションテーマを選択します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "サムネイル両方を右側に設置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -8183,7 +8286,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "プレーン"
+   "背景画像"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -8221,10 +8324,6 @@ MSG_HASH(
    "プレイリストは, メーカー名を削除した後に再度アルファベット順に並べ替えられます."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "メニューの色テーマ"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "色テーマを選択します。"
    )
@@ -8238,7 +8337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "二番目のサムネイル"
+   "２番目のサムネイル"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
@@ -8257,7 +8356,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "メニューのアイコン"
+   "アイコン"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -8298,18 +8397,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    "横長画面表示中に, ナビゲーションバーを画面の右側に自動的に移動します."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "メニューの色テーマ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "異なる背景色グラデーションテーマを選択します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "メニュー遷移アニメーション"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -9000,10 +9087,6 @@ MSG_HASH(
 
 /* Unsorted */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "アップデータ"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cheevosアカウント"
@@ -11248,6 +11331,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "タッチスクリーン座標のx/yスケールを調整し, OSレベルの表示スケールに対応します."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

@@ -613,6 +613,10 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
 - (bool)readBackBuffer:(uint8_t *)buffer
 {
+   int x, y;
+   NSUInteger dstStride, srcStride;
+   uint8_t const *src;
+   uint8_t *dst, *tmp;
    if (!_captureEnabled || _backBuffer == nil)
       return NO;
 
@@ -622,22 +626,22 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       return NO;
    }
 
-   uint8_t *tmp = malloc(_backBuffer.width * _backBuffer.height * 4);
+   tmp = malloc(_backBuffer.width * _backBuffer.height * 4);
 
    [_backBuffer getBytes:tmp
              bytesPerRow:4 * _backBuffer.width
               fromRegion:MTLRegionMake2D(0, 0, _backBuffer.width, _backBuffer.height)
              mipmapLevel:0];
 
-   NSUInteger srcStride = _backBuffer.width * 4;
-   uint8_t const *src   = tmp + (_viewport.y * srcStride);
+   srcStride = _backBuffer.width * 4;
+   src       = tmp + (_viewport.y * srcStride);
 
-   NSUInteger dstStride = _viewport.width * 3;
-   uint8_t *dst         = buffer + (_viewport.height - 1) * dstStride;
+   dstStride = _viewport.width * 3;
+   dst       = buffer + (_viewport.height - 1) * dstStride;
 
-   for (int y = 0; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
+   for (y = 0; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
    {
-      for (int x = 0; x < _viewport.width; x++)
+      for (x = 0; x < _viewport.width; x++)
       {
          dst[3 * x + 0] = src[4 * (_viewport.x + x) + 0];
          dst[3 * x + 1] = src[4 * (_viewport.x + x) + 1];
@@ -679,7 +683,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 - (void)resetRenderViewport:(ViewportResetMode)mode
 {
    bool fullscreen = mode == kFullscreenViewport;
-   MTLViewport vp = {
+   MTLViewport vp  = {
       .originX = fullscreen ? 0 : _viewport.x,
       .originY = fullscreen ? 0 : _viewport.y,
       .width   = fullscreen ? _viewport.full_width : _viewport.width,

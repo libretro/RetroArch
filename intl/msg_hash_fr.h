@@ -591,6 +591,10 @@ MSG_HASH(
    "Date de compilation "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Version de RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Version Git "
    )
@@ -1114,7 +1118,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Modifier les réglages de sortie audio."
+   "Modifier les réglages de l'entrée/sortie audio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1151,6 +1155,62 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "Modifier les réglages de sauvegarde."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Synchronisation avec le Cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Modifier les réglages de synchronisation avec le Cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Activer la synchronisation avec le Cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "Tente de synchroniser les configurations, SRAM et sauvegardes instantanées à un fournisseur de stockage sur le Cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Synchronisation destructive avec le Cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Lorsque cette option est désactivée, les fichiers sont déplacés vers un dossier de sauvegarde avant d'être remplacés ou supprimés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Plateforme de synchronisation avec le Cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "Quel protocole de réseau de stockage avec le Cloud utiliser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "URL du stockage dans le Cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "L'URL du point d'entrée de l'API vers le service de stockage Cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Pseudo "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Votre nom d'utilisateur pour votre compte de stockage Cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "Mot de passe "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Votre mot de passe pour votre compte de stockage Cloud."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1572,6 +1632,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Pilote Jack Audio Connection Kit."
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Pilote de microphone à utiliser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Rééchantillonneur du microphone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Pilote de rééchantillonnage du microphone à utiliser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Images blocs du microphone"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Ré-échantillonneur audio "
@@ -1868,7 +1946,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   "Faire défiler cette valeur si l'image n'est pas centrée correctement à l'écran."
+   "Parcourez ces options si l'image n'est pas centrée correctement à l'écran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
@@ -1986,14 +2064,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Fréquence de rafraîchissement détectée par le pilote d'affichage."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Basculer la fréquence de rafraîchissement automatiquement"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Bascule automatiquement la fréquence de rafraîchissement de l'écran lors de l'utilisation du mode d'écran spécifié, basé sur le cœur et/ou le contenu en cours d'exécution."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -2397,6 +2467,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Modifier les réglages de la sortie audio."
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Modifier les réglages de l'entrée audio."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "Rééchantillonneur audio"
@@ -2456,6 +2532,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Couper automatiquement le son lors de l'avance rapide."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accélération lors de l'avance rapide"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accélérer l'audio lors de l'avance rapide. Empêche les crépitents audio mais réhausse le pitch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2564,6 +2648,74 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Latence audio désirée en millisecondes. Peut être ignorée si le pilote audio ne peut fournir une telle valeur."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Active l'entrée audio dans les cœurs pris en charge. N'ajoute aucune surcharge si le cœur n'utilise pas de microphone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Périphérique "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Remplace le périphérique d'entrée utilisé par défaut par le pilote de microphone. Cette option dépend du pilote."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Remplacer le périphérique audio utilisé par défaut par le pilote audio. Cette option dépend du pilote."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Qualité du rééchantillonnage "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Réduire cette valeur pour favoriser les performances/réduire la latence plutôt que la qualité audio, l'augmenter permet une meilleure qualité audio aux dépens de la performance/d'une latence inférieure."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Fréquence d'entrée par défaut (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Fréquence d'échantillonnage d'entrée audio, utilisée si le cœur ne requiert pas une fréquence spécifique."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Latence d'entrée audio (ms) "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Latence d'entrée audio désirée en millisecondes. Peut être ignorée si le pilote de microphone ne peut fournir une telle valeur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Mode exclusif WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Permet à RetroArch de prendre le contrôle exclusif du périphérique de microphone lorsque vous utilisez le pilote de microphone WASAPI. Si cette option est désactivée, RetroArch utilisera le mode partagé à la place."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Format de virgule flottante WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Utiliser l'entrée à virgule flottante pour le pilote WASAPI, si pris en charge par votre périphérique audio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Taille de la mémoire tampon partagée WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Taille de la mémoire tampon intermédiaire (en images) lors de l'utilisation du pilote WASAPI en mode partagé."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -2899,6 +3051,22 @@ MSG_HASH(
    "Nombre de secondes à maintenir une touche avant qu'elle ne soit assignée."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Appuyer sur la touche du clavier, de la souris ou de la manette"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Relâcher les touches !"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Délai dépassé"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Maintenir"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Délai d'activation du turbo "
    )
@@ -2960,7 +3128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Modifier les réglages de tir turbo."
+   "Changez les paramètres de tir turbo.\nRemarque : la fonction turbo nécessite le mappage d'une touche turbo à votre périphérique d'entrée dans le menu 'Commandes du port X' correspondant."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2984,7 +3152,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Modifier les réglages de touches de raccourcis."
+   "Modifie les paramètres et affectations des touches de raccourci, comme afficher/masquer le menu pendant le jeu par exemple."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "Affectations de RetroManette"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Change la façon dont la RetroManette virtuelle est mappée à un périphérique d'entrée physique. Si un périphérique d'entrée est reconnu et configuré correctement automatiquement, les utilisateurs n'ont probablement pas besoin d'utiliser ce menu.\nRemarque : pour les changements d'entrées spécifiques au cœurs, utilisez le sous-menu 'Commandes' du menu rapide à la place."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro utilise une abstraction de manette virtuelle connue sous le nom de 'RetroManette' pour communiquer des interfaces (comme RetroArch) aux cœurs et vice versa. Ce menu détermine comment la RetroManette virtuelle est mappée aux périphériques d'entrée physiques et quels ports d'entrée virtuels ces périphériques occupent.\nSi un périphérique d'entrée physique est reconnu et configuré correctement automatiquement, les utilisateurs n'ont probablement pas besoin d'utiliser ce menu d[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -2992,7 +3172,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Modifier les touches pour ce port."
+   "Change la façon dont la RetroManette virtuelle est mappée à votre périphérique d'entrée physique pour ce port virtuel."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Change les mappages de touche spécifiques au cœur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3481,11 +3665,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Clavier virtuel à l'écran (afficher/masquer)"
+   "Clavier en surimpression (activer/désactiver)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Active/désactive le clavier virtuel à l'écran."
+   "Active/désactive le clavier en surimpression."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4785,6 +4969,41 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Décalage vertical de la surimpression lors de l'utilisation d'une orientation d'écran en mode portrait. Les valeurs positives déplacent la surimpression vers le haut; les valeurs négatives vers le bas."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Clavier en surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Sélectionner et ajuster le clavier en surimpression."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Préréglage du clavier en surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Sélectionner un clavier en surimpression à partir du navigateur de fichiers."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Mise à l'échelle automatique du clavier en surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Ajuster le clavier en surimpression en utilisant son rapport d'aspect d'origine. Désactiver pour l'étirer à l'écran."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Opacité du clavier en surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "Opacité de tous les éléments d'interface utilisateur du clavier en surimpression."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -4966,6 +5185,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Afficher un message à l'écran lors de la restauration automatique du dernier disque utilisé au lancement de contenu multi-disque chargé via des listes de lecture M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Notifications de sauvegardes instantanées"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Affiche un message à l'écran lors de l'enregistrement et du chargement des sauvegardes instantanées."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -5682,7 +5909,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Afficher le sous-menu de sauvegarde instantanée"
+   "Afficher le sous-menu 'Sauvegardes instantanées'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5790,7 +6017,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Afficher les options de 'Rembobinage'."
+   "Afficher l'option 'Rembobinage'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -5799,6 +6026,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Afficher l'option 'Sauvegarder la configuration de substitution pour le cœur' dans le menu 'Configuration de substitution'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Afficher 'Sauvegarder la configuration de substitution pour le dossier'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Afficher l'option 'Sauvegarder la configuration de substitution pour le dossier' dans le menu 'Configuration de substitution'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6057,7 +6292,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Facteur de mise à l'échelle du menu "
+   "Facteur de mise à l'échelle "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
@@ -6081,7 +6316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Opacité du menu"
+   "Opacité "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
@@ -6097,7 +6332,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Miniatures"
+   "Miniature principale"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -6141,7 +6376,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Se souvenir de la position du curseur dans le menu lors du passage à un autre onglet."
+   "Se rappeler de la position précédente du curseur dans les onglets. RGUI n'a pas d'onglets, mais les listes de lecture et les réglages se comportent comme tels."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6249,10 +6484,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "Classements "
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Classements spécifiques au jeu. N'a aucun effet si le mode Hardcore est désactivé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6415,6 +6646,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Affiche des indicateurs à l'écran lorsque certains succès peuvent être remportés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Indicateur de progression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Affiche un indicateur à l'écran lorsque des progrès sont réalisés envers certains succès."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Messages de démarrage du tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Affiche une description du tableau de classement lorsqu'il devient actif."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Messages de soumission au tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Affiche un message avec la valeur en cours de soumission au tableau de classement lorsqu'une tentative est terminée."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Messages d'échec d'entrée au tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Affiche un message quand une tentative d'entrée au tableau de classement échoue."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Trackers du tableau de classement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Affiche les trackers sur l'écran avec la valeur actuelle des tableaux de classement actifs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6689,7 +6960,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Mise à jour"
+   "Réglages de mise à jour"
    )
 
 /* Settings > Network > Updater */
@@ -6952,6 +7223,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Lorsque cette option est activée et que le dossier par défaut du 'Navigateur de fichiers' est également défini, cet emplacement est enregistré dans la liste de lecture. Lorsque la liste de lecture est chargée sur un autre système où cette même option est activée, la valeur du dossier défini par défaut est comparée à la valeur dans la liste de lecture; si celle-ci diffère, l'emplacement des entrées de la liste de lecture est automatiquement corrigé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "Gérer"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -7271,6 +7546,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "Les surimpressions sont conservées dans ce dossier."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Claviers en surimpression"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "Les claviers en surimpression sont conservés dans ce dossier."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -8280,36 +8563,36 @@ MSG_HASH(
    "Charger un fichier de remappage"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-   "Sauvegarder le remappage pour le cœur"
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "Charger et remplacer le mappage des touches actuel."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "Supprimer le remappage pour le cœur"
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Enregistrer le fichier de remappage sous"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Enregistrer le mappage des touches actuel en tant que nouveau fichier de remappage."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+   "Sauvegarder le remappage pour le cœur"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "Sauvegarder le remappage pour le dossier"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Supprimer le remappage pour le dossier"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Sauvegarder le remappage pour le jeu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "Supprimer le remappage pour le jeu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
-   "Réinitialiser le remappage des entrées"
+   "Réinitialiser le mappage des touches"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "Définit toutes les options du remappage des entrées aux valeurs par défaut."
+   "Définit toutes les options du remappage des touches aux valeurs par défaut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
@@ -8317,7 +8600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
-   "Écraser le fichier de remappage actif avec les options actuelles de remappage des entrées."
+   "Écraser le fichier de remappage actif avec les options actuelles de remappage des touches."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -9647,7 +9930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Touche : %s)"
+   "Touche %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -9826,7 +10109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Filtre linéaire dans le menu"
+   "Filtre linéaire "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
@@ -9842,7 +10125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Rapport d'aspect du menu"
+   "Rapport d'aspect"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
@@ -9850,7 +10133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Verrouiller le rapport d'aspect du menu"
+   "Verrouiller le rapport d'aspect"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
@@ -9858,7 +10141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
+   "Thème de couleurs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -9866,7 +10149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Préréglages de thème du menu personnalisés"
+   "Préréglages de thème personnalisés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
@@ -9874,7 +10157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Transparence du menu"
+   "Transparence"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -9918,7 +10201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Réduit les miniatures intégrées lors de l'affichage des listes de lecture. Lorsque cette option est désactivée, la 'Miniature du haut' peut toujours être affichée en plein écran en appuyant sur RetroManette Y."
+   "Activer l'affichage des miniatures réduites intégrées lors de l'affichage de listes de lecture. Activable/désactivable avec RetroManette Select. Lorsque cette option est désactivée, les miniatures peuvent toujours être affichées en mode plein écran avec RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -9926,7 +10209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Type de miniatures à afficher en haut à droite des listes de lecture. Cette vignette peut être basculée en mode plein écran en appuyant sur RetroManette Y."
+   "Type de miniatures à afficher en haut à droite des listes de lecture. Ce type de miniatures peut alterner en appuyant sur RetroManette Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -10002,6 +10285,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
    "16:10 (centré)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (centré)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
@@ -10168,7 +10455,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Miniature de gauche"
+   "Miniature secondaire"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10216,11 +10503,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Opacité du menu "
+   "Facteur de la couche alpha du thème de couleur"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Police du menu "
+   "Police"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
@@ -10228,19 +10515,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Valeur de rouge (Police du menu)"
+   "Valeur de rouge de la police"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Valeur de vert (Police du menu)"
+   "Valeur de vert de la police"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Valeur de bleu (Police du menu)"
+   "Valeur de bleu de la police"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Mise en page du menu "
+   "Disposition"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -10248,7 +10535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Thème d'icônes du menu "
+   "Thème d'icônes"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10264,7 +10551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Afficher les ombres"
+   "Effet d'ombres"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -10272,7 +10559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Pipeline de shader du menu (fond animé) "
+   "Pipeline de shader (fond animé) "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -10280,11 +10567,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
+   "Thème de couleurs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Sélectionner un autre thème de couleur pour le menu."
+   "Sélectionner un thème de couleur d'arrière-plan différent."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -10431,7 +10718,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Ordinaire"
+   "Image d'arrière-plan "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -10494,7 +10781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
+   "Thème de couleurs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -10573,7 +10860,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Icônes du menu"
+   "Par icônes"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10621,15 +10908,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Thème de couleur du menu "
+   "Thème de couleurs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Sélectionner un autre thème de couleur pour le menu."
+   "Sélectionner un thème de couleur d'arrière-plan différent."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Animation de transition vers le menu"
+   "Animation de transition"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -11370,7 +11657,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Mise à jour"
+   "Réglages de mise à jour des cœurs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -12682,6 +12969,10 @@ MSG_HASH(
    "Échec de chargement de la surimpression."
    )
 MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "Clavier en surimpression non défini."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
    "Échec de chargement de la sauvegarde instantanée depuis"
    )
@@ -13043,7 +13334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
-   "Toutes les options du remappage des entrées ont été réinitialisées aux valeurs par défaut."
+   "Toutes les options du remappage des touches ont été réinitialisées aux valeurs par défaut."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -13200,6 +13491,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Succès débloqué"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Tentative d'entrée au tableau de classement démarrée"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Échec de la tentative d'entrée au tableau de classement"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Soumis %s pour %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -13407,11 +13710,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
-   "Options de remappage des entrées enregistrées vers :"
+   "Options de remappage des touches enregistrées vers :"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSH_FAILED,
-   "Impossible d'enregistrer les options de remappage des entrées vers :"
+   "Impossible d'enregistrer les options de remappage des touches vers :"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
@@ -13821,6 +14124,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Synchronisation à la fréquence d'affichage exacte du contenu désactivée."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Fréquence de rafraîchissement vidéo changée à %s Hz."
+   )
 
 /* Lakka */
 
@@ -13897,7 +14204,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Sélectionner le mode d'affichage."
+   "Sélectionner le mode d'affichage (Redémarrage requis)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -14292,6 +14599,48 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "Ajuster l'échelle x/y des coordonnées de l'écran tactile pour s'adapter à la mise à l'échelle de l'écran au niveau du système d'exploitation."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "VMouse tactile en mode pointeur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Activez cette option pour utiliser les événements de toucher de l'écran tactile."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Utiliser la VMouse tactile en mode souris"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Activer l'émulation virtuelle de la souris à partir des événements d'entrées tactiles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Utiliser la VMouse tactile en mode trackpad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Activez cette option avec l'option souris pour utiliser l'écran tactile en tant que pavé tactile."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Utiliser la VMouse tactile en mode trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Activez cette option avec l'option souris pour utiliser l'écran tactile en tant que trackball, ajoutant de l'inertie au pointeur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Utiliser la VMouse tactile en mode gestes tactiles"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Active les gestes de l'écran tactile, y compris le tap, le taper-glisser et le glissement avec les doigts."
+   )
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

@@ -48,7 +48,7 @@ else
    DEF_FLAGS += -ffast-math
 endif
 
-DEF_FLAGS += -Wall
+DEF_FLAGS += -Wall -Wsign-compare
 
 ifneq ($(findstring BSD,$(OS)),)
    DEF_FLAGS += -DBSD

@@ -928,8 +928,6 @@ enum retro_mod
                                             * anything else.
                                             * It is recommended to expose all relevant pointers through
                                             * retro_get_memory_* as well.
-                                            *
-                                            * Can be called from retro_init and retro_load_game.
                                             */
 #define RETRO_ENVIRONMENT_SET_GEOMETRY 37
                                            /* const struct retro_game_geometry * --
@@ -1793,6 +1791,63 @@ enum retro_mod
                                              * this environment call to query support.
                                              */
 
+#define RETRO_ENVIRONMENT_GET_JIT_CAPABLE 74
+                                           /* bool * --
+                                            * Result is set to true if the frontend has already verified JIT can be
+                                            * used, mainly for use iOS/tvOS. On other platforms the result is true.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (75 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_microphone_interface * --
+                                            * Returns an interface that can be used to receive input from the microphone driver.
+                                            *
+                                            * Returns true if microphone support is available,
+                                            * even if no microphones are plugged in.
+                                            * Returns false if mic support is disabled or unavailable.
+                                            *
+                                            * This callback can be invoked at any time,
+                                            * even before the microphone driver is ready.
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE 76
+                                           /* const struct retro_netpacket_callback * --
+                                            * When set, a core gains control over network packets sent and
+                                            * received during a multiplayer session. This can be used to
+                                            * emulate multiplayer games that were originally played on two
+                                            * or more separate consoles or computers connected together.
+                                            *
+                                            * The frontend will take care of connecting players together,
+                                            * and the core only needs to send the actual data as needed for
+                                            * the emulation, while handshake and connection management happen
+                                            * in the background.
+                                            *
+                                            * When two or more players are connected and this interface has
+                                            * been set, time manipulation features (such as pausing, slow motion,
+                                            * fast forward, rewinding, save state loading, etc.) are disabled to
+                                            * avoid interrupting communication.
+                                            *
+                                            * Should be set in either retro_init or retro_load_game, but not both.
+                                            *
+                                            * When not set, a frontend may use state serialization-based
+                                            * multiplayer, where a deterministic core supporting multiple
+                                            * input devices does not need to take any action on its own.
+                                            */
+
+#define RETRO_ENVIRONMENT_GET_DEVICE_POWER (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_device_power * --
+                                            * Returns the device's current power state as reported by the frontend.
+                                            * This is useful for emulating the battery level in handheld consoles,
+                                            * or for reducing power consumption when on battery power.
+                                            *
+                                            * The return value indicates whether the frontend can provide this information,
+                                            * even if the parameter is NULL.
+                                            *
+                                            * If the frontend does not support this functionality,
+                                            * then the provided argument will remain unchanged.
+                                            *
+                                            * Note that this environment call describes the power state for the entire device,
+                                            * not for individual peripherals like controllers.
+                                            */
 
 /* VFS functionality */
 
@@ -1968,13 +2023,13 @@ struct retro_vfs_interface_info
 
 enum retro_hw_render_interface_type
 {
-	RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
-	RETRO_HW_RENDER_INTERFACE_D3D9   = 1,
-	RETRO_HW_RENDER_INTERFACE_D3D10  = 2,
-	RETRO_HW_RENDER_INTERFACE_D3D11  = 3,
-	RETRO_HW_RENDER_INTERFACE_D3D12  = 4,
+   RETRO_HW_RENDER_INTERFACE_VULKAN     = 0,
+   RETRO_HW_RENDER_INTERFACE_D3D9       = 1,
+   RETRO_HW_RENDER_INTERFACE_D3D10      = 2,
+   RETRO_HW_RENDER_INTERFACE_D3D11      = 3,
+   RETRO_HW_RENDER_INTERFACE_D3D12      = 4,
    RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
-   RETRO_HW_RENDER_INTERFACE_DUMMY  = INT_MAX
+   RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
 };
 
 /* Base struct. All retro_hw_render_interface_* types
@@ -2750,9 +2805,17 @@ enum retro_hw_context_type
    /* Vulkan, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE. */
    RETRO_HW_CONTEXT_VULKAN           = 6,
 
-   /* Direct3D, set version_major to select the type of interface
-    * returned by RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
-   RETRO_HW_CONTEXT_DIRECT3D         = 7,
+   /* Direct3D11, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D11            = 7,
+
+   /* Direct3D10, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D10            = 8,
+
+   /* Direct3D12, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D12            = 9,
+
+   /* Direct3D9, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
+   RETRO_HW_CONTEXT_D3D9             = 10,
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
@@ -3005,6 +3068,100 @@ struct retro_disk_control_ext_callback
 
    retro_get_image_path_t get_image_path;       /* Optional - may be NULL */
    retro_get_image_label_t get_image_label;     /* Optional - may be NULL */
+};
+
+/* Definitions for RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
+ * A core can set it if sending and receiving custom network packets
+ * during a multiplayer session is desired.
+ */
+
+/* Netpacket flags for retro_netpacket_send_t */
+#define RETRO_NETPACKET_UNRELIABLE  0        /* Packet to be sent unreliable, depending on network quality it might not arrive. */
+#define RETRO_NETPACKET_RELIABLE    (1 << 0) /* Reliable packets are guaranteed to arrive at the target in the order they were send. */
+#define RETRO_NETPACKET_UNSEQUENCED (1 << 1) /* Packet will not be sequenced with other packets and may arrive out of order. Cannot be set on reliable packets. */
+
+/* Used by the core to send a packet to one or more connected players.
+ * A single packet sent via this interface can contain up to 64 KB of data.
+ *
+ * The broadcast flag can be set to true to send to multiple connected clients.
+ * In a broadcast, the client_id argument indicates 1 client NOT to send the
+ * packet to (pass 0xFFFF to send to everyone). Otherwise, the client_id
+ * argument indicates a single client to send the packet to.
+ *
+ * A frontend must support sending reliable packets (RETRO_NETPACKET_RELIABLE).
+ * Unreliable packets might not be supported by the frontend, but the flags can
+ * still be specified. Reliable transmission will be used instead.
+ *
+ * If this function is called passing NULL for buf, it will instead flush all
+ * previously buffered outgoing packets and instantly read any incoming packets.
+ * During such a call, retro_netpacket_receive_t and retro_netpacket_stop_t can
+ * be called. The core can perform this in a loop to do a blocking read, i.e.,
+ * wait for incoming data, but needs to handle stop getting called and also
+ * give up after a short while to avoid freezing on a connection problem.
+ *
+ * This function is not guaranteed to be thread-safe and must be called during
+ * retro_run or any of the netpacket callbacks passed with this interface.
+ */
+typedef void (RETRO_CALLCONV *retro_netpacket_send_t)(int flags, const void* buf, size_t len, uint16_t client_id, bool broadcast);
+
+/* Called by the frontend to signify that a multiplayer session has started.
+ * If client_id is 0 the local player is the host of the session and at this
+ * point no other player has connected yet.
+ *
+ * If client_id is > 0 the local player is a client connected to a host and
+ * at this point is already fully connected to the host.
+ *
+ * The core must store the retro_netpacket_send_t function pointer provided
+ * here and use it whenever it wants to send a packet. This function pointer
+ * remains valid until the frontend calls retro_netpacket_stop_t.
+ */
+typedef void (RETRO_CALLCONV *retro_netpacket_start_t)(uint16_t client_id, retro_netpacket_send_t send_fn);
+
+/* Called by the frontend when a new packet arrives which has been sent from
+ * another player with retro_netpacket_send_t. The client_id argument indicates
+ * who has sent the packet.
+ */
+typedef void (RETRO_CALLCONV *retro_netpacket_receive_t)(const void* buf, size_t len, uint16_t client_id);
+
+/* Called by the frontend when the multiplayer session has ended.
+ * Once this gets called the retro_netpacket_send_t function pointer passed
+ * to retro_netpacket_start_t will not be valid anymore.
+ */
+typedef void (RETRO_CALLCONV *retro_netpacket_stop_t)(void);
+
+/* Called by the frontend every frame (between calls to retro_run while
+ * updating the state of the multiplayer session.
+ * This is a good place for the core to call retro_netpacket_send_t from.
+ */
+typedef void (RETRO_CALLCONV *retro_netpacket_poll_t)(void);
+
+/* Called by the frontend when a new player connects to the hosted session.
+ * This is only called on the host side, not for clients connected to the host.
+ * If this function returns false, the newly connected player gets dropped.
+ * This can be used for example to limit the number of players.
+ */
+typedef bool (RETRO_CALLCONV *retro_netpacket_connected_t)(uint16_t client_id);
+
+/* Called by the frontend when a player leaves or disconnects from the hosted session.
+ * This is only called on the host side, not for clients connected to the host.
+ */
+typedef void (RETRO_CALLCONV *retro_netpacket_disconnected_t)(uint16_t client_id);
+
+/**
+ * A callback interface for giving a core the ability to send and receive custom
+ * network packets during a multiplayer session between two or more instances
+ * of a libretro frontend.
+ *
+ * @see RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE
+ */
+struct retro_netpacket_callback
+{
+   retro_netpacket_start_t        start;
+   retro_netpacket_receive_t      receive;
+   retro_netpacket_stop_t         stop;         /* Optional - may be NULL */
+   retro_netpacket_poll_t         poll;         /* Optional - may be NULL */
+   retro_netpacket_connected_t    connected;    /* Optional - may be NULL */
+   retro_netpacket_disconnected_t disconnected; /* Optional - may be NULL */
 };
 
 enum retro_pixel_format
@@ -3807,6 +3964,289 @@ struct retro_throttle_state
     * This won't be accurate if the total processing time of the core and
     * the frontend is longer than what is available for one frame. */
    float rate;
+};
+
+/**
+ * Opaque handle to a microphone that's been opened for use.
+ * The underlying object is accessed or created with \c retro_microphone_interface_t.
+ */
+typedef struct retro_microphone retro_microphone_t;
+
+/**
+ * Parameters for configuring a microphone.
+ * Some of these might not be honored,
+ * depending on the available hardware and driver configuration.
+ */
+typedef struct retro_microphone_params
+{
+   /**
+    * The desired sample rate of the microphone's input, in Hz.
+    * The microphone's input will be resampled,
+    * so cores can ask for whichever frequency they need.
+    *
+    * If zero, some reasonable default will be provided by the frontend
+    * (usually from its config file).
+    *
+    * @see retro_get_mic_rate_t
+    */
+   unsigned rate;
+} retro_microphone_params_t;
+
+/**
+ * @copydoc retro_microphone_interface::open_mic
+ */
+typedef retro_microphone_t *(RETRO_CALLCONV *retro_open_mic_t)(const retro_microphone_params_t *params);
+
+/**
+ * @copydoc retro_microphone_interface::close_mic
+ */
+typedef void (RETRO_CALLCONV *retro_close_mic_t)(retro_microphone_t *microphone);
+
+/**
+ * @copydoc retro_microphone_interface::get_params
+ */
+typedef bool (RETRO_CALLCONV *retro_get_mic_params_t)(const retro_microphone_t *microphone, retro_microphone_params_t *params);
+
+/**
+ * @copydoc retro_microphone_interface::set_mic_state
+ */
+typedef bool (RETRO_CALLCONV *retro_set_mic_state_t)(retro_microphone_t *microphone, bool state);
+
+/**
+ * @copydoc retro_microphone_interface::get_mic_state
+ */
+typedef bool (RETRO_CALLCONV *retro_get_mic_state_t)(const retro_microphone_t *microphone);
+
+/**
+ * @copydoc retro_microphone_interface::read_mic
+ */
+typedef int (RETRO_CALLCONV *retro_read_mic_t)(retro_microphone_t *microphone, int16_t* samples, size_t num_samples);
+
+/**
+ * The current version of the microphone interface.
+ * Will be incremented whenever \c retro_microphone_interface or \c retro_microphone_params_t
+ * receive new fields.
+ *
+ * Frontends using cores built against older mic interface versions
+ * should not access fields introduced in newer versions.
+ */
+#define RETRO_MICROPHONE_INTERFACE_VERSION 1
+
+/**
+ * An interface for querying the microphone and accessing data read from it.
+ *
+ * @see RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE
+ */
+struct retro_microphone_interface
+{
+   /**
+    * The version of this microphone interface.
+    * Set by the core to request a particular version,
+    * and set by the frontend to indicate the returned version.
+    * 0 indicates that the interface is invalid or uninitialized.
+    */
+   unsigned interface_version;
+
+   /**
+    * Initializes a new microphone.
+    * Assuming that microphone support is enabled and provided by the frontend,
+    * cores may call this function whenever necessary.
+    * A microphone could be opened throughout a core's lifetime,
+    * or it could wait until a microphone is plugged in to the emulated device.
+    *
+    * The returned handle will be valid until it's freed,
+    * even if the audio driver is reinitialized.
+    *
+    * This function is not guaranteed to be thread-safe.
+    *
+    * @param args[in] Parameters used to create the microphone.
+    * May be \c NULL, in which case the default value of each parameter will be used.
+    *
+    * @returns Pointer to the newly-opened microphone,
+    * or \c NULL if one couldn't be opened.
+    * This likely means that no microphone is plugged in and recognized,
+    * or the maximum number of supported microphones has been reached.
+    *
+    * @note Microphones are \em inactive by default;
+    * to begin capturing audio, call \c set_mic_state.
+    * @see retro_microphone_params_t
+    */
+   retro_open_mic_t open_mic;
+
+   /**
+    * Closes a microphone that was initialized with \c open_mic.
+    * Calling this function will stop all microphone activity
+    * and free up the resources that it allocated.
+    * Afterwards, the handle is invalid and must not be used.
+    *
+    * A frontend may close opened microphones when unloading content,
+    * but this behavior is not guaranteed.
+    * Cores should close their microphones when exiting, just to be safe.
+    *
+    * @param microphone Pointer to the microphone that was allocated by \c open_mic.
+    * If \c NULL, this function does nothing.
+    *
+    * @note The handle might be reused if another microphone is opened later.
+    */
+   retro_close_mic_t close_mic;
+
+   /**
+    * Returns the configured parameters of this microphone.
+    * These may differ from what was requested depending on
+    * the driver and device configuration.
+    *
+    * Cores should check these values before they start fetching samples.
+    *
+    * Will not change after the mic was opened.
+    *
+    * @param microphone[in] Opaque handle to the microphone
+    * whose parameters will be retrieved.
+    * @param params[out] The parameters object that the
+    * microphone's parameters will be copied to.
+    *
+    * @return \c true if the parameters were retrieved,
+    * \c false if there was an error.
+    */
+   retro_get_mic_params_t get_params;
+
+   /**
+    * Enables or disables the given microphone.
+    * Microphones are disabled by default
+    * and must be explicitly enabled before they can be used.
+    * Disabled microphones will not process incoming audio samples,
+    * and will therefore have minimal impact on overall performance.
+    * Cores may enable microphones throughout their lifetime,
+    * or only for periods where they're needed.
+    *
+    * Cores that accept microphone input should be able to operate without it;
+    * we suggest substituting silence in this case.
+    *
+    * @param microphone Opaque handle to the microphone
+    * whose state will be adjusted.
+    * This will have been provided by \c open_mic.
+    * @param state \c true if the microphone should receive audio input,
+    * \c false if it should be idle.
+    * @returns \c true if the microphone's state was successfully set,
+    * \c false if \c microphone is invalid
+    * or if there was an error.
+    */
+   retro_set_mic_state_t set_mic_state;
+
+   /**
+    * Queries the active state of a microphone at the given index.
+    * Will return whether the microphone is enabled,
+    * even if the driver is paused.
+    *
+    * @param microphone Opaque handle to the microphone
+    * whose state will be queried.
+    * @return \c true if the provided \c microphone is valid and active,
+    * \c false if not or if there was an error.
+    */
+   retro_get_mic_state_t get_mic_state;
+
+   /**
+    * Retrieves the input processed by the microphone since the last call.
+    * \em Must be called every frame unless \c microphone is disabled,
+    * similar to how \c retro_audio_sample_batch_t works.
+    *
+    * @param[in] microphone Opaque handle to the microphone
+    * whose recent input will be retrieved.
+    * @param[out] samples The buffer that will be used to store the microphone's data.
+    * Microphone input is in mono (i.e. one number per sample).
+    * Should be large enough to accommodate the expected number of samples per frame;
+    * for example, a 44.1kHz sample rate at 60 FPS would require space for 735 samples.
+    * @param[in] num_samples The size of the data buffer in samples (\em not bytes).
+    * Microphone input is in mono, so a "frame" and a "sample" are equivalent in length here.
+    *
+    * @return The number of samples that were copied into \c samples.
+    * If \c microphone is pending driver initialization,
+    * this function will copy silence of the requested length into \c samples.
+    *
+    * Will return -1 if the microphone is disabled,
+    * the audio driver is paused,
+    * or there was an error.
+    */
+   retro_read_mic_t read_mic;
+};
+
+/**
+ * Describes how a device is being powered.
+ * @see RETRO_ENVIRONMENT_GET_DEVICE_POWER
+ */
+enum retro_power_state
+{
+   /**
+    * Indicates that the frontend cannot report its power state at this time,
+    * most likely due to a lack of support.
+    *
+    * \c RETRO_ENVIRONMENT_GET_DEVICE_POWER will not return this value;
+    * instead, the environment callback will return \c false.
+    */
+   RETRO_POWERSTATE_UNKNOWN = 0,
+
+   /**
+    * Indicates that the device is running on its battery.
+    * Usually applies to portable devices such as handhelds, laptops, and smartphones.
+    */
+   RETRO_POWERSTATE_DISCHARGING,
+
+   /**
+    * Indicates that the device's battery is currently charging.
+    */
+   RETRO_POWERSTATE_CHARGING,
+
+   /**
+    * Indicates that the device is connected to a power source
+    * and that its battery has finished charging.
+    */
+   RETRO_POWERSTATE_CHARGED,
+
+   /**
+    * Indicates that the device is connected to a power source
+    * and that it does not have a battery.
+    * This usually suggests a desktop computer or a non-portable game console.
+    */
+   RETRO_POWERSTATE_PLUGGED_IN
+};
+
+/**
+ * Indicates that an estimate is not available for the battery level or time remaining,
+ * even if the actual power state is known.
+ */
+#define RETRO_POWERSTATE_NO_ESTIMATE (-1)
+
+/**
+ * Describes the power state of the device running the frontend.
+ * @see RETRO_ENVIRONMENT_GET_DEVICE_POWER
+ */
+struct retro_device_power
+{
+   /**
+    * The current state of the frontend's power usage.
+    */
+   enum retro_power_state state;
+
+   /**
+    * A rough estimate of the amount of time remaining (in seconds)
+    * before the device powers off.
+    * This value depends on a variety of factors,
+    * so it is not guaranteed to be accurate.
+    *
+    * Will be set to \c RETRO_POWERSTATE_NO_ESTIMATE if \c state does not equal \c RETRO_POWERSTATE_DISCHARGING.
+    * May still be set to \c RETRO_POWERSTATE_NO_ESTIMATE if the frontend is unable to provide an estimate.
+    */
+   int seconds;
+
+   /**
+    * The approximate percentage of battery charge,
+    * ranging from 0 to 100 (inclusive).
+    * The device may power off before this reaches 0.
+    *
+    * The user might have configured their device
+    * to stop charging before the battery is full,
+    * so do not assume that this will be 100 in the \c RETRO_POWERSTATE_CHARGED state.
+    */
+   int8_t percent;
 };
 
 /* Callbacks */

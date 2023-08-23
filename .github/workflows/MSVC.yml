@@ -1,0 +1,71 @@
+name: CI Windows (MSVC)
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+# These jobs run smoke tests to ensure that MSVC-specific builds work properly.
+jobs:
+  uwp:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        include:
+          - configuration: Release
+            platform: x64
+          - configuration: ReleaseANGLE
+            platform: x64
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Compile RA
+        working-directory: "${{github.workspace}}/pkg/msvc-uwp"
+        run: |
+          msbuild -p:"Configuration=${{matrix.configuration}}" -p:"Platform=${{matrix.platform}}" .\RetroArch-msvcUWP.sln
+
+      - name: Get short SHA
+        id: slug
+        shell: powershell
+        run: echo "::set-output name=sha8::$('${{github.sha}}'.Substring(0,8))"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: retroarch-UWP-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
+          path: pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
+
+  msvc-2019:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        include:
+          - configuration: Release
+            platform: x64
+        # Qt and Cg builds are excluded for now
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Compile RA
+        working-directory: "${{github.workspace}}/pkg/msvc"
+        run: |
+          msbuild -p:"Configuration=${{matrix.configuration}}" -p:"Platform=${{matrix.platform}}" .\RetroArch-msvc2019.sln
+
+      - name: Get short SHA
+        id: slug
+        shell: powershell
+        run: echo "::set-output name=sha8::$('${{github.sha}}'.Substring(0,8))"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: retroarch-msvc2019-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
+          path: pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc2019.exe

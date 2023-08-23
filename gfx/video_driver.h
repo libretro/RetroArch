@@ -44,7 +44,6 @@
 #include "video_crt_switch.h"
 #endif
 
-#include "video_coord_array.h"
 #include "video_shader_parse.h"
 #include "video_filter.h"
 
@@ -52,14 +51,15 @@
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
-#define VIDEO_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
-#define VIDEO_SHADER_MENU        (GFX_MAX_SHADERS - 2)
-#define VIDEO_SHADER_MENU_2      (GFX_MAX_SHADERS - 3)
-#define VIDEO_SHADER_MENU_3      (GFX_MAX_SHADERS - 4)
-#define VIDEO_SHADER_MENU_4      (GFX_MAX_SHADERS - 5)
-#define VIDEO_SHADER_MENU_5      (GFX_MAX_SHADERS - 6)
-#define VIDEO_SHADER_MENU_6      (GFX_MAX_SHADERS - 7)
-#define VIDEO_SHADER_STOCK_HDR   (GFX_MAX_SHADERS - 8)
+#define VIDEO_SHADER_STOCK_BLEND   (GFX_MAX_SHADERS - 1)
+#define VIDEO_SHADER_MENU          (GFX_MAX_SHADERS - 2)
+#define VIDEO_SHADER_MENU_2        (GFX_MAX_SHADERS - 3)
+#define VIDEO_SHADER_MENU_3        (GFX_MAX_SHADERS - 4)
+#define VIDEO_SHADER_MENU_4        (GFX_MAX_SHADERS - 5)
+#define VIDEO_SHADER_MENU_5        (GFX_MAX_SHADERS - 6)
+#define VIDEO_SHADER_MENU_6        (GFX_MAX_SHADERS - 7)
+#define VIDEO_SHADER_STOCK_HDR     (GFX_MAX_SHADERS - 8)
+#define VIDEO_SHADER_STOCK_NOBLEND (GFX_MAX_SHADERS - 9)
 
 #define VIDEO_HDR_MAX_CONTRAST 10.0f
 
@@ -450,14 +450,14 @@ typedef struct video_frame_info
       bool full_screen;
    } osd_stat_params;
 
+   uint32_t video_st_flags;
+   uint16_t menu_st_flags;
+
    char stat_text[1024];
 
    bool widgets_active;
    bool notifications_hidden;
    bool menu_mouse_enable;
-   bool widgets_is_paused;
-   bool widgets_is_fast_forwarding;
-   bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
@@ -474,7 +474,6 @@ typedef struct video_frame_info
    bool windowed_fullscreen;
    bool fullscreen;
    bool font_enable;
-   bool use_rgba;
    bool hdr_support;
    bool libretro_running;
    bool xmb_shadows_enable;
@@ -483,8 +482,6 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool menu_is_alive;
-   bool menu_screensaver_active;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
@@ -621,12 +618,6 @@ typedef struct gfx_ctx_metrics
    enum display_metric_types type;
 } gfx_ctx_metrics_t;
 
-typedef struct gfx_ctx_input
-{
-   input_driver_t **input;
-   void **input_data;
-} gfx_ctx_input_t;
-
 typedef struct gfx_ctx_ident
 {
    const char *ident;
@@ -664,9 +655,9 @@ typedef struct video_poke_interface
          unsigned width, unsigned height, float alpha);
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-   void (*set_osd_msg)(void *data, 
+   void (*set_osd_msg)(void *data,
          const char *msg,
-         const void *params, void *font);
+         const struct font_params *params, void *font);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);
@@ -677,11 +668,11 @@ typedef struct video_poke_interface
    bool (*get_hw_render_interface)(void *data,
          const struct retro_hw_render_interface **iface);
 
-   /* hdr settings */ 
+   /* hdr settings */
    void (*set_hdr_max_nits)(void *data, float max_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
    void (*set_hdr_contrast)(void *data, float contrast);
-   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);         
+   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -864,6 +855,7 @@ typedef struct
 
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
+   char window_title_prev[512];
    char gpu_device_string[128];
    char gpu_api_version_string[128];
    char title_buf[64];
@@ -893,29 +885,27 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
 bool video_driver_has_windowed(void);
+#else
+#define video_driver_has_windowed() (false)
+#endif
+
+#ifdef HAVE_THREADS
+bool video_driver_is_threaded(void);
+#else
+#define video_driver_is_threaded() (false)
+#endif
 
 bool video_driver_has_focus(void);
-
-bool video_driver_cached_frame_has_valid_framebuffer(void);
-
-void video_driver_set_cached_frame_ptr(const void *data);
 
 void video_driver_set_stub_frame(void);
 
 void video_driver_unset_stub_frame(void);
 
-bool video_driver_supports_viewport_read(void);
-
-bool video_driver_prefer_viewport_read(void);
-
-bool video_driver_supports_read_frame_raw(void);
-
 float video_driver_get_core_aspect(void);
 
 void video_driver_set_viewport_core(void);
-
-void video_driver_reset_custom_viewport(settings_t *settings);
 
 void video_driver_set_rgba(void);
 
@@ -929,14 +919,6 @@ void video_driver_unset_hdr_support(void);
 
 bool video_driver_supports_hdr(void);
 
-unsigned video_driver_get_hdr_color(unsigned color);
-
-float video_driver_get_hdr_luminance(float nits);
-
-unsigned video_driver_get_hdr_paper_white(void);
-
-float* video_driver_get_hdr_paper_white_float(void);
-
 bool video_driver_get_next_video_out(void);
 
 bool video_driver_get_prev_video_out(void);
@@ -947,22 +929,13 @@ void video_driver_set_aspect_ratio(void);
 
 void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
 
-void video_driver_show_mouse(void);
-
-void video_driver_hide_mouse(void);
-
 void video_driver_apply_state_changes(void);
-
-bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 
 void video_driver_cached_frame(void);
 
 bool video_driver_is_hw_context(void);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
-
-const struct retro_hw_render_context_negotiation_interface
-*video_driver_get_context_negotiation_interface(void);
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
@@ -995,41 +968,18 @@ bool video_driver_set_video_mode(unsigned width,
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height, char *desc, size_t desc_len);
 
-void video_driver_set_texture_enable(bool enable, bool full_screen);
-
-void video_driver_set_texture_frame(const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha);
-
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
 void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 
-void video_driver_set_hdr_max_nits(float max_nits);
-void video_driver_set_hdr_paper_white_nits(float paper_white_nits);
-void video_driver_set_hdr_contrast(float contrast);
-void video_driver_set_hdr_expand_gamut(bool expand_gamut);
-
 const char *video_driver_get_ident(void);
-
-void video_driver_set_viewport(unsigned width, unsigned height,
-      bool force_fullscreen, bool allow_rotate);
 
 void video_driver_get_size(unsigned *width, unsigned *height);
 
 void video_driver_set_size(unsigned width, unsigned height);
 
 float video_driver_get_aspect_ratio(void);
-
-void video_driver_set_aspect_ratio_value(float value);
-
-enum retro_pixel_format video_driver_get_pixel_format(void);
-
-void video_driver_cached_frame_set(const void *data, unsigned width,
-      unsigned height, size_t pitch);
-
-void video_driver_cached_frame_get(const void **data, unsigned *width,
-      unsigned *height, size_t *pitch);
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group);
@@ -1048,10 +998,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect);
-
-struct retro_system_av_info *video_viewport_get_system_av_info(void);
-
-struct video_viewport *video_viewport_get_custom(void);
 
 /**
  * video_monitor_set_refresh_rate:
@@ -1086,18 +1032,6 @@ void video_monitor_compute_fps_statistics(uint64_t
  **/
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
-
-bool video_driver_monitor_adjust_system_rates(
-      float timing_skew_hz,
-      float video_refresh_rate,
-      bool vrr_runloop_enable,
-      float audio_max_timing_skew,
-      unsigned video_swap_interval,
-      double input_fps);
-
-void crt_switch_driver_refresh(void);
-
-char* crt_switch_core_name(void);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
    (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
@@ -1223,11 +1157,6 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
 float video_driver_get_refresh_rate(void);
 
-#if defined(HAVE_GFX_WIDGETS)
-bool video_driver_has_widgets(void);
-#endif
-
-bool video_driver_is_threaded(void);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 
@@ -1249,8 +1178,6 @@ void video_driver_force_fallback(const char *driver);
 void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *list);
 
 struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api);
-
-enum retro_hw_context_type hw_render_context_type(const char *s);
 
 const char *hw_render_context_name(
       enum retro_hw_context_type type, int major, int minor);
@@ -1327,8 +1254,6 @@ void video_driver_set_viewport_config(
 
 void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom);
 
-uint32_t video_driver_get_st_flags(void);
-
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled);
 
 /**
@@ -1342,6 +1267,13 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  **/
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
+
+void video_driver_update_title(void *data);
+
+bool video_coord_array_append(video_coord_array_t *ca,
+      const video_coords_t *coords, unsigned count);
+
+void video_coord_array_free(video_coord_array_t *ca);
 
 extern const video_driver_t *video_drivers[];
 

@@ -68,6 +68,8 @@
    strlcpy(var, newvar, sizeof(var)); \
 }
 
+RETRO_BEGIN_DECLS
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -80,12 +82,11 @@ enum crt_switch_type
 enum override_type
 {
    OVERRIDE_NONE = 0,
+   OVERRIDE_AS,
    OVERRIDE_CORE,
    OVERRIDE_CONTENT_DIR,
    OVERRIDE_GAME
 };
-
-RETRO_BEGIN_DECLS
 
 typedef struct settings
 {
@@ -159,6 +160,14 @@ typedef struct settings
       unsigned audio_output_sample_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
+
+#ifdef HAVE_MICROPHONE
+      unsigned microphone_sample_rate;
+      unsigned microphone_block_frames;
+      unsigned microphone_latency;
+      unsigned microphone_wasapi_sh_buffer_length;
+      unsigned microphone_resampler_quality;
+#endif
 
       unsigned fps_update_interval;
       unsigned memory_update_interval;
@@ -353,6 +362,7 @@ typedef struct settings
       float placeholder;
       float video_aspect_ratio;
       float video_refresh_rate;
+      float video_autoswitch_pal_threshold;
       float crt_video_refresh_rate;
       float video_font_size;
       float video_msg_pos_x;
@@ -385,6 +395,7 @@ typedef struct settings
       float audio_mixer_volume; /* dB scale. */
 
       float input_overlay_opacity;
+      float input_osk_overlay_opacity;
 
       float input_overlay_scale_landscape;
       float input_overlay_aspect_adjust_landscape;
@@ -421,6 +432,7 @@ typedef struct settings
       char wifi_driver[32];
       char led_driver[32];
       char location_driver[32];
+      char cloud_sync_driver[32];
       char menu_driver[32];
       char cheevos_username[32];
       char cheevos_password[256];
@@ -438,6 +450,12 @@ typedef struct settings
 
       char input_keyboard_layout[64];
 
+#ifdef HAVE_MICROPHONE
+      char microphone_driver[32];
+      char microphone_resampler[32];
+      char microphone_device[255];
+#endif
+
 #ifdef ANDROID
       char input_android_physical_keyboard[255];
 #endif
@@ -447,6 +465,10 @@ typedef struct settings
       char netplay_mitm_server[255];
 
       char translation_service_url[2048];
+
+      char webdav_url[255];
+      char webdav_username[255];
+      char webdav_password[255];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
@@ -489,6 +511,7 @@ typedef struct settings
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
+      char path_osk_overlay[PATH_MAX_LENGTH];
       char path_record_config[PATH_MAX_LENGTH];
       char path_stream_config[PATH_MAX_LENGTH];
       char path_menu_wallpaper[PATH_MAX_LENGTH];
@@ -512,6 +535,7 @@ typedef struct settings
       char directory_libretro[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
+      char directory_osk_overlay[PATH_MAX_LENGTH];
       char directory_resampler[PATH_MAX_LENGTH];
       char directory_screenshot[PATH_MAX_LENGTH];
       char directory_system[PATH_MAX_LENGTH];
@@ -601,6 +625,16 @@ typedef struct settings
       bool audio_wasapi_exclusive_mode;
       bool audio_wasapi_float_format;
       bool audio_fastforward_mute;
+      bool audio_fastforward_speedup;
+
+#ifdef HAVE_MICROPHONE
+      /* Microphone */
+      bool microphone_enable;
+#ifdef HAVE_WASAPI
+      bool microphone_wasapi_exclusive_mode;
+      bool microphone_wasapi_float_format;
+#endif
+#endif
 
       /* Input */
       bool input_remap_binds_enable;
@@ -614,6 +648,7 @@ typedef struct settings
       bool input_overlay_show_mouse_cursor;
       bool input_overlay_auto_rotate;
       bool input_overlay_auto_scale;
+      bool input_osk_overlay_auto_scale;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -626,6 +661,13 @@ typedef struct settings
       bool input_auto_mouse_grab;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
+      bool input_touch_vmouse_pointer;
+      bool input_touch_vmouse_mouse;
+      bool input_touch_vmouse_touchpad;
+      bool input_touch_vmouse_trackball;
+      bool input_touch_vmouse_gesture;
 #endif
 
       /* Frame time counter */
@@ -643,6 +685,7 @@ typedef struct settings
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
+      bool notification_show_save_state;
       bool notification_show_fast_forward;
 #ifdef HAVE_SCREENSHOTS
       bool notification_show_screenshot;
@@ -832,6 +875,11 @@ typedef struct settings
       bool cheevos_visibility_unlock;
       bool cheevos_visibility_mastery;
       bool cheevos_visibility_account;
+      bool cheevos_visibility_lboard_start;
+      bool cheevos_visibility_lboard_submit;
+      bool cheevos_visibility_lboard_cancel;
+      bool cheevos_visibility_lboard_trackers;
+      bool cheevos_visibility_progress_tracker;
 
       /* Camera */
       bool camera_allow;
@@ -861,6 +909,10 @@ typedef struct settings
       /* Steam */
       bool steam_rich_presence_enable;
 #endif
+
+      /* Cloud Sync */
+      bool cloud_sync_enable;
+      bool cloud_sync_destructive;
 
       /* Misc. */
       bool discord_enable;
@@ -1031,6 +1083,17 @@ const char *config_get_default_video(void);
  **/
 const char *config_get_default_audio(void);
 
+#if defined(HAVE_MICROPHONE)
+/**
+ * config_get_default_microphone:
+ *
+ * Gets default microphone driver.
+ *
+ * Returns: Default microphone driver.
+ **/
+const char *config_get_default_microphone(void);
+#endif
+
 /**
  * config_get_default_audio_resampler:
  *
@@ -1144,7 +1207,8 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, (-1) if nothing to write, otherwise returns false (0).
  **/
-int8_t config_save_overrides(enum override_type type, void *data, bool remove);
+int8_t config_save_overrides(enum override_type type,
+      void *data, bool remove, const char *path);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state

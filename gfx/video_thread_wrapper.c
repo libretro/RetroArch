@@ -1166,7 +1166,7 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void thread_set_osd_msg(void *data,
-      const char *msg, const void *params, void *font)
+      const char *msg, const struct font_params *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
 

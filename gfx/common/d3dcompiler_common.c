@@ -22,6 +22,7 @@
 #endif
 
 #include "d3dcompiler_common.h"
+#include "dxgi_common.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)

@@ -213,13 +213,12 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   struct retro_system_av_info *av_info = NULL;
+   video_driver_state_t *video_st       = video_state_get_ptr();
+   struct retro_system_av_info *av_info = &video_st->av_info;
    gfx_ctx_go2_drm_data_t *drm          = (gfx_ctx_go2_drm_data_t*)data;
 
    if (!drm)
       return false;
-
-   av_info              = video_viewport_get_system_av_info();
 
    frontend_driver_install_signal_handler();
 
@@ -278,8 +277,7 @@ unsigned *width, unsigned *height)
 static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   unsigned w;
-   unsigned h;
+   unsigned w, h;
    gfx_ctx_go2_drm_data_t 
       *drm              = (gfx_ctx_go2_drm_data_t*)data;
 #ifdef HAVE_MENU
@@ -289,8 +287,8 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
    if (      use_ctx_scaling 
          && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
-      struct retro_system_av_info* 
-         av_info        = video_viewport_get_system_av_info();
+      video_driver_state_t *video_st       = video_state_get_ptr();
+      struct retro_system_av_info *av_info = &video_st->av_info;
        w                = av_info->geometry.base_width;
        h                = av_info->geometry.base_height;
    }

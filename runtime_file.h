@@ -76,15 +76,6 @@ runtime_log_t *runtime_log_init(
 
 /* Setters */
 
-/* Set runtime to specified hours, minutes, seconds value */
-void runtime_log_set_runtime_hms(runtime_log_t *runtime_log, unsigned hours, unsigned minutes, unsigned seconds);
-
-/* Set runtime to specified microseconds value */
-void runtime_log_set_runtime_usec(runtime_log_t *runtime_log, retro_time_t usec);
-
-/* Adds specified hours, minutes, seconds value to current runtime */
-void runtime_log_add_runtime_hms(runtime_log_t *runtime_log, unsigned hours, unsigned minutes, unsigned seconds);
-
 /* Adds specified microseconds value to current runtime */
 void runtime_log_add_runtime_usec(runtime_log_t *runtime_log, retro_time_t usec);
 
@@ -104,12 +95,6 @@ void runtime_log_reset(runtime_log_t *runtime_log);
  * from runtime_log directly - but perhaps it is logically
  * cleaner to have a symmetrical set/get interface) */
 
-/* Gets runtime in hours, minutes, seconds */
-void runtime_log_get_runtime_hms(runtime_log_t *runtime_log, unsigned *hours, unsigned *minutes, unsigned *seconds);
-
-/* Gets runtime in microseconds */
-void runtime_log_get_runtime_usec(runtime_log_t *runtime_log, retro_time_t *usec);
-
 /* Gets runtime as a pre-formatted string */
 void runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *str, size_t len);
 
@@ -117,10 +102,6 @@ void runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *str, size_t l
 void runtime_log_get_last_played(runtime_log_t *runtime_log,
       unsigned *year, unsigned *month, unsigned *day,
       unsigned *hour, unsigned *minute, unsigned *second);
-
-/* Gets last played entry values as a struct tm 'object'
- * (e.g. for printing with strftime()) */
-void runtime_log_get_last_played_time(runtime_log_t *runtime_log, struct tm *time_info);
 
 /* Gets last played entry value as a pre-formatted string */
 void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
@@ -133,18 +114,12 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
 /* Returns true if log has a non-zero runtime entry */
 bool runtime_log_has_runtime(runtime_log_t *runtime_log);
 
-/* Returns true if log has a non-zero last played entry */
-bool runtime_log_has_last_played(runtime_log_t *runtime_log);
-
 /* Saving */
 
 /* Saves specified runtime log to disk */
 void runtime_log_save(runtime_log_t *runtime_log);
 
 /* Utility functions */
-
-/* Convert from hours, minutes, seconds to microseconds */
-void runtime_log_convert_hms2usec(unsigned hours, unsigned minutes, unsigned seconds, retro_time_t *usec);
 
 /* Convert from microseconds to hours, minutes, seconds */
 void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *minutes, unsigned *seconds);

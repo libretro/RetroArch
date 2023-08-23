@@ -1048,7 +1048,16 @@ bool xrandr_timing::delete_mode(modeline *mode)
 			XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[m_desktop_output]);
 			XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 			if (resources->modes[m].id == crtc_info->mode)
-				log_verbose("XRANDR: <%d> (delete_mode) [WARNING] modeline [%04lx] is currently active\n", m_id, resources->modes[m].id);
+			{
+				log_verbose("XRANDR: <%d> (delete_mode) [WARNING] modeline [%04lx] is currently active, restoring desktop mode first\n", m_id, resources->modes[m].id);
+				modeline desktop_mode = {};
+				desktop_mode.type |= MODE_DESKTOP;
+				if (!set_timing(&desktop_mode, 0))
+				{
+					log_error("XRANDR: <%d> (delete_mode) [ERROR] Could not restore desktop mode\n", m_id);
+					return false;
+				}
+			}
 
 			XRRFreeCrtcInfo(crtc_info);
 			XRRFreeOutputInfo(output_info);
@@ -1177,6 +1186,9 @@ bool xrandr_timing::process_modelist(std::vector<modeline *> modelist)
 
 		else if (mode->type & MODE_ADD)
 			result = add_mode(mode);
+
+		else if (mode->type & MODE_UPDATE)
+			result = update_mode(mode);
 
 		if (!result)
 		{

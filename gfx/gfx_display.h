@@ -32,15 +32,6 @@
 #include "../retroarch.h"
 #include "../gfx/font_driver.h"
 
-RETRO_BEGIN_DECLS
-
-enum gfx_display_flags
-{
-   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
-   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
-   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
-};
-
 #define GFX_SHADOW_ALPHA 0.75f
 
 /* Number of pixels corner-to-corner on a 1080p
@@ -74,17 +65,24 @@ enum gfx_display_flags
  * */
 #define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
 
+
+RETRO_BEGIN_DECLS
+
+enum gfx_display_flags
+{
+   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
+   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
+   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
+};
+
 enum menu_driver_id_type
 {
    MENU_DRIVER_ID_UNKNOWN = 0,
    MENU_DRIVER_ID_RGUI,
    MENU_DRIVER_ID_OZONE,
    MENU_DRIVER_ID_GLUI,
-   MENU_DRIVER_ID_XMB,
-   MENU_DRIVER_ID_XUI,
-   MENU_DRIVER_ID_STRIPES
+   MENU_DRIVER_ID_XMB
 };
-
 
 enum gfx_display_prim_type
 {
@@ -239,14 +237,6 @@ void gfx_display_scissor_begin(
       unsigned video_height,
       int x, int y, unsigned width, unsigned height);
 
-void gfx_display_font_free(font_data_t *font);
-
-void gfx_display_set_width(unsigned width);
-void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
-      size_t *fb_pitch);
-void gfx_display_set_height(unsigned height);
-void gfx_display_set_framebuffer_pitch(size_t pitch);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
@@ -315,12 +305,6 @@ bool gfx_display_reset_textures_list_buffer(
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
-
-float gfx_display_get_adjusted_scale(
-      gfx_display_t *p_disp,
-      float base_scale, float scale_factor, unsigned width);
-
-float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
 
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,

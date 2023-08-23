@@ -61,7 +61,9 @@ enum {
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
     AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
-    AINPUT_SOURCE_STYLUS = 0x00004000
+    AINPUT_SOURCE_STYLUS = 0x00004002,
+    AMOTION_EVENT_BUTTON_STYLUS_PRIMARY = 1 << 5,
+    AMOTION_EVENT_BUTTON_STYLUS_SECONDARY = 1 << 6
 };
 #endif
 
@@ -641,15 +643,17 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    /* Adjust mouse speed based on ratio
     * between core resolution and system resolution */
    float x = 0, y = 0;
-   float                        x_scale = 1;
-   float                        y_scale = 1;
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   float                        x_scale      = 1;
+   float                        y_scale      = 1;
+   settings_t *settings                      = config_get_ptr();
+   video_driver_state_t *video_st            = video_state_get_ptr();
+   struct retro_system_av_info *av_info      = &video_st->av_info;
 
    if (av_info)
    {
-      video_viewport_t          *custom_vp   = video_viewport_get_custom();
+      video_viewport_t *custom_vp            = &settings->video_viewport_custom;
       const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
-      x_scale = 2 * (float)geom->base_width / (float)custom_vp->width;
+      x_scale = 2 * (float)geom->base_width  / (float)custom_vp->width;
       y_scale = 2 * (float)geom->base_height / (float)custom_vp->height;
    }
 
@@ -740,7 +744,12 @@ static INLINE void android_input_poll_event_type_motion(
          /* If touchscreen was pressed for less than 200ms
           * then register time stamp of a quick tap */
          if ((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
-            android->quick_tap_time = AMotionEvent_getEventTime(event);
+         {
+            /* Prevent the quick tap if a button on the overlay is down */
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (!(input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT))
+               android->quick_tap_time = AMotionEvent_getEventTime(event);
+         }
          android->mouse_l = 0;
       }
 
@@ -809,6 +818,86 @@ static INLINE void android_input_poll_event_type_motion(
     * then count it as a mouse right click */
    if (ENABLE_TOUCH_SCREEN_MOUSE)
       android->mouse_r = (android->pointer_count == 2);
+}
+
+
+static INLINE void android_input_poll_event_type_motion_stylus(
+      android_input_t *android, AInputEvent *event,
+      int port, int source)
+{
+   int getaction     = AMotionEvent_getAction(event);
+   int action        = getaction  & AMOTION_EVENT_ACTION_MASK;
+   size_t motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+
+   if (ENABLE_TOUCH_SCREEN_MOUSE)
+   {
+      // mouse right button press on stylus primary button
+      int btn              = (int)AMotionEvent_getButtonState(event);
+      android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY);
+   }
+
+   bool hovered_or_moving        = (
+            action == AMOTION_EVENT_ACTION_HOVER_MOVE
+         || action == AMOTION_EVENT_ACTION_MOVE);
+
+   if (hovered_or_moving && motion_ptr < MAX_TOUCH)
+   {
+      if (ENABLE_TOUCH_SCREEN_MOUSE)
+      {
+         if (action == AMOTION_EVENT_ACTION_MOVE) {
+            android->mouse_l = 1;
+         } else {
+            android->mouse_l = 0;
+         }
+
+         android_mouse_calculate_deltas(android,event,motion_ptr);
+      }
+
+      if (action == AMOTION_EVENT_ACTION_MOVE) {
+         // move pointer
+
+         struct video_viewport vp;
+         float x = AMotionEvent_getX(event, motion_ptr);
+         float y = AMotionEvent_getY(event, motion_ptr);
+
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
+
+         video_driver_translate_coord_viewport_wrap(
+               &vp,
+               x, y,
+               &android->pointer[motion_ptr].x,
+               &android->pointer[motion_ptr].y,
+               &android->pointer[motion_ptr].full_x,
+               &android->pointer[motion_ptr].full_y);
+
+         android->pointer_count = MAX(
+               android->pointer_count,
+               motion_ptr + 1);
+      } else if (action == AMOTION_EVENT_ACTION_HOVER_MOVE) {
+         // release the pointer
+
+         memmove(android->pointer + motion_ptr,
+         android->pointer + motion_ptr + 1,
+         (MAX_TOUCH - motion_ptr - 1) * sizeof(struct input_pointer));
+
+         if (android->pointer_count > 0)
+            android->pointer_count--;
+      }
+   } else if ((action == AMOTION_EVENT_ACTION_HOVER_EXIT) && motion_ptr < MAX_TOUCH) {
+      if (ENABLE_TOUCH_SCREEN_MOUSE)
+      {
+         android->mouse_l        = 0;
+
+         android_mouse_calculate_deltas(android,event,motion_ptr);
+      }
+
+      // pointer was already released during AMOTION_EVENT_ACTION_HOVER_MOVE
+   }
 }
 
 static bool android_is_keyboard_id(int id)
@@ -949,18 +1038,19 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
 
     if (is_keyboard)
     {
+       int i;
         /*
          * Check that there is not already a similar physical keyboard attached
          * attached to the system
          */
-        for (int i = 0; i < kbd_num; i++)
+        for (i = 0; i < kbd_num; i++)
         {
             char kbd_device_name[256] = { 0 };
-            int kbd_vendor_id                 = 0;
-            int kbd_product_id                = 0;
+            int kbd_vendor_id         = 0;
+            int kbd_product_id        = 0;
 
             if (!engine_lookup_name(kbd_device_name, &kbd_vendor_id,
-                                    &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
+                     &kbd_product_id, sizeof(kbd_device_name), kbd_id[i]))
                 return false;
 
             if (compare_by_id && vendor_id == kbd_vendor_id && product_id == kbd_product_id)
@@ -1469,9 +1559,10 @@ static void android_input_poll_input_default(android_input_t *android)
             case AINPUT_EVENT_TYPE_MOTION:
                if ((source & AINPUT_SOURCE_TOUCHPAD))
                   engine_handle_touchpad(android_app, event, port);
-               /* Only handle events from a touchscreen or mouse */
-               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
-                           | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
+               else if ((source & AINPUT_SOURCE_STYLUS) == AINPUT_SOURCE_STYLUS)
+                  android_input_poll_event_type_motion_stylus(android, event,
+                        port, source);
+               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
                         port, source);
                else

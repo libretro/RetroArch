@@ -64,51 +64,52 @@ RetroArch also emphasizes being easy to integrate into various launcher frontend
 ## Platforms
 
 RetroArch has been ported to the following platforms:
-
+   - Android (2.x to most recent version)
+   - Apple iOS
+   - Apple macOS (PPC, x86-32 and x86-64)
+   - Apple tvOS
+   - Blackberry
    - DOS
-   - Windows 11
-   - Windows 10
-   - Windows 8
-   - Windows 7
-   - Windows Vista
-   - Windows XP
-   - Windows Millennium
-   - Windows 2000
-   - Windows NT 3.5
-   - Windows 98
-   - Windows 95
-   - Linux
    - Emscripten (WebAssembly and JavaScript)
    - FreeBSD
-   - NetBSD
-   - OpenBSD
    - Haiku
-   - Solaris
-   - Apple macOS (PPC, x86-32 and x86-64)
-   - Apple iOS
-   - Apple tvOS
-   - Android (2.x to most recent version)
+   - Linux
+   - Microsoft Xbox 360 (Libxenon/XeXDK)
+   - Microsoft Xbox One
+   - Microsoft Xbox Series S/X
+   - Miyoo
+   - NetBSD
+   - Nintendo 3DS/2DS
+   - Nintendo GameCube
+   - Nintendo NES/SNES Classic Edition
+   - Nintendo Switch
+   - Nintendo Wii
+   - Nintendo Wii U
+   - OpenBSD
+   - OpenDingux
+   - Original Microsoft Xbox
    - PlayStation2
    - PlayStation3
    - PlayStation4
    - PlayStation Portable
    - PlayStation Vita
-   - Original Microsoft Xbox
-   - Microsoft Xbox 360 (Libxenon/XeXDK)
-   - Microsoft Xbox One
-   - Microsoft Xbox Series S/X
-   - Nintendo GameCube
-   - Nintendo Wii
-   - Nintendo Wii U
-   - Nintendo 3DS/2DS
-   - Nintendo Switch
-   - Nintendo NES/SNES Classic Edition
    - Raspberry Pi
-   - Blackberry
-   - OpenDingux
-   - Miyoo
-   - RS90
+   - ReactOS
    - RetroFW
+   - RS90
+   - SerenityOS
+   - Solaris
+   - Windows 10
+   - Windows 11
+   - Windows 2000
+   - Windows 7
+   - Windows 8
+   - Windows 95
+   - Windows 98
+   - Windows Millennium
+   - Windows NT 3.5
+   - Windows Vista
+   - Windows XP
 
 ## Dependencies (PC)
 
@@ -335,7 +336,7 @@ The links below belong to our official channels. Links other than this may have 
 - [YouTube Topic](https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ)
 - [Patreon](https://www.patreon.com/libretro)
 - [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
-- [Discord](https://discord.gg/27Xxm2h)
+- [Discord](https://discord.com/invite/VZ2b7wghxR)
 - [Teespring](https://teespring.com/stores/retroarch)
 - [Documentation](https://docs.libretro.com/)
 - [Forum](https://forums.libretro.com/)

@@ -1340,7 +1340,7 @@ static void core_info_path_list_free(core_path_list_t *path_list)
 static core_path_list_t *core_info_path_list_new(const char *core_dir,
       const char *core_exts, bool show_hidden_files)
 {
-   size_t i;
+   size_t i, _len;
    char exts[32];
    core_path_list_t *path_list       = NULL;
    struct string_list *core_ext_list = NULL;
@@ -1375,11 +1375,12 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Get list of file extensions to include
     * > core + lock */
-   strlcpy(exts, core_exts, sizeof(exts));
-   strlcat(exts, "|lck",      sizeof(exts));
+   _len = strlcpy(exts, core_exts, sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcat(exts, "|lsae", sizeof(exts));
+   strlcpy(exts + _len, "|lck|lsae", sizeof(exts) - _len);
+#else
+   strlcpy(exts + _len, "|lck",      sizeof(exts) - _len);
 #endif
 
    /* Fetch core directory listing */
@@ -1486,13 +1487,11 @@ static bool core_info_path_is_locked(
    if (lock_list->size < 1)
       return false;
 
-   len                  = strlcpy(lock_filename, core_file_name,
+   len = strlcpy(lock_filename, core_file_name,
          sizeof(lock_filename));
-   lock_filename[len  ] = '.';
-   lock_filename[len+1] = 'l';
-   lock_filename[len+2] = 'c';
-   lock_filename[len+3] = 'k';
-   lock_filename[len+4] = '\0';
+   strlcpy(lock_filename       + len,
+         ".lck",
+         sizeof(lock_filename) - len);
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1519,14 +1518,11 @@ static bool core_info_path_is_standalone_exempt(
    if (exempt_list->size < 1)
       return false;
 
-   len                    = strlcpy(exempt_filename, core_file_name,
+   len = strlcpy(exempt_filename, core_file_name,
          sizeof(exempt_filename));
-   exempt_filename[len  ] = '.';
-   exempt_filename[len+1] = 'l';
-   exempt_filename[len+2] = 's';
-   exempt_filename[len+3] = 'a';
-   exempt_filename[len+4] = 'e';
-   exempt_filename[len+5] = '\0';
+   strlcpy(exempt_filename       + len,
+         ".lsae",
+         sizeof(exempt_filename) - len);
 
    hash = core_info_hash_string(exempt_filename);
 
@@ -1599,6 +1595,8 @@ static void core_info_resolve_firmware(
       core_info_t *info, config_file_t *conf)
 {
    unsigned i;
+   size_t _len;
+   char prefix[12];
    unsigned firmware_count        = 0;
    core_info_firmware_t *firmware = NULL;
 
@@ -1611,26 +1609,25 @@ static void core_info_resolve_firmware(
    if (!firmware)
       return;
 
+   _len = strlcpy(prefix, "firmware", sizeof(prefix));
+
    for (i = 0; i < firmware_count; i++)
    {
-      char prefix[12];
-      char path_key[64];
-      char desc_key[64];
-      char opt_key[64];
+      size_t _len2;
+      char key[64];
       struct config_entry_list *entry = NULL;
       bool tmp_bool                   = false;
 
-      prefix[0]   = '\0';
+      snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
+      _len2 = strlcpy(key, prefix, sizeof(key));
+      strlcpy(key + _len2, "opt", sizeof(key) - _len2);
 
-      snprintf(prefix,   sizeof(prefix),   "firmware%u_", i);
-      strlcpy(path_key,  prefix,           sizeof(path_key));
-      strlcat(path_key,  "path",           sizeof(path_key));
-      strlcpy(desc_key,  prefix,           sizeof(desc_key));
-      strlcat(desc_key,  "desc",           sizeof(desc_key));
-      strlcpy(opt_key,   prefix,           sizeof(opt_key));
-      strlcat(opt_key,   "opt",            sizeof(opt_key));
+      if (config_get_bool(conf, key, &tmp_bool))
+         firmware[i].optional = tmp_bool;
 
-      entry = config_get_entry(conf, path_key);
+      strlcpy(key + _len2, "path", sizeof(key) - _len2);
+
+      entry = config_get_entry(conf, key);
 
       if (entry && !string_is_empty(entry->value))
       {
@@ -1638,16 +1635,15 @@ static void core_info_resolve_firmware(
          entry->value     = NULL;
       }
 
-      entry = config_get_entry(conf, desc_key);
+      strlcpy(key + _len2, "desc", sizeof(key) - _len2);
+
+      entry = config_get_entry(conf, key);
 
       if (entry && !string_is_empty(entry->value))
       {
          firmware[i].desc = entry->value;
          entry->value     = NULL;
       }
-
-      if (config_get_bool(conf, opt_key , &tmp_bool))
-         firmware[i].optional = tmp_bool;
    }
 
    info->firmware_count = firmware_count;
@@ -2888,7 +2884,7 @@ static bool core_info_update_core_aux_file(const char *path, bool create)
  *   core info list this is *not* thread safe */
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
-   size_t len;
+   size_t _len;
    core_info_t *core_info = NULL;
    char lock_file_path[PATH_MAX_LENGTH];
 
@@ -2907,13 +2903,11 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   len                   = strlcpy(
-         lock_file_path, core_info->path, sizeof(lock_file_path));
-   lock_file_path[len  ] = '.';
-   lock_file_path[len+1] = 'l';
-   lock_file_path[len+2] = 'c';
-   lock_file_path[len+3] = 'k';
-   lock_file_path[len+4] = '\0';
+   _len  = strlcpy(lock_file_path, core_info->path,
+          sizeof(lock_file_path));
+   strlcpy(lock_file_path       + _len,
+         ".lck",
+         sizeof(lock_file_path) - _len);
 
    /* Create or delete lock file, as required */
    if (!core_info_update_core_aux_file(lock_file_path, lock))
@@ -2937,7 +2931,7 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path)
 {
-   size_t len;
+   size_t _len;
    core_info_t *core_info     = NULL;
    const char *core_file_path = NULL;
    bool is_locked             = false;
@@ -2968,14 +2962,11 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   len                   = strlcpy(
-         lock_file_path, core_file_path,
+   _len = strlcpy(lock_file_path, core_file_path,
          sizeof(lock_file_path));
-   lock_file_path[len  ] = '.';
-   lock_file_path[len+1] = 'l';
-   lock_file_path[len+2] = 'c';
-   lock_file_path[len+3] = 'k';
-   lock_file_path[len+4] = '\0';
+   strlcpy(lock_file_path       + _len,
+         ".lck",
+         sizeof(lock_file_path) - _len);
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
@@ -3015,14 +3006,11 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len                     = strlcpy(exempt_file_path, core_info->path,
+   _len = strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   exempt_file_path[_len  ] = '.';
-   exempt_file_path[_len+1] = 'l';
-   exempt_file_path[_len+2] = 's';
-   exempt_file_path[_len+3] = 'a';
-   exempt_file_path[_len+4] = 'e';
-   exempt_file_path[_len+5] = '\0';
+   strlcpy(exempt_file_path       + _len,
+         ".lsae",
+         sizeof(exempt_file_path) - _len);
 
    /* Create or delete 'standalone exempt' file, as required */
    if (core_info_update_core_aux_file(exempt_file_path, exempt))
@@ -3058,15 +3046,11 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len                     = strlcpy(
-         exempt_file_path, core_info->path,
+   _len = strlcpy(exempt_file_path, core_info->path,
          sizeof(exempt_file_path));
-   exempt_file_path[_len  ] = '.';
-   exempt_file_path[_len+1] = 'l';
-   exempt_file_path[_len+2] = 's';
-   exempt_file_path[_len+3] = 'a';
-   exempt_file_path[_len+4] = 'e';
-   exempt_file_path[_len+5] = '\0';
+   strlcpy(exempt_file_path       + _len,
+         ".lsae",
+         sizeof(exempt_file_path) - _len);
 
    /* Check whether 'standalone exempt' file exists */
    if (path_is_valid(exempt_file_path))

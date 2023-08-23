@@ -41,6 +41,7 @@ enum default_dirs
    DEFAULT_DIR_CORE,
    DEFAULT_DIR_CORE_INFO,
    DEFAULT_DIR_OVERLAY,
+   DEFAULT_DIR_OSK_OVERLAY,
    DEFAULT_DIR_PORT,
    DEFAULT_DIR_SHADER,
    DEFAULT_DIR_SAVESTATE,
@@ -80,6 +81,7 @@ struct defaults
 #endif
 #endif
    int settings_out_latency;
+   int settings_in_latency;
 #ifdef HAVE_MENU
    unsigned menu_materialui_menu_color_theme;
 #endif

@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ALTBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -44,6 +46,15 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_altserver._tcp</string>
+		<string>_ra_netplay._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>RetroArch uses the local network to find and communicate with AltServer to enable JIT.</string>
+	<key>ALTDeviceID</key>
+	<string>$(TARGET_DEVICE_IDENTIFIER)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>YES</string>
 	<key>UIApplicationExitsOnSuspend</key>

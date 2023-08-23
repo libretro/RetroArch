@@ -34,7 +34,7 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
-#include "gfx/common/ctr_common.h"
+#include "gfx/common/ctr_defines.h"
 #endif
 
 /* Required for OpenDingux IPU filter + refresh
@@ -193,6 +193,11 @@
 #define DEFAULT_CHEEVOS_VISIBILITY_UNLOCK true
 #define DEFAULT_CHEEVOS_VISIBILITY_MASTERY true
 #define DEFAULT_CHEEVOS_VISIBILITY_ACCOUNT true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_START true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_SUBMIT true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_CANCEL true
+#define DEFAULT_CHEEVOS_VISIBILITY_LBOARD_TRACKERS true
+#define DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER true
 #endif
 
 /* VIDEO */
@@ -232,6 +237,7 @@
 /* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
  * based on running core/content */
 #define DEFAULT_AUTOSWITCH_REFRESH_RATE AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
+#define DEFAULT_AUTOSWITCH_PAL_THRESHOLD 54.50f
 
 /* Which monitor to prefer. 0 is any monitor, 1 and up selects
  * specific monitors, 1 being the first monitor. */
@@ -574,6 +580,14 @@
 #define DEFAULT_INPUT_OVERLAY_AUTO_SCALE false
 #endif
 
+#ifdef UDEV_TOUCH_SUPPORT
+#define DEFAULT_INPUT_TOUCH_VMOUSE_POINTER true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_MOUSE true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_TOUCHPAD true
+#define DEFAULT_INPUT_TOUCH_VMOUSE_TRACKBALL false
+#define DEFAULT_INPUT_TOUCH_VMOUSE_GESTURE true
+#endif
+
 #include "runtime_file_defines.h"
 #ifdef HAVE_MENU
 #include "menu/menu_defines.h"
@@ -625,10 +639,10 @@
 #define DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT true
 #define DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT true
 #define DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT true
-#define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU false
+#define DEFAULT_QUICK_MENU_SHOW_SAVESTATE_SUBMENU true
 #define DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE true
-#define DEFAULT_QUICK_MENU_SHOW_REPLAY true
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
+#define DEFAULT_QUICK_MENU_SHOW_REPLAY false
 #define DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES true
 #define DEFAULT_QUICK_MENU_SHOW_START_RECORDING true
 #define DEFAULT_QUICK_MENU_SHOW_START_STREAMING true
@@ -753,7 +767,7 @@
 #define DEFAULT_XMB_TITLE_MARGIN                   5
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
-#define DEFAULT_XMB_ALPHA_FACTOR                   75
+#define DEFAULT_XMB_ALPHA_FACTOR                   90
 
 #define DEFAULT_MENU_FONT_COLOR_RED 255
 #define DEFAULT_MENU_FONT_COLOR_GREEN 255
@@ -820,8 +834,8 @@
 #define DEFAULT_GLOBAL_CORE_OPTIONS false
 #define DEFAULT_AUTO_SHADERS_ENABLE true
 
-#define DEFAULT_SORT_SAVEFILES_ENABLE false
-#define DEFAULT_SORT_SAVESTATES_ENABLE false
+#define DEFAULT_SORT_SAVEFILES_ENABLE true
+#define DEFAULT_SORT_SAVESTATES_ENABLE true
 #define DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE false
 #define DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE false
 #define DEFAULT_SORT_SCREENSHOTS_BY_CONTENT_ENABLE false
@@ -869,7 +883,7 @@
 #define DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY 80
 #define DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY 50
 
-#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM)
+#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM) || TARGET_OS_TV
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
@@ -1034,6 +1048,9 @@
  * at launch the last used disk of multi-disk content */
 #define DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK true
 
+/* Display save state notifications */
+#define DEFAULT_NOTIFICATION_SHOW_SAVE_STATE true
+
 /* Display a notification when fast forwarding
  * content */
 #define DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD true
@@ -1071,10 +1088,13 @@
 /* Output samplerate. */
 #if defined(GEKKO) || defined(MIYOO)
 #define DEFAULT_OUTPUT_RATE 32000
+#define DEFAULT_INPUT_RATE  32000
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
+#define DEFAULT_INPUT_RATE  32730
 #else
 #define DEFAULT_OUTPUT_RATE 48000
+#define DEFAULT_INPUT_RATE  48000
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
@@ -1085,8 +1105,10 @@
 #if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
+#define DEFAULT_IN_LATENCY 128
 #else
 #define DEFAULT_OUT_LATENCY 64
+#define DEFAULT_IN_LATENCY 64
 #endif
 
 /* Will sync audio. (recommended) */
@@ -1115,15 +1137,28 @@
 
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
-#define DEFAULT_WASAPI_EXCLUSIVE_MODE true
+#define DEFAULT_WASAPI_EXCLUSIVE_MODE false
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
-/* auto */
+/* Automatic shared mode buffer */
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
 /* Automatically mute audio when fast forward
  * is enabled */
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
+/* Speed up audio to match fast-forward speed up.
+ * Avoids crackling */
+#define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+
+#ifdef HAVE_MICROPHONE
+/* Microphone support */
+#define DEFAULT_MICROPHONE_ENABLE true
+#define DEFAULT_MICROPHONE_DEVICE NULL
+
+#ifdef HAVE_WASAPI
+#define DEFAULT_WASAPI_MICROPHONE_SH_BUFFER_LENGTH 0
+#endif
+#endif
 
 /* MISC */
 
@@ -1381,7 +1416,7 @@
 #define DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE PLAYLIST_RUNTIME_PER_CORE
 
 /* Specifies time/date display format for runtime 'last played' data */
-#define DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
+#define DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE PLAYLIST_LAST_PLAYED_STYLE_YMD_HM
 
 #define DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
 #endif
@@ -1396,7 +1431,7 @@
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
-#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_MAIN
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
@@ -1413,6 +1448,8 @@
  * drivers and display widgets */
 #if defined(VITA)
 #define DEFAULT_MENU_SCALE_FACTOR 1.5f
+#elif defined(__ANDROID__)
+#define DEFAULT_MENU_SCALE_FACTOR 0.75f
 #else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
 #endif
@@ -1484,11 +1521,11 @@
 #if defined(DINGUX)
 #define DEFAULT_INPUT_MAX_USERS 1
 #else
-#define DEFAULT_INPUT_MAX_USERS 5
+#define DEFAULT_INPUT_MAX_USERS 8
 #endif
 
-#define DEFAULT_INPUT_BIND_TIMEOUT 5
-#define DEFAULT_INPUT_BIND_HOLD 2
+#define DEFAULT_INPUT_BIND_TIMEOUT 3
+#define DEFAULT_INPUT_BIND_HOLD 1
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 
@@ -1554,8 +1591,12 @@
 #endif
 
 /* MIDI */
-#define DEFAULT_MIDI_INPUT  "OFF"
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#define DEFAULT_MIDI_OUTPUT "Microsoft GS Wavetable Synth"
+#else
 #define DEFAULT_MIDI_OUTPUT "OFF"
+#endif
+#define DEFAULT_MIDI_INPUT  "OFF"
 #define DEFAULT_MIDI_VOLUME 100
 
 #ifdef HAVE_MIST

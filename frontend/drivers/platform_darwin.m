@@ -22,7 +22,7 @@
 
 #include <sys/utsname.h>
 
-#include <mach/mach_host.h>
+#include <mach/mach.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
@@ -282,13 +282,21 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
 #if defined(IOS)
    get_ios_version(major, minor);
+#if TARGET_OS_TV
+   s[0] = 't';
+   s[1] = 'v';
+   s[2] = 'O';
+   s[3] = 'S';
+   s[4] = '\0';
+#else
    s[0] = 'i';
    s[1] = 'O';
    s[2] = 'S';
    s[3] = '\0';
+#endif
 #elif defined(OSX)
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 // MAC_OS_X_VERSION_10_13
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
    NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
    *major = (int)version.majorVersion;
    *minor = (int)version.minorVersion;
@@ -347,7 +355,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFRelease(bundle_url);
 
 #if HAVE_STEAM
-   // for steam we're going to put everything next to the .app
+   /* For Steam, we're going to put everything next to the .app */
    fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
 #else
    CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
@@ -369,16 +377,16 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #if defined(OSX)
    fill_pathname_application_data(application_data, sizeof(application_data));
 #else
-   // ios and tvos are going to put everything in the documents dir
+   /* iOS and tvOS are going to put everything in the documents dir */
    strncpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
 
-   // By the time we are here:
-   // bundle_path_buf is the full path of the .app
-   // documents_dir_buf is where user documents go (macos: ~/Documents/RetroArch)
-   // application_data is where "hidden" app data goes (macos: ~/Library/Application Support/RetroArch, ios: documents dir)
+   /* By the time we are here:
+    * bundle_path_buf is the full path of the .app
+    * documents_dir_buf is where user documents go (macos: ~/Documents/RetroArch)
+    * application_data is where "hidden" app data goes (macos: ~/Library/Application Support/RetroArch, ios: documents dir)
 
-   // this stuff we expect the user to find easily, possibly sync across iCloud
+    * this stuff we expect the user to find easily, possibly sync across iCloud */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], documents_dir_buf, "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], documents_dir_buf, "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], documents_dir_buf, "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
@@ -400,10 +408,21 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   NSURL *url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
+   if (url) {
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   } else {
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+   }
+   url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
+   if (url) {
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   } else {
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   }
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], application_data, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], application_data, "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], application_data, "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], application_data, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
@@ -422,16 +441,14 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     fill_pathname_join_special(assets_zip_path,
           bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
-    CFURLRef resource_url;
-    CFStringRef resource_path;
+    char full_resource_path_buf[PATH_MAX_LENGTH];
     char resource_path_buf[PATH_MAX_LENGTH] = {0};
-    resource_url  = CFBundleCopyResourcesDirectoryURL(bundle);
-    resource_path = CFURLCopyPath(resource_url);
+    CFURLRef resource_url     = CFBundleCopyResourcesDirectoryURL(bundle);
+    CFStringRef resource_path = CFURLCopyPath(resource_url);
     CFStringGetCString(resource_path, resource_path_buf, sizeof(resource_path_buf), kCFStringEncodingUTF8);
     CFRelease(resource_path);
     CFRelease(resource_url);
 
-    char full_resource_path_buf[PATH_MAX_LENGTH];
     fill_pathname_join_special(full_resource_path_buf,
           bundle_path_buf, resource_path_buf, sizeof(full_resource_path_buf));
     fill_pathname_join_special(assets_zip_path,
@@ -470,11 +487,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
 #endif
-}
-
-static void frontend_darwin_content_loaded(void)
-{
-   ui_companion_driver_notify_content_loaded();
 }
 
 static int frontend_darwin_get_rating(void)
@@ -751,7 +763,6 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    return ret;
 }
 
-/* TODO/FIXME - is adding iOS/tvOS support possible here? */
 static uint64_t frontend_darwin_get_total_mem(void)
 {
 #if defined(OSX)
@@ -761,11 +772,15 @@ static uint64_t frontend_darwin_get_total_mem(void)
     size_t len     = sizeof(size);
     if (sysctl(mib, namelen, &size, &len, NULL, 0) >= 0)
        return size;
+#elif defined(IOS)
+    task_vm_info_data_t vmInfo;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
+       return vmInfo.resident_size_peak;
 #endif
     return 0;
 }
 
-/* TODO/FIXME - is adding iOS/tvOS support possible here? */
 static uint64_t frontend_darwin_get_free_mem(void)
 {
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
@@ -784,6 +799,11 @@ static uint64_t frontend_darwin_get_free_mem(void)
               (int64_t)vm_stats.wire_count)    * (int64_t)page_size;
         return used_memory;
     }
+#elif defined(IOS)
+    task_vm_info_data_t vmInfo;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
+        return vmInfo.resident_size_peak - vmInfo.resident_size;
 #endif
     return 0;
 }
@@ -943,7 +963,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_name,        /* get_name */
    frontend_darwin_get_os,          /* get_os               */
    frontend_darwin_get_rating,      /* get_rating           */
-   frontend_darwin_content_loaded,  /* content_loaded       */
+   NULL,                            /* content_loaded       */
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */
    frontend_darwin_parse_drive_list,/* parse_drive_list     */

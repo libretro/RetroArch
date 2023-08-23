@@ -162,6 +162,12 @@ enum netplay_cmd
    /* Sends over cheats enabled on client (unsupported) */
    NETPLAY_CMD_CHEATS         = 0x0047,
 
+   /* Send a network packet from the raw packet core interface */
+   NETPLAY_CMD_NETPACKET      = 0x0048,
+
+   /* Used by clients to have the host also forward it to other clients */
+   NETPLAY_CMD_NETPACKET_BROADCAST = 0x0049,
+
    /* Misc. commands */
 
    /* Sends multiple config requests over,
@@ -263,6 +269,19 @@ enum rarch_netplay_stall_reason
 
    /* The server asked us to stall */
    NETPLAY_STALL_SERVER_REQUESTED
+};
+
+enum netplay_modus
+{
+   /* Netplay operates by having all participants send input data every
+      frame and run cores deterministically in sync on all connected devices.
+      It will rewind frames when input data from the past arrives. */
+   NETPLAY_MODUS_INPUT_FRAME_SYNC = 0,
+
+   /* Netplay operates by having the active core send and receive custom
+      packets once connection setup and handshake has been completed.
+      Time skips (pausing, fast forward, save state loading) are refused. */
+   NETPLAY_MODUS_CORE_PACKET_INTERFACE = 1
 };
 
 /* Input state for a particular client-device pair */
@@ -604,6 +623,9 @@ struct netplay
    /* Are we stalled? */
    enum rarch_netplay_stall_reason stall;
 
+   /* Netplay mode of operation (cannot change at runtime) */
+   enum netplay_modus modus;
+
    /* Keyboard mapping (network and host) */
    uint16_t mapping_hton[RETROK_LAST];
    uint16_t mapping_ntoh[NETPLAY_KEY_LAST];
@@ -826,4 +848,10 @@ bool netplay_cmd_mode(netplay_t *netplay,
  **/
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save);
+
+void netplay_mdns_publish(netplay_t *netplay);
+void netplay_mdns_unpublish(void);
+void netplay_mdns_start_discovery(void);
+void netplay_mdns_finish_discovery(net_driver_state_t *net_st);
+
 #endif

@@ -599,6 +599,10 @@ MSG_HASH(
    "빌드 일시"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch 버전"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git 버전"
    )
@@ -1146,7 +1150,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "오디오 출력 설정을 변경합니다."
+   "오디오 입/출력 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1187,6 +1191,62 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "저장 설정을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "클라우드 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "클라우드 동기화 설정을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "클라우드 동기화 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "설정, SRAM, 상태저장을 클라우드 저장소 제공자에 동기화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "파괴적 클라우드 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "비활성화할 경우, 동기화 대상 파일들을 덮어씌우거나 삭제하지 않고 백업 폴더에 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "클라우드 동기화 백엔드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "사용할 클라우드 저장소 네트워크 프로토콜을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "클라우드 저장소 URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "클라우드 저장소 서비스의 API 진입점 URL입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "사용자 이름"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "클라우드 저장소 계정의 사용자명입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "비밀번호"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "클라우드 저장소 계정의 비밀번호입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1612,6 +1672,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack Audio Connection Kit 드라이버입니다."
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "마이크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "사용할 마이크 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "마이크 리샘플러"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "사용할 마이크 리샘플러 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "마이크 블록 프레임"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "오디오 리샘플러 드라이버"
@@ -2028,14 +2110,6 @@ MSG_HASH(
    "디스플레이 드라이버가 보고한 화면 주사율입니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "주사율 자동 변경"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "지정한 화면 모드 사용 시, 코어 또는 실행중인 콘텐츠에 따라 화면 주사율을 자동으로 변경합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "독점 전체화면 모드에서만"
    )
@@ -2445,6 +2519,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "오디오 출력 설정을 변경합니다."
    )
+#ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "마이크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "오디오 입력 설정을 변경합니다."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "리샘플러"
@@ -2510,6 +2594,14 @@ MSG_HASH(
    "빨리 감기를 사용할 때 오디오를 음소거합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "빨리 감기 중 오디오도 빨리 감기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "빨리 감기 중 오디오의 속도를 올립니다. 소리 깨짐 효과를 방지하지만 음높이가 올라갑니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "오디오 볼륨 레벨 (dB)"
    )
@@ -2559,7 +2651,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "오디오 드라이버에서 지원할 경우 WASAPI 드라이버에 부동소수점 형식을 사용합니다."
+   "오디오 장치가 지원할 경우, WASAPI 드라이버가 부동소수점 형식을 사용하도록 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
@@ -2616,6 +2708,78 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "오디오 지연(밀리초)을 설정합니다. 오디오 드라이버가 해당 지연시간을 지원하지 못할 경우 무시될 수 있습니다."
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "마이크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "지원되는 코어에서 오디오 입력을 활성화합니다. 코어가 마이크를 사용하지 않을 경우 이 옵션은 아무 영향도 끼치지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "오디오 장치"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "마이크 드라이버가 사용할 기본 입력 장치를 설정합니다. 이 옵션은 드라이버 종속적입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "마이크 드라이버가 사용할 기본 입력 장치를 설정합니다. 이 옵션은 드라이버 종속적입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "오디오 리샘플러 품질"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "값을 낮춰서 오디오 품질 대신 성능 및 반응 속도에 비중을 두거나, 반대로 값을 높여서 성능이나 반응 속도 대신 더 나은 음질에 비중을 둘 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "기본 입력 레이트 (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "오디오 입력의 샘플 레이트입니다. 코어가 특정한 값을 요구하지 않을 경우 사용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "오디오 입력 지연 (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "오디오 입력 지연(밀리초)을 설정합니다. 마이크 드라이버가 해당 지연시간을 지원하지 못할 경우 무시될 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI 단독 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI 드라이버를 사용할 때 RetroArch가 마이크 장치에 대한 독점 권한을 갖도록 허용합니다. 비활성 시 공유 모드를 사용하게 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "WASAPI 부동소수점 형식"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "오디오 장치가 지원할 경우, WASAPI 드라이버가 부동소수점 형식을 사용하도록 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI 공유 버퍼 길이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "WASAPI 드라이버를 공유 모드로 사용할 경우 사용할 중간 버퍼의 길이(프레임)입니다."
+   )
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -2959,6 +3123,22 @@ MSG_HASH(
    "입력 설정을 위해 누르고 있어야 하는 시간(초)입니다."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "키보드, 마우스, 또는 컨트롤러를 누르세요"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "키 및 버튼에서 손을 떼세요!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "시간 제한"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "꾹 누르기"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "터보 반복 간격"
    )
@@ -3020,7 +3200,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "터보 입력 설정을 변경합니다."
+   "터보 발사 설정 변경입니다.\n참고: 터보 기능을 사용하려면 해당 '포트 X 컨트롤' 메뉴에서 터보 버튼을 입력 장치에 매핑해야 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3044,7 +3224,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "핫키 설정을 변경합니다."
+   "게임 플레이 중 메뉴 토글 등 단축키에 대한 설정 및 할당을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "레트로패드 바인딩"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다. 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 사용할 필요가 없습니다.\n참고: 코어별로 입력을 변경하려면 빠른 메뉴의 '컨트롤' 하위 메뉴를 대신 사용하세요."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro는 '레트로패드'로 알려진 가상 게임패드 가상화를 사용하여 프론트엔드(예: RetroArch)에서 코어로, 또는 그 반대로 통신합니다. 이 메뉴는 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식과 이러한 장치가 차지하는 가상 입력 포트를 결정합니다.\n물리적 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 전혀 사용할 필요가 없으며, 코어별 입력 변[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3052,7 +3244,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "현재 포트에 대한 입력을 설정합니다."
+   "이 가상 포트의 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "코어별 입력 매핑을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3541,11 +3737,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "온스크린 키보드 (켜기/끄기)"
+   "키보드 오버레이 (토글)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "온스크린 키보드를 켜거나 끕니다."
+   "키보드 오버레이를 켜거나 끕니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -3911,6 +4107,10 @@ MSG_HASH(
    "종료 기능을 가진 코어가 종료될 때 더미 코어를 불러와 RetroArch까지 종료되는 것을 방지합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "일부 코어는 종료 기능을 가지고 있을 수 있습니다. 이 옵션을 비활성화해둘 경우, 해당 종료 기능을 실행하면 RetroArch 전체가 종료됩니다.\n이 옵션을 활성화하면 종료 대신 더미 코어를 불러와 RetroArch가 종료되지 않고 메뉴를 표시할 수 있게 합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
    "자동으로 코어 시작"
    )
@@ -3921,6 +4121,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "콘텐츠를 불러오기 전에 필요한 펌웨어가 모두 있는지 확인합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
+   "일부 코어는 펌웨어 또는 BIOS 파일을 필요로 합니다. 이 옵션을 활성화하면, RetroArch는 필요한 펌웨어 파일이 모두 갖춰지지 않은 코어의 실행을 차단합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
@@ -4028,6 +4232,10 @@ MSG_HASH(
    "종료 시 구성 파일의 변경 내용을 저장합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "종료 시 구성 파일에 변경사항을 저장합니다. 메뉴에서 설정을 변경할 경우 유용합니다. 구성 파일을 덮어쓰며, #include와 주석은 보존되지 않습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "종료 시 입력설정 파일 저장하기"
    )
@@ -4125,6 +4333,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "비휘발성 SRAM을 정기적으로 자동 저장합니다. 기본값은 비활성이며 기간은 초 단위입니다. 0으로 설정시 자동저장이 비활성 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "리플레이 체크포인트 간격"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "리플레이 녹화 중에 자동으로 게임의 상태저장을 수행할 시간 간격(초)입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "리플레이 녹화 중에 게임의 상태저장을 일정 간격으로 자동 실행합니다. 기본값은 비활성이며 기간은 초 단위입니다. 0으로 설정시 자동 상태저장이 비활성 됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -4370,6 +4590,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "빨리 감기를 사용할 때 콘텐츠가 실행되는 최대 속도입니다. (예: 60fps 콘텐츠의 경우 5.0x = 300fps) 0.0x로 설정하면 빨리 감기 속도는 무제한이 됩니다. (FPS 제한 없음)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "컨텐츠를 빨리 감기 할 때 사용될 최대 실행 속도 배율입니다. (예: 60fps 컨텐츠에 5.0배 => 빨리 감기 시 최대 300fps로 실행)\n이 속도를 넘지 않기 위해 RetroArch는 슬립을 사용하므로, 속도 제한이 정확하지 않을 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -4825,6 +5049,41 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "세로 화면에서 사용할 오버레이의 세로 오프셋입니다. 값을 키우면 오버레이가 위쪽으로 이동하고, 값을 줄이면 오버레이가 아래쪽으로 이동합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "키보드 오버레이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "키보드 오버레이를 선택하고 조정합니다."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "키보드 오버레이 사전 설정"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "파일 브라우저에서 키보드 오버레이를 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "자동 크기 조정 키보드 오버레이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "키보드 오버레이를 원래 화면 비율로 조정합니다. 화면으로 늘리려면 비활성화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "키보드 오버레이 불투명도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "키보드 오버레이의 모든 UI 요소의 불투명도입니다."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -5006,6 +5265,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "M3U 실행목록을 통해 불러온 마지막으로 사용한 멀티 디스크 콘텐츠 디스크를 실행 시 자동으로 복원할 때 화면에 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "상태저장 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "상태저장을 하거나 불러올 때 화면에 메시지를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -5726,7 +5993,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "상태저장 하위메뉴 표시"
+   "'상태저장' 하위메뉴 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
@@ -5843,6 +6110,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "'기존 설정 덮어쓰기' 메뉴에 '코어 우선 설정 저장' 옵션을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "'콘텐츠 디렉터리 재정의 저장하기' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "'기존 설정 덮어쓰기' 메뉴에 '콘텐츠 디렉터리 재정의 저장하기' 옵션을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6101,7 +6376,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "메뉴 크기 배율"
+   "크기 배율"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
@@ -6125,7 +6400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "메뉴 투명도"
+   "불투명도"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
@@ -6141,7 +6416,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "미리보기"
+   "첫 번째 미리보기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -6185,7 +6460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "다른 탭으로 전환할 때 메뉴 커서의 위치를 기억해둡니다."
+   "탭 사이를 전환할 때 커서의 마지막 위치를 기억해둡니다. RGUI에는 탭은 없지만, 실행목록과 설정 메뉴가 탭인 것으로 간주됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -6293,10 +6568,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
    "리더보드"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "게임별 리더보드를 사용합니다. '도전과제 하드코어 모드'를 비활성화한 경우 작동하지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6465,6 +6736,46 @@ MSG_HASH(
    "특정 도전 과제를 달성할 수 있을 때 화면에 지표를 표시합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "진행률 지표"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "특정 도전과제를 향한 진행률을 보여주는 온스크린 지표를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "리더보드 시작 메시지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "리더보드가 활성화될 때 리더보드의 설명을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "리더보드 제출 메시지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "리더보드 시도가 완료되어 결과가 제출되었을 때 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "리더보드 실패 메시지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "리더보드 시도가 실패했을 때 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "리더보드 트래커"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "활성 리더보드의 현재 값을 화면에 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
    "로그인 메시지"
    )
@@ -6592,6 +6903,10 @@ MSG_HASH(
    "넷플레이를 관전 모드로 실행합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "넷플레이를 관전 모드로 시작할지 설정합니다. 설정할 경우, 넷플레이가 관전 모드로 시작됩니다. 모드는 언제든지 변경할 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    "페이드 채팅"
    )
@@ -6648,6 +6963,10 @@ MSG_HASH(
    "넷플레이 중 호스트와 클라이언트가 동기화되어있는지 확인하는 프레임의 빈도(프레임)를 설정합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "넷플레이 중 호스트와 클라이언트가 동기화되어있는지 확인하는 프레임의 빈도입니다. 대부분의 코어에서, 이 값은 특별한 효과가 없고 무시될 것입니다. 비결정식 코어의 경우, 이 값은 넷플레이 피어들이 얼마나 자주 동기화될 것인지 결정합니다. 버그가 많은 코어에서 이 값을 0 이외의 값으로 설정하는 것은 심각한 성능 문제를 일으킬 수 있습니다. 0으로 설정하면 동기화 [...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "입력 대기 프레임"
    )
@@ -6656,12 +6975,20 @@ MSG_HASH(
    "넷플레이 시 네트워크 지연을 숨기기 위해 사용할 지연 프레임 수입니다. 입력 지연을 얻는 대신 지터링과 CPU 사용률을 줄입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "넷플레이 시 네트워크 지연을 숨기기 위해 사용할 입력 지연 프레임 수입니다.\n이 옵션은 넷플레이 중에 로컬 입력을 지연시켜, 실행되는 프레임이 네트워크에서 받아오는 프레임과 더 가까워지게 합니다. 이는 화면 떨림 등의 증상을 줄이고 넷플레이의 CPU 사용량을 감소시키지만, 대신 체감 가능한 수준의 입력 지연을 발생시킵니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "입력 대기 프레임 범위"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "네트워크 지연을 숨기기 위해 사용하는 입력 대기 프레임 범위입니다. 예측 불가능한 입력 지연으로 지터를 줄이고 넷플레이의 CPU 사용을 줄입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "넷플레이 중 네트워크 지연을 숨기기 위해 사용하는 입력 대기 프레임 범위입니다.\n설정할 경우, 넷플레이는 CPU 사용 시간, 입력 지연, 네트워크 지연을 균등하게 유지하기 위해 입력 지연 시간을 동적으로 조절합니다. 이는 화면 떨림 등의 증상을 줄이고 넷플레이의 CPU 사용량을 감소시키지만, 대신 예측 불가능한 입력 지연을 발생시킵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -6721,7 +7048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "업데이트"
+   "업데이터 설정"
    )
 
 /* Settings > Network > Updater */
@@ -6993,6 +7320,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "활성 및 '파일 탐색기' 디렉토리가 선택되면 '파일 탐색기' 매개 변수의 현재 값이 실행목록에 저장됩니다. 동일 옵션이 활성화 된 다른 시스템에서 실행목록을 불러오면 '파일 탐색기' 매개 변수 값이 실행목록 값과 비교되고 다를 경우 자동으로 교정됩니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "관리"
+   )
 
 /* Settings > Playlists > Playlist Management */
 
@@ -7120,6 +7451,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "고전 게임에서 도전과제를 사용할 수 있습니다. 자세한 정보는 https://retroachievements.org에서 확인하세요."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "RetroAchievements 계정의 로그인 정보입니다. retroachievements.org를 방문하여 무료 계정을 만드십시오.\n가입이 완료된 후에, 사용자명과 비밀번호를 RetroArch에 입력하여 사용할 수 있습니다."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
@@ -7301,6 +7636,14 @@ MSG_HASH(
    "오버레이가 저장되는 디렉토리입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "키보드 오버레이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "키보드 오버레이는 이 디렉터리에 저장됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    "비디오 레이아웃"
    )
@@ -7395,6 +7738,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    "모든 세이브 파일이 저장될 디렉토리. 설정하지 않을 경우 콘텐츠 파일의 작업 디렉토리에 저장됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "모든 세이브 파일(*.srm)을 이 디렉토리에 저장합니다. .rt나 .psrm 등의 관련 파일도 모두 포함됩니다. 이 설정은 명령줄 옵션으로 덮어씌워질 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -8320,24 +8667,12 @@ MSG_HASH(
    "코어 입력설정 파일 저장"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "코어 입력설정 파일 삭제"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "입력설정 파일을 콘텐츠 폴더에 저장"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "콘텐츠 폴더 입력설정 파일 삭제"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "게임 입력설정 파일 저장"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "게임 입력설정 파일 삭제"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9723,7 +10058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(키: %s)"
+   "키 %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -9814,7 +10149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "메뉴 선형 필터"
+   "선형 필터"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
@@ -9830,7 +10165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "메뉴 화면비"
+   "화면비"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
@@ -9838,7 +10173,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "메뉴 화면비 고정"
+   "화면비 고정"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
@@ -9846,7 +10181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "메뉴 색상 테마"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -9854,7 +10189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "사용자 메뉴 테마 프리셋"
+   "사용자 테마 프리셋"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
@@ -9862,7 +10197,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "반투명 메뉴"
+   "투명도"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -9906,7 +10241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "실행목록을 볼 때 목록에 축소된 미리보기를 표시할 수 있습니다. 사용 안할 시 '상단 미리보기'를 패드 Y버튼을 눌러 전체화면으로 표시할 수 있습니다."
+   "실행목록을 볼 때 목록에 축소된 미리보기를 표시합니다. RetroPad 선택 버튼으로 켜고 끌 수 있습니다. 비활성화하더라도, 미리보기의 전체화면 표시는 RetroPad 시작 버튼을 눌러 켜고 끌 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
@@ -9914,7 +10249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "오른쪽 상단에 표시할 미리보기의 종류입니다. Y 버튼을 누르면 이 미리보기가 전체화면으로 표시됩니다."
+   "오른쪽 상단에 표시될 미리보기의 종류입니다. RetroPad Y 버튼을 누르면 미리보기 종류를 전환할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -9996,12 +10331,20 @@ MSG_HASH(
    "16:10 (가운데 맞춤)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (가운데 맞춤)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
    "3:2 (가운데 맞춤)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
    "5:3 (가운데 맞춤)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "자동"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
@@ -10196,7 +10539,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "왼쪽 미리보기"
+   "두 번째 미리보기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10244,11 +10587,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "메뉴 알파 요소"
+   "색상 테마 알파 요소"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "메뉴 폰트"
+   "폰트"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
@@ -10256,19 +10599,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "메뉴 폰트 빨강"
+   "폰트 색 (빨강)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "메뉴 폰트 초록"
+   "폰트 색 (초록)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "메뉴 폰트 파랑"
+   "폰트 색 (파랑)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "메뉴 형태"
+   "레이아웃"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -10276,7 +10619,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "메뉴 아이콘 테마"
+   "아이콘 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10292,7 +10635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "그림자 그리기"
+   "그림자 효과"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -10300,7 +10643,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "메뉴 셰이더 파이프라인"
+   "셰이더 파이프라인"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -10308,11 +10651,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "메뉴 색상 테마"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "배경색 그라데이션 테마를 선택합니다."
+   "다른 배경색 테마를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -10475,7 +10818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "단순"
+   "배경 이미지"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -10542,7 +10885,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "메뉴 테마 색상"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -10629,7 +10972,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "메뉴 아이콘"
+   "아이콘"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10677,15 +11020,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "메뉴 테마 색상"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "배경색 그라데이션 테마를 선택합니다."
+   "다른 배경색 테마를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "메뉴 전환 애니메이션"
+   "전환 애니메이션"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -11454,7 +11797,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "업데이터"
+   "코어 업데이터 설정"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -12778,6 +13121,10 @@ MSG_HASH(
    "오버레이 불러오기 실패."
    )
 MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "키보드 오버레이가 설정되지 않았습니다."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
    "상태 불러오기 실패:"
    )
@@ -13306,6 +13653,18 @@ MSG_HASH(
    "도전과제 해제"
    )
 MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "리더보드 시도 시작됨"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "리더보드 시도 실패함"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "%s 제출함 (%s)" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
    "미리보기 형식 변경"
    )
@@ -13403,7 +13762,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
-   "%u 포트에 %s 구성됨"
+   "%s가 포트 %u에 구성됨"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -13925,6 +14284,10 @@ MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "정확한 프레임 동기화가 비활성화되었습니다."
    )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "비디오 주사율이 %s Hz로 변경되었습니다."
+   )
 
 /* Lakka */
 
@@ -14001,7 +14364,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "디스플레이 모드를 선택합니다."
+   "디스플레이 모드를 선택합니다 (재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -14424,6 +14787,48 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
    "운영체제 단의 화면 크기 배율에 맞게 터치 입력의 X/Y 좌표 배율을 조정합니다."
    )
+#ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "가상 터치 마우스를 포인터로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "터치스크린 입력을 터치 이벤트로 전달할 수 있게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "가상 터치 마우스를 마우스로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "터치 이벤트 입력으로 가상 마우스를 구현합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "가상 터치 마우스를 터치패드로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "마우스로 사용 옵션과 함께 활성화하면 터치스크린을 터치패드처럼 사용할 수 있게 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "가상 터치 마우스를 트랙볼로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "마우스로 사용 옵션과 함께 활성화하면 터치스크린을 트랙볼처럼 활용할 수 있게 되며, 포인터에 관성이 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "가상 터치 마우스를 제스처로 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "탭, 탭 후 드래그, 손가락 스와이프 등의 터치스크린 제스처를 활성화합니다."
+   )
+#endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,

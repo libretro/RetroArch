@@ -48,7 +48,7 @@
 #include "../common/d3d9_common.h"
 #include "../include/Cg/cg.h"
 #include "../include/Cg/cgD3D9.h"
-#include "../video_coord_array.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
@@ -101,6 +101,301 @@ typedef struct cg_renderchain
    CGcontext cgCtx;
 } cg_renderchain_t;
 
+/*
+ * DISPLAY DRIVER
+ */
+
+static const float d3d9_cg_vertexes[8] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
+static const float d3d9_cg_tex_coords[8] = {
+   0, 1,
+   1, 1,
+   0, 0,
+   1, 0
+};
+
+static const float *gfx_display_d3d9_cg_get_default_vertices(void)
+{
+   return &d3d9_cg_vertexes[0];
+}
+
+static const float *gfx_display_d3d9_cg_get_default_tex_coords(void)
+{
+   return &d3d9_cg_tex_coords[0];
+}
+
+static void *gfx_display_d3d9_cg_get_default_mvp(void *data)
+{
+   static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
+                                 0.0f, 1.0f, 0.0f, 0.0f,
+                                 0.0f, 0.0f, 1.0f, 0.0f,
+                                 0.0f, 0.0f, 0.0f, 1.0f
+                               };
+   return &id;
+}
+
+static INT32 gfx_display_prim_to_d3d9_cg_enum(
+      enum gfx_display_prim_type prim_type)
+{
+   switch (prim_type)
+   {
+      case GFX_DISPLAY_PRIM_TRIANGLES:
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
+         return D3DPT_COMM_TRIANGLESTRIP;
+      case GFX_DISPLAY_PRIM_NONE:
+      default:
+         break;
+   }
+
+   /* TODO/FIXME - hack */
+   return 0;
+}
+
+static void gfx_display_d3d9_cg_blend_begin(void *data)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, true);
+}
+
+static void gfx_display_d3d9_cg_blend_end(void *data)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, false);
+}
+
+static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   unsigned i;
+   math_matrix_4x4 mop, m1, m2;
+   LPDIRECT3DDEVICE9 dev;
+   D3DPRIMITIVETYPE type;
+   unsigned start                = 0;
+   unsigned count                = 0;
+   d3d9_video_t *d3d             = (d3d9_video_t*)data;
+   Vertex * pv                   = NULL;
+   const float *vertex           = NULL;
+   const float *tex_coord        = NULL;
+   const float *color            = NULL;
+
+   if (!d3d || !draw || draw->pipeline_id)
+      return;
+
+   dev                           = d3d->dev;
+
+   if ((d3d->menu_display.offset + draw->coords->vertices )
+         > (unsigned)d3d->menu_display.size)
+      return;
+
+   IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
+            d3d->menu_display.buffer, 0, 0, (void**)&pv, 0);
+   if (!pv)
+      return;
+
+   pv          += d3d->menu_display.offset;
+   vertex       = draw->coords->vertex;
+   tex_coord    = draw->coords->tex_coord;
+   color        = draw->coords->color;
+
+   if (!vertex)
+      vertex    = &d3d9_cg_vertexes[0];
+   if (!tex_coord)
+      tex_coord = &d3d9_cg_tex_coords[0];
+
+   for (i = 0; i < draw->coords->vertices; i++)
+   {
+      int colors[4];
+
+      colors[0]   = *color++ * 0xFF;
+      colors[1]   = *color++ * 0xFF;
+      colors[2]   = *color++ * 0xFF;
+      colors[3]   = *color++ * 0xFF;
+
+      pv[i].x     = *vertex++;
+      pv[i].y     = *vertex++;
+      pv[i].z     = 0.5f;
+      pv[i].u     = *tex_coord++;
+      pv[i].v     = *tex_coord++;
+
+      pv[i].color =
+         D3DCOLOR_ARGB(
+               colors[3], /* A */
+               colors[0], /* R */
+               colors[1], /* G */
+               colors[2]  /* B */
+               );
+   }
+   IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
+         d3d->menu_display.buffer);
+
+   if (!draw->matrix_data)
+      draw->matrix_data = gfx_display_d3d9_cg_get_default_mvp(d3d);
+
+   /* ugh */
+   matrix_4x4_scale(m1,       2.0,  2.0, 0);
+   matrix_4x4_translate(mop, -1.0, -1.0, 0);
+   matrix_4x4_multiply(m2, mop, m1);
+   matrix_4x4_multiply(m1,
+         *((math_matrix_4x4*)draw->matrix_data), m2);
+   matrix_4x4_scale(mop,
+         (draw->width  / 2.0) / video_width,
+         (draw->height / 2.0) / video_height, 0);
+   matrix_4x4_multiply(m2, mop, m1);
+   matrix_4x4_translate(mop,
+         (draw->x + (draw->width  / 2.0)) / video_width,
+         (draw->y + (draw->height / 2.0)) / video_height,
+         0);
+   matrix_4x4_multiply(m1, mop, m2);
+   matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
+   d3d_matrix_transpose(&m1, &m2);
+
+   IDirect3DDevice9_SetVertexShaderConstantF(dev,
+         0, (const float*)&m1, 4);
+
+   if (draw->texture)
+   {
+      IDirect3DDevice9_SetTexture(dev, 0,
+         (IDirect3DBaseTexture9*)draw->texture);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSU, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_ADDRESSV, D3DTADDRESS_COMM_CLAMP);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MINFILTER, D3DTEXF_COMM_LINEAR);
+      IDirect3DDevice9_SetSamplerState(dev,
+         0, D3DSAMP_MAGFILTER, D3DTEXF_COMM_LINEAR);
+      IDirect3DDevice9_SetSamplerState(dev, 0,
+         D3DSAMP_MIPFILTER, D3DTEXF_COMM_LINEAR);
+   }
+
+   type  = (D3DPRIMITIVETYPE)gfx_display_prim_to_d3d9_cg_enum(draw->prim_type);
+   start = d3d->menu_display.offset;
+   count = draw->coords->vertices -
+         ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
+          ? 2 : 0);
+
+   IDirect3DDevice9_BeginScene(dev);
+   IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
+   IDirect3DDevice9_EndScene(dev);
+
+   d3d->menu_display.offset += draw->coords->vertices;
+}
+
+static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
+      gfx_display_t *p_disp,
+      void *data, unsigned video_width, unsigned video_height)
+{
+   static float t                    = 0;
+   video_coord_array_t *ca           = NULL;
+
+   if (!draw)
+      return;
+
+   ca                                = &p_disp->dispca;
+
+   draw->x                           = 0;
+   draw->y                           = 0;
+   draw->coords                      = NULL;
+   draw->matrix_data                 = NULL;
+
+   if (ca)
+      draw->coords                   = (struct video_coords*)&ca->coords;
+
+   switch (draw->pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+         {
+            struct uniform_info uniform_param  = {0};
+            t                                 += 0.01;
+
+            (void)uniform_param;
+
+            uniform_param.enabled              = true;
+            uniform_param.lookup.enable        = true;
+            uniform_param.lookup.add_prefix    = true;
+            uniform_param.lookup.idx           = draw->pipeline_id;
+            uniform_param.lookup.type          = SHADER_PROGRAM_VERTEX;
+            uniform_param.type                 = UNIFORM_1F;
+            uniform_param.lookup.ident         = "time";
+            uniform_param.result.f.v0          = t;
+         }
+         break;
+   }
+}
+
+void gfx_display_d3d9_cg_scissor_begin(
+      void *data,
+      unsigned video_width, unsigned video_height,
+      int x, int y, unsigned width, unsigned height)
+{
+   RECT rect;
+   d3d9_video_t *d3d9 = (d3d9_video_t*)data;
+
+   if (!d3d9)
+      return;
+
+   rect.left          = x;
+   rect.top           = y;
+   rect.right         = width + x;
+   rect.bottom        = height + y;
+
+   IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
+}
+
+void gfx_display_d3d9_cg_scissor_end(void *data,
+      unsigned video_width, unsigned video_height)
+{
+   RECT rect;
+   d3d9_video_t            *d3d9 = (d3d9_video_t*)data;
+
+   if (!d3d9)
+      return;
+
+   rect.left            = 0;
+   rect.top             = 0;
+   rect.right           = video_width;
+   rect.bottom          = video_height;
+
+   IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
+}
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
+   gfx_display_d3d9_cg_draw,
+   gfx_display_d3d9_cg_draw_pipeline,
+   gfx_display_d3d9_cg_blend_begin,
+   gfx_display_d3d9_cg_blend_end,
+   gfx_display_d3d9_cg_get_default_mvp,
+   gfx_display_d3d9_cg_get_default_vertices,
+   gfx_display_d3d9_cg_get_default_tex_coords,
+   FONT_DRIVER_RENDER_D3D9_API,
+   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
+   "d3d9_cg",
+   false,
+   gfx_display_d3d9_cg_scissor_begin,
+   gfx_display_d3d9_cg_scissor_end
+};
+
+/*
+ * VIDEO DRIVER
+ */
+
 static INLINE bool d3d9_cg_validate_param_name(const char *name)
 {
    int i;
@@ -142,16 +437,16 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
             return ret;
       }
 
-      if (     cgGetParameterDirection(param)   != CG_IN
-            || cgGetParameterVariability(param) != CG_VARYING)
+      if (     (cgGetParameterDirection(param)   != CG_IN)
+            || (cgGetParameterVariability(param) != CG_VARYING))
          continue;
 
       semantic = cgGetParameterSemantic(param);
       if (!semantic)
          continue;
 
-      if (string_is_equal(sem, semantic) &&
-            d3d9_cg_validate_param_name(cgGetParameterName(param)))
+      if (     string_is_equal(sem, semantic)
+            && d3d9_cg_validate_param_name(cgGetParameterName(param)))
          return param;
    }
 
@@ -172,8 +467,8 @@ static bool d3d9_cg_load_program(cg_renderchain_t *chain,
    CGcontext cgCtx            = chain->cgCtx;
 
    if (
-         fragment_profile == CG_PROFILE_UNKNOWN ||
-         vertex_profile   == CG_PROFILE_UNKNOWN)
+            (fragment_profile == CG_PROFILE_UNKNOWN)
+         || (vertex_profile   == CG_PROFILE_UNKNOWN))
    {
       RARCH_ERR("Invalid profile type\n");
       goto error;
@@ -507,10 +802,6 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
 {
    unsigned i;
    float texture_size[2];
-   char attr_texture[64];
-   char attr_input_size[64];
-   char attr_tex_size[64];
-   char attr_coord[64];
    static const char *prev_names[] = {
       "PREV",
       "PREV1",
@@ -526,44 +817,20 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
 
    for (i = 0; i < TEXTURES - 1; i++)
    {
-      char prev_name[32];
+      char attr[64];
       CGparameter param;
       float video_size[2];
       CGprogram fprg = (CGprogram)pass->fprg;
       CGprogram vprg = (CGprogram)pass->vprg;
-
-      strlcpy(prev_name, prev_names[i], sizeof(prev_name));
-      strlcpy(attr_texture,    prev_name,       sizeof(attr_texture));
-      strlcat(attr_texture,    ".texture",      sizeof(attr_texture));
-      strlcpy(attr_input_size, prev_name,       sizeof(attr_input_size));
-      strlcat(attr_input_size, ".video_size",   sizeof(attr_input_size));
-      strlcpy(attr_tex_size,   prev_name,       sizeof(attr_tex_size));
-      strlcat(attr_tex_size,   ".texture_size", sizeof(attr_tex_size));
-      strlcpy(attr_coord,      prev_name,       sizeof(attr_coord));
-      strlcat(attr_coord,      ".tex_coord",    sizeof(attr_coord));
+      size_t _len    = strlcpy(attr, prev_names[i], sizeof(attr));
 
       video_size[0]  = chain->prev.last_width[
          (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
       video_size[1]  = chain->prev.last_height[
          (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
-      /* Vertex program */
-      param = cgGetNamedParameter(vprg, attr_input_size);
-      if (param)
-         cgD3D9SetUniform(param, &video_size);
-      param = cgGetNamedParameter(vprg, attr_tex_size);
-      if (param)
-         cgD3D9SetUniform(param, &texture_size);
-
-      /* Fragment program */
-      param = cgGetNamedParameter(fprg, attr_input_size);
-      if (param)
-         cgD3D9SetUniform(param, &video_size);
-      param = cgGetNamedParameter(fprg, attr_tex_size);
-      if (param)
-         cgD3D9SetUniform(param, &texture_size);
-
-      param = cgGetNamedParameter(fprg, attr_texture);
+      strlcpy(attr + _len, ".texture", sizeof(attr) - _len);
+      param = cgGetNamedParameter(fprg, attr);
       if (param)
       {
          unsigned         index = cgGetParameterResourceIndex(param);
@@ -582,7 +849,8 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
          IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter(vprg, attr_coord);
+      strlcpy(attr + _len, ".tex_coord", sizeof(attr) - _len);
+      param = cgGetNamedParameter(vprg, attr);
       if (param)
       {
          LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
@@ -595,6 +863,24 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_renderchain_t *chain,
                sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
+
+      strlcpy(attr + _len, ".video_size",   sizeof(attr) - _len);
+
+      param = cgGetNamedParameter(vprg, attr);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+      param = cgGetNamedParameter(fprg, attr);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+
+      strlcpy(attr + _len, ".texture_size", sizeof(attr) - _len);
+      param = cgGetNamedParameter(vprg, attr);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
+      param = cgGetNamedParameter(fprg, attr);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
+
    }
 }
 
@@ -613,44 +899,16 @@ static void d3d9_cg_renderchain_bind_pass(
       float video_size[2];
       float texture_size[2];
       char pass_base[64];
-      char attr_texture[64];
-      char attr_input_size[64];
-      char attr_tex_size[64];
-      char attr_coord[64];
       struct shader_pass *curr_pass = (struct shader_pass*)&chain->passes->data[i];
-
-      snprintf(pass_base, sizeof(pass_base), "PASS%u", i);
-      strlcpy(attr_texture,    pass_base,       sizeof(attr_texture));
-      strlcat(attr_texture,    ".texture",      sizeof(attr_texture));
-      strlcpy(attr_input_size, pass_base,       sizeof(attr_input_size));
-      strlcat(attr_input_size, ".video_size",   sizeof(attr_input_size));
-      strlcpy(attr_tex_size,   pass_base,       sizeof(attr_tex_size));
-      strlcat(attr_tex_size,   ".texture_size", sizeof(attr_tex_size));
-      strlcpy(attr_coord,      pass_base,       sizeof(attr_coord));
-      strlcat(attr_coord,      ".tex_coord",    sizeof(attr_coord));
+      size_t _len = snprintf(pass_base, sizeof(pass_base), "PASS%u", i);
 
       video_size[0]   = curr_pass->last_width;
       video_size[1]   = curr_pass->last_height;
       texture_size[0] = curr_pass->info.tex_w;
       texture_size[1] = curr_pass->info.tex_h;
 
-      /* Vertex program */
-      param           = cgGetNamedParameter(vprg, attr_input_size);
-      if (param)
-         cgD3D9SetUniform(param, &video_size);
-      param           = cgGetNamedParameter(vprg, attr_tex_size);
-      if (param)
-         cgD3D9SetUniform(param, &texture_size);
-
-      /* Fragment program */
-      param           = cgGetNamedParameter(fprg, attr_input_size);
-      if (param)
-         cgD3D9SetUniform(param, &video_size);
-      param           = cgGetNamedParameter(fprg, attr_tex_size);
-      if (param)
-         cgD3D9SetUniform(param, &texture_size);
-
-      param = cgGetNamedParameter(fprg, attr_texture);
+      strlcpy(pass_base + _len, ".texture",  sizeof(pass_base) - _len);
+      param = cgGetNamedParameter(fprg, pass_base);
       if (param)
       {
          unsigned index = cgGetParameterResourceIndex(param);
@@ -665,7 +923,8 @@ static void d3d9_cg_renderchain_bind_pass(
          IDirect3DDevice9_SetSamplerState(chain->dev, index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
       }
 
-      param = cgGetNamedParameter(vprg, attr_coord);
+      strlcpy(pass_base + _len, ".tex_coord", sizeof(pass_base) - _len);
+      param = cgGetNamedParameter(vprg, pass_base);
       if (param)
       {
          struct unsigned_vector_list *attrib_map =
@@ -677,6 +936,23 @@ static void d3d9_cg_renderchain_bind_pass(
                sizeof(struct D3D9CGVertex));
          unsigned_vector_list_append(chain->bound_vert, index);
       }
+
+      strlcpy(pass_base + _len, ".video_size",   sizeof(pass_base) - _len);
+      param           = cgGetNamedParameter(vprg, pass_base);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+      param           = cgGetNamedParameter(fprg, pass_base);
+      if (param)
+         cgD3D9SetUniform(param, &video_size);
+
+      strlcpy(pass_base + _len, ".texture_size", sizeof(pass_base) - _len);
+      param           = cgGetNamedParameter(vprg, pass_base);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
+      param           = cgGetNamedParameter(fprg, pass_base);
+      if (param)
+         cgD3D9SetUniform(param, &texture_size);
+
    }
 }
 
@@ -1381,8 +1657,8 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
          if (!d3d9_renderchain_add_lut(
                   d3d->renderchain_data,
                   d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
-                  ? video_smooth 
+                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC
+                  ? video_smooth
                   : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          {
             RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
@@ -1629,7 +1905,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 
    d3d9_cg_fake_context.get_flags   = d3d9_cg_get_flags;
    d3d9_cg_fake_context.get_metrics = win32_get_metrics;
-   video_context_driver_set(&d3d9_cg_fake_context); 
+   video_context_driver_set(&d3d9_cg_fake_context);
    {
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -1756,7 +2032,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
-   bool menu_is_alive                  = video_info->menu_is_alive;
+   bool menu_is_alive                  = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
@@ -1811,12 +2087,12 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation);
-   
+
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       int n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n) 
-      {   
+      for (n = 0; n < video_info->black_frame_insertion; ++n)
+      {
         bool ret = (IDirect3DDevice9_Present(d3d->dev,
                  NULL, NULL, NULL, NULL) != D3DERR_DEVICELOST);
         if (!ret || d3d->needs_restore)
@@ -1824,7 +2100,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
         IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
               0, 1, 0);
       }
-   }   
+   }
 
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
@@ -1888,7 +2164,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       IDirect3DDevice9_EndScene(d3d->dev);
    }
 
-   win32_update_title();
+   video_driver_update_title(NULL);
    IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
 
    return true;
@@ -1900,12 +2176,12 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_unload_texture,
    d3d9_set_video_mode,
 #if defined(__WINRT__)
-   NULL,
+   NULL, /* get_refresh_rate */
 #else
    /* UWP does not expose this information easily */
    win32_get_refresh_rate,
 #endif
-   NULL,
+   NULL, /* set_filtering */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
@@ -1916,16 +2192,15 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_set_menu_texture_frame,
    d3d9_set_menu_texture_enable,
    d3d9_set_osd_msg,
-
    win32_show_cursor,
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void d3d9_cg_get_poke_interface(void *data,
@@ -2006,8 +2281,8 @@ video_driver_t video_d3d9_cg = {
    d3d9_cg_frame,
    d3d9_cg_set_nonblock_state,
    d3d9_cg_alive,
-   NULL,                      /* focus */
-   win32_suppress_screensaver,
+   NULL, /* focus */
+   win32_suspend_screensaver,
    d3d9_has_windowed,
    d3d9_cg_set_shader,
    d3d9_cg_free,
@@ -2016,7 +2291,7 @@ video_driver_t video_d3d9_cg = {
    d3d9_set_rotation,
    d3d9_viewport_info,
    d3d9_read_viewport,
-   NULL,                      /* read_frame_raw */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d9_get_overlay_interface,
 #endif

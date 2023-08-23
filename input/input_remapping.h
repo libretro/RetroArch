@@ -148,7 +148,7 @@ void input_config_get_bind_string(void *settings_data,
  *
  * @return Key identifier.
  **/
-enum retro_key input_config_translate_str_to_rk(const char *str);
+enum retro_key input_config_translate_str_to_rk(const char *str, size_t len);
 
 /**
  * Searches for a string among the "base" fields of the list of binds.
