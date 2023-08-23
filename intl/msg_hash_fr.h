@@ -2066,14 +2066,6 @@ MSG_HASH(
    "Fréquence de rafraîchissement détectée par le pilote d'affichage."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Basculer la fréquence de rafraîchissement automatiquement"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Bascule automatiquement la fréquence de rafraîchissement de l'écran lors de l'utilisation du mode d'écran spécifié, basé sur le cœur et/ou le contenu en cours d'exécution."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Uniquement en mode plein écran exclusif"
    )
@@ -8571,6 +8563,18 @@ MSG_HASH(
    "Charger un fichier de remappage"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "Charger et remplacer le mappage des touches actuel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Enregistrer le fichier de remappage sous"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Enregistrer le mappage des touches actuel en tant que nouveau fichier de remappage."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "Sauvegarder le remappage pour le cœur"
    )
@@ -8584,11 +8588,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
-   "Réinitialiser le remappage des entrées"
+   "Réinitialiser le mappage des touches"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "Définit toutes les options du remappage des entrées aux valeurs par défaut."
+   "Définit toutes les options du remappage des touches aux valeurs par défaut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
@@ -8596,7 +8600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
-   "Écraser le fichier de remappage actif avec les options actuelles de remappage des entrées."
+   "Écraser le fichier de remappage actif avec les options actuelles de remappage des touches."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -13330,7 +13334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
-   "Toutes les options du remappage des entrées ont été réinitialisées aux valeurs par défaut."
+   "Toutes les options du remappage des touches ont été réinitialisées aux valeurs par défaut."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -13706,11 +13710,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
-   "Options de remappage des entrées enregistrées vers :"
+   "Options de remappage des touches enregistrées vers :"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSH_FAILED,
-   "Impossible d'enregistrer les options de remappage des entrées vers :"
+   "Impossible d'enregistrer les options de remappage des touches vers :"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,

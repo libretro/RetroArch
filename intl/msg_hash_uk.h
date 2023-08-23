@@ -1842,14 +1842,6 @@ MSG_HASH(
    "Частота оновлення, згідно драйвера дисплея."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Автоматично перемикати Частоту Оновлення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Автоматично перемикати частоту оновлення екрана під час використання вказаного режиму екрана на основі ядра та/або вмісту, що запускається."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Тільки в Ексклюзивному Повноекранному Режимі"
    )

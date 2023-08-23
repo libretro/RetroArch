@@ -2110,14 +2110,6 @@ MSG_HASH(
    "디스플레이 드라이버가 보고한 화면 주사율입니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "주사율 자동 변경"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "지정한 화면 모드 사용 시, 코어 또는 실행중인 콘텐츠에 따라 화면 주사율을 자동으로 변경합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "독점 전체화면 모드에서만"
    )

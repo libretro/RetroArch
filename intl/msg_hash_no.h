@@ -1614,14 +1614,6 @@ MSG_HASH(
    "Oppdateringsraten som er rapportert av visningsdriveren."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Bytt oppdateringsrate automatisk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Bytter oppdateringsraten på skjermen når den angitte skjermmodusen blir brukt, basert på kjernen og/eller innholdet som kjøres."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Bare i eksklusiv fullskjermmodus"
    )

@@ -1922,14 +1922,6 @@ MSG_HASH(
    "Näyttöajurin raportoima virkistystaajuus."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Vaihda virkistystaajuutta automaattisesti"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Vaihda näytön virkistystaajuutta automaattisesti, kun käytetään määritettyä näyttötilaa, joka perustuu suoritettavaan ytimeen ja/tai sisältöön."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Vain yksinomaisessa koko näytön tilassa"
    )

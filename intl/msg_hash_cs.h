@@ -2042,14 +2042,6 @@ MSG_HASH(
    "Obnovovací frekvence hlášená ovladačem displeje."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Automatické Přepínání Obnovovací Frekvence"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Automatické přepínání obnovovací frekvence obrazovky při použití zadaného režimu obrazovky na základě jádra a/nebo spuštěného obsahu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Pouze v Exkluzivním Celoobrazovém Režimu"
    )

@@ -1714,14 +1714,6 @@ MSG_HASH(
    "La freqüència de refresc tal com l'anuncia el controlador de la pantalla."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Canvia la freqüència d’actualització automàticament"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Canvia la freqüència d’actualització de la pantalla automàticament quan es fa servir el mode de pantalla especificat, segons el nucli i/o contingut que s’executa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Només en mode de pantalla completa exclusiva"
    )

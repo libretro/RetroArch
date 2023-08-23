@@ -2042,14 +2042,6 @@ MSG_HASH(
    "裝置預設的螢幕更新率, 按[確定鍵]可套用預設值至「垂直更新率」選項。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "自動切換更新率"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "設定自動切換更新率的顯示模式, 使用設定的顯示模式時, 依據執行的核心和檔案, 自動切換螢幕更新率。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "僅限全螢幕獨占模式"
    )

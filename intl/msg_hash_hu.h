@@ -2074,14 +2074,6 @@ MSG_HASH(
    "A képernyő-illesztőprogram által megadott frissítési gyakoriság."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Képfrissítési gyakoriság automatikus állítása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "A képfrissítési gyakoriság automatikus állítása, amikor a megadott képernyőmód aktív, az éppen futó mag és/vagy tartalom szerint."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Csak kizárólagos teljes képernyős módban"
    )
