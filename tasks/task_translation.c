@@ -1575,7 +1575,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_target))
       {
-         _len  = strlcpy(buffer + _len, token, length - _len);
+         _len += strlcpy(buffer + _len, token, length - _len);
          _len += strlcpy(buffer + _len, "target_lang=", length - _len);
          strlcpy(buffer + _len, lang_target, length - _len);
          token[0] = '&';
