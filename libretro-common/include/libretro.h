@@ -500,56 +500,97 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_PRIVATE 0x20000
 
 /* Environment commands. */
-#define RETRO_ENVIRONMENT_SET_ROTATION  1  /* const unsigned * --
-                                            * Sets screen rotation of graphics.
-                                            * Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180,
-                                            * 270 degrees counter-clockwise respectively.
-                                            */
-#define RETRO_ENVIRONMENT_GET_OVERSCAN  2  /* bool * --
-                                            * NOTE: As of 2019 this callback is considered deprecated in favor of
-                                            * using core options to manage overscan in a more nuanced, core-specific way.
-                                            *
-                                            * Boolean value whether or not the implementation should use overscan,
-                                            * or crop away overscan.
-                                            */
-#define RETRO_ENVIRONMENT_GET_CAN_DUPE  3  /* bool * --
-                                            * Boolean value whether or not frontend supports frame duping,
-                                            * passing NULL to video frame callback.
-                                            */
+/**
+ * Requests the frontend to set the screen rotation.
+ *
+ * @param data[in] <tt>const unsigned*</tt>.
+ * Valid values are 0, 1, 2, and 3.
+ * These numbers respectively set the screen rotation to 0, 90, 180, and 270 degrees counter-clockwise.
+ * @returns \c true if the screen rotation was set successfully.
+ */
+#define RETRO_ENVIRONMENT_SET_ROTATION  1
 
-                                           /* Environ 4, 5 are no longer supported (GET_VARIABLE / SET_VARIABLES),
-                                            * and reserved to avoid possible ABI clash.
-                                            */
+/**
+ * Queries whether the core should use overscan or not.
+ *
+ * @param data[out] <tt>bool*</tt>.
+ * Set to \c true if the core should use overscan,
+ * \c false if it should be cropped away.
+ * @returns \c true if the query was successful.
+ * Does \em not indicate whether overscan should be used.
+ * @note As of 2019 this callback is considered deprecated in favor of
+ * using core options to manage overscan in a more nuanced, core-specific way.
+ */
+#define RETRO_ENVIRONMENT_GET_OVERSCAN  2
 
-#define RETRO_ENVIRONMENT_SET_MESSAGE   6  /* const struct retro_message * --
-                                            * Sets a message to be displayed in implementation-specific manner
-                                            * for a certain amount of 'frames'.
-                                            * Should not be used for trivial messages, which should simply be
-                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a
-                                            * fallback, stderr).
-                                            */
-#define RETRO_ENVIRONMENT_SHUTDOWN      7  /* N/A (NULL) --
-                                            * Requests the frontend to shutdown.
-                                            * Should only be used if game has a specific
-                                            * way to shutdown the game from a menu item or similar.
-                                            */
+/**
+ * Queries whether the frontend supports frame duping,
+ * in the form of passing \c NULL to the video frame callback.
+ *
+ * @param data[out] <tt>bool*</tt>. Set to \c true if the frontend supports frame duping.
+ * @returns \c true if the query was successful.
+ * @see retro_video_refresh_t
+ */
+#define RETRO_ENVIRONMENT_GET_CAN_DUPE  3
+
+/*
+ * Environ 4, 5 are no longer supported (GET_VARIABLE / SET_VARIABLES),
+ * and reserved to avoid possible ABI clash.
+ */
+
+/**
+ * @brief Displays a message in a frontend-specific manner
+ * for a certain amount of 'frames'.
+ *
+ * @par For trivial messages, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr instead.
+ *
+ * @example
+ * \code
+ * void set_message_example(void)
+ * {
+ *    struct retro_message msg;
+ *    msg.frames = 60 * 5; // 5 seconds
+ *    msg.msg = "Hello world!";
+ *
+ *    environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+ * }
+ * \endcode
+ *
+ * @param data[in] <tt>const struct retro_message*</tt>.
+ * @see retro_message
+ * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
+ */
+#define RETRO_ENVIRONMENT_SET_MESSAGE   6
+
+/**
+ * Requests the frontend to shutdown the core.
+ * Should only be used if the core can exit on its own,
+ * such as from a menu item in a game
+ * or an emulated power-off in an emulator.
+ *
+ * @param data Ignored.
+ * @returns \c true if the frontend accepts the request.
+ */
+#define RETRO_ENVIRONMENT_SHUTDOWN      7
+
+/**
+ * Gives a hint to the frontend of how demanding this core is on the system.
+ * For example, reporting a level of 2 means that
+ * this implementation should run decently on frontends
+ * of level 2 and above.
+ *
+ * It can be used by the frontend to potentially warn
+ * about too demanding implementations.
+ *
+ * The levels are "floating".
+ *
+ * This function can be called on a per-game basis,
+ * as a core may have different demands for different games or settings.
+ * If called, it should be called in retro_load_game().
+ * @param data[in] <tt>const unsigned*</tt>.
+*/
 #define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL 8
-                                           /* const unsigned * --
-                                            * Gives a hint to the frontend how demanding this implementation
-                                            * is on a system. E.g. reporting a level of 2 means
-                                            * this implementation should run decently on all frontends
-                                            * of level 2 and up.
-                                            *
-                                            * It can be used by the frontend to potentially warn
-                                            * about too demanding implementations.
-                                            *
-                                            * The levels are "floating".
-                                            *
-                                            * This function can be called on a per-game basis,
-                                            * as certain games an implementation can play might be
-                                            * particularly demanding.
-                                            * If called, it should be called in retro_load_game().
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY 9
                                            /* const char ** --
                                             * Returns the "system" directory of the frontend.
