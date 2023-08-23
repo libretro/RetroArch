@@ -113,8 +113,8 @@ int preprocess(rc_richpresence_t* richpresence)
 
             state_changed = new_value.value.u32 != last_display_part->value.value.u32
                     || new_value.value.i32 != last_display_part->value.value.i32
-                    || new_value.value.f32 != last_display_part->value.value.f32
-                    || new_value.type != last_display_part->value.type;
+                    || new_value.value.f32 != last_display_part->value.value.f32/*
+                    || new_value.type != last_display_part->value.type*/;
             break;
         }
         
