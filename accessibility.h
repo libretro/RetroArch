@@ -48,6 +48,11 @@ typedef struct
    /* Timestamp of the last translation request */
    retro_time_t last_call;
 
+   #ifdef HAVE_THREADS
+   /* Necessary because last_image is manipulated by task handlers */
+   slock_t *image_lock;
+   #endif
+
    /* Frame captured during the last call to the translation service */
    uint8_t *last_image;
    int last_image_size;
@@ -57,12 +62,6 @@ typedef struct
    
    /* Text-to-speech narrator override flag */
    bool enabled;
-   
-#ifdef HAVE_THREADS
-   /* Necessary because last_image is manipulated by task handlers */
-   slock_t *image_lock;
-#endif
-   
 } access_state_t;
 
 bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enabled);

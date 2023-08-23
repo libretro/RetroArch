@@ -1533,6 +1533,7 @@ static rjsonwriter_t* build_request_json(
 static void build_request_url(char *buffer, size_t length, settings_t *settings)
 {
    char token[2];
+   size_t _len;
    bool poke_supported              = false;
    unsigned service_source_lang     = settings->uints.ai_service_source_lang;
    unsigned service_target_lang     = settings->uints.ai_service_target_lang;
@@ -1560,9 +1561,9 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_source))
       {
-         strlcat(buffer, token, length);
-         strlcat(buffer, "source_lang=", length);
-         strlcat(buffer, lang_source, length);
+         _len  = strlcpy(buffer, token, length);
+         _len += strlcpy(buffer + _len, "source_lang=", length - _len);
+         strlcpy(buffer + _len, lang_source, length - _len);
          token[0] = '&';
       }
    }
@@ -1574,45 +1575,45 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_target))
       {
-         strlcat(buffer, token, length);
-         strlcat(buffer, "target_lang=", length);
-         strlcat(buffer, lang_target, length);
+         _len  = strlcpy(buffer, token, length);
+         _len += strlcpy(buffer + _len, "target_lang=", length - _len);
+         strlcpy(buffer + _len, lang_target, length - _len);
          token[0] = '&';
       }
    }
    
-   strlcat(buffer, token, length);
-   strlcat(buffer, "output=", length);
+   _len  = strlcpy(buffer, token, length);
+   _len += strlcpy(buffer + _len, "output=", length - _len);
    switch (ai_service_mode)
    {
       case 0: /* Image Mode */
-         strlcat(buffer, "image,bmp", length);
+         strlcpy(buffer + _len, "image,bmp", length - _len);
 #ifdef HAVE_RPNG
-         strlcat(buffer, ",png", length);         
+         _len += strlcpy(buffer + _len, ",png", length - _len);  
          if (poke_supported)
-            strlcat(buffer, ",png-a", length);
+            strlcpy(buffer + _len, ",png-a", length - _len);
 #endif
          break;
          
       case 1: /* Speech Mode */
-         strlcat(buffer, "sound,wav", length);
+         strlcpy(buffer + _len, "sound,wav", length - _len);
          break;
       
       case 2: /* Narrator Mode */
-         strlcat(buffer, "text", length);
+         strlcpy(buffer + _len, "text", length - _len);
          break;
          
       case 3: /* Text Mode */
       case 4: /* Text + Narrator */
-         strlcat(buffer, "text,subs", length);
+         strlcpy(buffer + _len, "text,subs", length - _len);
          break;
          
       case 5: /* Image + Narrator */
-         strlcat(buffer, "text,image,bmp", length);
+         strlcpy(buffer + _len, "text,image,bmp", length - _len);
 #ifdef HAVE_RPNG
-         strlcat(buffer, ",png", length);         
+         _len += strlcpy(buffer + _len, ",png", length - _len);  
          if (poke_supported)
-            strlcat(buffer, ",png-a", length);
+            strlcpy(buffer + _len, ",png-a", length - _len);
 #endif
          break;
    }
