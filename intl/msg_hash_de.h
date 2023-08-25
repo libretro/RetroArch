@@ -9182,7 +9182,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
-   "Die akuelle Konfiguration als eine neue Override-Datei speichern."
+   "Die aktuelle Konfiguration als eine neue Override-Datei speichern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
