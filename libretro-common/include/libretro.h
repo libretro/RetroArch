@@ -527,7 +527,8 @@ enum retro_mod
  * Queries whether the frontend supports frame duping,
  * in the form of passing \c NULL to the video frame callback.
  *
- * @param data[out] <tt>bool*</tt>. Set to \c true if the frontend supports frame duping.
+ * @param data[out] <tt>bool*</tt>.
+ * Set to \c true if the frontend supports frame duping.
  * @returns \c true if the query was successful.
  * @see retro_video_refresh_t
  */
@@ -545,7 +546,7 @@ enum retro_mod
  * @par For trivial messages, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr instead.
  *
  * @example
- * \code
+ * \code{.c}
  * void set_message_example(void)
  * {
  *    struct retro_message msg;
@@ -586,68 +587,110 @@ enum retro_mod
  *
  * This function can be called on a per-game basis,
  * as a core may have different demands for different games or settings.
- * If called, it should be called in retro_load_game().
+ * If called, it should be called in <tt>retro_load_game()</tt>.
  * @param data[in] <tt>const unsigned*</tt>.
 */
 #define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL 8
 
+/**
+ * Returns the path to the frontend's system directory,
+ * which can be used to store system-specific configuration
+ * such as BIOS files or cached data.
+ *
+ * @param data[out] <tt>const char**</tt>.
+ * Pointer to the \c char* in which the system directory will be saved.
+ * The string is managed by the frontend and must not be modified or freed by the core.
+ * May be \c NULL if no system directory is defined,
+ * in which case the core should find an alternative directory.
+ * @return \c true if the query was successful,
+ * even if the value returned in \c data is \c NULL.
+ * @note Historically, some cores would use this folder for save data such as memory cards or SRAM.
+ * This is now discouraged in favor of \c RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY.
+ * @see RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
+ */
 #define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY 9
-                                           /* const char ** --
-                                            * Returns the "system" directory of the frontend.
-                                            * This directory can be used to store system specific
-                                            * content such as BIOSes, configuration data, etc.
-                                            * The returned value can be NULL.
-                                            * If so, no such directory is defined,
-                                            * and it's up to the implementation to find a suitable directory.
-                                            *
-                                            * NOTE: Some cores used this folder also for "save" data such as
-                                            * memory cards, etc, for lack of a better place to put it.
-                                            * This is now discouraged, and if possible, cores should try to
-                                            * use the new GET_SAVE_DIRECTORY.
-                                            */
+
+/**
+ * Sets the internal pixel format used by the frontend.
+ * The default pixel format is \c RETRO_PIXEL_FORMAT_0RGB1555 for compatibility reasons,
+ * although it's considered deprecated and shouldn't be used by new code.
+ *
+ * @param data[in] <tt>const enum retro_pixel_format *</tt>.
+ * Pointer to the pixel format to use.
+ * @returns \c true if the pixel format was set successfully,
+ * \c false if it's not supported.
+ * @note This function should be called inside \c retro_load_game()
+ * or <tt>retro_get_system_av_info()</tt>.
+ * @see retro_pixel_format
+ */
 #define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT 10
-                                           /* const enum retro_pixel_format * --
-                                            * Sets the internal pixel format used by the implementation.
-                                            * The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
-                                            * This pixel format however, is deprecated (see enum retro_pixel_format).
-                                            * If the call returns false, the frontend does not support this pixel
-                                            * format.
-                                            *
-                                            * This function should be called inside retro_load_game() or
-                                            * retro_get_system_av_info().
-                                            */
+
+/**
+ * Sets an array of input descriptors for the frontend
+ * to present to the user for configuring the core's controls.
+ *
+ * This function can be called at any time,
+ * preferably early in the core's life cycle.
+ * Ideally, no later than <tt>retro_load_game()<tt>.
+ *
+ * @param data[in] <tt>const struct retro_input_descriptor *</tt>.
+ * An array of input descriptors terminated by one whose
+ * \c retro_input_descriptor::description field is set to <tt>NULL</tt>.
+ * Can include game-specific controls.
+ * @return \c true if the environment call is recognized.
+ * @see retro_input_descriptor
+ */
 #define RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS 11
-                                           /* const struct retro_input_descriptor * --
-                                            * Sets an array of retro_input_descriptors.
-                                            * It is up to the frontend to present this in a usable way.
-                                            * The array is terminated by retro_input_descriptor::description
-                                            * being set to NULL.
-                                            * This function can be called at any time, but it is recommended
-                                            * to call it as early as possible.
-                                            */
+
+/**
+ * Sets a callback function used to notify the core about keyboard events.
+ * This should only be used for cores that specifically need keyboard input,
+ * such as for home computer emulators or games with text entry.
+ *
+ * @param data[in] <tt>const struct retro_keyboard_callback *</tt>.
+ * Pointer to the callback function.
+ * @return \c true if the environment call is recognized.
+ * @see retro_keyboard_callback
+ * @see retro_keyboard_event_t
+ */
 #define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
-                                           /* const struct retro_keyboard_callback * --
-                                            * Sets a callback function used to notify core about keyboard events.
-                                            */
+
+/**
+ * Sets an interface that the frontend can use to insert and remove
+ * disk images from the emulated drive.
+ * This is intended for games that span multiple disks that are
+ * manually swapped out by the user (e.g. PSX).
+ * @param data[in] <tt>const struct retro_disk_control_callback *</tt>.
+ * Pointer to the callback functions to use.
+ * @see retro_disk_control_callback
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ */
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE 13
-                                           /* const struct retro_disk_control_callback * --
-                                            * Sets an interface which frontend can use to eject and insert
-                                            * disk images.
-                                            * This is used for games which consist of multiple images and
-                                            * must be manually swapped out by the user (e.g. PSX).
-                                            */
+
+/**
+ * Requests that a frontend enable a particular hardware rendering API.
+ *
+ * If successful, cores will be able to render to a
+ * frontend-provided framebuffer.
+ * The framebuffer will be at least as large as
+ * the maximum dimensions provided in <tt>retro_get_system_av_info</tt>.
+ *
+ * @param data[in, out] <tt>struct retro_hw_render_callback *</tt>.
+ * Pointer to the hardware render callback struct.
+ * Used to define callbacks for the hardware-rendering life cycle,
+ * as well as to request a particular rendering API.
+ * @return \c true if the environment call is recognized
+ * and the requested rendering API is supported.
+ * \c false if \c data is \c NULL
+ * or the frontend can't provide the requested rendering API.
+ * @see retro_hw_render_callback
+ * @see RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER
+ * @note Should be called in <tt>retro_load_game()</tt>.
+ * @note If HW rendering is used, pass only \c RETRO_HW_FRAME_BUFFER_VALID or
+ * \c NULL to <tt>retro_video_refresh_t</tt>.
+ */
 #define RETRO_ENVIRONMENT_SET_HW_RENDER 14
-                                           /* struct retro_hw_render_callback * --
-                                            * Sets an interface to let a libretro core render with
-                                            * hardware acceleration.
-                                            * Should be called in retro_load_game().
-                                            * If successful, libretro cores will be able to render to a
-                                            * frontend-provided framebuffer.
-                                            * The size of this framebuffer will be at least as large as
-                                            * max_width/max_height provided in get_av_info().
-                                            * If HW rendering is used, pass only RETRO_HW_FRAME_BUFFER_VALID or
-                                            * NULL to retro_video_refresh_t.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_VARIABLE 15
                                            /* struct retro_variable * --
                                             * Interface to acquire user-defined information from environment
@@ -832,7 +875,12 @@ enum retro_mod
                                             * location-based information from the host device,
                                             * such as current latitude / longitude.
                                             */
-#define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30 /* Old name, kept for compatibility. */
+
+/**
+ * An obsolete alias to \c RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY kept for compatibility.
+ * @see RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY
+ **/
+#define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
 #define RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY 30
                                            /* const char ** --
                                             * Returns the "core assets" directory of the frontend.
