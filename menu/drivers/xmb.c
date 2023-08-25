@@ -70,11 +70,12 @@
 
 #define XMB_TAB_MAX_LENGTH 255
 
-#ifndef XMB_DELAY
 #define XMB_DELAY 166.66667f
-#endif
 
-#define XMB_THUMBNAIL_STREAM_DELAY 5 * 16.66667f
+#define XMB_THUMBNAIL_STREAM_DELAY 16.66667f * 5
+
+#define XMB_EASING_ALPHA EASING_OUT_CIRC
+#define XMB_EASING_XY    EASING_OUT_QUAD
 
 /* Specifies minimum period (in usec) between
  * tab switch events when input repeat is
@@ -1515,6 +1516,12 @@ static void xmb_selection_pointer_changed(
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_st->selection_ptr;
+   settings_t       *settings = config_get_ptr();
+   unsigned menu_xmb_animation_move_up_down
+                              = settings->uints.menu_xmb_animation_move_up_down;
+
+   if (menu_xmb_animation_move_up_down > 1)
+      allow_animations = false;
 
    if (!xmb)
       return;
@@ -1638,9 +1645,9 @@ static void xmb_selection_pointer_changed(
          xmb_update_savestate_thumbnail_image(xmb);
       }
 
-      if (     (!allow_animations)
-            || (real_iy < -threshold
-               || real_iy > height+threshold))
+      if (     !allow_animations
+            || real_iy < -threshold
+            || real_iy > height + threshold)
       {
          node->alpha = node->label_alpha = ia;
          node->y     = iy;
@@ -1648,9 +1655,6 @@ static void xmb_selection_pointer_changed(
       }
       else
       {
-         settings_t                     *settings = config_get_ptr();
-         unsigned menu_xmb_animation_move_up_down = settings->uints.menu_xmb_animation_move_up_down;
-
          /* Move up/down animation */
          gfx_animation_ctx_entry_t anim_entry;
 
@@ -1694,8 +1698,10 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   int        threshold = xmb->icon_size    * 10;
-   size_t           end = list ? list->size : 0;
+   int        threshold           = xmb->icon_size    * 10;
+   size_t           end           = list ? list->size : 0;
+   settings_t           *settings = config_get_ptr();
+   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
    video_driver_get_size(NULL, &height);
 
@@ -1715,7 +1721,9 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 
       real_y = node->y + xmb->margins_screen_top;
 
-      if (real_y < -threshold || real_y > height + threshold)
+      if (     !menu_horizontal_animation
+            || real_y < -threshold
+            || real_y > height + threshold)
       {
          node->alpha       = ia;
          node->label_alpha = 0;
@@ -1725,10 +1733,12 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       {
          gfx_animation_ctx_entry_t anim_entry;
 
+         node->alpha /= 5;
+
          anim_entry.duration     = XMB_DELAY;
          anim_entry.target_value = ia;
          anim_entry.subject      = &node->alpha;
-         anim_entry.easing_enum  = EASING_OUT_QUAD;
+         anim_entry.easing_enum  = XMB_EASING_ALPHA;
          anim_entry.tag          = (uintptr_t)list;
          anim_entry.cb           = NULL;
 
@@ -1741,6 +1751,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
 
          anim_entry.target_value = xmb->icon_size * dir * -2;
          anim_entry.subject      = &node->x;
+         anim_entry.easing_enum  = XMB_EASING_XY;
 
          gfx_animation_push(&anim_entry);
       }
@@ -1756,9 +1767,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    size_t end                      = list ? list->size : 0;
    settings_t *settings            = config_get_ptr();
    struct menu_state *menu_st      = menu_state_get_ptr();
-   bool savestate_thumbnail_enable = settings
-         ? settings->bools.savestate_thumbnail_enable
-         : false;
+   bool menu_horizontal_animation  = settings->bools.menu_horizontal_animation;
+   bool savestate_thumbnail_enable = settings->bools.savestate_thumbnail_enable;
 
    video_driver_get_size(NULL, &height);
 
@@ -1797,7 +1807,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       else
          ia          = xmb->items_passive_alpha;
 
-      if (real_y < -threshold || real_y > height+threshold)
+      if (     !menu_horizontal_animation
+            || real_y < -threshold
+            || real_y > height + threshold)
       {
          node->alpha = node->label_alpha = ia;
          node->x     = 0;
@@ -1806,10 +1818,12 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       {
          gfx_animation_ctx_entry_t anim_entry;
 
+         node->alpha /= 5;
+
          anim_entry.duration     = XMB_DELAY;
          anim_entry.target_value = ia;
          anim_entry.subject      = &node->alpha;
-         anim_entry.easing_enum  = EASING_OUT_QUAD;
+         anim_entry.easing_enum  = XMB_EASING_ALPHA;
          anim_entry.tag          = (uintptr_t)list;
          anim_entry.cb           = NULL;
 
@@ -1821,6 +1835,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
          anim_entry.target_value = 0;
          anim_entry.subject      = &node->x;
+         anim_entry.easing_enum  = XMB_EASING_XY;
 
          gfx_animation_push(&anim_entry);
       }
@@ -1851,6 +1866,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    {
       /* This shows savestate thumbnail after
        * opening savestate submenu */
+      xmb->skip_thumbnail_reset = false;
       xmb_update_savestate_thumbnail_path(xmb, (unsigned)current);
       xmb_update_savestate_thumbnail_image(xmb);
    }
@@ -1896,11 +1912,22 @@ static void xmb_push_animations(xmb_node_t *node,
       uintptr_t tag, float ia, float ix)
 {
    gfx_animation_ctx_entry_t anim_entry;
+   settings_t *settings           = config_get_ptr();
+   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
+
+   if (!menu_horizontal_animation)
+   {
+      node->alpha = node->label_alpha = ia;
+      node->x     = ix;
+      return;
+   }
+
+   node->alpha /= 5;
 
    anim_entry.duration     = XMB_DELAY;
    anim_entry.target_value = ia;
    anim_entry.subject      = &node->alpha;
-   anim_entry.easing_enum  = EASING_OUT_QUAD;
+   anim_entry.easing_enum  = XMB_EASING_ALPHA;
    anim_entry.tag          = tag;
    anim_entry.cb           = NULL;
 
@@ -1912,6 +1939,7 @@ static void xmb_push_animations(xmb_node_t *node,
 
    anim_entry.target_value = ix;
    anim_entry.subject      = &node->x;
+   anim_entry.easing_enum  = XMB_EASING_XY;
 
    gfx_animation_push(&anim_entry);
 }
@@ -2071,11 +2099,12 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned j;
-   settings_t *settings = config_get_ptr();
-   size_t list_size     = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + xmb->system_tab_end;
+   settings_t *settings           = config_get_ptr();
+   size_t list_size               = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
+         + xmb->system_tab_end;
+   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
    unsigned xmb_animation_horizontal_highlight =
-      settings->uints.menu_xmb_animation_horizontal_highlight;
+         settings->uints.menu_xmb_animation_horizontal_highlight;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -2093,11 +2122,15 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
          iz              = xmb->categories_active_zoom;
       }
 
-      if (!xmb->allow_horizontal_animation)
-         return;
+      if (     !xmb->allow_horizontal_animation
+            || !menu_horizontal_animation)
+      {
+         node->alpha = ia;
+         node->zoom  = iz;
+         continue;
+      }
 
-      /* Horizontal icon animation */
-
+      /* Horizontal icon highlight animation */
       entry.target_value = ia;
       entry.subject      = &node->alpha;
       /* TODO/FIXME - integer conversion resulted in change of sign */
@@ -2179,17 +2212,26 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_horizontal_list(xmb);
 
-   anim_entry.duration     = XMB_DELAY;
-   anim_entry.target_value = xmb->icon_spacing_horizontal
-      * -(float)xmb->categories_selection_ptr;
-   anim_entry.subject      = &xmb->categories_x_pos;
-   anim_entry.easing_enum  = EASING_OUT_QUAD;
-   /* TODO/FIXME - integer conversion resulted in change of sign */
-   anim_entry.tag          = -1;
-   anim_entry.cb           = NULL;
+   /* Horizontal tab icon scroll */
+   if (menu_horizontal_animation)
+   {
+      anim_entry.duration     = XMB_DELAY;
+      anim_entry.target_value = xmb->icon_spacing_horizontal
+         * -(float)xmb->categories_selection_ptr;
+      anim_entry.subject      = &xmb->categories_x_pos;
+      anim_entry.easing_enum  = XMB_EASING_XY;
+      /* TODO/FIXME - integer conversion resulted in change of sign */
+      anim_entry.tag          = -1;
+      anim_entry.cb           = NULL;
 
-   if (anim_entry.subject)
-      gfx_animation_push(&anim_entry);
+      if (anim_entry.subject)
+         gfx_animation_push(&anim_entry);
+   }
+   else
+   {
+      xmb->categories_x_pos = xmb->icon_spacing_horizontal
+         * -(float)xmb->categories_selection_ptr;
+   }
 
    dir                     = -1;
    if (    xmb->categories_selection_ptr
@@ -2218,7 +2260,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    }
 }
 
-static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
+static void xmb_list_open_horizontal_list(xmb_handle_t *xmb, bool animate)
 {
    unsigned j;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
@@ -2238,16 +2280,21 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
       else if (xmb->depth <= 1)
          ia                   = xmb->categories_passive_alpha;
 
-      anim_entry.duration     = XMB_DELAY;
-      anim_entry.target_value = ia;
-      anim_entry.subject      = &node->alpha;
-      anim_entry.easing_enum  = EASING_OUT_QUAD;
-      /* TODO/FIXME - integer conversion resulted in change of sign */
-      anim_entry.tag          = -1;
-      anim_entry.cb           = NULL;
+      if (animate)
+      {
+         anim_entry.duration     = XMB_DELAY;
+         anim_entry.target_value = ia;
+         anim_entry.subject      = &node->alpha;
+         anim_entry.easing_enum  = XMB_EASING_ALPHA;
+         /* TODO/FIXME - integer conversion resulted in change of sign */
+         anim_entry.tag          = -1;
+         anim_entry.cb           = NULL;
 
-      if (anim_entry.subject)
-         gfx_animation_push(&anim_entry);
+         if (anim_entry.subject)
+            gfx_animation_push(&anim_entry);
+      }
+      else
+         node->alpha = ia;
    }
 }
 
@@ -2449,13 +2496,13 @@ static void xmb_context_reset_horizontal_list(
          len                = fill_pathname_base(
                sysname, path, sizeof(sysname));
          /* Manually strip the extension (and dot) from sysname */
-            sysname[len-4]  =
-            sysname[len-3]  =
-            sysname[len-2]  =
-            sysname[len-1]  = '\0';
+         sysname[len-4]     =
+         sysname[len-3]     =
+         sysname[len-2]     =
+         sysname[len-1]     = '\0';
          len                = fill_pathname_join_special(
-			 texturepath, iconpath, sysname,
-			 sizeof(texturepath));
+               texturepath, iconpath, sysname,
+               sizeof(texturepath));
          texturepath[  len] = '.';
          texturepath[++len] = 'p';
          texturepath[++len] = 'n';
@@ -2463,16 +2510,15 @@ static void xmb_context_reset_horizontal_list(
          texturepath[++len] = '\0';
 
          /* If the playlist icon doesn't exist return default */
-
          if (!path_is_valid(texturepath))
          {
-               len = fill_pathname_join_special(texturepath, iconpath, "default",
-               sizeof(texturepath));
-               texturepath[  len] = '.';
-               texturepath[++len] = 'p';
-               texturepath[++len] = 'n';
-               texturepath[++len] = 'g';
-               texturepath[++len] = '\0';
+            len = fill_pathname_join_special(texturepath, iconpath, "default",
+            sizeof(texturepath));
+            texturepath[  len] = '.';
+            texturepath[++len] = 'p';
+            texturepath[++len] = 'n';
+            texturepath[++len] = 'g';
+            texturepath[++len] = '\0';
          }
 
          ti.width         = 0;
@@ -2593,15 +2639,15 @@ static void xmb_list_open(xmb_handle_t *xmb)
 {
    gfx_animation_ctx_entry_t entry;
 
-   settings_t *settings       = config_get_ptr();
-   unsigned
-      menu_xmb_animation_opening_main_menu =
-      settings->uints.menu_xmb_animation_opening_main_menu;
-   int                    dir = 0;
-   struct menu_state *menu_st = menu_state_get_ptr();
-   menu_list_t *menu_list     = menu_st->entries.list;
-   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
-   size_t selection           = menu_st->selection_ptr;
+   settings_t *settings           = config_get_ptr();
+   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
+   unsigned menu_xmb_animation_opening_main_menu =
+         settings->uints.menu_xmb_animation_opening_main_menu;
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t selection               = menu_st->selection_ptr;
+   int                    dir     = 0;
 
    xmb->depth                 = (int)
       xmb_list_get_size(xmb, MENU_LIST_PLAIN);
@@ -2613,7 +2659,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    else
       return; /* If menu hasn't changed, do nothing */
 
-   xmb_list_open_horizontal_list(xmb);
+   xmb_list_open_horizontal_list(xmb, menu_horizontal_animation);
 
    xmb_list_open_old(xmb, &xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
@@ -2622,8 +2668,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
          dir, selection);
 
    /* Main Menu opening animation */
-
-   entry.target_value = xmb->icon_size * -(xmb->depth*2-2);
+   entry.target_value = xmb->icon_size * -(xmb->depth * 2 - 2);
    entry.subject      = &xmb->x;
    /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
@@ -2652,12 +2697,20 @@ static void xmb_list_open(xmb_handle_t *xmb)
    if (     xmb->depth == 1
          || xmb->depth == 2)
    {
-      gfx_animation_push(&entry);
+      if (menu_horizontal_animation)
+      {
+         gfx_animation_push(&entry);
 
-      entry.target_value = xmb->depth - 1;
-      entry.subject      = &xmb->textures_arrow_alpha;
+         entry.target_value = xmb->depth - 1;
+         entry.subject      = &xmb->textures_arrow_alpha;
 
-      gfx_animation_push(&entry);
+         gfx_animation_push(&entry);
+      }
+      else
+      {
+         xmb->x = xmb->icon_size * -(xmb->depth * 2 - 2);
+         xmb->textures_arrow_alpha = xmb->depth - 1;
+      }
    }
 
    xmb->old_depth = xmb->depth;
@@ -3866,7 +3919,7 @@ static int xmb_draw_item(
 
    if (menu_xmb_vertical_fade_factor)
    {
-      float min_alpha  = 0.1f;
+      float min_alpha  = 0.01f;
       float max_alpha  = (i == current)
          ? xmb->items_active_alpha
          : xmb->items_passive_alpha;
@@ -3877,7 +3930,7 @@ static int xmb_draw_item(
       float factor     = menu_xmb_vertical_fade_factor / 100.0f / icon_ratio;
 
       if (!xmb->use_ps3_layout)
-         scr_margin -= (xmb->margins_screen_top / 10);
+         scr_margin -= (icon_space / 8);
 
       /* Top */
       if (i < current)
@@ -3892,8 +3945,8 @@ static int xmb_draw_item(
       if (new_alpha > max_alpha)
          new_alpha = max_alpha;
 
-      /* Horizontal animation requires breathing room on x-axis */
-      if (node->x > (-icon_space * 2) && node->x < (icon_space * 2))
+      /* Avoid adjusting animating rows */
+      if (new_alpha < node->alpha || node->x == 0)
          node->alpha = node->label_alpha = new_alpha;
    }
 
@@ -4289,11 +4342,6 @@ static void xmb_draw_items(
 
    if (list == &xmb->selection_buf_old)
    {
-      xmb_node_t *node = (xmb_node_t*)list->list[current].userdata;
-
-      if (node && (uint8_t)(255 * node->alpha) == 0)
-         return;
-
       /* Draw only current item for "back" icon */
       first = (unsigned)current;
       last  = (unsigned)current;
@@ -4389,13 +4437,11 @@ static void xmb_hide_fullscreen_thumbnails(
       gfx_animation_ctx_entry_t animation_entry;
 
       /* Configure fade out animation */
-      animation_entry.easing_enum     = EASING_OUT_QUAD;
+      animation_entry.easing_enum     = XMB_EASING_ALPHA;
       animation_entry.tag             = alpha_tag;
-      animation_entry.duration        =
-         gfx_thumb_get_ptr()->fade_duration;
+      animation_entry.duration        = gfx_thumb_get_ptr()->fade_duration;
       animation_entry.target_value    = 0.0f;
-      animation_entry.subject         =
-         &xmb->fullscreen_thumbnail_alpha;
+      animation_entry.subject         = &xmb->fullscreen_thumbnail_alpha;
       animation_entry.cb              = NULL;
       animation_entry.userdata        = NULL;
 
@@ -4489,7 +4535,7 @@ static void xmb_show_fullscreen_thumbnails(
    if (animate)
    {
       /* Configure fade in animation */
-      animation_entry.easing_enum  = EASING_OUT_QUAD;
+      animation_entry.easing_enum  = XMB_EASING_ALPHA;
       animation_entry.tag          = alpha_tag;
       animation_entry.duration     = gfx_thumb_get_ptr()->fade_duration;
       animation_entry.target_value = 1.0f;
@@ -4575,22 +4621,24 @@ static enum menu_action xmb_parse_menu_entry_action(
              * > This is always true when scroll
              *   acceleration is greater than zero */
             size_t scroll_accel       = menu_st->scroll.acceleration;
-#ifdef HAVE_AUDIOMIXER
-	    settings_t *settings      = config_get_ptr();
-	    size_t category           = xmb->categories_selection_ptr;
-	    size_t list_size          = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
-	    /* We only want the scrolling sound to play if any of the following are true:
-	     * 1. Wraparound is enabled (since the category is guaranteed to change)
-	     * 2. We're scrolling right, but we aren't on the last category
-	     * 3. We're scrolling left, but we aren't on the first category */
-	    bool fail_condition       = ((action == MENU_ACTION_RIGHT)
-			    ? (category == list_size)
-			    : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
 
-	    if (((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY ||
-				    scroll_accel <= 0) && !fail_condition)
-		    audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
+#ifdef HAVE_AUDIOMIXER
+            settings_t *settings      = config_get_ptr();
+            size_t category           = xmb->categories_selection_ptr;
+            size_t list_size          = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
+            /* We only want the scrolling sound to play if any of the following are true:
+             * 1. Wraparound is enabled (since the category is guaranteed to change)
+             * 2. We're scrolling right, but we aren't on the last category
+             * 3. We're scrolling left, but we aren't on the first category */
+            bool fail_condition       = ((action == MENU_ACTION_RIGHT)
+                  ? (category == list_size)
+                  : (category == 0)) && !(settings->bools.menu_navigation_wraparound_enable);
+
+            if (     ((current_time - xmb->last_tab_switch_time) >= XMB_TAB_SWITCH_REPEAT_DELAY || scroll_accel <= 0)
+                  && !fail_condition)
+               audio_driver_mixer_play_scroll_sound(action == MENU_ACTION_RIGHT);
 #endif
+
             if (scroll_accel > 0)
             {
                /* Ignore input action if tab switch period
@@ -4663,6 +4711,10 @@ static enum menu_action xmb_parse_menu_entry_action(
                && xmb_fullscreen_thumbnails_available(xmb, menu_st)
                && xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr) == XMB_SYSTEM_TAB_MAIN)
          {
+            /* Allow launch if already using "imageviewer" core */
+            if (string_is_equal(runloop_state_get_ptr()->system.info.library_name, "image display"))
+               break;
+
             if (xmb->show_fullscreen_thumbnails)
                xmb_hide_fullscreen_thumbnails(xmb, true);
             else
@@ -5969,7 +6021,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             /* Left thumbnail, left side */
             if (show_left_thumbnail)
             {
-               float y_offset            = ((xmb->depth != 1) ? 1.2f : 0.0f) * xmb->icon_size;
+               float y_offset            = xmb->icon_size * 1.2f;
                float thumb_width         = left_thumbnail_margin_width;
                float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - y_offset;
                float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
@@ -6184,8 +6236,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
-   /* Horizontal tab icons only needed on root depth */
-   if (!xmb->assets_missing && xmb->depth == 1)
+   if (!xmb->assets_missing)
    {
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
@@ -6444,7 +6495,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->icon_spacing_horizontal  = 200.0          * scale_factor;
    xmb->icon_spacing_vertical    = 64.0           * scale_factor;
 
-   xmb->margins_screen_top       = (256 + 32)     * scale_factor;
+   xmb->margins_screen_top       = (256 + 16)     * scale_factor;
    xmb->margins_screen_left      = 336.0          * scale_factor;
 
    xmb->margins_title_left       = (margins_title * scale_factor) + (4 * scale_factor) + (margins_title_h_offset * scale_factor);
@@ -6464,7 +6515,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    float scale_factor            = xmb->last_scale_factor;
    float margins_title           = xmb->margins_title;
    float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
-   unsigned new_font_size        = 28.0           * scale_factor;
+   unsigned new_font_size        = 24.0           * scale_factor;
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;
@@ -6497,9 +6548,9 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->cursor_size              = 64.0           * scale_factor;
    xmb->icon_size                = 128.0          * scale_factor;
    xmb->icon_spacing_horizontal  = 250.0          * scale_factor;
-   xmb->icon_spacing_vertical    = 108.0          * scale_factor;
+   xmb->icon_spacing_vertical    = 96.0           * scale_factor;
 
-   xmb->margins_screen_top       = (256 + 32)     * scale_factor;
+   xmb->margins_screen_top       = (256 + 16)     * scale_factor;
    xmb->margins_screen_left      = 136.0          * scale_factor;
 
    xmb->margins_title_left       = (margins_title * scale_factor) + (4 * scale_factor) + (margins_title_h_offset * scale_factor);
@@ -6704,7 +6755,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->textures_arrow_alpha          = 0;
    xmb->depth                         = 1;
    xmb->old_depth                     = 1;
-   xmb->alpha                         = 0;
+   xmb->alpha                         = 1.0f;
 
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
@@ -7574,14 +7625,13 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection               = menu_st->selection_ptr;
    settings_t *settings           = config_get_ptr();
-   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
    if (!xmb)
       return;
 
-   /* Check whether to enable the horizontal animation. */
-   if (     menu_horizontal_animation
-         && xmb->allow_horizontal_animation)
+   /* Check whether to enable the horizontal animation.
+    * Deep copy required for 'previous' icon. */
+   if (xmb->allow_horizontal_animation)
    {
       unsigned first  = 0, last = 0;
       unsigned height = 0;
@@ -7604,7 +7654,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       first                   = 0;
    }
    else
-      xmb->selection_ptr_old = 0;
+      xmb->selection_ptr_old = selection;
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + xmb->system_tab_end;
@@ -7763,20 +7813,11 @@ static void xmb_context_destroy(void *data)
 static void xmb_toggle(void *userdata, bool menu_on)
 {
    gfx_animation_ctx_entry_t entry;
-   bool tmp                   = false;
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
    struct menu_state *menu_st = menu_state_get_ptr();
 
-   if (!xmb)
+   if (!xmb || !menu_on)
       return;
-
-   xmb->depth                 = (int)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-
-   if (!menu_on)
-   {
-      xmb->alpha = 0;
-      return;
-   }
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
@@ -7789,22 +7830,10 @@ static void xmb_toggle(void *userdata, bool menu_on)
          xmb->fullscreen_thumbnails_available = false;
    }
 
-   entry.duration     = XMB_DELAY * 2;
-   entry.target_value = 1.0f;
-   entry.subject      = &xmb->alpha;
-   entry.easing_enum  = EASING_OUT_QUAD;
-   /* TODO/FIXME - integer conversion resulted in change of sign */
-   entry.tag          = -1;
-   entry.cb           = NULL;
-
-   gfx_animation_push(&entry);
-
-   tmp = !MENU_ENTRIES_NEEDS_REFRESH(menu_st);
-
-   if (tmp)
-      menu_st->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
+   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
+      menu_st->flags                 &=  ~MENU_ST_FLAG_PREVENT_POPULATE;
    else
-      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+      menu_st->flags                 |=   MENU_ST_FLAG_PREVENT_POPULATE;
 
    xmb_toggle_horizontal_list(xmb);
 }

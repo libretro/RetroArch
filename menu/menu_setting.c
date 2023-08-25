@@ -4067,6 +4067,9 @@ static void setting_get_string_representation_uint_menu_xmb_animation_move_up_do
       case 1:
          strlcpy(s, "Easing Out Expo", len);
          break;
+      case 2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+         break;
    }
 }
 
@@ -17381,7 +17384,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_menu_xmb_animation_move_up_down;
-            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
             CONFIG_UINT(
