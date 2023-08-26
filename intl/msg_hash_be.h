@@ -80,12 +80,16 @@ MSG_HASH(
    "Загрузіць дыск"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Загружае фізічны медыядыск. Спачатку выберыце адпаведнае дыску ядро («Загрузіць ядро»)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "Стварыць дамп дыска"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Стварыць дамп медыя дыска ва ўнутраным сховішчы. Ён будзе захаваны як файл вобразу."
+   "Стварае дамп медыядыска ва ўнутраным сховішчы. Ён будзе захаваны як файл вобразу."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -120,6 +124,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    "Адключыць рэжым кіёска (патрабуецца перазапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Паказаць усе адпаведныя канфігурацыі налады."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -262,6 +270,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
    "Агляд"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   "Агляд усяго адпаведнага базе даных змесціва праз інтэрфейс пошуку па катэгорыям."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -292,6 +304,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Пампавальнік змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Сцягвае вольнае змесціва для выбранага ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
