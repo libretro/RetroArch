@@ -13,19 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __WEBHOOKS_H
-#define __WEBHOOKS_H
+#ifndef __WEBHOOKS_PROGRESS_TRACKER_H
+#define __WEBHOOKS_PROGRESS_TRACKER_H
 
-#include <stdint.h>
-#include <stdlib.h>
+int wpt_process_frame(rc_runtime_t* runtime);
 
-#include "cheevos_client.h"
-#include "rc_api_request.h"
-
-#include "webhooks_game.h"
-
-void webhooks_send_presence();
-
-void webhooks_send_game_event(int game_id, game_event_t game_event);
-
-#endif /* __WEBHOOKS_H */
+#endif /* __WEBHOOKS_PROGRESS_TRACKER_H */

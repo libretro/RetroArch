@@ -171,6 +171,8 @@
 #include "cheevos/cheevos_menu.h"
 #endif
 
+#include "webhooks/webhooks.h"
+
 #ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #include "network/netplay/netplay_private.h"
@@ -7103,6 +7105,9 @@ int runloop_iterate(void)
    if (cheevos_enable)
       rcheevos_test();
 #endif
+
+  webhooks_process_frame();
+
 #ifdef HAVE_CHEATS
    cheat_manager_apply_retro_cheats();
 #endif

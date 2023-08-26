@@ -55,9 +55,6 @@
 #include "cheevos_client.h"
 #include "cheevos_menu.h"
 #include "cheevos_locals.h"
-#include "webhooks.h"
-#include "webhooks_oauth.h"
-#include "webhooks_game.h"
 
 #include "../network/netplay/netplay.h"
 
@@ -780,9 +777,7 @@ bool rcheevos_unload(void)
 {
    settings_t* settings  = config_get_ptr();
 
-   webhooks_send_game_event(rcheevos_locals.game.id, STOPPED);
-  
-   /* Immediately mark the game as unloaded 
+   /* Immediately mark the game as unloaded
       so the ping thread will terminate normally */
    rcheevos_locals.game.id         = -1;
    rcheevos_locals.game.console_id = 0;
@@ -882,7 +877,7 @@ bool rcheevos_unload(void)
 
    rc_runtime_destroy(&rcheevos_locals.runtime);
 
-   /* If the config-level token has been cleared, 
+   /* If the config-level token has been cleared,
     * we need to re-login on loading the next game */
    if (!settings->arrays.cheevos_token[0])
       rcheevos_locals.token[0]                  = '\0';
@@ -894,7 +889,7 @@ bool rcheevos_unload(void)
 static void rcheevos_toggle_hardcore_achievements(
       rcheevos_locals_t *locals)
 {
-   const unsigned active_mask  = 
+   const unsigned active_mask  =
       RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE | RCHEEVOS_ACTIVE_UNSUPPORTED;
    rcheevos_racheevo_t* cheevo = locals->game.achievements;
    rcheevos_racheevo_t* stop   = cheevo + locals->game.achievement_count;
@@ -961,7 +956,7 @@ static void rcheevos_activate_leaderboards(void)
 static void rcheevos_deactivate_leaderboards(void)
 {
    rcheevos_ralboard_t* lboard = rcheevos_locals.game.leaderboards;
-   rcheevos_ralboard_t* stop   = lboard + 
+   rcheevos_ralboard_t* stop   = lboard +
       rcheevos_locals.game.leaderboard_count;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -1131,8 +1126,8 @@ void rcheevos_hardcore_enabled_changed(void)
     * (i.e. cheevos_enable, hardcore_mode_enable) to synchronize the internal state to the configs.
     * also called when a game is first loaded to synchronize the internal state to the configs. */
    const settings_t* settings = config_get_ptr();
-   const bool enabled         = settings 
-      && settings->bools.cheevos_enable 
+   const bool enabled         = settings
+      && settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable;
 
    if (enabled != rcheevos_locals.hardcore_active)
@@ -1156,10 +1151,10 @@ void rcheevos_hardcore_enabled_changed(void)
 void rcheevos_validate_config_settings(void)
 {
    int i;
-   const rc_disallowed_setting_t 
+   const rc_disallowed_setting_t
       *disallowed_settings           = NULL;
    core_option_manager_t* coreopts   = NULL;
-   struct retro_system_info *sysinfo = 
+   struct retro_system_info *sysinfo =
       &runloop_state_get_ptr()->system.info;
    const settings_t* settings = config_get_ptr();
 
@@ -1176,7 +1171,7 @@ void rcheevos_validate_config_settings(void)
       return;
    }
 
-   if (!(disallowed_settings 
+   if (!(disallowed_settings
             = rc_libretro_get_disallowed_settings(sysinfo->library_name)))
       return;
 
@@ -1292,10 +1287,6 @@ static void rcheevos_runtime_event_handler(
                rcheevos_find_lboard(runtime_event->id),
                runtime_event->value);
          break;
-           
-      case RC_RUNTIME_EVENT_RICHPRESENCE_UPDATED:
-        webhooks_send_presence();
-        break;
 
       default:
          break;
@@ -1826,7 +1817,7 @@ static void rcheevos_start_session_async(retro_task_t* task)
     * to proceed to the next loading state */
    rcheevos_client_start_session(rcheevos_locals.game.id);
 
-   webhooks_send_game_event(rcheevos_locals.game.id, STARTED);
+   //--> webhooks_send_game_event(rcheevos_locals.game.id, STARTED);
   
    rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_STARTING_SESSION);
 
@@ -2538,9 +2529,4 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
          initial_disc ? rcheevos_identify_initial_disc_callback :
             rcheevos_identify_game_disc_callback, data);
    }
-}
-
-void rcheevos_webhook_oauth_initiate()
-{
-  woauth_initiate();
 }

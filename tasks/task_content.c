@@ -77,6 +77,8 @@
 #include "../cheevos/cheevos.h"
 #endif
 
+#include "../webhooks/webhooks.h"
+
 #include "task_content.h"
 #include "tasks_internal.h"
 
@@ -1144,6 +1146,8 @@ static bool content_file_load(
       return false;
    }
 
+  webhooks_game_loaded(p_content->content_list->game_info);
+
 #ifdef HAVE_CHEEVOS
    if (!special)
    {
@@ -1154,6 +1158,7 @@ static bool content_file_load(
          if (first_content_type == RARCH_CONTENT_NONE)
          {
             rcheevos_load(p_content->content_list->game_info);
+
             return true;
          }
       }

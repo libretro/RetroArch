@@ -13,27 +13,27 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __WEBHOOKS_RICH_PRESENCE_H
-#define __WEBHOOKS_RICH_PRESENCE_H
+#ifndef __WEBHOOKS_GAME_H
+#define __WEBHOOKS_GAME_H
 
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "cheevos_client.h"
+#include "../cheevos/cheevos_client.h"
 #include "rc_api_request.h"
 
-typedef void (*richpresence_async_handler)
+typedef void (*webhook_game_async_handler)
 (
-  struct richpresence_async_io_request *request,
+  struct webhook_game_async_io_request *request,
   http_transfer_data_t *data,
   char buffer[],
   size_t buffer_size
 );
 
-typedef struct richpresence_async_io_request
+typedef struct webhook_game_async_io_request_t
 {
    rc_api_request_t request;
-   richpresence_async_handler handler;
+   webhook_game_async_handler handler;
    int id;
    rcheevos_client_callback callback;
    void* callback_data;
@@ -42,8 +42,13 @@ typedef struct richpresence_async_io_request
    const char* failure_message;
    const char* headers;
    char type;
-} richpresence_async_io_request;
+} webhook_game_async_io_request_t;
 
-void wrp_update_presence();
+typedef enum game_event_t {
+    STARTED,
+    STOPPED
+} game_event_t;
 
-#endif /* __WEBHOOKS_RICH_PRESENCE_H */
+void wg_update_game(int game_id, game_event_t game_event);
+
+#endif /* __WEBHOOKS_GAME_H */

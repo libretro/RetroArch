@@ -150,6 +150,8 @@
 #include "cheevos/cheevos_menu.h"
 #endif
 
+#include "webhooks/webhooks_oauth.h"
+
 #ifdef HAVE_TRANSLATE
 #include <encodings/base64.h>
 #include <formats/rbmp.h>
@@ -4460,7 +4462,7 @@ bool command_event(enum event_command cmd, void *data)
                1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
      case CMD_EVENT_WEBHOOK_START_ASSOCIATION:
-        rcheevos_webhook_oauth_initiate();
+       woauth_initiate();
         break;
       case CMD_EVENT_NONE:
          return false;

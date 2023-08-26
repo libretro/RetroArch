@@ -13,43 +13,38 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <ctype.h>
+#ifndef __WEBHOOKS_H
+#define __WEBHOOKS_H
 
-#include <file/file_path.h>
-#include <string/stdstring.h>
-#include <streams/interface_stream.h>
-#include <streams/file_stream.h>
-#include <features/features_cpu.h>
-#include <formats/cdfs.h>
-#include <formats/m3u_file.h>
-#include <compat/strl.h>
-#include <retro_miscellaneous.h>
-#include <retro_math.h>
-#include <retro_timers.h>
-#include <net/net_http.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <libretro.h>
 #include <lrc_hash.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
+#include "rc_api_request.h"
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
-#include "webhooks.h"
-#include "webhooks_rich_presence.h"
 #include "webhooks_game.h"
-#include "../deps/rcheevos/include/rc_api_runtime.h"
 
-void webhooks_send_presence()
-{
-  wrp_update_presence();
-}
+const int HASH_LENGTH = 33;
+const int MACRO_LENGTH = 2048;
 
-void webhooks_send_game_event(int game_id, enum game_event_t game_event)
+typedef struct wb_locals_t
 {
-  wg_update_game(game_id, game_event);
-}
+    char hash[HASH_LENGTH];
+    char macro[MACRO_LENGTH];
+    struct rc_runtime_t runtime;
+} wb_locals_t;
+
+void wb_initialize();
+
+void webhooks_game_loaded(const struct retro_game_info* info);
+void webhooks_game_unloaded();
+
+void webhooks_process_frame();
+
+
+void webhooks_send_presence();
+
+void wh_send_game_event(int game_id, game_event_t game_event);
+
+#endif /* __WEBHOOKS_H */

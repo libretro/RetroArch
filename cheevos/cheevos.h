@@ -51,8 +51,6 @@ void rcheevos_leaderboard_trackers_visibility_changed(void);
 void rcheevos_set_support_cheevos(bool state);
 bool rcheevos_get_support_cheevos(void);
 
-void rcheevos_webhook_oauth_initiate();
-
 const char* rcheevos_get_hash(void);
 int rcheevos_get_richpresence(char *s, size_t len);
 uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked);
