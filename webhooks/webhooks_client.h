@@ -18,12 +18,17 @@
 
 #include "rc_runtime.h"
 
+void wc_send_event
+(
+  const char* game_hash,
+  bool is_loaded
+);
+
 void wc_update_progress
 (
   const char* game_hash,
   const char* progress,
   unsigned long frame_number
 );
-
 
 #endif /* __WEBHOOKS_RICH_PRESENCE_H */
