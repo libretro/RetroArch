@@ -5770,6 +5770,31 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
+#ifdef HAVE_MENU
+   /* Check menu hotkey */
+   {
+      static bool old_pressed = false;
+      char *menu_driver       = settings->arrays.menu_driver;
+      bool pressed            = BIT256_GET(current_bits, RARCH_MENU_TOGGLE)
+            && !string_is_equal(menu_driver, "null");
+      bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+      if (    (pressed && !old_pressed)
+            || core_type_is_dummy)
+      {
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+         {
+            if (rarch_is_initialized && !core_type_is_dummy)
+               retroarch_menu_running_finished(false);
+         }
+         else
+            retroarch_menu_running();
+      }
+
+      old_pressed             = pressed;
+   }
+#endif
+
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    gfx_animation_update(
          current_time,
@@ -6020,30 +6045,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Check close content hotkey */
    HOTKEY_CHECK(RARCH_CLOSE_CONTENT_KEY, CMD_EVENT_CLOSE_CONTENT, true, NULL);
 
-#ifdef HAVE_MENU
-   /* Check menu hotkey */
-   {
-      static bool old_pressed = false;
-      char *menu_driver       = settings->arrays.menu_driver;
-      bool pressed            = BIT256_GET(current_bits, RARCH_MENU_TOGGLE)
-            && !string_is_equal(menu_driver, "null");
-      bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-
-      if (    (pressed && !old_pressed)
-            || core_type_is_dummy)
-      {
-         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-         {
-            if (rarch_is_initialized && !core_type_is_dummy)
-               retroarch_menu_running_finished(false);
-         }
-         else
-            retroarch_menu_running();
-      }
-
-      old_pressed             = pressed;
-   }
-#endif
 
    /* Check FPS hotkey */
    HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true, NULL);

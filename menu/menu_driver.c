@@ -5237,6 +5237,10 @@ unsigned menu_event(
 
    ok_old                                          = ok_current;
 
+   /* Menu must be alive */
+   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+      return ret;
+
    /* Get pointer (mouse + touchscreen) input
     * Note: Must be done regardless of menu screensaver
     *       state */
