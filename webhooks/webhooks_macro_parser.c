@@ -1,6 +1,10 @@
 #include "webhooks_macro_parser.h"
 
-int wmp_parse_macro(const char* macro, rc_runtime_t* runtime)
+int wmp_parse_macro
+(
+  const char* macro,
+  rc_runtime_t* runtime
+)
 {
   //  For now, the parser acts as a Facade to the rc_runtime_activate_richpresence
   //  that actually does the parse of the macro.

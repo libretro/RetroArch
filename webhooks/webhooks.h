@@ -30,9 +30,11 @@ const int MACRO_LENGTH = 2048;
 
 typedef struct wb_locals_t
 {
-    char hash[HASH_LENGTH];
-    char macro[MACRO_LENGTH];
-    struct rc_runtime_t runtime;
+  char hash[HASH_LENGTH];
+  char macro[MACRO_LENGTH];
+  struct rc_runtime_t runtime;
+  rc_libretro_memory_regions_t memory;
+  uint console_id;
 } wb_locals_t;
 
 void wb_initialize();

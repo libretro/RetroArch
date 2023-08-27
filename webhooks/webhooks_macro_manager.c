@@ -11,41 +11,13 @@
 #include "../config.h"
 #endif
 
-typedef struct async_io_request_t async_io_request_t;
-
-typedef void (*async_handler)
-(
-  struct async_io_request_t *request,
-  http_transfer_data_t *data,
-  char buffer[],
-  size_t buffer_size
-);
-
-typedef void (*async_client_callback)(void* userdata);
-
-struct async_io_request_t
-{
-    rc_api_request_t request;
-    async_handler handler;
-    async_client_callback callback;
-    void* callback_data;
-
-    //  Not used yet.
-    int id;
-    int attempt_count;
-    const char* success_message;
-    const char* failure_message;
-    const char* headers;
-    char type;
-};
-
 //  ---------------------------------------------------------------------------
 
 
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wmm_end_http_request(async_io_request_t* request)
+static void wmm_end_http_request(async_http_request_t* request)
 {
   rc_api_destroy_request(&request->request);
 
@@ -74,7 +46,7 @@ static void wmm_send_http_request_callback
   const char* error
 )
 {
-  struct async_io_request_t *request = (struct async_io_request_t*)user_data;
+  struct async_http_request_t *request = (struct async_http_request_t*)user_data;
   http_transfer_data_t      *data    = (http_transfer_data_t*)task_data;
   //const bool                 aborted = rcheevos_load_aborted();
   char buffer[224];
@@ -147,14 +119,12 @@ static void wmm_send_http_request_callback
 
     //CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
   }
-
-  wmm_end_http_request(request);
 }
 
 //  ---------------------------------------------------------------------------
 //  Configures the HTTP request to GET the macro from the webhook server.
 //  ---------------------------------------------------------------------------
-static void wmm_send_http_request(const wb_locals_t* locals, async_io_request_t* request)
+static void wmm_send_http_request(const wb_locals_t* locals, async_http_request_t* request)
 {
   task_push_http_transfer_with_headers
   (
@@ -170,7 +140,7 @@ static void wmm_send_http_request(const wb_locals_t* locals, async_io_request_t*
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's header, mainly the bearer token.
 //  ---------------------------------------------------------------------------
-static void wmm_set_request_header(async_io_request_t* request)
+static void wmm_set_request_header(async_http_request_t* request)
 {
   //  Builds the header containing the authorization.
   const char* access_token = woauth_get_accesstoken();
@@ -208,7 +178,7 @@ static void wmm_set_request_header(async_io_request_t* request)
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's URL.
 //  ---------------------------------------------------------------------------
-static void wmm_set_request_url(const wb_locals_t* locals, async_io_request_t* request)
+static void wmm_set_request_url(const wb_locals_t* locals, async_http_request_t* request)
 {
   const settings_t *settings = config_get_ptr();
   const char* base_url = settings->arrays.cheevos_webhook_url;
@@ -239,7 +209,7 @@ static void wmm_set_request_url(const wb_locals_t* locals, async_io_request_t* r
 //  ---------------------------------------------------------------------------
 //  Configures the HTTP request to GET the macro from the webhook server.
 //  ---------------------------------------------------------------------------
-static void wmm_prepare_http_request(const wb_locals_t* locals, async_io_request_t* request)
+static void wmm_prepare_http_request(const wb_locals_t* locals, async_http_request_t* request)
 {
   wmm_set_request_url(locals, request);
 
@@ -249,7 +219,7 @@ static void wmm_prepare_http_request(const wb_locals_t* locals, async_io_request
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wmm_initiate_macro_request(wb_locals_t* locals, async_io_request_t* request)
+static void wmm_initiate_macro_request(wb_locals_t* locals, async_http_request_t* request)
 {
   wmm_prepare_http_request(locals, request);
 
@@ -261,7 +231,7 @@ static void wmm_initiate_macro_request(wb_locals_t* locals, async_io_request_t* 
 //  ---------------------------------------------------------------------------
 static void wmm_on_request_completed
 (
-  async_io_request_t *request,
+  async_http_request_t *request,
   http_transfer_data_t *data,
   char buffer[],
   size_t buffer_size
@@ -281,7 +251,7 @@ void wmm_download_macro(wb_locals_t* locals, on_macro_downloaded_t on_macro_down
   //  Clears any progress.
   locals->macro[0] = '\0';
 
-  async_io_request_t *request = (async_io_request_t*) malloc(sizeof(async_io_request_t));
+  async_http_request_t *request = (async_http_request_t*) malloc(sizeof(async_http_request_t));
 
   if (!request)
   {
@@ -292,7 +262,6 @@ void wmm_download_macro(wb_locals_t* locals, on_macro_downloaded_t on_macro_down
   request->handler = wmm_on_request_completed;
   request->callback = on_macro_downloaded;
   request->callback_data = locals;
-
 
   wmm_initiate_macro_request(locals, request);
 }

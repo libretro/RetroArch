@@ -197,6 +197,7 @@ ACHIEVEMENTS
 
 #include "../webhooks/webhooks.c"
 #include "../webhooks/webhooks_oauth.c"
+#include "../webhooks/webhooks_client.c"
 #include "../webhooks/webhooks_macro_manager.c"
 #include "../webhooks/webhooks_macro_parser.c"
 #include "../webhooks/webhooks_progress_tracker.c"

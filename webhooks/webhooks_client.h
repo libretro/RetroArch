@@ -16,36 +16,14 @@
 #ifndef __WEBHOOKS_RICH_PRESENCE_H
 #define __WEBHOOKS_RICH_PRESENCE_H
 
-#include <stdint.h>
-#include <stdlib.h>
+#include "rc_runtime.h"
 
-#include "../cheevos/cheevos_client.h"
-#include "rc_api_request.h"
-
-/*
-typedef void (*richpresence_async_handler)
+void wc_update_progress
 (
-  struct richpresence_async_io_request *request,
-  http_transfer_data_t *data,
-  char buffer[],
-  size_t buffer_size
+  const char* game_hash,
+  const char* progress,
+  unsigned long frame_number
 );
 
-typedef struct richpresence_async_io_request
-{
-   rc_api_request_t request;
-   richpresence_async_handler handler;
-   int id;
-   rcheevos_client_callback callback;
-   void* callback_data;
-   int attempt_count;
-   const char* success_message;
-   const char* failure_message;
-   const char* headers;
-   char type;
-} richpresence_async_io_request;
-
-void wrp_update_presence();
-*/
 
 #endif /* __WEBHOOKS_RICH_PRESENCE_H */

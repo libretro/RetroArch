@@ -13,43 +13,27 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <ctype.h>
-
-#include <file/file_path.h>
-#include <string/stdstring.h>
-#include <streams/interface_stream.h>
-#include <streams/file_stream.h>
-#include <features/features_cpu.h>
-#include <formats/cdfs.h>
-#include <formats/m3u_file.h>
-#include <compat/strl.h>
-#include <retro_miscellaneous.h>
-#include <retro_math.h>
-#include <retro_timers.h>
-#include <net/net_http.h>
-#include <libretro.h>
-#include <lrc_hash.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
 #include "webhooks.h"
+
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 
-static void wrp_end_http_request
+#include "rc_api_request.h"
+
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+static void wc_end_http_request
 (
-  richpresence_async_io_request* request
+  async_http_request_t* request
 )
 {
   rc_api_destroy_request(&request->request);
 
-  if (request->callback && !rcheevos_load_aborted())
+  if (request->callback /* &&!rcheevos_load_aborted()*/)
     request->callback(request->callback_data);
 
   /* rich presence request will be reused on next ping - reset the attempt
@@ -63,7 +47,10 @@ static void wrp_end_http_request
   //free(request);
 }
 
-static void wrp_handle_http_callback
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+static void wc_handle_http_callback
 (
   retro_task_t* task,
   void* task_data,
@@ -71,17 +58,17 @@ static void wrp_handle_http_callback
   const char* error
 )
 {
-  struct richpresence_async_io_request *request = (struct richpresence_async_io_request*)user_data;
+  struct async_http_request_t *request = (struct async_http_request_t*)user_data;
   http_transfer_data_t      *data    = (http_transfer_data_t*)task_data;
-  const bool                 aborted = rcheevos_load_aborted();
+  //const bool                 aborted = rcheevos_load_aborted();
   char buffer[224];
 
-  if (aborted)
+  /*if (aborted)
   {
-    /* load was aborted. don't process the response */
+    // load was aborted. don't process the response
     strlcpy(buffer, "Load aborted", sizeof(buffer));
   }
-  else if (error)
+  else */if (error)
   {
     strlcpy(buffer, error, sizeof(buffer));
   }
@@ -145,12 +132,16 @@ static void wrp_handle_http_callback
     CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
   }
 
-  wrp_end_http_request(request);
+  //  TODO Handle should be called?
+  wc_end_http_request(request);
 }
 
-static void wrp_begin_http_request
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+static void wc_begin_http_request
 (
-  richpresence_async_io_request* request
+  async_http_request_t* request
 )
 {
   task_push_http_post_transfer_with_headers
@@ -160,23 +151,25 @@ static void wrp_begin_http_request
     true,
     "POST",
     request->headers,
-    wrp_handle_http_callback,
+    wc_handle_http_callback,
     request
   );
 }
 
-static void wrp_prepare_http_request
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+static void wc_set_request_url
 (
-  richpresence_async_io_request* request
+  const char* game_hash,
+  const char* progress,
+  unsigned long frame_number,
+  async_http_request_t* request
 )
 {
-  char buffer[512] = "";
   const settings_t *settings = config_get_ptr();
   const char* webhook_url = settings->arrays.cheevos_webhook_url;
 
-  //  Retrieves the Rich Presence data from the cheevos API.
-  rcheevos_get_richpresence(buffer, sizeof(buffer));
-  
   const size_t url_len = strlen(webhook_url);
   request->request.url = malloc(url_len);
   strncpy(request->request.url , webhook_url, url_len);
@@ -184,38 +177,23 @@ static void wrp_prepare_http_request
   rc_api_url_builder_t builder;
   rc_url_builder_init(&builder, &request->request.buffer, 48);
 
-  rc_url_builder_append_unum_param(&builder, "g", rcheevos_locals.game.id);
-  rc_url_builder_append_str_param(&builder, "m", buffer);
+  rc_url_builder_append_str_param(&builder, "h", game_hash);
+  rc_url_builder_append_str_param(&builder, "p", progress);
+  rc_url_builder_append_num_param(&builder, "f", frame_number);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
-static void wrp_send_presence
-(
-  richpresence_async_io_request* request
-)
+//  ---------------------------------------------------------------------------
+//  Builds and sets the request's header, mainly the bearer token.
+//  ---------------------------------------------------------------------------
+static void wc_set_request_header(async_http_request_t* request)
 {
-  wrp_prepare_http_request(request);
-
-  wrp_begin_http_request(request);
-}
-
-void wrp_update_presence()
-{
-  richpresence_async_io_request *request = (richpresence_async_io_request*) calloc(1, sizeof(richpresence_async_io_request));
-
-  if (!request)
-  {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
-    return;
-  }
-
-  request->type = CHEEVOS_ASYNC_RICHPRESENCE;
-
   //  Builds the header containing the authorization.
   const char* access_token = woauth_get_accesstoken();
 
-  if (access_token == NULL) {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to retrieve an access token\n");
+  if (access_token == NULL)
+  {
+    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to retrieve an access token\n");
     return;
   }
 
@@ -229,18 +207,69 @@ void wrp_update_presence()
   char* headers = (char*)malloc(header_length);
 
   if (headers == NULL) {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate header\n");
+    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate header\n");
     return;
   }
 
   strncpy(headers, authorization_header, auth_header_len);
   strncpy(headers + auth_header_len, access_token, token_len);
+
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';
   headers[auth_header_len + token_len + 2] = '\0';
 
   request->headers = headers;
-  request->failure_message = "Error sending webhook data";
+}
 
-  wrp_send_presence(request);
+//  ---------------------------------------------------------------------------
+//  Configures the HTTP request to POST the progress to the webhook server.
+//  ---------------------------------------------------------------------------
+static void wc_prepare_http_request
+(
+  const char* game_hash,
+  const char* progress,
+  unsigned long frame_number,
+  async_http_request_t* request
+)
+{
+  wc_set_request_url(game_hash, progress, frame_number, request);
+
+  wc_set_request_header(request);
+}
+
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+static void wc_initiate_progress_request
+(
+  const char* game_hash,
+  const char* progress,
+  unsigned long frame_number,
+  async_http_request_t* request
+)
+{
+  wc_prepare_http_request(game_hash, progress, frame_number, request);
+
+  wc_begin_http_request(request);
+}
+
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+void wc_update_progress
+(
+  const char* game_hash,
+  const char* progress,
+  unsigned long frame_number
+)
+{
+  async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
+
+  if (!request)
+  {
+    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
+    return;
+  }
+
+  wc_initiate_progress_request(game_hash, progress, frame_number, request);
 }

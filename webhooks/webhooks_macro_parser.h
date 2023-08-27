@@ -16,6 +16,10 @@
 #ifndef __WEBHOOKS_MACRO_PARSER_H
 #define __WEBHOOKS_MACRO_PARSER_H
 
-int wmp_parse_macro(const char* macro, rc_runtime_t* runtime);
+int wmp_parse_macro
+(
+  const char* macro,
+  rc_runtime_t* runtime
+);
 
 #endif /*__WEBHOOKS_MACRO_PARSER_H*/
