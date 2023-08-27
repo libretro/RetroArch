@@ -19,9 +19,7 @@
 
 #define CINTERFACE
 
-#if !defined(__WINRT__)
 #define HAVE_IBXM 1
-#endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
