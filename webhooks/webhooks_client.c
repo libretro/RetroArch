@@ -179,7 +179,7 @@ static void wc_set_progress_request_url
   rc_url_builder_init(&builder, &request->request.buffer, 48);
 
   rc_url_builder_append_str_param(&builder, "h", game_hash);
-  rc_url_builder_append_str_param(&builder, "c", console_id);
+  rc_url_builder_append_num_param(&builder, "c", console_id);
   rc_url_builder_append_str_param(&builder, "p", progress);
   rc_url_builder_append_num_param(&builder, "f", frame_number);
   request->request.post_data = rc_url_builder_finalize(&builder);
@@ -204,7 +204,7 @@ static void wc_set_event_request_url
   rc_url_builder_init(&builder, &request->request.buffer, 48);
 
   rc_url_builder_append_str_param(&builder, "h", game_hash);
-  rc_url_builder_append_str_param(&builder, "c", console_id);
+  rc_url_builder_append_num_param(&builder, "c", console_id);
   rc_url_builder_append_num_param(&builder, "e", is_loaded ? 1 : 0);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
