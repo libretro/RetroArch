@@ -773,42 +773,78 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_VARIABLES 16
 
+/**
+ * Queries whether at least one core option was updated by the frontend
+ * since the last call to <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
+ * This typically means that the user opened the core options menu and made some changes.
+ *
+ * Cores usually call this each frame before the core's main emulation logic.
+ * Specific options can then be queried with <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
+ *
+ * @param data[out] <tt>bool *</tt>.
+ * Set to \c true if at least one core option was updated
+ * since the last call to <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
+ * Behavior is undefined if this pointer is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE 17
-                                           /* bool * --
-                                            * Result is set to true if some variables are updated by
-                                            * frontend since last call to RETRO_ENVIRONMENT_GET_VARIABLE.
-                                            * Variables should be queried with GET_VARIABLE.
-                                            */
-#define RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME 18
-                                           /* const bool * --
-                                            * If true, the libretro implementation supports calls to
-                                            * retro_load_game() with NULL as argument.
-                                            * Used by cores which can run without particular game data.
-                                            * This should be called within retro_set_environment() only.
-                                            */
-#define RETRO_ENVIRONMENT_GET_LIBRETRO_PATH 19
-                                           /* const char ** --
-                                            * Retrieves the absolute path from where this libretro
-                                            * implementation was loaded.
-                                            * NULL is returned if the libretro was loaded statically
-                                            * (i.e. linked statically to frontend), or if the path cannot be
-                                            * determined.
-                                            * Mostly useful in cooperation with SET_SUPPORT_NO_GAME as assets can
-                                            * be loaded without ugly hacks.
-                                            */
 
-                                           /* Environment 20 was an obsolete version of SET_AUDIO_CALLBACK.
-                                            * It was not used by any known core at the time,
-                                            * and was removed from the API. */
+/**
+ * Notifies the frontend that this core can run without loading any content,
+ * such as when emulating a console that has built-in software.
+ * When a core is loaded without content,
+ * \c retro_load_game receives an argument of <tt>NULL</tt>.
+ * This should be called within \c retro_set_environment() only.
+ *
+ * @param data[in] <tt>const bool *</tt>.
+ * Pointer to a single \c bool that indicates whether this frontend can run without content.
+ * Can point to a value of \c false but this isn't necessary,
+ * as contentless support is opt-in.
+ * The behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see retro_load_game
+ */
+#define RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME 18
+
+/**
+ * Retrieves the absolute path from which this core was loaded.
+ * Useful when loading assets from paths relative to the core,
+ * as is sometimes the case when using <tt>RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME</tt>.
+ *
+ * @param data[out] <tt>const char **</tt>.
+ * Pointer to a string in which the core's path will be saved.
+ * The string is managed by the frontend and must not be modified or freed by the core.
+ * May be \c NULL if the core is statically linked to the frontend
+ * or if the core's path otherwise cannot be determined.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_GET_LIBRETRO_PATH 19
+
+/* Environment call 20 was an obsolete version of SET_AUDIO_CALLBACK.
+ * It was not used by any known core at the time, and was removed from the API.
+ * The number 20 is reserved to prevent ABI clashes.
+ */
+
+/**
+ * Sets a callback that notifies the core of how much time has passed
+ * since the last iteration of <tt>retro_run</tt>.
+ * If the frontend is not running the core in real time
+ * (e.g. it's frame-stepping or running in slow motion),
+ * then the reference value will be provided to the callback instead.
+ *
+ * @param data[in] <tt>const struct retro_frame_time_callback *</tt>.
+ * Pointer to a single \c retro_frame_time_callback struct.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @note Frontends may disable this environment call in certain situations.
+ * It will return \c false in those cases.
+ * @see retro_frame_time_callback
+ */
 #define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK 21
-                                           /* const struct retro_frame_time_callback * --
-                                            * Lets the core know how much time has passed since last
-                                            * invocation of retro_run().
-                                            * The frontend can tamper with the timing to fake fast-forward,
-                                            * slow-motion, frame stepping, etc.
-                                            * In this case the delta time will use the reference value
-                                            * in frame_time_callback..
-                                            */
+
 #define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 22
                                            /* const struct retro_audio_callback * --
                                             * Sets an interface which is used to notify a libretro core about audio
@@ -888,16 +924,22 @@ enum retro_mod
                                             * functions must be used to explicitly
                                             * start and stop the camera driver.
                                             */
+
+/**
+ * Gets an interface that the core can use for cross-platform logging.
+ * Certain platforms don't have a console or <tt>stderr</tt>,
+ * or they have their own preferred logging methods.
+ * The frontend itself may also display log output.
+ *
+ * @param data[out] <tt>struct retro_log_callback *</tt>.
+ * Pointer to the callback where the function pointer will be saved.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see retro_log_callback
+ * @note Cores can fall back to \c stderr if this interface is not available.
+ */
 #define RETRO_ENVIRONMENT_GET_LOG_INTERFACE 27
-                                           /* struct retro_log_callback * --
-                                            * Gets an interface for logging. This is useful for
-                                            * logging in a cross-platform way
-                                            * as certain platforms cannot use stderr for logging.
-                                            * It also allows the frontend to
-                                            * show logging information in a more suitable way.
-                                            * If this interface is not used, libretro cores should
-                                            * log to stderr as desired.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
                                            /* struct retro_perf_callback * --
                                             * Gets an interface for performance counters. This is useful
