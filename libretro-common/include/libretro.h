@@ -670,8 +670,8 @@ enum retro_mod
 /**
  * Requests that a frontend enable a particular hardware rendering API.
  *
- * If successful, cores will be able to render to a
- * frontend-provided framebuffer.
+ * If successful, the frontend will create a context (and other related resources)
+ * that the core can use for rendering.
  * The framebuffer will be at least as large as
  * the maximum dimensions provided in <tt>retro_get_system_av_info</tt>.
  *
@@ -684,6 +684,7 @@ enum retro_mod
  * \c false if \c data is \c NULL
  * or the frontend can't provide the requested rendering API.
  * @see retro_hw_render_callback
+ * @see retro_video_refresh_t
  * @see RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER
  * @note Should be called in <tt>retro_load_game()</tt>.
  * @note If HW rendering is used, pass only \c RETRO_HW_FRAME_BUFFER_VALID or
@@ -691,52 +692,87 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_HW_RENDER 14
 
+/**
+ * Retrieves a core option's value from the frontend.
+ * \c retro_variable::key should be set to an option key
+ * that was previously set in \c RETRO_ENVIRONMENT_SET_VARIABLES
+ * (or a similar environment call).
+ *
+ * @param data[in,out] <tt>struct retro_variable *</tt>.
+ * Pointer to a single \c retro_variable struct.
+ * See the documentation for \c retro_variable for details
+ * on which fields are set by the frontend or core.
+ * May be \c NULL.
+ * @returns \c true if the environment call is recognized,
+ * even if \c data is \c NULL or the key it specifies is not found.
+ * @note Passing \c NULL in to \c data can be useful to
+ * test for support of this environment call without looking up any variables.
+ * @see retro_variable
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+ */
 #define RETRO_ENVIRONMENT_GET_VARIABLE 15
-                                           /* struct retro_variable * --
-                                            * Interface to acquire user-defined information from environment
-                                            * that cannot feasibly be supported in a multi-system way.
-                                            * 'key' should be set to a key which has already been set by
-                                            * SET_VARIABLES.
-                                            * 'data' will be set to a value or NULL.
-                                            */
+
+/**
+ * @brief Notifies the frontend of the core's available options.
+ * The core may check these options later using \c RETRO_ENVIRONMENT_GET_VARIABLE.
+ * The frontend may also present these options to the user
+ * in its own configuration UI.
+ *
+ * @par
+ * This should be called the first time as early as possible,
+ * ideally in <tt>retro_set_environment</tt>.
+ * The core may later call this function again
+ * to communicate updated options to the frontend,
+ * but the number of core options must not change.
+ *
+ * retro_variable::value should be formatted as follows:
+ *
+ * <ul>
+ * <li>The text before the first ';' is the option's human-readable title.</li>
+ * <li>A single space follows the ';'.</li>
+ * <li>The rest of the string is a <tt>'|'</tt>-delimited list of possible values,
+ * with the first one being the default.</li>
+ * </ul>
+ *
+ * Here's an example that sets two options.
+ *
+ * @example
+ * \code{.c}
+ * void set_variables_example(void)
+ * {
+ *    struct retro_variable options[] = {
+ *        { "foo_speedhack", "Speed hack; false|true" }, // false by default
+ *        { "foo_displayscale", "Display scale factor; 1|2|3|4" }, // 1 by default
+ *        { NULL, NULL },
+ *    };
+ *
+ *    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, &options);
+ * }
+ * \endcode
+ *
+ * The possible values will generally be displayed and stored as-is by the frontend.
+ *
+ * @deprecated Prefer using \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 for new code,
+ * as it offers more features such as categories and translation.
+ * Only use this environment call to maintain compatibility
+ * with older frontends or cores.
+ * @note Keep the available options (and their possible values) as low as possible;
+ * it should be feasible to cycle through them without a keyboard.
+ * @param data[in] <tt>const struct retro_variable *</tt>.
+ * Pointer to an array of \c retro_variable structs that define available core options,
+ * terminated by a <tt>{ NULL, NULL }</tt> element.
+ * The frontend must maintain its own copy of this array.
+
+ * @returns \c true if the environment call is recognized,
+ * even if \c data is <tt>NULL</tt>.
+ * @see retro_variable
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_SET_VARIABLES 16
-                                           /* const struct retro_variable * --
-                                            * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using
-                                            * GET_VARIABLE.
-                                            * This allows the frontend to present these variables to
-                                            * a user dynamically.
-                                            * This should be called the first time as early as
-                                            * possible (ideally in retro_set_environment).
-                                            * Afterward it may be called again for the core to communicate
-                                            * updated options to the frontend, but the number of core
-                                            * options must not change from the number in the initial call.
-                                            *
-                                            * 'data' points to an array of retro_variable structs
-                                            * terminated by a { NULL, NULL } element.
-                                            * retro_variable::key should be namespaced to not collide
-                                            * with other implementations' keys. E.g. A core called
-                                            * 'foo' should use keys named as 'foo_option'.
-                                            * retro_variable::value should contain a human readable
-                                            * description of the key as well as a '|' delimited list
-                                            * of expected values.
-                                            *
-                                            * The number of possible options should be very limited,
-                                            * i.e. it should be feasible to cycle through options
-                                            * without a keyboard.
-                                            *
-                                            * First entry should be treated as a default.
-                                            *
-                                            * Example entry:
-                                            * { "foo_option", "Speed hack coprocessor X; false|true" }
-                                            *
-                                            * Text before first ';' is description. This ';' must be
-                                            * followed by a space, and followed by a list of possible
-                                            * values split up with '|'.
-                                            *
-                                            * Only strings are operated on. The possible values will
-                                            * generally be displayed and stored as-is by the frontend.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE 17
                                            /* bool * --
                                             * Result is set to true if some variables are updated by
