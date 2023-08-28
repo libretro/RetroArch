@@ -516,7 +516,7 @@ enum retro_mod
  * @param data[out] <tt>bool*</tt>.
  * Set to \c true if the core should use overscan,
  * \c false if it should be cropped away.
- * @returns \c true if the query was successful.
+ * @returns \c true if the environment call is available.
  * Does \em not indicate whether overscan should be used.
  * @note As of 2019 this callback is considered deprecated in favor of
  * using core options to manage overscan in a more nuanced, core-specific way.
@@ -529,7 +529,7 @@ enum retro_mod
  *
  * @param data[out] <tt>bool*</tt>.
  * Set to \c true if the frontend supports frame duping.
- * @returns \c true if the query was successful.
+ * @returns \c true if the environment call is available.
  * @see retro_video_refresh_t
  */
 #define RETRO_ENVIRONMENT_GET_CAN_DUPE  3
@@ -558,6 +558,7 @@ enum retro_mod
  * \endcode
  *
  * @param data[in] <tt>const struct retro_message*</tt>.
+ * @returns \c true if the environment call is available.
  * @see retro_message
  * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
  */
@@ -570,7 +571,7 @@ enum retro_mod
  * or an emulated power-off in an emulator.
  *
  * @param data Ignored.
- * @returns \c true if the frontend accepts the request.
+ * @returns \c true if the environment call is available.
  */
 #define RETRO_ENVIRONMENT_SHUTDOWN      7
 
@@ -602,8 +603,8 @@ enum retro_mod
  * The string is managed by the frontend and must not be modified or freed by the core.
  * May be \c NULL if no system directory is defined,
  * in which case the core should find an alternative directory.
- * @return \c true if the query was successful,
- * even if the value returned in \c data is \c NULL.
+ * @return \c true if the environment call is available,
+ * even if the value returned in \c data is <tt>NULL</tt>.
  * @note Historically, some cores would use this folder for save data such as memory cards or SRAM.
  * This is now discouraged in favor of \c RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY.
  * @see RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
@@ -703,7 +704,7 @@ enum retro_mod
  * See the documentation for \c retro_variable for details
  * on which fields are set by the frontend or core.
  * May be \c NULL.
- * @returns \c true if the environment call is recognized,
+ * @returns \c true if the environment call is available,
  * even if \c data is \c NULL or the key it specifies is not found.
  * @note Passing \c NULL in to \c data can be useful to
  * test for support of this environment call without looking up any variables.
@@ -763,8 +764,8 @@ enum retro_mod
  * Pointer to an array of \c retro_variable structs that define available core options,
  * terminated by a <tt>{ NULL, NULL }</tt> element.
  * The frontend must maintain its own copy of this array.
-
- * @returns \c true if the environment call is recognized,
+ *
+ * @returns \c true if the environment call is available,
  * even if \c data is <tt>NULL</tt>.
  * @see retro_variable
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
