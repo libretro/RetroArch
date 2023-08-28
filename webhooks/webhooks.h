@@ -43,10 +43,6 @@ void webhooks_game_loaded(const struct retro_game_info* info);
 void webhooks_game_unloaded();
 
 void webhooks_process_frame();
-
-
 void webhooks_send_presence();
-
-void wh_send_game_event(int game_id, game_event_t game_event);
 
 #endif /* __WEBHOOKS_H */

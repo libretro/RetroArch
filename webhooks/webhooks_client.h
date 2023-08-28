@@ -20,12 +20,14 @@
 
 void wc_send_event
 (
+  unsigned int console_id,
   const char* game_hash,
   bool is_loaded
 );
 
 void wc_update_progress
 (
+  unsigned int console_id,
   const char* game_hash,
   const char* progress,
   unsigned long frame_number

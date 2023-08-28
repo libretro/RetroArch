@@ -212,9 +212,9 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 
   wh_compute_hash(info);
 
-  wc_send_event(locals.hash, true);
-
   wh_init_memory(&locals);
+
+  wc_send_event(locals.console_id, locals.hash, true);
 
   wmm_download_macro(&locals, &wh_on_macro_downloaded);
 }
@@ -224,7 +224,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 //  ---------------------------------------------------------------------------
 void webhooks_game_unloaded()
 {
-  wc_send_event(locals.hash, false);
+  wc_send_event(locals.console_id, locals.hash, false);
 }
 
 //  ---------------------------------------------------------------------------
@@ -240,10 +240,5 @@ void webhooks_process_frame()
     return;
   }
 
-  wc_update_progress(locals.hash, wpt_get_last_progress(), frame_counter);
-}
-
-void webhooks_send_game_event(int game_id, enum game_event_t game_event)
-{
-  //wg_update_game(game_id, game_event);
+  wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter);
 }
