@@ -621,14 +621,14 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY 9
 
 /**
- * Sets the internal pixel format used by the frontend.
+ * Sets the internal pixel format used by the frontend for rendering.
  * The default pixel format is \c RETRO_PIXEL_FORMAT_0RGB1555 for compatibility reasons,
  * although it's considered deprecated and shouldn't be used by new code.
  *
  * @param data[in] <tt>const enum retro_pixel_format *</tt>.
  * Pointer to the pixel format to use.
  * @returns \c true if the pixel format was set successfully,
- * \c false if it's not supported.
+ * \c false if it's not supported or this callback is unavailable.
  * @note This function should be called inside \c retro_load_game()
  * or <tt>retro_get_system_av_info()</tt>.
  * @see retro_pixel_format
@@ -3341,27 +3341,36 @@ struct retro_netpacket_callback
    retro_netpacket_disconnected_t disconnected; /* Optional - may be NULL */
 };
 
+/**
+ * The pixel format used for rendering.
+ * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+ */
 enum retro_pixel_format
 {
-   /* 0RGB1555, native endian.
-    * 0 bit must be set to 0.
-    * This pixel format is default for compatibility concerns only.
-    * If a 15/16-bit pixel format is desired, consider using RGB565. */
+   /**
+    * 0RGB1555, native endian.
+    * Used as the default if \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT is not called.
+    * The most significant bit must be set to 0.
+    * @deprecated This format remains supported to maintain compatibility.
+    * New code should use <tt>RETRO_PIXEL_FORMAT_RGB565</tt> instead.
+    * @see RETRO_PIXEL_FORMAT_RGB565
+    */
    RETRO_PIXEL_FORMAT_0RGB1555 = 0,
 
-   /* XRGB8888, native endian.
-    * X bits are ignored. */
+   /**
+    * XRGB8888, native endian.
+    * The most significant byte (the <tt>X</tt>) is ignored.
+    */
    RETRO_PIXEL_FORMAT_XRGB8888 = 1,
 
-   /* RGB565, native endian.
-    * This pixel format is the recommended format to use if a 15/16-bit
-    * format is desired as it is the pixel format that is typically
-    * available on a wide range of low-power devices.
-    *
-    * It is also natively supported in APIs like OpenGL ES. */
+   /**
+    * RGB565, native endian.
+    * This format is recommended if 16-bit pixels are desired,
+    * as it is available on a variety of devices and APIs.
+    */
    RETRO_PIXEL_FORMAT_RGB565   = 2,
 
-   /* Ensure sizeof() == sizeof(int). */
+   /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
