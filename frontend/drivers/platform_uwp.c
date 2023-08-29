@@ -68,12 +68,6 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       case PROCESSOR_ARCHITECTURE_AMD64:
          arch = "x64";
          break;
-      case PROCESSOR_ARCHITECTURE_INTEL:
-         arch = "x86";
-         break;
-      case PROCESSOR_ARCHITECTURE_ARM:
-         arch = "ARM";
-         break;
       case PROCESSOR_ARCHITECTURE_ARM64:
          arch = "ARM64";
          break;
@@ -87,48 +81,26 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    if (minor)
       *minor = vi.dwMinorVersion;
 
-   if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
-   else
-      snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
+   snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
 
    switch (vi.dwMajorVersion)
    {
       case 10:
          if (server)
-            _len = strlcpy(s, "Windows Server 2016", len);
-         else
-            _len = strlcpy(s, "Windows 10", len);
-         break;
-      case 6:
-         switch (vi.dwMinorVersion)
          {
-            case 3:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 8.1", len);
-               break;
-            case 2:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012", len);
-               else
-                  _len = strlcpy(s, "Windows 8", len);
-               break;
-            case 1:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 7", len);
-               break;
-            case 0:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008", len);
-               else
-                  _len = strlcpy(s, "Windows Vista", len);
-               break;
-            default:
-               break;
+            if ((vi.dwBuildNumber >= 14393) && (vi.dwBuildNumber < 17763))
+               _len = strlcpy(s, "Windows Server 2016", len);
+            else if ((vi.dwBuildNumber >= 17763) && (vi.dwBuildNumber < 20348))
+               _len = strlcpy(s, "Windows Server 2019", len);
+            else if (vi.dwBuildNumber >= 20348)
+               _len = strlcpy(s, "Windows Server 2022", len);
+         }
+         else
+         {
+            if ((vi.dwBuildNumber >= 10240) && (vi.dwBuildNumber < 22000))
+               _len = strlcpy(s, "Windows 10", len);
+            else if (vi.dwBuildNumber >= 22000)
+               _len = strlcpy(s, "Windows 11", len);
          }
          break;
       default:
@@ -202,10 +174,6 @@ enum frontend_architecture frontend_uwp_get_arch(void)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
          return FRONTEND_ARCH_X86_64;
-      case PROCESSOR_ARCHITECTURE_INTEL:
-         return FRONTEND_ARCH_X86;
-      case PROCESSOR_ARCHITECTURE_ARM:
-         return FRONTEND_ARCH_ARM;
       case PROCESSOR_ARCHITECTURE_ARM64:
          return FRONTEND_ARCH_ARMV8;
       default:
