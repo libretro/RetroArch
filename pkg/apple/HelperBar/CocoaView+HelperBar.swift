@@ -50,7 +50,7 @@ extension CocoaView: HelperBarActionDelegate {
    }
    
    func orientationLockButtonTapped() {
-      #if TARGET_OS_IOS
+      #if os(iOS)
       shouldLockCurrentInterfaceOrientation.toggle()
       if shouldLockCurrentInterfaceOrientation {
          let currentOrientation = UIApplication.shared.windows.first?.windowScene?.interfaceOrientation ?? UIInterfaceOrientation.portrait
