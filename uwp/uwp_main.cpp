@@ -1164,8 +1164,10 @@ extern "C" {
 
    const char* uwp_get_cpu_model_name(void)
    {
-      /* TODO/FIXME - Xbox codepath should have a hardcoded CPU model name */
-      if (is_running_on_xbox()) { }
+      if (is_running_on_xbox())
+      {
+        return "Xbox One/Series CPU";
+      }
       else
       {
          Platform::String^ cpu_id    = nullptr;
