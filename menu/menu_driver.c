@@ -4559,8 +4559,10 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
       default:
          if (vercode >= 1910 && vercode < 1920)
             return " msvc2017";
-         else if (vercode >= 1920 && vercode < 2000)
+         else if (vercode >= 1920 && vercode < 1930)
             return " msvc2019";
+         else if (vercode >= 1930)
+            return " msvc2022";
          break;
    }
 
