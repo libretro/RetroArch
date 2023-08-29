@@ -540,10 +540,11 @@ enum retro_mod
  */
 
 /**
- * @brief Displays a message in a frontend-specific manner
- * for a certain amount of 'frames'.
+ * @brief Displays a user-facing message for a short time.
  *
- * @par For trivial messages, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr instead.
+ * Use this callback to convey important status messages,
+ * such as errors or the result of long-running operations.
+ * For trivial messages or logging, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr.
  *
  * @example
  * \code{.c}
@@ -562,9 +563,13 @@ enum retro_mod
  * Only use this environment call for compatibility with older cores or frontends.
  *
  * @param data[in] <tt>const struct retro_message*</tt>.
+ * Details about the message to show to the user.
+ * Behavior is undefined if <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
  * @see retro_message
  * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ * @note The frontend must make its own copy of the message and the underlying string.
  */
 #define RETRO_ENVIRONMENT_SET_MESSAGE   6
 
@@ -3389,10 +3394,22 @@ enum retro_savestate_context
    RETRO_SAVESTATE_CONTEXT_UNKNOWN                = INT_MAX
 };
 
+/**
+ * Defines a message that the frontend will display to the user,
+ * as determined by <tt>RETRO_ENVIRONMENT_SET_MESSAGE</tt>.
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE
+ * @see retro_message_ext
+ */
 struct retro_message
 {
-   const char *msg;        /* Message to be displayed. */
-   unsigned    frames;     /* Duration in frames of message. */
+   /**
+    * Null-terminated message to be displayed.
+    * If \c NULL or empty, the message will be ignored.
+    */
+   const char *msg;
+
+   /** Duration to display \c msg in frames. */
+   unsigned    frames;
 };
 
 enum retro_message_target
