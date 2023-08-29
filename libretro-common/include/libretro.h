@@ -518,7 +518,7 @@ enum retro_mod
  * \c false if it should be cropped away.
  * @returns \c true if the environment call is available.
  * Does \em not indicate whether overscan should be used.
- * @note As of 2019 this callback is considered deprecated in favor of
+ * @deprecated As of 2019 this callback is considered deprecated in favor of
  * using core options to manage overscan in a more nuanced, core-specific way.
  */
 #define RETRO_ENVIRONMENT_GET_OVERSCAN  2
@@ -556,6 +556,10 @@ enum retro_mod
  *    environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
  * }
  * \endcode
+ *
+ * @deprecated Prefer using \c RETRO_ENVIRONMENT_SET_MESSAGE_EXT for new code,
+ * as it offers more features.
+ * Only use this environment call for compatibility with older cores or frontends.
  *
  * @param data[in] <tt>const struct retro_message*</tt>.
  * @returns \c true if the environment call is available.
@@ -956,7 +960,7 @@ enum retro_mod
                                             */
 
 /**
- * An obsolete alias to \c RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY kept for compatibility.
+ * @deprecated An obsolete alias to \c RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY kept for compatibility.
  * @see RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY
  **/
 #define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
