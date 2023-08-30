@@ -183,11 +183,11 @@ struct bsv_state
 /* These data are always little-endian. */
 struct bsv_key_data
 {
+  uint8_t down;
+  uint16_t mod;
+  uint8_t _padding;
   uint32_t code;
   uint32_t character;
-  uint16_t mod;
-  uint8_t down;
-  uint8_t _padding;
 };
 
 typedef struct bsv_key_data bsv_key_data_t;
