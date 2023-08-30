@@ -3926,7 +3926,6 @@ void input_config_reset(void)
        * to zero manually) */
       input_st->input_device_info[i].name[0]          = '\0';
       input_st->input_device_info[i].display_name[0]  = '\0';
-      input_st->input_device_info[i].config_path[0]   = '\0';
       input_st->input_device_info[i].config_name[0]   = '\0';
       input_st->input_device_info[i].joypad_driver[0] = '\0';
       input_st->input_device_info[i].vid              = 0;
@@ -4046,15 +4045,6 @@ const char *input_config_get_device_name(unsigned port)
    return input_st->input_device_info[port].name;
 }
 
-
-const char *input_config_get_device_config_path(unsigned port)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].config_path))
-      return NULL;
-   return input_st->input_device_info[port].config_path;
-}
-
 const char *input_config_get_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -4139,21 +4129,6 @@ void input_config_set_device_display_name(unsigned port, const char *name)
             sizeof(input_st->input_device_info[port].display_name));
 }
 
-void input_config_set_device_config_path(unsigned port, const char *path)
-{
-   if (!string_is_empty(path))
-   {
-      char parent_dir_name[128];
-      input_driver_state_t *input_st = &input_driver_st;
-      if (fill_pathname_parent_dir_name(parent_dir_name,
-               path, sizeof(parent_dir_name)))
-         fill_pathname_join_special(
-               input_st->input_device_info[port].config_path,
-               parent_dir_name, path_basename_nocompression(path),
-               sizeof(input_st->input_device_info[port].config_path));
-   }
-}
-
 void input_config_set_device_config_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -4205,12 +4180,6 @@ void input_config_clear_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
    input_st->input_device_info[port].display_name[0] = '\0';
-}
-
-void input_config_clear_device_config_path(unsigned port)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   input_st->input_device_info[port].config_path[0] = '\0';
 }
 
 void input_config_clear_device_config_name(unsigned port)
