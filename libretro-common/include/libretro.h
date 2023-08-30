@@ -256,7 +256,10 @@ extern "C" {
 #define RETRO_REGION_NTSC  0
 #define RETRO_REGION_PAL   1
 
-/* Id values for LANGUAGE */
+/**
+ * Identifiers for supported languages.
+ * @see RETRO_ENVIRONMENT_GET_LANGUAGE
+ */
 enum retro_language
 {
    RETRO_LANGUAGE_ENGLISH             = 0,
@@ -293,7 +296,7 @@ enum retro_language
    RETRO_LANGUAGE_HUNGARIAN           = 31,
    RETRO_LANGUAGE_LAST,
 
-   /* Ensure sizeof(enum) == sizeof(int) */
+   /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
    RETRO_LANGUAGE_DUMMY          = INT_MAX
 };
 
@@ -646,7 +649,7 @@ enum retro_mod
  * @param data[in] <tt>const struct retro_input_descriptor *</tt>.
  * An array of input descriptors terminated by one whose
  * \c retro_input_descriptor::description field is set to <tt>NULL</tt>.
- * Can include game-specific controls.
+ * Behavior is undefined if <tt>NULL</tt>.
  * @return \c true if the environment call is recognized.
  * @see retro_input_descriptor
  */
@@ -659,9 +662,10 @@ enum retro_mod
  *
  * @param data[in] <tt>const struct retro_keyboard_callback *</tt>.
  * Pointer to the callback function.
+ * Behavior is undefined if <tt>NULL</tt>.
  * @return \c true if the environment call is recognized.
  * @see retro_keyboard_callback
- * @see retro_keyboard_event_t
+ * @see retro_key
  */
 #define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
 
@@ -1125,20 +1129,38 @@ enum retro_mod
                                             * A frontend must guarantee that this environment call completes in
                                             * constant time.
                                             */
+
+/**
+ * Returns the name of the user, if possible.
+ * This callback is suitable for cores that offer personalization,
+ * such as online facilities or user profiles on the emulated system.
+ * @param data[out] <tt>const char **</tt>.
+ * Pointer to the user name string.
+ * May be <tt>NULL</tt>, in which case the core should use a default name.
+ * The returned pointer is owned by the frontend and must not be modified or freed by the core.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available,
+ * even if the frontend couldn't provide a name.
+ */
 #define RETRO_ENVIRONMENT_GET_USERNAME 38
-                                           /* const char **
-                                            * Returns the specified username of the frontend, if specified by the user.
-                                            * This username can be used as a nickname for a core that has online facilities
-                                            * or any other mode where personalization of the user is desirable.
-                                            * The returned value can be NULL.
-                                            * If this environ callback is used by a core that requires a valid username,
-                                            * a default username should be specified by the core.
-                                            */
+
+/**
+ * Returns the frontend's configured language.
+ * It can be used to localize the core's UI,
+ * or to customize the emulated firmware if applicable.
+ *
+ * @param data[out] <tt>retro_language *</tt>.
+ * Pointer to the language identifier.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @note The returned language may not be the same as the operating system's language.
+ * Cores should fall back to the operating system's language (or to English)
+ * if the environment call is unavailable or the returned language is unsupported.
+ * @see retro_language
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+ */
 #define RETRO_ENVIRONMENT_GET_LANGUAGE 39
-                                           /* unsigned * --
-                                            * Returns the specified language of the frontend, if specified by the user.
-                                            * It can be used by the core for localization purposes.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_framebuffer * --
                                             * Returns a preallocated framebuffer which the core can use for rendering
@@ -1445,15 +1467,25 @@ enum retro_mod
                                             * default when calling SET_VARIABLES/SET_CORE_OPTIONS.
                                             */
 
+/**
+ * Returns the frontend's preferred hardware rendering API.
+ * Cores should use this information to decide which API to use with \c RETRO_ENVIRONMENT_SET_HW_RENDER.
+ * @param data[out] <tt>retro_hw_context_type *</tt>.
+ * Pointer to the hardware context type.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * This value will be set even if the environment call returns <tt>false</tt>,
+ * unless the frontend doesn't implement it.
+ * @returns \c true if the environment call is available
+ * and the frontend is able to use a hardware rendering API besides the one returned.
+ * If \c false is returned and the core cannot use the preferred rendering API,
+ * then it should exit or fall back to software rendering.
+ * @note The returned value does not indicate which API is currently in use.
+ * For example, the frontend may return \c RETRO_HW_CONTEXT_OPENGL while a Direct3D context is active.
+ * @see retro_hw_context_type
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ */
 #define RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER 56
-                                           /* unsigned * --
-                                            *
-                                            * Allows an implementation to ask frontend preferred hardware
-                                            * context to use. Core should use this information to deal
-                                            * with what specific context to request with SET_HW_RENDER.
-                                            *
-                                            * 'data' points to an unsigned variable
-                                            */
 
 #define RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION 57
                                            /* unsigned * --
@@ -1968,11 +2000,14 @@ enum retro_mod
                                              * this environment call to query support.
                                              */
 
+/**
+ * Asks the frontend whether JIT compilation can be used.
+ * Primarily used by iOS and tvOS.
+ * @param data[out] <tt>bool *</tt>.
+ * Set to \c true if the frontend has verified that JIT compilation is possible.
+ * @return \c true if the environment call is available.
+ */
 #define RETRO_ENVIRONMENT_GET_JIT_CAPABLE 74
-                                           /* bool * --
-                                            * Result is set to true if the frontend has already verified JIT can be
-                                            * used, mainly for use iOS/tvOS. On other platforms the result is true.
-                                            */
 
 #define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (75 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_microphone_interface * --
@@ -2618,8 +2653,11 @@ struct retro_perf_counter
    bool registered;
 };
 
-/* Returns current time in microseconds.
- * Tries to use the most accurate timer available.
+/**
+ * @returns The current system time in microseconds.
+ * @note Accuracy may vary by platform.
+ * The frontend should use the most accurate timer possible.
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
  */
 typedef retro_time_t (RETRO_CALLCONV *retro_perf_get_time_usec_t)(void);
 
@@ -2860,6 +2898,7 @@ enum retro_rumble_effect
    RETRO_RUMBLE_STRONG = 0,
    RETRO_RUMBLE_WEAK = 1,
 
+   /** Defined to ensure <tt>sizeof(enum retro_rumble_effect) == sizeof(int)</tt>. Do not use. */
    RETRO_RUMBLE_DUMMY = INT_MAX
 };
 
@@ -3536,21 +3575,25 @@ struct retro_input_descriptor
    const char *description;
 };
 
+/**
+ * Contains basic information about the core.
+ *
+ * @see retro_get_system_info
+ * @warning All pointers are owned by the core
+ * and must remain valid throughout its lifetime.
+ */
 struct retro_system_info
 {
-   /* All pointers are owned by libretro implementation, and pointers must
-    * remain valid until it is unloaded. */
 
    const char *library_name;      /* Descriptive name of library. Should not
                                    * contain any version numbers, etc. */
    const char *library_version;   /* Descriptive version of core. */
 
-   const char *valid_extensions;  /* A string listing probably content
-                                   * extensions the core will be able to
-                                   * load, separated with pipe.
-                                   * I.e. "bin|rom|iso".
-                                   * Typically used for a GUI to filter
-                                   * out extensions. */
+   /**
+    * A pipe-delimited string list of file extensions that this core can load, e.g. "bin|rom|iso".
+    * Typically used by a frontend for filtering or core selection.
+    */
+   const char *valid_extensions;
 
    /* Libretro cores that need to have direct access to their content
     * files, including cores which use the path of the content files to
@@ -3816,12 +3859,15 @@ struct retro_system_av_info
 
 struct retro_variable
 {
-   /* Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE.
+   /**
+    * Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE.
     * If NULL, obtains the complete environment string if more
     * complex parsing is necessary.
     * The environment string is formatted as key-value pairs
     * delimited by semicolons as so:
     * "key1=value1;key2=value2;..."
+    * Should be prefixed with the core's name
+    * to minimize the risk of collisions with another core's options.
     */
    const char *key;
 
@@ -4544,7 +4590,11 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info);
  */
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device);
 
-/* Resets the current game. */
+/**
+ * Resets the currently-loaded game.
+ * Cores should treat this as a soft reset (i.e. an emulated reset button) if possible,
+ * but hard resets are acceptable.
+ */
 RETRO_API void retro_reset(void);
 
 /* Runs the game for one video frame.
