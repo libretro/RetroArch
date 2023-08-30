@@ -183,11 +183,11 @@ struct bsv_state
 /* These data are always little-endian. */
 struct bsv_key_data
 {
-  uint8_t down;
-  uint16_t mod;
-  uint8_t _padding;
   uint32_t code;
   uint32_t character;
+  uint16_t mod;
+  uint8_t down;
+  uint8_t _padding;
 };
 
 typedef struct bsv_key_data bsv_key_data_t;
@@ -199,15 +199,15 @@ struct bsv_movie
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
    size_t *frame_pos;
+   int64_t identifier;
    size_t frame_mask;
    size_t frame_ptr;
    size_t min_file_pos;
    size_t state_size;
-   int64_t identifier;
+   bsv_key_data_t key_events[255]; /* uint32_t alignment */
 
    /* Staging variables for keyboard events */
    uint8_t key_event_count;
-   bsv_key_data_t key_events[255];
 
    /* Rewind state */
    bool playback;
