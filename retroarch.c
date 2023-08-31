@@ -7266,6 +7266,7 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"uk", RETRO_LANGUAGE_UKRAINIAN},
       {"cs", RETRO_LANGUAGE_CZECH},
       {"ca_ES@valencia", RETRO_LANGUAGE_CATALAN_VALENCIA},
+      {"en_CA", RETRO_LANGUAGE_BRITISH_ENGLISH}, // Canada must be indexed before Catalan's "ca".
       {"ca", RETRO_LANGUAGE_CATALAN},
       {"en_GB", RETRO_LANGUAGE_BRITISH_ENGLISH},
       {"en", RETRO_LANGUAGE_ENGLISH},
