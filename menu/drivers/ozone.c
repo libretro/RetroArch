@@ -5328,16 +5328,15 @@ static void ozone_update_scroll(
    }
 }
 
-static unsigned ozone_get_sublabel_max_width(ozone_handle_t *ozone,
+static int ozone_get_sublabel_max_width(ozone_handle_t *ozone,
       unsigned video_info_width,
       unsigned entry_padding)
 {
    settings_t *settings        = config_get_ptr();
-   float menu_scale_factor     = settings->floats.menu_scale_factor;
-   unsigned sublabel_max_width = video_info_width - (menu_scale_factor * (entry_padding * 2));
+   int sublabel_max_width      = video_info_width - (entry_padding * 2);
 
    if (ozone->depth == 1)
-      sublabel_max_width -= (unsigned) ozone->dimensions_sidebar_width;
+      sublabel_max_width -= (int)ozone->dimensions_sidebar_width;
    if (ozone->show_thumbnail_bar)
    {
       if (ozone->is_quick_menu && menu_is_running_quick_menu())
@@ -5420,7 +5419,7 @@ static void ozone_compute_entries_position(
       {
          if (!string_is_empty(entry.sublabel))
          {
-            unsigned sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
+            int sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
             char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
 
             wrapped_sublabel_str[0] = '\0';
@@ -5762,7 +5761,7 @@ border_iterate:
       {
          if (node->wrap && !string_is_empty(sublabel_str))
          {
-            unsigned sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
+            int sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
             char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
 
             wrapped_sublabel_str[0] = '\0';
