@@ -26,12 +26,12 @@
 #include "webhooks_game.h"
 
 const int HASH_LENGTH = 33;
-const int MACRO_LENGTH = 2048;
+const int GAME_PROGRESS_LENGTH = 4096;
 
 typedef struct wb_locals_t
 {
   char hash[HASH_LENGTH];
-  char macro[MACRO_LENGTH];
+  char game_progress[GAME_PROGRESS_LENGTH];
   struct rc_runtime_t runtime;
   rc_libretro_memory_regions_t memory;
   uint console_id;

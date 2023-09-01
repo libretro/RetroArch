@@ -27,8 +27,8 @@
 
 #include "webhooks.h"
 #include "webhooks_client.h"
-#include "webhooks_macro_manager.h"
-#include "webhooks_macro_parser.h"
+#include "webhooks_progress_downloader.h"
+#include "webhooks_progress_parser.h"
 #include "webhooks_progress_tracker.h"
 
 #include "webhooks_client.h"
@@ -36,6 +36,8 @@
 
 //  Keeps dependency on rcheevos to compute the hash of a ROM.
 #include "../deps/rcheevos/include/rc_api_runtime.h"
+//  Keeps dependency on rcheevos to reuse the triggers.
+#include "../deps/rcheevos/include/rc_runtime.h"
 
 struct wb_identify_game_data_t
 {
@@ -124,9 +126,9 @@ static void wh_compute_hash(const struct retro_game_info* info)
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wh_on_macro_downloaded(wb_locals_t* locals, const char* macro, size_t length)
+static void wh_on_game_progress_downloaded(wb_locals_t* locals, const char* game_progress, size_t length)
 {
-  wmp_parse_macro(macro, &locals->runtime);
+  wpp_parse_game_progress(game_progress, &locals->runtime);
 }
 
 //  ---------------------------------------------------------------------------
@@ -153,7 +155,7 @@ static void wh_get_core_memory_info(unsigned id, rc_libretro_core_memory_info_t*
 }
 
 //  ---------------------------------------------------------------------------
-//
+//  Initialize wb_locals_t's memory field.
 //  ---------------------------------------------------------------------------
 static int wh_init_memory(wb_locals_t* locals)
 {
@@ -216,7 +218,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 
   wc_send_event(locals.console_id, locals.hash, true);
 
-  wmm_download_macro(&locals, &wh_on_macro_downloaded);
+  wpd_download_game_progress(&locals, &wh_on_game_progress_downloaded);
 }
 
 //  ---------------------------------------------------------------------------

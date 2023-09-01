@@ -528,6 +528,8 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
 
   runtime_event.value = 0;
 
+  //  TESTS ALL ACHIEVEMENTS //
+
   rc_update_memref_values(self->memrefs, peek, ud);
   rc_update_variables(self->variables, peek, ud, L);
 

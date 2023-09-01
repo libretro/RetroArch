@@ -13,13 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __WEBHOOKS_MACRO_PARSER_H
-#define __WEBHOOKS_MACRO_PARSER_H
+#ifndef __WEBHOOKS_PROGRESS_PARSER_H
+#define __WEBHOOKS_PROGRESS_PARSER_H
 
-int wmp_parse_macro
+int wpp_parse_game_progress
 (
-  const char* macro,
+  const char* game_progress,
   rc_runtime_t* runtime
 );
 
-#endif /*__WEBHOOKS_MACRO_PARSER_H*/
+#endif /*__WEBHOOKS_PROGRESS_PARSER_H*/

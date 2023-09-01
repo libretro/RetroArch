@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "webhooks.h"
-#include "webhooks_macro_manager.h"
+#include "webhooks_progress_downloader.h"
 #include "webhooks_oauth.h"
 
 #include "../tasks/tasks_internal.h"
@@ -17,7 +17,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wmm_end_http_request(async_http_request_t* request)
+static void wpd_end_http_request(async_http_request_t* request)
 {
   rc_api_destroy_request(&request->request);
 
@@ -38,7 +38,7 @@ static void wmm_end_http_request(async_http_request_t* request)
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wmm_send_http_request_callback
+static void wpd_send_http_request_callback
 (
   retro_task_t* task,
   void* task_data,
@@ -124,7 +124,7 @@ static void wmm_send_http_request_callback
 //  ---------------------------------------------------------------------------
 //  Configures the HTTP request to GET the macro from the webhook server.
 //  ---------------------------------------------------------------------------
-static void wmm_send_http_request(const wb_locals_t* locals, async_http_request_t* request)
+static void wpd_send_http_request(const wb_locals_t* locals, async_http_request_t* request)
 {
   task_push_http_transfer_with_headers
   (
@@ -132,7 +132,7 @@ static void wmm_send_http_request(const wb_locals_t* locals, async_http_request_
     true,
     "GET",
     request->headers,
-    wmm_send_http_request_callback,
+    wpd_send_http_request_callback,
     request
   );
 }
@@ -140,7 +140,7 @@ static void wmm_send_http_request(const wb_locals_t* locals, async_http_request_
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's header, mainly the bearer token.
 //  ---------------------------------------------------------------------------
-static void wmm_set_request_header(async_http_request_t* request)
+static void wpd_set_request_header(async_http_request_t* request)
 {
   //  Builds the header containing the authorization.
   const char* access_token = woauth_get_accesstoken();
@@ -178,7 +178,7 @@ static void wmm_set_request_header(async_http_request_t* request)
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's URL.
 //  ---------------------------------------------------------------------------
-static void wmm_set_request_url(const wb_locals_t* locals, async_http_request_t* request)
+static void wpd_set_request_url(const wb_locals_t* locals, async_http_request_t* request)
 {
   const settings_t *settings = config_get_ptr();
   const char* base_url = settings->arrays.cheevos_webhook_url;
@@ -209,27 +209,27 @@ static void wmm_set_request_url(const wb_locals_t* locals, async_http_request_t*
 //  ---------------------------------------------------------------------------
 //  Configures the HTTP request to GET the macro from the webhook server.
 //  ---------------------------------------------------------------------------
-static void wmm_prepare_http_request(const wb_locals_t* locals, async_http_request_t* request)
+static void wpd_prepare_http_request(const wb_locals_t* locals, async_http_request_t* request)
 {
-  wmm_set_request_url(locals, request);
+  wpd_set_request_url(locals, request);
 
-  wmm_set_request_header(request);
+  wpd_set_request_header(request);
 }
 
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wmm_initiate_macro_request(wb_locals_t* locals, async_http_request_t* request)
+static void wpd_initiate_macro_request(wb_locals_t* locals, async_http_request_t* request)
 {
-  wmm_prepare_http_request(locals, request);
+  wpd_prepare_http_request(locals, request);
 
-  wmm_send_http_request(locals, request);
+  wpd_send_http_request(locals, request);
 }
 
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wmm_on_request_completed
+static void wpd_on_request_completed
 (
   async_http_request_t *request,
   http_transfer_data_t *data,
@@ -237,19 +237,19 @@ static void wmm_on_request_completed
   size_t buffer_size
 )
 {
-  on_macro_downloaded_t on_macro_downloaded = (on_macro_downloaded_t)(request->callback);
+  on_game_progress_downloaded_t on_game_progress_downloaded = (on_game_progress_downloaded_t)(request->callback);
   struct wb_locals_t* locals = (struct wb_locals_t*)(request->callback_data);
 
-  on_macro_downloaded(locals, data->data, data->len);
+  on_game_progress_downloaded(locals, data->data, data->len);
 }
 
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-void wmm_download_macro(wb_locals_t* locals, on_macro_downloaded_t on_macro_downloaded)
+void wpd_download_game_progress(wb_locals_t* locals, on_game_progress_downloaded_t on_game_progress_downloaded)
 {
-  //  Clears any progress.
-  locals->macro[0] = '\0';
+  //  Clears any previous progress.
+  locals->game_progress[0] = '\0';
 
   async_http_request_t *request = (async_http_request_t*) malloc(sizeof(async_http_request_t));
 
@@ -259,9 +259,9 @@ void wmm_download_macro(wb_locals_t* locals, on_macro_downloaded_t on_macro_down
     return;
   }
 
-  request->handler = wmm_on_request_completed;
-  request->callback = on_macro_downloaded;
+  request->handler = wpd_on_request_completed;
+  request->callback = on_game_progress_downloaded;
   request->callback_data = locals;
 
-  wmm_initiate_macro_request(locals, request);
+  wpd_initiate_macro_request(locals, request);
 }
