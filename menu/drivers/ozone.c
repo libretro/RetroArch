@@ -5333,7 +5333,9 @@ static int ozone_get_sublabel_max_width(ozone_handle_t *ozone,
       unsigned entry_padding)
 {
    settings_t *settings        = config_get_ptr();
-   int sublabel_max_width      = video_info_width - (entry_padding * 2);
+   int sublabel_max_width      = video_info_width
+         - (entry_padding * 2)
+         - (ozone->dimensions.entry_icon_padding * 2);
 
    if (ozone->depth == 1)
       sublabel_max_width -= (int)ozone->dimensions_sidebar_width;
@@ -9048,8 +9050,6 @@ static void ozone_set_layout(
    settings_t *settings                             = config_get_ptr();
    bool font_inited                                 = false;
    float scale_factor                               = ozone->last_scale_factor;
-   float font_min_size                              = 9.0f;
-   float font_size                                  = font_min_size;
 
    /* Calculate dimensions */
    ozone->dimensions.header_height                  = HEADER_HEIGHT * scale_factor;
@@ -9152,52 +9152,32 @@ static void ozone_set_layout(
    }
 
    /* Sidebar */
-   font_size = FONT_SIZE_SIDEBAR * scale_factor;
-   if (font_size < font_min_size)
-      font_size = font_min_size;
-
    font_inited = ozone_init_font(&ozone->fonts.sidebar,
-         is_threaded, font_path, font_size);
+         is_threaded, font_path, FONT_SIZE_SIDEBAR * scale_factor);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Entries */
-   font_size = FONT_SIZE_ENTRIES_LABEL * scale_factor;
-   if (font_size < font_min_size)
-      font_size = font_min_size;
-
    font_inited = ozone_init_font(&ozone->fonts.entries_label,
-         is_threaded, font_path, font_size);
+         is_threaded, font_path, FONT_SIZE_ENTRIES_LABEL * scale_factor);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Sublabels */
-   font_size = FONT_SIZE_ENTRIES_SUBLABEL * scale_factor;
-   if (font_size < font_min_size - 2)
-      font_size = font_min_size - 2;
-
    font_inited = ozone_init_font(&ozone->fonts.entries_sublabel,
-         is_threaded, font_path, font_size);
+         is_threaded, font_path, FONT_SIZE_ENTRIES_SUBLABEL * scale_factor);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Time */
-   font_size = FONT_SIZE_TIME * scale_factor;
-   if (font_size < font_min_size - 2)
-      font_size = font_min_size - 2;
-
    font_inited = ozone_init_font(&ozone->fonts.time,
-         is_threaded, font_path, font_size);
+         is_threaded, font_path, FONT_SIZE_TIME * scale_factor);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Footer */
-   font_size = FONT_SIZE_FOOTER * scale_factor;
-   if (font_size < font_min_size - 2)
-      font_size = font_min_size - 2;
-
    font_inited = ozone_init_font(&ozone->fonts.footer,
-         is_threaded, font_path, font_size);
+         is_threaded, font_path, FONT_SIZE_FOOTER * scale_factor);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
