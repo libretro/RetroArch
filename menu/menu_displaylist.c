@@ -885,6 +885,31 @@ end:
    return count;
 }
 
+/* Fetches a string representation of a backup
+ * list entry timestamp.
+ * Returns false in the event of an error */
+static size_t core_backup_list_get_entry_timestamp_str(
+      const core_backup_list_entry_t *entry,
+      enum core_backup_date_separator_type date_separator,
+      char *timestamp, size_t len)
+{
+   const char *format_str = "%04u-%02u-%02u %02u:%02u:%02u";
+   /* Get time format string */
+   if      (date_separator == CORE_BACKUP_DATE_SEPARATOR_SLASH)
+      format_str = "%04u/%02u/%02u %02u:%02u:%02u";
+   else if (date_separator == CORE_BACKUP_DATE_SEPARATOR_PERIOD)
+      format_str = "%04u.%02u.%02u %02u:%02u:%02u";
+
+   return snprintf(timestamp, len,
+         format_str,
+         entry->date.year,
+         entry->date.month,
+         entry->date.day,
+         entry->date.hour,
+         entry->date.minute,
+         entry->date.second);
+}
+
 static unsigned menu_displaylist_parse_core_backup_list(
       file_list_t *list, const char *core_path,
       settings_t *settings, bool restore)
@@ -936,8 +961,7 @@ static unsigned menu_displaylist_parse_core_backup_list(
             /* Get timestamp and crc strings */
             core_backup_list_get_entry_timestamp_str(
                   entry, date_separator, timestamp, sizeof(timestamp));
-            core_backup_list_get_entry_crc_str(
-                  entry, crc, sizeof(crc));
+            snprintf(crc, sizeof(crc), "%08lx", (unsigned long)entry->crc);
 
             /* Append 'auto backup' tag to timestamp, if required */
             if (entry->backup_mode == CORE_BACKUP_MODE_AUTO)
