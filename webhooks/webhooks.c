@@ -33,7 +33,6 @@
 #include "webhooks_progress_tracker.h"
 
 #include "webhooks_client.h"
-#include "webhooks_game.h"
 
 //  Keeps dependency on rcheevos to compute the hash of a ROM.
 #include "../deps/rcheevos/include/rc_api_runtime.h"
@@ -246,12 +245,13 @@ void webhooks_game_loaded(const struct retro_game_info* info)
   //  -----------------------------------------------------------------------------
 
   frame_counter = 0;
+  retro_time_t time = cpu_features_get_time_usec();
 
   wh_compute_hash(info);
 
   wh_init_memory(&locals);
 
-  wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter);
+  wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
 
   wpd_download_game_progress(&locals, &wh_on_game_progress_downloaded);
 }
@@ -261,7 +261,9 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 //  ---------------------------------------------------------------------------
 void webhooks_game_unloaded()
 {
-  wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter);
+  retro_time_t time = cpu_features_get_time_usec();
+
+  wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 }
 
 //  ---------------------------------------------------------------------------
@@ -270,6 +272,7 @@ void webhooks_game_unloaded()
 void webhooks_process_frame()
 {
   frame_counter++;
+  retro_time_t time = cpu_features_get_time_usec();
 
   //  Checks for the game events.
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
@@ -279,7 +282,7 @@ void webhooks_process_frame()
 
     if (result == RC_TRIGGER_STATE_TRIGGERED) {
       int event_id = locals.runtime.triggers[trigger_num].id;
-      wc_send_event(locals.console_id, locals.hash, event_id, frame_counter);
+      wc_send_event(locals.console_id, locals.hash, event_id, frame_counter, time);
     }
   }
 
@@ -287,6 +290,6 @@ void webhooks_process_frame()
   int result = wpt_process_frame(&locals.runtime);
 
   if (result != PROGRESS_UNCHANGED) {
-    wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter);
+    wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter, time);
   }
 }

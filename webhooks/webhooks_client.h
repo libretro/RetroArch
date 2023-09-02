@@ -23,7 +23,8 @@ void wc_send_event
   unsigned int console_id,
   const char* game_hash,
   unsigned short game_event,
-  unsigned long frame_number
+  unsigned long frame_number,
+  retro_time_t time
 );
 
 void wc_update_progress
@@ -31,7 +32,8 @@ void wc_update_progress
   unsigned int console_id,
   const char* game_hash,
   const char* progress,
-  unsigned long frame_number
+  unsigned long frame_number,
+  retro_time_t time
 );
 
 #endif /* __WEBHOOKS_RICH_PRESENCE_H */

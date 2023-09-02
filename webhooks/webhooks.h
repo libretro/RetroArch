@@ -23,8 +23,6 @@
 
 #include "rc_api_request.h"
 
-#include "webhooks_game.h"
-
 const int HASH_LENGTH = 33;
 const int GAME_PROGRESS_LENGTH = 4096;
 

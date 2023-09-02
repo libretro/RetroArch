@@ -165,6 +165,7 @@ static void wc_set_progress_request_url
   const char* game_hash,
   const char* progress,
   unsigned long frame_number,
+  retro_time_t time,
   async_http_request_t* request
 )
 {
@@ -182,6 +183,7 @@ static void wc_set_progress_request_url
   rc_url_builder_append_num_param(&builder, "c", console_id);
   rc_url_builder_append_str_param(&builder, "p", progress);
   rc_url_builder_append_num_param(&builder, "f", frame_number);
+  rc_url_builder_append_num_param(&builder, "t", time);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
@@ -191,6 +193,7 @@ static void wc_set_event_request_url
   const char* game_hash,
   unsigned short game_event,
   unsigned long frame_number,
+  retro_time_t time,
   async_http_request_t* request
 )
 {
@@ -208,6 +211,7 @@ static void wc_set_event_request_url
   rc_url_builder_append_num_param(&builder, "c", console_id);
   rc_url_builder_append_num_param(&builder, "e", game_event);
   rc_url_builder_append_num_param(&builder, "f", frame_number);
+  rc_url_builder_append_num_param(&builder, "t", time);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
@@ -258,10 +262,11 @@ static void wc_prepare_progress_http_request
   const char* game_hash,
   const char* progress,
   unsigned long frame_number,
+  retro_time_t time,
   async_http_request_t* request
 )
 {
-  wc_set_progress_request_url(console_id, game_hash, progress, frame_number, request);
+  wc_set_progress_request_url(console_id, game_hash, progress, frame_number, time, request);
 
   wc_set_request_header(request);
 }
@@ -272,10 +277,11 @@ static void wc_prepare_event_http_request
   const char* game_hash,
   unsigned short game_event,
   unsigned long frame_number,
+  retro_time_t time,
   async_http_request_t* request
 )
 {
-  wc_set_event_request_url(console_id, game_hash, game_event, frame_number, request);
+  wc_set_event_request_url(console_id, game_hash, game_event, frame_number, time, request);
 
   wc_set_request_header(request);
 }
@@ -289,10 +295,11 @@ static void wc_initiate_progress_request
   const char* game_hash,
   const char* progress,
   unsigned long frame_number,
+  retro_time_t time,
   async_http_request_t* request
 )
 {
-  wc_prepare_progress_http_request(console_id, game_hash, progress, frame_number, request);
+  wc_prepare_progress_http_request(console_id, game_hash, progress, frame_number, time, request);
 
   wc_begin_http_request(request);
 }
@@ -303,10 +310,11 @@ static void wc_initiate_event_request
   const char* game_hash,
   unsigned short game_event,
   unsigned long frame_number,
+  retro_time_t time,
   async_http_request_t* request
 )
 {
-  wc_prepare_event_http_request(console_id, game_hash, game_event, frame_number, request);
+  wc_prepare_event_http_request(console_id, game_hash, game_event, frame_number, time, request);
 
   wc_begin_http_request(request);
 }
@@ -319,7 +327,8 @@ void wc_update_progress
   unsigned int console_id,
   const char* game_hash,
   const char* progress,
-  unsigned long frame_number
+  unsigned long frame_number,
+  retro_time_t time
 )
 {
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
@@ -330,7 +339,7 @@ void wc_update_progress
     return;
   }
 
-  wc_initiate_progress_request(console_id, game_hash, progress, frame_number, request);
+  wc_initiate_progress_request(console_id, game_hash, progress, frame_number, time, request);
 }
 
 //  ---------------------------------------------------------------------------
@@ -341,7 +350,8 @@ void wc_send_event
   unsigned int console_id,
   const char* game_hash,
   unsigned short game_event,
-  unsigned long frame_number
+  unsigned long frame_number,
+  retro_time_t time
 )
 {
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
@@ -352,5 +362,5 @@ void wc_send_event
     return;
   }
 
-  wc_initiate_event_request(console_id, game_hash, game_event, frame_number, request);
+  wc_initiate_event_request(console_id, game_hash, game_event, frame_number, time, request);
 }
