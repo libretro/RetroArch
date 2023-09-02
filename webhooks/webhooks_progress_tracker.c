@@ -1,4 +1,5 @@
 #include "webhooks_progress_tracker.h"
+#include "webhooks.h"
 
 #include "../deps/rcheevos/src/rcheevos/rc_internal.h"
 #include "../deps/rcheevos/src/rcheevos/rc_compat.h"
@@ -21,32 +22,6 @@ char frame_progress[2048];
 char last_progress[2048];
 
 //  ---------------------------------------------------------------------------
-//
-//  ---------------------------------------------------------------------------
-static unsigned wpt_peek(unsigned address, unsigned num_bytes, void* ud)
-{
-   unsigned avail;
-   uint8_t* data = rc_libretro_memory_find_avail(&rcheevos_locals.memory, address, &avail);
-
-   if (data && avail >= num_bytes)
-   {
-      switch (num_bytes)
-      {
-         case 4:
-            return (data[3] << 24) | (data[2] << 16) | (data[1] <<  8) | (data[0]);
-         case 3:
-            return (data[2] << 16) | (data[1] << 8) | (data[0]);
-         case 2:
-            return (data[1] << 8)  | (data[0]);
-         case 1:
-            return data[0];
-      }
-   }
-
-   return 0;
-}
-
-//  ---------------------------------------------------------------------------
 //  Returns the last progress computed
 //  ---------------------------------------------------------------------------
 const char* wpt_get_last_progress() {
@@ -66,8 +41,8 @@ int wpt_process_frame(rc_runtime_t* runtime)
   }
 
   //  Gets the latest values from the memory.
-  rc_update_memref_values(runtime->memrefs, &wpt_peek, NULL);
-  rc_update_variables(runtime->variables, &wpt_peek, NULL, NULL);
+  rc_update_memref_values(runtime->memrefs, &wb_peek, NULL);
+  rc_update_variables(runtime->variables, &wb_peek, NULL, NULL);
 
   rc_richpresence_t* richpresence = runtime_richpresence->richpresence;
 

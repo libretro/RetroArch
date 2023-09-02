@@ -20,6 +20,7 @@
 #include <net/net_http.h>
 #include <libretro.h>
 #include <lrc_hash.h>
+#include <limits.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -79,6 +80,40 @@ struct async_http_request_t
 wb_locals_t locals;
 
 unsigned long frame_counter = 0;
+
+const unsigned short LOADED = 1;
+const unsigned short UNLOADED = USHRT_MAX;
+
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+unsigned wb_peek
+(
+  unsigned address,
+  unsigned num_bytes,
+  void* ud
+)
+{
+  unsigned avail;
+  uint8_t* data = rc_libretro_memory_find_avail(&locals.memory, address, &avail);
+
+  if (data && avail >= num_bytes)
+  {
+    switch (num_bytes)
+    {
+      case 4:
+        return (data[3] << 24) | (data[2] << 16) | (data[1] <<  8) | (data[0]);
+      case 3:
+        return (data[2] << 16) | (data[1] << 8) | (data[0]);
+      case 2:
+        return (data[1] << 8)  | (data[0]);
+      case 1:
+        return data[0];
+    }
+  }
+
+  return 0;
+}
 
 //  ---------------------------------------------------------------------------
 //
@@ -216,7 +251,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 
   wh_init_memory(&locals);
 
-  wc_send_event(locals.console_id, locals.hash, true);
+  wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter);
 
   wpd_download_game_progress(&locals, &wh_on_game_progress_downloaded);
 }
@@ -226,7 +261,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 //  ---------------------------------------------------------------------------
 void webhooks_game_unloaded()
 {
-  wc_send_event(locals.console_id, locals.hash, false);
+  wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter);
 }
 
 //  ---------------------------------------------------------------------------
@@ -236,11 +271,22 @@ void webhooks_process_frame()
 {
   frame_counter++;
 
-  int result = wpt_process_frame(&locals.runtime);
+  //  Checks for the game events.
+  rc_runtime_trigger_t* triggers = locals.runtime.triggers;
+  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    struct rc_trigger_t* trigger = triggers->trigger;
+    int result = rc_evaluate_trigger(trigger, &wb_peek, NULL, 0);
 
-  if (result == PROGRESS_UNCHANGED) {
-    return;
+    if (result == RC_TRIGGER_STATE_TRIGGERED) {
+      int event_id = locals.runtime.triggers[trigger_num].id;
+      wc_send_event(locals.console_id, locals.hash, event_id, frame_counter);
+    }
   }
 
-  wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter);
+  //  Checks for the progress.
+  int result = wpt_process_frame(&locals.runtime);
+
+  if (result != PROGRESS_UNCHANGED) {
+    wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter);
+  }
 }

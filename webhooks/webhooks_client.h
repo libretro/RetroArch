@@ -22,7 +22,8 @@ void wc_send_event
 (
   unsigned int console_id,
   const char* game_hash,
-  bool is_loaded
+  unsigned short game_event,
+  unsigned long frame_number
 );
 
 void wc_update_progress

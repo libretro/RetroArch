@@ -76,18 +76,16 @@ int wpp_parse_game_progress
         return RC_MISSING_VALUE;
 
       //  Activate the trigger.
-      //result = rc_runtime_activate_achievement(&locals.runtime, game_event->id, game_event->macro, NULL, 0);
+      result = rc_runtime_activate_achievement(&locals.runtime, game_event->id, game_event->macro, NULL, 0);
+
+      if (result != RC_OK)
+        return -1;
 
       ++game_event;
     }
   }
-  
+
   result = rc_runtime_activate_richpresence(runtime, game_progress_response.progress, NULL, 0);
 
-  //  -->
-  //int result = rc_runtime_activate_achievement(&locals.runtime, 1, "0xH0048=5_0xH0049>=20_0xH0050=0_0xH00b0=1_0xH0d65=0_0xH0d45=221", NULL, 0);
-
-  //int result = rc_runtime_activate_richpresence(runtime, game_progress, NULL, 0);
-
-  return -1;
+  return result;
 }

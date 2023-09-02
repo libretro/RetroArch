@@ -37,6 +37,13 @@ typedef struct wb_locals_t
   uint console_id;
 } wb_locals_t;
 
+unsigned wb_peek
+(
+  unsigned address,
+  unsigned num_bytes,
+  void* ud
+);
+
 void wb_initialize();
 
 void webhooks_game_loaded(const struct retro_game_info* info);

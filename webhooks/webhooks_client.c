@@ -189,7 +189,8 @@ static void wc_set_event_request_url
 (
   unsigned int console_id,
   const char* game_hash,
-  bool is_loaded,
+  unsigned short game_event,
+  unsigned long frame_number,
   async_http_request_t* request
 )
 {
@@ -205,7 +206,8 @@ static void wc_set_event_request_url
 
   rc_url_builder_append_str_param(&builder, "h", game_hash);
   rc_url_builder_append_num_param(&builder, "c", console_id);
-  rc_url_builder_append_num_param(&builder, "e", is_loaded ? 1 : 0);
+  rc_url_builder_append_num_param(&builder, "e", game_event);
+  rc_url_builder_append_num_param(&builder, "f", frame_number);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
@@ -268,11 +270,12 @@ static void wc_prepare_event_http_request
 (
   unsigned int console_id,
   const char* game_hash,
-  bool is_loaded,
+  unsigned short game_event,
+  unsigned long frame_number,
   async_http_request_t* request
 )
 {
-  wc_set_event_request_url(console_id, game_hash, is_loaded, request);
+  wc_set_event_request_url(console_id, game_hash, game_event, frame_number, request);
 
   wc_set_request_header(request);
 }
@@ -298,11 +301,12 @@ static void wc_initiate_event_request
 (
   unsigned int console_id,
   const char* game_hash,
-  bool is_loaded,
+  unsigned short game_event,
+  unsigned long frame_number,
   async_http_request_t* request
 )
 {
-  wc_prepare_event_http_request(console_id, game_hash, is_loaded, request);
+  wc_prepare_event_http_request(console_id, game_hash, game_event, frame_number, request);
 
   wc_begin_http_request(request);
 }
@@ -336,7 +340,8 @@ void wc_send_event
 (
   unsigned int console_id,
   const char* game_hash,
-  bool is_loaded
+  unsigned short game_event,
+  unsigned long frame_number
 )
 {
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
@@ -347,5 +352,5 @@ void wc_send_event
     return;
   }
 
-  wc_initiate_event_request(console_id, game_hash, is_loaded, request);
+  wc_initiate_event_request(console_id, game_hash, game_event, frame_number, request);
 }
