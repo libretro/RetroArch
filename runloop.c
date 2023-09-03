@@ -2674,9 +2674,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.sample_rate);
 
             memcpy(av_info, *info, sizeof(*av_info));
-            video_st->core_frame_time = 1000000 /
-                  ((video_st->av_info.timing.fps > 0.0) ?
-                        video_st->av_info.timing.fps : 60.0);
 
             command_event(CMD_EVENT_REINIT, &reinit_flags);
 
@@ -4587,9 +4584,6 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
    core_init_libretro_cbs(runloop_st, &runloop_st->retro_ctx);
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
-   video_st->core_frame_time = 1000000 /
-         ((video_st->av_info.timing.fps > 0.0) ?
-               video_st->av_info.timing.fps : 60.0);
 
    RARCH_LOG("[Core]: Geometry: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
          video_st->av_info.geometry.base_width, video_st->av_info.geometry.base_height,
