@@ -31,17 +31,14 @@ while [ $# -gt 0 ]; do
 done
 
 WAYSCAN="$(exists wayland-scanner || :)"
+PKGCONFIG="$(exists pkg-config || :)"
 
 [ "${WAYSCAN}" ] || die 1 "Error: No wayscan in ($PATH)"
 
 WAYLAND_PROTOS=''
 
-if [ "$PROTOS" != 'no' ]; then
-   for protos in "$SHARE_DIR" /usr/local/share/wayland-protocols /usr/share/wayland-protocols; do
-      [ -d "$protos" ] || continue
-      WAYLAND_PROTOS="$protos"
-      break
-   done
+if [ "$PROTOS" != 'no' -a "$PKGCONFIG" ]; then
+   WAYLAND_PROTOS="$($PKGCONFIG wayland-protocols --variable=pkgdatadir)"
 fi
 
 if [ -z "${WAYLAND_PROTOS}" ]; then
