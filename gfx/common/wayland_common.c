@@ -119,6 +119,7 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
             break;
          case XDG_TOPLEVEL_STATE_SUSPENDED:
             wl->suspended  = true;
+            break;
       }
    }
 
