@@ -260,7 +260,7 @@ void wpd_download_game_progress(wb_locals_t* locals, on_game_progress_downloaded
   }
 
   request->handler = wpd_on_request_completed;
-  request->callback = on_game_progress_downloaded;
+  request->callback = (async_client_callback)on_game_progress_downloaded;
   request->callback_data = locals;
 
   wpd_initiate_macro_request(locals, request);

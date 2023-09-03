@@ -201,7 +201,6 @@ ACHIEVEMENTS
 #include "../webhooks/webhooks_progress_downloader.c"
 #include "../webhooks/webhooks_progress_parser.c"
 #include "../webhooks/webhooks_progress_tracker.c"
-#include "../webhooks/json_parser.c"
 
 #include "../deps/rcheevos/src/rapi/rc_api_common.c"
 #include "../deps/rcheevos/src/rapi/rc_api_runtime.c"

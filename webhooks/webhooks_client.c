@@ -170,20 +170,22 @@ static void wc_set_progress_request_url
 )
 {
   const settings_t *settings = config_get_ptr();
-  const char* webhook_url = settings->arrays.cheevos_webhook_url;
-
-  const size_t url_len = strlen(webhook_url);
-  request->request.url = malloc(url_len);
-  strncpy(request->request.url , webhook_url, url_len);
+  request->request.url = settings->arrays.cheevos_webhook_url;
   
   rc_api_url_builder_t builder;
   rc_url_builder_init(&builder, &request->request.buffer, 48);
 
+  char time_str[64];
+  sprintf(time_str, "%lld", time);
+  
+  char frame_number_str[64];
+  sprintf(frame_number_str, "%ld", frame_number);
+
   rc_url_builder_append_str_param(&builder, "h", game_hash);
   rc_url_builder_append_num_param(&builder, "c", console_id);
   rc_url_builder_append_str_param(&builder, "p", progress);
-  rc_url_builder_append_num_param(&builder, "f", frame_number);
-  rc_url_builder_append_num_param(&builder, "t", time);
+  rc_url_builder_append_str_param(&builder, "f", frame_number_str);
+  rc_url_builder_append_str_param(&builder, "t", time_str);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
@@ -198,20 +200,22 @@ static void wc_set_event_request_url
 )
 {
   const settings_t *settings = config_get_ptr();
-  const char* webhook_url = settings->arrays.cheevos_webhook_url;
-
-  const size_t url_len = strlen(webhook_url);
-  request->request.url = malloc(url_len);
-  strncpy(request->request.url , webhook_url, url_len);
+  request->request.url = settings->arrays.cheevos_webhook_url;
 
   rc_api_url_builder_t builder;
   rc_url_builder_init(&builder, &request->request.buffer, 48);
 
+  char time_str[64];
+  sprintf(time_str, "%lld", time);
+  
+  char frame_number_str[64];
+  sprintf(frame_number_str, "%ld", frame_number);
+
   rc_url_builder_append_str_param(&builder, "h", game_hash);
   rc_url_builder_append_num_param(&builder, "c", console_id);
   rc_url_builder_append_num_param(&builder, "e", game_event);
-  rc_url_builder_append_num_param(&builder, "f", frame_number);
-  rc_url_builder_append_num_param(&builder, "t", time);
+  rc_url_builder_append_str_param(&builder, "f", frame_number_str);
+  rc_url_builder_append_str_param(&builder, "t", time_str);
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 

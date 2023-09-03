@@ -6,7 +6,7 @@ const int ERROR_MESSAGE_LENGTH = 512;
 const int PROGRESS_LENGTH = 2048;
 
 struct wpp_game_event_t {
-  int id;
+  unsigned int id;
   const char* macro;
 };
 
@@ -45,47 +45,66 @@ int wpp_parse_game_progress
     RC_JSON_NEW_FIELD("Id"),
     RC_JSON_NEW_FIELD("Macro")
   };
-
-  rc_json_field_t iterator;
   
-  rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
-  rc_buf_init(api_buffer);
-
-  int result = rc_json_parse_response(&game_progress_response, game_progress, fields, sizeof(fields) / sizeof(fields[0]));
+  rc_api_response_t* api_response = (rc_api_response_t*)&game_progress_response;
+  
+  int result = rc_json_parse_response(api_response, game_progress, fields, sizeof(fields) / sizeof(fields[0]));
 
   if (result != 0)
     return result;
 
-  if (!rc_json_get_required_array(&game_progress_response.num_game_events, &iterator, &api_buffer, &fields[3], "Events"))
-    return -1;
+  rc_json_field_t iterator;
+  rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
+  rc_buf_init(api_buffer);
 
-  if (!rc_json_get_required_string(&game_progress_response.progress, &api_buffer, &fields[2], "Progress"))
+  if (!rc_json_get_required_array(&game_progress_response.num_game_events, &iterator, api_response, &fields[3], "Events")) {
+    free(api_buffer);
     return -1;
+  }
+
+  if (!rc_json_get_required_string(&game_progress_response.progress, api_response, &fields[2], "Progress")) {
+    free(api_buffer);
+    return -1;
+  }
 
   if (game_progress_response.num_game_events) {
-   game_progress_response.game_events = (struct wpp_game_event_t*)rc_buf_alloc(api_buffer, game_progress_response.num_game_events * sizeof(struct wpp_game_event_t));
-    if (!game_progress_response.game_events)
-      return RC_OUT_OF_MEMORY;
+
+    game_progress_response.game_events = (struct wpp_game_event_t*)rc_buf_alloc(api_buffer, game_progress_response.num_game_events * sizeof(struct wpp_game_event_t));
+
+    if (!game_progress_response.game_events) {
+      free(api_buffer);
+      return -1;
+    }
 
     struct wpp_game_event_t* game_event = game_progress_response.game_events;
 
     while (rc_json_get_array_entry_object(events_fields, sizeof(events_fields) / sizeof(events_fields[0]), &iterator)) {
-      if (!rc_json_get_required_unum(&game_event->id, &game_progress_response, &events_fields[0], "Id"))
-        return RC_MISSING_VALUE;
-      if (!rc_json_get_required_string(&game_event->macro, &game_progress_response, &events_fields[1], "Macro"))
-        return RC_MISSING_VALUE;
+
+      if (!rc_json_get_required_unum(&game_event->id, api_response, &events_fields[0], "Id")) {
+        free(api_buffer);
+        return -1;
+      }
+
+      if (!rc_json_get_required_string(&game_event->macro, api_response, &events_fields[1], "Macro")) {
+        free(api_buffer);
+        return -1;
+      }
 
       //  Activate the trigger.
       result = rc_runtime_activate_achievement(&locals.runtime, game_event->id, game_event->macro, NULL, 0);
 
-      if (result != RC_OK)
+      if (result != RC_OK) {
+        free(api_buffer);
         return -1;
+      }
 
       ++game_event;
     }
   }
 
   result = rc_runtime_activate_richpresence(runtime, game_progress_response.progress, NULL, 0);
+
+  free(api_buffer);
 
   return result;
 }
