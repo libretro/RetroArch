@@ -1846,7 +1846,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_MENU
    SETTING_BOOL("notification_show_when_menu_is_alive", &settings->bools.notification_show_when_menu_is_alive, true, DEFAULT_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE, false);
 #endif
-   
+
 #ifdef HAVE_MENU
    SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
    SETTING_BOOL("menu_disable_info_button",      &settings->bools.menu_disable_info_button, true, false, false);
@@ -3152,37 +3152,37 @@ static bool check_menu_driver_compatibility(settings_t *settings)
    char *video_driver   = settings->arrays.video_driver;
    char *menu_driver    = settings->arrays.menu_driver;
 
-   if (  string_is_equal(menu_driver,  "rgui") ||
-         string_is_equal(menu_driver,  "null") ||
-         string_is_equal(video_driver, "null"))
+   if (     string_is_equal(menu_driver,  "rgui")
+         || string_is_equal(menu_driver,  "null")
+         || string_is_equal(video_driver, "null"))
       return true;
 
    /* TODO/FIXME - maintenance hazard */
    if (string_starts_with_size(video_driver, "d3d", STRLEN_CONST("d3d")))
       if (
-            string_is_equal(video_driver, "d3d9_hlsl") ||
-            string_is_equal(video_driver, "d3d9_cg")   ||
-            string_is_equal(video_driver, "d3d10")     ||
-            string_is_equal(video_driver, "d3d11")     ||
-            string_is_equal(video_driver, "d3d12")
+               string_is_equal(video_driver, "d3d9_hlsl")
+            || string_is_equal(video_driver, "d3d9_cg")
+            || string_is_equal(video_driver, "d3d10")
+            || string_is_equal(video_driver, "d3d11")
+            || string_is_equal(video_driver, "d3d12")
          )
       return true;
    if (string_starts_with_size(video_driver, "gl", STRLEN_CONST("gl")))
       if (
-            string_is_equal(video_driver, "gl")     ||
-            string_is_equal(video_driver, "gl1")    ||
-            string_is_equal(video_driver, "glcore")
+               string_is_equal(video_driver, "gl")
+            || string_is_equal(video_driver, "gl1")
+            || string_is_equal(video_driver, "glcore")
          )
          return true;
    if (
-         string_is_equal(video_driver, "caca")   ||
-         string_is_equal(video_driver, "gdi")    ||
-         string_is_equal(video_driver, "gx2")    ||
-         string_is_equal(video_driver, "vulkan") ||
-         string_is_equal(video_driver, "metal")  ||
-         string_is_equal(video_driver, "ctr")    ||
-         string_is_equal(video_driver, "vita2d") ||
-         string_is_equal(video_driver, "rsx")
+            string_is_equal(video_driver, "caca")
+         || string_is_equal(video_driver, "gdi")
+         || string_is_equal(video_driver, "gx2")
+         || string_is_equal(video_driver, "vulkan")
+         || string_is_equal(video_driver, "metal")
+         || string_is_equal(video_driver, "ctr")
+         || string_is_equal(video_driver, "vita2d")
+         || string_is_equal(video_driver, "rsx")
       )
       return true;
 
@@ -3504,13 +3504,13 @@ static bool config_load_file(global_t *global,
       return false;
    }
 
-   bool_settings                                   = populate_settings_bool  (settings, &bool_settings_size);
-   float_settings                                  = populate_settings_float (settings, &float_settings_size);
-   int_settings                                    = populate_settings_int   (settings, &int_settings_size);
-   uint_settings                                   = populate_settings_uint  (settings, &uint_settings_size);
-   size_settings                                   = populate_settings_size  (settings, &size_settings_size);
-   array_settings                                  = populate_settings_array (settings, &array_settings_size);
-   path_settings                                   = populate_settings_path  (settings, &path_settings_size);
+   bool_settings    = populate_settings_bool  (settings, &bool_settings_size);
+   float_settings   = populate_settings_float (settings, &float_settings_size);
+   int_settings     = populate_settings_int   (settings, &int_settings_size);
+   uint_settings    = populate_settings_uint  (settings, &uint_settings_size);
+   size_settings    = populate_settings_size  (settings, &size_settings_size);
+   array_settings   = populate_settings_array (settings, &array_settings_size);
+   path_settings    = populate_settings_path  (settings, &path_settings_size);
 
    /* Initialize verbosity settings */
    check_verbosity_settings(conf, settings);
@@ -3637,7 +3637,7 @@ static bool config_load_file(global_t *global,
    {
       size_t tmp = 0;
       if (config_get_size_t(conf, size_settings[i].ident, &tmp))
-         *size_settings[i].ptr = tmp ;
+         *size_settings[i].ptr = tmp;
       /* Special case for rewind_buffer_size - need to convert
        * low values to what they were
        * intended to be based on the default value in config.def.h
@@ -3770,9 +3770,11 @@ static bool config_load_file(global_t *global,
    path_config = path_get(RARCH_PATH_CONFIG);
 
    if (string_is_empty(settings->paths.path_content_favorites))
-         strlcpy(settings->paths.directory_content_favorites, "default", sizeof(settings->paths.directory_content_favorites));
+         strlcpy(settings->paths.directory_content_favorites, "default",
+               sizeof(settings->paths.directory_content_favorites));
 
-   if (string_is_empty(settings->paths.directory_content_favorites) || string_is_equal(settings->paths.directory_content_favorites, "default"))
+   if (     string_is_empty(settings->paths.directory_content_favorites)
+         || string_is_equal(settings->paths.directory_content_favorites, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
                path_config,
@@ -3786,9 +3788,11 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_favorites));
 
    if (string_is_empty(settings->paths.path_content_history))
-         strlcpy(settings->paths.directory_content_history, "default", sizeof(settings->paths.directory_content_history));
+         strlcpy(settings->paths.directory_content_history, "default",
+               sizeof(settings->paths.directory_content_history));
 
-   if (string_is_empty(settings->paths.directory_content_history) || string_is_equal(settings->paths.directory_content_history, "default"))
+   if (     string_is_empty(settings->paths.directory_content_history)
+         || string_is_equal(settings->paths.directory_content_history, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_history,
                path_config,
@@ -3802,9 +3806,11 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_history));
 
    if (string_is_empty(settings->paths.path_content_image_history))
-         strlcpy(settings->paths.directory_content_image_history, "default", sizeof(settings->paths.directory_content_image_history));
+         strlcpy(settings->paths.directory_content_image_history, "default",
+               sizeof(settings->paths.directory_content_image_history));
 
-   if (string_is_empty(settings->paths.directory_content_image_history) || string_is_equal(settings->paths.directory_content_image_history, "default"))
+   if (     string_is_empty(settings->paths.directory_content_image_history)
+         || string_is_equal(settings->paths.directory_content_image_history, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
                path_config,
@@ -3818,9 +3824,11 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_image_history));
 
    if (string_is_empty(settings->paths.path_content_music_history))
-         strlcpy(settings->paths.directory_content_music_history, "default", sizeof(settings->paths.directory_content_music_history));
+         strlcpy(settings->paths.directory_content_music_history, "default",
+               sizeof(settings->paths.directory_content_music_history));
 
-   if (string_is_empty(settings->paths.directory_content_music_history) || string_is_equal(settings->paths.directory_content_music_history, "default"))
+   if (     string_is_empty(settings->paths.directory_content_music_history)
+         || string_is_equal(settings->paths.directory_content_music_history, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_music_history,
                path_config,
@@ -3834,9 +3842,11 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_music_history));
 
    if (string_is_empty(settings->paths.path_content_video_history))
-         strlcpy(settings->paths.directory_content_video_history, "default", sizeof(settings->paths.directory_content_video_history));
+         strlcpy(settings->paths.directory_content_video_history, "default",
+               sizeof(settings->paths.directory_content_video_history));
 
-   if (string_is_empty(settings->paths.directory_content_video_history) || string_is_equal(settings->paths.directory_content_video_history, "default"))
+   if (     string_is_empty(settings->paths.directory_content_video_history)
+         || string_is_equal(settings->paths.directory_content_video_history, "default"))
          fill_pathname_resolve_relative(
                settings->paths.path_content_video_history,
                path_config,
@@ -3863,12 +3873,14 @@ static bool config_load_file(global_t *global,
 #if defined(__APPLE__) && defined(OSX)
 #if defined(__aarch64__)
    /* Wrong architecture, set it back to arm64 */
-   if (string_is_equal(settings->paths.network_buildbot_url, "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"))
+   if (string_is_equal(settings->paths.network_buildbot_url,
+            "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"))
        configuration_set_string(settings,
              settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
 #elif defined(__x86_64__)
    /* Wrong architecture, set it back to x86_64 */
-   if (string_is_equal(settings->paths.network_buildbot_url, "http://buildbot.libretro.com/nightly/apple/osx/arm64/latest/"))
+   if (string_is_equal(settings->paths.network_buildbot_url,
+            "http://buildbot.libretro.com/nightly/apple/osx/arm64/latest/"))
        configuration_set_string(settings,
              settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
 #endif
@@ -3956,33 +3968,33 @@ static bool config_load_file(global_t *global,
    {
       if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "true"))
       {
-         settings->bools.cheevos_visibility_lboard_start = true;
-         settings->bools.cheevos_visibility_lboard_submit = true;
-         settings->bools.cheevos_visibility_lboard_cancel = true;
+         settings->bools.cheevos_visibility_lboard_start    = true;
+         settings->bools.cheevos_visibility_lboard_submit   = true;
+         settings->bools.cheevos_visibility_lboard_cancel   = true;
          settings->bools.cheevos_visibility_lboard_trackers = true;
       }
       else if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "trackers"))
       {
-         settings->bools.cheevos_visibility_lboard_start = false;
-         settings->bools.cheevos_visibility_lboard_submit = true;
-         settings->bools.cheevos_visibility_lboard_cancel = false;
+         settings->bools.cheevos_visibility_lboard_start    = false;
+         settings->bools.cheevos_visibility_lboard_submit   = true;
+         settings->bools.cheevos_visibility_lboard_cancel   = false;
          settings->bools.cheevos_visibility_lboard_trackers = true;
       }
       else if (string_is_equal(settings->arrays.cheevos_leaderboards_enable, "notifications"))
       {
-         settings->bools.cheevos_visibility_lboard_start = true;
-         settings->bools.cheevos_visibility_lboard_submit = true;
-         settings->bools.cheevos_visibility_lboard_cancel = true;
+         settings->bools.cheevos_visibility_lboard_start    = true;
+         settings->bools.cheevos_visibility_lboard_submit   = true;
+         settings->bools.cheevos_visibility_lboard_cancel   = true;
          settings->bools.cheevos_visibility_lboard_trackers = false;
       }
       else
       {
-         settings->bools.cheevos_visibility_lboard_start = false;
-         settings->bools.cheevos_visibility_lboard_submit = false;
-         settings->bools.cheevos_visibility_lboard_cancel = false;
+         settings->bools.cheevos_visibility_lboard_start    = false;
+         settings->bools.cheevos_visibility_lboard_submit   = false;
+         settings->bools.cheevos_visibility_lboard_cancel   = false;
          settings->bools.cheevos_visibility_lboard_trackers = false;
       }
-      settings->arrays.cheevos_leaderboards_enable[0] = '\0';
+      settings->arrays.cheevos_leaderboards_enable[0]       = '\0';
    }
 #endif
 
@@ -3995,12 +4007,11 @@ static bool config_load_file(global_t *global,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
 #endif
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
-         config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
+   if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL)
+         && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
-
       else if (path_is_directory(tmp_str))
       {
          dir_set(RARCH_DIR_SAVEFILE, tmp_str);
@@ -4016,8 +4027,8 @@ static bool config_load_file(global_t *global,
          RARCH_WARN("[Config]: 'savefile_directory' is not a directory, ignoring..\n");
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
-         config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
+   if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
+         && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
@@ -4077,8 +4088,8 @@ static bool config_load_file(global_t *global,
     * history playlist size limit. (Have to do this, otherwise
     * users with large custom history size limits may lose
     * favourites entries when updating RetroArch...) */
-   if ( (bool)RHMAP_HAS_STR(conf->entries_map, "content_history_size") &&
-       !(bool)RHMAP_HAS_STR(conf->entries_map, "content_favorites_size"))
+   if (    (bool)RHMAP_HAS_STR(conf->entries_map, "content_history_size")
+       && !(bool)RHMAP_HAS_STR(conf->entries_map, "content_favorites_size"))
    {
       if (settings->uints.content_history_size > 999)
          settings->ints.content_favorites_size = -1;
@@ -4436,8 +4447,8 @@ bool config_load_remap(const char *directory_input_remapping,
 
    /* > Cannot load remaps if we have no core
     * > Cannot load remaps if remap directory is unset */
-   if (string_is_empty(core_name) ||
-       string_is_empty(directory_input_remapping))
+   if (   string_is_empty(core_name)
+       || string_is_empty(directory_input_remapping))
       return false;
 
    /* Concatenate strings into full paths for core_path,
@@ -4568,34 +4579,29 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf)
 static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
+   size_t _len;
    char config[16];
-   const char *hat  = NULL;
-
-   config[0]        = '\0';
+   config[0] = '\0';
+   _len      = snprintf(config, sizeof(config), "h%u", GET_HAT(bind->joykey));
 
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         hat = "up";
+         strlcpy(config + _len, "up", sizeof(config) - _len);
          break;
-
       case HAT_DOWN_MASK:
-         hat = "down";
+         strlcpy(config + _len, "down", sizeof(config) - _len);
          break;
-
       case HAT_LEFT_MASK:
-         hat = "left";
+         strlcpy(config + _len, "left", sizeof(config) - _len);
          break;
-
       case HAT_RIGHT_MASK:
-         hat = "right";
+         strlcpy(config + _len, "right", sizeof(config) - _len);
          break;
-
       default:
          break;
    }
 
-   snprintf(config, sizeof(config), "h%u%s", GET_HAT(bind->joykey), hat);
    config_set_string(conf, key, config);
 }
 
@@ -5034,8 +5040,8 @@ bool config_save_file(const char *path)
    if (array_settings && (array_settings_size > 0))
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
-         if (!array_settings[i].override ||
-             !retroarch_override_setting_is_set(array_settings[i].override, NULL))
+         if (   !array_settings[i].override
+             || !retroarch_override_setting_is_set(array_settings[i].override, NULL))
             config_set_string(conf,
                   array_settings[i].ident,
                   array_settings[i].ptr);
@@ -5047,8 +5053,8 @@ bool config_save_file(const char *path)
    if (float_settings && (float_settings_size > 0))
    {
       for (i = 0; i < (unsigned)float_settings_size; i++)
-         if (!float_settings[i].override ||
-             !retroarch_override_setting_is_set(float_settings[i].override, NULL))
+         if (   !float_settings[i].override
+             || !retroarch_override_setting_is_set(float_settings[i].override, NULL))
             config_set_float(conf,
                   float_settings[i].ident,
                   *float_settings[i].ptr);
@@ -5060,8 +5066,8 @@ bool config_save_file(const char *path)
    if (int_settings && (int_settings_size > 0))
    {
       for (i = 0; i < (unsigned)int_settings_size; i++)
-         if (!int_settings[i].override ||
-             !retroarch_override_setting_is_set(int_settings[i].override, NULL))
+         if (   !int_settings[i].override
+             || !retroarch_override_setting_is_set(int_settings[i].override, NULL))
             config_set_int(conf,
                   int_settings[i].ident,
                   *int_settings[i].ptr);
@@ -5072,8 +5078,8 @@ bool config_save_file(const char *path)
    if (uint_settings && (uint_settings_size > 0))
    {
       for (i = 0; i < (unsigned)uint_settings_size; i++)
-         if (!uint_settings[i].override ||
-             !retroarch_override_setting_is_set(uint_settings[i].override, NULL))
+         if (   !uint_settings[i].override
+             || !retroarch_override_setting_is_set(uint_settings[i].override, NULL))
             config_set_int(conf,
                   uint_settings[i].ident,
                   *uint_settings[i].ptr);
@@ -5084,8 +5090,8 @@ bool config_save_file(const char *path)
    if (size_settings && (size_settings_size > 0))
    {
       for (i = 0; i < (unsigned)size_settings_size; i++)
-         if (!size_settings[i].override ||
-             !retroarch_override_setting_is_set(size_settings[i].override, NULL))
+         if (   !size_settings[i].override
+             || !retroarch_override_setting_is_set(size_settings[i].override, NULL))
             config_set_int(conf,
                   size_settings[i].ident,
                   (int)*size_settings[i].ptr);
@@ -5124,8 +5130,8 @@ bool config_save_file(const char *path)
    if (bool_settings && (bool_settings_size > 0))
    {
       for (i = 0; i < (unsigned)bool_settings_size; i++)
-         if (!bool_settings[i].override ||
-             !retroarch_override_setting_is_set(bool_settings[i].override, NULL))
+         if (   !bool_settings[i].override
+             || !retroarch_override_setting_is_set(bool_settings[i].override, NULL))
             config_set_string(conf, bool_settings[i].ident,
                   *bool_settings[i].ptr
                   ? "true" : "false");
@@ -5152,7 +5158,7 @@ bool config_save_file(const char *path)
       config_set_string(conf, "log_verbosity",
             verbosity_is_enabled() ? "true" : "false");
    config_set_string(conf, "perfcnt_enable",
-            retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL) 
+            retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL)
          ? "true" : "false");
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
@@ -5256,8 +5262,8 @@ int8_t config_save_overrides(enum override_type type,
    /* > Cannot save an override if we have no core
     * > Cannot save a per-game or per-content-directory
     *   override if we have no content */
-   if (string_is_empty(core_name) ||
-       (!has_content && (type != OVERRIDE_CORE)))
+   if (     string_is_empty(core_name)
+       || (!has_content && (type != OVERRIDE_CORE)))
       return false;
 
    settings = (settings_t*)calloc(1, sizeof(settings_t));
@@ -5383,9 +5389,9 @@ int8_t config_save_overrides(enum override_type type,
              * remember to update each override). Also exclude the username
              * as it's directly tied to the token and password.
              */
-            if (string_is_equal(array_settings[i].ident, "cheevos_token") ||
-                string_is_equal(array_settings[i].ident, "cheevos_password") ||
-                string_is_equal(array_settings[i].ident, "cheevos_username"))
+            if (   string_is_equal(array_settings[i].ident, "cheevos_token")
+                || string_is_equal(array_settings[i].ident, "cheevos_password")
+                || string_is_equal(array_settings[i].ident, "cheevos_username"))
                continue;
 #endif
             config_set_string(conf, array_overrides[i].ident,
@@ -5628,7 +5634,8 @@ bool input_remapping_load_file(void *data, const char *path)
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
 
-   if (!conf || string_is_empty(path))
+   if (    !conf
+         || string_is_empty(path))
       return false;
 
    if (!string_is_empty(runloop_st->name.remapfile))
@@ -5985,8 +5992,8 @@ void config_save_file_salamander(void)
 
    config_path[0] = '\0';
 
-   if (string_is_empty(libretro_path) ||
-       string_is_equal(libretro_path, "builtin"))
+   if (   string_is_empty(libretro_path)
+       || string_is_equal(libretro_path, "builtin"))
       return;
 
    /* Get config file path */
@@ -6097,7 +6104,8 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds = NULL;
 
-   if ((port >= MAX_USERS) || !config)
+   if (    (port >= MAX_USERS)
+         || !config)
       return;
 
    binds = input_autoconf_binds[port];
@@ -6212,10 +6220,10 @@ void input_config_parse_joy_axis(
             && tmp[3] == '\0'
          )
          bind->joyaxis = AXIS_NONE;
-      else if 
-         (     tmp[0] != '\0'   
+      else if
+         (     tmp[0] != '\0'
           &&   tmp[1] != '\0'
-          && (*tmp    == '+' 
+          && (*tmp    == '+'
           ||  *tmp    == '-'))
       {
          int i_axis = (int)strtol(tmp + 1, NULL, 0);
