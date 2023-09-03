@@ -36,9 +36,7 @@
 
 #define WINDOW_TITLE "RetroArch"
 
-#ifndef XDG_TOPLEVEL_STATE_SUSPENDED
 #define XDG_TOPLEVEL_STATE_SUSPENDED 9
-#endif
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
