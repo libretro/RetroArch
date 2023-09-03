@@ -4290,65 +4290,165 @@ struct retro_device_power
    int8_t percent;
 };
 
-/* Callbacks */
+/**
+ * @defgroup Callbacks
+ * @{
+ */
 
-/* Environment callback. Gives implementations a way of performing
- * uncommon tasks. Extensible. */
+/**
+ * Environment callback to give implementations a way of performing uncommon tasks.
+ *
+ * @note Extensible.
+ *
+ * @param cmd The command to run.
+ * @param data A pointer to the data associated with the command.
+ *
+ * @return Will return \c true if the frontend understands the request given to it, or \c false otherwise.
+ *
+ * @see RETRO_ENVIRONMENT_SET_ROTATION
+ * @see retro_set_environment()
+ */
 typedef bool (RETRO_CALLCONV *retro_environment_t)(unsigned cmd, void *data);
 
-/* Render a frame. Pixel format is 15-bit 0RGB1555 native endian
- * unless changed (see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT).
+/**
+ * Render a frame.
  *
- * Width and height specify dimensions of buffer.
- * Pitch specifices length in bytes between two lines in buffer.
- *
- * For performance reasons, it is highly recommended to have a frame
+ * @note For performance reasons, it is highly recommended to have a frame
  * that is packed in memory, i.e. pitch == width * byte_per_pixel.
  * Certain graphic APIs, such as OpenGL ES, do not like textures
  * that are not packed in memory.
+ *
+ * @param data A pointer to the frame buffer data with a pixel format of 15-bit \c 0RGB1555 native endian, unless changed with \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT.
+ * @param width SpecSpecificesies how wide the frame buffer is along the x axis.
+ * @param height Specifices how tall the frame buffer is along the y axis.
+ * @param pitch Specifices the length in bytes between two lines in the buffer.
+ *
+ * @see retro_set_video_refresh()
+ * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+ * @see retro_pixel_format
  */
 typedef void (RETRO_CALLCONV *retro_video_refresh_t)(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
-/* Renders a single audio frame. Should only be used if implementation
- * generates a single sample at a time.
- * Format is signed 16-bit native endian.
+/**
+ * Renders a single audio frame. Should only be used if implementation generates a single sample at a time.
+ *
+ * @param left The left audio sample represented as a signed 16-bit native endian.
+ * @param right The right audio sample represented as a signed 16-bit native endian.
+ *
+ * @see retro_set_audio_sample()
+ * @see retro_set_audio_sample_batch()
  */
 typedef void (RETRO_CALLCONV *retro_audio_sample_t)(int16_t left, int16_t right);
 
-/* Renders multiple audio frames in one go.
+/**
+ * Renders multiple audio frames in one go.
  *
- * One frame is defined as a sample of left and right channels, interleaved.
- * I.e. int16_t buf[4] = { l, r, l, r }; would be 2 frames.
- * Only one of the audio callbacks must ever be used.
+ * @note Only one of the audio callbacks must ever be used.
+ *
+ * @param data A pointer to the audio sample data pairs to render.
+ * @param frames The number of frames that are represented in the data. One frame
+ *     is defined as a sample of left and right channels, interleaved.
+ *     For example: <tt>int16_t buf[4] = { l, r, l, r };</tt> would be 2 frames.
+ *
+ * @return The number of samples that were processed.
+ *
+ * @see retro_set_audio_sample_batch()
+ * @see retro_set_audio_sample()
  */
 typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_t)(const int16_t *data,
       size_t frames);
 
-/* Polls input. */
+/**
+ * Polls input.
+ *
+ * @see retro_set_input_poll()
+ */
 typedef void (RETRO_CALLCONV *retro_input_poll_t)(void);
 
-/* Queries for input for player 'port'. device will be masked with
- * RETRO_DEVICE_MASK.
+/**
+ * Queries for input for player 'port'.
  *
- * Specialization of devices such as RETRO_DEVICE_JOYPAD_MULTITAP that
- * have been set with retro_set_controller_port_device()
- * will still use the higher level RETRO_DEVICE_JOYPAD to request input.
+ * @param port Which player 'port' to query.
+ * @param device Which device to query for. Will be masked with \c RETRO_DEVICE_MASK.
+ * @param index The input index to retrieve. This is used for multi-touch devices, like \c RETRO_DEVICE_POINTER.
+ * @param id The ID of which value to query, like \c RETRO_DEVICE_ID_JOYPAD_B.
+ *
+ * @note Specialization of devices such as \c RETRO_DEVICE_JOYPAD_MULTITAP that
+ * have been set with \c retro_set_controller_port_device() will still use the
+ * higher level \c RETRO_DEVICE_JOYPAD to request input.
+ *
+ * @see retro_set_input_state()
+ * @see RETRO_DEVICE_NONE
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_KEYBOARD
+ * @see RETRO_DEVICE_LIGHTGUN
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_POINTER
  */
 typedef int16_t (RETRO_CALLCONV *retro_input_state_t)(unsigned port, unsigned device,
       unsigned index, unsigned id);
 
-/* Sets callbacks. retro_set_environment() is guaranteed to be called
- * before retro_init().
+/**
+ * Sets the environment callback.
  *
- * The rest of the set_* functions are guaranteed to have been called
- * before the first call to retro_run() is made. */
-RETRO_API void retro_set_environment(retro_environment_t);
-RETRO_API void retro_set_video_refresh(retro_video_refresh_t);
-RETRO_API void retro_set_audio_sample(retro_audio_sample_t);
-RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t);
-RETRO_API void retro_set_input_poll(retro_input_poll_t);
-RETRO_API void retro_set_input_state(retro_input_state_t);
+ * @param cb The function which is used when making environment calls.
+ *
+ * @note Guaranteed to be called before \c retro_init().
+ *
+ * @see RETRO_ENVIRONMENT_SET_ROTATION
+ */
+RETRO_API void retro_set_environment(retro_environment_t cb);
+
+/**
+ * Sets the video refresh callback.
+ *
+ * @param cb The function which is used when rendering a frame.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb);
+
+/**
+ * Sets the audio sample callback.
+ *
+ * @param cb The function which is used when rendering a single audio frame.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_audio_sample(retro_audio_sample_t cb);
+
+/**
+ * Sets the audio sample batch callback.
+ *
+ * @param cb The function which is used when rendering multiple audio frames in one go.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb);
+
+/**
+ * Sets the input poll callback.
+ *
+ * @param cb The function which is used to poll the active input.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_input_poll(retro_input_poll_t cb);
+
+/**
+ * Sets the input state callback.
+ *
+ * @param cb The function which is used to query the input state.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_input_state(retro_input_state_t cb);
+
+/**
+ * @}
+ */
 
 /**
  * Initializes the library.
