@@ -210,6 +210,7 @@ typedef struct gfx_ctx_wayland_data
    bool resize;
    bool configured;
    bool activated;
+   bool suspended;
    bool reported_display_size;
    bool swap_complete;
 } gfx_ctx_wayland_data_t;

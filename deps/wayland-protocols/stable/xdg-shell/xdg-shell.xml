@@ -29,7 +29,7 @@
     DEALINGS IN THE SOFTWARE.
   </copyright>
 
-  <interface name="xdg_wm_base" version="5">
+  <interface name="xdg_wm_base" version="6">
     <description summary="create desktop-style surfaces">
       The xdg_wm_base interface is exposed as a global object enabling clients
       to turn their wl_surfaces into windows in a desktop environment. It
@@ -122,7 +122,7 @@
     </event>
   </interface>
 
-  <interface name="xdg_positioner" version="5">
+  <interface name="xdg_positioner" version="6">
     <description summary="child surface positioner">
       The xdg_positioner provides a collection of rules for the placement of a
       child surface relative to a parent surface. Rules can be defined to ensure
@@ -407,7 +407,7 @@
     </request>
   </interface>
 
-  <interface name="xdg_surface" version="5">
+  <interface name="xdg_surface" version="6">
     <description summary="desktop user interface surface base interface">
       An interface that may be implemented by a wl_surface, for
       implementations that provide a desktop-style user interface.
@@ -436,8 +436,10 @@
 
       After creating a role-specific object and setting it up, the client must
       perform an initial commit without any buffer attached. The compositor
-      will reply with an xdg_surface.configure event. The client must
-      acknowledge it and is then allowed to attach a buffer to map the surface.
+      will reply with initial wl_surface state such as
+      wl_surface.preferred_buffer_scale followed by an xdg_surface.configure
+      event. The client must acknowledge it and is then allowed to attach a
+      buffer to map the surface.
 
       Mapping an xdg_surface-based role surface is defined as making it
       possible for the surface to be shown by the compositor. Note that
@@ -530,13 +532,22 @@
 	commit. This unset is meant for extremely simple clients.
 
 	The arguments are given in the surface-local coordinate space of
-	the wl_surface associated with this xdg_surface.
+	the wl_surface associated with this xdg_surface, and may extend outside
+	of the wl_surface itself to mark parts of the subsurface tree as part of
+	the window geometry.
 
-	The width and height must be greater than zero. Setting an invalid size
-	will raise an invalid_size error. When applied, the effective window
-	geometry will be the set window geometry clamped to the bounding
-	rectangle of the combined geometry of the surface of the xdg_surface and
-	the associated subsurfaces.
+	When applied, the effective window geometry will be the set window
+	geometry clamped to the bounding rectangle of the combined
+	geometry of the surface of the xdg_surface and the associated
+	subsurfaces.
+
+	The effective geometry will not be recalculated unless a new call to
+	set_window_geometry is done and the new pending surface state is
+	subsequently applied.
+
+	The width and height of the effective window geometry must be
+	greater than zero. Setting an invalid size will raise an
+	invalid_size error.
       </description>
       <arg name="x" type="int"/>
       <arg name="y" type="int"/>
@@ -606,7 +617,7 @@
 
   </interface>
 
-  <interface name="xdg_toplevel" version="5">
+  <interface name="xdg_toplevel" version="6">
     <description summary="toplevel surface">
       This interface defines an xdg_surface role which allows a surface to,
       among other things, set window-like properties such as maximize,
@@ -799,10 +810,10 @@
 
 	The edges parameter specifies how the surface should be resized, and
 	is one of the values of the resize_edge enum. Values not matching
-	a variant of the enum will cause a protocol error. The compositor
-	may use this information to update the surface position for example
-	when dragging the top left corner. The compositor may also use
-	this information to adapt its behavior, e.g. choose an appropriate
+	a variant of the enum will cause the invalid_resize_edge protocol error.
+	The compositor may use this information to update the surface position
+	for example when dragging the top left corner. The compositor may also
+	use this information to adapt its behavior, e.g. choose an appropriate
 	cursor image.
       </description>
       <arg name="seat" type="object" interface="wl_seat" summary="the wl_seat of the user event"/>
@@ -823,7 +834,8 @@
       <entry name="maximized" value="1" summary="the surface is maximized">
 	<description summary="the surface is maximized">
 	  The surface is maximized. The window geometry specified in the configure
-	  event must be obeyed by the client.
+	  event must be obeyed by the client, or the xdg_wm_base.invalid_surface_state
+	  error is raised.
 
 	  The client should draw without shadow or other
 	  decoration outside of the window geometry.
@@ -875,6 +887,13 @@
 	<description summary="the surface’s bottom edge is tiled">
 	  The window is currently in a tiled layout and the bottom edge is
 	  considered to be adjacent to another part of the tiling grid.
+	</description>
+      </entry>
+      <entry name="suspended" value="9" since="6">
+        <description summary="surface repaint is suspended">
+	  The surface is currently not ordinarily being repainted; for
+	  example because its content is occluded by another window, or its
+	  outputs are switched off due to screen locking.
 	</description>
       </entry>
     </enum>
@@ -1175,7 +1194,7 @@
     </event>
   </interface>
 
-  <interface name="xdg_popup" version="5">
+  <interface name="xdg_popup" version="6">
     <description summary="short-lived, popup surfaces for menus">
       A popup surface is a short-lived, temporary surface. It can be used to
       implement for example menus, popovers, tooltips and other similar user
@@ -1213,8 +1232,8 @@
 	This destroys the popup. Explicitly destroying the xdg_popup
 	object will also dismiss the popup, and unmap the surface.
 
-	If this xdg_popup is not the "topmost" popup, a protocol error
-	will be sent.
+	If this xdg_popup is not the "topmost" popup, the
+	xdg_wm_base.not_the_topmost_popup protocol error will be sent.
       </description>
     </request>
 

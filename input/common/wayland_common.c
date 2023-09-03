@@ -714,7 +714,7 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name))
       wl->xdg_shell = (struct xdg_wm_base*)
-         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 3));
+         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 6));
    else if (string_is_equal(interface, wl_shm_interface.name))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
    else if (string_is_equal(interface, wl_seat_interface.name))

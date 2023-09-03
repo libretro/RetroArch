@@ -33,6 +33,10 @@
 #define APP_ID "org.libretro.RetroArch"
 #define WINDOW_TITLE "RetroArch"
 
+#ifndef XDG_TOPLEVEL_STATE_SUSPENDED
+#define XDG_TOPLEVEL_STATE_SUSPENDED 9
+#endif
+
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
 #endif
@@ -88,6 +92,7 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
 
    wl->fullscreen             = false;
    wl->maximized              = false;
+   wl->suspended              = false;
 
    WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
    {
@@ -112,6 +117,8 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
          case XDG_TOPLEVEL_STATE_ACTIVATED:
             wl->activated  = true;
             break;
+         case XDG_TOPLEVEL_STATE_SUSPENDED:
+            wl->suspended  = true;
       }
    }
 
