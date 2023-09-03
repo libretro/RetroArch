@@ -5656,6 +5656,7 @@ border_iterate:
    {
       char rich_label[255];
       char entry_value_ticker[255];
+      char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
       uintptr_t texture;
       menu_entry_t entry;
       gfx_animation_ctx_ticker_t ticker;
@@ -5764,7 +5765,6 @@ border_iterate:
          if (node->wrap && !string_is_empty(sublabel_str))
          {
             int sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
-            char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
 
             wrapped_sublabel_str[0] = '\0';
             (ozone->word_wrap)(wrapped_sublabel_str,
