@@ -4574,7 +4574,8 @@ struct retro_device_power
  * @param cmd The command to run.
  * @param data A pointer to the data associated with the command.
  *
- * @return Will return \c true if the frontend understands the request given to it, or \c false otherwise.
+ * @return Varies by callback,
+ * but will always return \c false if the command is not recognized.
  *
  * @see RETRO_ENVIRONMENT_SET_ROTATION
  * @see retro_set_environment()
