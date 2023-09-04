@@ -4553,8 +4553,51 @@ RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t);
 RETRO_API void retro_set_input_poll(retro_input_poll_t);
 RETRO_API void retro_set_input_state(retro_input_state_t);
 
-/* Library global initialization/deinitialization. */
+/**
+ * Called by the frontend when initializing a libretro core.
+ *
+ * @warning There are many possible "gotchas" with global state in dynamic libraries.
+ * Here are some to keep in mind:
+ * <ul>
+ * <li>Do not assume that the core was loaded by the operating system
+ * for the first time within this call.
+ * It may have been statically linked or retained from a previous session.
+ * Consequently, cores must not rely on global variables being initialized
+ * to their default values before this function is called;
+ * this also goes for object constructors in C++.
+ * <li>Although C++ requires that constructors be called for global variables,
+ * it does not require that their destructors be called
+ * if stored within a dynamic library's global scope.
+ * <li>If the core is statically linked to the frontend,
+ * global variables may be initialized when the frontend itself is initially executed.
+ * </ul>
+ * @see retro_deinit
+ */
 RETRO_API void retro_init(void);
+
+/**
+ * Called by the frontend when deinitializing a libretro core.
+ * The core must release all of its allocated resources before this function returns.
+ *
+ * @warning There are many possible "gotchas" with global state in dynamic libraries.
+ * Here are some to keep in mind:
+ * <ul>
+ * <li>Do not assume that the operating system will unload the core after this function returns,
+ * as the core may be linked statically or retained in memory.
+ * Cores should use this function to clean up all allocated resources
+ * and reset all global variables to their default states.
+ * <li>Do not assume that this core won't be loaded again after this function returns.
+ * It may be kept in memory by the frontend for later use,
+ * or it may be statically linked.
+ * Therefore, all global variables should be reset to their default states within this function.
+ * <li>C++ does not require that destructors be called
+ * for variables within a dynamic library's global scope.
+ * Therefore, global objects that own dynamically-managed resources
+ * (such as \c std::string or <tt>std::vector</tt>)
+ * should be kept behind pointers that are explicitly deallocated within this function.
+ * </ul>
+ * @see retro_init
+ */
 RETRO_API void retro_deinit(void);
 
 /* Must return RETRO_API_VERSION. Used to validate ABI compatibility
