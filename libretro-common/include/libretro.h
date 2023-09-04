@@ -3059,6 +3059,7 @@ enum retro_hw_context_type
    /* Direct3D9, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
    RETRO_HW_CONTEXT_D3D9             = 10,
 
+   /** Dummy value to ensure sizeof(enum retro_hw_context_type) == sizeof(int). Do not use. */
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
 
