@@ -122,10 +122,10 @@ static void wh_compute_hash(const struct retro_game_info* info)
   struct wb_identify_game_data_t* data;
   struct rc_hash_filereader file_reader;
   
-  data = (struct wb_identify_game_data_t*) calloc(1, sizeof(struct wb_identify_game_data_t));
+  data = (struct wb_identify_game_data_t*) malloc(sizeof(struct wb_identify_game_data_t));
   if (!data)
   {
-    //RARCH_LOG(RCHEEVOS_TAG "allocation failed\n");return false;
+    WEBHOOKS_LOG(WEBHOOKS_TAG "allocation failed\n");
     return;
   }
 

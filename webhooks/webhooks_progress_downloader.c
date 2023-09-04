@@ -100,10 +100,10 @@ static void wpd_send_http_request_callback
     /* success */
     if (request->success_message)
     {
-      //if (request->id)
-        //CHEEVOS_LOG(RCHEEVOS_TAG "%s %u\n", request->success_message, request->id);
-      //else
-        //CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", request->success_message);
+      if (request->id)
+        WEBHOOKS_LOG(WEBHOOKS_TAG "%s %u\n", request->success_message, request->id);
+      else
+        WEBHOOKS_LOG(WEBHOOKS_TAG "%s\n", request->success_message);
     }
   }
   else
@@ -111,13 +111,11 @@ static void wpd_send_http_request_callback
     /* encountered an error */
     char errbuf[256];
     if (request->id)
-      snprintf(errbuf, sizeof(errbuf), "%s %u: %s",
-               request->failure_message, request->id, buffer);
+      snprintf(errbuf, sizeof(errbuf), "%s %u: %s", request->failure_message, request->id, buffer);
     else
-      snprintf(errbuf, sizeof(errbuf), "%s: %s",
-               request->failure_message, buffer);
+      snprintf(errbuf, sizeof(errbuf), "%s: %s", request->failure_message, buffer);
 
-    //CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
+    WEBHOOKS_LOG(WEBHOOKS_TAG "%s\n", errbuf);
   }
 }
 
@@ -147,7 +145,7 @@ static void wpd_set_request_header(async_http_request_t* request)
 
   if (access_token == NULL)
   {
-    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to retrieve an access token\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to retrieve an access token\n");
     return;
   }
 
@@ -161,7 +159,7 @@ static void wpd_set_request_header(async_http_request_t* request)
   char* headers = (char*)malloc(header_length);
 
   if (headers == NULL) {
-    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate header\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate header\n");
     return;
   }
 
@@ -255,7 +253,7 @@ void wpd_download_game_progress(wb_locals_t* locals, on_game_progress_downloaded
 
   if (!request)
   {
-    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate rich presence request\n");
     return;
   }
 

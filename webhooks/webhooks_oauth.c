@@ -154,9 +154,9 @@ static void woauth_end_http_request
     if (request->success_message)
     {
       if (request->id)
-        CHEEVOS_LOG(RCHEEVOS_TAG "%s %u\n", request->success_message, request->id);
+        WEBHOOKS_LOG(WEBHOOKS_TAG "%s %u\n", request->success_message, request->id);
       else
-        CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", request->success_message);
+        WEBHOOKS_LOG(WEBHOOKS_TAG "%s\n", request->success_message);
     }
   }
   else
@@ -164,13 +164,11 @@ static void woauth_end_http_request
     /* encountered an error */
     char errbuf[256];
     if (request->id)
-      snprintf(errbuf, sizeof(errbuf), "%s %u: %s",
-               request->failure_message, request->id, buffer);
+      snprintf(errbuf, sizeof(errbuf), "%s %u: %s", request->failure_message, request->id, buffer);
     else
-      snprintf(errbuf, sizeof(errbuf), "%s: %s",
-               request->failure_message, buffer);
+      snprintf(errbuf, sizeof(errbuf), "%s: %s", request->failure_message, buffer);
 
-    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
+    WEBHOOKS_LOG(WEBHOOKS_TAG "%s\n", errbuf);
   }
 
   // Check again a moment later.
@@ -301,11 +299,11 @@ static void woauth_trigger_accesstoken_retrieval()
 
   if (!request)
   {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate an OAuth2 request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate an OAuth2 request\n");
     return;
   }
 
-  CHEEVOS_LOG(RCHEEVOS_TAG "Starting retrieving access token \n");
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting retrieving access token \n");
 
   woauth_initialize_accesstoken_request(request);
 
@@ -440,12 +438,14 @@ const char* woauth_get_accesstoken()
   if (*e != 0 || errno != 0) {
     //  The emulator has not been associated.
     //  Nothing can be done without any user intervention.
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the expires_in from the configuration: the association must be established.\n");
     return NULL;
   }
 
   if (expecting_refresh == 0) {
     //  The emulator has not been associated.
     //  Nothing can be done without any user intervention.
+    WEBHOOKS_LOG(WEBHOOKS_TAG "The value expires_in in the configuration is not set (0): the association must be established again\n");
     return NULL;
   }
   else if (expecting_refresh <= now) {
@@ -460,6 +460,7 @@ const char* woauth_get_accesstoken()
     else {
       //  The refresh token as well as the device code is missing.
       //  Nothing can be done without any user intervention.
+      WEBHOOKS_LOG(WEBHOOKS_TAG "The refresh_token is missing from the configuration: the association must be established again\n");
       return NULL;
     }
   }
@@ -467,6 +468,8 @@ const char* woauth_get_accesstoken()
     if (!token_refresh_scheduled) {
       //  The access token expires within the next X minutes;
       //  Let's refresh it now.
+      WEBHOOKS_LOG(WEBHOOKS_TAG "The access_token is about to expire. A new access_token is being retrieved using the refresh_token\n");
+
       token_refresh_scheduled = true;
       woauth_trigger_accesstoken_retrieval();
       return settings->arrays.cheevos_webhook_accesstoken;
@@ -474,6 +477,7 @@ const char* woauth_get_accesstoken()
     else {
       //  The refresh token as well as the device code is missing.
       //  Nothing can be done without any user intervention.
+      WEBHOOKS_LOG(WEBHOOKS_TAG "A new access_token retrieval is already scheduled.\n");
       return NULL;
     }
   }

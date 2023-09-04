@@ -23,6 +23,21 @@
 
 #include "rc_api_request.h"
 
+/* Define this macro to get extra-verbose log for cheevos. */
+#define WEBHOOKS_VERBOSE
+
+#define WEBHOOKS_TAG "[WEBHOOKS]: "
+#define WEBHOOKS_FREE(p) do { void* q = (void*)p; if (q) free(q); } while (0)
+
+#ifdef WEBHOOKS_VERBOSE
+#define WEBHOOKS_LOG RARCH_LOG
+#define WEBHOOKS_ERR RARCH_ERR
+#else
+void webhooks_log(const char *fmt, ...);
+ #define WEBHOOKS_LOG webhooks_log
+ #define WEBHOOKS_ERR RARCH_ERR
+#endif
+
 const int HASH_LENGTH = 33;
 const int GAME_PROGRESS_LENGTH = 4096;
 

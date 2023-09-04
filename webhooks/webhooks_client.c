@@ -113,9 +113,9 @@ static void wc_handle_http_callback
     if (request->success_message)
     {
       if (request->id)
-        CHEEVOS_LOG(RCHEEVOS_TAG "%s %u\n", request->success_message, request->id);
+        WEBHOOKS_LOG(WEBHOOKS_TAG "%s %u\n", request->success_message, request->id);
       else
-        CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", request->success_message);
+        WEBHOOKS_LOG(WEBHOOKS_TAG "%s\n", request->success_message);
     }
   }
   else
@@ -229,7 +229,7 @@ static void wc_set_request_header(async_http_request_t* request)
 
   if (access_token == NULL)
   {
-    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to retrieve an access token\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to retrieve an access token\n");
     return;
   }
 
@@ -243,7 +243,7 @@ static void wc_set_request_header(async_http_request_t* request)
   char* headers = (char*)malloc(header_length);
 
   if (headers == NULL) {
-    //CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate header\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate header\n");
     return;
   }
 
@@ -339,7 +339,7 @@ void wc_update_progress
 
   if (!request)
   {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate rich presence request\n");
     return;
   }
 
@@ -362,7 +362,7 @@ void wc_send_event
 
   if (!request)
   {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate rich presence request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate rich presence request\n");
     return;
   }
 
