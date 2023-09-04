@@ -4912,25 +4912,31 @@ RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code);
  * Loads a game.
  *
  * @param game A pointer to a \c retro_game_info detailing information about the game to load.
+ * May be \c NULL if the core is loaded without content.
  *
  * @return Will return true when the game was loaded successfully, or false otherwise.
  *
  * @see retro_game_info
+ * @see RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME
  */
 RETRO_API bool retro_load_game(const struct retro_game_info *game);
 
 /**
- * Loads a "special" kind of game.
+ * Called when the frontend has loaded one or more "special" content files,
+ * typically through subsystems.
  *
- * @note Should not be used, except in extreme cases.
+ * @note Only necessary for cores that support subsystems.
+ * Others may return \c false or delegate to <tt>retro_load_game</tt>.
  *
  * @param game_type The type of game to load.
- * @param info A pointer to a \c retro_game_info providing information about the game.
+ * @param info A pointer to an array of \c retro_game_info objects
+ * providing information about the loaded content.
  * @param num_info The number of \c retro_game_info objects passed into the info parameter.
  *
  * @return Will return \c true when loading is successful, false otherwise.
  *
  * @see RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
  * @see retro_load_game()
  */
 RETRO_API bool retro_load_game_special(
@@ -4950,8 +4956,12 @@ RETRO_API void retro_unload_game(void);
 
 /**
  * Gets the region of the actively loaded content as either \c RETRO_REGION_NTSC or \c RETRO_REGION_PAL.
- *
- * @return The region of the actively loaded content. The default is \c RETRO_REGION_NTSC.
+ * @note This refers to the region of the content's intended television standard,
+ * not necessarily the region of the content's origin.
+ * For emulated consoles that don't use either standard
+ * (e.g. handhelds or post-HD platforms),
+ * the core should return \c RETRO_REGION_NTSC.
+ * @return The region of the actively loaded content.
  *
  * @see RETRO_REGION_NTSC
  * @see RETRO_REGION_PAL
