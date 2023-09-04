@@ -913,31 +913,36 @@ enum retro_mod
                                             * Reading sensor state is done via the normal
                                             * input_state_callback API.
                                             */
+
+/**
+ * @brief Gets an interface to the device's video camera.
+ * The frontend delivers new video frames via a user-defined callback
+ * that runs in the same thread as <tt>retro_run()</tt>.
+ *
+ * Should be called in retro_load_game().
+ *
+ * Camera frames may be provided as a raw frame buffer or as an OpenGL texture,
+ * depending on the camera driver's support and the core's requested capabilities.
+ *
+ * Video frames may only be provided as OpenGL textures
+ * when the core is using an OpenGL context via <tt>RETRO_ENVIRONMENT_SET_HW_RENDER</tt>.
+ *
+ * The camera is not started automatically;
+ * the retrieved interface functions must be used to explicitly do so.
+ *
+ * @param data[in,out] <tt>struct retro_camera_callback *</tt>.
+ * Pointer to the camera driver interface.
+ * Some fields in the struct must be filled in by the core,
+ * others are provided by the frontend.
+ * @returns \c true if the environment call is available,
+ * even if camera support isn't.
+ * @note This API only supports one video camera at a time.
+ * If the device provides multiple cameras (e.g. inner/outer cameras on a phone),
+ * the frontend will choose one to use.
+ * @see retro_camera_callback
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ */
 #define RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_camera_callback * --
-                                            * Gets an interface to a video camera driver.
-                                            * A libretro core can use this interface to get access to a
-                                            * video camera.
-                                            * New video frames are delivered in a callback in same
-                                            * thread as retro_run().
-                                            *
-                                            * GET_CAMERA_INTERFACE should be called in retro_load_game().
-                                            *
-                                            * Depending on the camera implementation used, camera frames
-                                            * will be delivered as a raw framebuffer,
-                                            * or as an OpenGL texture directly.
-                                            *
-                                            * The core has to tell the frontend here which types of
-                                            * buffers can be handled properly.
-                                            * An OpenGL texture can only be handled when using a
-                                            * libretro GL core (SET_HW_RENDER).
-                                            * It is recommended to use a libretro GL core when
-                                            * using camera interface.
-                                            *
-                                            * The camera is not started automatically. The retrieved start/stop
-                                            * functions must be used to explicitly
-                                            * start and stop the camera driver.
-                                            */
 
 /**
  * Gets an interface that the core can use for cross-platform logging.
@@ -2842,6 +2847,9 @@ typedef void (RETRO_CALLCONV *retro_camera_frame_raw_framebuffer_t)(const uint32
 typedef void (RETRO_CALLCONV *retro_camera_frame_opengl_texture_t)(unsigned texture_id,
       unsigned texture_target, const float *affine);
 
+/**
+ * @see RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+ */
 struct retro_camera_callback
 {
    /* Set by libretro core.
@@ -2853,8 +2861,23 @@ struct retro_camera_callback
    unsigned width;
    unsigned height;
 
-   /* Set by frontend. */
+   /**
+    * Starts the camera driver.
+    * Set by the frontend.
+    * @returns \c true if the driver was successfully started.
+    * @note Must be called in <tt>retro_run()</tt>.
+    * @see retro_camera_callback
+    */
    retro_camera_start_t start;
+
+   /**
+    * Stops the camera driver.
+    * @note Must be called in <tt>retro_run()</tt>.
+    * @warning The frontend may close the camera on its own when unloading the core,
+    * but this behavior is not guaranteed.
+    * Cores should clean up the camera before exiting.
+    * @see retro_camera_callback
+    */
    retro_camera_stop_t stop;
 
    /* Set by libretro core if raw framebuffer callbacks will be used. */
@@ -2863,15 +2886,18 @@ struct retro_camera_callback
    /* Set by libretro core if OpenGL texture callbacks will be used. */
    retro_camera_frame_opengl_texture_t frame_opengl_texture;
 
-   /* Set by libretro core. Called after camera driver is initialized and
-    * ready to be started.
-    * Can be NULL, in which this callback is not called.
+   /**
+    * Core-defined callback invoked by the frontend right after the camera driver is initialized
+    * (\em not when calling <tt>start</tt>).
+    * May be <tt>NULL</tt>, in which this function is not called.
     */
    retro_camera_lifetime_status_t initialized;
 
-   /* Set by libretro core. Called right before camera driver is
-    * deinitialized.
-    * Can be NULL, in which this callback is not called.
+   /**
+    * Core-defined callback invoked by the frontend
+    * right before the video camera driver is deinitialized
+    * (\em not when calling <tt>stop</tt>).
+    * May be <tt>NULL</tt>, in which case this function is not called.
     */
    retro_camera_lifetime_status_t deinitialized;
 };
