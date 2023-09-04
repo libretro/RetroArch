@@ -3488,13 +3488,13 @@ enum retro_savestate_context
 
    /* Savestate where you are guaranteed that the same instance will load the save state.
     * You can store internal pointers to code or data.
-    * It's still a full serialization and deserialization, and could be loaded or saved at any time. 
+    * It's still a full serialization and deserialization, and could be loaded or saved at any time.
     * It won't be written to disk or sent over the network.
     */
    RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE = 1,
 
    /* Savestate where you are guaranteed that the same emulator binary will load that savestate.
-    * You can skip anything that would slow down saving or loading state but you can not store internal pointers. 
+    * You can skip anything that would slow down saving or loading state but you can not store internal pointers.
     * It won't be written to disk or sent over the network.
     * Example: "Second Instance" runahead
     */
@@ -4561,65 +4561,165 @@ struct retro_device_power
    int8_t percent;
 };
 
-/* Callbacks */
+/**
+ * @defgroup Callbacks
+ * @{
+ */
 
-/* Environment callback. Gives implementations a way of performing
- * uncommon tasks. Extensible. */
+/**
+ * Environment callback to give implementations a way of performing uncommon tasks.
+ *
+ * @note Extensible.
+ *
+ * @param cmd The command to run.
+ * @param data A pointer to the data associated with the command.
+ *
+ * @return Will return \c true if the frontend understands the request given to it, or \c false otherwise.
+ *
+ * @see RETRO_ENVIRONMENT_SET_ROTATION
+ * @see retro_set_environment()
+ */
 typedef bool (RETRO_CALLCONV *retro_environment_t)(unsigned cmd, void *data);
 
-/* Render a frame. Pixel format is 15-bit 0RGB1555 native endian
- * unless changed (see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT).
+/**
+ * Render a frame.
  *
- * Width and height specify dimensions of buffer.
- * Pitch specifices length in bytes between two lines in buffer.
- *
- * For performance reasons, it is highly recommended to have a frame
+ * @note For performance reasons, it is highly recommended to have a frame
  * that is packed in memory, i.e. pitch == width * byte_per_pixel.
  * Certain graphic APIs, such as OpenGL ES, do not like textures
  * that are not packed in memory.
+ *
+ * @param data A pointer to the frame buffer data with a pixel format of 15-bit \c 0RGB1555 native endian, unless changed with \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT.
+ * @param width SpecSpecificesies how wide the frame buffer is along the x axis.
+ * @param height Specifices how tall the frame buffer is along the y axis.
+ * @param pitch Specifices the length in bytes between two lines in the buffer.
+ *
+ * @see retro_set_video_refresh()
+ * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+ * @see retro_pixel_format
  */
 typedef void (RETRO_CALLCONV *retro_video_refresh_t)(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
-/* Renders a single audio frame. Should only be used if implementation
- * generates a single sample at a time.
- * Format is signed 16-bit native endian.
+/**
+ * Renders a single audio frame. Should only be used if implementation generates a single sample at a time.
+ *
+ * @param left The left audio sample represented as a signed 16-bit native endian.
+ * @param right The right audio sample represented as a signed 16-bit native endian.
+ *
+ * @see retro_set_audio_sample()
+ * @see retro_set_audio_sample_batch()
  */
 typedef void (RETRO_CALLCONV *retro_audio_sample_t)(int16_t left, int16_t right);
 
-/* Renders multiple audio frames in one go.
+/**
+ * Renders multiple audio frames in one go.
  *
- * One frame is defined as a sample of left and right channels, interleaved.
- * I.e. int16_t buf[4] = { l, r, l, r }; would be 2 frames.
- * Only one of the audio callbacks must ever be used.
+ * @note Only one of the audio callbacks must ever be used.
+ *
+ * @param data A pointer to the audio sample data pairs to render.
+ * @param frames The number of frames that are represented in the data. One frame
+ *     is defined as a sample of left and right channels, interleaved.
+ *     For example: <tt>int16_t buf[4] = { l, r, l, r };</tt> would be 2 frames.
+ *
+ * @return The number of samples that were processed.
+ *
+ * @see retro_set_audio_sample_batch()
+ * @see retro_set_audio_sample()
  */
 typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_t)(const int16_t *data,
       size_t frames);
 
-/* Polls input. */
+/**
+ * Polls input.
+ *
+ * @see retro_set_input_poll()
+ */
 typedef void (RETRO_CALLCONV *retro_input_poll_t)(void);
 
-/* Queries for input for player 'port'. device will be masked with
- * RETRO_DEVICE_MASK.
+/**
+ * Queries for input for player 'port'.
  *
- * Specialization of devices such as RETRO_DEVICE_JOYPAD_MULTITAP that
- * have been set with retro_set_controller_port_device()
- * will still use the higher level RETRO_DEVICE_JOYPAD to request input.
+ * @param port Which player 'port' to query.
+ * @param device Which device to query for. Will be masked with \c RETRO_DEVICE_MASK.
+ * @param index The input index to retrieve. This is used for multi-touch devices, like \c RETRO_DEVICE_POINTER.
+ * @param id The ID of which value to query, like \c RETRO_DEVICE_ID_JOYPAD_B.
+ *
+ * @note Specialization of devices such as \c RETRO_DEVICE_JOYPAD_MULTITAP that
+ * have been set with \c retro_set_controller_port_device() will still use the
+ * higher level \c RETRO_DEVICE_JOYPAD to request input.
+ *
+ * @see retro_set_input_state()
+ * @see RETRO_DEVICE_NONE
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_KEYBOARD
+ * @see RETRO_DEVICE_LIGHTGUN
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_POINTER
  */
 typedef int16_t (RETRO_CALLCONV *retro_input_state_t)(unsigned port, unsigned device,
       unsigned index, unsigned id);
 
-/* Sets callbacks. retro_set_environment() is guaranteed to be called
- * before retro_init().
+/**
+ * Sets the environment callback.
  *
- * The rest of the set_* functions are guaranteed to have been called
- * before the first call to retro_run() is made. */
-RETRO_API void retro_set_environment(retro_environment_t);
-RETRO_API void retro_set_video_refresh(retro_video_refresh_t);
-RETRO_API void retro_set_audio_sample(retro_audio_sample_t);
-RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t);
-RETRO_API void retro_set_input_poll(retro_input_poll_t);
-RETRO_API void retro_set_input_state(retro_input_state_t);
+ * @param cb The function which is used when making environment calls.
+ *
+ * @note Guaranteed to be called before \c retro_init().
+ *
+ * @see RETRO_ENVIRONMENT_SET_ROTATION
+ */
+RETRO_API void retro_set_environment(retro_environment_t cb);
+
+/**
+ * Sets the video refresh callback.
+ *
+ * @param cb The function which is used when rendering a frame.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb);
+
+/**
+ * Sets the audio sample callback.
+ *
+ * @param cb The function which is used when rendering a single audio frame.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_audio_sample(retro_audio_sample_t cb);
+
+/**
+ * Sets the audio sample batch callback.
+ *
+ * @param cb The function which is used when rendering multiple audio frames in one go.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb);
+
+/**
+ * Sets the input poll callback.
+ *
+ * @param cb The function which is used to poll the active input.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_input_poll(retro_input_poll_t cb);
+
+/**
+ * Sets the input state callback.
+ *
+ * @param cb The function which is used to query the input state.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_input_state(retro_input_state_t cb);
+
+/**
+ * @}
+ */
 
 /**
  * Called by the frontend when initializing a libretro core.
@@ -4668,36 +4768,68 @@ RETRO_API void retro_init(void);
  */
 RETRO_API void retro_deinit(void);
 
-/* Must return RETRO_API_VERSION. Used to validate ABI compatibility
- * when the API is revised. */
+/**
+ * Retrieves which version of the libretro API is being used.
+ *
+ * @note This is used to validate ABI compatibility when the API is revised.
+ *
+ * @return Must return \c RETRO_API_VERSION.
+ *
+ * @see RETRO_API_VERSION
+ */
 RETRO_API unsigned retro_api_version(void);
 
-/* Gets statically known system info. Pointers provided in *info
- * must be statically allocated.
- * Can be called at any time, even before retro_init(). */
+/**
+ * Gets statically known system info.
+ *
+ * @note Can be called at any time, even before retro_init().
+ *
+ * @param info A pointer to a \c retro_system_info where the info is to be loaded into. This must be statically allocated.
+ */
 RETRO_API void retro_get_system_info(struct retro_system_info *info);
 
-/* Gets information about system audio/video timings and geometry.
- * Can be called only after retro_load_game() has successfully completed.
- * NOTE: The implementation of this function might not initialize every
- * variable if needed.
- * E.g. geom.aspect_ratio might not be initialized if core doesn't
- * desire a particular aspect ratio. */
+/**
+ * Gets information about system audio/video timings and geometry.
+ *
+ * @note Can be called only after \c retro_load_game() has successfully completed.
+ *
+ * @note The implementation of this function might not initialize every variable
+ * if needed. For example, \c geom.aspect_ratio might not be initialized if
+ * the core doesn't desire a particular aspect ratio.
+ *
+ * @param info A pointer to a \c retro_system_av_info where the audio/video information should be loaded into.
+ *
+ * @see retro_system_av_info
+ */
 RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info);
 
-/* Sets device to be used for player 'port'.
- * By default, RETRO_DEVICE_JOYPAD is assumed to be plugged into all
+/**
+ * Sets device to be used for player 'port'.
+ *
+ * By default, \c RETRO_DEVICE_JOYPAD is assumed to be plugged into all
  * available ports.
- * Setting a particular device type is not a guarantee that libretro cores
+ *
+ * @note Setting a particular device type is not a guarantee that libretro cores
  * will only poll input based on that particular device type. It is only a
  * hint to the libretro core when a core cannot automatically detect the
  * appropriate input device type on its own. It is also relevant when a
  * core can change its behavior depending on device type.
  *
- * As part of the core's implementation of retro_set_controller_port_device,
- * the core should call RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS to notify the
+ * @note As part of the core's implementation of retro_set_controller_port_device,
+ * the core should call \c RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS to notify the
  * frontend if the descriptions for any controls have changed as a
  * result of changing the device type.
+ *
+ * @param port Which port to set the device for, usually indicates the player number.
+ * @param device Which device the given port is using. By default, \c RETRO_DEVICE_JOYPAD is assumed for all ports.
+ *
+ * @see RETRO_DEVICE_NONE
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_KEYBOARD
+ * @see RETRO_DEVICE_LIGHTGUN
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_POINTER
  */
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device);
 
@@ -4708,52 +4840,150 @@ RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device);
  */
 RETRO_API void retro_reset(void);
 
-/* Runs the game for one video frame.
- * During retro_run(), input_poll callback must be called at least once.
+/**
+ * Runs the game for one video frame.
  *
- * If a frame is not rendered for reasons where a game "dropped" a frame,
- * this still counts as a frame, and retro_run() should explicitly dupe
- * a frame if GET_CAN_DUPE returns true.
- * In this case, the video callback can take a NULL argument for data.
+ * During \c retro_run(), the \c retro_input_poll_t callback must be called at least once.
+ *
+ * @note If a frame is not rendered for reasons where a game "dropped" a frame,
+ * this still counts as a frame, and \c retro_run() should explicitly dupe
+ * a frame if \c RETRO_ENVIRONMENT_GET_CAN_DUPE returns true. In this case,
+ * the video callback can take a NULL argument for data.
+ *
+ * @see retro_input_poll_t
  */
 RETRO_API void retro_run(void);
 
-/* Returns the amount of data the implementation requires to serialize
- * internal state (save states).
- * Between calls to retro_load_game() and retro_unload_game(), the
+/**
+ * Returns the amount of data the implementation requires to serialize internal state (save states).
+ *
+ * @note Between calls to \c retro_load_game() and \c retro_unload_game(), the
  * returned size is never allowed to be larger than a previous returned
  * value, to ensure that the frontend can allocate a save state buffer once.
+ *
+ * @return The amount of data the implementation requires to serialize the internal state.
+ *
+ * @see retro_serialize()
  */
 RETRO_API size_t retro_serialize_size(void);
 
-/* Serializes internal state. If failed, or size is lower than
- * retro_serialize_size(), it should return false, true otherwise. */
+/**
+ * Serializes the internal state.
+ *
+ * @param data A pointer to where the serialized data should be saved to.
+ * @param size The size of the memory.
+ *
+ * @return If failed, or size is lower than \c retro_serialize_size(), it
+ * should return false. On success, it will return true.
+ *
+ * @see retro_serialize_size()
+ * @see retro_unserialize()
+ */
 RETRO_API bool retro_serialize(void *data, size_t size);
+
+/**
+ * Unserialize the given state data, and load it into the internal state.
+ *
+ * @return Returns true if loading the state was successful, false otherwise.
+ *
+ * @see retro_serialize()
+ */
 RETRO_API bool retro_unserialize(const void *data, size_t size);
 
+/**
+ * Reset all the active cheats to their default disabled state.
+ *
+ * @see retro_cheat_set()
+ */
 RETRO_API void retro_cheat_reset(void);
+
+/**
+ * Enable or disable a cheat.
+ *
+ * @param index The index of the cheat to act upon.
+ * @param enabled Whether to enable or disable the cheat.
+ * @param code A string of the code used for the cheat.
+ *
+ * @see retro_cheat_reset()
+ */
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
-/* Loads a game.
- * Return true to indicate successful loading and false to indicate load failure.
+/**
+ * Loads a game.
+ *
+ * @param game A pointer to a \c retro_game_info detailing information about the game to load.
+ *
+ * @return Will return true when the game was loaded successfully, or false otherwise.
+ *
+ * @see retro_game_info
  */
 RETRO_API bool retro_load_game(const struct retro_game_info *game);
 
-/* Loads a "special" kind of game. Should not be used,
- * except in extreme cases. */
+/**
+ * Loads a "special" kind of game.
+ *
+ * @note Should not be used, except in extreme cases.
+ *
+ * @param game_type The type of game to load.
+ * @param info A pointer to a \c retro_game_info providing information about the game.
+ * @param num_info The number of \c retro_game_info objects passed into the info parameter.
+ *
+ * @return Will return \c true when loading is successful, false otherwise.
+ *
+ * @see RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
+ * @see retro_load_game()
+ */
 RETRO_API bool retro_load_game_special(
   unsigned game_type,
   const struct retro_game_info *info, size_t num_info
 );
 
-/* Unloads the currently loaded game. Called before retro_deinit(void). */
+/**
+ * Unloads the currently loaded game.
+ *
+ * @note This is called before \c retro_deinit(void).
+ *
+ * @see retro_load_game()
+ * @see retro_deinit()
+ */
 RETRO_API void retro_unload_game(void);
 
-/* Gets region of game. */
+/**
+ * Gets the region of the actively loaded content as either \c RETRO_REGION_NTSC or \c RETRO_REGION_PAL.
+ *
+ * @return The region of the actively loaded content. The default is \c RETRO_REGION_NTSC.
+ *
+ * @see RETRO_REGION_NTSC
+ * @see RETRO_REGION_PAL
+ */
 RETRO_API unsigned retro_get_region(void);
 
-/* Gets region of memory. */
+/**
+ * Get a region of memory.
+ *
+ * @param id The ID for the memory block that's desired to retrieve. Can be \c RETRO_MEMORY_SAVE_RAM, \c RETRO_MEMORY_RTC, \c RETRO_MEMORY_SYSTEM_RAM, or \c RETRO_MEMORY_VIDEO_RAM.
+ *
+ * @return A pointer to the desired region of memory, or NULL when not available.
+ *
+ * @see RETRO_MEMORY_SAVE_RAM
+ * @see RETRO_MEMORY_RTC
+ * @see RETRO_MEMORY_SYSTEM_RAM
+ * @see RETRO_MEMORY_VIDEO_RAM
+ */
 RETRO_API void *retro_get_memory_data(unsigned id);
+
+/**
+ * Gets the size of the given region of memory.
+ *
+ * @param id The ID for the memory block to check the size of. Can be RETRO_MEMORY_SAVE_RAM, RETRO_MEMORY_RTC, RETRO_MEMORY_SYSTEM_RAM, or RETRO_MEMORY_VIDEO_RAM.
+ *
+ * @return The size of the region in memory, or 0 when not available.
+ *
+ * @see RETRO_MEMORY_SAVE_RAM
+ * @see RETRO_MEMORY_RTC
+ * @see RETRO_MEMORY_SYSTEM_RAM
+ * @see RETRO_MEMORY_VIDEO_RAM
+ */
 RETRO_API size_t retro_get_memory_size(unsigned id);
 
 #ifdef __cplusplus
