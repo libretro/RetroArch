@@ -2595,22 +2595,48 @@ struct retro_get_proc_address_interface
    retro_get_proc_address_t get_proc_address;
 };
 
+/**
+ * The severity of a given message.
+ * The frontend may log messages differently depending on the level.
+ * It may also ignore log messages of a certain level.
+ * @see retro_log_callback
+ */
 enum retro_log_level
 {
+   /** The logged message is most likely not interesting to the user. */
    RETRO_LOG_DEBUG = 0,
+
+   /** Information about the core operating normally. */
    RETRO_LOG_INFO,
+
+   /** Indicates a potential problem, possibly one that the core can recover from. */
    RETRO_LOG_WARN,
+
+   /** Indicates a degraded experience, if not failure. */
    RETRO_LOG_ERROR,
 
+   /** Defined to ensure that sizeof(enum retro_log_level) == sizeof(int). Do not use. */
    RETRO_LOG_DUMMY = INT_MAX
 };
 
-/* Logging function. Takes log level argument as well. */
+/**
+ * Logs a message to the frontend.
+ *
+ * @param level The log level of the message.
+ * @param fmt The format string to log.
+ * Same format as <tt>printf</tt>.
+ * Behavior is undefined if this is <tt>NULL</tt>.
+ * @param ... Zero or more arguments used by the format string.
+ * Behavior is undefined if these don't match the ones expected by <tt>fmt</tt>.
+ * @see retro_log_level
+ * @see printf
+ */
 typedef void (RETRO_CALLCONV *retro_log_printf_t)(enum retro_log_level level,
       const char *fmt, ...);
 
 struct retro_log_callback
 {
+   /** Set by the frontend. The core should call this function to log a message. */
    retro_log_printf_t log;
 };
 
