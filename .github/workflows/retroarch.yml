@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Configure
         run: ./configure
       - name: Build
