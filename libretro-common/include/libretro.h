@@ -4590,9 +4590,9 @@ typedef bool (RETRO_CALLCONV *retro_environment_t)(unsigned cmd, void *data);
  * that are not packed in memory.
  *
  * @param data A pointer to the frame buffer data with a pixel format of 15-bit \c 0RGB1555 native endian, unless changed with \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT.
- * @param width SpecSpecificesies how wide the frame buffer is along the x axis.
- * @param height Specifices how tall the frame buffer is along the y axis.
- * @param pitch Specifices the length in bytes between two lines in the buffer.
+ * @param width The width of the frame buffer, in pixels.
+ * @param height The height frame buffer, in pixels.
+ * @param pitch The width of the frame buffer, in bytes.
  *
  * @see retro_set_video_refresh()
  * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
