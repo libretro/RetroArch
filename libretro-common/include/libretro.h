@@ -2987,22 +2987,37 @@ struct retro_audio_callback
    retro_audio_set_state_callback_t set_state;
 };
 
-/* Notifies a libretro core of time spent since last invocation
- * of retro_run() in microseconds.
- *
- * It will be called right before retro_run() every frame.
- * The frontend can tamper with timing to support cases like
- * fast-forward, slow-motion and framestepping.
- *
- * In those scenarios the reference frame time value will be used. */
 typedef int64_t retro_usec_t;
+
+/**
+ * Called right before each iteration of \c retro_run
+ * if registered via <tt>RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK</tt>.
+ *
+ * @param usec Time since the last call to <tt>retro_run</tt>, in microseconds.
+ * If the frontend is manipulating the frame time
+ * (e.g. via fast-forward or slow motion),
+ * this value will be the reference value initially provided to the environment call.
+ * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
+ * @see retro_frame_time_callback
+ */
 typedef void (RETRO_CALLCONV *retro_frame_time_callback_t)(retro_usec_t usec);
+
+/**
+ * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
+ */
 struct retro_frame_time_callback
 {
+   /**
+    * Called to notify the core of the current frame time.
+    * If <tt>NULL</tt>, the frontend will clear its registered callback.
+    */
    retro_frame_time_callback_t callback;
-   /* Represents the time of one frame. It is computed as
-    * 1000000 / fps, but the implementation will resolve the
-    * rounding to ensure that framestepping, etc is exact. */
+
+   /**
+    * The ideal duration of one frame, in microseconds.
+    * Compute it as <tt>1000000 / fps</tt>.
+    * The frontend will resolve rounding to ensure that framestepping, etc is exact.
+    */
    retro_usec_t reference;
 };
 
