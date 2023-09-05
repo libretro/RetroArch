@@ -572,6 +572,7 @@ enum retro_mod
  * @see retro_message
  * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
  * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
  * @note The frontend must make its own copy of the message and the underlying string.
  */
 #define RETRO_ENVIRONMENT_SET_MESSAGE   6
