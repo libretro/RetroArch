@@ -9070,8 +9070,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_MIDI_INPUT,                                            PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_MIDI_OUTPUT,                                           PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_MIDI_INPUT,                                            PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_MIDI_VOLUME,                                           PARSE_ONLY_UINT  },
             };
 
