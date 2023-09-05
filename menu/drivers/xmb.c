@@ -7624,7 +7624,6 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    file_list_t *menu_stack        = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection               = menu_st->selection_ptr;
-   settings_t *settings           = config_get_ptr();
 
    if (!xmb)
       return;
@@ -7812,7 +7811,6 @@ static void xmb_context_destroy(void *data)
 
 static void xmb_toggle(void *userdata, bool menu_on)
 {
-   gfx_animation_ctx_entry_t entry;
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
    struct menu_state *menu_st = menu_state_get_ptr();
 
@@ -7888,7 +7886,7 @@ static int xmb_list_push(void *data, void *userdata,
    bool menu_show_load_disc        = settings->bools.menu_show_load_disc;
    bool menu_show_dump_disc        = settings->bools.menu_show_dump_disc;
 #ifdef HAVE_LAKKA
-   bool menu_show_eject_disc        = settings->bools.menu_show_eject_disc;
+   bool menu_show_eject_disc       = settings->bools.menu_show_eject_disc;
 #endif
    bool menu_show_shutdown         = settings->bools.menu_show_shutdown;
    bool menu_show_reboot           = settings->bools.menu_show_reboot;
@@ -8081,8 +8079,8 @@ static int xmb_list_push(void *data, void *userdata,
                   false);
             }
 #endif
-            if (  !menu_content_show_settings &&
-                  !string_is_empty(menu_content_show_settings_password))
+            if (     !menu_content_show_settings
+                  && !string_is_empty(menu_content_show_settings_password))
             {
                MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                      info->list,

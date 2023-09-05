@@ -3729,11 +3729,8 @@ static void menu_input_st_string_cb_remap_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      settings_t *settings            = config_get_ptr();
       struct menu_state *menu_st      = menu_state_get_ptr();
       const char *label               = menu_st->input_dialog_kb_label;
-      const char *msg_str             = NULL;
-      int ret                         = false;
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);
@@ -3872,7 +3869,6 @@ static void menu_input_st_string_cb_override_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      settings_t *settings            = config_get_ptr();
       struct menu_state *menu_st      = menu_state_get_ptr();
       const char *label               = menu_st->input_dialog_kb_label;
       const char *msg_str             = NULL;

@@ -5332,8 +5332,7 @@ static int ozone_get_sublabel_max_width(ozone_handle_t *ozone,
       unsigned video_info_width,
       unsigned entry_padding)
 {
-   settings_t *settings        = config_get_ptr();
-   int sublabel_max_width      = video_info_width
+   int sublabel_max_width = video_info_width
          - (entry_padding * 2)
          - (ozone->dimensions.entry_icon_padding * 2);
 
