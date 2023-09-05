@@ -14963,7 +14963,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (setting->get_string_representation)
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = min; i <= max + half_step; i += step)
                                  {
                                     char val_s[256];
                                     *setting->value.target.fraction = i;
@@ -14989,7 +14989,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               }
                               else
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = min; i <= max + half_step; i += step)
                                  {
                                     char val_s[16];
                                     snprintf(val_s, sizeof(val_s), "%.2f", i);

@@ -7878,8 +7878,7 @@ static void write_handler_audio_rate_control_delta(rarch_setting_t *setting)
 
    if (*setting->value.target.fraction < 0.0005)
    {
-      configuration_set_bool(settings,
-            settings->bools.audio_rate_control, false);
+      configuration_set_bool(settings, settings->bools.audio_rate_control, false);
       audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, 0.0f);
    }
    else
@@ -13807,14 +13806,16 @@ static bool setting_append_list(
                parent_group,
                write_handler_audio_rate_control_delta,
                read_handler_audio_rate_control_delta);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(
                list,
                list_info,
-               0,
-               0,
+               0.0,
+               0.020,
                0.001,
                true,
-               false);
+               true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUDIO_REINIT);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_FLOAT(
@@ -13823,7 +13824,7 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
                MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
                DEFAULT_MAX_TIMING_SKEW,
-               "%.2f",
+               "%.3f",
                &group_info,
                &subgroup_info,
                parent_group,
@@ -13838,6 +13839,7 @@ static bool setting_append_list(
                0.01,
                true,
                true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_AUDIO_REINIT);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
 #ifdef RARCH_MOBILE
