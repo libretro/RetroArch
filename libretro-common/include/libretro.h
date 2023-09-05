@@ -4242,40 +4242,84 @@ struct retro_fastforwarding_override
    bool inhibit_toggle;
 };
 
-/* During normal operation. Rate will be equal to the core's internal FPS. */
+/**
+ * During normal operation.
+ *
+ * @note Rate will be equal to the core's internal FPS.
+ */
 #define RETRO_THROTTLE_NONE              0
 
-/* While paused or stepping single frames. Rate will be 0. */
+/**
+ * While paused or stepping single frames.
+ *
+ * @note Rate will be 0.
+ */
 #define RETRO_THROTTLE_FRAME_STEPPING    1
 
-/* During fast forwarding.
- * Rate will be 0 if not specifically limited to a maximum speed. */
+/**
+ * During fast forwarding.
+ *
+ * @note Rate will be 0 if not specifically limited to a maximum speed.
+ */
 #define RETRO_THROTTLE_FAST_FORWARD      2
 
-/* During slow motion. Rate will be less than the core's internal FPS. */
+/**
+ * During slow motion.
+ *
+ * @note Rate will be less than the core's internal FPS.
+ */
 #define RETRO_THROTTLE_SLOW_MOTION       3
 
-/* While rewinding recorded save states. Rate can vary depending on the rewind
- * speed or be 0 if the frontend is not aiming for a specific rate. */
+/**
+ * While rewinding recorded save states.
+ *
+ * @note Rate can vary depending on the rewind speed or be 0 if the frontend
+ * is not aiming for a specific rate.
+ */
 #define RETRO_THROTTLE_REWINDING         4
 
-/* While vsync is active in the video driver and the target refresh rate is
- * lower than the core's internal FPS. Rate is the target refresh rate. */
+/**
+ * While vsync is active in the video driver, and the target refresh rate is lower than the core's internal FPS.
+ *
+ * @note Rate is the target refresh rate.
+ */
 #define RETRO_THROTTLE_VSYNC             5
 
-/* When the frontend does not throttle in any way. Rate will be 0.
- * An example could be if no vsync or audio output is active. */
+/**
+ * When the frontend does not throttle in any way.
+ *
+ * @note Rate will be 0. An example could be if no vsync or audio output is active.
+ */
 #define RETRO_THROTTLE_UNBLOCKED         6
 
+/**
+ * Details about the actual rate an implementation is calling \c retro_run() at.
+ *
+ * @see RETRO_ENVIRONMENT_GET_THROTTLE_STATE
+ */
 struct retro_throttle_state
 {
-   /* The current throttling mode. Should be one of the values above. */
+   /**
+    * The current throttling mode.
+    *
+    * @note Should be one of the \c RETRO_THROTTLE_* values.
+    * @see RETRO_THROTTLE_NONE
+    * @see RETRO_THROTTLE_FRAME_STEPPING
+    * @see RETRO_THROTTLE_FAST_FORWARD
+    * @see RETRO_THROTTLE_SLOW_MOTION
+    * @see RETRO_THROTTLE_REWINDING
+    * @see RETRO_THROTTLE_VSYNC
+    * @see RETRO_THROTTLE_UNBLOCKED
+    */
    unsigned mode;
 
-   /* How many times per second the frontend aims to call retro_run.
-    * Depending on the mode, it can be 0 if there is no known fixed rate.
+   /**
+    * How many times per second the frontend aims to call retro_run.
+    *
+    * @note Depending on the mode, it can be 0 if there is no known fixed rate.
     * This won't be accurate if the total processing time of the core and
-    * the frontend is longer than what is available for one frame. */
+    * the frontend is longer than what is available for one frame.
+    */
    float rate;
 };
 
