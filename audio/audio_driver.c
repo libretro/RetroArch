@@ -76,7 +76,7 @@ audio_driver_t audio_null = {
    NULL,
    NULL,
    NULL, /* write_avail */
-   NULL /* buffer_size */
+   NULL  /* buffer_size */
 };
 
 audio_driver_t *audio_drivers[] = {
@@ -458,25 +458,26 @@ static void audio_driver_flush(
    src_data.data_out                 = audio_st->output_samples_buf;
    /* Now the resampler will write to the driver state's scratch buffer */
 
-   if (audio_st->flags & AUDIO_FLAG_CONTROL)
+   /* Count samples. */
    {
-      /* Readjust the audio input rate. */
-      int      half_size             = (int)(audio_st->buffer_size / 2);
+      unsigned write_idx             =
+            audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
 
-      int      avail               =
-          (int)audio_st->current_audio->write_avail(
+      if (audio_st->flags & AUDIO_FLAG_CONTROL)
+      {
+         /* Readjust the audio input rate. */
+         int avail                   = (int)audio_st->current_audio->write_avail(
                audio_st->context_audio_data);
-      int      delta_mid           = avail - half_size;
-      double   direction           = (double)delta_mid / half_size;
-      double   adjust              = 1.0 +
-         audio_st->rate_control_delta * direction;
-      unsigned write_idx           =
-         audio_st->free_samples_count++ &
-         (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+         int half_size               = (int)(audio_st->buffer_size / 2);
+         int delta_mid               = avail - half_size;
+         double direction            = (double)delta_mid / half_size;
+         double adjust               = 1.0 + audio_st->rate_control_delta * direction;
 
-      audio_st->free_samples_buf[write_idx]  = avail;
-      audio_st->source_ratio_current         =
-         audio_st->source_ratio_original * adjust;
+         audio_st->free_samples_buf[write_idx]
+                                     = avail;
+         audio_st->source_ratio_current
+                                     = audio_st->source_ratio_original * adjust;
+      }
 
 #if 0
       if (verbosity_is_enabled())
@@ -1819,8 +1820,11 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats)
    if (samples < 3)
       return false;
 
-   stats->samples                = (unsigned)
+   stats->samples                 = (unsigned)
       audio_st->free_samples_count;
+
+   if (!(audio_st->flags & AUDIO_FLAG_CONTROL))
+      return false;
 
 #ifdef WARPUP
    /* uint64 to double not implemented, fair chance
