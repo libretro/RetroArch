@@ -860,32 +860,42 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK 21
 
+/**
+ * Registers a set of functions that the frontend can use
+ * to tell the core it's ready for audio output.
+ *
+ * It is intended for games that feature asynchronous audio.
+ * It should not be used for emulators unless their audio is asynchronous.
+ *
+ *
+ * The callback only notifies about writability; the libretro core still
+ * has to call the normal audio callbacks
+ * to write audio. The audio callbacks must be called from within the
+ * notification callback.
+ * The amount of audio data to write is up to the core.
+ * Generally, the audio callback will be called continously in a loop.
+ *
+ * A frontend may disable this callback in certain situations.
+ * The core must be able to render audio with the "normal" interface.
+ *
+ * @param data[in] <tt>const struct retro_audio_callback *</tt>.
+ * Pointer to a set of functions that the frontend will call to notify the core
+ * when it's ready to receive audio data.
+ * May be \c NULL, in which case the frontend will return
+ * whether this environment callback is available.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @warning The provided callbacks can be invoked from any thread,
+ * so their implementations \em must be thread-safe.
+ * @note If a core uses this callback,
+ * it should also use <tt>RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK</tt>.
+ * @see retro_audio_callback
+ * @see retro_audio_sample_t
+ * @see retro_audio_sample_batch_t
+ * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
+ */
 #define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 22
-                                           /* const struct retro_audio_callback * --
-                                            * Sets an interface which is used to notify a libretro core about audio
-                                            * being available for writing.
-                                            * The callback can be called from any thread, so a core using this must
-                                            * have a thread safe audio implementation.
-                                            * It is intended for games where audio and video are completely
-                                            * asynchronous and audio can be generated on the fly.
-                                            * This interface is not recommended for use with emulators which have
-                                            * highly synchronous audio.
-                                            *
-                                            * The callback only notifies about writability; the libretro core still
-                                            * has to call the normal audio callbacks
-                                            * to write audio. The audio callbacks must be called from within the
-                                            * notification callback.
-                                            * The amount of audio data to write is up to the implementation.
-                                            * Generally, the audio callback will be called continously in a loop.
-                                            *
-                                            * Due to thread safety guarantees and lack of sync between audio and
-                                            * video, a frontend  can selectively disallow this interface based on
-                                            * internal configuration. A core using this interface must also
-                                            * implement the "normal" audio interface.
-                                            *
-                                            * A libretro core using SET_AUDIO_CALLBACK should also make use of
-                                            * SET_FRAME_TIME_CALLBACK.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE 23
                                            /* struct retro_rumble_interface * --
                                             * Gets an interface which is used by a libretro core to set
@@ -2970,21 +2980,50 @@ struct retro_rumble_interface
    retro_set_rumble_state_t set_rumble_state;
 };
 
-/* Notifies libretro that audio data should be written. */
+/**
+ * Called by the frontend to request audio samples.
+ * The core should render audio within this function
+ * using the callback provided by \c retro_set_audio_sample or \c retro_set_audio_sample_batch.
+ *
+ * @warning This function may be called by any thread,
+ * therefore it must be thread-safe.
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
+ * @see retro_audio_callback
+ * @see retro_audio_sample_batch_t
+ * @see retro_audio_sample_t
+ */
 typedef void (RETRO_CALLCONV *retro_audio_callback_t)(void);
 
-/* True: Audio driver in frontend is active, and callback is
- * expected to be called regularily.
- * False: Audio driver in frontend is paused or inactive.
- * Audio callback will not be called until set_state has been
- * called with true.
- * Initial state is false (inactive).
+/**
+ * Called by the frontend to notify the core that it should pause or resume audio rendering.
+ * The initial state of the audio driver after registering this callback is \c false (inactive).
+ *
+ * @param enabled \c true if the frontend's audio driver is active.
+ * If so, the registered audio callback will be called regularly.
+ * If not, the audio callback will not be invoked until the next time
+ * the frontend calls this function with \c true.
+ * @warning This function may be called by any thread,
+ * therefore it must be thread-safe.
+ * @note Even if no audio samples are rendered,
+ * the core should continue to update its emulated platform's audio engine if necessary.
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
+ * @see retro_audio_callback
+ * @see retro_audio_callback_t
  */
 typedef void (RETRO_CALLCONV *retro_audio_set_state_callback_t)(bool enabled);
 
+/**
+ * An interface that the frontend uses to request audio samples from the core.
+ * @note To unregister a callback, pass a \c retro_audio_callback_t
+ * with both fields set to <tt>NULL</tt>.
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
+ */
 struct retro_audio_callback
 {
+   /** @see retro_audio_callback_t */
    retro_audio_callback_t callback;
+
+   /** @see retro_audio_set_state_callback_t */
    retro_audio_set_state_callback_t set_state;
 };
 
