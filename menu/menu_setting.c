@@ -1083,8 +1083,9 @@ static int setting_fraction_action_left_default(
 
    if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
-      float min = setting->min;
-      if (*setting->value.target.fraction < min)
+      float min       = setting->min;
+      float half_step = setting->step * 0.5f;
+      if (*setting->value.target.fraction < min - half_step)
       {
          settings_t *settings = config_get_ptr();
          float           max  = setting->max;
