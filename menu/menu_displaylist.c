@@ -952,23 +952,19 @@ static unsigned menu_displaylist_parse_core_backup_list(
              && entry
              && !string_is_empty(entry->backup_path))
          {
+            size_t _len;
             char timestamp[128];
-            char crc[16];
-
             timestamp[0] = '\0';
-            crc[0]       = '\0';
-
             /* Get timestamp and crc strings */
-            core_backup_list_get_entry_timestamp_str(
+            _len = core_backup_list_get_entry_timestamp_str(
                   entry, date_separator, timestamp, sizeof(timestamp));
-            snprintf(crc, sizeof(crc), "%08lx", (unsigned long)entry->crc);
 
             /* Append 'auto backup' tag to timestamp, if required */
             if (entry->backup_mode == CORE_BACKUP_MODE_AUTO)
             {
-               strlcat(timestamp, " ", sizeof(timestamp));
-               strlcat(timestamp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
-                     sizeof(timestamp));
+               _len += strlcpy(timestamp + _len, " ", sizeof(timestamp) - _len);
+               strlcpy(timestamp + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
+                     sizeof(timestamp) - _len);
             }
 
             /* Add menu entry */
@@ -978,6 +974,9 @@ static unsigned menu_displaylist_parse_core_backup_list(
                   enum_idx,
                   settings_type, 0, 0, NULL))
             {
+               char crc[16];
+               crc[0]       = '\0';
+               snprintf(crc, sizeof(crc), "%08lx", (unsigned long)entry->crc);
                /* We need to set backup path, timestamp and crc
                 * > Only have 2 useable fields as standard
                 *   ('path' and 'label'), so have to set the
@@ -8366,6 +8365,7 @@ unsigned menu_displaylist_build_list(
                   /* Loop through disk images */
                   for (i = 0; i < num_images; i++)
                   {
+                     size_t _len;
                      char current_image_str[PATH_MAX_LENGTH];
                      char image_label[128];
 
@@ -8377,7 +8377,7 @@ unsigned menu_displaylist_build_list(
                            &sys_info->disk_control,
                            i, image_label, sizeof(image_label));
 
-                     snprintf(
+                     _len = snprintf(
                            current_image_str, sizeof(current_image_str),
                            "%0*u", num_digits, i + 1);
 
@@ -8388,10 +8388,12 @@ unsigned menu_displaylist_build_list(
                      {
                         /* Note: 2-space gap is intentional
                          * (for clarity) */
-                        strlcat(current_image_str,
-                              ":  ", sizeof(current_image_str));
-                        strlcat(current_image_str,
-                              image_label, sizeof(current_image_str));
+                        _len += strlcpy(current_image_str + _len,
+                              ":  ",
+                              sizeof(current_image_str)   - _len);
+                        strlcpy(current_image_str         + _len,
+                              image_label,
+                              sizeof(current_image_str)   - _len);
                      }
 
                      /* Add menu entry */
