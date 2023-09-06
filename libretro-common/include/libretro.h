@@ -77,9 +77,15 @@ extern "C" {
 #  endif
 #endif
 
-/* Used for checking API/ABI mismatches that can break libretro
- * implementations.
- * It is not incremented for compatible changes to the API.
+/**
+ * The major version of the libretro API and ABI.
+ * Cores may support multiple versions,
+ * or they may reject cores with unsupported versions.
+ * It is only incremented for incompatible API/ABI changes;
+ * this generally implies a function was removed or changed,
+ * or that a \c struct had fields removed or changed.
+ * @note A design goal of libretro is to avoid having to increase this value at all costs.
+ * This is why there are APIs that are "extended" or "V2".
  */
 #define RETRO_API_VERSION         1
 
@@ -496,8 +502,11 @@ enum retro_mod
    RETROKMOD_DUMMY = INT_MAX /* Ensure sizeof(enum) == sizeof(int) */
 };
 
-/* If set, this call is not part of the public libretro API yet. It can
- * change or be removed at any time. */
+/**
+ * This bit indicates that the associated environment call is experimental,
+ * and may be changed or removed in the future.
+ * Frontends should mask out this bit before handling the environment call.
+ */
 #define RETRO_ENVIRONMENT_EXPERIMENTAL 0x10000
 /* Environment callback to be used internally in frontend. */
 #define RETRO_ENVIRONMENT_PRIVATE 0x20000
