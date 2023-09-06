@@ -998,64 +998,95 @@ enum retro_mod
  * @see RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY
  **/
 #define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
+
+/**
+ * Returns the frontend's "core assets" directory,
+ * which can be used to store assets that the core needs
+ * such as art assets or level data.
+ *
+ * @param data[out] <tt>const char **</tt>.
+ * Pointer to a string in which the core assets directory will be saved.
+ * This string is managed by the frontend and must not be modified or freed by the core.
+ * May be \c NULL if no core assets directory is defined,
+ * in which case the core should find an alternative directory.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available,
+ * even if the value returned in \c data is <tt>NULL</tt>.
+ */
 #define RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY 30
-                                           /* const char ** --
-                                            * Returns the "core assets" directory of the frontend.
-                                            * This directory can be used to store specific assets that the
-                                            * core relies upon, such as art assets,
-                                            * input data, etc etc.
-                                            * The returned value can be NULL.
-                                            * If so, no such directory is defined,
-                                            * and it's up to the implementation to find a suitable directory.
-                                            */
+
+/**
+ * Returns the frontend's save data directory, if available.
+ * This directory should be used to store game-specific save data,
+ * including memory card images.
+ *
+ * Although libretro provides an interface for cores to expose SRAM to the frontend,
+ * not all cores can support it correctly.
+ * In this case, cores should use this environment callback
+ * to save their game data to disk manually.
+ *
+ * Cores that use this environment callback
+ * should flush their save data to disk periodically and when unloading.
+ *
+ * @param data[out] <tt>const char **</tt>.
+ * Pointer to the string in which the save data directory will be saved.
+ * This string is managed by the frontend and must not be modified or freed by the core.
+ * May return \c NULL if no save data directory is defined.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available,
+ * even if the value returned in \c data is <tt>NULL</tt>.
+ * @note Early libretro cores used \c RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY for save data.
+ * This is still supported for backwards compatibility,
+ * but new cores should use this environment call instead.
+ * \c RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY should be used for game-agnostic data
+ * such as BIOS files or core-specific configuration.
+ * @note The returned directory may or may not be the same
+ * as the one used for \c retro_get_memory_data.
+ *
+ * @see retro_get_memory_data
+ * @see RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
+ */
 #define RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY 31
-                                           /* const char ** --
-                                            * Returns the "save" directory of the frontend, unless there is no
-                                            * save directory available. The save directory should be used to
-                                            * store SRAM, memory cards, high scores, etc, if the libretro core
-                                            * cannot use the regular memory interface (retro_get_memory_data()).
-                                            *
-                                            * If the frontend cannot designate a save directory, it will return
-                                            * NULL to indicate that the core should attempt to operate without a
-                                            * save directory set.
-                                            *
-                                            * NOTE: early libretro cores used the system directory for save
-                                            * files. Cores that need to be backwards-compatible can still check
-                                            * GET_SYSTEM_DIRECTORY.
-                                            */
+
+/**
+ * Sets new video and audio parameters for the core.
+ * This can only be called from within <tt>retro_run</tt>.
+ *
+ * This environment call may entail a full reinitialization of the frontend's audio/video drivers,
+ * hence it should \em only be used if the core needs to make drastic changes
+ * to audio/video parameters.
+ *
+ * This environment call should \em not be used when:
+ * <ul>
+ * <li>Changing the emulated system's internal resolution,
+ * within the limits defined by the existing values of \c max_width and \c max_height.
+ * Use \c RETRO_ENVIRONMENT_SET_GEOMETRY instead,
+ * and adjust \c retro_get_system_av_info to account fo
+ * supported scale factors and screen layouts
+ * when computing \c max_width and \c max_height.
+ * Only use this environment call if \c max_width or \c max_height needs to increase.
+ * <li>Adjusting the screen's aspect ratio,
+ * e.g. when changing the layout of the screen(s).
+ * Use \c RETRO_ENVIRONMENT_SET_GEOMETRY or \c RETRO_ENVIRONMENT_SET_ROTATION instead.
+ * </ul>
+ *
+ * The frontend will reinitialize its audio and video drivers within this callback;
+ * after that happens, audio and video callbacks will target the newly-initialized driver,
+ * even within the same \c retro_run call.
+ *
+ * This callback makes it possible to support configurable resolutions
+ * while avoiding the need to compute the "worst case" values of \c max_width and \c max_height.
+ *
+ * @param data[in] <tt>const struct retro_system_av_info *</tt>.
+ * Pointer to the new video and audio parameters that the frontend should adopt.
+ * @returns \c true if the environment call is available
+ * and the new av_info struct was accepted.
+ * \c false if the environment call is unavailable or \c data is <tt>NULL</tt>.
+ * @see retro_system_av_info
+ * @see RETRO_ENVIRONMENT_SET_GEOMETRY
+ */
 #define RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO 32
-                                           /* const struct retro_system_av_info * --
-                                            * Sets a new av_info structure. This can only be called from
-                                            * within retro_run().
-                                            * This should *only* be used if the core is completely altering the
-                                            * internal resolutions, aspect ratios, timings, sampling rate, etc.
-                                            * Calling this can require a full reinitialization of video/audio
-                                            * drivers in the frontend,
-                                            *
-                                            * so it is important to call it very sparingly, and usually only with
-                                            * the users explicit consent.
-                                            * An eventual driver reinitialize will happen so that video and
-                                            * audio callbacks
-                                            * happening after this call within the same retro_run() call will
-                                            * target the newly initialized driver.
-                                            *
-                                            * This callback makes it possible to support configurable resolutions
-                                            * in games, which can be useful to
-                                            * avoid setting the "worst case" in max_width/max_height.
-                                            *
-                                            * ***HIGHLY RECOMMENDED*** Do not call this callback every time
-                                            * resolution changes in an emulator core if it's
-                                            * expected to be a temporary change, for the reasons of possible
-                                            * driver reinitialization.
-                                            * This call is not a free pass for not trying to provide
-                                            * correct values in retro_get_system_av_info(). If you need to change
-                                            * things like aspect ratio or nominal width/height,
-                                            * use RETRO_ENVIRONMENT_SET_GEOMETRY, which is a softer variant
-                                            * of SET_SYSTEM_AV_INFO.
-                                            *
-                                            * If this returns false, the frontend does not acknowledge a
-                                            * changed av_info struct.
-                                            */
+
 #define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
                                            /* const struct retro_get_proc_address_interface * --
                                             * Allows a libretro core to announce support for the
@@ -1227,14 +1258,25 @@ enum retro_mod
                                             * Similarly, after context_destroyed callback returns,
                                             * the contents of the HW_RENDER_INTERFACE are invalidated.
                                             */
+
+/**
+ * Notifies the frontend that this core supports achievements.
+ * The core must expose its emulated address space via
+ * \c retro_get_memory_data or \c RETRO_ENVIRONMENT_GET_MEMORY_MAPS.
+ *
+ * Must be called before the first call to <tt>retro_run</tt>.
+ *
+ * @param data[in] <tt>const bool *</tt>.
+ * Pointer to a single \c bool that indicates whether this core supports achievements.
+ * Can be \c false but this isn't necessary,
+ * as cores must opt in to achievement support.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
+ * @see retro_get_memory_data
+ */
 #define RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const bool * --
-                                            * If true, the libretro implementation supports achievements
-                                            * either via memory descriptors set with RETRO_ENVIRONMENT_SET_MEMORY_MAPS
-                                            * or via retro_get_memory_data/retro_get_memory_size.
-                                            *
-                                            * This must be called before the first call to retro_run.
-                                            */
+
 #define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_context_negotiation_interface * --
                                             * Sets an interface which lets the libretro core negotiate with frontend how a context is created.
@@ -1247,17 +1289,21 @@ enum retro_mod
                                             * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
                                             * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
                                             */
+
+/**
+ * The frontend will try to use a "shared" context when setting up a hardware context.
+ * Mostly applicable to OpenGL.
+ *
+ * In order for this to have any effect,
+ * the core must call \c RETRO_ENVIRONMENT_SET_HW_RENDER at some point
+ * if it hasn't already.
+ *
+ * @param data Ignored.
+ * @returns \c true if the environment call is available
+ * and the frontend supports shared hardware contexts.
+ */
 #define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* N/A (null) * --
-                                            * The frontend will try to use a 'shared' hardware context (mostly applicable
-                                            * to OpenGL) when a hardware context is being set up.
-                                            *
-                                            * Returns true if the frontend supports shared hardware contexts and false
-                                            * if the frontend does not support shared hardware contexts.
-                                            *
-                                            * This will do nothing on its own until SET_HW_RENDER env callbacks are
-                                            * being used.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_vfs_interface_info * --
                                             * Gets access to the VFS interface.
@@ -1317,20 +1363,27 @@ enum retro_mod
                                             * Returns a MIDI interface that can be used for raw data I/O.
                                             */
 
+/**
+ * Asks the frontend if it's currently in fast-forward mode.
+ * @param data[out] <tt>bool *</tt>.
+ * Set to \c true if the frontend is currently fast-forwarding its main loop.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+ */
 #define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* bool * --
-                                            * Boolean value that indicates whether or not the frontend is in
-                                            * fastforwarding mode.
-                                            */
 
+/**
+ * Returns the refresh rate the frontend is targeting, in Hz.
+ * The intended use case is for the core to use the result to select an ideal refresh rate.
+ *
+ * @param data[out] <tt>float *</tt>.
+ * Pointer to the \c float in which the frontend will store its target refresh rate.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+*/
 #define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* float * --
-                                            * Float value that lets us know what target refresh rate
-                                            * is curently in use by the frontend.
-                                            *
-                                            * The core can use the returned value to set an ideal
-                                            * refresh rate/framerate.
-                                            */
 
 #define RETRO_ENVIRONMENT_GET_INPUT_BITMASKS (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                             /* bool * --
@@ -3948,29 +4001,84 @@ struct retro_game_info_ext
    bool persistent_data;
 };
 
+/**
+ * Parameters describing the size and shape of the video frame.
+ * @see retro_system_av_info
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see retro_get_system_av_info
+ */
 struct retro_game_geometry
 {
-   unsigned base_width;    /* Nominal video width of game. */
-   unsigned base_height;   /* Nominal video height of game. */
-   unsigned max_width;     /* Maximum possible width of game. */
+   /**
+    * Nominal video width of game, in pixels.
+    * This will typically be the emulated platform's native video width
+    * (or its smallest, if the original hardware supports multiple resolutions).
+    */
+   unsigned base_width;
+
+   /**
+    * Nominal video height of game, in pixels.
+    * This will typically be the emulated platform's native video height
+    * (or its smallest, if the original hardware supports multiple resolutions).
+    */
+   unsigned base_height;
+
+   /**
+    * Maximum possible width of the game screen, in pixels.
+    * This will typically be the emulated platform's maximum video width.
+    * For cores that emulate platforms with multiple screens (such as the Nintendo DS),
+    * this should assume the core's widest possible screen layout (e.g. side-by-side).
+    * For cores that support upscaling the resolution,
+    * this should assume the highest supported scale factor is active.
+    */
+   unsigned max_width;
+
+   /**
+    * Maximum possible height of the game screen, in pixels.
+    * This will typically be the emulated platform's maximum video height.
+    * For cores that emulate platforms with multiple screens (such as the Nintendo DS),
+    * this should assume the core's tallest possible screen layout (e.g. vertical).
+    * For cores that support upscaling the resolution,
+    * this should assume the highest supported scale factor is active.
+    */
    unsigned max_height;    /* Maximum possible height of game. */
 
-   float    aspect_ratio;  /* Nominal aspect ratio of game. If
-                            * aspect_ratio is <= 0.0, an aspect ratio
-                            * of base_width / base_height is assumed.
-                            * A frontend could override this setting,
-                            * if desired. */
+   /**
+    * Nominal aspect ratio of game.
+    * If zero or less,
+    * an aspect ratio of <tt>base_width / base_height</tt> is assumed.
+    *
+    * @note A frontend may ignore this setting.
+    */
+   float    aspect_ratio;
 };
 
+/**
+ * Parameters describing the timing of the video and audio.
+ * @see retro_system_av_info
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see retro_get_system_av_info
+ */
 struct retro_system_timing
 {
-   double fps;             /* FPS of video content. */
-   double sample_rate;     /* Sampling rate of audio. */
+   /** Video output refresh rate, in frames per second. */
+   double fps;
+
+   /** The audio output sample rate, in Hz. */
+   double sample_rate;
 };
 
+/**
+ * Configures how the core's audio and video should be updated.
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see retro_get_system_av_info
+ */
 struct retro_system_av_info
 {
+   /** Parameters describing the size and shape of the video frame. */
    struct retro_game_geometry geometry;
+
+   /** Parameters describing the timing of the video and audio. */
    struct retro_system_timing timing;
 };
 
