@@ -420,7 +420,8 @@ static void gfx_display_gl2_blend_end(void *data)
 
 #ifdef MALI_BUG
 static bool
-gfx_display_gl2_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
+gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
+      gfx_display_ctx_draw_t *draw,
       unsigned width, unsigned height)
 {
    static bool mali_4xx_detected     = false;
@@ -431,19 +432,14 @@ gfx_display_gl2_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
    if (!scissor_inited)
    {
       unsigned i;
-      const char *gpu_device_string = NULL;
       scissor_inited                = true;
+      const char *gpu_device_string = gl->device_string;
 
       scissor_set_rectangle(0,
             width - 1,
             0,
             height - 1,
             0);
-
-      /* TODO/FIXME - This might be thread unsafe in the long run -
-       * preferably call this once outside of the menu display driver
-       * and then just pass this string as a parameter */
-      gpu_device_string = video_driver_get_gpu_device_string();
 
       if (gpu_device_string)
       {
@@ -503,7 +499,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       return;
 
 #ifdef MALI_BUG
-   if (gfx_display_gl2_discard_draw_rectangle(draw, video_width,
+   if (gfx_display_gl2_discard_draw_rectangle(gl, draw, video_width,
             video_height))
    {
       /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
@@ -4323,21 +4319,17 @@ static void *gl2_init(const video_info_t *video,
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
 
    {
-      char device_str[128];
       size_t len    = 0;
-      device_str[0] = '\0';
 
       if (!string_is_empty(vendor))
       {
-        len               = strlcpy(device_str, vendor, sizeof(device_str));
-        device_str[  len] = ' ';
-        device_str[++len] = '\0';
+        len                    = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
+        gl->device_str[  len]  = ' ';
+        gl->device_str[++len]  = '\0';
       }
 
       if (!string_is_empty(renderer))
-        strlcpy(device_str + len, renderer, sizeof(device_str) - len);
-
-      video_driver_set_gpu_device_string(device_str);
+        strlcpy(gl->device_str + len, renderer, sizeof(gl->device_str) - len);
 
       if (!string_is_empty(version))
         video_driver_set_gpu_api_version_string(version);

@@ -335,18 +335,11 @@ static void switch_res_crt(
          RARCH_ERR("[CRT]: SR failed to add mode\n");
       if (p_switch->kms_ctx)
       {
-#if 0
-         settings_t *settings = config_get_ptr();
-#endif
          get_modeline_for_kms(p_switch, &srm);
          video_driver_set_video_mode(srm.width, srm.height, true);
       }
       else if (p_switch->khr_ctx)
-      {
          RARCH_WARN("[CRT]: Vulkan -> Can't modeswitch for now\n");
-         /*crt_switch_driver_refresh();
-         video_driver_set_video_mode(srm.width, srm.height, true);*/
-      }
       else
          ret = sr_set_mode(srm.id);
       if (!p_switch->kms_ctx && !ret)
@@ -524,7 +517,6 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
    char buffer[1024];
    VCHI_INSTANCE_T vchi_instance;
    VCHI_CONNECTION_T *vchi_connection  = NULL;
-   static char output[250]             = {0};
    static char output1[250]            = {0};
    static char output2[250]            = {0};
    static char set_hdmi[250]           = {0};
@@ -637,7 +629,7 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
    snprintf(output1,  sizeof(output1),
          "tvservice -e \"DMT 87\" > /dev/null");
    system(output1);
-   snprintf(output2,  sizeof(output1),
+   snprintf(output2,  sizeof(output2),
          "fbset -g %d %d %d %d 24 > /dev/null",
          width, height, width, height);
    system(output2);

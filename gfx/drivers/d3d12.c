@@ -2506,8 +2506,6 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
          d3d12->adapter = d3d12->adapters[gpu_index];
          AddRef(d3d12->adapter);
          RARCH_LOG("[D3D12]: Using GPU index %d.\n", gpu_index);
-         video_driver_set_gpu_device_string(
-               d3d12->gpu_list->elems[gpu_index].data);
       }
       else
       {

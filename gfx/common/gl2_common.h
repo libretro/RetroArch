@@ -254,6 +254,7 @@ struct gl2
    struct video_tex_info prev_info[GFX_MAX_TEXTURES]; /* unsigned alignment */
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];   /* unsigned alignment */
 
+   char device_str[128];
    bool pbo_readback_valid[4];
 };
 
