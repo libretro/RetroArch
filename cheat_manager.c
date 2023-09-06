@@ -88,7 +88,7 @@ void cheat_manager_apply_cheats(void)
 
    for (i = 0; i < cheat_st->size; i++)
    {
-      if (     cheat_st->cheats[i].state 
+      if (     cheat_st->cheats[i].state
             && cheat_st->cheats[i].handler == CHEAT_HANDLER_TYPE_EMU)
       {
          retro_ctx_cheat_info_t cheat_info;
@@ -189,16 +189,10 @@ bool cheat_manager_save(
 
    for (i = 0; i < cheat_st->size; i++)
    {
-      size_t _len;
       unsigned j;
-      char formatted_number[12];
-      char var_key[128];
       char key[256];
- 
-      formatted_number[0] = '\0';
-      snprintf(formatted_number, sizeof(formatted_number), "cheat%u_", i);
-
-      _len = strlcpy(var_key, formatted_number, sizeof(var_key));
+      char var_key[128];
+      size_t _len = snprintf(var_key, sizeof(var_key), "cheat%u_", i);
 
       strlcpy(var_key + _len, "desc", sizeof(var_key) - _len);
       if (!string_is_empty(cheat_st->cheats[i].desc))
@@ -211,8 +205,8 @@ bool cheat_manager_save(
 
       strlcpy(var_key + _len, "enable", sizeof(var_key) - _len);
       config_set_string(conf, var_key,
-               cheat_st->cheats[i].state 
-            ? "true" 
+               cheat_st->cheats[i].state
+            ? "true"
             : "false");
 
       strlcpy(var_key + _len, "big_endian", sizeof(var_key) - _len);
@@ -531,7 +525,7 @@ bool cheat_manager_load(const char *path, bool append)
    }
 
    cheat_st->loading_cheat_offset            = orig_size;
-   cb.config_file_new_entry_cb               = 
+   cb.config_file_new_entry_cb               =
       cheat_manager_load_cb_second_pass;
    conf = config_file_new_with_callback(path, &cb);
 
@@ -619,11 +613,11 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
    snprintf(msg, sizeof(msg),
          "Cheat: #%u [%s]: %s",
          handle_idx,
-         handle->cheats[handle_idx].state 
-         ? msg_hash_to_str(MENU_ENUM_LABEL_ON) 
+         handle->cheats[handle_idx].state
+         ? msg_hash_to_str(MENU_ENUM_LABEL_ON)
          : msg_hash_to_str(MENU_ENUM_LABEL_OFF),
-         handle->cheats[handle_idx].desc 
-         ? (handle->cheats[handle_idx].desc) 
+         handle->cheats[handle_idx].desc
+         ? (handle->cheats[handle_idx].desc)
          : (handle->cheats[handle_idx].code)
          );
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -813,7 +807,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
    {
       for (i = 0; i < sys_info->mmaps.num_descriptors; i++)
       {
-         if ((sys_info->mmaps.descriptors[i].core.flags 
+         if ((sys_info->mmaps.descriptors[i].core.flags
                   & RETRO_MEMDESC_SYSTEM_RAM) != 0
                && sys_info->mmaps.descriptors[i].core.ptr
                && sys_info->mmaps.descriptors[i].core.len > 0)
