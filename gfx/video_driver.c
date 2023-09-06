@@ -2948,19 +2948,6 @@ float video_driver_get_refresh_rate(void)
    return 0.0f;
 }
 
-void video_driver_set_gpu_device_string(const char *str)
-{
-   video_driver_state_t *video_st           = &video_driver_st;
-   strlcpy(video_st->gpu_device_string, str,
-         sizeof(video_st->gpu_device_string));
-}
-
-const char* video_driver_get_gpu_device_string(void)
-{
-   video_driver_state_t *video_st           = &video_driver_st;
-   return video_st->gpu_device_string;
-}
-
 void video_driver_set_gpu_api_version_string(const char *str)
 {
    video_driver_state_t *video_st           = &video_driver_st;

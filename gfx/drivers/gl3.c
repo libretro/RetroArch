@@ -1875,16 +1875,7 @@ static void *gl3_init(const video_info_t *video,
    if (!string_is_empty(version))
       sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
 
-   {
-      char device_str[128];
-      size_t len        = strlcpy(device_str, vendor, sizeof(device_str));
-      device_str[  len] = ' ';
-      device_str[++len] = '\0';
-      strlcpy(device_str + len, renderer, sizeof(device_str) - len);
-
-      video_driver_set_gpu_device_string(device_str);
-      video_driver_set_gpu_api_version_string(version);
-   }
+   video_driver_set_gpu_api_version_string(version);
 
 #ifdef _WIN32
    if (   string_is_equal(vendor,   "Microsoft Corporation"))
