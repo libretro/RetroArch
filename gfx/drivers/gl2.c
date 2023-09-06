@@ -433,7 +433,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
    {
       unsigned i;
       scissor_inited                = true;
-      const char *gpu_device_string = gl->device_string;
+      const char *gpu_device_string = gl->device_str;
 
       scissor_set_rectangle(0,
             width - 1,
