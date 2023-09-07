@@ -112,6 +112,11 @@ extern "C" {
 #define RETRO_DEVICE_MASK               ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
 #define RETRO_DEVICE_SUBCLASS(base, id) (((id + 1) << RETRO_DEVICE_TYPE_SHIFT) | base)
 
+/**
+ * @defgroup RETRO_DEVICE Input Device Types
+ * @{
+ */
+
 /* Input disabled. */
 #define RETRO_DEVICE_NONE         0
 
@@ -190,6 +195,8 @@ extern "C" {
  * Eventually _PRESSED will return false for an index. No further presses
  * are registered at this point. */
 #define RETRO_DEVICE_POINTER      6
+
+/** @} */
 
 /* Buttons for the RetroPad (JOYPAD).
  * The placement of these is equivalent to placements on the
@@ -936,15 +943,45 @@ enum retro_mod
  * @defgroup GET_RUMBLE_INTERFACE Rumble Interface
  */
 #define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE 23
+
+/**
+ * Returns the frontend's supported input device types.
+ *
+ * The supported device types are returned as a bitmask,
+ * with each value of \ref RETRO_DEVICE corresponding to a bit.
+ *
+ * Should only be called in \c retro_run().
+ *
+ * @code
+ * void get_input_device_capabilities_example(void)
+ * {
+ *    uint64_t capabilities;
+ *    environ_cb(RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES, &capabilities);
+ *    if (capabilities & ((1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG)))
+ *      printf("Joypad and analog device types are supported");
+ * }
+ * @endcode
+ *
+ * @param data[out] <tt>uint64_t *</tt>.
+ * Pointer to a bitmask of supported input device types.
+ * If the frontend supports a particular \c RETRO_DEVICE_* type,
+ * then the bit <tt>(1 << RETRO_DEVICE_*)</tt> will be set.
+ *
+ * Each bit represents a \c RETRO_DEVICE constant,
+ * e.g. bit 1 represents \c RETRO_DEVICE_JOYPAD,
+ * bit 2 represents \c RETRO_DEVICE_MOUSE, and so on.
+ *
+ * Bits that do not correspond to known device types will be set to zero
+ * and are reserved for future use.
+ *
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available.
+ * @note If the frontend supports multiple input drivers,
+ * availability of this environment call (and the reported capabilities)
+ * may depend on the active driver.
+ * @see RETRO_DEVICE
+ */
 #define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
-                                           /* uint64_t * --
-                                            * Gets a bitmask telling which device type are expected to be
-                                            * handled properly in a call to retro_input_state_t.
-                                            * Devices which are not handled or recognized always return
-                                            * 0 in retro_input_state_t.
-                                            * Example bitmask: caps = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG).
-                                            * Should only be called in retro_run().
-                                            */
 #define RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE (25 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_sensor_interface * --
                                             * Gets access to the sensor interface.
