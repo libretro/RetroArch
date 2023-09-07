@@ -680,9 +680,9 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
 
 /**
- * Sets an interface that the frontend can use to insert and remove
- * disk images from the emulated drive.
- * This is intended for games that span multiple disks that are
+ * Sets an interface that the frontend can use to insert and remove emulated disk images.
+ *
+ * @note This is intended for games that span multiple disks that are
  * manually swapped out by the user (e.g. PSX).
  * @param data[in] <tt>const struct retro_disk_control_callback *</tt>.
  * Pointer to the callback functions to use.
