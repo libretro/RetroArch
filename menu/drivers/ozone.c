@@ -5222,6 +5222,10 @@ static void ozone_content_metadata_line(
       uint32_t color,
       uint8_t lines_count)
 {
+   if (*y + (lines_count * (unsigned)ozone->fonts.footer.line_height)
+         > video_height - ozone->dimensions.footer_height)
+      return;
+
    gfx_display_draw_text(
          ozone->fonts.footer.font,
          text,
