@@ -738,7 +738,8 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_VARIABLE 15
 
 /**
- * @brief Notifies the frontend of the core's available options.
+ * Notifies the frontend of the core's available options.
+ *
  * The core may check these options later using \c RETRO_ENVIRONMENT_GET_VARIABLE.
  * The frontend may also present these options to the user
  * in its own configuration UI.
