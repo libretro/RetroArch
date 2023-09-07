@@ -2712,6 +2712,12 @@ enum retro_log_level
 typedef void (RETRO_CALLCONV *retro_log_printf_t)(enum retro_log_level level,
       const char *fmt, ...);
 
+/**
+ * Details about how to make log messages.
+ *
+ * @see retro_log_printf_t
+ * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
+ */
 struct retro_log_callback
 {
    /** Set by the frontend. The core should call this function to log a message. */
