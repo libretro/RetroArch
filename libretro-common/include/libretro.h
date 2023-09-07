@@ -89,6 +89,11 @@ extern "C" {
  */
 #define RETRO_API_VERSION         1
 
+/**
+ * @defgroup RETRO_DEVICE Input Devices
+ * @{
+ */
+
 /*
  * Libretro's fundamental device abstractions.
  *
@@ -257,6 +262,8 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_Y         1
 #define RETRO_DEVICE_ID_POINTER_PRESSED   2
 #define RETRO_DEVICE_ID_POINTER_COUNT     3
+
+/** @} */
 
 /* Returned from retro_get_region(). */
 #define RETRO_REGION_NTSC  0
@@ -501,6 +508,11 @@ enum retro_mod
 
    RETROKMOD_DUMMY = INT_MAX /* Ensure sizeof(enum) == sizeof(int) */
 };
+
+/**
+ * @defgroup RETRO_ENVIRONMENT Environment Callbacks
+ * @{
+ */
 
 /**
  * This bit indicates that the associated environment call is experimental,
@@ -2140,6 +2152,8 @@ enum retro_mod
                                             * not for individual peripherals like controllers.
                                             */
 
+/**@}*/
+
 /* VFS functionality */
 
 /* File paths:
@@ -2846,6 +2860,10 @@ struct retro_perf_callback
    retro_perf_log_t              perf_log;
 };
 
+/**
+ * @defgroup RETRO_SENSOR Sensor Interface
+ * @{
+ */
 /* FIXME: Document the sensor API and work out behavior.
  * It will be marked as experimental until then.
  */
@@ -2861,6 +2879,9 @@ enum retro_sensor_action
    RETRO_SENSOR_DUMMY = INT_MAX
 };
 
+/** @defgroup RETRO_SENSOR_ID Sensor Value IDs
+ * @{
+ */
 /* Id values for SENSOR types. */
 #define RETRO_SENSOR_ACCELEROMETER_X 0
 #define RETRO_SENSOR_ACCELEROMETER_Y 1
@@ -2869,6 +2890,7 @@ enum retro_sensor_action
 #define RETRO_SENSOR_GYROSCOPE_Y 4
 #define RETRO_SENSOR_GYROSCOPE_Z 5
 #define RETRO_SENSOR_ILLUMINANCE 6
+/** @} */
 
 typedef bool (RETRO_CALLCONV *retro_set_sensor_state_t)(unsigned port,
       enum retro_sensor_action action, unsigned rate);
@@ -2880,6 +2902,8 @@ struct retro_sensor_interface
    retro_set_sensor_state_t set_sensor_state;
    retro_sensor_get_input_t get_sensor_input;
 };
+
+/** @} */
 
 enum retro_camera_buffer
 {
@@ -3027,6 +3051,9 @@ struct retro_location_callback
    retro_location_lifetime_status_t deinitialized;
 };
 
+/** @defgroup RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE Rumble Interface
+ * @{ */
+
 enum retro_rumble_effect
 {
    RETRO_RUMBLE_STRONG = 0,
@@ -3050,6 +3077,8 @@ struct retro_rumble_interface
 {
    retro_set_rumble_state_t set_rumble_state;
 };
+
+/** @} */
 
 /**
  * Called by the frontend to request audio samples.
@@ -4879,7 +4908,7 @@ typedef int16_t (RETRO_CALLCONV *retro_input_state_t)(unsigned port, unsigned de
  *
  * @note Guaranteed to be called before \c retro_init().
  *
- * @see RETRO_ENVIRONMENT_SET_ROTATION
+ * @see RETRO_ENVIRONMENT
  */
 RETRO_API void retro_set_environment(retro_environment_t cb);
 
