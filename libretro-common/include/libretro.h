@@ -2708,6 +2708,8 @@ enum retro_log_level
  * @param ... Zero or more arguments used by the format string.
  * Behavior is undefined if these don't match the ones expected by <tt>fmt</tt>.
  * @see retro_log_level
+ * @see retro_log_callback
+ * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
  * @see printf
  */
 typedef void (RETRO_CALLCONV *retro_log_printf_t)(enum retro_log_level level,
