@@ -918,16 +918,24 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 22
 
+/**
+ * Gets an interface that a core can use to access a controller's rumble motors.
+ *
+ * The interface supports two independently-controlled motors,
+ * one strong and one weak.
+ *
+ * Should be called from either \c retro_init() or \c retro_load_game(),
+ * but not from \c retro_set_environment().
+ *
+ * @param data[out] <tt>struct retro_rumble_interface *</tt>.
+ * Pointer to the interface struct.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available,
+ * even if the current device doesn't support vibration.
+ * @see retro_rumble_interface
+ * @defgroup GET_RUMBLE_INTERFACE Rumble Interface
+ */
 #define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE 23
-                                           /* struct retro_rumble_interface * --
-                                            * Gets an interface which is used by a libretro core to set
-                                            * state of rumble motors in controllers.
-                                            * A strong and weak motor is supported, and they can be
-                                            * controlled indepedently.
-                                            * Should be called from either retro_init() or retro_load_game().
-                                            * Should not be called from retro_set_environment().
-                                            * Returns false if rumble functionality is unavailable.
-                                            */
 #define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
                                            /* uint64_t * --
                                             * Gets a bitmask telling which device type are expected to be
@@ -3051,30 +3059,46 @@ struct retro_location_callback
    retro_location_lifetime_status_t deinitialized;
 };
 
-/** @defgroup RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE Rumble Interface
+/** @addtogroup GET_RUMBLE_INTERFACE
  * @{ */
 
+/**
+ * The type of rumble motor in a controller.
+ *
+ * Both motors can be controlled independently,
+ * and the strong motor does not override the weak motor.
+ * @see RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+ */
 enum retro_rumble_effect
 {
    RETRO_RUMBLE_STRONG = 0,
    RETRO_RUMBLE_WEAK = 1,
 
-   /** Defined to ensure <tt>sizeof(enum retro_rumble_effect) == sizeof(int)</tt>. Do not use. */
+   /** @private Defined to ensure <tt>sizeof(enum retro_rumble_effect) == sizeof(int)</tt>. Do not use. */
    RETRO_RUMBLE_DUMMY = INT_MAX
 };
 
-/* Sets rumble state for joypad plugged in port 'port'.
- * Rumble effects are controlled independently,
- * and setting e.g. strong rumble does not override weak rumble.
- * Strength has a range of [0, 0xffff].
+/**
+ * Requests a rumble state change for a controller.
  *
- * Returns true if rumble state request was honored.
- * Calling this before first retro_run() is likely to return false. */
+ * @param port The controller port to set the rumble state for.
+ * @param effect The rumble motor to set the strength of.
+ * @param strength The desired intensity of the rumble motor, ranging from \c 0 to \c 0xffff (inclusive).
+ * @return \c true if the requested rumble state was honored.
+ * If the controller doesn't support rumble, will return \c false.
+ * @note Calling this before the first \c retro_run() may return \c false.
+ * @see RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+ */
 typedef bool (RETRO_CALLCONV *retro_set_rumble_state_t)(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+/**
+ * An interface that the core can use to set the rumble state of a controller.
+ * @see RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+ */
 struct retro_rumble_interface
 {
+   /** Set by the frontend. */
    retro_set_rumble_state_t set_rumble_state;
 };
 
