@@ -2782,7 +2782,11 @@ typedef void (RETRO_CALLCONV *retro_log_printf_t)(enum retro_log_level level,
  */
 struct retro_log_callback
 {
-   /** Set by the frontend. The core should call this function to log a message. */
+   /**
+    * Called when logging a message.
+    *
+    * @note Set by the frontend.
+    */
    retro_log_printf_t log;
 };
 
