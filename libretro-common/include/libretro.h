@@ -198,6 +198,10 @@ extern "C" {
 
 /** @} */
 
+/** @defgroup RETRO_DEVICE_ID_JOYPAD RetroPad Input
+ * @{
+ */
+
 /* Buttons for the RetroPad (JOYPAD).
  * The placement of these is equivalent to placements on the
  * Super Nintendo controller.
@@ -229,12 +233,20 @@ extern "C" {
  */
 #define RETRO_DEVICE_ID_JOYPAD_MASK    256
 
+/** @} */
+
+/** @defgroup RETRO_DEVICE_ID_ANALOG Analog RetroPad Input
+ * @{
+ */
+
 /* Index / Id values for ANALOG device. */
 #define RETRO_DEVICE_INDEX_ANALOG_LEFT       0
 #define RETRO_DEVICE_INDEX_ANALOG_RIGHT      1
 #define RETRO_DEVICE_INDEX_ANALOG_BUTTON     2
 #define RETRO_DEVICE_ID_ANALOG_X             0
 #define RETRO_DEVICE_ID_ANALOG_Y             1
+
+/** @} */
 
 /* Id values for MOUSE. */
 #define RETRO_DEVICE_ID_MOUSE_X                0
@@ -2799,6 +2811,10 @@ struct retro_get_proc_address_interface
 
 /** @} */
 
+/** @defgroup GET_LOG_INTERFACE Logging
+ * @{
+ */
+
 /**
  * The severity of a given message.
  * The frontend may log messages differently depending on the level.
@@ -2855,6 +2871,8 @@ struct retro_log_callback
     */
    retro_log_printf_t log;
 };
+
+/** @} */
 
 /* Performance related functions */
 
@@ -3239,6 +3257,8 @@ struct retro_camera_callback
     */
    retro_camera_lifetime_status_t deinitialized;
 };
+
+/** @} */
 
 /* Sets the interval of time and/or distance at which to update/poll
  * location-based data.
