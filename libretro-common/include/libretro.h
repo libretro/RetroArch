@@ -763,9 +763,8 @@ enum retro_mod
  * The frontend may also present these options to the user
  * in its own configuration UI.
  *
- * @par
  * This should be called the first time as early as possible,
- * ideally in <tt>retro_set_environment</tt>.
+ * ideally in \c retro_set_environment.
  * The core may later call this function again
  * to communicate updated options to the frontend,
  * but the number of core options must not change.
@@ -773,16 +772,15 @@ enum retro_mod
  * retro_variable::value should be formatted as follows:
  *
  * <ul>
- * <li>The text before the first ';' is the option's human-readable title.</li>
- * <li>A single space follows the ';'.</li>
+ * <li>The text before the first \c ';' is the option's human-readable title.</li>
+ * <li>A single space follows the \c ';'.</li>
  * <li>The rest of the string is a <tt>'|'</tt>-delimited list of possible values,
  * with the first one being the default.</li>
  * </ul>
  *
  * Here's an example that sets two options.
  *
- * @example
- * \code{.c}
+ * @code
  * void set_variables_example(void)
  * {
  *    struct retro_variable options[] = {
@@ -793,7 +791,7 @@ enum retro_mod
  *
  *    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, &options);
  * }
- * \endcode
+ * @endcode
  *
  * The possible values will generally be displayed and stored as-is by the frontend.
  *
@@ -993,7 +991,8 @@ enum retro_mod
                                             */
 
 /**
- * @brief Gets an interface to the device's video camera.
+ * Gets an interface to the device's video camera.
+ *
  * The frontend delivers new video frames via a user-defined callback
  * that runs in the same thread as <tt>retro_run()</tt>.
  *
@@ -1616,7 +1615,9 @@ enum retro_mod
  * If \c false is returned and the core cannot use the preferred rendering API,
  * then it should exit or fall back to software rendering.
  * @note The returned value does not indicate which API is currently in use.
- * For example, the frontend may return \c RETRO_HW_CONTEXT_OPENGL while a Direct3D context is active.
+ * For example, the frontend may return \c RETRO_HW_CONTEXT_OPENGL
+ * while a Direct3D context from a previous session is active;
+ * this would signal that the frontend's current preference is for OpenGL.
  * @see retro_hw_context_type
  * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
@@ -2762,10 +2763,10 @@ enum retro_log_level
  *
  * @param level The log level of the message.
  * @param fmt The format string to log.
- * Same format as <tt>printf</tt>.
- * Behavior is undefined if this is <tt>NULL</tt>.
+ * Same format as \c printf.
+ * Behavior is undefined if this is \c NULL.
  * @param ... Zero or more arguments used by the format string.
- * Behavior is undefined if these don't match the ones expected by <tt>fmt</tt>.
+ * Behavior is undefined if these don't match the ones expected by \c fmt.
  * @see retro_log_level
  * @see retro_log_callback
  * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
@@ -3043,16 +3044,16 @@ struct retro_camera_callback
 
    /**
     * Core-defined callback invoked by the frontend right after the camera driver is initialized
-    * (\em not when calling <tt>start</tt>).
-    * May be <tt>NULL</tt>, in which this function is not called.
+    * (\em not when calling \c start).
+    * May be \c NULL, in which case this function is skipped.
     */
    retro_camera_lifetime_status_t initialized;
 
    /**
     * Core-defined callback invoked by the frontend
     * right before the video camera driver is deinitialized
-    * (\em not when calling <tt>stop</tt>).
-    * May be <tt>NULL</tt>, in which case this function is not called.
+    * (\em not when calling \c stop).
+    * May be \c NULL, in which case this function is skipped.
     */
    retro_camera_lifetime_status_t deinitialized;
 };
@@ -4947,9 +4948,12 @@ typedef void (RETRO_CALLCONV *retro_input_poll_t)(void);
  *
  * @param port Which player 'port' to query.
  * @param device Which device to query for. Will be masked with \c RETRO_DEVICE_MASK.
- * @param index The input index to retrieve. This is used for multi-touch devices, like \c RETRO_DEVICE_POINTER.
+ * @param index The input index to retrieve.
+ * The exact semantics depend on the device type given in \c device.
  * @param id The ID of which value to query, like \c RETRO_DEVICE_ID_JOYPAD_B.
- *
+ * @returns Depends on the provided arguments,
+ * but will return 0 if their values are unsupported
+ * by the frontend or the backing physical device.
  * @note Specialization of devices such as \c RETRO_DEVICE_JOYPAD_MULTITAP that
  * have been set with \c retro_set_controller_port_device() will still use the
  * higher level \c RETRO_DEVICE_JOYPAD to request input.
