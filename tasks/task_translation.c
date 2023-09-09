@@ -1547,6 +1547,8 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 #endif
       
    _len = strlcpy(buffer, service_url, length);
+   buffer += _len;
+   length -= _len;
    
    token[1] = '\0';
    if (strrchr(buffer, '?'))
@@ -1561,9 +1563,17 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_source))
       {
-         _len += strlcpy(buffer + _len, token, length - _len);
-         _len += strlcpy(buffer + _len, "source_lang=", length - _len);
-         strlcpy(buffer + _len, lang_source, length - _len);
+         _len = strlcpy(buffer, token, length);
+         buffer += _len;
+         length -= _len;
+
+         _len = strlcpy(buffer + _len, "source_lang=", length - _len);
+         buffer += _len;
+         length -= _len;
+
+         _len = strlcpy(buffer, lang_source, length);
+         buffer += _len;
+         length -= _len;
          token[0] = '&';
       }
    }
@@ -1575,45 +1585,81 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
       if (!string_is_empty(lang_target))
       {
-         _len += strlcpy(buffer + _len, token, length - _len);
-         _len += strlcpy(buffer + _len, "target_lang=", length - _len);
-         strlcpy(buffer + _len, lang_target, length - _len);
+         _len = strlcpy(buffer, token, length);
+         buffer += _len;
+         length -= _len;
+
+         _len = strlcpy(buffer, "target_lang=", length);
+         buffer += _len;
+         length -= _len;
+
+         _len = strlcpy(buffer, lang_target, length);
+         buffer += _len;
+         length -= _len;
          token[0] = '&';
       }
    }
    
-   _len += strlcpy(buffer + _len, token, length - _len);
-   _len += strlcpy(buffer + _len, "output=", length - _len);
+   _len = strlcpy(buffer, token, length);
+   buffer += _len;
+   length -= _len;
+
+   _len = strlcpy(buffer, "output=", length);
+   buffer += _len;
+   length -= _len;
+
    switch (ai_service_mode)
    {
       case 0: /* Image Mode */
-         strlcpy(buffer + _len, "image,bmp", length - _len);
+         _len = strlcpy(buffer, "image,bmp", length);
+         buffer += _len;
+         length -= _len;
 #ifdef HAVE_RPNG
-         _len += strlcpy(buffer + _len, ",png", length - _len);  
+         _len = strlcpy(buffer, ",png", length);
+         buffer += _len;
+         length -= _len;  
          if (poke_supported)
-            strlcpy(buffer + _len, ",png-a", length - _len);
+         {
+            strlcpy(buffer, ",png-a", length);
+            buffer += _len;
+            length -= _len;
+         }
 #endif
          break;
          
       case 1: /* Speech Mode */
-         strlcpy(buffer + _len, "sound,wav", length - _len);
+         _len = strlcpy(buffer, "sound,wav", length);
+         buffer += _len;
+         length -= _len;
          break;
       
       case 2: /* Narrator Mode */
-         strlcpy(buffer + _len, "text", length - _len);
+         _len = strlcpy(buffer, "text", length);
+         buffer += _len;
+         length -= _len;
          break;
          
       case 3: /* Text Mode */
       case 4: /* Text + Narrator */
-         strlcpy(buffer + _len, "text,subs", length - _len);
+         _len = strlcpy(buffer, "text,subs", length);
+         buffer += _len;
+         length -= _len;
          break;
          
       case 5: /* Image + Narrator */
-         strlcpy(buffer + _len, "text,image,bmp", length - _len);
+         _len = strlcpy(buffer, "text,image,bmp", length);
+         buffer += _len;
+         length -= _len;
 #ifdef HAVE_RPNG
-         _len += strlcpy(buffer + _len, ",png", length - _len);  
+         _len = strlcpy(buffer, ",png", length);
+         buffer += _len;
+         length -= _len;  
          if (poke_supported)
-            strlcpy(buffer + _len, ",png-a", length - _len);
+         {
+            _len = strlcpy(buffer, ",png-a", length);
+            buffer += _len;
+            length -= _len;
+         }
 #endif
          break;
    }
