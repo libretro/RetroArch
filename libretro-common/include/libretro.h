@@ -980,15 +980,22 @@ enum retro_mod
  * @see RETRO_DEVICE
  */
 #define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
+
+/**
+ * Returns an interface that the core can use to access and configure available sensors,
+ * such as an accelerometer or gyroscope.
+ *
+ * @param data[out] <tt>struct retro_sensor_interface *</tt>.
+ * Pointer to the sensor interface that the frontend will populate.
+ * Behavior is undefined if is \c NULL.
+ * @returns \c true if the environment call is available,
+ * even if the device doesn't have any supported sensors.
+ * @see retro_sensor_interface
+ * @see retro_sensor_action
+ * @see RETRO_SENSOR
+ * @addtogroup RETRO_SENSOR
+ */
 #define RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE (25 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_sensor_interface * --
-                                            * Gets access to the sensor interface.
-                                            * The purpose of this interface is to allow
-                                            * setting state related to sensors such as polling rate,
-                                            * enabling/disable it entirely, etc.
-                                            * Reading sensor state is done via the normal
-                                            * input_state_callback API.
-                                            */
 
 /**
  * Gets an interface to the device's video camera.
@@ -2912,20 +2919,42 @@ struct retro_perf_callback
 
 /**
  * @defgroup RETRO_SENSOR Sensor Interface
+ * @todo Document the sensor API and work out behavior.
+ * @todo It will be marked as experimental until then.
  * @{
  */
-/* FIXME: Document the sensor API and work out behavior.
- * It will be marked as experimental until then.
+
+/**
+ * Defines actions that can be performed on sensors.
+ * @note Cores should only enable sensors while they're actively being used;
+ * depending on the frontend and platform,
+ * enabling these sensors may impact battery life.
+ *
+ * @see RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
+ * @see retro_sensor_interface
+ * @see retro_set_sensor_state_t
  */
 enum retro_sensor_action
 {
+   /** Enables accelerometer input, if one exists. */
    RETRO_SENSOR_ACCELEROMETER_ENABLE = 0,
+
+   /** Disables accelerometer input, if one exists. */
    RETRO_SENSOR_ACCELEROMETER_DISABLE,
+
+   /** Enables gyroscope input, if one exists. */
    RETRO_SENSOR_GYROSCOPE_ENABLE,
+
+   /** Disables gyroscope input, if one exists. */
    RETRO_SENSOR_GYROSCOPE_DISABLE,
+
+   /** Enables ambient light input, if a luminance sensor exists. */
    RETRO_SENSOR_ILLUMINANCE_ENABLE,
+
+   /** Disables ambient light input, if a luminance sensor exists. */
    RETRO_SENSOR_ILLUMINANCE_DISABLE,
 
+   /** @private Defined to ensure <tt>sizeof(enum retro_sensor_action) == sizeof(int)</tt>. Do not use. */
    RETRO_SENSOR_DUMMY = INT_MAX
 };
 
@@ -2933,27 +2962,122 @@ enum retro_sensor_action
  * @{
  */
 /* Id values for SENSOR types. */
+
+/**
+ * Returns the device's acceleration along its local X axis minus the effect of gravity, in m/s^2.
+ *
+ * Positive values mean that the device is accelerating to the right.
+ * assuming the user is looking at it head-on.
+ */
 #define RETRO_SENSOR_ACCELEROMETER_X 0
+
+/**
+ * Returns the device's acceleration along its local Y axis minus the effect of gravity, in m/s^2.
+ *
+ * Positive values mean that the device is accelerating upwards,
+ * assuming the user is looking at it head-on.
+ */
 #define RETRO_SENSOR_ACCELEROMETER_Y 1
+
+/**
+ * Returns the the device's acceleration along its local Z axis minus the effect of gravity, in m/s^2.
+ *
+ * Positive values indicate forward acceleration towards the user,
+ * assuming the user is looking at the device head-on.
+ */
 #define RETRO_SENSOR_ACCELEROMETER_Z 2
+
+/**
+ * Returns the angular velocity of the device around its local X axis, in radians per second.
+ *
+ * Positive values indicate counter-clockwise rotation.
+ *
+ * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
+ * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
+ * for guidance on using this value to derive a device's orientation.
+ */
 #define RETRO_SENSOR_GYROSCOPE_X 3
+
+/**
+ * Returns the angular velocity of the device around its local Z axis, in radians per second.
+ *
+ * Positive values indicate counter-clockwise rotation.
+ *
+ * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
+ * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
+ * for guidance on using this value to derive a device's orientation.
+ */
 #define RETRO_SENSOR_GYROSCOPE_Y 4
+
+/**
+ * Returns the angular velocity of the device around its local Z axis, in radians per second.
+ *
+ * Positive values indicate counter-clockwise rotation.
+ *
+ * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
+ * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
+ * for guidance on using this value to derive a device's orientation.
+ */
 #define RETRO_SENSOR_GYROSCOPE_Z 5
+
+/**
+ * Returns the ambient illuminance (light intensity) of the device's environment, in lux.
+ *
+ * @see https://en.wikipedia.org/wiki/Lux for a table of common lux values.
+ */
 #define RETRO_SENSOR_ILLUMINANCE 6
 /** @} */
 
+/**
+ * Adjusts the state of a sensor.
+ *
+ * @param port The device port of the controller that owns the sensor given in \c action.
+ * @param action The action to perform on the sensor.
+ * Different devices support different sensors.
+ * @param rate The rate at which the underlying sensor should be updated, in Hz.
+ * This should be treated as a hint,
+ * as some device sensors may not support the requested rate
+ * (if it's configurable at all).
+ * @returns \c true if the sensor state was successfully adjusted, \c false otherwise.
+ * @note If one of the \c RETRO_SENSOR_*_ENABLE actions fails,
+ * this likely means that the given sensor is not available
+ * on the provided \c port.
+ * @see retro_sensor_action
+ */
 typedef bool (RETRO_CALLCONV *retro_set_sensor_state_t)(unsigned port,
       enum retro_sensor_action action, unsigned rate);
 
+/**
+ * Retrieves the current value reported by sensor.
+ * @param port The device port of the controller that owns the sensor given in \c id.
+ * @param id The sensor value to query.
+ * @returns The current sensor value.
+ * Exact semantics depend on the value given in \c id,
+ * but will return 0 for invalid arguments.
+ *
+ * @see RETRO_SENSOR_ID
+ */
 typedef float (RETRO_CALLCONV *retro_sensor_get_input_t)(unsigned port, unsigned id);
 
+/**
+ * An interface that cores can use to access device sensors.
+ *
+ * All function pointers are set by the frontend.
+ */
 struct retro_sensor_interface
 {
+   /** @copydoc retro_set_sensor_state_t */
    retro_set_sensor_state_t set_sensor_state;
+
+   /** @copydoc retro_sensor_get_input_t */
    retro_sensor_get_input_t get_sensor_input;
 };
 
 /** @} */
+
+/** @defgroup GET_CAMERA_INTERFACE Camera Interface
+ * @{
+ */
 
 enum retro_camera_buffer
 {
