@@ -1151,17 +1151,29 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO 32
 
+/**
+ * Provides an interface that a frontend can use
+ * to get function pointers from the core.
+ *
+ * This allows cores to define their own extensions to the libretro API,
+ * or to expose implementations of a frontend's libretro extensions.
+ *
+ * @param data[in] <tt>const struct retro_get_proc_address_interface *</tt>.
+ * Pointer to the interface that the frontend can use to get function pointers from the core.
+ * The frontend must maintain its own copy of this interface.
+ * @returns \c true if the environment call is available
+ * and the returned interface was accepted.
+ * @note The provided interface may be called at any time,
+ * even before this environment call returns.
+ * @note Extensions should be prefixed with the name of the frontend or core that defines them.
+ * For example, a frontend named "foo" that defines a debugging extension
+ * should expect the core to define functions prefixed with "foo_debug_".
+ * @warning If a core wants to use this environment call,
+ * it \em must do so from within \c retro_set_environment().
+ * @see retro_get_proc_address_interface
+ */
 #define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
-                                           /* const struct retro_get_proc_address_interface * --
-                                            * Allows a libretro core to announce support for the
-                                            * get_proc_address() interface.
-                                            * This interface allows for a standard way to extend libretro where
-                                            * use of environment calls are too indirect,
-                                            * e.g. for cases where the frontend wants to call directly into the core.
-                                            *
-                                            * If a core wants to expose this interface, SET_PROC_ADDRESS_CALLBACK
-                                            * **MUST** be called from within retro_set_environment().
-                                            */
+
 #define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
                                            /* const struct retro_subsystem_info * --
                                             * This environment call introduces the concept of libretro "subsystems".
@@ -2718,28 +2730,60 @@ struct retro_subsystem_info
    unsigned id;
 };
 
+/** @defgroup SET_PROC_ADDRESS_CALLBACK Core Function Pointers
+ * @{ */
+
+/**
+ * The function pointer type that \c retro_get_proc_address_t returns.
+ *
+ * Despite the signature shown here, the original function may include any parameters and return type
+ * that respects the calling convention and C ABI.
+ *
+ * The frontend is expected to cast the function pointer to the correct type.
+ */
 typedef void (RETRO_CALLCONV *retro_proc_address_t)(void);
 
-/* libretro API extension functions:
- * (None here so far).
- *
+/**
  * Get a symbol from a libretro core.
- * Cores should only return symbols which are actual
- * extensions to the libretro API.
  *
- * Frontends should not use this to obtain symbols to standard
- * libretro entry points (static linking or dlsym).
+ * Cores should only return symbols that serve as libretro extensions.
+ * Frontends should not use this to obtain symbols to standard libretro entry points;
+ * instead, they should link to the core statically or use \c dlsym (or local equivalent).
  *
- * The symbol name must be equal to the function name,
- * e.g. if void retro_foo(void); exists, the symbol must be called "retro_foo".
+ * The symbol name must be equal to the function name.
+ * e.g. if <tt>void retro_foo(void);</tt> exists, the symbol in the compiled library must be called \c retro_foo.
  * The returned function pointer must be cast to the corresponding type.
+ *
+ * @param \c sym The name of the symbol to look up.
+ * @return Pointer to the exposed function with the name given in \c sym,
+ * or \c NULL if one couldn't be found.
+ * @note The frontend is expected to know the returned pointer's type in advance
+ * so that it can be cast correctly.
+ * @note The core doesn't need to expose every possible function through this interface.
+ * It's enough to only expose the ones that it expects the frontend to use.
+ * @note The functions exposed through this interface
+ * don't need to be publicly exposed in the compiled library
+ * (e.g. via \c __declspec(dllexport)).
+ * @see RETRO_ENVIRONMENT_SET_PROC_ADDRESS_INTERFACE
  */
 typedef retro_proc_address_t (RETRO_CALLCONV *retro_get_proc_address_t)(const char *sym);
 
+/**
+ * An interface that the frontend can use to get function pointers from the core.
+ *
+ * @note The returned function pointer will be invalidated once the core is unloaded.
+ * How and when that happens is up to the frontend.
+ *
+ * @see retro_get_proc_address_t
+ * @see RETRO_ENVIRONMENT_GET_PROC_ADDRESS_INTERFACE
+ */
 struct retro_get_proc_address_interface
 {
+   /** Set by the core. */
    retro_get_proc_address_t get_proc_address;
 };
+
+/** @} */
 
 /**
  * The severity of a given message.
