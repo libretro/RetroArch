@@ -1232,6 +1232,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_gamemode_enable,                MENU
 #endif
 #endif /*HAVE_LAKKA*/
 
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_rest,               MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_brightness_control,             MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL)
 
 #ifdef _3DS
@@ -5225,6 +5226,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_gamemode_enable);
             break;
 #endif /*HAVE_LAKKA*/
+         case MENU_ENUM_LABEL_VIDEO_FRAME_REST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_rest);
+            break;
          case MENU_ENUM_LABEL_BRIGHTNESS_CONTROL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_brightness_control);
             break;
