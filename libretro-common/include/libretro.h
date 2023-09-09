@@ -220,6 +220,13 @@ extern "C" {
 #define RETRO_DEVICE_ID_JOYPAD_L3      14
 #define RETRO_DEVICE_ID_JOYPAD_R3      15
 
+/**
+ * Represents a bitmask that describes the state of all \c RETRO_DEVICE_ID_JOYPAD button constants,
+ * rather than the state of a single button.
+ *
+ * @see RETRO_ENVIRONMENT_GET_INPUT_BITMASKS
+ * @see RETRO_DEVICE_JOYPAD
+ */
 #define RETRO_DEVICE_ID_JOYPAD_MASK    256
 
 /* Index / Id values for ANALOG device. */
@@ -1461,17 +1468,24 @@ enum retro_mod
 */
 #define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Returns whether the frontend can return the state of all buttons at once as a bitmask,
+ * rather than requiring a series of individual calls to \c retro_input_state_t.
+ *
+ * If this callback returns \c true,
+ * you can get the state of all buttons by passing \c RETRO_DEVICE_ID_JOYPAD_MASK
+ * as the \c id parameter to \c retro_input_state_t.
+ * Bit #N represents the RETRO_DEVICE_ID_JOYPAD constant of value N,
+ * e.g. <tt>(1 << RETRO_DEVICE_ID_JOYPAD_A)</tt> represents the A button.
+ *
+ * @param data Ignored.
+ * @returns \c true if the frontend can report the complete digital joypad state as a bitmask.
+ * @see retro_input_state_t
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_ID_JOYPAD_MASK
+ */
 #define RETRO_ENVIRONMENT_GET_INPUT_BITMASKS (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* bool * --
-                                            * Boolean value that indicates whether or not the frontend supports
-                                            * input bitmasks being returned by retro_input_state_t. The advantage
-                                            * of this is that retro_input_state_t has to be only called once to
-                                            * grab all button states instead of multiple times.
-                                            *
-                                            * If it returns true, you can pass RETRO_DEVICE_ID_JOYPAD_MASK as 'id'
-                                            * to retro_input_state_t (make sure 'device' is set to RETRO_DEVICE_JOYPAD).
-                                            * It will return a bitmask of all the digital buttons.
-                                            */
+
 
 #define RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION 52
                                            /* unsigned * --
