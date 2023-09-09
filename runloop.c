@@ -2674,9 +2674,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.sample_rate);
 
             memcpy(av_info, *info, sizeof(*av_info));
-            video_st->core_frame_time = 1000000 /
-                  ((video_st->av_info.timing.fps > 0.0) ?
-                        video_st->av_info.timing.fps : 60.0);
 
             command_event(CMD_EVENT_REINIT, &reinit_flags);
 
@@ -4587,9 +4584,6 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
    core_init_libretro_cbs(runloop_st, &runloop_st->retro_ctx);
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
-   video_st->core_frame_time = 1000000 /
-         ((video_st->av_info.timing.fps > 0.0) ?
-               video_st->av_info.timing.fps : 60.0);
 
    RARCH_LOG("[Core]: Geometry: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
          video_st->av_info.geometry.base_width, video_st->av_info.geometry.base_height,
@@ -5770,6 +5764,31 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
+#ifdef HAVE_MENU
+   /* Check menu hotkey */
+   {
+      static bool old_pressed = false;
+      char *menu_driver       = settings->arrays.menu_driver;
+      bool pressed            = BIT256_GET(current_bits, RARCH_MENU_TOGGLE)
+            && !string_is_equal(menu_driver, "null");
+      bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
+
+      if (    (pressed && !old_pressed)
+            || core_type_is_dummy)
+      {
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+         {
+            if (rarch_is_initialized && !core_type_is_dummy)
+               retroarch_menu_running_finished(false);
+         }
+         else
+            retroarch_menu_running();
+      }
+
+      old_pressed             = pressed;
+   }
+#endif
+
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    gfx_animation_update(
          current_time,
@@ -6020,30 +6039,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Check close content hotkey */
    HOTKEY_CHECK(RARCH_CLOSE_CONTENT_KEY, CMD_EVENT_CLOSE_CONTENT, true, NULL);
 
-#ifdef HAVE_MENU
-   /* Check menu hotkey */
-   {
-      static bool old_pressed = false;
-      char *menu_driver       = settings->arrays.menu_driver;
-      bool pressed            = BIT256_GET(current_bits, RARCH_MENU_TOGGLE)
-            && !string_is_equal(menu_driver, "null");
-      bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
-
-      if (    (pressed && !old_pressed)
-            || core_type_is_dummy)
-      {
-         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-         {
-            if (rarch_is_initialized && !core_type_is_dummy)
-               retroarch_menu_running_finished(false);
-         }
-         else
-            retroarch_menu_running();
-      }
-
-      old_pressed             = pressed;
-   }
-#endif
 
    /* Check FPS hotkey */
    HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true, NULL);

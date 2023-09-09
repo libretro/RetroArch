@@ -4411,16 +4411,32 @@ MSG_HASH(
    "Kayıtları İçerik Dizinine Yaz"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "İçerik dizinini dosya kaydetme dizini olarak kullanın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Durum Kayıtlarını İçerik Dizinine Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "İçerik dizinini durum kaydı dizini olarak kullanın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Sistem Dosyalarını İçerik Dizinine Yaz"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "İçerik dizinini sistem dizini olarak kullanın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Ekran Görüntülerini İçerik Dizinine Yaz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "İçerik dizinini ekran görüntüsü dizini olarak kullanın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -7026,6 +7042,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "Güncelleyici Ayarları"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Temel güncelleyici ayarlarına erişin"
+   )
 
 /* Settings > Network > Updater */
 
@@ -8571,16 +8591,32 @@ MSG_HASH(
    "Seçenekleri Oyun İçin Kaydet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Yalnızca mevcut içerik için geçerli olacak temel seçenekleri kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Oyun Seçeneklerini Sil"
+   "Oyun Seçeneklerini Kaldır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Yalnızca mevcut içerik için geçerli olacak temel seçenekleri silin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "İçerik Dizini Seçeneklerini Kaydet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Mevcut dosya ile aynı dizinden yüklenen tüm içerik için geçerli olacak temel seçenekleri kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "İçerik Dizini Seçeneklerini Sil"
+   "İçerik Dizini Seçeneklerini Kaldır"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Mevcut dosya ile aynı dizinden yüklenen tüm içerik için geçerli olacak temel seçenekleri silin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,

@@ -3926,7 +3926,6 @@ void input_config_reset(void)
        * to zero manually) */
       input_st->input_device_info[i].name[0]          = '\0';
       input_st->input_device_info[i].display_name[0]  = '\0';
-      input_st->input_device_info[i].config_path[0]   = '\0';
       input_st->input_device_info[i].config_name[0]   = '\0';
       input_st->input_device_info[i].joypad_driver[0] = '\0';
       input_st->input_device_info[i].vid              = 0;
@@ -4046,15 +4045,6 @@ const char *input_config_get_device_name(unsigned port)
    return input_st->input_device_info[port].name;
 }
 
-
-const char *input_config_get_device_config_path(unsigned port)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].config_path))
-      return NULL;
-   return input_st->input_device_info[port].config_path;
-}
-
 const char *input_config_get_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -4139,21 +4129,6 @@ void input_config_set_device_display_name(unsigned port, const char *name)
             sizeof(input_st->input_device_info[port].display_name));
 }
 
-void input_config_set_device_config_path(unsigned port, const char *path)
-{
-   if (!string_is_empty(path))
-   {
-      char parent_dir_name[128];
-      input_driver_state_t *input_st = &input_driver_st;
-      if (fill_pathname_parent_dir_name(parent_dir_name,
-               path, sizeof(parent_dir_name)))
-         fill_pathname_join_special(
-               input_st->input_device_info[port].config_path,
-               parent_dir_name, path_basename_nocompression(path),
-               sizeof(input_st->input_device_info[port].config_path));
-   }
-}
-
 void input_config_set_device_config_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -4205,12 +4180,6 @@ void input_config_clear_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
    input_st->input_device_info[port].display_name[0] = '\0';
-}
-
-void input_config_clear_device_config_path(unsigned port)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   input_st->input_device_info[port].config_path[0] = '\0';
 }
 
 void input_config_clear_device_config_name(unsigned port)
@@ -6338,18 +6307,38 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             && current_input
             && current_input->input_state)
       {
-         /* Set RetroPad Select bit when pressing Escape while keyboard
-          * is open in order to clear the input window and close it */
-         if (current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  (const retro_keybind_set *)input_config_binds,
-                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                  0,
-                  RETRO_DEVICE_KEYBOARD, 0, RETROK_ESCAPE))
-            BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+         /* Allow arrows, LCtrl as OK, character map switches,
+          * and set RetroPad Select bit when pressing Escape
+          * in order to clear the input window and close it. */
+         unsigned i;
+         unsigned ids[][2] =
+         {
+            {RETROK_LCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
+            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
+            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
+            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT  },
+            {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
+            {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
+            {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
+         };
+
+         if (settings->bools.input_menu_swap_ok_cancel_buttons)
+            ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
+
+         for (i = 0; i < ARRAY_SIZE(ids); i++)
+         {
+            if (current_input->input_state(
+                     input_st->current_data,
+                     joypad,
+                     sec_joypad,
+                     &joypad_info,
+                     (const retro_keybind_set *)input_config_binds,
+                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     0,
+                     RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+               BIT256_SET_PTR(current_bits, ids[i][1]);
+         }
       }
    }
    else

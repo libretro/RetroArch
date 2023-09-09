@@ -40,27 +40,28 @@
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   int i;
    runloop_state_t      *runloop_st = runloop_state_get_ptr();
 
-   if (!runloop_st->input_state_list)
-      return 0;
-
-   /* find list item */
-   for (i = 0; i < runloop_st->input_state_list->size; i++)
+   if (runloop_st->input_state_list)
    {
-      input_list_element *element =
-         (input_list_element*)runloop_st->input_state_list->data[i];
-
-      if (  (element->port   == port)   &&
-            (element->device == device) &&
-            (element->index  == index))
+      int i;
+      /* find list item */
+      for (i = 0; i < runloop_st->input_state_list->size; i++)
       {
-         if (id < element->state_size)
-            return element->state[id];
-         return 0;
+         input_list_element *element =
+            (input_list_element*)runloop_st->input_state_list->data[i];
+
+         if (     (element->port   == port)
+               && (element->device == device)
+               && (element->index  == index))
+         {
+            if (id < element->state_size)
+               return element->state[id];
+            break;
+         }
       }
    }
+
    return 0;
 }
 

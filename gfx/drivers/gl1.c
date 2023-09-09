@@ -1115,26 +1115,8 @@ static void *gl1_init(const video_info_t *video,
    RARCH_LOG("[GL1]: Version: %s.\n", version);
    RARCH_LOG("[GL1]: Extensions: %s\n", extensions);
 
-   {
-      char device_str[128];
-      size_t len    = 0;
-      device_str[0] = '\0';
-
-      if (!string_is_empty(vendor))
-      {
-         len               = strlcpy(device_str, vendor, sizeof(device_str));
-         device_str[  len] = ' ';
-         device_str[++len] = '\0';
-      }
-
-      if (!string_is_empty(renderer))
-         strlcpy(device_str + len, renderer, sizeof(device_str) - len);
-
-      video_driver_set_gpu_device_string(device_str);
-
-      if (!string_is_empty(version))
-         video_driver_set_gpu_api_version_string(version);
-   }
+   if (!string_is_empty(version))
+      video_driver_set_gpu_api_version_string(version);
 
    if (gl1->ctx_driver->input_driver)
    {

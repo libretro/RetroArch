@@ -885,6 +885,31 @@ end:
    return count;
 }
 
+/* Fetches a string representation of a backup
+ * list entry timestamp.
+ * Returns false in the event of an error */
+static size_t core_backup_list_get_entry_timestamp_str(
+      const core_backup_list_entry_t *entry,
+      enum core_backup_date_separator_type date_separator,
+      char *timestamp, size_t len)
+{
+   const char *format_str = "%04u-%02u-%02u %02u:%02u:%02u";
+   /* Get time format string */
+   if      (date_separator == CORE_BACKUP_DATE_SEPARATOR_SLASH)
+      format_str = "%04u/%02u/%02u %02u:%02u:%02u";
+   else if (date_separator == CORE_BACKUP_DATE_SEPARATOR_PERIOD)
+      format_str = "%04u.%02u.%02u %02u:%02u:%02u";
+
+   return snprintf(timestamp, len,
+         format_str,
+         entry->date.year,
+         entry->date.month,
+         entry->date.day,
+         entry->date.hour,
+         entry->date.minute,
+         entry->date.second);
+}
+
 static unsigned menu_displaylist_parse_core_backup_list(
       file_list_t *list, const char *core_path,
       settings_t *settings, bool restore)
@@ -927,24 +952,19 @@ static unsigned menu_displaylist_parse_core_backup_list(
              && entry
              && !string_is_empty(entry->backup_path))
          {
+            size_t _len;
             char timestamp[128];
-            char crc[16];
-
             timestamp[0] = '\0';
-            crc[0]       = '\0';
-
             /* Get timestamp and crc strings */
-            core_backup_list_get_entry_timestamp_str(
+            _len = core_backup_list_get_entry_timestamp_str(
                   entry, date_separator, timestamp, sizeof(timestamp));
-            core_backup_list_get_entry_crc_str(
-                  entry, crc, sizeof(crc));
 
             /* Append 'auto backup' tag to timestamp, if required */
             if (entry->backup_mode == CORE_BACKUP_MODE_AUTO)
             {
-               strlcat(timestamp, " ", sizeof(timestamp));
-               strlcat(timestamp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
-                     sizeof(timestamp));
+               _len += strlcpy(timestamp + _len, " ", sizeof(timestamp) - _len);
+               strlcpy(timestamp + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
+                     sizeof(timestamp) - _len);
             }
 
             /* Add menu entry */
@@ -954,6 +974,9 @@ static unsigned menu_displaylist_parse_core_backup_list(
                   enum_idx,
                   settings_type, 0, 0, NULL))
             {
+               char crc[16];
+               crc[0]       = '\0';
+               snprintf(crc, sizeof(crc), "%08lx", (unsigned long)entry->crc);
                /* We need to set backup path, timestamp and crc
                 * > Only have 2 useable fields as standard
                 *   ('path' and 'label'), so have to set the
@@ -1752,14 +1775,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       count++;
 
    /* CPU Architecture */
-   frontend_driver_get_cpu_architecture_str(tmp, sizeof(tmp));
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
          sizeof(entry));
    entry[  _len]   = ':';
    entry[++_len]   = ' ';
    entry[++_len]   = '\0';
-   strlcpy(entry + _len, tmp, sizeof(entry) - _len);
+   frontend_driver_get_cpu_architecture_str(entry + _len, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE,
          0, 0, NULL))
@@ -8352,6 +8374,7 @@ unsigned menu_displaylist_build_list(
                   /* Loop through disk images */
                   for (i = 0; i < num_images; i++)
                   {
+                     size_t _len;
                      char current_image_str[PATH_MAX_LENGTH];
                      char image_label[128];
 
@@ -8363,7 +8386,7 @@ unsigned menu_displaylist_build_list(
                            &sys_info->disk_control,
                            i, image_label, sizeof(image_label));
 
-                     snprintf(
+                     _len = snprintf(
                            current_image_str, sizeof(current_image_str),
                            "%0*u", num_digits, i + 1);
 
@@ -8374,10 +8397,12 @@ unsigned menu_displaylist_build_list(
                      {
                         /* Note: 2-space gap is intentional
                          * (for clarity) */
-                        strlcat(current_image_str,
-                              ":  ", sizeof(current_image_str));
-                        strlcat(current_image_str,
-                              image_label, sizeof(current_image_str));
+                        _len += strlcpy(current_image_str + _len,
+                              ":  ",
+                              sizeof(current_image_str)   - _len);
+                        strlcpy(current_image_str         + _len,
+                              image_label,
+                              sizeof(current_image_str)   - _len);
                      }
 
                      /* Add menu entry */
@@ -9056,8 +9081,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_MIDI_INPUT,                                            PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_MIDI_OUTPUT,                                           PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_MIDI_INPUT,                                            PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_MIDI_VOLUME,                                           PARSE_ONLY_UINT  },
             };
 
@@ -10499,8 +10524,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY,          PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,          PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,             PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_PLAYLISTS,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SETTINGS_SHOW_CORE,             PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING,           PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_CONFIGURATION,    PARSE_ONLY_BOOL},
@@ -10980,8 +11005,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,         PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,                    PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,      PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,         PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,              PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,         PARSE_ONLY_UINT,   true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10989,6 +11014,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
+                  case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
                      if (menu_horizontal_animation)
                         build_list[i].checked = true;
                      break;
@@ -14948,7 +14974,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (setting->get_string_representation)
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = min; i <= max + half_step; i += step)
                                  {
                                     char val_s[256];
                                     *setting->value.target.fraction = i;
@@ -14974,7 +15000,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               }
                               else
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = min; i <= max + half_step; i += step)
                                  {
                                     char val_s[16];
                                     snprintf(val_s, sizeof(val_s), "%.2f", i);

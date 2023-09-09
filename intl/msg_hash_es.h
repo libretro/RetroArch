@@ -2090,6 +2090,14 @@ MSG_HASH(
    "Muestra la frecuencia de actualización que declara el controlador de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Cambiar automáticamente la frecuencia de actualización"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Cambia automáticamente la frecuencia de actualización de la pantalla en función del contenido actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Solo en el modo de pantalla completa exclusiva"
    )
@@ -2100,6 +2108,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "En todos los modos de pantalla completa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Umbral de cambio de frecuencia de actualización a PAL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "La frecuencia de actualización máxima que se considerará como PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -4395,16 +4411,32 @@ MSG_HASH(
    "Escribir archivos de guardado en el directorio del contenido"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Utiliza el directorio de contenidos como directorio de archivos guardados."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Escribir guardados rápidos en el directorio del contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Utiliza el directorio de contenidos como directorio de guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Guardar archivos del sistema en el directorio del contenido"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Utiliza el directorio de contenidos como directorio del sistema."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Escribir capturas de pantalla en el directorio del contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Utiliza el directorio de contenidos como directorio de capturas de pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -7006,6 +7038,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "Ajustes del actualizador"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Accede a los ajustes del actualizador de núcleos."
+   )
 
 /* Settings > Network > Updater */
 
@@ -8543,16 +8579,32 @@ MSG_HASH(
    "Guardar opciones del juego"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Guarda las opciones del núcleo que se aplicará al contenido actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    "Eliminar opciones del juego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Elimina las opciones del núcleo que se aplicará al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Guardar opciones del directorio de contenidos"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Guarda las opciones del núcleo que se aplicarán a todos los contenidos que se carguen desde el mismo directorio que el archivo actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
    "Eliminar opciones del directorio de contenidos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Elimina las opciones del núcleo que se aplicarán a todos los contenidos que se carguen desde el mismo directorio que el archivo actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -8615,16 +8667,64 @@ MSG_HASH(
    "Cargar archivo de reasignación"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "Carga y sustituye las asignaciones de entrada actuales."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Guardar archivo de reasignación como..."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Guarda las asignaciones de entrada actuales a un archivo de reasignación nuevo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "Guardar reasignación para el núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Guarda un archivo de reasignación que se aplicará a todos los contenidos que se carguen con este núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   "Eliminar archivo de reasignación del núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Elimina el archivo de reasignación que se aplicará a todos los contenidos que se carguen con este núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "Guardar archivo de reasignación de directorios de contenido"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Guarda un archivo de reasignación que se aplicará a todos los contenidos que se carguen desde el mismo directorio que el archivo actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Eliminar archivo de reasignación de directorios de contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Elimina el archivo de reasignación que se aplicará a todos los contenidos que se carguen desde el mismo directorio que el archivo actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Guardar reasignación del juego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Guarda un archivo de reasignación que se aplicará al contenido actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "Eliminar archivo de reasignación del juego"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Elimina el archivo de reasignación que se aplicará al contenido actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9267,6 +9367,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
    "Carga y sustituye la configuración actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "Guardar personalizaciones como..."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Guarda la configuración actual a un archivo de personalización nuevo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -13203,6 +13311,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
    "Introduce el nombre de archivo del preajuste"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Introduce el nombre del archivo de personalización"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "Introduce el nombre del archivo de reasignación"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,

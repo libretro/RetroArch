@@ -1922,6 +1922,10 @@ MSG_HASH(
    "Näyttöajurin raportoima virkistystaajuus."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Automaattinen virkistystaajuuden vaihto"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Vain yksinomaisessa koko näytön tilassa"
    )
@@ -6210,6 +6214,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Lataa automaattisesti puuttuvat esikatselukuvat selatessasi soittolistoja. Vaikuttaa suorituskykyyn suuresti."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "Päivittäjän asetukset"
+   )
 
 /* Settings > Network > Updater */
 
@@ -7715,16 +7723,8 @@ MSG_HASH(
    "Tallenna pelin asetukset"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Poista pelin asetukset"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Tallenna sisällön hakemiston asetukset"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Poista sisällön hakemiston asetukset"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -10779,6 +10779,10 @@ MSG_HASH(
 
 /* Unsorted */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   "Ydinpäivittäjän asetukset"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Saavutustilit"

@@ -174,11 +174,6 @@ static void input_autoconfigure_set_config_file(
    if (!string_is_empty(config->path))
    {
       const char *config_file_name = path_basename_nocompression(config->path);
-
-      strlcpy(autoconfig_handle->device_info.config_path,
-            config->path,
-            sizeof(autoconfig_handle->device_info.config_path));
-
       if (!string_is_empty(config_file_name))
          strlcpy(autoconfig_handle->device_info.config_name,
                config_file_name,
@@ -413,14 +408,6 @@ static void cb_input_autoconfigure_connect(
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
 
-   /* > Config file path/name */
-   if (!string_is_empty(autoconfig_handle->device_info.config_path))
-      input_config_set_device_config_path(port,
-            autoconfig_handle->device_info.config_path);
-   else
-      input_config_set_device_config_path(port,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-
    if (!string_is_empty(autoconfig_handle->device_info.config_name))
       input_config_set_device_config_name(port,
             autoconfig_handle->device_info.config_name);
@@ -633,7 +620,6 @@ bool input_autoconfigure_connect(
    autoconfig_handle->device_info.pid              = pid;
    autoconfig_handle->device_info.name[0]          = '\0';
    autoconfig_handle->device_info.display_name[0]  = '\0';
-   autoconfig_handle->device_info.config_path[0]   = '\0';
    autoconfig_handle->device_info.config_name[0]   = '\0';
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
@@ -770,7 +756,6 @@ static void cb_input_autoconfigure_disconnect(
     * callback, to ensure it occurs on the main thread */
    input_config_clear_device_name(port);
    input_config_clear_device_display_name(port);
-   input_config_clear_device_config_path(port);
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
    input_config_set_device_vid(port, 0);

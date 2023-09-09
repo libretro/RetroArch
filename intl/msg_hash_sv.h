@@ -3582,10 +3582,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    "Spara spelalternativ"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Ta bort spelalternativ"
-   )
 
 /* - Legacy (unused) */
 

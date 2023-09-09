@@ -239,17 +239,15 @@ void gfx_thumbnail_cancel_pending_requests(void)
  *         and gfx_thumbnail_set_content*()
  * NOTE 2: 'playlist' and 'idx' are only required here for
  *         on-demand thumbnail download support
- *         (an annoyance...) */ 
+ *         (an annoyance...) */
 void gfx_thumbnail_request(
       gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
       playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
-   const char *thumbnail_path         = NULL;
-   bool has_thumbnail                 = false;
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
-   
+
    if (!path_data || !thumbnail)
       return;
 
@@ -260,74 +258,77 @@ void gfx_thumbnail_request(
 
    /* Update/extract thumbnail path */
    if (gfx_thumbnail_is_enabled(path_data, thumbnail_id))
-      if (gfx_thumbnail_update_path(path_data, thumbnail_id))
-         has_thumbnail = gfx_thumbnail_get_path(path_data, thumbnail_id, &thumbnail_path);
-
-   /* Load thumbnail, if required */
-   if (has_thumbnail)
    {
-      if (path_is_valid(thumbnail_path))
+      if (gfx_thumbnail_update_path(path_data, thumbnail_id))
       {
-         gfx_thumbnail_tag_t *thumbnail_tag =
-               (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
+         const char *thumbnail_path = NULL;
+         if (gfx_thumbnail_get_path(path_data, thumbnail_id, &thumbnail_path))
+         {
+            /* Load thumbnail, if required */
+            if (path_is_valid(thumbnail_path))
+            {
+               gfx_thumbnail_tag_t *thumbnail_tag =
+                  (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
 
-         if (!thumbnail_tag)
-            goto end;
+               if (!thumbnail_tag)
+                  goto end;
 
-         /* Configure user data */
-         thumbnail_tag->thumbnail = thumbnail;
-         thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+               /* Configure user data */
+               thumbnail_tag->thumbnail = thumbnail;
+               thumbnail_tag->list_id   = p_gfx_thumb->list_id;
 
-         /* Would like to cancel any existing image load tasks
-          * here, but can't see how to do it... */
-         if (task_push_image_load(
-               thumbnail_path, video_driver_supports_rgba(),
-               gfx_thumbnail_upscale_threshold,
-               gfx_thumbnail_handle_upload, thumbnail_tag))
-            thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
-      }
+               /* Would like to cancel any existing image load tasks
+                * here, but can't see how to do it... */
+               if (task_push_image_load(
+                        thumbnail_path, video_driver_supports_rgba(),
+                        gfx_thumbnail_upscale_threshold,
+                        gfx_thumbnail_handle_upload, thumbnail_tag))
+                  thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
+            }
 #ifdef HAVE_NETWORKING
-      /* Handle on demand thumbnail downloads */
-      else if (network_on_demand_thumbnails)
-      {
-         const char *system                         = NULL;
-         const char *img_name                       = NULL;
-         static char last_img_name[PATH_MAX_LENGTH] = {0};
+            /* Handle on demand thumbnail downloads */
+            else if (network_on_demand_thumbnails)
+            {
+               const char *system                         = NULL;
+               const char *img_name                       = NULL;
+               static char last_img_name[PATH_MAX_LENGTH] = {0};
 
-         if (!playlist)
-            goto end;
+               if (!playlist)
+                  goto end;
 
-         /* Get current image name */
-         if (!gfx_thumbnail_get_img_name(path_data, &img_name))
-            goto end;
+               /* Get current image name */
+               if (!gfx_thumbnail_get_img_name(path_data, &img_name))
+                  goto end;
 
-         /* Only trigger a thumbnail download if image
-          * name has changed since the last call of
-          * gfx_thumbnail_request()
-          * > Allows gfx_thumbnail_request() to be used
-          *   for successive right/left thumbnail requests
-          *   with minimal duplication of effort
-          *   (i.e. task_push_pl_entry_thumbnail_download()
-          *   will automatically cancel if a download for the
-          *   existing playlist entry is pending, but the
-          *   checks required for this involve significant
-          *   overheads. We can avoid this entirely with
-          *   a simple string comparison) */
-         if (string_is_equal(img_name, last_img_name))
-            goto end;
+               /* Only trigger a thumbnail download if image
+                * name has changed since the last call of
+                * gfx_thumbnail_request()
+                * > Allows gfx_thumbnail_request() to be used
+                *   for successive right/left thumbnail requests
+                *   with minimal duplication of effort
+                *   (i.e. task_push_pl_entry_thumbnail_download()
+                *   will automatically cancel if a download for the
+                *   existing playlist entry is pending, but the
+                *   checks required for this involve significant
+                *   overheads. We can avoid this entirely with
+                *   a simple string comparison) */
+               if (string_is_equal(img_name, last_img_name))
+                  goto end;
 
-         strlcpy(last_img_name, img_name, sizeof(last_img_name));
+               strlcpy(last_img_name, img_name, sizeof(last_img_name));
 
-         /* Get system name */
-         if (!gfx_thumbnail_get_system(path_data, &system))
-            goto end;
+               /* Get system name */
+               if (!gfx_thumbnail_get_system(path_data, &system))
+                  goto end;
 
-         /* Trigger thumbnail download */
-         task_push_pl_entry_thumbnail_download(
-               system, playlist, (unsigned)idx,
-               false, true);
-      }
+               /* Trigger thumbnail download */
+               task_push_pl_entry_thumbnail_download(
+                     system, playlist, (unsigned)idx,
+                     false, true);
+            }
 #endif
+         }
+      }
    }
 
 end:
@@ -787,10 +788,10 @@ void gfx_thumbnail_get_draw_dimensions(
    video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Sanity check */
-   if (   !thumbnail 
-       || (width             < 1) 
+   if (   !thumbnail
+       || (width             < 1)
        || (height            < 1)
-       || (thumbnail->width  < 1) 
+       || (thumbnail->width  < 1)
        || (thumbnail->height < 1))
    {
       *draw_width  = 0.0f;
@@ -802,7 +803,7 @@ void gfx_thumbnail_get_draw_dimensions(
     * differences */
    display_aspect   = (float)width            / (float)height;
    thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
-   core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT) 
+   core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          && video_st && video_st->av_info.geometry.aspect_ratio > 0)
                ? video_st->av_info.geometry.aspect_ratio
                : thumbnail_aspect;

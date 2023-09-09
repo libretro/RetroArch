@@ -4343,16 +4343,32 @@ MSG_HASH(
    "Scrivi i salvataggi nella directory del contenuto"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Usa la directory dei contenuti come cartella dei file."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Scrivi gli stati di salvataggio nella cartella del contenuto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Usa la directory dei contenuti come cartella di salvataggio stato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "I file di sistema sono contenuti nella directory dei contenuti"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Usa la directory dei contenuti come directory di sistema."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Registra gli screenshot contenuti nella directory dei contenuti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Usa la directory dei contenuti come directory screenshot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -6938,6 +6954,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "Impostazioni Updater"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Accedi alle impostazioni di aggiornamento core"
+   )
 
 /* Settings > Network > Updater */
 
@@ -8455,16 +8475,32 @@ MSG_HASH(
    "Salva Opzioni di Gioco"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Salva le opzioni core che verranno applicate solo per il contenuto corrente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Elimina Opzioni Di Gioco"
+   "Rimuovi Opzioni Di Gioco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Elimina le opzioni core che si applicheranno solo per il contenuto corrente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Salva Opzioni Contenuti Cartella"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Salva le opzioni core che verranno applicate per tutti i contenuti caricati dalla stessa directory del file corrente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Elimina Opzioni Contenuto Cartella"
+   "Rimuovi Opzioni Cartella Contenuto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Elimina le opzioni core che verranno applicate per tutti i contenuti caricati dalla stessa directory del file corrente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,

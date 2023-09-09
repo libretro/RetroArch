@@ -159,7 +159,7 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
    { (unsigned int)VirtualKey::RightControl, RETROK_RCTRL },
    { (unsigned int)VirtualKey::LeftMenu, RETROK_LALT },
    { (unsigned int)VirtualKey::RightMenu, RETROK_RALT },
-   { VK_RETURN, RETROK_KP_ENTER },
+//key   { VK_RETURN, RETROK_KP_ENTER },
    { (unsigned int)VirtualKey::CapitalLock, RETROK_CAPSLOCK },
    { VK_OEM_1, RETROK_SEMICOLON },
    { VK_OEM_PLUS, RETROK_EQUALS },
@@ -323,6 +323,9 @@ void App::SetWindow(CoreWindow^ window)
 
    window->PointerWheelChanged +=
       ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
+
+   window->Dispatcher->AcceleratorKeyActivated +=
+      ref new TypedEventHandler<CoreDispatcher^, AcceleratorKeyEventArgs^>(this, &App::OnAcceleratorKey);
 
    DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
@@ -576,27 +579,85 @@ void App::OnWindowActivated(CoreWindow^ sender, WindowActivatedEventArgs^ args)
    m_windowFocused = args->WindowActivationState != CoreWindowActivationState::Deactivated;
 }
 
-void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args)
+bool App::GetKey(CoreWindow^ window, VirtualKey vkey, bool down, bool extended, unsigned& keycode, uint16_t& mod)
 {
-   unsigned keycode;
-   uint16_t mod = 0;
-   if ((sender->GetKeyState(VirtualKey::Shift) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   /* Some keys we need to specify via the extended flag */
+   if (vkey == VirtualKey::Enter)
+      keycode = (extended ? RETROK_KP_ENTER : RETROK_RETURN);
+   else if (vkey == VirtualKey::Control)
+      keycode = (extended ? RETROK_RCTRL : RETROK_LCTRL);
+   else if (vkey == VirtualKey::Menu)
+      keycode = (extended ? RETROK_RALT : RETROK_LALT);
+   else if (vkey == VirtualKey::Shift)
+   {
+      /* Shift is just sent generic, we need to query for and remember left or right */
+      bool left_down = ((window->GetKeyState(VirtualKey::LeftShift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down);
+      bool right_down = ((window->GetKeyState(VirtualKey::RightShift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down);
+      static bool had_left_down, had_right_down;
+      if (down != had_left_down && down == left_down)
+      {
+         had_left_down = down;
+         keycode = RETROK_LSHIFT;
+      }
+      else if (down != had_right_down && down == right_down)
+      {
+         had_right_down = down;
+         keycode = RETROK_RSHIFT;
+      }
+      else
+         return false;
+   }
+   else
+   {
+      keycode = input_keymaps_translate_keysym_to_rk((unsigned)vkey);
+      if (keycode == RETROK_UNKNOWN)
+         return false;
+   }
+
+   mod = 0;
+   if ((window->GetKeyState(VirtualKey::Shift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_SHIFT;
-   if ((sender->GetKeyState(VirtualKey::Control) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Control) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_CTRL;
-   if ((sender->GetKeyState(VirtualKey::Menu) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Menu) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_ALT;
-   if ((sender->GetKeyState(VirtualKey::CapitalLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::CapitalLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
       mod |= RETROKMOD_CAPSLOCK;
-   if ((sender->GetKeyState(VirtualKey::Scroll) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Scroll) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
       mod |= RETROKMOD_SCROLLOCK;
-   if ((sender->GetKeyState(VirtualKey::LeftWindows) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked ||
-         (sender->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::LeftWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down ||
+         (window->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_META;
 
-   keycode = input_keymaps_translate_keysym_to_rk((unsigned)args->VirtualKey);
+   return true;
+}
 
-   input_keyboard_event(!args->KeyStatus.IsKeyReleased, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args)
+{
+   bool down = !args->KeyStatus.IsKeyReleased;
+   unsigned keycode;
+   uint16_t mod;
+   if (GetKey(sender, args->VirtualKey, down, args->KeyStatus.IsExtendedKey, keycode, mod))
+      input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+}
+
+void App::OnAcceleratorKey(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args)
+{
+   if (args->EventType == CoreAcceleratorKeyEventType::KeyDown || args->EventType == CoreAcceleratorKeyEventType::KeyUp ||
+         args->EventType == CoreAcceleratorKeyEventType::SystemKeyDown || args->EventType == CoreAcceleratorKeyEventType::SystemKeyUp)
+   {
+      /* This callback is called for all keys but we're only interested in the Alt keys which don't call OnKey */
+      VirtualKey vkey = args->VirtualKey;
+      if (vkey == VirtualKey::Menu || vkey == VirtualKey::LeftMenu || vkey == VirtualKey::RightMenu)
+      {
+         CoreWindow^ window = CoreWindow::GetForCurrentThread();
+         bool down = !args->KeyStatus.IsKeyReleased;
+         unsigned keycode;
+         uint16_t mod;
+         if (GetKey(window, vkey, down, args->KeyStatus.IsExtendedKey, keycode, mod))
+            input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+      }
+   }
 }
 
 void App::OnPointer(CoreWindow^ sender, PointerEventArgs^ args)
@@ -1103,8 +1164,10 @@ extern "C" {
 
    const char* uwp_get_cpu_model_name(void)
    {
-      /* TODO/FIXME - Xbox codepath should have a hardcoded CPU model name */
-      if (is_running_on_xbox()) { }
+      if (is_running_on_xbox())
+      {
+        return "Xbox One/Series CPU";
+      }
       else
       {
          Platform::String^ cpu_id    = nullptr;

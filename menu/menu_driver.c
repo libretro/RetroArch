@@ -4559,8 +4559,10 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
       default:
          if (vercode >= 1910 && vercode < 1920)
             return " msvc2017";
-         else if (vercode >= 1920 && vercode < 2000)
+         else if (vercode >= 1920 && vercode < 1930)
             return " msvc2019";
+         else if (vercode >= 1930)
+            return " msvc2022";
          break;
    }
 
@@ -5236,6 +5238,10 @@ unsigned menu_event(
    };
 
    ok_old                                          = ok_current;
+
+   /* Menu must be alive */
+   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+      return ret;
 
    /* Get pointer (mouse + touchscreen) input
     * Note: Must be done regardless of menu screensaver

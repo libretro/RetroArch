@@ -1929,11 +1929,8 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
             LOWORD(ident.DriverVersion.HighPart),
             HIWORD(ident.DriverVersion.LowPart),
             LOWORD(ident.DriverVersion.LowPart));
-
       RARCH_LOG("[D3D9]: Using GPU: \"%s\".\n", ident.Description);
       RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
-
-      video_driver_set_gpu_device_string(ident.Description);
       video_driver_set_gpu_api_version_string(version_str);
    }
 

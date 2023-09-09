@@ -2066,6 +2066,14 @@ MSG_HASH(
    "Fréquence de rafraîchissement détectée par le pilote d'affichage."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Permutation automatique de la fréquence de rafraîchissement"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Changer automatiquement la fréquence du rafraîchissement de l'écran en fonction du contenu actuel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Uniquement en mode plein écran exclusif"
    )
@@ -2076,6 +2084,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Tous les modes plein écran"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Seuil de détection du PAL pour la fréquence de rafraîchissement automatique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Fréquence de rafraîchissement maximale à considérer comme PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -4355,16 +4371,32 @@ MSG_HASH(
    "Enregistrer les sauvegardes avec le contenu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Utiliser le dossier du contenu comme dossier de sauvegarde."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Enregistrer les sauvegardes instantanées avec le contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Utiliser le dossier du contenu comme dossier de sauvegarde instantanée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Fichiers système avec le contenu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Utiliser le dossier du contenu comme dossier système."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Enregistrer les captures d'écran avec le contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Utiliser le dossier du contenu comme dossier de capture d'écran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -6962,6 +6994,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "Réglages de mise à jour"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Accéder aux réglages de mise à jour des cœurs"
+   )
 
 /* Settings > Network > Updater */
 
@@ -8491,16 +8527,32 @@ MSG_HASH(
    "Sauvegarder les options pour le jeu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Sauvegarder les options de cœur qui s'appliqueront uniquement pour le contenu actuel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    "Supprimer les options pour le jeu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Supprimer les options du cœur qui ne s'appliquent qu'au contenu actuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Sauvegarder les options pour le dossier du contenu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Sauvegarder les options du cœur qui s'appliqueront à tout le contenu chargé à partir du même dossier que le fichier actuel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
    "Supprimer les options pour le dossier du contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Supprimer les options du cœur qui s'appliquent à tout le contenu chargé à partir du même dossier que le fichier actuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -8568,23 +8620,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
-   "Enregistrer le fichier de remappage sous"
+   "Sauvegarder le fichier de remappage sous"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
-   "Enregistrer le mappage des touches actuel en tant que nouveau fichier de remappage."
+   "Sauvegarder le mappage des touches actuel en tant que nouveau fichier de remappage."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "Sauvegarder le remappage pour le cœur"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Sauvegarder un fichier de remappage qui s'appliquera à tout le contenu chargé avec ce cœur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   "Supprimer le remappage pour le cœur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Supprimer le fichier de remappage qui s'applique à tout le contenu chargé avec ce cœur."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "Sauvegarder le remappage pour le dossier"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Sauvegarder un fichier de remappage qui s'appliquera à tout le contenu chargé à partir du même dossier que le fichier actuel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Supprimer le remappage pour le dossier"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Supprimer le fichier de remappage qui s'applique à tout le contenu chargé à partir du même dossier que le fichier actuel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Sauvegarder le remappage pour le jeu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Sauvegarder un fichier de remappage qui s'appliquera uniquement pour le contenu actuel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "Supprimer le remappage pour le jeu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Supprimer le fichier de remappage qui s'applique uniquement pour le contenu actuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9217,12 +9305,20 @@ MSG_HASH(
    "Charger et remplacer la configuration actuelle."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "Sauvegarder les remplacements de configuration sous"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Sauvegarder la configuration actuelle comme un nouveau fichier de remplacement de configuration."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Sauvegarder la configuration de substitution pour le cœur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Enregistrer un fichier de configuration de substitution qui s'appliquera à tout le contenu chargé avec ce cœur. Aura la priorité sur la configuration principale."
+   "Sauvegarder un fichier de configuration de substitution qui s'appliquera à tout le contenu chargé avec ce cœur. Aura la priorité sur la configuration principale."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -9230,7 +9326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Supprimer le fichier de configuration de substitution qui s'appliquera à tout le contenu chargé avec ce cœur."
+   "Supprimer le fichier de configuration de substitution qui s'applique à tout le contenu chargé avec ce cœur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9238,7 +9334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Enregistrer un fichier de configuration de substitution qui s'appliquera à tout le contenu chargé depuis le même dossier que le fichier actuel. Aura la priorité sur la configuration principale."
+   "Sauvegarder un fichier de configuration de substitution qui s'appliquera à tout le contenu chargé depuis le même dossier que le fichier actuel. Aura la priorité sur la configuration principale."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9246,7 +9342,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Supprimer le fichier de configuration de substitution qui s'appliquera à tout le contenu chargé à partir du même dossier que le fichier actuel."
+   "Supprimer le fichier de configuration de substitution qui s'applique à tout le contenu chargé à partir du même dossier que le fichier actuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9254,7 +9350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Enregistrer un fichier de configuration de substitution qui s'appliquera uniquement au contenu actuel. Aura la priorité sur la configuration principale."
+   "Sauvegarder un fichier de configuration de substitution qui s'appliquera uniquement au contenu actuel. Aura la priorité sur la configuration principale."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9262,7 +9358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Supprimer le fichier de configuration de substitution qui ne s'appliquera qu'au contenu actuel."
+   "Supprimer le fichier de configuration de substitution qui ne s'applique qu'au contenu actuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
@@ -13159,6 +13255,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
    "Saisir le nom du fichier de préréglages"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Saisir le nom du fichier de remplacement de configuration"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "Saisir le nom du fichier de remappage des touches"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,

@@ -772,7 +772,6 @@ typedef struct
 #endif
    struct retro_system_av_info av_info; /* double alignment */
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-   retro_time_t core_frame_time;
    uint64_t frame_time_count;
    uint64_t frame_count;
    uint8_t *record_gpu_buffer;
@@ -856,7 +855,6 @@ typedef struct
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
    char window_title_prev[512];
-   char gpu_device_string[128];
    char gpu_api_version_string[128];
    char title_buf[64];
    char cached_driver_id[32];
@@ -1163,10 +1161,6 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 bool video_driver_test_all_flags(enum display_flags testflag);
 
 gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
-
-void video_driver_set_gpu_device_string(const char *str);
-
-const char* video_driver_get_gpu_device_string(void);
 
 void video_driver_set_gpu_api_version_string(const char *str);
 

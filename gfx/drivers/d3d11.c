@@ -2620,7 +2620,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
          d3d11->current_adapter = d3d11->adapters[gpu_index];
          d3d11->adapter         = d3d11->current_adapter;
          RARCH_LOG("[D3D11]: Using GPU index %d.\n", gpu_index);
-         video_driver_set_gpu_device_string(d3d11->gpu_list->elems[gpu_index].data);
       }
       else
       {
