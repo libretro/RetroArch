@@ -243,7 +243,8 @@ static void woauth_handle_accesstoken_response
   }
   
   //  Sets the device code in the configuration as well so that it is visible to the user.
-  retro_time_t expiration_timestamp = cpu_features_get_time_usec() + 1000 * 1000 * (unsigned int)oauth_token_response.expires_in;
+  retro_time_t now = cpu_features_get_time_usec();
+  retro_time_t expiration_timestamp = now + 1000 * 1000 * (unsigned int)oauth_token_response.expires_in;
   char expiration[64];
   sprintf(expiration, "%lld", expiration_timestamp);
   
@@ -448,7 +449,7 @@ const char* woauth_get_accesstoken()
     WEBHOOKS_LOG(WEBHOOKS_TAG "The value expires_in in the configuration is not set (0): the association must be established again\n");
     return NULL;
   }
-  else if (expecting_refresh <= now) {
+  else if (now >= expecting_refresh) {
     if(!token_refresh_scheduled) {
       if (strlen(settings->arrays.cheevos_webhook_refreshtoken) > 0) {
         //  Let's get an access token asap using the refresh token.

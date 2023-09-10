@@ -2586,6 +2586,9 @@ bool command_event(enum event_command cmd, void *data)
          rcheevos_reset_game(false);
 #endif
 #endif
+       
+         webhooks_game_reset();
+       
 #ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
@@ -6676,6 +6679,9 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
+  webhooks_initialize();
+  
+  
 #if defined(HAVE_AUDIOMIXER)
    audio_driver_load_system_sounds();
 #endif

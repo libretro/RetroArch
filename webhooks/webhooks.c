@@ -31,6 +31,7 @@
 #include "webhooks_progress_downloader.h"
 #include "webhooks_progress_parser.h"
 #include "webhooks_progress_tracker.h"
+#include "webhooks_oauth.h"
 
 #include "webhooks_client.h"
 
@@ -82,6 +83,7 @@ unsigned long frame_counter = 0;
 
 const unsigned short LOADED = 1;
 const unsigned short UNLOADED = USHRT_MAX;
+const unsigned long PROGRESS_UPDATE_FRAME_FREQUENCY = 30;
 
 //  ---------------------------------------------------------------------------
 //
@@ -223,12 +225,64 @@ static int wh_init_memory(wb_locals_t* locals)
   return result;
 }
 
+static void wb_check_progress
+(
+  unsigned long frame_counter,
+  retro_time_t time
+)
+{
+  //  No need to update the progress at every frame since
+  //  it can the ability to submerge the server with many
+  //  requests. For instance, when a boss is beaten in Castlevania 1,
+  //  the score is changed very rapidly.
+  if (frame_counter % PROGRESS_UPDATE_FRAME_FREQUENCY != 0)
+    return;
+
+  int result = wpt_process_frame(&locals.runtime);
+
+  if (result != PROGRESS_UNCHANGED) {
+    wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter, time);
+  }
+}
+
+static void wb_check_game_events
+(
+  unsigned long frame_counter,
+  retro_time_t time
+)
+{
+  rc_runtime_trigger_t* triggers = locals.runtime.triggers;
+  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    struct rc_trigger_t* trigger = triggers->trigger;
+    int result = rc_evaluate_trigger(trigger, &wb_peek, NULL, 0);
+
+    if (result == RC_TRIGGER_STATE_TRIGGERED) {
+      int event_id = locals.runtime.triggers[trigger_num].id;
+      wc_send_event(locals.console_id, locals.hash, event_id, frame_counter, time);
+    }
+  }
+}
+
+static void wb_reset_game_events()
+{
+  rc_runtime_trigger_t* triggers = locals.runtime.triggers;
+  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    struct rc_trigger_t* trigger = triggers->trigger;
+    rc_reset_trigger(trigger);
+  }
+}
+
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-void wb_initialize()
+void webhooks_initialize()
 {
-  //rc_runtime_init(&locals.runtime);
+  //  -----------------------------------------------------------------------------
+  //  IT IS DONE HERE NOW BUT I SHOULD TRY AND DO THIS ONLY ONCE IN wb_initialize().
+  //  I NEED TO FIND THE PROPER PLACE TO HOOK IT UP.
+  rc_runtime_init(&locals.runtime);
+
+  woauth_get_accesstoken();
 }
 
 //  ---------------------------------------------------------------------------
@@ -239,7 +293,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
   //  -----------------------------------------------------------------------------
   //  IT IS DONE HERE NOW BUT I SHOULD TRY AND DO THIS ONLY ONCE IN wb_initialize().
   //  I NEED TO FIND THE PROPER PLACE TO HOOK IT UP.
-  rc_runtime_init(&locals.runtime);
+  //rc_runtime_init(&locals.runtime);
 
   //  -----------------------------------------------------------------------------
 
@@ -268,27 +322,25 @@ void webhooks_game_unloaded()
 //  ---------------------------------------------------------------------------
 //  Called for each frame.
 //  ---------------------------------------------------------------------------
+void webhooks_game_reset()
+{
+  frame_counter = 0;
+  retro_time_t time = cpu_features_get_time_usec();
+
+  wb_reset_game_events();
+
+  wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
+}
+
+//  ---------------------------------------------------------------------------
+//  Called for each frame.
+//  ---------------------------------------------------------------------------
 void webhooks_process_frame()
 {
   frame_counter++;
   retro_time_t time = cpu_features_get_time_usec();
 
-  //  Checks for the game events.
-  rc_runtime_trigger_t* triggers = locals.runtime.triggers;
-  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
-    struct rc_trigger_t* trigger = triggers->trigger;
-    int result = rc_evaluate_trigger(trigger, &wb_peek, NULL, 0);
+  wb_check_game_events(frame_counter, time);
 
-    if (result == RC_TRIGGER_STATE_TRIGGERED) {
-      int event_id = locals.runtime.triggers[trigger_num].id;
-      wc_send_event(locals.console_id, locals.hash, event_id, frame_counter, time);
-    }
-  }
-
-  //  Checks for the progress.
-  int result = wpt_process_frame(&locals.runtime);
-
-  if (result != PROGRESS_UNCHANGED) {
-    wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter, time);
-  }
+  wb_check_progress(frame_counter, time);
 }
