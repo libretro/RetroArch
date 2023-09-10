@@ -353,6 +353,10 @@ MSG_HASH(
    "Звесткі аб дыску"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Праглядзець звесткі аб устаўленых медыядысках."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
    "Звесткі аб сеціве"
    )
