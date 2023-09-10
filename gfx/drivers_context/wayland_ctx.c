@@ -32,15 +32,6 @@
 #include "../../input/input_keymaps.h"
 #include "../../verbosity.h"
 
-/* Generated from idle-inhibit-unstable-v1.xml */
-#include "../common/wayland/idle-inhibit-unstable-v1.h"
-
-/* Generated from xdg-shell.xml */
-#include "../common/wayland/xdg-shell.h"
-
-/* Generated from xdg-decoration-unstable-v1.h */
-#include "../common/wayland/xdg-decoration-unstable-v1.h"
-
 #ifdef HAVE_EGL
 #include <wayland-egl.h>
 #include <poll.h>
