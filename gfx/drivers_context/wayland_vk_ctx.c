@@ -59,6 +59,18 @@ static void xdg_toplevel_handle_configure(void *data,
    wl->configured = false;
 }
 
+static void xdg_toplevel_handle_configure_bounds(void *data,
+      struct xdg_toplevel *toplevel,
+      int32_t width, int32_t height)
+{
+}
+
+static void xdg_toplevel_handle_wm_capabilities(void *data,
+      struct xdg_toplevel *toplevel,
+      struct wl_array *capabilities)
+{
+}
+
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
@@ -126,6 +138,8 @@ static const toplevel_listener_t toplevel_listener = {
    .xdg_toplevel_listener = {
       xdg_toplevel_handle_configure,
       xdg_toplevel_handle_close,
+      xdg_toplevel_handle_configure_bounds,
+      xdg_toplevel_handle_wm_capabilities,
    },
 };
 
