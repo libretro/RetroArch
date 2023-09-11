@@ -232,11 +232,9 @@ function startRetroArch()
    document.getElementById("btnMenu").disabled = false;
    document.getElementById("btnFullscreen").disabled = false;
 
-   setTimeout(() => {
-      Module['callMain'](Module['arguments']);
-      Module['resumeMainLoop']();
-      document.getElementById('canvas').focus();
-   }, 0);
+   Module['callMain'](Module['arguments']);
+   Module['resumeMainLoop']();
+   Module['canvas'].focus();
 }
 function selectFiles(files)
 {
