@@ -45,19 +45,38 @@ var Module = {
             }
             return null;
          }
-         module.FS.init(stdin);
+         function stdout(c) {
+            if(c == null) {
+               // flush
+               if(module.message_accum != "") {
+                  module.message_out.push(module.message_accum);
+                  module.message_accum = "";
+               }
+            } else {
+               let s = String.fromCharCode(c);
+               if(s == "\n") {
+                  if(module.message_accum != "") {
+                     module.message_out.push(module.message_accum);
+                     module.message_accum = "";
+                  }
+               } else {
+                  module.message_accum = module.message_accum+s;
+               }
+            }
+         }
+         module.FS.init(stdin, stdout);
       }
    ],
    postRun: [],
-   onRuntimeInitialized: function(module)
+   onRuntimeInitialized: function()
       {
          appInitialized();
       },
-   print: function(module, text)
+   print: function(text)
       {
          console.log(text);
       },
-   printErr: function(module, text)
+   printErr: function(text)
       {
          console.log(text);
       },
@@ -182,7 +201,7 @@ function setupFileSystem(backend)
    mfs.mount('/home/web_user/retroarch/bundle', xfs1);
    mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
    BrowserFS.initialize(mfs);
-   var BFS = new BrowserFS.EmscriptenFS();
+   var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
    Module.FS.mount(BFS, {root: '/home'}, '/home');
    console.log("WEBPLAYER: " + backend + " filesystem initialization successful");
 }
@@ -212,12 +231,13 @@ function startRetroArch()
    document.getElementById("btnRom").disabled = false;
    document.getElementById("btnMenu").disabled = false;
    document.getElementById("btnFullscreen").disabled = false;
-   
-   Module['callMain'](Module['arguments']);
-   Module['resumeMainLoop']();
-   document.getElementById('canvas').focus();      
-}
 
+   setTimeout(() => {
+      Module['callMain'](Module['arguments']);
+      Module['resumeMainLoop']();
+      document.getElementById('canvas').focus();
+   }, 0);
+}
 function selectFiles(files)
 {
    $('#btnAdd').addClass('disabled');
@@ -283,77 +303,78 @@ $(function() {
    /**
     * Attempt to disable some default browser keys.
     */
-	var keys = {
-    9: "tab",
-    13: "enter",
-    16: "shift",
-    18: "alt",
-    27: "esc",
-    33: "rePag",
-    34: "avPag",
-    35: "end",
-    36: "home",
-    37: "left",
-    38: "up",
-    39: "right",
-    40: "down",
-    112: "F1",
-    113: "F2",
-    114: "F3",
-    115: "F4",
-    116: "F5",
-    117: "F6",
-    118: "F7",
-    119: "F8",
-    120: "F9",
-    121: "F10",
-    122: "F11",
-    123: "F12"
-  };
-	window.addEventListener('keydown', function (e) {
-    if (keys[e.which]) {
-      e.preventDefault();
-    }
-  });
+   var keys = {
+      9: "tab",
+      13: "enter",
+      16: "shift",
+      18: "alt",
+      27: "esc",
+      33: "rePag",
+      34: "avPag",
+      35: "end",
+      36: "home",
+      37: "left",
+      38: "up",
+      39: "right",
+      40: "down",
+      112: "F1",
+      113: "F2",
+      114: "F3",
+      115: "F4",
+      116: "F5",
+      117: "F6",
+      118: "F7",
+       119: "F8",
+       120: "F9",
+       121: "F10",
+       122: "F11",
+       123: "F12"
+    };
+   window.addEventListener('keydown', function (e) {
+      if (keys[e.which]) {
+         e.preventDefault();
+      }
+   });
 
    // Switch the core when selecting one.
    $('#core-selector a').click(function () {
       var coreChoice = $(this).data('core');
       switchCore(coreChoice);
    });
-
    // Find which core to load.
    var core = localStorage.getItem("core", core);
    if (!core) {
       core = 'gambatte';
    }
+   loadCore(core);
+});
+
+function loadCore(core) {
    // Make the core the selected core in the UI.
    var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
    $('#dropdownMenu1').text(coreTitle);
 
    // Load the Core's related JavaScript.
-   $.getScript(core + '_libretro.js', function ()
-   {
-      window[core](Module).then(mod => {
+   import("./"+core+"_libretro.js").then(script => {
+      script.default(Module).then(mod => {
          Module = mod;
          $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
          $('#icnRun').addClass('fa-play');
          $('#lblDrop').removeClass('active');
          $('#lblLocal').addClass('active');
          idbfsInit();
-      })
-   });
- });
+      }).catch(err => { console.error("Couldn't instantiate module",err); throw err; });
+   }).catch(err => { console.error("Couldn't load script",err); throw err; });
+}
 
 function keyPress(k)
 {
+   function kp(k, event) {
+      var oEvent = new KeyboardEvent(event, { code: k });
+     
+      document.dispatchEvent(oEvent);
+      document.getElementById('canvas').focus();
+   }
    kp(k, "keydown");
    setTimeout(function(){kp(k, "keyup")}, 50);
-}
-
-kp = function(k, event) {
-   var oEvent = new KeyboardEvent(event, { code: k });
-
-   document.dispatchEvent(oEvent);
-   document.getElementById('canvas').focus();
 }
