@@ -235,8 +235,8 @@ static void wb_check_progress
   //  it can the ability to submerge the server with many
   //  requests. For instance, when a boss is beaten in Castlevania 1,
   //  the score is changed very rapidly.
-  if (frame_counter % PROGRESS_UPDATE_FRAME_FREQUENCY != 0)
-    return;
+  //if (frame_counter % PROGRESS_UPDATE_FRAME_FREQUENCY != 0)
+  //  return;
 
   int result = wpt_process_frame(&locals.runtime);
 
@@ -290,13 +290,6 @@ void webhooks_initialize()
 //  ---------------------------------------------------------------------------
 void webhooks_game_loaded(const struct retro_game_info* info)
 {
-  //  -----------------------------------------------------------------------------
-  //  IT IS DONE HERE NOW BUT I SHOULD TRY AND DO THIS ONLY ONCE IN wb_initialize().
-  //  I NEED TO FIND THE PROPER PLACE TO HOOK IT UP.
-  //rc_runtime_init(&locals.runtime);
-
-  //  -----------------------------------------------------------------------------
-
   frame_counter = 0;
   retro_time_t time = cpu_features_get_time_usec();
 

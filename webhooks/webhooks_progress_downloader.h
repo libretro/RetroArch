@@ -1,5 +1,5 @@
-#ifndef __WEBHOOKS_MACRO_MANAGER_H
-#define __WEBHOOKS_MACRO_MANAGER_H
+#ifndef __WEBHOOKS_PROGRESS_DOWNLOADER_H
+#define __WEBHOOKS_PROGRESS_DOWNLOADER_H
 
 typedef void (*on_game_progress_downloaded_t)
 (
@@ -14,4 +14,4 @@ void wpd_download_game_progress
   on_game_progress_downloaded_t on_game_progress_downloaded
 );
 
-#endif //__WEBHOOKS_MACRO_MANAGER_H
+#endif //__WEBHOOKS_PROGRESS_DOWNLOADER_H

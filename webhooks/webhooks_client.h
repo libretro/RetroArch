@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __WEBHOOKS_RICH_PRESENCE_H
-#define __WEBHOOKS_RICH_PRESENCE_H
+#ifndef __WEBHOOKS_CLIENT_H
+#define __WEBHOOKS_CLIENT_H
 
 #include "rc_runtime.h"
 
@@ -36,4 +36,4 @@ void wc_update_progress
   retro_time_t time
 );
 
-#endif /* __WEBHOOKS_RICH_PRESENCE_H */
+#endif /* __WEBHOOKS_CLIENT_H */

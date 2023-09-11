@@ -2831,6 +2831,7 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
             }
 #endif
+            webhooks_game_unloaded();
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
             runloop_system_info_free();
@@ -7120,6 +7121,7 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
    }
 #endif
+   webhooks_game_unloaded();
 #ifdef HAVE_DISCORD
    {
       discord_state_t *discord_st = discord_state_get_ptr();
