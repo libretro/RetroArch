@@ -4391,7 +4391,7 @@ static void input_overlay_enable_(bool enable)
       : settings->floats.input_overlay_opacity;
    bool auto_rotate               = settings->bools.input_overlay_auto_rotate;
    bool hide_mouse_cursor         = !settings->bools.input_overlay_show_mouse_cursor
-         && (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE);
+         && settings->bools.video_fullscreen;
 
    if (!ol)
       return;
