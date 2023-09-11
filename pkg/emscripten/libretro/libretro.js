@@ -7,6 +7,69 @@ var BrowserFS = BrowserFS;
 var afs;
 var initializationCount = 0;
 
+var Module = {
+   noInitialRun: true,
+   arguments: ["-v", "--menu"],
+
+   encoder: new TextEncoder(),
+   message_queue:[],
+   message_out:[],
+   message_accum:"",
+          
+   retroArchSend: function(msg) {
+      let bytes = this.encoder.encode(msg+"\n");
+      this.message_queue.push([bytes,0]);
+   },
+   retroArchRecv: function() {
+      let out = this.message_out.shift();
+      if(out == null && this.message_accum != "") {
+         out = this.message_accum;
+         this.message_accum = "";
+      }
+      return out;
+   },
+   preRun: [
+      function(module) {
+         function stdin() {
+            // Return ASCII code of character, or null if no input
+            while(module.message_queue.length > 0){
+               var msg = module.message_queue[0][0];
+               var index = module.message_queue[0][1];
+               if(index >= msg.length) {
+                  module.message_queue.shift();
+               } else {
+                  module.message_queue[0][1] = index+1;
+                  // assumption: msg is a uint8array
+                  return msg[index];
+               }
+            }
+            return null;
+         }
+         module.FS.init(stdin);
+      }
+   ],
+   postRun: [],
+   onRuntimeInitialized: function(module)
+      {
+         appInitialized();
+      },
+   print: function(module, text)
+      {
+         console.log(text);
+      },
+   printErr: function(module, text)
+      {
+         console.log(text);
+      },
+   canvas: document.getElementById('canvas'),
+   totalDependencies: 0,
+   monitorRunDependencies: function(left)
+      {
+         this.totalDependencies = Math.max(this.totalDependencies, left);
+      }
+};
+
+
 function cleanupStorage()
 {
    localStorage.clear();
@@ -120,7 +183,7 @@ function setupFileSystem(backend)
    mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS();
-   FS.mount(BFS, {root: '/home'}, '/home');
+   Module.FS.mount(BFS, {root: '/home'}, '/home');
    console.log("WEBPLAYER: " + backend + " filesystem initialization successful");
 }
 
@@ -149,10 +212,10 @@ function startRetroArch()
    document.getElementById("btnRom").disabled = false;
    document.getElementById("btnMenu").disabled = false;
    document.getElementById("btnFullscreen").disabled = false;
-
+   
    Module['callMain'](Module['arguments']);
    Module['resumeMainLoop']();
-   document.getElementById('canvas').focus();
+   document.getElementById('canvas').focus();      
 }
 
 function selectFiles(files)
@@ -184,65 +247,12 @@ function selectFiles(files)
 function uploadData(data,name)
 {
    var dataView = new Uint8Array(data);
-   FS.createDataFile('/', name, dataView, true, false);
+   Module.FS.createDataFile('/', name, dataView, true, false);
 
-   var data = FS.readFile(name,{ encoding: 'binary' });
-   FS.writeFile('/home/web_user/retroarch/userdata/content/' + name, data ,{ encoding: 'binary' });
-   FS.unlink(name);
+   var data = Module.FS.readFile(name,{ encoding: 'binary' });
+   Module.FS.writeFile('/home/web_user/retroarch/userdata/content/' + name, data ,{ encoding: 'binary' });
+   Module.FS.unlink(name);
 }
-
-var encoder = new TextEncoder();
-var message_queue = [];
-
-function retroArchSend(msg) {
-  var bytes = encoder.encode(msg+"\n");
-  message_queue.push([bytes,0]);
-}
-
-var Module =
-{
-  noInitialRun: true,
-  arguments: ["-v", "--menu"],
-  preRun: [
-    function() {
-      function stdin() {
-        // Return ASCII code of character, or null if no input
-        while(message_queue.length > 0){
-          var msg = message_queue[0][0];
-          var index = message_queue[0][1];
-          if(index >= msg.length) {
-            message_queue.shift();
-          } else {
-            message_queue[0][1] = index+1;
-            // assumption: msg is a uint8array
-            return msg[index];
-          }
-        }
-        return null;
-      }
-      FS.init(stdin);
-    }
-  ],
-  postRun: [],
-  onRuntimeInitialized: function()
-  {
-     appInitialized();
-  },
-  print: function(text)
-  {
-     console.log(text);
-  },
-  printErr: function(text)
-  {
-     console.log(text);
-  },
-  canvas: document.getElementById('canvas'),
-  totalDependencies: 0,
-  monitorRunDependencies: function(left)
-  {
-     this.totalDependencies = Math.max(this.totalDependencies, left);
-  }
-};
 
 function switchCore(corename) {
    localStorage.setItem("core", corename);
@@ -324,11 +334,14 @@ $(function() {
    // Load the Core's related JavaScript.
    $.getScript(core + '_libretro.js', function ()
    {
-      $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
-      $('#icnRun').addClass('fa-play');
-      $('#lblDrop').removeClass('active');
-      $('#lblLocal').addClass('active');
-      idbfsInit();
+      window[core](Module).then(mod => {
+         Module = mod;
+         $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
+         $('#icnRun').addClass('fa-play');
+         $('#lblDrop').removeClass('active');
+         $('#lblLocal').addClass('active');
+         idbfsInit();
+      })
    });
  });
 
