@@ -1013,6 +1013,10 @@ MSG_HASH(
    "Аўдыё"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Змяніць налады ўводу/вываду аўдыё."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Увод"
    )
@@ -1035,6 +1039,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
    "Канфігурацыя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   "Змяніць прадвызначаныя налады для файлаў канфігурацыі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,

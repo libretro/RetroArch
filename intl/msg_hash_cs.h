@@ -2042,6 +2042,14 @@ MSG_HASH(
    "Obnovovací frekvence hlášená ovladačem displeje."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Auto. přepínání obnovovací frekvence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Auto. přepínání obnovovací frekvence obrazovky podle aktuálního obsahu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Pouze v Exkluzivním Celoobrazovém Režimu"
    )
@@ -2052,6 +2060,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Všechny Režimy Celé Obrazovky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Automatická obnovovací frekvence PAL prahové hodnoty"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Max. obnovovací frekvence, která se považuje za PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -3023,6 +3039,22 @@ MSG_HASH(
    "Počet sekund, po které je třeba vstup podržet, aby byl svázán."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Stiskněte klávesnici, myš nebo ovladač"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "Uvolněte klávesy a tlačítka!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Časový limit"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Držet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo Období"
    )
@@ -3109,6 +3141,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    "Změna způsobu mapování virtuálního zařízení RetroPad na fyzické vstupní zařízení. Pokud je vstupní zařízení rozpoznáno a automaticky nakonfigurováno správně, uživatelé pravděpodobně nebudou muset tuto nabídku používat.\nPoznámka: pro změny vstupů specifických pro jádro použijte raději podnabídku \"Ovládací prvky\" v rychlém menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro používá abstrakci virtuálního gamepadu známou jako \"RetroPad\" pro komunikaci z frontendů (jako je RetroArch) do jader a naopak. Tato nabídka určuje, jak je virtuální RetroPad mapován na fyzická vstupní zařízení a které virtuální vstupní porty tato zařízení obsadí.\nJe-li fyzické vstupní zařízení rozpoznáno a automaticky nakonfigurováno správně, uživatelé pravděpodobně nebudou muset tuto nabídku vůbec používat a pro změny vstupů specifických[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4255,6 +4291,10 @@ MSG_HASH(
    "Automatické vytvoření pozice uložení při zavření obsahu. Pokud je povolena volba 'Automaticky načíst pozici', RetroArch tuto pozici uložení automaticky načte."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Automaticky načíst pozici uložení"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Automatické načtení pozice automatického ukládání při spuštění."
    )
@@ -4295,16 +4335,32 @@ MSG_HASH(
    "Zapsat Uložené do Adresáře Obsahu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Použijte adresář s obsahem jako adresář pro uložení souboru."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Zapsat Uložené Pozice do Adresáře Obsahu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Použijte adresář obsahu jako adresář uložení pozice."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Systémové Soubory Jsou v Adresáři Obsahu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Použijte adresář s obsahem jako systémový adresář."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Zapsat Snímky Obrazovky do Adresáře Obsahu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Použijte adresář s obsahem jako adresář se snímky obrazovky."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -5129,6 +5185,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Zobrazení zprávy na obrazovce při automatickém obnovení posledního použitého disku vícediskového obsahu načteného prostřednictvím seznamů skladeb M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Oznámení o uložení pozice"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Zobrazení zprávy na obrazovce při ukládání a načítání pozice uložení."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -6885,6 +6949,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Automatické stahování chybějících miniatur při procházení seznamů skladeb. Má závažný dopad na výkon."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   "Nastavení aktualizátoru"
    )
 
 /* Settings > Network > Updater */
