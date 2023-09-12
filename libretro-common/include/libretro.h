@@ -1287,9 +1287,9 @@ enum retro_mod
  * such as online facilities or user profiles on the emulated system.
  * @param data[out] <tt>const char **</tt>.
  * Pointer to the user name string.
- * May be <tt>NULL</tt>, in which case the core should use a default name.
+ * May be \c NULL, in which case the core should use a default name.
  * The returned pointer is owned by the frontend and must not be modified or freed by the core.
- * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * Behavior is undefined if \c NULL.
  * @returns \c true if the environment call is available,
  * even if the frontend couldn't provide a name.
  */
@@ -1302,7 +1302,7 @@ enum retro_mod
  *
  * @param data[out] <tt>retro_language *</tt>.
  * Pointer to the language identifier.
- * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * Behavior is undefined if \c NULL.
  * @returns \c true if the environment call is available.
  * @note The returned language may not be the same as the operating system's language.
  * Cores should fall back to the operating system's language (or to English)
