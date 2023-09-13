@@ -394,12 +394,12 @@ static void *gfx_ctx_vc_init(void *video_driver)
        * can be used to stretch video output. */
 
       /* Calculate source and destination aspect ratios. */
-      float srcAspect                        = (float)fullscreen_x / (float)fullscreen_y;
-      float dstAspect                        = (float)vc->fb_width / (float)vc->fb_height;
+      float src_aspect                       = (float)fullscreen_x / (float)fullscreen_y;
+      float dst_aspect                       = (float)vc->fb_width / (float)vc->fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
-      if (srcAspect != dstAspect)
-         vc->native_window.width             = (unsigned)(fullscreen_y * dstAspect);
+      if (src_aspect != dst_aspect)
+         vc->native_window.width             = (unsigned)(fullscreen_y * dst_aspect);
       else
          vc->native_window.width             = fullscreen_x;
       vc->native_window.height               = fullscreen_y;

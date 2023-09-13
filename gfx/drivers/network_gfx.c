@@ -171,7 +171,7 @@ static bool network_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    network_video_t *network  = (network_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)
@@ -233,8 +233,8 @@ static bool network_gfx_frame(void *data, const void *frame,
 
       network_video_temp_buf = (unsigned*)
          malloc(
-                 network->screen_width 
-               * network->screen_height 
+                 network->screen_width
+               * network->screen_height
                * sizeof(unsigned));
    }
 
@@ -257,14 +257,14 @@ static bool network_gfx_frame(void *data, const void *frame,
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
 
                   /* convert RGBX4444 to RGBX8888 */
-                  unsigned r           = ((pixel & 0xF000) << 8) 
+                  unsigned r           = ((pixel & 0xF000) << 8)
                      | ((pixel & 0xF000) << 4);
-                  unsigned g           = ((pixel & 0x0F00) << 4) 
+                  unsigned g           = ((pixel & 0x0F00) << 4)
                      | ((pixel & 0x0F00) << 0);
-                  unsigned b           = ((pixel & 0x00F0) << 0) 
+                  unsigned b           = ((pixel & 0x00F0) << 0)
                      | ((pixel & 0x00F0) >> 4);
 
-                  network_video_temp_buf[network->screen_width * y + x] 
+                  network_video_temp_buf[network->screen_width * y + x]
                      = 0xFF000000 | b | g | r;
                }
             }

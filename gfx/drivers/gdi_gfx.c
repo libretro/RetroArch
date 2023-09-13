@@ -35,6 +35,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../gfx_display.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -60,7 +61,7 @@ HDC          win32_gdi_hdc;
 static void *dinput_gdi;
 
 /*
- * DISPLAY DRIVER 
+ * DISPLAY DRIVER
  */
 
 static const float *gfx_display_gdi_get_default_vertices(void)
@@ -162,7 +163,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
 };
 
 /*
- * FONT DRIVER 
+ * FONT DRIVER
  */
 
 typedef struct
@@ -341,21 +342,8 @@ font_renderer_t gdi_font = {
 };
 
 /*
- * VIDEO DRIVER 
+ * VIDEO DRIVER
  */
-
-static void gfx_ctx_gdi_update_title(void)
-{
-   char title[128];
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (window && title[0])
-      window->set_title(&main_window, title);
-}
 
 static void gfx_ctx_gdi_get_video_size(
       unsigned *width, unsigned *height)
@@ -609,7 +597,7 @@ static bool gdi_frame(void *data, const void *frame,
    unsigned bits                    = gdi->video_bits;
    HWND hwnd                        = win32_get_window();
 #ifdef HAVE_MENU
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    /* FIXME: Force these settings off as they interfere with the rendering */
@@ -624,9 +612,9 @@ static bool gdi_frame(void *data, const void *frame,
       menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  gdi->video_width  != frame_width  ||
-         gdi->video_height != frame_height ||
-         gdi->video_pitch  != pitch)
+   if (     (gdi->video_width  != frame_width)
+         || (gdi->video_height != frame_height)
+         || (gdi->video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -779,7 +767,7 @@ static bool gdi_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   gfx_ctx_gdi_update_title();
+   video_driver_update_title(NULL);
 
    return true;
 }
@@ -945,7 +933,7 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gdi_unload_texture(void *data, 
+static void gdi_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    struct gdi_texture *texture = (struct gdi_texture*)handle;

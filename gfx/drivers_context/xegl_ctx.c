@@ -554,7 +554,6 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
          break;
 #endif
       case GFX_CTX_OPENGL_API:
-         break;
       case GFX_CTX_NONE:
       default:
          break;

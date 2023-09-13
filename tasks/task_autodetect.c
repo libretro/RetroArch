@@ -41,6 +41,8 @@
 #include "../menu/menu_driver.h"
 #endif
 
+#include "../runloop.h"
+
 enum autoconfig_handle_flags
 {
    AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
@@ -115,7 +117,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
    uint16_t config_pid = 0;
    bool pid_match      = false;
    unsigned affinity   = 0;
-   struct config_entry_list 
+   struct config_entry_list
       *entry           = NULL;
 
    /* Parse config file */
@@ -172,11 +174,6 @@ static void input_autoconfigure_set_config_file(
    if (!string_is_empty(config->path))
    {
       const char *config_file_name = path_basename_nocompression(config->path);
-
-      strlcpy(autoconfig_handle->device_info.config_path,
-            config->path,
-            sizeof(autoconfig_handle->device_info.config_path));
-
       if (!string_is_empty(config_file_name))
          strlcpy(autoconfig_handle->device_info.config_name,
                config_file_name,
@@ -411,14 +408,6 @@ static void cb_input_autoconfigure_connect(
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
 
-   /* > Config file path/name */
-   if (!string_is_empty(autoconfig_handle->device_info.config_path))
-      input_config_set_device_config_path(port,
-            autoconfig_handle->device_info.config_path);
-   else
-      input_config_set_device_config_path(port,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-
    if (!string_is_empty(autoconfig_handle->device_info.config_name))
       input_config_set_device_config_name(port,
             autoconfig_handle->device_info.config_name);
@@ -631,7 +620,6 @@ bool input_autoconfigure_connect(
    autoconfig_handle->device_info.pid              = pid;
    autoconfig_handle->device_info.name[0]          = '\0';
    autoconfig_handle->device_info.display_name[0]  = '\0';
-   autoconfig_handle->device_info.config_path[0]   = '\0';
    autoconfig_handle->device_info.config_name[0]   = '\0';
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
@@ -768,7 +756,6 @@ static void cb_input_autoconfigure_disconnect(
     * callback, to ensure it occurs on the main thread */
    input_config_clear_device_name(port);
    input_config_clear_device_display_name(port);
-   input_config_clear_device_config_path(port);
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
    input_config_set_device_vid(port, 0);
@@ -852,7 +839,7 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    input_driver_state_t *input_st         = input_state_get_ptr();
    bool notification_show_autoconfig      = settings ? settings->bools.notification_show_autoconfig : true;
    bool pause_on_disconnect               = settings ? settings->bools.pause_on_disconnect : true;
-   bool core_is_running                   = runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING;
+   bool core_is_running                   = (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING) ? true : false;
 
    if (port >= MAX_INPUT_DEVICES)
       goto error;
@@ -901,7 +888,7 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    {
 #ifdef HAVE_MENU
       bool menu_pause_libretro = settings->bools.menu_pause_libretro;
-      bool menu_is_alive       = menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
+      bool menu_is_alive       = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
       if (menu_pause_libretro && !menu_is_alive)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);

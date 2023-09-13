@@ -33,10 +33,10 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../common/vita2d_defines.h"
 #include "../../driver.h"
-#include "../video_coord_array.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -149,7 +149,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       vertices[i].z = 1.0f;
       vertices[i].u = *tex_coord++;
       vertices[i].v = *tex_coord++;
-      vertices[i].r = *color++; 
+      vertices[i].r = *color++;
       vertices[i].g = *color++;
       vertices[i].b = *color++;
       vertices[i].a = *color++;
@@ -164,7 +164,7 @@ static void gfx_display_vita2d_scissor_begin(void *data,
       int x, int y,
       unsigned width, unsigned height)
 {
-   vita2d_set_clip_rectangle(x, y, x + width, y + height);  
+   vita2d_set_clip_rectangle(x, y, x + width, y + height);
    vita2d_set_region_clip(SCE_GXM_REGION_CLIP_OUTSIDE, x, y, x + width, y + height);
 }
 
@@ -546,7 +546,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
    *input             = NULL;
    *input_data        = NULL;
 
-   vita2d_init_advanced_with_msaa((1 * 1024 * 1024), SCE_GXM_MULTISAMPLE_4X, 
+   vita2d_init_advanced_with_msaa((1 * 1024 * 1024), SCE_GXM_MULTISAMPLE_4X,
     sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITATV? VITA2D_VIDEO_MODE_1280x720 : VITA2D_VIDEO_MODE_960x544 );
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
@@ -624,21 +624,18 @@ static bool vita2d_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    void *tex_p;
-   vita_video_t *vita     = (vita_video_t *)data;
+   vita_video_t *vita                     = (vita_video_t *)data;
    unsigned temp_width                    = PSP_FB_WIDTH;
    unsigned temp_height                   = PSP_FB_HEIGHT;
    vita2d_video_mode_data video_mode_data = {0};
 #ifdef HAVE_MENU
-   bool menu_is_alive     = video_info->menu_is_alive;
+   bool menu_is_alive                     = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_active    = video_info->widgets_active;
+   bool widgets_active                    = video_info->widgets_active;
 #endif
-   bool statistics_show   = video_info->statistics_show;
-   struct font_params 
-      *osd_params         = (struct font_params*)
-      &video_info->osd_stat_params;
-
+   bool statistics_show                   = video_info->statistics_show;
+   struct font_params *osd_params         = (struct font_params*)&video_info->osd_stat_params;
 
    if (frame)
    {
@@ -849,7 +846,7 @@ static void vita2d_set_projection(vita_video_t *vita,
 static void vita2d_update_viewport(vita_video_t* vita,
       video_frame_info_t *video_info)
 {
-   vita2d_video_mode_data 
+   vita2d_video_mode_data
       video_mode_data        = vita2d_get_video_mode_data();
    unsigned temp_width       = video_mode_data.width;
    unsigned temp_height      = video_mode_data.height;
@@ -1058,7 +1055,7 @@ static void vita2d_set_filtering(void *data, unsigned index, bool smooth, bool c
    if (vita)
    {
       vita->tex_filter = smooth
-         ? SCE_GXM_TEXTURE_FILTER_LINEAR 
+         ? SCE_GXM_TEXTURE_FILTER_LINEAR
          : SCE_GXM_TEXTURE_FILTER_POINT;
       vita2d_texture_set_filters(vita->texture,vita->tex_filter,
             vita->tex_filter);
@@ -1183,7 +1180,7 @@ static uintptr_t vita2d_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void vita2d_unload_texture(void *data, 
+static void vita2d_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    struct vita2d_texture *texture = (struct vita2d_texture*)handle;
@@ -1205,7 +1202,7 @@ static bool vita2d_get_current_sw_framebuffer(void *data,
 {
    vita_video_t *vita = (vita_video_t*)data;
 
-   if (     !vita->texture 
+   if (     !vita->texture
          || (vita->width  != framebuffer->width)
          || (vita->height != framebuffer->height))
    {
@@ -1227,7 +1224,7 @@ static bool vita2d_get_current_sw_framebuffer(void *data,
    framebuffer->data         = vita2d_texture_get_datap(vita->texture);
    framebuffer->pitch        = vita2d_texture_get_stride(vita->texture);
    framebuffer->format       = vita->rgb32
-      ? RETRO_PIXEL_FORMAT_XRGB8888 
+      ? RETRO_PIXEL_FORMAT_XRGB8888
       : RETRO_PIXEL_FORMAT_RGB565;
    framebuffer->memory_flags = 0;
 

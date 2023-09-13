@@ -81,13 +81,13 @@ static bool trigger_spurious_error(void)
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
-      VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-      VkDebugUtilsMessageTypeFlagsEXT messageType,
+      VkDebugUtilsMessageSeverityFlagBitsEXT msg_severity,
+      VkDebugUtilsMessageTypeFlagsEXT msg_type,
       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
       void *pUserData)
 {
-   if (     (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-         && (messageType     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
+   if (     (msg_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+         && (msg_type     == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT))
    {
       RARCH_ERR("[Vulkan]: Validation Error: %s\n", pCallbackData->pMessage);
    }
@@ -175,7 +175,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
 {
    VkFence fence;
    VkFenceCreateInfo info;
-   struct vulkan_emulated_mailbox *mailbox = 
+   struct vulkan_emulated_mailbox *mailbox =
       (struct vulkan_emulated_mailbox*)userdata;
 
    if (!mailbox)
@@ -190,7 +190,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD)
              && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
@@ -207,9 +207,9 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
             mailbox->device, mailbox->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &mailbox->index);
 #ifdef ANDROID
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
-       * This is not an error we need to care about, 
+       * This is not an error we need to care about,
        * and we'll treat it as SUCCESS. */
       if (mailbox->result == VK_SUBOPTIMAL_KHR)
          mailbox->result = VK_SUCCESS;
@@ -261,10 +261,12 @@ static void vulkan_debug_mark_object(VkDevice device,
    if (vkSetDebugUtilsObjectNameEXT)
    {
       char merged_name[1024];
-      VkDebugUtilsObjectNameInfoEXT info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+      VkDebugUtilsObjectNameInfoEXT info;
       size_t _len                        = strlcpy(merged_name, name, sizeof(merged_name));
       snprintf(merged_name + _len, sizeof(merged_name) - _len, " (%u)", count);
 
+      info.sType                         = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+      info.pNext                         = NULL;
       info.objectType                    = object_type;
       info.objectHandle                  = object_handle;
       info.pObjectName                   = merged_name;
@@ -567,7 +569,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    unsigned enabled_device_extension_count = 0;
 
-   struct retro_hw_render_context_negotiation_interface_vulkan 
+   struct retro_hw_render_context_negotiation_interface_vulkan
                                     *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)
                                     video_st->hw_render_context_negotiation;
 
@@ -591,7 +593,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    if (iface)
    {
-      if (iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN) 
+      if (iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
       {
          RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong API.\n");
          iface = NULL;
@@ -711,29 +713,14 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    RARCH_LOG("[Vulkan]: Using GPU: \"%s\".\n", vk->context.gpu_properties.deviceName);
 
    {
-      char device_str[128];
       char version_str[128];
-      size_t len            = strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
-      device_str[len  ]     = ' ';
-      device_str[++len]     = '\0';
-
-      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
-      device_str[len  ]     = '.';
-      device_str[++len]     = '\0';
-      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
-      device_str[len  ]     = '.';
-      device_str[++len]     = '\0';
-      snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
-
-      len                   = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
-      version_str[len  ]    = '.';
+      size_t len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      version_str[  len]    = '.';
       version_str[++len]    = '\0';
       len                  += snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
-      version_str[len  ]    = '.';
+      version_str[  len]    = '.';
       version_str[++len]    = '\0';
       snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
-
-      video_driver_set_gpu_device_string(device_str);
       video_driver_set_gpu_api_version_string(version_str);
    }
 
@@ -846,19 +833,16 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    VkResult res;
    uint32_t i, layer_count;
    VkLayerProperties properties[128];
-   const char **instance_extensions;
-   const char **instance_layers;
-   gfx_ctx_vulkan_data_t *vk = (gfx_ctx_vulkan_data_t *)opaque;
-   VkInstanceCreateInfo info = *create_info;
-   VkInstance instance       = VK_NULL_HANDLE;
-
-   instance_extensions       = (const char **)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
-   instance_layers           = (const char **)malloc((info.enabledLayerCount + 1) * sizeof(const char *));
+   gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
+   VkInstanceCreateInfo info        = *create_info;
+   VkInstance instance              = VK_NULL_HANDLE;
+   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
+   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1) * sizeof(const char *));
 
    memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
-   memcpy((void*)instance_layers, info.ppEnabledLayerNames, info.enabledLayerCount * sizeof(const char *));
-   info.ppEnabledExtensionNames = instance_extensions;
-   info.ppEnabledLayerNames = instance_layers;
+   memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
+   info.ppEnabledExtensionNames     = instance_extensions;
+   info.ppEnabledLayerNames         = instance_layers;
 
    instance_extensions[info.enabledExtensionCount++] = "VK_KHR_surface";
 
@@ -897,7 +881,7 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    }
 
 #ifdef VULKAN_DEBUG
-   instance_layers[info.enabledLayerCount++] = "VK_LAYER_KHRONOS_validation";
+   instance_layers[info.enabledLayerCount++]         = "VK_LAYER_KHRONOS_validation";
    instance_extensions[info.enabledExtensionCount++] = "VK_EXT_debug_utils";
 #endif
 
@@ -953,7 +937,6 @@ static bool vulkan_update_display_mode(
 {
    unsigned visible_width  = mode->parameters.visibleRegion.width;
    unsigned visible_height = mode->parameters.visibleRegion.height;
-   unsigned visible_rate   = mode->parameters.refreshRate;
 
    if (!info->width || !info->height)
    {
@@ -968,15 +951,16 @@ static bool vulkan_update_display_mode(
    }
    else
    {
+      unsigned visible_rate = mode->parameters.refreshRate;
       /* For particular resolutions, find the closest. */
-      int delta_x     = (int)info->width  - (int)visible_width;
-      int delta_y     = (int)info->height - (int)visible_height;
-      int old_delta_x = (int)info->width  - (int)*width;
-      int old_delta_y = (int)info->height - (int)*height;
-      int delta_rate  = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
+      int delta_x           = (int)info->width  - (int)visible_width;
+      int delta_y           = (int)info->height - (int)visible_height;
+      int old_delta_x       = (int)info->width  - (int)*width;
+      int old_delta_y       = (int)info->height - (int)*height;
+      int delta_rate        = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
 
-      int dist        = delta_x     * delta_x     + delta_y     * delta_y;
-      int old_dist    = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
+      int dist              = delta_x     * delta_x     + delta_y     * delta_y;
+      int old_dist          = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
 
       if (dist < old_dist && delta_rate < 1000)
       {
@@ -994,6 +978,7 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
       const struct vulkan_display_surface_info *info)
 {
    unsigned dpy, i, j;
+   VkDisplaySurfaceCreateInfoKHR create_info;
    bool ret                                  = true;
    uint32_t display_count                    = 0;
    uint32_t plane_count                      = 0;
@@ -1003,7 +988,6 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayModePropertiesKHR *modes         = NULL;
    uint32_t best_plane                       = UINT32_MAX;
    VkDisplayPlaneAlphaFlagBitsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
-   VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
    VkDisplayModeKHR best_mode                = VK_NULL_HANDLE;
    /* Monitor index starts on 1, 0 is auto. */
    unsigned monitor_index                    = info->monitor_index;
@@ -1127,7 +1111,7 @@ retry:
          vkGetDisplayPlaneCapabilitiesKHR(vk->context.gpu,
                best_mode, i, &plane_caps);
 
-         if (    plane_caps.supportedAlpha 
+         if (    plane_caps.supportedAlpha
                & VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR)
          {
             best_plane = j;
@@ -1156,6 +1140,9 @@ out:
    if (best_plane == UINT32_MAX)
       GOTO_FAIL();
 
+   create_info.sType              = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
+   create_info.pNext              = NULL;
+   create_info.flags              = 0;
    create_info.displayMode        = best_mode;
    create_info.planeIndex         = best_plane;
    create_info.planeStackIndex    = planes[best_plane].currentStackIndex;
@@ -1255,7 +1242,7 @@ static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
    if (ctx->num_recycled_acquire_semaphores == 0)
    {
       VkSemaphoreCreateInfo sem_info;
-      
+
       sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
       sem_info.pNext = NULL;
       sem_info.flags = 0;
@@ -1482,21 +1469,21 @@ struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device, struct vk_descriptor_manager *manager)
 {
-   if (manager->count < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
-      return manager->current->sets[manager->count++];
-
-   while (manager->current->next)
+   if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
    {
+      while (manager->current->next)
+      {
+         manager->current = manager->current->next;
+         manager->count   = 0;
+         return manager->current->sets[manager->count++];
+      }
+
+      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
+      retro_assert(manager->current->next);
+
       manager->current = manager->current->next;
       manager->count   = 0;
-      return manager->current->sets[manager->count++];
    }
-
-   manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-   retro_assert(manager->current->next);
-
-   manager->current = manager->current->next;
-   manager->count   = 0;
    return manager->current->sets[manager->count++];
 }
 
@@ -1754,7 +1741,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    fence_info.sType               = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
    fence_info.pNext               = NULL;
    fence_info.flags               = 0;
-   
+
    sem_info.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
    sem_info.pNext                 = NULL;
    sem_info.flags                 = 0;
@@ -1809,9 +1796,9 @@ retry:
             vk->swapchain, UINT64_MAX,
             semaphore, fence, &vk->context.current_swapchain_index);
 #ifdef ANDROID
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
-       * This is not an error we need to care about, and 
+       * This is not an error we need to care about, and
        * we'll treat it as SUCCESS. */
       if (err == VK_SUBOPTIMAL_KHR)
          err = VK_SUCCESS;
@@ -1971,7 +1958,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             &&   (vk->mailbox.swapchain != VK_NULL_HANDLE))
       {
          VkResult res = VK_SUCCESS;
-         /* We are tearing down, and entering a state 
+         /* We are tearing down, and entering a state
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
          if (! (vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
@@ -2024,7 +2011,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vk->context.swap_interval = swap_interval;
    for (i = 0; i < present_mode_count; i++)
    {
-      if (     !swap_interval 
+      if (     !swap_interval
             && (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR))
       {
          swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
@@ -2036,7 +2023,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
          break;
       }
-      else if ( swap_interval 
+      else if ( swap_interval
             && (present_modes[i] == VK_PRESENT_MODE_FIFO_KHR))
       {
          /* Kind of tautological since FIFO must always be present. */
@@ -2056,7 +2043,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->vk_surface, &format_count, formats);
 
    format.format = VK_FORMAT_UNDEFINED;
-   if (     format_count == 1 
+   if (     format_count == 1
          && (formats[0].format == VK_FORMAT_UNDEFINED))
    {
       format        = formats[0];
@@ -2068,7 +2055,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       {
          RARCH_ERR("[Vulkan]: Surface has no formats.\n");
          return false;
-      }  
+      }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (settings->bools.video_hdr_enable)
@@ -2204,7 +2191,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageExtent.height     = swapchain_size.height;
    info.imageArrayLayers       = 1;
    info.imageUsage             =  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-	   			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
+	   			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 				| VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount  = 0;
@@ -2212,7 +2199,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.preTransform           = pre_transform;
    info.compositeAlpha         = composite;
    info.presentMode            = swapchain_present_mode;
-   info.clipped                = true;
+   info.clipped                = VK_TRUE;
    info.oldSwapchain           = old_swapchain;
 
 #ifdef _WIN32
@@ -2292,10 +2279,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
+   VkApplicationInfo app;
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
-   VkApplicationInfo app          = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   const char *prog_name          = NULL;
    video_driver_state_t *video_st = video_state_get_ptr();
-   struct retro_hw_render_context_negotiation_interface_vulkan 
+   struct retro_hw_render_context_negotiation_interface_vulkan
                            *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)video_st->hw_render_context_negotiation;
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
@@ -2350,9 +2338,12 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-   app.pApplicationName   = msg_hash_to_str(MSG_PROGRAM);
+   prog_name              = msg_hash_to_str(MSG_PROGRAM);
+   app.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+   app.pNext              = NULL;
+   app.pApplicationName   = prog_name;
    app.applicationVersion = 0;
-   app.pEngineName        = msg_hash_to_str(MSG_PROGRAM);
+   app.pEngineName        = prog_name;
    app.engineVersion      = 0;
    app.apiVersion         = VK_API_VERSION_1_0;
 
@@ -2412,17 +2403,24 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
    else
    {
-      if (     iface 
-            && iface->interface_version >= 2 
+      if (     iface
+            && iface->interface_version >= 2
             && iface->create_instance)
          vk->context.instance = iface->create_instance(
                GetInstanceProcAddr, &app,
                vulkan_context_create_instance_wrapper, vk);
       else
       {
-         VkInstanceCreateInfo info = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-         info.pApplicationInfo     = &app;
-         vk->context.instance      = vulkan_context_create_instance_wrapper(vk, &info);
+         VkInstanceCreateInfo info;
+         info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+         info.pNext                   = NULL;
+         info.flags                   = 0;
+         info.pApplicationInfo        = &app;
+         info.enabledLayerCount       = 0;
+         info.ppEnabledLayerNames     = NULL;
+         info.enabledExtensionCount   = 0;
+         info.ppEnabledExtensionNames = NULL;
+         vk->context.instance         = vulkan_context_create_instance_wrapper(vk, &info);
       }
 
       if (vk->context.instance == VK_NULL_HANDLE)
@@ -2482,7 +2480,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    vulkan_destroy_swapchain(vk);
 
-   if (     destroy_surface 
+   if (     destroy_surface
          && (vk->vk_surface != VK_NULL_HANDLE))
    {
       vkDestroySurfaceKHR(vk->context.instance,
@@ -2557,9 +2555,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
 #ifdef ANDROID
-   /* VK_SUBOPTIMAL_KHR can be returned on 
+   /* VK_SUBOPTIMAL_KHR can be returned on
     * Android 10 when prerotate is not dealt with.
-    * This is not an error we need to care about, 
+    * This is not an error we need to care about,
     * and we'll treat it as SUCCESS. */
    if (result == VK_SUBOPTIMAL_KHR)
       result = VK_SUCCESS;

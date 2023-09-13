@@ -407,14 +407,16 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
          conf->path);
 }
 
-void config_file_add_reference(config_file_t *conf, char *path)
+size_t config_file_add_reference(config_file_t *conf, char *path)
 {
+   size_t len;
    /* It is expected that the conf has it's path already set */
    char short_path[PATH_MAX_LENGTH];
    if (!conf->references)
       conf->references = path_linked_list_new();
-   fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
    path_linked_list_add_path(conf->references, short_path);
+   return len;
 }
 
 static int config_file_load_internal(
@@ -516,11 +518,9 @@ static bool config_file_parse_line(config_file_t *conf,
    {
       char *path               = NULL;
       bool include_found       = string_starts_with_size(comment,
-            "include ",
-            STRLEN_CONST("include "));
+            "include ",   STRLEN_CONST("include "));
       bool reference_found     = string_starts_with_size(comment,
-            "reference ",
-            STRLEN_CONST("reference "));
+            "reference ", STRLEN_CONST("reference "));
 
       /* All comments except those starting with the include or 
        * reference directive are ignored */
@@ -1331,69 +1331,66 @@ void config_set_path(config_file_t *conf, const char *entry, const char *val)
 #endif
 }
 
-void config_set_double(config_file_t *conf, const char *key, double val)
+size_t config_set_double(config_file_t *conf, const char *key, double val)
 {
    char buf[320];
 #ifdef __cplusplus
-   snprintf(buf, sizeof(buf), "%f", (float)val);
+   size_t len = snprintf(buf, sizeof(buf), "%f", (float)val);
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
-   snprintf(buf, sizeof(buf), "%lf", val);
+   size_t len = snprintf(buf, sizeof(buf), "%lf", val);
 #else
-   snprintf(buf, sizeof(buf), "%f", (float)val);
+   size_t len = snprintf(buf, sizeof(buf), "%f", (float)val);
 #endif
    config_set_string(conf, key, buf);
+   return len;
 }
 
-void config_set_float(config_file_t *conf, const char *key, float val)
+size_t config_set_float(config_file_t *conf, const char *key, float val)
 {
    char buf[64];
-   snprintf(buf, sizeof(buf), "%f", val);
+   size_t len = snprintf(buf, sizeof(buf), "%f", val);
    config_set_string(conf, key, buf);
+   return len;
 }
 
-void config_set_int(config_file_t *conf, const char *key, int val)
+size_t config_set_int(config_file_t *conf, const char *key, int val)
 {
    char buf[16];
-   snprintf(buf, sizeof(buf), "%d", val);
+   size_t len = snprintf(buf, sizeof(buf), "%d", val);
    config_set_string(conf, key, buf);
+   return len;
 }
 
-void config_set_uint(config_file_t *conf, const char *key, unsigned int val)
+size_t config_set_uint(config_file_t *conf, const char *key, unsigned int val)
 {
    char buf[16];
-   snprintf(buf, sizeof(buf), "%u", val);
+   size_t len = snprintf(buf, sizeof(buf), "%u", val);
    config_set_string(conf, key, buf);
+   return len;
 }
 
-void config_set_hex(config_file_t *conf, const char *key, unsigned val)
+size_t config_set_hex(config_file_t *conf, const char *key, unsigned val)
 {
    char buf[16];
-   snprintf(buf, sizeof(buf), "%x", val);
+   size_t len = snprintf(buf, sizeof(buf), "%x", val);
    config_set_string(conf, key, buf);
+   return len;
 }
 
-void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
+size_t config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 {
    char buf[32];
-   snprintf(buf, sizeof(buf), "%" PRIu64, val);
+   size_t len = snprintf(buf, sizeof(buf), "%" PRIu64, val);
    config_set_string(conf, key, buf);
+   return len;
 }
 
-void config_set_char(config_file_t *conf, const char *key, char val)
+size_t config_set_char(config_file_t *conf, const char *key, char val)
 {
    char buf[2];
-   snprintf(buf, sizeof(buf), "%c", val);
+   size_t len = snprintf(buf, sizeof(buf), "%c", val);
    config_set_string(conf, key, buf);
-}
-
-/**
- * config_set_bool:
-
- * TODO/FIXME - could be turned into a trivial macro or removed
- **/
-void config_set_bool(config_file_t *conf, const char *key, bool val)
-{
-   config_set_string(conf, key, val ? "true" : "false");
+   return len;
 }
 
 /**
@@ -1406,32 +1403,32 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
    if (!conf)
       return false;
 
-   if (!conf->modified)
-      return true;
-
-   if (!string_is_empty(path))
+   if (conf->modified)
    {
-      void* buf  = NULL;
-      FILE *file = (FILE*)fopen_utf8(path, "wb");
-      if (!file)
-         return false;
+      if (string_is_empty(path))
+         config_file_dump(conf, stdout, sort);
+      else
+      {
+         void* buf  = NULL;
+         FILE *file = (FILE*)fopen_utf8(path, "wb");
+         if (!file)
+            return false;
 
-      buf        = calloc(1, 0x4000);
-      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+         buf        = calloc(1, 0x4000);
+         setvbuf(file, (char*)buf, _IOFBF, 0x4000);
 
-      config_file_dump(conf, file, sort);
+         config_file_dump(conf, file, sort);
 
-      if (file != stdout)
-         fclose(file);
-      if (buf)
-         free(buf);
+         if (file != stdout)
+            fclose(file);
+         if (buf)
+            free(buf);
 
-      /* Only update modified flag if config file
-       * is actually written to disk */
-      conf->modified = false;
+         /* Only update modified flag if config file
+          * is actually written to disk */
+         conf->modified = false;
+      }
    }
-   else
-      config_file_dump(conf, stdout, sort);
 
    return true;
 }

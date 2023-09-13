@@ -188,8 +188,8 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
    unsigned i;
    int result;
    struct retro_memory_map mmap;
-   rarch_system_info_t* system                 = &runloop_state_get_ptr()->system;
-   rarch_memory_map_t* mmaps                   = &system->mmaps;
+   rarch_system_info_t *sys_info               = &runloop_state_get_ptr()->system;
+   rarch_memory_map_t *mmaps                   = &sys_info->mmaps;
    struct retro_memory_descriptor *descriptors = (struct retro_memory_descriptor*)malloc(mmaps->num_descriptors * sizeof(*descriptors));
    if (!descriptors)
       return 0;
@@ -197,7 +197,7 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
    mmap.descriptors = &descriptors[0];
    mmap.num_descriptors = mmaps->num_descriptors;
 
-   /* RetroArch wraps the retro_memory_descriptor's 
+   /* RetroArch wraps the retro_memory_descriptor's
     * in rarch_memory_descriptor_t's, pull them back out */
    for (i = 0; i < mmap.num_descriptors; ++i)
       memcpy(&descriptors[i], &mmaps->descriptors[i].core,
@@ -213,7 +213,7 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
 
 uint8_t* rcheevos_patch_address(unsigned address)
 {
-   /* Memory map was not previously initialized 
+   /* Memory map was not previously initialized
     * (no achievements for this game?), try now */
    if (rcheevos_locals.memory.count == 0)
       rcheevos_init_memory(&rcheevos_locals);
@@ -232,7 +232,7 @@ static unsigned rcheevos_peek(unsigned address,
       switch (num_bytes)
       {
          case 4:
-            return (data[3] << 24) | (data[2] << 16) | 
+            return (data[3] << 24) | (data[2] << 16) |
                    (data[1] <<  8) | (data[0]);
          case 3:
             return (data[2] << 16) | (data[1] << 8) | (data[0]);
@@ -287,7 +287,7 @@ static void rcheevos_activate_achievements(void)
 static rcheevos_racheevo_t* rcheevos_find_cheevo(unsigned id)
 {
    rcheevos_racheevo_t* cheevo = rcheevos_locals.game.achievements;
-   rcheevos_racheevo_t* stop   = cheevo 
+   rcheevos_racheevo_t* stop   = cheevo
       + rcheevos_locals.game.achievement_count;
 
    for(; cheevo < stop; ++cheevo)
@@ -355,7 +355,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
       }
    }
 
-   /* Start the award task (unofficial achievement 
+   /* Start the award task (unofficial achievement
     * unlocks are not submitted). */
    if (!(cheevo->active & RCHEEVOS_ACTIVE_UNOFFICIAL))
       rcheevos_client_award_achievement(cheevo->id);
@@ -406,7 +406,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
 static rcheevos_ralboard_t* rcheevos_find_lboard(unsigned id)
 {
    rcheevos_ralboard_t* lboard = rcheevos_locals.game.leaderboards;
-   rcheevos_ralboard_t* stop   = lboard 
+   rcheevos_ralboard_t* stop   = lboard
       + rcheevos_locals.game.leaderboard_count;
 
    for (; lboard < stop; ++lboard)
@@ -631,8 +631,8 @@ static void rcheevos_challenge_started(
       bool widgets_ready)
 {
    settings_t* settings = config_get_ptr();
-   if (     cheevo 
-         && widgets_ready 
+   if (     cheevo
+         && widgets_ready
          && settings->bools.cheevos_challenge_indicators
          && rcheevos_is_player_active())
       gfx_widgets_set_challenge_display(cheevo->id, cheevo->badge);
@@ -741,7 +741,7 @@ void rcheevos_reset_game(bool widgets_ready)
 
    rc_runtime_reset(&rcheevos_locals.runtime);
 
-   /* Some cores reallocate memory on reset, 
+   /* Some cores reallocate memory on reset,
     * make sure we update our pointers */
    if (rcheevos_locals.memory.total_size > 0)
       rcheevos_init_memory(&rcheevos_locals);
@@ -777,7 +777,7 @@ bool rcheevos_unload(void)
 {
    settings_t* settings  = config_get_ptr();
 
-   /* Immediately mark the game as unloaded 
+   /* Immediately mark the game as unloaded
       so the ping thread will terminate normally */
    rcheevos_locals.game.id         = -1;
    rcheevos_locals.game.console_id = 0;
@@ -877,7 +877,7 @@ bool rcheevos_unload(void)
 
    rc_runtime_destroy(&rcheevos_locals.runtime);
 
-   /* If the config-level token has been cleared, 
+   /* If the config-level token has been cleared,
     * we need to re-login on loading the next game */
    if (!settings->arrays.cheevos_token[0])
       rcheevos_locals.token[0]                  = '\0';
@@ -889,7 +889,7 @@ bool rcheevos_unload(void)
 static void rcheevos_toggle_hardcore_achievements(
       rcheevos_locals_t *locals)
 {
-   const unsigned active_mask  = 
+   const unsigned active_mask  =
       RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE | RCHEEVOS_ACTIVE_UNSUPPORTED;
    rcheevos_racheevo_t* cheevo = locals->game.achievements;
    rcheevos_racheevo_t* stop   = cheevo + locals->game.achievement_count;
@@ -956,7 +956,7 @@ static void rcheevos_activate_leaderboards(void)
 static void rcheevos_deactivate_leaderboards(void)
 {
    rcheevos_ralboard_t* lboard = rcheevos_locals.game.leaderboards;
-   rcheevos_ralboard_t* stop   = lboard + 
+   rcheevos_ralboard_t* stop   = lboard +
       rcheevos_locals.game.leaderboard_count;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -1017,12 +1017,6 @@ void rcheevos_leaderboard_trackers_visibility_changed(void)
    }
 }
 
-static void rcheevos_enforce_hardcore_settings(void)
-{
-   /* disable slowdown */
-   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
-}
-
 static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 {
    settings_t* settings = config_get_ptr();
@@ -1053,7 +1047,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-         rcheevos_enforce_hardcore_settings();
+         runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 
          /* Reactivate leaderboards */
          rcheevos_activate_leaderboards();
@@ -1126,8 +1120,8 @@ void rcheevos_hardcore_enabled_changed(void)
     * (i.e. cheevos_enable, hardcore_mode_enable) to synchronize the internal state to the configs.
     * also called when a game is first loaded to synchronize the internal state to the configs. */
    const settings_t* settings = config_get_ptr();
-   const bool enabled         = settings 
-      && settings->bools.cheevos_enable 
+   const bool enabled         = settings
+      && settings->bools.cheevos_enable
       && settings->bools.cheevos_hardcore_mode_enable;
 
    if (enabled != rcheevos_locals.hardcore_active)
@@ -1140,27 +1134,31 @@ void rcheevos_hardcore_enabled_changed(void)
       else
          rcheevos_deactivate_leaderboards();
    }
+   /* hardcore enabledness didn't change, but hardcore is active, so make
+    * sure to enforce the restrictions. */
    else if (rcheevos_locals.hardcore_active && rcheevos_locals.loaded)
-   {
-      /* hardcore enabledness didn't change, but hardcore is active, so make
-       * sure to enforce the restrictions. */
-      rcheevos_enforce_hardcore_settings();
-   }
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 }
 
 void rcheevos_validate_config_settings(void)
 {
    int i;
-   const rc_disallowed_setting_t 
-      *disallowed_settings          = NULL;
-   core_option_manager_t* coreopts  = NULL;
-   struct retro_system_info *system = 
+   const rc_disallowed_setting_t
+      *disallowed_settings           = NULL;
+   core_option_manager_t* coreopts   = NULL;
+   struct retro_system_info *sysinfo =
       &runloop_state_get_ptr()->system.info;
    const settings_t* settings = config_get_ptr();
 
-   if (!system->library_name || !rcheevos_locals.hardcore_active)
+   if (!sysinfo->library_name || !rcheevos_locals.hardcore_active)
       return;
 
+   /* this adds a sleep to every frame. if the value is high enough that a
+    * single frame takes more than 1/60th of a second to evaluate, render,
+    * and sleep, then the real framerate is less than 60fps. with vsync on,
+    * it'll wait for the next vsync event, effectively halfing the fps. the
+    * auto setting should achieve the most accurate frame rate anyway, so
+    * disallow any manual values */
    if (!settings->bools.video_frame_delay_auto && settings->uints.video_frame_delay != 0) {
       const char* error = "Hardcore paused. Manual video frame delay setting not allowed.";
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
@@ -1171,8 +1169,38 @@ void rcheevos_validate_config_settings(void)
       return;
    }
 
-   if (!(disallowed_settings 
-            = rc_libretro_get_disallowed_settings(system->library_name)))
+   /* this specifies how many vsync events should occur for each rendered
+    * frame. if vsync is on for a 60Hz monitor and swap_interval is 2 (only
+    * update every other vsync), only 30fps will be generated. for a 144Hz
+    * monitor, a value of 2 will generate 72fps, which is still faster than
+    * the expected 60fps, so the user should really be using auto (0).
+    * allow 1 even though that could be potentially abused on monitors
+    * running at less than 60Hz because 1 is the default value - many users
+    * wouldn't know how to change it to auto. */
+   if (settings->uints.video_swap_interval > 1) {
+      const char* error = "Hardcore paused. vsync swap interval above 1 not allowed.";
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      rcheevos_pause_hardcore();
+
+      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
+
+   /* this causes N blank frames to be rendered between real frames, thus
+    * slowing down the actual number of rendered frames per second. */
+   if (settings->uints.video_black_frame_insertion > 0) {
+      const char* error = "Hardcore paused. Black frame insertion not allowed.";
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      rcheevos_pause_hardcore();
+
+      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
+
+   if (!(disallowed_settings
+            = rc_libretro_get_disallowed_settings(sysinfo->library_name)))
       return;
 
    if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
@@ -1184,7 +1212,7 @@ void rcheevos_validate_config_settings(void)
       const char* val = core_option_manager_get_val(coreopts, i);
       if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
       {
-         char buffer[256];
+         char buffer[128];
          snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
          CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
          rcheevos_pause_hardcore();
@@ -1197,14 +1225,14 @@ void rcheevos_validate_config_settings(void)
    }
 
    if (rcheevos_locals.game.console_id &&
-      !rc_libretro_is_system_allowed(system->library_name, rcheevos_locals.game.console_id))
+      !rc_libretro_is_system_allowed(sysinfo->library_name, rcheevos_locals.game.console_id))
    {
       char buffer[256];
       buffer[0] = '\0';
       /* TODO/FIXME - localize */
       snprintf(buffer, sizeof(buffer),
             "Hardcore paused. You cannot earn hardcore achievements for %s using %s",
-            rc_console_name(rcheevos_locals.game.console_id), system->library_name);
+            rc_console_name(rcheevos_locals.game.console_id), sysinfo->library_name);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
       rcheevos_pause_hardcore();
 
@@ -1308,12 +1336,12 @@ static void rcheevos_validate_memrefs(rcheevos_locals_t* locals)
        * first call to retro_run. in that case, there will be a total_size
        * of memory reported by the core, but init will return false, as
        * all of the pointers were null. if we're still loading the game,
-       * just reset the memory count and we'll re-evaluate in 
+       * just reset the memory count and we'll re-evaluate in
        * rcheevos_test()
        */
       if (!locals->loaded)
       {
-         /* If no memory was exposed, report the error now 
+         /* If no memory was exposed, report the error now
           * instead of waiting */
          if (locals->memory.total_size != 0)
          {
@@ -1634,8 +1662,8 @@ void rcheevos_show_mastery_placard(void)
    rcheevos_locals.game.mastery_placard_shown = true;
 
    snprintf(title, sizeof(title),
-      msg_hash_to_str(rcheevos_locals.hardcore_active 
-         ? MSG_CHEEVOS_MASTERED_GAME 
+      msg_hash_to_str(rcheevos_locals.hardcore_active
+         ? MSG_CHEEVOS_MASTERED_GAME
          : MSG_CHEEVOS_COMPLETED_GAME),
       rcheevos_locals.game.title);
    title[sizeof(title) - 1] = '\0';
@@ -1689,7 +1717,7 @@ static void rcheevos_show_game_placard(void)
    char msg[256];
    const settings_t* settings        = config_get_ptr();
    const rcheevos_racheevo_t* cheevo = rcheevos_locals.game.achievements;
-   const rcheevos_racheevo_t* end    = cheevo 
+   const rcheevos_racheevo_t* end    = cheevo
       + rcheevos_locals.game.achievement_count;
    int number_of_active              = 0;
    int number_of_unsupported         = 0;
@@ -1798,7 +1826,7 @@ static void rcheevos_fetch_badges_callback(void* userdata)
 
 static void rcheevos_fetch_badges(void)
 {
-   /* this function manages the 
+   /* this function manages the
     * RCHEEVOS_LOAD_STATE_FETCHING_BADGES state */
    rcheevos_client_fetch_badges(rcheevos_fetch_badges_callback, NULL);
 }
@@ -1858,18 +1886,14 @@ static void rcheevos_start_session_async(retro_task_t* task)
    }
 #endif
 
+   /* If there's nothing for the runtime to process,
+    * disable hardcore. */
    if (!needs_runtime)
-   {
-      /* if there's nothing for the runtime to process,
-       * disable hardcore. */
       rcheevos_pause_hardcore();
-   }
+   /* hardcore is active. we're going to start processing
+    * achievements. make sure restrictions are enforced */
    else if (rcheevos_locals.hardcore_active)
-   {
-      /* hardcore is active. we're going to start processing
-       * achievements. make sure restrictions are enforced */
-      rcheevos_enforce_hardcore_settings();
-   }
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 
    task_set_finished(task, true);
 
@@ -1915,8 +1939,7 @@ static void rcheevos_initialize_runtime_callback(void* userdata)
 
 static void rcheevos_fetch_game_data(void)
 {
-   if (     rcheevos_locals.load_info.state 
-         == RCHEEVOS_LOAD_STATE_NETWORK_ERROR)
+   if (rcheevos_load_aborted())
    {
       rcheevos_locals.game.hash = NULL;
       rcheevos_pause_hardcore();
@@ -1990,7 +2013,7 @@ struct rcheevos_identify_game_data
 
 static void rcheevos_identify_game_callback(void* userdata)
 {
-   struct rcheevos_identify_game_data* data = 
+   struct rcheevos_identify_game_data* data =
       (struct rcheevos_identify_game_data*)userdata;
 
    rcheevos_locals.load_info.hashes_tried++;
@@ -2045,11 +2068,10 @@ static void rcheevos_identify_game_callback(void* userdata)
 
 static int rcheevos_get_image_path(unsigned index, char* buffer, size_t buffer_size)
 {
-   rarch_system_info_t* system = &runloop_state_get_ptr()->system;
-   if (!system->disk_control.cb.get_image_path)
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   if (!sys_info->disk_control.cb.get_image_path)
       return 0;
-
-   return system->disk_control.cb.get_image_path(index, buffer, buffer_size);
+   return sys_info->disk_control.cb.get_image_path(index, buffer, buffer_size);
 }
 
 static bool rcheevos_identify_game(const struct retro_game_info* info)
@@ -2168,7 +2190,7 @@ void rcheevos_begin_load_state(enum rcheevos_load_state state)
 #endif
 }
 
-/* Decrement and return the outstanding requests counter. 
+/* Decrement and return the outstanding requests counter.
  * If non-zero, requests are still outstanding */
 int rcheevos_end_load_state(void)
 {
@@ -2193,10 +2215,10 @@ bool rcheevos_load_aborted(void)
    {
       /* Unload has been called */
       case RCHEEVOS_LOAD_STATE_ABORTED:
-      /* Unload quit waiting and ran to completion */      
+      /* Unload quit waiting and ran to completion */
       case RCHEEVOS_LOAD_STATE_NONE:
       /* Login/resolve hash failed after several attempts */
-      case RCHEEVOS_LOAD_STATE_NETWORK_ERROR: 
+      case RCHEEVOS_LOAD_STATE_NETWORK_ERROR:
          return true;
       default:
          break;
@@ -2209,7 +2231,7 @@ bool rcheevos_load(const void *data)
    const struct retro_game_info *info = (const struct retro_game_info*)
       data;
    settings_t *settings               = config_get_ptr();
-   bool cheevos_enable                = settings 
+   bool cheevos_enable                = settings
       && settings->bools.cheevos_enable;
 
    memset(&rcheevos_locals.load_info, 0,
@@ -2227,7 +2249,7 @@ bool rcheevos_load(const void *data)
 #endif
    rc_runtime_init(&rcheevos_locals.runtime);
 
-   /* If achievements are not enabled, or the core doesn't 
+   /* If achievements are not enabled, or the core doesn't
     * support achievements, disable hardcore and bail */
    if (!cheevos_enable || !rcheevos_locals.core_supports || !data)
    {
@@ -2290,11 +2312,11 @@ bool rcheevos_load(const void *data)
 
     */
 
-   /* Identify the game and log the user in. 
+   /* Identify the game and log the user in.
     * These will run asynchronously. */
    if (!rcheevos_identify_game(info))
    {
-      /* No hashes could be generated for the game, 
+      /* No hashes could be generated for the game,
        * disable hardcore and bail */
       rcheevos_locals.game.id = 0;
       rcheevos_end_load_state();

@@ -1614,14 +1614,6 @@ MSG_HASH(
    "Oppdateringsraten som er rapportert av visningsdriveren."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Bytt oppdateringsrate automatisk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Bytter oppdateringsraten på skjermen når den angitte skjermmodusen blir brukt, basert på kjernen og/eller innholdet som kjøres."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Bare i eksklusiv fullskjermmodus"
    )
@@ -2062,6 +2054,9 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -2324,6 +2319,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Størrelsesforhold"
+   )
 
 /* RGUI: Settings Options */
 

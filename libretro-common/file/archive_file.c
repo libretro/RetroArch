@@ -179,43 +179,6 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    return state->backend->archive_parse_file_init(state, path);
 }
 
-/**
- * file_archive_decompress_data_to_file:
- * @path                        : filename path of archive.
- * @size                        : output file size
- * @checksum                    : CRC32 checksum from input data.
- *
- * Write data to file.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-static int file_archive_decompress_data_to_file(
-      file_archive_transfer_t *transfer,
-      file_archive_file_handle_t *handle,
-      const char *path,
-      uint32_t size,
-      uint32_t checksum)
-{
-   if (!handle)
-      return 0;
-
-#if 0
-   handle->real_checksum = transfer->backend->stream_crc_calculate(
-         0, handle->data, size);
-   if (handle->real_checksum != checksum)
-   {
-      /* File CRC difers from archive CRC. */
-      printf("File CRC differs from archive CRC. File: 0x%x, Archive: 0x%x.\n",
-            (unsigned)handle->real_checksum, (unsigned)checksum);
-   }
-#endif
-
-   if (!filestream_write_file(path, handle->data, size))
-      return 0;
-
-   return 1;
-}
-
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
 {
    if (!state || !state->archive_file)
@@ -512,9 +475,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
                userdata->transfer->context, &handle);
    }while (ret == 0);
 
-   if (ret == -1 || !file_archive_decompress_data_to_file(
-            userdata->transfer, &handle, path,
-            size, crc32))
+   if (ret == -1 || !filestream_write_file(path, handle.data, size))
       return false;
 
    return true;

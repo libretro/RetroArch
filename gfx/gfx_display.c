@@ -16,7 +16,6 @@
  */
 #include "gfx_display.h"
 
-#include "video_coord_array.h"
 #include "../configuration.h"
 #include "../verbosity.h"
 
@@ -208,7 +207,7 @@ static float gfx_display_get_dpi_scale_internal(
          fraction       -= 24.0f;
          fraction       /= (32.0f - 24.0f);
 
-         scale           =   ((1.0f - fraction) * dpi_scale) 
+         scale           =   ((1.0f - fraction) * dpi_scale)
                            + (fraction * pixel_scale);
       }
       else if (display_size < 12.0f)
@@ -224,7 +223,7 @@ static float gfx_display_get_dpi_scale_internal(
           * to pixel scaling */
          float fraction = display_size / 12.0f;
 
-         scale          =   ((1.0f - fraction) * pixel_scale) 
+         scale          =   ((1.0f - fraction) * pixel_scale)
                           + (fraction * dpi_scale);
       }
       else
@@ -269,7 +268,7 @@ float gfx_display_get_dpi_scale(
    float menu_widget_scale_factor                      = fullscreen ?
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
 #endif
-   float menu_scale_factor                             = is_widget 
+   float menu_scale_factor                             = is_widget
       ? menu_widget_scale_factor
       : settings->floats.menu_scale_factor;
 #else
@@ -507,7 +506,7 @@ void gfx_display_draw_quad(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx             = p_disp->dispctx;
 
    if (w == 0 || h == 0)
@@ -527,8 +526,8 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture != 0) 
-      ? *texture 
+   draw.texture         = (texture != 0)
+      ? *texture
       : gfx_white_texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
@@ -560,7 +559,7 @@ void gfx_display_draw_texture_slice(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx              = p_disp->dispctx;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
    /* To prevent visible seams between the corners and
@@ -607,7 +606,7 @@ void gfx_display_draw_texture_slice(
     * so 8 vertices */
    float tex_coord[8];
    float vert_coord[8];
-   static float colors[16] = { 
+   static float colors[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
@@ -878,7 +877,7 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
       math_matrix_4x4 *matrix, float cosine, float sine, void *data)
 {
    gfx_display_ctx_driver_t *dispctx  = p_disp->dispctx;
-   math_matrix_4x4 *b                 = (dispctx->get_default_mvp) 
+   math_matrix_4x4 *b                 = (dispctx->get_default_mvp)
       ? (math_matrix_4x4*)dispctx->get_default_mvp(data)
       : NULL;
    if (b)
@@ -887,7 +886,7 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
          {  0.0f,          0.0f,          0.0f,          0.0f ,
             0.0f,          0.0f,          0.0f,          0.0f ,
             0.0f,          0.0f,          1.0f,          0.0f ,
-            0.0f,          0.0f,          0.0f,          1.0f } 
+            0.0f,          0.0f,          0.0f,          1.0f }
       };
       MAT_ELEM_4X4(rot, 0, 0)            = cosine;
       MAT_ELEM_4X4(rot, 0, 1)            = -sine;
@@ -1082,7 +1081,7 @@ bool gfx_display_reset_textures_list_buffer(
       if (height)
          *height    = ti.height;
 
-      /* if the poke interface doesn't support texture load then return false */  
+      /* if the poke interface doesn't support texture load then return false */
       if (video_driver_texture_load(&ti, filter_type, item))
       {
          image_texture_free(&ti);

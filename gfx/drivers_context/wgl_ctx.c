@@ -144,31 +144,30 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 }
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-static bool wgl_has_extension(const char *extension, const char *extensions)
+static bool wgl_has_extension(const char *ext, const char *exts)
 {
-   const char *start      = NULL;
-   const char *terminator = NULL;
-   const char      *where = strchr(extension, ' ');
+   const char *where = strchr(ext, ' ');
 
-   if (where || *extension == '\0')
+   if (where || *ext == '\0')
       return false;
 
-   if (!extensions)
-      return false;
-
-   start = extensions;
-
-   for (;;)
+   if (exts)
    {
-      if (!(where = strstr(start, extension)))
-         break;
+      const char *terminator = NULL;
+      const char *start      = exts;
 
-      terminator = where + strlen(extension);
-      if (where == start || *(where - 1) == ' ')
-         if (*terminator == ' ' || *terminator == '\0')
-            return true;
+      for (;;)
+      {
+         if (!(where = strstr(start, ext)))
+            break;
 
-      start = terminator;
+         terminator = where + strlen(ext);
+         if (where == start || *(where - 1) == ' ')
+            if (*terminator == ' ' || *terminator == '\0')
+               return true;
+
+         start = terminator;
+      }
    }
    return false;
 }
@@ -267,11 +266,11 @@ void create_gl_context(HWND hwnd, bool *quit)
          pcreate_context = (wglCreateContextAttribsProc)
             gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
-      /* In order to support the core info "required_hw_api" 
+      /* In order to support the core info "required_hw_api"
        * field correctly, we should try to init the highest available
-       * version GL context possible. This means trying successively 
+       * version GL context possible. This means trying successively
        * lower versions until it works, because GL has
-       * no facility for determining the highest possible 
+       * no facility for determining the highest possible
        * supported version.
        */
       if (pcreate_context)
@@ -329,8 +328,8 @@ void create_gl_context(HWND hwnd, bool *quit)
                      (versions[i][0] == (int)win32_major)
                   && (versions[i][1] == (int)win32_minor))
             {
-               /* The requested version was tried and 
-                * is not supported, go ahead and fail 
+               /* The requested version was tried and
+                * is not supported, go ahead and fail
                 * since everything else will be lower than that. */
                break;
             }
@@ -348,16 +347,16 @@ void create_gl_context(HWND hwnd, bool *quit)
 
    {
       const char *(WINAPI * wglGetExtensionsStringARB) (HDC) = 0;
-      const char *extensions                                 = NULL;
-      wglGetExtensionsStringARB                              = 
+      const char *exts                                       = NULL;
+      wglGetExtensionsStringARB                              =
 	      (const char *(WINAPI *) (HDC))
 	      gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
 
       if (wglGetExtensionsStringARB)
       {
-         extensions = wglGetExtensionsStringARB(win32_hdc);
-         RARCH_LOG("[WGL]: Extensions: %s\n", extensions);
-         if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
+         exts = wglGetExtensionsStringARB(win32_hdc);
+         RARCH_LOG("[WGL]: Extensions: %s\n", exts);
+         if (wgl_has_extension("WGL_EXT_swap_control_tear", exts))
          {
             RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
             wgl_flags |= WGL_FLAG_ADAPTIVE_VSYNC;
@@ -472,23 +471,6 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
 
 static bool gfx_ctx_wgl_set_resize(void *data,
       unsigned width, unsigned height) { return false; }
-
-static void gfx_ctx_wgl_update_title(void *data)
-{
-   char title[128];
-
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (title[0])
-   {
-      const ui_window_t *window = ui_companion_driver_get_window_ptr();
-
-      if (window)
-         window->set_title(&main_window, title);
-   }
-}
 
 static void gfx_ctx_wgl_destroy(void *data)
 {
@@ -794,7 +776,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_get_video_output_next,
    win32_get_metrics,
    NULL,
-   gfx_ctx_wgl_update_title,
+   video_driver_update_title,
    win32_check_window,
    gfx_ctx_wgl_set_resize,
    win32_has_focus,

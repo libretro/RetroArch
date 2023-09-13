@@ -91,7 +91,7 @@ task_finished:
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
-      bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
+      bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
       command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    }
    if (task->user_data)
@@ -134,9 +134,6 @@ static void handle_translation_cb(
       retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
-   size_t pitch;
-   unsigned width, height;
-   unsigned image_width, image_height;
    uint8_t* raw_output_data          = NULL;
    char* raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
@@ -145,31 +142,28 @@ static void handle_translation_cb(
 #ifdef HAVE_AUDIOMIXER
    int new_sound_size                = 0;
 #endif
-   const void* dummy_data            = NULL;
    void* raw_image_data              = NULL;
    void* raw_image_data_alpha        = NULL;
    void* raw_sound_data              = NULL;
-   int retval                        = 0;
-   rjson_t* json                     = NULL;
+   rjson_t *json                     = NULL;
    int json_current_key              = 0;
-   char* err_string                  = NULL;
-   char* text_string                 = NULL;
-   char* auto_string                 = NULL;
-   char* key_string                  = NULL;
+   char* err_str                     = NULL;
+   char* txt_str                     = NULL;
+   char* auto_str                    = NULL;
+   char* key_str                     = NULL;
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
    input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
-   bool was_paused                   = runloop_flags & RUNLOOP_FLAG_PAUSED;
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                      = video_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt           = video_st->pix_fmt;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = video_st->flags &
-      VIDEO_FLAG_WIDGETS_PAUSED;
+   bool gfx_widgets_paused           = (video_st->flags &
+      VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
    dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
 #ifdef HAVE_ACCESSIBILITY
@@ -192,8 +186,7 @@ static void handle_translation_cb(
    if (!data || error || !data->data)
       goto finish;
 
-   json = rjson_open_buffer(data->data, data->len);
-   if (!json)
+   if (!(json = rjson_open_buffer(data->data, data->len)))
       goto finish;
 
    /* Parse JSON body for the image and sound data */
@@ -242,36 +235,35 @@ static void handle_translation_cb(
                break;
 #endif
             case 2: /* text */
-               text_string = strdup(str);
+               txt_str = strdup(str);
                break;
             case 3: /* error */
-               err_string  = strdup(str);
+               err_str = strdup(str);
                break;
             case 4: /* auto */
-               auto_string = strdup(str);
+               auto_str = strdup(str);
                break;
             case 5: /* press */
-               key_string  = strdup(str);
+               key_str = strdup(str);
                break;
          }
          json_current_key = -1;
       }
    }
 
-   if (string_is_equal(err_string, "No text found."))
+   if (string_is_equal(err_str, "No text found."))
    {
 #ifdef DEBUG
       RARCH_LOG("No text found...\n");
 #endif
-      if (text_string)
+      if (txt_str)
       {
-         free(text_string);
-         text_string = NULL;
+         free(txt_str);
+         txt_str = NULL;
       }
 
-      text_string = (char*)malloc(15);
-
-      strlcpy(text_string, err_string, 15);
+      txt_str = (char*)malloc(15);
+      strlcpy(txt_str, err_str, 15);
 #ifdef HAVE_GFX_WIDGETS
       if (gfx_widgets_paused)
       {
@@ -284,9 +276,9 @@ static void handle_translation_cb(
 
    if (     !raw_image_file_data
          && !raw_sound_data
-         && !text_string
-         && (access_st->ai_service_auto != 2)
-         && !key_string)
+         && !txt_str
+         && !key_str
+         && (access_st->ai_service_auto != 2))
    {
       error = "Invalid JSON body.";
       goto finish;
@@ -294,11 +286,11 @@ static void handle_translation_cb(
 
    if (raw_image_file_data)
    {
+      unsigned image_width, image_height;
       /* Get the video frame dimensions reference */
-      dummy_data = video_st->frame_cache_data;
-      width      = video_st->frame_cache_width;
-      height     = video_st->frame_cache_height;
-      pitch      = video_st->frame_cache_pitch;
+      const void *dummy_data = video_st->frame_cache_data;
+      unsigned width         = video_st->frame_cache_width;
+      unsigned height        = video_st->frame_cache_height;
 
       /* try two different modes for text display *
        * In the first mode, we use display widget overlays, but they require
@@ -311,15 +303,14 @@ static void handle_translation_cb(
           && video_st->poke->load_texture
           && video_st->poke->unload_texture)
       {
-         bool ai_res;
          enum image_type_enum image_type;
          /* Write to overlay */
-         if (  raw_image_file_data[0] == 'B' &&
-               raw_image_file_data[1] == 'M')
+         if (     raw_image_file_data[0]    == 'B'
+               && raw_image_file_data[1]    == 'M')
              image_type = IMAGE_TYPE_BMP;
-         else if (raw_image_file_data[1] == 'P' &&
-                  raw_image_file_data[2] == 'N' &&
-                  raw_image_file_data[3] == 'G')
+         else if (   raw_image_file_data[1] == 'P'
+                  && raw_image_file_data[2] == 'N'
+                  && raw_image_file_data[3] == 'G')
             image_type = IMAGE_TYPE_PNG;
          else
          {
@@ -327,11 +318,9 @@ static void handle_translation_cb(
             goto finish;
          }
 
-         ai_res = gfx_widgets_ai_service_overlay_load(
+         if (!gfx_widgets_ai_service_overlay_load(
                raw_image_file_data, (unsigned)new_image_size,
-               image_type);
-
-         if (!ai_res)
+               image_type))
          {
             RARCH_LOG("Video driver not supported for AI Service.");
             runloop_msg_queue_push(
@@ -352,10 +341,13 @@ static void handle_translation_cb(
 #endif
       /* Can't use display widget overlays, so try writing to video buffer */
       {
+         size_t pitch;
          /* Write to video buffer directly (software cores only) */
-         if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
+
+         /* This is a BMP file coming back. */
+         if (     raw_image_file_data[0] == 'B'
+               && raw_image_file_data[1] == 'M')
          {
-            /* This is a BMP file coming back. */
             /* Get image data (24 bit), and convert to the emulated pixel format */
             image_width    =
                ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24) +
@@ -368,16 +360,18 @@ static void handle_translation_cb(
                ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
-            raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
+            raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
             memcpy(raw_image_data,
-                   raw_image_file_data+54*sizeof(uint8_t),
-                   image_width*image_height*3*sizeof(uint8_t));
+                   raw_image_file_data + 54       * sizeof(uint8_t),
+                   image_width * image_height * 3 * sizeof(uint8_t));
          }
-         else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
-                  raw_image_file_data[3] == 'G')
+         /* PNG coming back from the url */
+         else if (raw_image_file_data[1] == 'P'
+               && raw_image_file_data[2] == 'N'
+               && raw_image_file_data[3] == 'G')
          {
+            int retval   = 0;
             rpng_t *rpng = NULL;
-            /* PNG coming back from the url */
             image_width  =
                 ((uint32_t) ((uint8_t)raw_image_file_data[16]) << 24)+
                 ((uint32_t) ((uint8_t)raw_image_file_data[17]) << 16)+
@@ -388,9 +382,8 @@ static void handle_translation_cb(
                 ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 16)+
                 ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 8)+
                 ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 0);
-            rpng = rpng_alloc();
 
-            if (!rpng)
+            if (!(rpng = rpng_alloc()))
             {
                error = "Can't allocate memory.";
                goto finish;
@@ -411,18 +404,18 @@ static void handle_translation_cb(
              * probably be replaced with a scaler call.*/
             {
                unsigned ui;
-               int d,tw,th,tc;
-               d=0;
+               int tw, th, tc;
+               int d          = 0;
                raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
                for (ui = 0; ui < image_width * image_height * 4; ui++)
                {
                   if (ui % 4 != 3)
                   {
-                     tc = d%3;
-                     th = image_height-d / (3*image_width)-1;
-                     tw = (d%(image_width*3)) / 3;
-                     ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[ui];
-                     d+=1;
+                     tc = d % 3;
+                     th = image_height-d / (image_width * 3) - 1;
+                     tw = (d % (image_width * 3)) / 3;
+                     ((uint8_t*) raw_image_data)[tw * 3 + th * 3 * image_width + tc] = ((uint8_t *)raw_image_data_alpha)[ui];
+                     d += 1;
                   }
                }
             }
@@ -434,8 +427,7 @@ static void handle_translation_cb(
             goto finish;
          }
 
-         scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx));
-         if (!scaler)
+         if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
             goto finish;
 
          if (dummy_data == RETRO_HW_FRAME_BUFFER_VALID)
@@ -460,14 +452,14 @@ static void handle_translation_cb(
             raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_ARGB8888;
             pitch              = width * 4;
-            scaler->out_stride = width * 4;
+            scaler->out_stride = (int)pitch;
          }
          else
          {
             raw_output_data    = (uint8_t*)malloc(width * height * 2 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_RGB565;
             pitch              = width * 2;
-            scaler->out_stride = width * 1;
+            scaler->out_stride = width;
          }
 
          if (!raw_output_data)
@@ -514,20 +506,19 @@ static void handle_translation_cb(
    }
 #endif
 
-   if (key_string)
+   if (key_str)
    {
+      size_t i;
       char key[8];
-      int length = (int)strlen(key_string);
-      int i         = 0;
-      int start     = 0;
-      char t        = ' ';
+      size_t length = strlen(key_str);
+      size_t start  = 0;
 
       for (i = 1; i < length; i++)
       {
-         t = key_string[i];
-         if (i == length-1 || t == ' ' || t == ',')
+         char t = key_str[i];
+         if (i == length - 1 || t == ' ' || t == ',')
          {
-            if (i == length-1 && t != ' ' && t!= ',')
+            if (i == length - 1 && t != ' ' && t!= ',')
                i++;
 
             if (i-start > 7)
@@ -536,32 +527,32 @@ static void handle_translation_cb(
                continue;
             }
 
-            strncpy(key, key_string+start, i-start);
+            strncpy(key, key_str + start, i-start);
             key[i-start] = '\0';
 
 #ifdef HAVE_ACCESSIBILITY
             if (string_is_equal(key, "b"))
-               input_st->ai_gamepad_state[0] = 2;
+               input_st->ai_gamepad_state[0]  = 2;
             if (string_is_equal(key, "y"))
-               input_st->ai_gamepad_state[1] = 2;
+               input_st->ai_gamepad_state[1]  = 2;
             if (string_is_equal(key, "select"))
-               input_st->ai_gamepad_state[2] = 2;
+               input_st->ai_gamepad_state[2]  = 2;
             if (string_is_equal(key, "start"))
-               input_st->ai_gamepad_state[3] = 2;
+               input_st->ai_gamepad_state[3]  = 2;
 
             if (string_is_equal(key, "up"))
-               input_st->ai_gamepad_state[4] = 2;
+               input_st->ai_gamepad_state[4]  = 2;
             if (string_is_equal(key, "down"))
-               input_st->ai_gamepad_state[5] = 2;
+               input_st->ai_gamepad_state[5]  = 2;
             if (string_is_equal(key, "left"))
-               input_st->ai_gamepad_state[6] = 2;
+               input_st->ai_gamepad_state[6]  = 2;
             if (string_is_equal(key, "right"))
-               input_st->ai_gamepad_state[7] = 2;
+               input_st->ai_gamepad_state[7]  = 2;
 
             if (string_is_equal(key, "a"))
-               input_st->ai_gamepad_state[8] = 2;
+               input_st->ai_gamepad_state[8]  = 2;
             if (string_is_equal(key, "x"))
-               input_st->ai_gamepad_state[9] = 2;
+               input_st->ai_gamepad_state[9]  = 2;
             if (string_is_equal(key, "l"))
                input_st->ai_gamepad_state[10] = 2;
             if (string_is_equal(key, "r"))
@@ -588,14 +579,14 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (     text_string 
+   if (     txt_str
          && is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
       accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
-            text_string, 10);
+            txt_str, 10);
 #endif
 
 finish:
@@ -615,23 +606,26 @@ finish:
       free(raw_image_data);
    if (scaler)
       free(scaler);
-   if (err_string)
-      free(err_string);
-   if (text_string)
-      free(text_string);
+   if (err_str)
+      free(err_str);
+   if (txt_str)
+      free(txt_str);
    if (raw_output_data)
       free(raw_output_data);
 
-   if (string_is_equal(auto_string, "auto"))
+   if (auto_str)
    {
-      if (     (access_st->ai_service_auto != 0)
-            && !settings->bools.ai_service_pause)
-         call_auto_translate_task(settings, &was_paused);
+      if (string_is_equal(auto_str, "auto"))
+      {
+         bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
+         if (     (access_st->ai_service_auto != 0)
+               && !settings->bools.ai_service_pause)
+            call_auto_translate_task(settings, &was_paused);
+      }
+      free(auto_str);
    }
-   if (auto_string)
-      free(auto_string);
-   if (key_string)
-      free(key_string);
+   if (key_str)
+      free(key_str);
 }
 
 static const char *ai_service_get_str(enum translation_lang id)
@@ -790,23 +784,17 @@ bool run_translation_service(settings_t *settings, bool paused)
    uint8_t *bmp_buffer               = NULL;
    uint64_t buffer_bytes             = 0;
    char *bmp64_buffer                = NULL;
-   rjsonwriter_t* jsonwriter         = NULL;
+   rjsonwriter_t *jsonwriter         = NULL;
    const char *json_buffer           = NULL;
-
    int bmp64_length                  = 0;
    bool TRANSLATE_USE_BMP            = false;
-
-   const char *label                 = NULL;
-   char* system_label                = NULL;
+   char *sys_lbl                     = NULL;
    core_info_t *core_info            = NULL;
    video_driver_state_t *video_st    = video_state_get_ptr();
-   const enum retro_pixel_format
-      video_driver_pix_fmt           = video_st->pix_fmt;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
-
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
    /* For the case when ai service pause is disabled. */
@@ -824,10 +812,11 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    if (core_info)
    {
-      size_t label_len;
-      const char *system_id               = core_info->system_id
+      size_t lbl_len;
+      const char *lbl                     = NULL;
+      const char *sys_id                  = core_info->system_id
          ? core_info->system_id : "core";
-      size_t system_id_len                = strlen(system_id);
+      size_t sys_id_len                   = strlen(sys_id);
       const struct playlist_entry *entry  = NULL;
       playlist_t *current_playlist        = playlist_get_cached();
 
@@ -837,17 +826,17 @@ bool run_translation_service(settings_t *settings, bool paused)
             current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
 
          if (entry && !string_is_empty(entry->label))
-            label = entry->label;
+            lbl = entry->label;
       }
 
-      if (!label)
-         label     = path_basename(path_get(RARCH_PATH_BASENAME));
-      label_len    = strlen(label);
-      system_label = (char*)malloc(label_len + system_id_len + 3);
-      memcpy(system_label, system_id, system_id_len);
-      memcpy(system_label     + system_id_len, "__", 2);
-      memcpy(system_label + 2 + system_id_len, label, label_len);
-      system_label[system_id_len + 2 + label_len] = '\0';
+      if (!lbl)
+         lbl       = path_basename(path_get(RARCH_PATH_BASENAME));
+      lbl_len      = strlen(lbl);
+      sys_lbl      = (char*)malloc(lbl_len + sys_id_len + 3);
+      memcpy(sys_lbl, sys_id, sys_id_len);
+      memcpy(sys_lbl + sys_id_len, "__", 2);
+      memcpy(sys_lbl + 2 + sys_id_len, lbl, lbl_len);
+      sys_lbl[sys_id_len + 2 + lbl_len] = '\0';
    }
 
    if (!scaler)
@@ -912,6 +901,8 @@ bool run_translation_service(settings_t *settings, bool paused)
    }
    else
    {
+      const enum retro_pixel_format
+         video_driver_pix_fmt           = video_st->pix_fmt;
       /* This is a software core, so just change the pixel format to 24-bit. */
       if (!(bit24_image = (uint8_t*)malloc(width * height * 3)))
           goto finish;
@@ -977,14 +968,14 @@ bool run_translation_service(settings_t *settings, bool paused)
    rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_length);
 
    /* Form request... */
-   if (system_label)
+   if (sys_lbl)
    {
       rjsonwriter_raw(jsonwriter, ",", 1);
       rjsonwriter_raw(jsonwriter, " ", 1);
       rjsonwriter_add_string(jsonwriter, "label");
       rjsonwriter_raw(jsonwriter, ":", 1);
       rjsonwriter_raw(jsonwriter, " ", 1);
-      rjsonwriter_add_string(jsonwriter, system_label);
+      rjsonwriter_add_string(jsonwriter, sys_lbl);
    }
 
    rjsonwriter_raw(jsonwriter, ",", 1);
@@ -1096,9 +1087,9 @@ bool run_translation_service(settings_t *settings, bool paused)
          switch (ai_service_mode)
          {
             case 2:
-               _len += strlcpy(new_ai_service_url    + _len,
+               strlcpy(new_ai_service_url       + _len,
                      "text",
-                     sizeof(new_ai_service_url)      - _len);
+                     sizeof(new_ai_service_url) - _len);
                break;
             case 1:
             case 3:
@@ -1116,9 +1107,9 @@ bool run_translation_service(settings_t *settings, bool paused)
                if (     video_st->poke
                      && video_st->poke->load_texture
                      && video_st->poke->unload_texture)
-                  _len += strlcpy(new_ai_service_url + _len,
+                  strlcpy(new_ai_service_url       + _len,
                         ",png-a",
-                        sizeof(new_ai_service_url)   - _len);
+                        sizeof(new_ai_service_url) - _len);
 #endif
                break;
             default:
@@ -1149,8 +1140,8 @@ finish:
 
    if (bmp64_buffer)
       free(bmp64_buffer);
-   if (system_label)
-      free(system_label);
+   if (sys_lbl)
+      free(sys_lbl);
    if (jsonwriter)
       rjsonwriter_free(jsonwriter);
    return !error;
@@ -1164,7 +1155,7 @@ bool is_narrator_running(bool accessibility_enable)
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend = 
+      frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)
          return frontend->is_narrator_running();

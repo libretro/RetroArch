@@ -321,7 +321,6 @@ OBJ += \
        gfx/gfx_animation.o \
        gfx/gfx_thumbnail_path.o \
        gfx/gfx_thumbnail.o \
-       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -449,9 +448,6 @@ endif
 ifeq ($(HAVE_LANGEXTRA), 1)
    DEFINES += -DHAVE_LANGEXTRA
    DEF_FLAGS += -finput-charset=UTF-8
-
-   OBJ += intl/msg_hash_chs.o \
-          intl/msg_hash_pt_br.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -758,8 +754,10 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
    OBJ += frontend/drivers/platform_emscripten.o \
           input/drivers/rwebinput_input.o \
           input/drivers_joypad/rwebpad_joypad.o \
-          audio/drivers/rwebaudio.o \
           camera/drivers/rwebcam.o
+   ifeq ($(HAVE_RWEBAUDIO), 1)
+      OBJ += audio/drivers/rwebaudio.o
+   endif
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)

@@ -68,12 +68,20 @@ MSG_HASH(
    "Välj vilken kärna du vill använda."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Bläddra efter en libretro-kärnimplementation. Var webbläsaren startar beror på sökvägen till dina kärnor. Om den är tom, börjar den i rotmappen.\nOm kärnmappen är en katalog, kommer menyn att använda den som översta mapp. Om sökvägen till kärnmappen är en fullständig sökväg, börjar den i mappen där filen finns."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Ladda in innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Välj vilket innehåll som ska startas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Bläddra efter innehåll. För att ladda in innehåll behöver du en 'Kärna' att använda innehållet och en innehållsfil.\nFör att kontrollera var menyn börjar kan du bläddra efter innehåll och sedan ställa in den på 'Sökväg för filutforskaren'. Om det inte är inställt, börjar den i rotmappen.\n Webbläsaren filtrerar bort filändelserna för den senast inställda kärnan i 'Ladda in kärna', och använder den kärnan när innehåll laddas in."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -188,6 +196,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Avsluta programmet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Avsluta RetroArch. Om du avslutar programmet på något drastiskt sätt (SIGKILL, etc.) Kommer RetroArch att avslutas utan att spara konfigurationen, etc. På Unix-liknande system tillåter SIGINT/SIGTERM en ordentlig avstängning."
    )
 
 /* Main Menu > Load Core */
@@ -477,7 +489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Stöd för Snabbsparning"
+   "Stöd för Status-snabbsparning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -520,6 +532,14 @@ MSG_HASH(
    "Förhindra modifiering av den installerade kärnan. Kan användas för att undvika oönskade uppdateringar när innehåll kräver en specifik kärnversion (t.ex. Arcade ROM-uppsättningar)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Exkludera från menyn 'Kärnor utan innehåll'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Förhindra att denna kärna visas i fliken/menyn 'Kärnor utan innehåll'. Gäller endast när visningsläget är inställt på 'Anpassat'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Ta bort kärna"
    )
@@ -557,6 +577,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Kompileringsdatum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch-version"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -885,6 +909,10 @@ MSG_HASH(
    "Berättande"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   "Tempo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
    "Perspektiv"
    )
@@ -931,6 +959,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Edge Magazine-nummer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Utgivningsmånad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Utgivningsår"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1069,6 +1105,10 @@ MSG_HASH(
    "Ljud"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Ändra ljudin- och utdatainställningar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Inmatning"
    )
@@ -1109,6 +1149,46 @@ MSG_HASH(
    "Ändra inställningar för lagring av filer."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Molnsynkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Ändra inställningar för molnsynkronisering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Aktivera molnsynkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Backend för molnsynkronisering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "Vilket molnlagringsprotokoll som ska användas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "URL för molnlagring"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Användarnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Ditt användarnamn för ditt molnlagringskonto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "Lösenord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Ditt lösenord för ditt molnlagringskonto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Loggar"
    )
@@ -1137,24 +1217,72 @@ MSG_HASH(
    "Spelar in konfigurationsfil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "Fil för databaspekare."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
    "Konfigurationsfil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "Fil för shader-förinställning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
    "Shaderfil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "Fil för omkartläggning av kontroller."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
    "Fuskfil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "Fil för överlagring."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
    "Databasfil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "Fil för TrueType-teckensnitt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "Vanlig fil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Video. Välj den för att öppna denna fil med videospelaren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Musik. Välj den för att öppna denna fil med musikspelaren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
    "Bildfil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "Bild. Välj den för att öppna denna fil med bildvisaren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Libretro-kärna. Genom att välja detta kommer denna kärna att associeras med spelet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Libretro-kärna. Välj denna fil för att RetroArch ska ladda in den här kärnan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "Mapp. Välj den för att öppna denna mapp."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1278,6 +1406,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
    "Lagring"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Tajming"
+   )
 
 #ifdef HAVE_MIST
 MSG_HASH(
@@ -1297,6 +1429,18 @@ MSG_HASH(
    "Vilken drivrutin som ska användas för inmatning. Vissa videodrivrutiner tvingar systemet att använda en viss inmatningsdrivrutin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "Udev-inputdrivrutinen använder det senaste evdev joypad-API:et för joystick-stöd. Den har stöd för hotplugging och force feedback.\nDrivrutinen läser evdev-händelser för tangentbordsstöd. Den har även stöd för tangentbordsåterkoppling, mus och pekplattor.\nSom standard i de flesta distributioner är /dev/input-noderna endast åtkomliga av root-användare (mode 600). Du kan konfigurera en udev-regel som gör dessa tillgängliga för icke-root-användare."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "Linuxraw-inputdrivrutinen kräver en aktiv TTY. Tangentbordshändelser läses direkt från TTY:n vilket gör det enklare, men inte lika flexibelt som udev. Datormusar och liknande stöds inte alls. Denna drivrutin använder det äldre joypad-API (/dev/input/js*)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "Input-drivrutin. Videodrivrutinen kan tvinga fram en annan input-drivrutin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Handkontroll"
    )
@@ -1313,12 +1457,108 @@ MSG_HASH(
    "Bild-drivrutin att använda."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "OpenGL 1.x-drivrutin. Minimumversion krävs: OpenGL 1.1. Stöder inte shaders. Använd istället senare OpenGL-drivrutiner, om möjligt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "OpenGL 2.x-drivrutin. Denna drivrutin gör det möjligt att använda libretro GL-kärnor i tillägg till mjukvarurenderade kärnor. Minimumversion krävs: OpenGL 2.0 eller OpenGLES 2.0. Stöder GLSL shader-formatet. Använd istället glcore-drivrutinen, om möjligt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "OpenGL 3.x-drivrutin. Denna drivrutin gör det möjligt att använda libretro GL-kärnor i tillägg till mjukvarurenderade kärnor. Minimumversion krävs: OpenGL 3.2 eller OpenGLES 3.0+. Stöder Slang shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Vulkan-drivrutin. Denna drivrutin gör det möjligt att använda libretro Vulkan-kärnor i tillägg till mjukvarurenderade kärnor. Minimumversion krävs: Vulkan 1.0. Stöder HDR och Slang shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2 mjukvarurenderad drivrutin. Prestanda anses vara undermålig. Överväg att använda den endast som en sista utväg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "SDL 2 mjukvarurenderad drivrutin. Prestandan för mjukvarurenderade libretro-kärnor beror på din plattform och SDL-implementering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Metal-drivrutin för Apple-plattformar. Stöder Slang shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Direct3D 8-drivrutin utan stöd för shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Direct3D 9-drivrutin med stöd för det äldre Cg shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Direct3D 9-drivrutin med stöd för HLSL shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Direct3D 10-drivrutin med stöd för Slang shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Direct3D 11-drivrutin med stöd för HDR och Slang shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Direct3D 12-drivrutin med stöd för HDR och Slang shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "DispmanX-drivrutin. Använder DispmanX API:n för Videocore IV GPU i Raspberry Pi 0..3. Inget stöd för överlagringar eller shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "LibCACA-drivrutin. Ger teckenutmatning istället för grafik. Rekommenderas inte för praktisk användning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "En lågnivå Exynos-videodrivrutin som använder G2D-blocket i Samsung Exynos SoC för blit-operationer. Prestandan för mjukvarurenderade kärnor bör vara optimal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Enkel DRM-videodrivrutin. Detta är en lågnivå videodrivrutin som använder libdrm för maskinvaruskalning med hjälp av GPU-överlagringar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "En lågnivå Sunxi-videodrivrutin som använder G2D-blocket i Allwinner SoC:er."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Wii U-drivrutin. Stöder Slang shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Switch-drivrutin. Stöder GLSL shader-formatet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "OpenVG-drivrutin. Använder OpenVG-maskinvaruaccelererat 2D-vektorgrafik-API."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "GDI-drivrutin. Använder en äldre Windows-gränssnitt. Rekommenderas inte."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "Nuvarande videodrivrutin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Ljud"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Ljuddrivrutin att använda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "RSound-drivrutin för nätverksbaserade ljudsystem."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -2333,6 +2573,14 @@ MSG_HASH(
    "Sänk volym"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   "Spara status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "Sparar spelets status på den för närvarande valda platsen och lagrar den i minnesplatsen."
+   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
@@ -2425,11 +2673,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för savestates."
+   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för sparad status."
    )
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Kringgå kärninformationens funktioner för sparad status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Specificerar om kärninformationens möjligheter för sparad status ska ignoreras, vilket gör det möjligt att experimentera med relaterade funktioner (köra framåt, spola tillbaka osv)."
+   )
 #ifndef HAVE_DYNAMIC
 #endif
 MSG_HASH(
@@ -2470,6 +2726,70 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Sortera sparad status i mappar efter kärnnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   "Sortera sparad status i mappar med namn efter den använda kärnan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Sortera sparad status i mappar efter innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Sortera sparad status i mappar med namn efter den katalog där innehållet finns."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Öka sparstatus-index automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+   "Innan en sparad status skapas, ökas sparstatus-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Automatiskt-ökande sparstatusar med maximalt antal att behålla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Begränsa antalet sparstatusar som kommer att skapas när \"Öka statusindex automatiskt\" är aktiverat. Om gränsen överskrids vid sparande av en ny status kommer den befintliga statusen med lägst index att raderas. Ett värde av \"0\" innebär att obegränsade statusar kommer att sparas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Spara din status automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Sparar din status automatiskt när innehållet avslutas. RetroArch kommer kunna ladda in status filen automatiskt om \"Spara din status automatiskt\" är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   "Laddar automatiskt upp den sparade statusen vid spelstart."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Miniatyr för sparad status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Visa miniatyrer av sparstatusar i menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Komprimera din sparstatus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   "Lagrar dina sparade statusfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och laddningstider."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Spara din status i innehållsmappen"
+   )
 
 /* Settings > Logging */
 
@@ -2505,6 +2825,10 @@ MSG_HASH(
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Återställ efter sparad status"
+   )
 
 /* Settings > Recording */
 
@@ -2549,6 +2873,9 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2599,6 +2926,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Pausa innehåll när menyn är aktiv"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Återgå till innehållet efter att du har använt av sparstatusar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Stäng menyn automatiskt och återgå till innehållet efter att ha sparat eller laddat in en sparad status. Att inaktivera detta kan förbättra prestandan för sparad status på mycket långsamma enheter."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -2701,6 +3036,26 @@ MSG_HASH(
    "Visa 'Starta om'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Visa \"Spara status\" undermenyn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Visa sparstatusalternativ i en undermeny."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "Visa \"Spara/Ladda in sparad status\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Visa \"Ångra spara/Ladda in sparad status\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Visa alternativen för att ångra sparad/inladdad status."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    "Visa 'Fusk'"
    )
@@ -2731,6 +3086,14 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Genomskinlighet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "Primär miniatyrbild"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "Alltid"
@@ -2781,7 +3144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Uppdaterare"
+   "Inställningar för uppdaterare"
    )
 
 /* Settings > Network > Updater */
@@ -2988,6 +3351,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    "Spara filer"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   "Statusregister"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Dina sparstatusar och inspelningar lagras i denna mapp. Om den inte är inställd hit så kommer den att försöka spara filerna i mappen där spelinnehållet är placerat."
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
@@ -3150,12 +3521,36 @@ MSG_HASH(
    "Stäng det aktuella innehållet. Eventuella osparade ändringar kan gå förlorade."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   "Spara din status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_STATE,
+   "Sparar spelets status på den för närvarande valda platsen och lagrar den i minnesplatsen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+   "Återvänd till förra statusen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+   "Om en status blev överskriven, kommer den att återgå till den tidigare sparade statusen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
    "Spela repris"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
    "Spela in repris"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   "Statusregister"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
+   "Åtkomst till sparad status-alternativ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -3186,10 +3581,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    "Spara spelalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Ta bort spelalternativ"
    )
 
 /* - Legacy (unused) */
@@ -3576,6 +3967,26 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   "Linjärt filter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Bildförhållande"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Lås bildförhållande"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "Färgtema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Genomskinlighet"
+   )
 
 /* RGUI: Settings Options */
 
@@ -3589,6 +4000,14 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   "Automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (Centrerad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
    "Automatiskt"
    )
 MSG_HASH(
@@ -3655,12 +4074,40 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Sekundär miniatyrbild"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Dynamisk bakgrund"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Menyteckensnitt"
+   "Typsnitt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+   "Teckenfärg (röd)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   "Teckenfärg (grön)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Teckenfärg (blå)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   "Ikontema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Skuggeffekter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "Färgtema"
    )
 
 /* XMB: Settings Options */
@@ -3698,18 +4145,38 @@ MSG_HASH(
    "Midnattsblå"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
+   "Bakgrundsbild"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
    "Iskall"
    )
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Färgtema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Sekundär miniatyrbild"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Menyikoner"
+   "Ikoner"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "Färgtema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Övergångsanimation"
    )
 
 /* MaterialUI: Settings Options */
@@ -4025,10 +4492,6 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Uppdaterare"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
    "Ingen skiva vald"
    )
@@ -4198,6 +4661,10 @@ MSG_HASH(
    "Ljudvolym"
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Laddar automatiskt in sparad status från"
+   )
+MSG_HASH(
    MSG_CONNECTING_TO_PORT,
    "Ansluter till port"
    )
@@ -4206,12 +4673,16 @@ MSG_HASH(
    "Rensar spellista: "
    )
 MSG_HASH(
+   MSG_AUTO_SAVE_STATE_TO,
+   "Spara status automatiskt till"
+   )
+MSG_HASH(
    MSG_CONNECTED_TO,
    "Ansluten till"
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Kärnan har inget stöd för savestates."
+   "Kärnan har inget stöd för sparad status."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -4238,8 +4709,20 @@ MSG_HASH(
    "Kunde inte ladda"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_STATE_TO,
+   "Misslyckades med att spara status till"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNDO_SAVE_STATE,
+   "Tyvärr. Du kan inte återvända till din förra status."
+   )
+MSG_HASH(
    MSG_FILE_NOT_FOUND,
    "Filen hittas ej"
+   )
+MSG_HASH(
+   MSG_FOUND_AUTO_SAVESTATE_IN,
+   "Hittade automatiskt sparad status i"
    )
 MSG_HASH(
    MSG_INTERFACE,
@@ -4262,8 +4745,32 @@ MSG_HASH(
    "Minne"
    )
 MSG_HASH(
+   MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+   "Ingen sparad status har ännu blivit överskriven."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Pausad."
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVESTATE_TO,
+   "Omdirigerar sparad status till"
+   )
+MSG_HASH(
+   MSG_RESTORED_OLD_SAVE_STATE,
+   "Återställde den gamla sparade statusen."
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   "Återställer katalogen för sparade statusfiler till"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Sparade statusen till minnesplatsen #%d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Sparade statusen till minnesplatsen #-1 (Automatiskt)."
    )
 MSG_HASH(
    MSG_SCANNING,
@@ -4286,6 +4793,10 @@ MSG_HASH(
    "till"
    )
 MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Ångra sparad status-fil"
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "Okänd"
    )
@@ -4296,6 +4807,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Startar om..."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Misslyckades med att automatiskt ladda in sparad status från \"%s\"."
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
@@ -4343,7 +4858,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Run-Ahead har inaktiverats eftersom denna kärna saknar stöd för savestates."
+   "Run-Ahead har inaktiverats eftersom denna kärna saknar stöd för sparad status."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,

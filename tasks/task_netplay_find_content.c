@@ -751,7 +751,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
    const char *pbasename, *pcontent, *psubsystem;
    core_info_list_t         *coreinfos = NULL;
    settings_t               *settings  = config_get_ptr();
-   struct retro_system_info *system    = &runloop_state_get_ptr()->system.info;
+   struct retro_system_info *sysinfo    = &runloop_state_get_ptr()->system.info;
 
    /* Do not run more than one CRC scan task at a time. */
    if (scan_state.running)
@@ -841,7 +841,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
          string_list_clone(path_get_subsystem_list());
 
    data->current.core_loaded =
-      string_is_equal_case_insensitive(system->library_name, core);
+      string_is_equal_case_insensitive(sysinfo->library_name, core);
 
    scan_state.state   = STATE_NONE;
    scan_state.running = true;

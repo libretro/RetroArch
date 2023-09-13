@@ -294,6 +294,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH,
 
    MENU_SETTING_ACTION_REMAP_FILE_LOAD,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_AS,
    MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE,
    MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR,
    MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME,
@@ -306,53 +307,6 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
 
    MENU_SETTINGS_LAST
-};
-
-enum menu_state_flags
-{
-   MENU_ST_FLAG_ALIVE                       = (1 << 0),
-   MENU_ST_FLAG_IS_BINDING                  = (1 << 1),
-   MENU_ST_FLAG_INP_DLG_KB_DISPLAY          = (1 << 2),
-   /* When enabled, on next iteration the 'Quick Menu' 
-    * list will be pushed onto the stack */
-   MENU_ST_FLAG_PENDING_QUICK_MENU          = (1 << 3),
-   MENU_ST_FLAG_PREVENT_POPULATE            = (1 << 4),
-   /* The menu driver owns the userdata */
-   MENU_ST_FLAG_DATA_OWN                    = (1 << 5),
-   /* Flagged when menu entries need to be refreshed */
-   MENU_ST_FLAG_ENTRIES_NEED_REFRESH        = (1 << 6),
-   MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH = (1 << 7),
-   /* 'Close Content'-hotkey menu resetting */
-   MENU_ST_FLAG_PENDING_CLOSE_CONTENT       = (1 << 8),
-   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
-    * requiring the menu to be flushed on the next iteration */
-   MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH  = (1 << 9),
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
-   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
-};
-
-enum menu_scroll_mode
-{
-   MENU_SCROLL_PAGE = 0,
-   MENU_SCROLL_START_LETTER
-};
-
-enum contentless_core_runtime_status
-{
-   CONTENTLESS_CORE_RUNTIME_UNKNOWN = 0,
-   CONTENTLESS_CORE_RUNTIME_MISSING,
-   CONTENTLESS_CORE_RUNTIME_VALID
-};
-
-enum action_iterate_type
-{
-   ITERATE_TYPE_DEFAULT = 0,
-   ITERATE_TYPE_HELP,
-   ITERATE_TYPE_INFO,
-   ITERATE_TYPE_BIND
 };
 
 struct menu_list
@@ -434,8 +388,6 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*refresh_thumbnail_image)(void *data, unsigned i);
-   void (*set_thumbnail_system)(void *data, char* s, size_t len);
-   void (*get_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
@@ -526,6 +478,7 @@ struct menu_state
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
    menu_handle_t *driver_data;
    void *userdata;
    const menu_ctx_driver_t *driver_ctx;
@@ -792,15 +745,16 @@ bool menu_is_nonrunning_quick_menu(void);
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
 
+void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
+
+size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 extern menu_ctx_driver_t menu_ctx_ozone;
-extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_stripes;
-
 
 RETRO_END_DECLS
 

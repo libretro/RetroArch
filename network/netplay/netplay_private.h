@@ -848,4 +848,10 @@ bool netplay_cmd_mode(netplay_t *netplay,
  **/
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save);
+
+void netplay_mdns_publish(netplay_t *netplay);
+void netplay_mdns_unpublish(void);
+void netplay_mdns_start_discovery(void);
+void netplay_mdns_finish_discovery(net_driver_state_t *net_st);
+
 #endif

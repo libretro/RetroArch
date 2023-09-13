@@ -465,7 +465,7 @@ bool content_undo_load_state(void)
     * the backing up of it and
     * its flushing could all be in their
     * own functions... */
-   if (     config_get_ptr()->bools.block_sram_overwrite 
+   if (     config_get_ptr()->bools.block_sram_overwrite
          && task_save_files
          && task_save_files->size)
    {
@@ -689,7 +689,9 @@ static bool content_write_serialized_state(void* buffer,
 #else
        bool frame_is_reversed         = false;
 #endif
-       if (!rewind && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK) && !frame_is_reversed)
+       if (    !rewind
+             && input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK)
+             && !frame_is_reversed)
        {
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
@@ -901,11 +903,15 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
+
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = undo_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    task_queue_push(task);
 
@@ -1119,7 +1125,7 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
 
    while (input < stop)
    {
-      size_t     block_size = ( input[7] << 24 
+      size_t     block_size = ( input[7] << 24
             | input[6] << 16 |  input[5] << 8 | input[4]);
       unsigned char *marker = input;
 
@@ -1287,7 +1293,7 @@ static void content_load_state_cb(retro_task_t *task,
    if (size < 0 || !buf)
       goto error;
 
-   /* This means we're backing up the file in memory, 
+   /* This means we're backing up the file in memory,
     * so content_undo_save_state()
     * can restore it */
    if (load_data->flags & SAVE_TASK_FLAG_LOAD_TO_BACKUP_BUFF)
@@ -1413,7 +1419,7 @@ static void save_state_cb(retro_task_t *task,
 #ifdef HAVE_SCREENSHOTS
    char               *path   = strdup(state->path);
    settings_t     *settings   = config_get_ptr();
-   const char *dir_screenshot = settings->paths.directory_screenshot; 
+   const char *dir_screenshot = settings->paths.directory_screenshot;
 
    if (state->flags & SAVE_TASK_FLAG_THUMBNAIL_ENABLE)
       take_screenshot(dir_screenshot,
@@ -1465,13 +1471,15 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
 
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_SAVING_STATE));
-   task->mute                    = state->flags & SAVE_TASK_FLAG_MUTE;
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    if (!task_queue_push(task))
    {
@@ -1513,7 +1521,7 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    char                  *path = strdup(load_data->path);
    void                  *data = load_data->undo_data;
    size_t                 size = load_data->undo_size;
-   bool               autosave = load_data->flags & SAVE_TASK_FLAG_AUTOSAVE;
+   bool               autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
 
    content_load_state_cb(task, task_data, user_data, error);
 
@@ -1569,13 +1577,15 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags              |= SAVE_TASK_FLAG_MUTE;
 
    task->state                   = state;
    task->type                    = TASK_TYPE_BLOCKING;
    task->handler                 = task_load_handler;
    task->callback                = content_load_and_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_LOADING_STATE));
-   task->mute                    = state->flags & SAVE_TASK_FLAG_MUTE;
+   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    if (!task_queue_push(task))
    {
@@ -1778,12 +1788,15 @@ bool content_load_state(const char *path,
    if (settings->bools.savestate_file_compression)
       state->flags             |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
+   if (!settings->bools.notification_show_save_state)
+      state->flags             |= SAVE_TASK_FLAG_MUTE;
 
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->mute                   = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
 
    task_queue_push(task);
 
@@ -1813,7 +1826,7 @@ bool content_rename_state(const char *origin, const char *dest)
 /*
 *
 * TODO/FIXME: Figure out when and where this should be called.
-* As it is, when e.g. closing Gambatte, we get the 
+* As it is, when e.g. closing Gambatte, we get the
 * same printf message 4 times.
 */
 void content_reset_savestate_backups(void)

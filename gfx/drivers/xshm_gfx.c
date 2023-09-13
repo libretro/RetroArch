@@ -117,7 +117,7 @@ static void *xshm_init(const video_info_t *video,
    if (input && input_data)
    {
       settings_t *settings                   = config_get_ptr();
-      void *xinput                           = input_driver_init_wrap(&input_x, 
+      void *xinput                           = input_driver_init_wrap(&input_x,
             settings->arrays.input_joypad_driver);
       if (xinput)
       {
@@ -141,7 +141,7 @@ static bool xshm_frame(void *data, const void *frame, unsigned width,
    unsigned y;
    xshm_t      *xshm  = (xshm_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    for (y = 0; y < height; y++)

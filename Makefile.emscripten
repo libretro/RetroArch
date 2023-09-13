@@ -46,6 +46,16 @@ HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
+HAVE_AL = 1
+
+
+# WARNING -- READ BEFORE ENABLING
+# The rwebaudio driver is known to have several audio bugs, such as
+#  minor crackling, or the entire page freezing/crashing.
+#  It works perfectly on chrome, but even firefox has really bad audio quality.
+#  I should also note, the driver on iOS is completely broken (crashes the page).
+#  You have been warned.
+HAVE_RWEBAUDIO = 0
 
 ASYNC ?= 0
 ifeq ($(LIBRETRO), mupen64plus)
@@ -70,9 +80,18 @@ OBJDIR := obj-emscripten
 LIBS    := -s USE_ZLIB=1
 LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['callMain']" \
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
-           --js-library emscripten/library_rwebaudio.js \
-           --js-library emscripten/library_rwebcam.js \
-           --js-library emscripten/library_errno_codes.js
+           --js-library emscripten/library_errno_codes.js \
+           --js-library emscripten/library_rwebcam.js
+
+ifeq ($(HAVE_RWEBAUDIO), 1)
+   LDFLAGS += --js-library emscripten/library_rwebaudio.js
+   DEFINES += -DHAVE_RWEBAUDIO
+endif
+ifeq ($(HAVE_AL), 1)
+   LDFLAGS += -lopenal
+   DEFINES += -DHAVE_AL
+   ASYNC = 1
+endif
 
 ifneq ($(PTHREAD), 0)
    LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)

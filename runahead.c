@@ -40,27 +40,28 @@
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   int i;
    runloop_state_t      *runloop_st = runloop_state_get_ptr();
 
-   if (!runloop_st->input_state_list)
-      return 0;
-
-   /* find list item */
-   for (i = 0; i < runloop_st->input_state_list->size; i++)
+   if (runloop_st->input_state_list)
    {
-      input_list_element *element =
-         (input_list_element*)runloop_st->input_state_list->data[i];
-
-      if (  (element->port   == port)   &&
-            (element->device == device) &&
-            (element->index  == index))
+      int i;
+      /* find list item */
+      for (i = 0; i < runloop_st->input_state_list->size; i++)
       {
-         if (id < element->state_size)
-            return element->state[id];
-         return 0;
+         input_list_element *element =
+            (input_list_element*)runloop_st->input_state_list->data[i];
+
+         if (     (element->port   == port)
+               && (element->device == device)
+               && (element->index  == index))
+         {
+            if (id < element->state_size)
+               return element->state[id];
+            break;
+         }
       }
    }
+
    return 0;
 }
 
@@ -391,7 +392,7 @@ end:
 static bool runloop_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
-   runloop_state_t *runloop_st    = runloop_state_get_ptr(); 
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
    bool result                    = runloop_environment_cb(cmd, data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_HAS_VARIABLE_UPDATE)
@@ -421,10 +422,10 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       settings_t *settings)
 {
    const enum rarch_core_type
-      last_core_type           = runloop_st->last_core_type;
-   rarch_system_info_t *info   = &runloop_st->system;
-   unsigned num_active_users   = settings->uints.input_max_users;
-   uint8_t flags               = content_get_flags();
+      last_core_type             = runloop_st->last_core_type;
+   rarch_system_info_t *sys_info = &runloop_st->system;
+   unsigned num_active_users     = settings->uints.input_max_users;
+   uint8_t flags                 = content_get_flags();
 
    if (     (last_core_type != CORE_TYPE_PLAIN)
          || (!runloop_st->load_content_info)
@@ -504,18 +505,18 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    runloop_st->secondary_core.retro_set_input_poll(
          runloop_st->secondary_callbacks.poll_cb);
 
-   if (info)
+   if (sys_info)
    {
-      int port;
+      ssize_t port;
       for (port = 0; port < MAX_USERS; port++)
       {
-         if (port < (int)info->ports.size)
+         if (port < sys_info->ports.size)
          {
-            unsigned device = (port < (int)num_active_users) ?
-                  runloop_st->port_map[port] : RETRO_DEVICE_NONE;
-
+            unsigned device = (port < num_active_users)
+                  ? runloop_st->port_map[port]
+                  : RETRO_DEVICE_NONE;
             runloop_st->secondary_core.retro_set_controller_port_device(
-                  port, device);
+                  (unsigned)port, device);
          }
       }
    }
@@ -816,7 +817,7 @@ static int16_t runahead_input_state_with_logging(unsigned port,
 
    if (runloop_st->input_state_callback_original)
    {
-      int16_t result                = 
+      int16_t result                =
          runloop_st->input_state_callback_original(
             port, device, index, id);
       int16_t last_input            =
@@ -834,7 +835,7 @@ static int16_t runahead_input_state_with_logging(unsigned port,
 static void runahead_reset_hook(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;       
+   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
    if (runloop_st->retro_reset_callback_original)
       runloop_st->retro_reset_callback_original();
 }
@@ -842,7 +843,7 @@ static void runahead_reset_hook(void)
 static bool runahead_unserialize_hook(const void *buf, size_t size)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;       
+   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
    if (runloop_st->retro_unserialize_callback_original)
       return runloop_st->retro_unserialize_callback_original(buf, size);
    return false;
@@ -861,7 +862,7 @@ static void runahead_add_input_state_hook(runloop_state_t *runloop_st)
 
    if (!runloop_st->retro_reset_callback_original)
    {
-      runloop_st->retro_reset_callback_original 
+      runloop_st->retro_reset_callback_original
          = runloop_st->current_core.retro_reset;
       runloop_st->current_core.retro_reset   = runahead_reset_hook;
    }
@@ -879,7 +880,7 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
 
    if (runloop_st->input_state_callback_original)
    {
-      cbs->state_cb                             = 
+      cbs->state_cb                             =
          runloop_st->input_state_callback_original;
       runloop_st->current_core.retro_set_input_state(cbs->state_cb);
       runloop_st->input_state_callback_original = NULL;
@@ -950,14 +951,14 @@ static void runahead_remove_hooks(runloop_state_t *runloop_st)
 {
    if (runloop_st->original_retro_deinit)
    {
-      runloop_st->current_core.retro_deinit = 
+      runloop_st->current_core.retro_deinit =
          runloop_st->original_retro_deinit;
       runloop_st->original_retro_deinit     = NULL;
    }
 
    if (runloop_st->original_retro_unload)
    {
-      runloop_st->current_core.retro_unload_game = 
+      runloop_st->current_core.retro_unload_game =
          runloop_st->original_retro_unload;
       runloop_st->original_retro_unload          = NULL;
    }
@@ -998,7 +999,7 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
 {
    if (!runloop_st->original_retro_deinit)
    {
-      runloop_st->original_retro_deinit     = 
+      runloop_st->original_retro_deinit     =
          runloop_st->current_core.retro_deinit;
       runloop_st->current_core.retro_deinit = runahead_deinit_hook;
    }
@@ -1067,10 +1068,10 @@ static bool runahead_save_state(runloop_state_t *runloop_st)
 
 static bool runahead_load_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *serialize_info = 
+   retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)
       runloop_st->runahead_save_state_list->data[0];
-   bool last_dirty                            = runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   bool last_dirty                            = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
    bool ret                                   = core_unserialize_special(serialize_info);
    if (last_dirty)
       runloop_st->flags                      |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
@@ -1139,13 +1140,13 @@ void runahead_run(void *data,
 #else
    const bool have_dynamic = false;
 #endif
-   video_driver_state_t 
+   video_driver_state_t
       *video_st            = video_state_get_ptr();
    uint64_t frame_count    = video_st->frame_count;
-   audio_driver_state_t 
+   audio_driver_state_t
       *audio_st            = audio_state_get_ptr();
 
-   if (      runahead_count <= 0 
+   if (      runahead_count <= 0
          || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
       goto force_input_dirty;
 
@@ -1624,7 +1625,7 @@ void preempt_run(preempt_t *preempt, void *data)
    settings_t *settings              = config_get_ptr();
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
-   
+
    /* Poll and check for dirty input */
    preempt_input_poll(preempt, runloop_st, settings);
 

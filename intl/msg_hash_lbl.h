@@ -1338,6 +1338,10 @@ MSG_HASH(
    "deferred_onscreen_overlay_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST,
+   "deferred_osk_overlay_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
    "deferred_onscreen_video_layout_settings_list"
    )
@@ -1404,6 +1408,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST,
    "deferred_saving_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
+   "deferred_cloud_sync_settings_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
@@ -1884,10 +1892,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_BIND_MODE,
-   "input_bind_mode"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
    "input_bind_timeout"
    )
@@ -1976,6 +1980,10 @@ MSG_HASH(
    "input_overlay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OSK_OVERLAY,
+   "input_osk_overlay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
    "input_overlay_enable"
    )
@@ -2010,6 +2018,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,
    "input_overlay_auto_scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "input_osk_overlay_auto_scale"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
@@ -2620,6 +2632,10 @@ MSG_HASH(
    "onscreen_overlay_settings"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
+   "osk_overlay_settings"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
    "onscreen_video_layout_settings"
    )
@@ -2648,6 +2664,10 @@ MSG_HASH(
    "overlay_directory"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+   "osk_overlay_directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,
    "video_layout_directory"
    )
@@ -2656,8 +2676,16 @@ MSG_HASH(
    "input_overlay_opacity"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY,
+   "input_osk_overlay_opacity"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_PRESET,
    "input_overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+   "input_osk_overlay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,
@@ -3210,6 +3238,10 @@ MSG_HASH(
    "remap_file_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS,
+   "remap_file_save_as"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
    "remap_file_save_core"
    )
@@ -3400,6 +3432,10 @@ MSG_HASH(
    "override_file_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,
+   "override_file_save_as"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
    "override_unload"
    )
@@ -3454,6 +3490,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
    "saving_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
+   "cloud_sync_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,
+   "cloud_sync_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "cloud_sync_destructive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
+   "cloud_sync_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_URL,
+   "cloud_sync_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,
+   "cloud_sync_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,
+   "cloud_sync_password"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_DIRECTORY,
@@ -5829,6 +5893,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "notification_show_set_initial_disk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "notification_show_save_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,

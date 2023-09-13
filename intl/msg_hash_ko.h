@@ -1193,6 +1193,62 @@ MSG_HASH(
    "저장 설정을 변경합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "클라우드 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "클라우드 동기화 설정을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "클라우드 동기화 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "설정, SRAM, 상태저장을 클라우드 저장소 제공자에 동기화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "파괴적 클라우드 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "비활성화할 경우, 동기화 대상 파일들을 덮어씌우거나 삭제하지 않고 백업 폴더에 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "클라우드 동기화 백엔드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "사용할 클라우드 저장소 네트워크 프로토콜을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "클라우드 저장소 URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "클라우드 저장소 서비스의 API 진입점 URL입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "사용자 이름"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "클라우드 저장소 계정의 사용자명입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "비밀번호"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "클라우드 저장소 계정의 비밀번호입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "로그"
    )
@@ -2052,14 +2108,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "디스플레이 드라이버가 보고한 화면 주사율입니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "주사율 자동 변경"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "지정한 화면 모드 사용 시, 코어 또는 실행중인 콘텐츠에 따라 화면 주사율을 자동으로 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -3075,6 +3123,22 @@ MSG_HASH(
    "입력 설정을 위해 누르고 있어야 하는 시간(초)입니다."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "키보드, 마우스, 또는 컨트롤러를 누르세요"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "키 및 버튼에서 손을 떼세요!"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "시간 제한"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "꾹 누르기"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "터보 반복 간격"
    )
@@ -3168,11 +3232,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다. 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 사용할 필요가 없습니다.\n참고: 코어별 입력 변경의 경우 빠른 메뉴의 '컨트롤' 하위 메뉴를 대신 사용하세요."
+   "가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다. 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 사용할 필요가 없습니다.\n참고: 코어별로 입력을 변경하려면 빠른 메뉴의 '컨트롤' 하위 메뉴를 대신 사용하세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro는 '레트로패드'로 알려진 가상 게임패드 가상화를 사용하여 프론트엔드 (예: RetroArch) 에서 코어로 또는 그 반대로 통신합니다. 이 메뉴는 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식과 이러한 장치가 차지하는 가상 입력 포트를 결정합니다. 물리적 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 전혀 사용할 필요가 없으며, 코어별 입력 변[...]"
+   "Libretro는 '레트로패드'로 알려진 가상 게임패드 가상화를 사용하여 프론트엔드(예: RetroArch)에서 코어로, 또는 그 반대로 통신합니다. 이 메뉴는 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식과 이러한 장치가 차지하는 가상 입력 포트를 결정합니다.\n물리적 입력 장치가 올바르게 인식되고 자동 구성되면 사용자는 이 메뉴를 전혀 사용할 필요가 없으며, 코어별 입력 변[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3180,7 +3244,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "이 가상 포트에 대한 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다."
+   "이 가상 포트의 가상 레트로패드가 물리적 입력 장치에 매핑되는 방식을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "코어별 입력 매핑을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3669,11 +3737,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "온스크린 키보드 (켜기/끄기)"
+   "키보드 오버레이 (토글)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "온스크린 키보드를 켜거나 끕니다."
+   "키보드 오버레이를 켜거나 끕니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -4981,6 +5049,41 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "세로 화면에서 사용할 오버레이의 세로 오프셋입니다. 값을 키우면 오버레이가 위쪽으로 이동하고, 값을 줄이면 오버레이가 아래쪽으로 이동합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "키보드 오버레이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "키보드 오버레이를 선택하고 조정합니다."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "키보드 오버레이 사전 설정"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "파일 브라우저에서 키보드 오버레이를 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "자동 크기 조정 키보드 오버레이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "키보드 오버레이를 원래 화면 비율로 조정합니다. 화면으로 늘리려면 비활성화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "키보드 오버레이 불투명도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "키보드 오버레이의 모든 UI 요소의 불투명도입니다."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -5162,6 +5265,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "M3U 실행목록을 통해 불러온 마지막으로 사용한 멀티 디스크 콘텐츠 디스크를 실행 시 자동으로 복원할 때 화면에 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "상태저장 알림"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "상태저장을 하거나 불러올 때 화면에 메시지를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -6265,7 +6376,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "메뉴 크기 배율"
+   "크기 배율"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
@@ -6289,7 +6400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "메뉴 투명도"
+   "불투명도"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
@@ -6305,7 +6416,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "미리보기"
+   "첫 번째 미리보기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
@@ -6937,7 +7048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "업데이트"
+   "업데이터 설정"
    )
 
 /* Settings > Network > Updater */
@@ -7523,6 +7634,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
    "오버레이가 저장되는 디렉토리입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "키보드 오버레이"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "키보드 오버레이는 이 디렉터리에 저장됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
@@ -8472,16 +8591,8 @@ MSG_HASH(
    "게임 옵션 저장"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "게임 옵션 삭제"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "콘텐츠 폴더 설정 저장"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "콘텐츠 폴더 설정 삭제"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -8548,24 +8659,12 @@ MSG_HASH(
    "코어 입력설정 파일 저장"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "코어 입력설정 파일 삭제"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "입력설정 파일을 콘텐츠 폴더에 저장"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "콘텐츠 폴더 입력설정 파일 삭제"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "게임 입력설정 파일 저장"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "게임 입력설정 파일 삭제"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9951,7 +10050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(키: %s)"
+   "키 %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -10042,7 +10141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "메뉴 선형 필터"
+   "선형 필터"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
@@ -10058,7 +10157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "메뉴 화면비"
+   "화면비"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
@@ -10066,7 +10165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "메뉴 화면비 고정"
+   "화면비 고정"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
@@ -10074,7 +10173,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "메뉴 색상 테마"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
@@ -10082,7 +10181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "사용자 메뉴 테마 프리셋"
+   "사용자 테마 프리셋"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
@@ -10090,7 +10189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "반투명 메뉴"
+   "투명도"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -10224,12 +10323,20 @@ MSG_HASH(
    "16:10 (가운데 맞춤)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (가운데 맞춤)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
    "3:2 (가운데 맞춤)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
    "5:3 (가운데 맞춤)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "자동"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
@@ -10424,7 +10531,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "왼쪽 미리보기"
+   "두 번째 미리보기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
@@ -10472,11 +10579,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "메뉴 알파 요소"
+   "색상 테마 알파 요소"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "메뉴 폰트"
+   "폰트"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
@@ -10484,19 +10591,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "메뉴 폰트 빨강"
+   "폰트 색 (빨강)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "메뉴 폰트 초록"
+   "폰트 색 (초록)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "메뉴 폰트 파랑"
+   "폰트 색 (파랑)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "메뉴 형태"
+   "레이아웃"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -10504,7 +10611,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "메뉴 아이콘 테마"
+   "아이콘 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -10520,7 +10627,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "그림자 그리기"
+   "그림자 효과"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -10528,7 +10635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "메뉴 셰이더 파이프라인"
+   "셰이더 파이프라인"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -10536,11 +10643,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "메뉴 색상 테마"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "배경색 그라데이션 테마를 선택합니다."
+   "다른 배경색 테마를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -10703,7 +10810,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "단순"
+   "배경 이미지"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -10770,7 +10877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "메뉴 테마 색상"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -10857,7 +10964,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "메뉴 아이콘"
+   "아이콘"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -10905,15 +11012,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "메뉴 테마 색상"
+   "색상 테마"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "배경색 그라데이션 테마를 선택합니다."
+   "다른 배경색 테마를 선택합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "메뉴 전환 애니메이션"
+   "전환 애니메이션"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -11682,7 +11789,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "업데이터"
+   "코어 업데이터 설정"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
@@ -13004,6 +13111,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "오버레이 불러오기 실패."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "키보드 오버레이가 설정되지 않았습니다."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,

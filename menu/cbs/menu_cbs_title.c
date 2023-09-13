@@ -467,8 +467,8 @@ static int action_get_core_information_list(
 
    /* Check whether we are parsing information for a
     * core updater/manager entry or the currently loaded core */
-   if ((menu_type == FILE_TYPE_DOWNLOAD_CORE) ||
-       (menu_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
+   if (   (menu_type == FILE_TYPE_DOWNLOAD_CORE)
+       || (menu_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
    {
       core_info_t *core_info_menu = NULL;
 
@@ -540,7 +540,7 @@ static int action_get_title_dropdown_input_description_common(
    /* Build title string */
    _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), len);
    _len += snprintf(s + _len, len - _len, " %u - ", port + 1);
-   _len += strlcpy (s + _len, input_label, len - _len);
+   strlcpy(s + _len, input_label, len - _len);
 
    return 1;
 }
@@ -629,6 +629,7 @@ DEFAULT_TITLE_MACRO(action_get_dump_disc_list,                  MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_eject_disc,                      MENU_ENUM_LABEL_VALUE_EJECT_DISC)
 #endif
 DEFAULT_TITLE_MACRO(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_cloud_sync_settings_list,        MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_frame_time_counter_settings_list, MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS)
@@ -639,6 +640,7 @@ DEFAULT_TITLE_MACRO(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_views_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_osk_overlay_settings_list,       MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_menu_views_settings_list,        MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_settings_views_settings_list,    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_views_settings_list,  MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS)
@@ -988,6 +990,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,                       action_get_load_disc_list},
       {MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST,          action_get_configuration_settings_list },
       {MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST,                 action_get_saving_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,             action_get_cloud_sync_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST,                action_get_logging_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST,     action_get_frame_time_counter_settings_list },
       {MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST,         action_get_frame_throttle_settings_list},
@@ -998,6 +1001,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST, action_get_onscreen_notifications_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST, action_get_onscreen_notifications_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST,       action_get_onscreen_overlay_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST,            action_get_osk_overlay_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST,             action_get_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST,         action_get_settings_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST,       action_get_quick_menu_views_settings_list},
@@ -1595,6 +1599,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_saving_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_cloud_sync_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_frame_throttle_settings_list);
             break;
@@ -1612,6 +1619,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_overlay_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_osk_overlay_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);

@@ -19,9 +19,7 @@
 
 #define CINTERFACE
 
-#if !defined(__WINRT__)
 #define HAVE_IBXM 1
-#endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
@@ -938,7 +936,6 @@ DRIVERS
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail_path.c"
 #include "../gfx/gfx_thumbnail.c"
-#include "../gfx/video_coord_array.c"
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
 #endif
@@ -1167,11 +1164,6 @@ RETROARCH
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
-#ifdef HAVE_LANGEXTRA
-#include "../intl/msg_hash_chs.c"
-#include "../intl/msg_hash_pt_br.c"
-#endif
-
 #include "../intl/msg_hash_us.c"
 
 /*============================================================
@@ -1620,4 +1612,13 @@ STEAM INTEGRATION USING MIST
 
 #ifdef HAVE_PRESENCE
 #include "../network/presence.c"
+#endif
+
+/*============================================================
+CLOUD SYNC
+============================================================ */
+#ifdef HAVE_CLOUDSYNC
+#include "../tasks/task_cloudsync.c"
+#include "../network/cloud_sync_driver.c"
+#include "../network/cloud_sync/webdav.c"
 #endif

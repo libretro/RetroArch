@@ -138,13 +138,14 @@ static void contentless_cores_init_info_entries(
             tmp_str[0] = '\0';
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");
-            strlcat(licenses_str, tmp_str, sizeof(licenses_str));
+            strlcpy(licenses_str       + _len, tmp_str,
+                  sizeof(licenses_str) - _len);
          }
          /* No license found - set to N/A */
          else
-            strlcat(licenses_str,
+            strlcpy(licenses_str       + _len,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                  sizeof(licenses_str));
+                  sizeof(licenses_str) - _len);
 
          entry->licenses_str            = strdup(licenses_str);
 
@@ -294,7 +295,10 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 
    if (path_is_valid(icon_path))
    {
-      struct texture_image ti = {0};
+      struct texture_image ti;
+      ti.pixels               = NULL;
+      ti.width                = 0;
+      ti.height               = 0;
       ti.supports_rgba        = rgba_supported;
 
       if (image_texture_load(&ti, icon_path))
@@ -325,9 +329,9 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
           &&  core_info->databases_list
           && (core_info->databases_list->size > 0))
       {
+         struct texture_image ti;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
-         struct texture_image ti = {0};
          size_t len              = fill_pathname_join_special(
                icon_path, icon_directory,
                icon_name, sizeof(icon_path));
@@ -337,6 +341,9 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          icon_path[++len]        = 'g';
          icon_path[++len]        = '\0';
 
+         ti.pixels               = NULL;
+         ti.width                = 0;
+         ti.height               = 0;
          ti.supports_rgba        = rgba_supported;
 
          if (!path_is_valid(icon_path))

@@ -509,16 +509,11 @@ void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
          len);
    s[_len  ]   = ' ';
-   s[_len+1]   = '\0';
    if (runtime_log)
    {
-      size_t _len2;
-      char t[64];
-      t[0]  = '\0';
-      _len2 = snprintf(t, sizeof(t), "%02u:%02u:%02u",
+      snprintf(s + _len + 1, len - _len - 1, "%02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
-      strlcpy(s + _len2, t, len - _len2);
    }
    else
    {
@@ -572,13 +567,12 @@ static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
 static bool runtime_last_played_human(runtime_log_t *runtime_log,
       char *str, size_t len)
 {
-   size_t _len, _len2;
+   size_t _len;
    struct tm time_info;
    time_t last_played;
    time_t current;
    time_t delta;
    unsigned i;
-   char tmp[32];
 
    unsigned units[7][2] =
    {
@@ -592,8 +586,6 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
    };
 
    float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
-
-   tmp[0]           = '\0';
 
    if (!runtime_log)
       return false;
@@ -611,17 +603,16 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
       delta /= periods[i];
 
    /* Generate string */
-   _len         = snprintf(tmp, sizeof(tmp), "%u ", (int)delta);
-   _len        += strlcpy (tmp       + _len,
+   _len  = snprintf(str, len, "%u ", (int)delta);
+   _len += strlcpy(str + _len,
          msg_hash_to_str((enum msg_hash_enums)units[i][(delta == 1) ? 0 : 1]),
-                         sizeof(tmp) - _len);
+         len - _len);
 
-   _len2        = strlcat(str, tmp, len);
-   str[  _len2] = ' ';
-   str[++_len2] = '\0';
-   _len2       += strlcpy(str + _len2,
+   str[  _len] = ' ';
+   str[++_len] = '\0';
+   strlcpy(str + _len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO),
-         len - _len2);
+         len - _len);
 
    return true;
 }
@@ -638,9 +629,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
 
    if (runtime_log)
    {
-      char tmp[64];
       bool has_am_pm      = false;
-      tmp[0]              = '\0';
       /* Handle 12-hour clock options
        * > These require extra work, due to AM/PM localisation */
       switch (timedate_style)
@@ -778,10 +767,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
          /* Get time */
          struct tm time_info;
          runtime_log_get_last_played_time(runtime_log, &time_info);
-         strftime_am_pm(tmp, sizeof(tmp), format_str, &time_info);
-         str[  _len] = ' ';
-         str[++_len] = '\0';
-         strlcat(str, tmp, len);
+         strftime_am_pm(str + _len, len - _len, format_str, &time_info);
          return;
       }
 
@@ -1033,14 +1019,13 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   runtime_log->last_played.day, runtime_log->last_played.month);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_AGO:
-            if (!(runtime_last_played_human(runtime_log, tmp, sizeof(tmp))))
-               strlcat(tmp,
+            str[  _len] = ' ';
+            str[++_len] = '\0';               
+            if (!(runtime_last_played_human(runtime_log, str + _len, len - _len - 2)))
+               strlcat(str + _len,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
-                     sizeof(tmp));
-            str[  _len] = ' ';
-            str[++_len] = '\0';
-            strlcat(str, tmp, len);
+                     len - _len - 2);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
          default:

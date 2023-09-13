@@ -54,7 +54,7 @@ static inline void add_sublabel_and_whats_this(
 
    cbs.enum_idx = setting->enum_idx;
 
-   menu_cbs_init_bind_sublabel(&cbs, 0, 0, setting->type, setting->size);
+   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0, setting->type, setting->size);
 
    cbs.action_sublabel(0, 0, 0, 0, 0, tmp, sizeof(tmp));
 

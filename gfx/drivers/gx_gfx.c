@@ -463,8 +463,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    while (gx_is_valid_yorigin(gx_mode.viYOrigin+(gx->yOriginPos+1)))
       gx->yOriginPos++;
 
-   gx_mode.xfbMode         = (modetype == VI_INTERLACE) 
-      ? VI_XFBMODE_DF 
+   gx_mode.xfbMode         = (modetype == VI_INTERLACE)
+      ? VI_XFBMODE_DF
       : VI_XFBMODE_SF;
    gx_mode.field_rendering = GX_FALSE;
    gx_mode.aa              = GX_FALSE;
@@ -526,6 +526,13 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          else
             new_fb_width = (unsigned)((16.0f / 10.0f) * (float)new_fb_height) & ~3;
          break;
+      case RGUI_ASPECT_RATIO_21_9:
+      case RGUI_ASPECT_RATIO_21_9_CENTRE:
+         if (new_fb_height == 240)
+            new_fb_width = 560;
+         else
+            new_fb_width = (unsigned)((21.0f / 9.0f) * (float)new_fb_height) & ~3;
+         break;
       default:
          /* 4:3 */
          if (new_fb_height == 240)
@@ -534,8 +541,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
             new_fb_width = (unsigned)((4.0f / 3.0f) * (float)new_fb_height) & ~3;
          break;
    }
-   if (new_fb_width > 424)
-      new_fb_width = 424;
+   if (new_fb_width > 560)
+      new_fb_width = 560;
 
    new_fb_pitch = new_fb_width * 2;
 
@@ -664,9 +671,9 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
    fb_pitch                = p_disp->framebuf_pitch;
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
-         (gx->rgb32) 
-         ? GX_TF_RGBA8 
-         : gx->menu_texture_enable 
+         (gx->rgb32)
+         ? GX_TF_RGBA8
+         : gx->menu_texture_enable
          ? GX_TF_RGB5A3
          : GX_TF_RGB565,
          GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -1065,7 +1072,7 @@ static void gx_resize(gx_video_t *gx,
        || (overscan_corr_bottom > 0))
    {
       float current_aspect = (float)width / (float)height;
-      int new_height       = height - 
+      int new_height       = height -
          (overscan_corr_top +
           overscan_corr_bottom);
       int new_width        = (int)((new_height * current_aspect) + 0.5f);
@@ -1240,7 +1247,7 @@ static void gx_set_rotation(void *data, unsigned orientation)
 
    if (!gx)
       return;
-   
+
    gx->orientation   = orientation;
    gx->should_resize = true;
 }
@@ -1458,7 +1465,7 @@ static bool gx_overlay_load(void *data,
 static void gx_overlay_enable(void *data, bool state)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   
+
    if (gx)
       gx->overlay_enable = state;
 }
@@ -1466,7 +1473,7 @@ static void gx_overlay_enable(void *data, bool state)
 static void gx_overlay_full_screen(void *data, bool enable)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   
+
    if (gx)
       gx->overlay_full_screen = enable;
 }
@@ -1485,7 +1492,7 @@ static void gx_render_overlay(void *data)
    gx_video_t *gx = (gx_video_t*)data;
    if (!gx)
       return;
-   
+
    GX_SetCurrentMtx(GX_PNMTX1);
    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -1582,7 +1589,7 @@ static bool gx_frame(void *data, const void *frame,
    bool video_smooth                  = settings->bools.video_smooth;
    unsigned video_aspect_ratio_idx    = settings->uints.video_aspect_ratio_idx;
 #ifdef HAVE_MENU
-   bool menu_is_alive                 = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
    bool fps_show                      = video_info->fps_show;
 

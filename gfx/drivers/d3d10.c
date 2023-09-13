@@ -123,7 +123,7 @@ d3d10_get_closest_match(D3D10Device device,
       UINT format_support;
       if (SUCCEEDED(device->lpVtbl->CheckFormatSupport(device, *format,
                   &format_support))
-            && ((format_support & desired_format_support) == 
+            && ((format_support & desired_format_support) ==
                desired_format_support))
          break;
       format++;
@@ -133,9 +133,9 @@ d3d10_get_closest_match(D3D10Device device,
 
 static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
 {
-   bool is_render_target   = texture->desc.BindFlags 
+   bool is_render_target   = texture->desc.BindFlags
                            & D3D10_BIND_RENDER_TARGET;
-   UINT format_support     = D3D10_FORMAT_SUPPORT_TEXTURE2D 
+   UINT format_support     = D3D10_FORMAT_SUPPORT_TEXTURE2D
                            | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
 
    texture->desc.MipLevels          = 1;
@@ -144,8 +144,8 @@ static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    texture->desc.SampleDesc.Quality = 0;
    texture->desc.BindFlags         |= D3D10_BIND_SHADER_RESOURCE;
    texture->desc.CPUAccessFlags     =
-      texture->desc.Usage == D3D10_USAGE_DYNAMIC 
-      ? D3D10_CPU_ACCESS_WRITE 
+      texture->desc.Usage == D3D10_USAGE_DYNAMIC
+      ? D3D10_CPU_ACCESS_WRITE
       : 0;
 
    if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
@@ -388,7 +388,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       {
          sprite->pos.x       = draw->x / (float)d3d10->viewport.Width;
          sprite->pos.y       =
-               (d3d10->viewport.Height - draw->y - draw->height) 
+               (d3d10->viewport.Height - draw->y - draw->height)
                / (float)d3d10->viewport.Height;
          sprite->pos.w       = draw->width  / (float)d3d10->viewport.Width;
          sprite->pos.h       = draw->height / (float)d3d10->viewport.Height;
@@ -797,7 +797,7 @@ static void d3d10_font_render_message(
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
-   const struct font_glyph* glyph_q       = 
+   const struct font_glyph* glyph_q       =
       font->font_driver->get_glyph(font->font_data, '?');
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
@@ -1200,7 +1200,7 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 {
    video_driver_update_viewport(&d3d10->vp, force_full,
-         d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT);
+         (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false);
 
    d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
    d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
@@ -1209,8 +1209,8 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
    d3d10->frame.viewport.MaxDepth  = 0.0f;
    d3d10->frame.viewport.MaxDepth  = 1.0f;
 
-   if (d3d10->shader_preset && (d3d10->frame.output_size.x != d3d10->vp.width ||
-            d3d10->frame.output_size.y != d3d10->vp.height))
+   if (d3d10->shader_preset && (d3d10->frame.output_size.x != d3d10->vp.width
+            || d3d10->frame.output_size.y != d3d10->vp.height))
       d3d10->flags                |= D3D10_ST_FLAG_RESIZE_RTS;
 
    d3d10->frame.output_size.x      = d3d10->vp.width;
@@ -1399,7 +1399,10 @@ static bool d3d10_gfx_set_shader(void* data,
 
    for (i = 0; i < d3d10->shader_preset->luts; i++)
    {
-      struct texture_image image = { 0 };
+      struct texture_image image;
+      image.pixels               = NULL;
+      image.width                = 0;
+      image.height               = 0;
       image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d10->shader_preset->lut[i].path))
@@ -1894,7 +1897,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
       d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
             &d3d10->blend_enable);
 
-      blend_desc.SrcBlend  = D3D10_BLEND_ONE;
+      blend_desc.SrcBlend  = D3D10_BLEND_DEST_COLOR;
       blend_desc.DestBlend = D3D10_BLEND_ONE;
       d3d10->device->lpVtbl->CreateBlendState(d3d10->device, &blend_desc,
             &d3d10->blend_pipeline);
@@ -1933,7 +1936,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;
       d3d10_fake_context.get_metrics = win32_get_metrics;
-      video_context_driver_set(&d3d10_fake_context); 
+      video_context_driver_set(&d3d10_fake_context);
 #ifdef HAVE_SLANG
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -1960,7 +1963,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #else
    DXGICreateFactory1(&d3d10->factory);
 #endif
-   
+
    {
       int         i = 0;
       int gpu_index = settings->ints.d3d10_gpu_index;
@@ -2008,7 +2011,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
          d3d10->current_adapter = d3d10->adapters[gpu_index];
          d3d10->adapter         = d3d10->current_adapter;
          RARCH_LOG("[D3D10]: Using GPU index %d.\n", gpu_index);
-         video_driver_set_gpu_device_string(d3d10->gpu_list->elems[gpu_index].data);
       }
       else
       {
@@ -2056,7 +2058,6 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
 
       if (pass->fbo.flags & FBO_SCALE_FLAG_VALID)
       {
-
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
@@ -2107,7 +2108,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
 
       RARCH_LOG("[D3D10]: Updating framebuffer size %ux%u.\n", width, height);
 
-      if (     (i != (d3d10->shader_preset->passes - 1)) 
+      if (     (i != (d3d10->shader_preset->passes - 1))
             || (width  != d3d10->vp.width)
             || (height != d3d10->vp.height))
       {
@@ -2160,11 +2161,11 @@ static bool d3d10_gfx_frame(
    unsigned video_width       = video_info->width;
    unsigned video_height      = video_info->height;
    bool statistics_show       = video_info->statistics_show;
-   struct font_params 
+   struct font_params
       *osd_params             = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
-   bool menu_is_alive         = video_info->menu_is_alive;
+   bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu   = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active        = video_info->widgets_active;
@@ -2197,7 +2198,7 @@ static bool d3d10_gfx_frame(
       video_driver_set_size(video_width, video_height);
    }
 
-#if 0 
+#if 0
    /* custom viewport doesn't call apply_state_changes,
       so we can't rely on this for now */
    if (d3d10->resize_viewport)
@@ -2227,7 +2228,7 @@ static bool d3d10_gfx_frame(
          if (d3d10->flags & D3D10_ST_FLAG_RESIZE_RTS)
          {
             int i;
-            /* Release all render targets first to avoid 
+            /* Release all render targets first to avoid
              * memory fragmentation */
             for (i = 0; i < (int) d3d10->shader_preset->passes; i++)
             {
@@ -2255,7 +2256,7 @@ static bool d3d10_gfx_frame(
          }
       }
 
-      /* either no history, or we moved a texture of 
+      /* either no history, or we moved a texture of
        * a different size in the front slot */
       if (     (d3d10->frame.texture[0].desc.Width  != width)
             || (d3d10->frame.texture[0].desc.Height != height))
@@ -2311,7 +2312,7 @@ static bool d3d10_gfx_frame(
             d3d10->pass[i].frame_count = frame_count;
 
 #ifdef HAVE_REWIND
-         d3d10->pass[i].frame_direction = state_manager_frame_is_reversed() 
+         d3d10->pass[i].frame_direction = state_manager_frame_is_reversed()
             ? -1 : 1;
 #else
          d3d10->pass[i].frame_direction = 1;
@@ -2438,7 +2439,7 @@ static bool d3d10_gfx_frame(
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_enable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
 
-   if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE) 
+   if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
          && d3d10->menu.texture.handle)
    {
       UINT offset = 0, stride = sizeof(d3d10_vertex_t);
@@ -2475,8 +2476,8 @@ static bool d3d10_gfx_frame(
    if (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
 #endif
    {
-      UINT offset = 0, stride = 0;
-      stride = sizeof(d3d10_sprite_t);
+      UINT offset = 0;
+      UINT stride = sizeof(d3d10_sprite_t);
       context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
       context->lpVtbl->IASetVertexBuffers(
             context, 0, 1, (D3D10Buffer* const)&d3d10->sprites.vbo,
@@ -2537,7 +2538,7 @@ static bool d3d10_gfx_frame(
    d3d10->flags &= ~D3D10_ST_FLAG_SPRITES_ENABLE;
 
 #ifndef __WINRT__
-   win32_update_title();
+   video_driver_update_title(NULL);
 #endif
    DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
 
@@ -2731,7 +2732,7 @@ static uintptr_t d3d10_gfx_load_texture(
 
    return (uintptr_t)texture;
 }
-static void d3d10_gfx_unload_texture(void* data, 
+static void d3d10_gfx_unload_texture(void* data,
       bool threaded, uintptr_t handle)
 {
    d3d10_texture_t* texture = (d3d10_texture_t*)handle;

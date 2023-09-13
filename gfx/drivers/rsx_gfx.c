@@ -698,7 +698,7 @@ static void rsx_font_render_message(rsx_t *rsx,
 }
 
 static void rsx_font_setup_viewport(
-      rsx_t *rsx, rsx_font_t *font, 
+      rsx_t *rsx, rsx_font_t *font,
       unsigned width, unsigned height,
       bool full_screen)
 {
@@ -787,7 +787,7 @@ static void rsx_font_render_msg(
       rsx_font_setup_viewport(rsx, font, width, height, full_screen);
 
    if (    !string_is_empty(msg)
-         && font->font_data  
+         && font->font_data
          && font->font_driver)
    {
       if (drop_x || drop_y)
@@ -902,11 +902,11 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
    texbuffer              = (u8*)texture->data;
    memcpy(texbuffer, data, height * pitch);
 
-   texture->tex.format    = (rgb32 
+   texture->tex.format    = (rgb32
                             ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
                             (menu)
-                            ? GCM_TEXTURE_FORMAT_A4R4G4B4 
-                            : GCM_TEXTURE_FORMAT_R5G6B5) 
+                            ? GCM_TEXTURE_FORMAT_A4R4G4B4
+                            : GCM_TEXTURE_FORMAT_R5G6B5)
                             | GCM_TEXTURE_FORMAT_LIN;
    texture->tex.mipmap    = 1;
    texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
@@ -1094,7 +1094,7 @@ static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
    enum gfx_ctx_api api                 = GFX_CTX_RSX_API;
 
    rsx->shared_context_use              = (video_shared_context && (hwr->context_type != RETRO_HW_CONTEXT_NONE));
-   
+
    if ((runloop_get_flags() & RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT)
       && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       rsx->shared_context_use           = true;
@@ -1102,7 +1102,7 @@ static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
    gfx_ctx = video_context_driver_init_first(rsx,
       settings->arrays.video_context_driver,
       api, 1, 0, rsx->shared_context_use, &ctx_data);
-   
+
    if (ctx_data)
       rsx->ctx_data                     = ctx_data;
 
@@ -1204,7 +1204,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
       if (!host_addr)
          goto error;
 
-      /* Initialise Reality, which sets up the 
+      /* Initialise Reality, which sets up the
        * command buffer and shared I/O memory */
 #ifdef NV40TCL_RENDER_ENABLE
       /* There was an API breakage on 2020-07-10, let's
@@ -1254,7 +1254,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 
    gcm->depth_pitch  = res.width * sizeof(u32);
    gcm->depth_buffer = (u32 *)rsxMemalign(64, (res.height * gcm->depth_pitch));  /* Beware, if was (res.height * gcm->depth_pitch) * 2 */
-   
+
    rsxAddressToOffset(gcm->depth_buffer, &gcm->depth_offset);
 
    gcmResetFlipStatus();
@@ -2163,7 +2163,7 @@ static bool rsx_frame(void* data, const void* frame,
    bool statistics_show             = video_info->statistics_show;
    struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive               = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
@@ -2195,10 +2195,10 @@ static bool rsx_frame(void* data, const void* frame,
       rsx_load_texture_data(gcm,
             &gcm->texture[gcm->tex_index],
             frame, width, height, pitch, gcm->rgb32, false,
-            gcm->smooth 
-            ? TEXTURE_FILTER_LINEAR 
+            gcm->smooth
+            ? TEXTURE_FILTER_LINEAR
             : TEXTURE_FILTER_NEAREST);
-      /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU, 
+      /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU,
        * shouldn't this be RSX_SHADER_STOCK_BLEND instead? */
       rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
       rsx_draw_vertices(gcm);
@@ -2211,7 +2211,7 @@ static bool rsx_frame(void* data, const void* frame,
       menu_driver_frame(menu_is_alive, video_info);
       if (gcm->menu_texture.data)
       {
-         /* TODO/FIXME - pipeline ID being used here 
+         /* TODO/FIXME - pipeline ID being used here
           * is RSX_SHADER_STOCK_BLEND, shouldn't
           * this be RSX_SHADER_MENU instead? */
          rsx_set_menu_texture(gcm, &gcm->menu_texture);

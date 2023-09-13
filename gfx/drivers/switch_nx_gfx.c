@@ -55,7 +55,7 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
-/* 
+/*
  * DISPLAY DRIVER
  */
 
@@ -90,7 +90,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    NULL                                          /* scissor_end   */
 };
 
-/* 
+/*
  * FONT DRIVER
  */
 
@@ -363,7 +363,7 @@ font_renderer_t switch_font =
    switch_font_get_line_metrics
 };
 
-/* 
+/*
  * VIDEO DRIVER
  */
 
@@ -670,9 +670,9 @@ static bool switch_frame(void *data, const void *frame,
    uint32_t *out_buffer = NULL;
    bool       ffwd_mode = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
-   bool menu_is_alive   = video_info->menu_is_alive;
+   bool menu_is_alive   = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
-   struct font_params 
+   struct font_params
       *osd_params       = (struct font_params *)&video_info->osd_stat_params;
    bool statistics_show = video_info->statistics_show;
 
@@ -686,8 +686,8 @@ static bool switch_frame(void *data, const void *frame,
          return true;
    }
 
-   if (  sw->should_resize || 
-         width  != sw->last_width || 
+   if (  sw->should_resize ||
+         width  != sw->last_width ||
          height != sw->last_height)
    {
       switch_update_viewport(sw, video_info);
@@ -701,8 +701,8 @@ static bool switch_frame(void *data, const void *frame,
       sw->scaler.in_width  = width;
       sw->scaler.in_height = height;
       sw->scaler.in_stride = pitch;
-      sw->scaler.in_fmt    = sw->rgb32 
-         ? SCALER_FMT_ARGB8888 
+      sw->scaler.in_fmt    = sw->rgb32
+         ? SCALER_FMT_ARGB8888
          : SCALER_FMT_RGB565;
 
       if (!sw->smooth)
