@@ -1062,12 +1062,21 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_LOG_INTERFACE 27
 
+/**
+ * Returns an interface that the core can use for profiling code
+ * and to access performance-related information.
+ *
+ * This callback supports performance counters, a high-resolution timer,
+ * and listing available CPU features (mostly SIMD instructions).
+ *
+ * @param data[out] <tt>struct retro_perf_callback *</tt>.
+ * Pointer to the callback interface.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available.
+ * @see retro_perf_callback
+ */
 #define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
-                                           /* struct retro_perf_callback * --
-                                            * Gets an interface for performance counters. This is useful
-                                            * for performance logging in a cross-platform way and for detecting
-                                            * architecture-specific features, such as SIMD support.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
                                            /* struct retro_location_callback * --
                                             * Gets access to the location interface.
@@ -2874,42 +2883,190 @@ struct retro_log_callback
 
 /** @} */
 
-/* Performance related functions */
+/** @defgroup GET_PERF_INTERFACE Performance Interface
+ * @{
+ */
 
-/* ID values for SIMD CPU features */
+/** @defgroup RETRO_SIMD CPU Features
+ * @{
+ */
+
+/**
+ * Indicates CPU support for the SSE instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE
+ */
 #define RETRO_SIMD_SSE      (1 << 0)
+
+/**
+ * Indicates CPU support for the SSE2 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE2
+ */
 #define RETRO_SIMD_SSE2     (1 << 1)
+
+/** Indicates CPU support for the AltiVec (aka VMX or Velocity Engine) instruction set. */
 #define RETRO_SIMD_VMX      (1 << 2)
+
+/** Indicates CPU support for the VMX128 instruction set. Xbox 360 only. */
 #define RETRO_SIMD_VMX128   (1 << 3)
+
+/**
+ * Indicates CPU support for the AVX instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#avxnewtechs=AVX
+ */
 #define RETRO_SIMD_AVX      (1 << 4)
+
+/**
+ * Indicates CPU support for the NEON instruction set.
+ * @see https://developer.arm.com/architectures/instruction-sets/intrinsics/#f:@navigationhierarchiessimdisa=[Neon]
+ */
 #define RETRO_SIMD_NEON     (1 << 5)
+
+/**
+ * Indicates CPU support for the SSE3 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE3
+ */
 #define RETRO_SIMD_SSE3     (1 << 6)
+
+/**
+ * Indicates CPU support for the SSSE3 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSSE3
+ */
 #define RETRO_SIMD_SSSE3    (1 << 7)
+
+/**
+ * Indicates CPU support for the MMX instruction set.
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=MMX
+ */
 #define RETRO_SIMD_MMX      (1 << 8)
+
+/** Indicates CPU support for the MMXEXT instruction set. */
 #define RETRO_SIMD_MMXEXT   (1 << 9)
+
+/**
+ * Indicates CPU support for the SSE4 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE4_1
+ */
 #define RETRO_SIMD_SSE4     (1 << 10)
+
+/**
+ * Indicates CPU support for the SSE4.2 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE4_2
+ */
 #define RETRO_SIMD_SSE42    (1 << 11)
+
+/**
+ * Indicates CPU support for the AVX2 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#avxnewtechs=AVX2
+ */
 #define RETRO_SIMD_AVX2     (1 << 12)
+
+/** Indicates CPU support for the VFPU instruction set. PS2 and PSP only.
+ *
+ * @see https://pspdev.github.io/vfpu-docs
+ */
 #define RETRO_SIMD_VFPU     (1 << 13)
+
+/**
+ * Indicates CPU support for Gekko SIMD extensions. GameCube only.
+ */
 #define RETRO_SIMD_PS       (1 << 14)
+
+/**
+ * Indicates CPU support for AES instructions.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#aestechs=AES&othertechs=AES
+ */
 #define RETRO_SIMD_AES      (1 << 15)
+
+/**
+ * Indicates CPU support for the VFPv3 instruction set.
+ */
 #define RETRO_SIMD_VFPV3    (1 << 16)
+
+/**
+ * Indicates CPU support for the VFPv4 instruction set.
+ */
 #define RETRO_SIMD_VFPV4    (1 << 17)
+
+/** Indicates CPU support for the POPCNT instruction. */
 #define RETRO_SIMD_POPCNT   (1 << 18)
+
+/** Indicates CPU support for the MOVBE instruction. */
 #define RETRO_SIMD_MOVBE    (1 << 19)
+
+/** Indicates CPU support for the CMOV instruction. */
 #define RETRO_SIMD_CMOV     (1 << 20)
+
+/** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
 
+/** @} */
+
+/**
+ * An abstract unit of ticks.
+ *
+ * Usually nanoseconds or CPU cycles,
+ * but it depends on the platform and the frontend.
+ */
 typedef uint64_t retro_perf_tick_t;
+
+/** Time in microseconds. */
 typedef int64_t retro_time_t;
 
+/**
+ * A performance counter.
+ *
+ * Use this to measure the execution time of a region of code.
+ * @see retro_perf_callback
+ */
 struct retro_perf_counter
 {
+   /**
+    * A human-readable identifier for the counter.
+    *
+    * May be displayed by the frontend.
+    * Behavior is undefined if this is \c NULL.
+    */
    const char *ident;
+
+   /**
+    * The time of the most recent call to \c retro_perf_callback::perf_start
+    * on this performance counter.
+    *
+    * @see retro_perf_start_t
+    */
    retro_perf_tick_t start;
+
+   /**
+    * The total time spent within this performance counter's measured code,
+    * i.e. between calls to \c retro_perf_callback::perf_start and \c retro_perf_callback::perf_stop.
+    *
+    * Updated after each call to \c retro_perf_callback::perf_stop.
+    * @see retro_perf_stop_t
+    */
    retro_perf_tick_t total;
+
+   /**
+    * The number of times this performance counter has been started.
+    *
+    * Updated after each call to \c retro_perf_callback::perf_start.
+    * @see retro_perf_start_t
+    */
    retro_perf_tick_t call_cnt;
 
+   /**
+    * \c true if this performance counter has been registered by the frontend.
+    * Must be initialized to \c false by the core before registering it.
+    * @see retro_perf_register_t
+    */
    bool registered;
 };
 
@@ -2921,77 +3078,151 @@ struct retro_perf_counter
  */
 typedef retro_time_t (RETRO_CALLCONV *retro_perf_get_time_usec_t)(void);
 
-/* A simple counter. Usually nanoseconds, but can also be CPU cycles.
- * Can be used directly if desired (when creating a more sophisticated
- * performance counter system).
- * */
+/**
+ * @returns The number of ticks since some unspecified epoch.
+ * The exact meaning of a "tick" depends on the platform,
+ * but it usually refers to nanoseconds or CPU cycles.
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
+ */
 typedef retro_perf_tick_t (RETRO_CALLCONV *retro_perf_get_counter_t)(void);
 
-/* Returns a bit-mask of detected CPU features (RETRO_SIMD_*). */
+/**
+ * Returns a bitmask of detected CPU features.
+ *
+ * Use this for runtime dispatching of CPU-specific code.
+ *
+ * @returns A bitmask of detected CPU features.
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
+ * @see RETRO_SIMD
+ */
 typedef uint64_t (RETRO_CALLCONV *retro_get_cpu_features_t)(void);
 
-/* Asks frontend to log and/or display the state of performance counters.
- * Performance counters can always be poked into manually as well.
+/**
+ * Asks the frontend to log or display the state of performance counters.
+ * How this is done depends on the frontend.
+ * Performance counters can be reviewed manually as well.
+ *
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
+ * @see retro_perf_counter
  */
 typedef void (RETRO_CALLCONV *retro_perf_log_t)(void);
 
-/* Register a performance counter.
- * ident field must be set with a discrete value and other values in
- * retro_perf_counter must be 0.
- * Registering can be called multiple times. To avoid calling to
- * frontend redundantly, you can check registered field first. */
+/**
+ * Registers a new performance counter.
+ *
+ * If \c counter has already been registered beforehand,
+ * this function does nothing.
+ *
+ * @param counter The counter to register.
+ * \c counter::ident must be set to a unique identifier,
+ * and all other values in \c counter must be set to zero or \c false.
+ * Behavior is undefined if \c NULL.
+ * @post If \c counter is successfully registered,
+ * then \c counter::registered will be set to \c true.
+ * Otherwise, it will be set to \c false.
+ * Registration may fail if the frontend's maximum number of counters (if any) has been reached.
+ * @note The counter is owned by the core and must not be freed by the frontend.
+ * The frontend must also clean up any references to a core's performance counters
+ * before unloading it, otherwise undefined behavior may occur.
+ * @see retro_perf_start_t
+ * @see retro_perf_stop_t
+ */
 typedef void (RETRO_CALLCONV *retro_perf_register_t)(struct retro_perf_counter *counter);
 
-/* Starts a registered counter. */
+/**
+ * Starts a registered performance counter.
+ *
+ * Call this just before the code you want to measure.
+ *
+ * @param counter The counter to start.
+ * Behavior is undefined if \c NULL.
+ * @see retro_perf_stop_t
+ */
 typedef void (RETRO_CALLCONV *retro_perf_start_t)(struct retro_perf_counter *counter);
 
-/* Stops a registered counter. */
+/**
+ * Stops a registered performance counter.
+ *
+ * Call this just after the code you want to measure.
+ *
+ * @param counter The counter to stop.
+ * Behavior is undefined if \c NULL.
+ * @see retro_perf_start_t
+ * @see retro_perf_stop_t
+ */
 typedef void (RETRO_CALLCONV *retro_perf_stop_t)(struct retro_perf_counter *counter);
 
-/* For convenience it can be useful to wrap register, start and stop in macros.
- * E.g.:
- * #ifdef LOG_PERFORMANCE
+/**
+ * An interface that the core can use to get performance information.
+ *
+ * Here's a usage example:
+ *
+ * @code{.c}
+ * #ifdef PROFILING
+ * // Wrapper macros to simplify using performance counters.
+ * // Optional; tailor these to your project's needs.
  * #define RETRO_PERFORMANCE_INIT(perf_cb, name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
  * #define RETRO_PERFORMANCE_START(perf_cb, name) perf_cb.perf_start(&(name))
  * #define RETRO_PERFORMANCE_STOP(perf_cb, name) perf_cb.perf_stop(&(name))
  * #else
- * ... Blank macros ...
+ * // Exclude the performance counters if profiling is disabled.
+ * #define RETRO_PERFORMANCE_INIT(perf_cb, name) ((void)0)
+ * #define RETRO_PERFORMANCE_START(perf_cb, name) ((void)0)
+ * #define RETRO_PERFORMANCE_STOP(perf_cb, name) ((void)0)
  * #endif
  *
- * These can then be used mid-functions around code snippets.
+ * // Defined somewhere else in the core.
+ * extern struct retro_perf_callback perf_cb;
  *
- * extern struct retro_perf_callback perf_cb;  * Somewhere in the core.
- *
- * void do_some_heavy_work(void)
+ * void retro_run(void)
  * {
- *    RETRO_PERFORMANCE_INIT(cb, work_1;
- *    RETRO_PERFORMANCE_START(cb, work_1);
- *    heavy_work_1();
- *    RETRO_PERFORMANCE_STOP(cb, work_1);
+ *    RETRO_PERFORMANCE_INIT(cb, interesting);
+ *    RETRO_PERFORMANCE_START(cb, interesting);
+ *    interesting_work();
+ *    RETRO_PERFORMANCE_STOP(cb, interesting);
  *
- *    RETRO_PERFORMANCE_INIT(cb, work_2);
- *    RETRO_PERFORMANCE_START(cb, work_2);
- *    heavy_work_2();
- *    RETRO_PERFORMANCE_STOP(cb, work_2);
+ *    RETRO_PERFORMANCE_INIT(cb, maybe_slow);
+ *    RETRO_PERFORMANCE_START(cb, maybe_slow);
+ *    more_interesting_work();
+ *    RETRO_PERFORMANCE_STOP(cb, maybe_slow);
  * }
  *
  * void retro_deinit(void)
  * {
- *    perf_cb.perf_log();  * Log all perf counters here for example.
+ *    // Asks the frontend to log the results of all performance counters.
+ *    perf_cb.perf_log();
  * }
+ * @endcode
+ *
+ * All functions are set by the frontend.
+ *
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
  */
-
 struct retro_perf_callback
 {
+   /** @copydoc retro_perf_get_time_usec_t */
    retro_perf_get_time_usec_t    get_time_usec;
+
+   /** @copydoc retro_perf_get_counter_t */
    retro_get_cpu_features_t      get_cpu_features;
 
+   /** @copydoc retro_perf_get_counter_t */
    retro_perf_get_counter_t      get_perf_counter;
+
+   /** @copydoc retro_perf_register_t */
    retro_perf_register_t         perf_register;
+
+   /** @copydoc retro_perf_start_t */
    retro_perf_start_t            perf_start;
+
+   /** @copydoc retro_perf_stop_t */
    retro_perf_stop_t             perf_stop;
+
+   /** @copydoc retro_perf_log_t */
    retro_perf_log_t              perf_log;
 };
+
+/** @} */
 
 /**
  * @defgroup RETRO_SENSOR Sensor Interface
