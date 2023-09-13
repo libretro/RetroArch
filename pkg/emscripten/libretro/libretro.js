@@ -80,7 +80,7 @@ var Module = {
       {
          console.log(text);
       },
-   canvas: document.getElementById('canvas'),
+    canvas: document.getElementById("canvas"),
    totalDependencies: 0,
    monitorRunDependencies: function(left)
       {
@@ -232,6 +232,8 @@ function startRetroArch()
    document.getElementById("btnMenu").disabled = false;
    document.getElementById("btnFullscreen").disabled = false;
 
+    Module["canvas"] = document.getElementById("canvas");
+    Module["canvas"].addEventListener("click", () => Module["canvas"].focus());
    Module['callMain'](Module['arguments']);
    Module['resumeMainLoop']();
    Module['canvas'].focus();
@@ -286,7 +288,7 @@ function switchStorage(backend) {
 
 // When the browser has loaded everything.
 $(function() {
-   // Enable all available ToolTips.
+    // Enable all available ToolTips.
    $('.tooltip-enable').tooltip({
       placement: 'right'
    });
@@ -351,10 +353,9 @@ function loadCore(core) {
    // Make the core the selected core in the UI.
    var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
    $('#dropdownMenu1').text(coreTitle);
-
    // Load the Core's related JavaScript.
-   import("./"+core+"_libretro.js").then(script => {
-      script.default(Module).then(mod => {
+    import("./"+core+"_libretro.js").then(script => {
+       script.default(Module).then(mod => {
          Module = mod;
          $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
          $('#icnRun').addClass('fa-play');
