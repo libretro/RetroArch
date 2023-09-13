@@ -76,8 +76,8 @@ dylib_t dylib_load(const char *path);
 /**
  * Frees the resources associated with a dynamic library.
  *
- * Any function pointers obtained from the library will become invalid,
- * and calling them will be undefined behavior.
+ * Any function pointers obtained from the library may become invalid,
+ * depending on whether the operating system manages reference counts to dynamic libraries.
  *
  * If there was an error closing the library,
  * it will be reported by \c dylib_error.
