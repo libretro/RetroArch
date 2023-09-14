@@ -1261,25 +1261,30 @@ enum retro_mod
                                             * It is recommended to expose all relevant pointers through
                                             * retro_get_memory_* as well.
                                             */
+
+/**
+ * Resizes the viewport without reinitializing the video driver.
+ *
+ * Similar to \c RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO,
+ * but any changes that would require video reinitialization will not be performed.
+ * Can only be called from within \c retro_run().
+ *
+ * This environment call allows a core to revise the size of the viewport at will,
+ * which can be useful for emulated platforms that support dynamic resolution changes
+ * or for cores that support multiple screen layouts.
+ *
+ * A frontend must guarantee that this environment call completes in
+ * constant time.
+ *
+ * @param data[in] <tt>const struct retro_game_geometry *</tt>.
+ * Pointer to the new video parameters that the frontend should adopt.
+ * \c retro_game_geometry::base_width and \c retro_game_geometry::base_height
+ * will be ignored.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if the environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ */
 #define RETRO_ENVIRONMENT_SET_GEOMETRY 37
-                                           /* const struct retro_game_geometry * --
-                                            * This environment call is similar to SET_SYSTEM_AV_INFO for changing
-                                            * video parameters, but provides a guarantee that drivers will not be
-                                            * reinitialized.
-                                            * This can only be called from within retro_run().
-                                            *
-                                            * The purpose of this call is to allow a core to alter nominal
-                                            * width/heights as well as aspect ratios on-the-fly, which can be
-                                            * useful for some emulators to change in run-time.
-                                            *
-                                            * max_width/max_height arguments are ignored and cannot be changed
-                                            * with this call as this could potentially require a reinitialization or a
-                                            * non-constant time operation.
-                                            * If max_width/max_height are to be changed, SET_SYSTEM_AV_INFO is required.
-                                            *
-                                            * A frontend must guarantee that this environment call completes in
-                                            * constant time.
-                                            */
 
 /**
  * Returns the name of the user, if possible.
@@ -4615,6 +4620,7 @@ struct retro_game_info_ext
  * Parameters describing the size and shape of the video frame.
  * @see retro_system_av_info
  * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see RETRO_ENVIRONMENT_SET_GEOMETRY
  * @see retro_get_system_av_info
  */
 struct retro_game_geometry
