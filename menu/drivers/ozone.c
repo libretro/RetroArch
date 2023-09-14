@@ -8351,7 +8351,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             if (menu_st->scroll.mode == MENU_SCROLL_PAGE)
                new_selection           = (int)(tab_selection - 10);
-            else
+            else if (ozone->sidebar_index_size)
             {
                /* Alphabetical scroll */
                size_t l                = ozone->sidebar_index_size - 1;
