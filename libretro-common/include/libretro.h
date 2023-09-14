@@ -1020,25 +1020,16 @@ enum retro_mod
  * Gets an interface to the device's video camera.
  *
  * The frontend delivers new video frames via a user-defined callback
- * that runs in the same thread as <tt>retro_run()</tt>.
- *
- * Should be called in retro_load_game().
- *
- * Camera frames may be provided as a raw frame buffer or as an OpenGL texture,
- * depending on the camera driver's support and the core's requested capabilities.
- *
- * Video frames may only be provided as OpenGL textures
- * when the core is using an OpenGL context via <tt>RETRO_ENVIRONMENT_SET_HW_RENDER</tt>.
- *
- * The camera is not started automatically;
- * the retrieved interface functions must be used to explicitly do so.
+ * that runs in the same thread as \c retro_run().
+ * Should be called in \c retro_load_game().
  *
  * @param data[in,out] <tt>struct retro_camera_callback *</tt>.
  * Pointer to the camera driver interface.
  * Some fields in the struct must be filled in by the core,
  * others are provided by the frontend.
- * @returns \c true if the environment call is available,
- * even if camera support isn't.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available,
+ * even if an actual camera isn't.
  * @note This API only supports one video camera at a time.
  * If the device provides multiple cameras (e.g. inner/outer cameras on a phone),
  * the frontend will choose one to use.
@@ -3386,83 +3377,162 @@ struct retro_sensor_interface
  * @{
  */
 
+/**
+ * Denotes the type of buffer in which the camera will store its input.
+ *
+ * Different camera drivers may support different buffer types.
+ *
+ * @see RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+ * @see retro_camera_callback
+ */
 enum retro_camera_buffer
 {
+   /**
+    * Indicates that camera frames should be delivered to the core as an OpenGL texture.
+    *
+    * Requires that the core is using an OpenGL context via \c RETRO_ENVIRONMENT_SET_HW_RENDER.
+    *
+    * @see retro_camera_frame_opengl_texture_t
+    */
    RETRO_CAMERA_BUFFER_OPENGL_TEXTURE = 0,
+
+   /**
+    * Indicates that camera frames should be delivered to the core as a raw buffer in memory.
+    *
+    * @see retro_camera_frame_raw_framebuffer_t
+    */
    RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER,
 
+   /**
+    * @private Defined to ensure <tt>sizeof(enum retro_camera_buffer) == sizeof(int)</tt>.
+    * Do not use.
+    */
    RETRO_CAMERA_BUFFER_DUMMY = INT_MAX
 };
 
-/* Starts the camera driver. Can only be called in retro_run(). */
+/**
+ * Starts an initialized camera.
+ * The camera is disabled by default,
+ * and must be enabled with this function before being used.
+ *
+ * Set by the frontend.
+ *
+ * @returns \c true if the camera was successfully started, \c false otherwise.
+ * Failure may occur if no actual camera is available,
+ * or if the frontend doesn't have permission to access it.
+ * @note Must be called in \c retro_run().
+ * @see retro_camera_callback
+ */
 typedef bool (RETRO_CALLCONV *retro_camera_start_t)(void);
 
-/* Stops the camera driver. Can only be called in retro_run(). */
+/**
+ * Stops the running camera.
+ *
+ * Set by the frontend.
+ *
+ * @note Must be called in \c retro_run().
+ * @warning The frontend may close the camera on its own when unloading the core,
+ * but this behavior is not guaranteed.
+ * Cores should clean up the camera before exiting.
+ * @see retro_camera_callback
+ */
 typedef void (RETRO_CALLCONV *retro_camera_stop_t)(void);
 
-/* Callback which signals when the camera driver is initialized
- * and/or deinitialized.
- * retro_camera_start_t can be called in initialized callback.
+/**
+ * Called by the frontend to report the state of the camera driver.
+ *
+ * @see retro_camera_callback
  */
 typedef void (RETRO_CALLCONV *retro_camera_lifetime_status_t)(void);
 
-/* A callback for raw framebuffer data. buffer points to an XRGB8888 buffer.
- * Width, height and pitch are similar to retro_video_refresh_t.
- * First pixel is top-left origin.
+/**
+ * Called by the frontend to report a new camera frame,
+ * delivered as a raw buffer in memory.
+ *
+ * Set by the core.
+ *
+ * @param buffer Pointer to the camera's most recent video frame.
+ * Each pixel is in XRGB8888 format.
+ * The first pixel represents the top-left corner of the image
+ * (i.e. the Y axis goes downward).
+ * @param width The width of the frame given in \c buffer, in pixels.
+ * @param height The height of the frame given in \c buffer, in pixels.
+ * @param pitch The width of the frame given in \c buffer, in bytes.
+ * @warning \c buffer may be invalidated when this function returns,
+ * so the core should make its own copy of \c buffer if necessary.
+ * @see RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER
  */
 typedef void (RETRO_CALLCONV *retro_camera_frame_raw_framebuffer_t)(const uint32_t *buffer,
       unsigned width, unsigned height, size_t pitch);
 
-/* A callback for when OpenGL textures are used.
+/**
+ * Called by the frontend to report a new camera frame,
+ * delivered as an OpenGL texture.
  *
- * texture_id is a texture owned by camera driver.
- * Its state or content should be considered immutable, except for things like
- * texture filtering and clamping.
+ * @param texture_id The ID of the OpenGL texture that represents the camera's most recent frame.
+ * Owned by the frontend, and must not be modified by the core.
+ * @param texture_target The type of the texture given in \c texture_id.
+ * Usually either \c GL_TEXTURE_2D or \c GL_TEXTURE_RECTANGLE,
+ * but other types are allowed.
+ * @param affine A pointer to a 3x3 column-major affine matrix
+ * that can be used to transform pixel coordinates to texture coordinates.
+ * After transformation, the bottom-left corner should have coordinates of <tt>(0, 0)</tt>
+ * and the top-right corner should have coordinates of <tt>(1, 1)</tt>
+ * (or <tt>(width, height)</tt> for \c GL_TEXTURE_RECTANGLE).
  *
- * texture_target is the texture target for the GL texture.
- * These can include e.g. GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE, and possibly
- * more depending on extensions.
- *
- * affine points to a packed 3x3 column-major matrix used to apply an affine
- * transform to texture coordinates. (affine_matrix * vec3(coord_x, coord_y, 1.0))
- * After transform, normalized texture coord (0, 0) should be bottom-left
- * and (1, 1) should be top-right (or (width, height) for RECTANGLE).
- *
- * GL-specific typedefs are avoided here to avoid relying on gl.h in
- * the API definition.
+ * @note GL-specific typedefs (e.g. \c GLfloat and \c GLuint) are avoided here
+ * so that the API doesn't rely on gl.h.
+ * @warning \c texture_id and \c affine may be invalidated when this function returns,
+ * so the core should make its own copy of them if necessary.
  */
 typedef void (RETRO_CALLCONV *retro_camera_frame_opengl_texture_t)(unsigned texture_id,
       unsigned texture_target, const float *affine);
 
 /**
+ * An interface that the core can use to access a device's camera.
+ *
  * @see RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
  */
 struct retro_camera_callback
 {
-   /* Set by libretro core.
-    * Example bitmask: caps = (1 << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE) | (1 << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER).
+   /**
+    * Requested camera capabilities,
+    * given as a bitmask of \c retro_camera_buffer values.
+    * Set by the core.
+    *
+    * Here's a usage example:
+    * @code
+    * // Requesting support for camera data delivered as both an OpenGL texture and a pixel buffer:
+    * struct retro_camera_callback callback;
+    * callback.caps = (1 << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE) | (1 << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER);
+    * @endcode
     */
    uint64_t caps;
 
-   /* Desired resolution for camera. Is only used as a hint. */
+   /**
+    * The desired width of the camera frame, in pixels.
+    * This is only a hint; the frontend may provide a different size.
+    * Set by the core.
+    * Use zero to let the frontend decide.
+    */
    unsigned width;
+
+   /**
+    * The desired height of the camera frame, in pixels.
+    * This is only a hint; the frontend may provide a different size.
+     * Set by the core.
+    * Use zero to let the frontend decide.
+    */
    unsigned height;
 
    /**
-    * Starts the camera driver.
-    * Set by the frontend.
-    * @returns \c true if the driver was successfully started.
-    * @note Must be called in <tt>retro_run()</tt>.
+    * @copydoc retro_camera_start_t
     * @see retro_camera_callback
     */
    retro_camera_start_t start;
 
    /**
-    * Stops the camera driver.
-    * @note Must be called in <tt>retro_run()</tt>.
-    * @warning The frontend may close the camera on its own when unloading the core,
-    * but this behavior is not guaranteed.
-    * Cores should clean up the camera before exiting.
+    * @copydoc retro_camera_stop_t
     * @see retro_camera_callback
     */
    retro_camera_stop_t stop;
@@ -3470,7 +3540,10 @@ struct retro_camera_callback
    /* Set by libretro core if raw framebuffer callbacks will be used. */
    retro_camera_frame_raw_framebuffer_t frame_raw_framebuffer;
 
-   /* Set by libretro core if OpenGL texture callbacks will be used. */
+   /**
+    * @copydoc retro_camera_frame_opengl_texture_t
+    * @note If \c NULL, this function will not be called.
+    */
    retro_camera_frame_opengl_texture_t frame_opengl_texture;
 
    /**
