@@ -863,7 +863,7 @@ config_file_t *open_userdefaults_config_file(void)
 {
    config_file_t *conf = NULL;
    NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
-   if ([backup length] >= 0)
+   if ([backup length] > 0)
    {
       char *str = strdup(backup.UTF8String);
       conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
