@@ -3547,7 +3547,10 @@ struct retro_camera_callback
     */
    retro_camera_stop_t stop;
 
-   /* Set by libretro core if raw framebuffer callbacks will be used. */
+   /**
+    * @copydoc retro_camera_frame_raw_framebuffer_t
+    * @note If \c NULL, this function will not be called.
+    */
    retro_camera_frame_raw_framebuffer_t frame_raw_framebuffer;
 
    /**
