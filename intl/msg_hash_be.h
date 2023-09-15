@@ -1602,6 +1602,14 @@ MSG_HASH(
    "Паказваць меню акна."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "Памятаць пазіцыю і памеры акна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Ужыванне ўласных памераў акна"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Шырыня акна"
    )
@@ -1646,7 +1654,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
-   "Дапасаваныя"
+   "Уласныя"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
@@ -1660,19 +1668,19 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "Дапасаваныя суадносіны бакоў (пазіцыя X)"
+   "Уласныя суадносіны бакоў (пазіцыя X)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Дапасаваныя суадносіны бакоў (пазіцыя Y)"
+   "Уласныя суадносіны бакоў (пазіцыя Y)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Дапасаваныя суадносіны бакоў (шырыня)"
+   "Уласныя суадносіны бакоў (шырыня)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Дапасаваныя суадносіны бакоў (вышыня)"
+   "Уласныя суадносіны бакоў (вышыня)"
    )
 
 /* Settings > Video > HDR */
@@ -2302,7 +2310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
-   "Дапасаваная"
+   "Уласная"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
@@ -2330,7 +2338,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-   "Дапасаваная канфігурацыя запісу"
+   "Уласная канфігурацыя запісу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
@@ -2342,7 +2350,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
-   "Дапасаваны"
+   "Уласны"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -2350,7 +2358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
-   "Дапасаваная"
+   "Уласная"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
@@ -2366,7 +2374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   "Дапасаваная канфігурацыя стрымінгу"
+   "Уласная канфігурацыя стрымінгу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -2710,7 +2718,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   "Дапасаваныя"
+   "Уласныя"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -4994,7 +5002,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
-   "Дапасаваная..."
+   "Уласная..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
