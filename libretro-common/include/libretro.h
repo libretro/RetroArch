@@ -1068,13 +1068,18 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
 
+/**
+ * Returns an interface that the core can use to retrieve the device's location,
+ * including its current latitude and longitude.
+ *
+ * @param data[out] <tt>struct retro_location_callback *</tt>.
+ * Pointer to the callback interface.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if the environment call is available,
+ * even if there's no location information available.
+ * @see retro_location_callback
+ */
 #define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
-                                           /* struct retro_location_callback * --
-                                            * Gets access to the location interface.
-                                            * The purpose of this interface is to be able to retrieve
-                                            * location-based information from the host device,
-                                            * such as current latitude / longitude.
-                                            */
 
 /**
  * @deprecated An obsolete alias to \c RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY kept for compatibility.
@@ -3569,48 +3574,108 @@ struct retro_camera_callback
 
 /** @} */
 
-/* Sets the interval of time and/or distance at which to update/poll
- * location-based data.
- *
- * To ensure compatibility with all location-based implementations,
- * values for both interval_ms and interval_distance should be provided.
- *
- * interval_ms is the interval expressed in milliseconds.
- * interval_distance is the distance interval expressed in meters.
+/** @defgroup GET_LOCATION_INTERFACE Location Interface
+ * @{
  */
+
+/** @copydoc retro_location_callback::set_interval */
 typedef void (RETRO_CALLCONV *retro_location_set_interval_t)(unsigned interval_ms,
       unsigned interval_distance);
 
-/* Start location services. The device will start listening for changes to the
- * current location at regular intervals (which are defined with
- * retro_location_set_interval_t). */
+/** @copydoc retro_location_callback::start */
 typedef bool (RETRO_CALLCONV *retro_location_start_t)(void);
 
-/* Stop location services. The device will stop listening for changes
- * to the current location. */
+/** @copydoc retro_location_callback::stop */
 typedef void (RETRO_CALLCONV *retro_location_stop_t)(void);
 
-/* Get the position of the current location. Will set parameters to
- * 0 if no new  location update has happened since the last time. */
+/** @copydoc retro_location_callback::get_position */
 typedef bool (RETRO_CALLCONV *retro_location_get_position_t)(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
 
-/* Callback which signals when the location driver is initialized
- * and/or deinitialized.
- * retro_location_start_t can be called in initialized callback.
- */
+/** Function type that reports the status of the location service. */
 typedef void (RETRO_CALLCONV *retro_location_lifetime_status_t)(void);
 
+/**
+ * An interface that the core can use to access a device's location.
+ *
+ * @note It is the frontend's responsibility to request the necessary permissions
+ * from the operating system.
+ * @see RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE
+ */
 struct retro_location_callback
 {
+   /**
+    * Starts listening the device's location service.
+    *
+    * The frontend will report changes to the device's location
+    * at the interval defined by \c set_interval.
+    * Set by the frontend.
+    *
+    * @return true if location services were successfully started, false otherwise.
+    * Note that this will return \c false if location services are disabled
+    * or the frontend doesn't have permission to use them.
+    * @note The device's location service may or may not have been enabled
+    * before the core calls this function.
+    */
    retro_location_start_t         start;
+
+   /**
+    * Stop listening to the device's location service.
+    *
+    * Set by the frontend.
+    *
+    * @note The location service itself may or may not
+    * be turned off by this function,
+    * depending on the platform and the frontend.
+    * @post The core will stop receiving location service updates.
+    */
    retro_location_stop_t          stop;
+
+   /**
+    * Returns the device's current coordinates.
+    *
+    * Set by the frontend.
+    *
+    * @param[out] lat Pointer to latitude, in degrees.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    * @param[out] lon Pointer to longitude, in degrees.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    * @param[out] horiz_accuracy Pointer to horizontal accuracy.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    * @param[out] vert_accuracy Pointer to vertical accuracy.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    */
    retro_location_get_position_t  get_position;
+
+   /**
+    * Sets the rate at which the location service should report updates.
+    *
+    * This is only a hint; the actual rate may differ.
+    * Sets the interval of time and/or distance at which to update/poll
+    * location-based data.
+    *
+    * Some platforms may only support one of the two parameters;
+    * cores should provide both to ensure compatibility.
+    *
+    * Set by the frontend.
+    *
+    * @param interval_ms The desired period of time between location updates, in milliseconds.
+    * @param interval_distance The desired distance between location updates, in meters.
+    */
    retro_location_set_interval_t  set_interval;
 
+   /** Called when the location service is initialized. Set by the core. Optional. */
    retro_location_lifetime_status_t initialized;
+
+   /** Called when the location service is deinitialized. Set by the core. Optional. */
    retro_location_lifetime_status_t deinitialized;
 };
+
+/** @} */
 
 /** @addtogroup GET_RUMBLE_INTERFACE
  * @{ */
