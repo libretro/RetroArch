@@ -5438,7 +5438,7 @@ static enum runloop_state_enum runloop_check_state(
    menu_handle_t *menu                 = menu_st->driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    bool menu_driver_binding_state      = (menu_st->flags & MENU_ST_FLAG_IS_BINDING) ? true : false;
-   bool menu_is_alive                  = (menu_st->flags & MENU_ST_FLAG_ALIVE)      ? true : false;
+   bool menu_was_alive                 = (menu_st->flags & MENU_ST_FLAG_ALIVE)      ? true : false;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 #if defined(HAVE_GFX_WIDGETS)
@@ -5776,16 +5776,13 @@ static enum runloop_state_enum runloop_check_state(
       if (    (pressed && !old_pressed)
             || core_type_is_dummy)
       {
-         if (menu_is_alive)
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
             if (rarch_is_initialized && !core_type_is_dummy)
                retroarch_menu_running_finished(false);
          }
          else
             retroarch_menu_running();
-
-         /* Update menu state if it has changed */
-         menu_is_alive = (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false;
       }
 
       old_pressed             = pressed;
@@ -5823,7 +5820,7 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #ifdef HAVE_MENU
-   if (menu_is_alive)
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
    {
       enum menu_action action;
       static input_bits_t old_input = {{0}};
@@ -5995,7 +5992,7 @@ static enum runloop_state_enum runloop_check_state(
                         (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false);
             }
 
-            if (      (menu_is_alive)
+            if (      (menu_st->flags & MENU_ST_FLAG_ALIVE)
                   && !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
                if (display_menu_libretro(runloop_st, input_st,
                         settings->floats.slowmotion_ratio,
@@ -6116,7 +6113,7 @@ static enum runloop_state_enum runloop_check_state(
 
 #ifdef HAVE_MENU
          /* Don't allow rewinding while menu is active */
-         if (menu_is_alive)
+         if (menu_st->flags & MENU_ST_FLAG_ALIVE)
             rewind_pressed   = false;
 #endif
 
@@ -6137,7 +6134,7 @@ static enum runloop_state_enum runloop_check_state(
                settings->uints.rewind_granularity,
                runloop_paused
 #ifdef HAVE_MENU
-                     || (  (menu_is_alive)
+                     || (  (menu_st->flags & MENU_ST_FLAG_ALIVE)
                         && settings->bools.menu_pause_libretro)
 #endif
                ,
@@ -6163,7 +6160,7 @@ static enum runloop_state_enum runloop_check_state(
 
          if (rewinding && runloop_paused
 #ifdef HAVE_MENU
-               && !(menu_is_alive)
+               && !(menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
             )
          {
@@ -6183,7 +6180,7 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Check pause hotkey in menu */
 #ifdef HAVE_MENU
-   if (menu_is_alive)
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
    {
       static bool old_pause_pressed = false;
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
@@ -6200,7 +6197,7 @@ static enum runloop_state_enum runloop_check_state(
 
 #ifdef HAVE_MENU
    /* Stop checking the rest of the hotkeys if menu is alive */
-   if (menu_is_alive)
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
    {
       float fastforward_ratio = runloop_get_fastforward_ratio(settings,
             &runloop_st->fastmotion_override.current);
@@ -6783,6 +6780,9 @@ static enum runloop_state_enum runloop_check_state(
       cbs->poll_cb();
       return RUNLOOP_STATE_PAUSE;
    }
+
+   if (menu_was_alive)
+      return RUNLOOP_STATE_END;
 
    return RUNLOOP_STATE_ITERATE;
 }
