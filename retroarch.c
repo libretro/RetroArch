@@ -1464,7 +1464,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; menu_ctx_drivers[i]; i++)
          {
             const char *opt  = menu_ctx_drivers[i]->ident;
-            *len            += STRLEN_CONST(menu_ctx_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             /* Don't allow the user to set menu driver to "null" using the UI.
              * Can prevent the user from locking him/herself out of the program. */
@@ -1477,7 +1477,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; camera_drivers[i]; i++)
          {
             const char *opt  = camera_drivers[i]->ident;
-            *len            += STRLEN_CONST(camera_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1487,7 +1487,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; bluetooth_drivers[i]; i++)
          {
             const char *opt  = bluetooth_drivers[i]->ident;
-            *len            += STRLEN_CONST(bluetooth_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1498,7 +1498,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; wifi_drivers[i]; i++)
          {
             const char *opt  = wifi_drivers[i]->ident;
-            *len            += STRLEN_CONST(wifi_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1508,7 +1508,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; location_drivers[i]; i++)
          {
             const char *opt  = location_drivers[i]->ident;
-            *len            += STRLEN_CONST(location_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1517,7 +1517,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; audio_drivers[i]; i++)
          {
             const char *opt  = audio_drivers[i]->ident;
-            *len            += STRLEN_CONST(audio_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1527,7 +1527,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; microphone_drivers[i]; i++)
          {
             const char *opt  = microphone_drivers[i]->ident;
-            *len            += STRLEN_CONST(microphone_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1537,7 +1537,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; audio_resampler_driver_find_handle(i); i++)
          {
             const char *opt  = audio_resampler_driver_find_ident(i);
-            *len            += STRLEN_CONST(audio_resampler_driver_find_ident(i)) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1546,7 +1546,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; video_drivers[i]; i++)
          {
             const char *opt  = video_drivers[i]->ident;
-            *len            += STRLEN_CONST(video_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             /* Don't allow the user to set video driver to "null" using the UI.
              * Can prevent the user from locking him/herself out of the program. */
@@ -1558,7 +1558,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; input_drivers[i]; i++)
          {
             const char *opt  = input_drivers[i]->ident;
-            *len            += STRLEN_CONST(input_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             /* Don't allow the user to set input driver to "null" using the UI.
              * Can prevent the user from locking him/herself out of the program. */
@@ -1571,7 +1571,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; hid_drivers[i]; i++)
          {
             const char *opt  = hid_drivers[i]->ident;
-            *len            += STRLEN_CONST(hid_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             /* Don't allow the user to set input HID driver to "null" using the UI.
              * Can prevent the user from locking him/herself out of the program. */
@@ -1584,7 +1584,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; joypad_drivers[i]; i++)
          {
             const char *opt  = joypad_drivers[i]->ident;
-            *len            += STRLEN_CONST(joypad_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             /* Don't allow the user to set input joypad driver to "null" using the UI.
              * Can prevent the user from locking him/herself out of the program. */
@@ -1596,7 +1596,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; record_drivers[i]; i++)
          {
             const char *opt  = record_drivers[i]->ident;
-            *len            += STRLEN_CONST(record_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1605,7 +1605,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; midi_driver_find_handle(i); i++)
          {
             const char *opt  = midi_drivers[i]->ident;
-            *len            += STRLEN_CONST(midi_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
@@ -1615,7 +1615,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; cloud_sync_drivers[i]; i++)
          {
             const char *opt  = cloud_sync_drivers[i]->ident;
-            *len            += STRLEN_CONST(cloud_sync_drivers[i]->ident) + 1;
+            *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
          }
