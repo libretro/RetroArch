@@ -3,6 +3,7 @@
 # 1.16.0
 - 3DS: Update __system_initArgv
 - 3DS: Update SquirrelJME 3DS Core information along with icons.
+- ANDROID: Rewrite input handling to better support AINPUT_SOURCE_STYLUS
 - ANDROID: Prevent the android quick tap mouse click emulation while pressing a button on the on-screen overlay
 - AUDIO: Fast-Forward Audio Resampling
 - AUDIO: Reinit audio on audio sync toggle
@@ -29,19 +30,23 @@ require fullpath or not, small and big ZIP files).
 - CHEEVOS: Eliminate leaderboard tracker stutter
 - CHEEVOS: Expand leaderboard visibility settings
 - CHEEVOS: Collapse trackers with same value definition
+- CHEEVOS: prevent frame step when hitting rewind button while paused in hardcore
+- CHEEVOS: disallow video_swap_interval and black_frame_insertion in hardcore
 - CRT/SWITCHRES: Don't always force core aspect ratio
 - CRT/SWITCHRES: Fix aspect ratio for tate games on a horizontal screen
 - CRT/SWITCHRES: Add PAL threshold option for automatic refresh rate switch
 - CRT/SWITCHRES/KMS: Add KMS modeswitch
 - COMMAND: Make cmd interface more useful for replay information
+- CONFIG: Allow all systems to check for backslashes (Windows) as last slash in path. Improves portable core logic
 - D3D11: Fix memory corruption in d3d11_gfx_init
 - D3D12: Enable blending when drawing the menu
 - D3D12: Move fence signaling out of d3d12_gfx_sync
-- D3D12: Add D3D12 HW_render support
+- D3D12/LIBRETRO: Add D3D12 HW_render support
 - DOWNLOADS/THUMBNAILS: Prevent directory creation on bogus thumbnail downloads
 - EMSCRIPTEN: Fix Emscripten sleep function/macro
 - EMSCRIPTEN/RWEBAUDIO: Fix RWebAudioInit race condition
 - EMSCRIPTEN/OPENAL: Make openal default audio driver
+- FFMPEG: Fix RetroArch fails to restart streaming when video re-inits and instead starts recording
 - FRAMESKIP: Use refresh rate instead of core fps for frameskip timing
 - INPUT: Combo hold + 'enable_hotkey' correction. Fixed issue with having menu toggle hold combo in different button than 'enable_hotkey', which caused 'enable_hotkey' to also act as menu toggle if held long enough, and simplified and unified duplicate code in start+select holds to a single function.
 - INPUT: input_keyboard_event: Don't check hotkey binds when device is RETRO_DEVICE_POINTER
@@ -49,6 +54,7 @@ require fullpath or not, small and big ZIP files).
 - INPUT: input_overlay_poll: Delay clearing INPUT_OVERLAY_BLOCKED flag until there is no overlay input (Avoids stray input after osk_toggle)
 - INPUT: Send keyboard events for modifiers before other keys (for correct modifier+key input if hitboxes overlap)
 - INPUT: Remember currently set keyboard mapping bits during same config read, because otherwise customized keybinds can get cleared out of the bits on the next iteration, causing keyboard events to get passed to the core when they should get blocked.
+- INPUT/AUTOCONFIG: Reinit after updating autoconf profiles
 - INPUT/LINUX/UDEV: Log mouse devices in info level
 - INPUT/LINUX/UDEV: First working version of udev driver with touchscreen support and gestures.
 - INPUT/WAYLAND: Add wayland to input driver list
@@ -76,6 +82,7 @@ Loading a cached overlay is done as a swap, intended for osk_toggle.
 - IOS: On iOS, stop/start audio on interruptions
 - IOS: Add accelerometer and gyroscope sensors to iOS
 - IOS: iOS needs to targets 13 due to some keyboard emulation, but tvOS does not
+- IOS/TVOS: Rework JIT availability checks
 - IOS/TVOS: When updating playlist with detected core path, used resolved core path
 - IOS/TVOS: Implement memory queries on iOS/tvOS
 - IOS/TVOS: Netplay discovery through bonjour/mdns
@@ -100,11 +107,14 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - LIBRETRO: Allow RETRO_ENVIRONMENT_SET_MEMORY_MAPS also after core startup. Change the comment in libretro.h about the removed limit and handle the environment call during core runtime in RetroArch.
 - LIBRETRO/MICROPHONE: Add new API for microphone support.
 - LIBRETRO: Add new API for querying the device's power state.
+- LIBRETRO/VFS: Rewrite retro_vfs_file_remove_impl
 - LINUX: Input driver fix 8+ joypads. It was reported that controllers beyond 8 worked only partially (analogs yes, but not buttons), and the found fix was also confirmed.
 - MIDI: Show MIDI output first
+- MENU: Reorganize 'Saving' menu
 - MENU: Start directory browsing from current value
 - MENU: Fix menu toggle combo hold with same 'enable_hotkey'
 - MENU: Add menu scroll home+end actions
+- MENU: Move 'systemfiles_in_content_dir' from Saving to Core
 - MENU: Menu navigation acceleration adjustments
 - MENU: Audio synchronization menu cleanup
 - MENU: Menu value label cleanup
@@ -124,6 +134,8 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - MENU: Relocate playlist manager core association options to prevent accidental resets with Start
 - MENU: Fraction setting wraparound rounding correction
 - MENU: Add more missing sublabels
+- MENU: 'Updater Settings' relocation
+- MENU: Search box usability improvements
 - MENU/RGUI: Implement 'Remember Selection' option
 - MENU/RGUI: Fix savestate thumbnail fullscreen cancel action
 - MENU/RGUI: Fix and add toggle for playlist thumbnails
@@ -133,6 +145,8 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - MENU/OZONE: Avoid crash if ozone sidebar_index_size is 0
 - MENU/OZONE: Prevent metadata and footer overlap
 - MENU/OZONE: Sublabel width tweak
+- MENU/OZONE: Mouse hover selection fix
+- MENU/XMB: Message/help box adjustments
 - MENU/XMB: XMB menu playlist index bugfix
 - MENU/XMB: Playlist label limit fixes
 - MENU/XMB: Prevent playlist label truncating long items even when right thumbnail is not enabled/visible
@@ -161,6 +175,7 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - OSX/MACOS: Add HAVE_STDIN_CMD support
 - OSX/MACOS: fix mouse grab in windowed mode
 - OSX/MACOS/IOS/TVOS: Enable SSL in macos/ios/tvos builds
+- PLAYLIST: Change default playlist last played time format
 - PS3/PSL1GHT: Add overlay support
 - RUNLOOP: Don't count frames while paused
 - SERENITYOS: Add SerenityOS to the list of supported operating systems
@@ -179,6 +194,7 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - VULKAN: Ignore Fast-Forward Frameskip option
 - VULKAN/KHR_DISPLAY: Support screen refresh rate with Vulkan KHR_Display context
 - WIN32: Increase maximum window limit
+- WIN32/WINDOWSXP/MSVC2010: Fix invisible menu display
 - WAYLAND: Remove splash screen
 - WAYLAND: Check for pointer before locking it
 - WAYLAND: Add mouse grab/lock functionality
