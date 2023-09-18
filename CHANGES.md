@@ -6,6 +6,7 @@
 - ANDROID: Prevent the android quick tap mouse click emulation while pressing a button on the on-screen overlay
 - AUDIO: Fast-Forward Audio Resampling
 - AUDIO: Reinit audio on audio sync toggle
+- AUDIO: Count audio samples in stats when rate control is disabled
 - AUDIO/PULSEAUDIO: Support device list for PulseAudio
 - AUDIO/WASAPI: WASAPI Frame Delay fix + cleanups
 - AUDIO/WASAPI/MIDI: Frame Delay correction
@@ -30,15 +31,18 @@ require fullpath or not, small and big ZIP files).
 - CHEEVOS: Collapse trackers with same value definition
 - CRT/SWITCHRES: Don't always force core aspect ratio
 - CRT/SWITCHRES: Fix aspect ratio for tate games on a horizontal screen
+- CRT/SWITCHRES: Add PAL threshold option for automatic refresh rate switch
 - CRT/SWITCHRES/KMS: Add KMS modeswitch
 - COMMAND: Make cmd interface more useful for replay information
 - D3D11: Fix memory corruption in d3d11_gfx_init
 - D3D12: Enable blending when drawing the menu
 - D3D12: Move fence signaling out of d3d12_gfx_sync
 - D3D12: Add D3D12 HW_render support
+- DOWNLOADS/THUMBNAILS: Prevent directory creation on bogus thumbnail downloads
 - EMSCRIPTEN: Fix Emscripten sleep function/macro
 - EMSCRIPTEN/RWEBAUDIO: Fix RWebAudioInit race condition
 - EMSCRIPTEN/OPENAL: Make openal default audio driver
+- FRAMESKIP: Use refresh rate instead of core fps for frameskip timing
 - INPUT: Combo hold + 'enable_hotkey' correction. Fixed issue with having menu toggle hold combo in different button than 'enable_hotkey', which caused 'enable_hotkey' to also act as menu toggle if held long enough, and simplified and unified duplicate code in start+select holds to a single function.
 - INPUT: input_keyboard_event: Don't check hotkey binds when device is RETRO_DEVICE_POINTER
 - INPUT: Add input_keymaps_translate_rk_to_ascii() for correct character input to input_keyboard_event
@@ -50,6 +54,9 @@ require fullpath or not, small and big ZIP files).
 - INPUT/WAYLAND: Add wayland to input driver list
 - INPUT/MENU: move port X binds into retropad binds submenu and add appropriate help text and sublabels to discourage people from messing around in there unnecessarily
 - INPUT/MENU: Add menu icons to 'RetroPad Binds'
+- INPUT/MENU/OSK: Allow more keyboard actions with menu osk
+- INPUT/REMAP: Remap label fix when no autoconf profile active
+- INPUT/REMAP: Add 'Save As' option for remaps and overrides
 - INPUT/OVERLAY: Add overlay parameter to control x/y separation in auto-scale mode
 - INPUT/OVERLAY: Revive/rewrite Keyboard Overlay and OSK Toggle. Add keyboard overlay preset, keyboard submenu, 
 and osk_toggle hotkey. Use overlay caching for osk_toggle.
@@ -78,12 +85,15 @@ Loading a cached overlay is done as a swap, intended for osk_toggle.
 - TVOS: Also handle tap events on tvOS
 - TVOS: Back up retroarch.cfg to NSUserDefaults on tvOS.
 - TVOS: tvOS has its own beautiful screensavers and I would like them
-- TVOS: tvOS Siri remote handling 
+- TVOS: tvOS Siri remote handling
+- TVOS: Fix accidental left/right keypresses on tvOS
+- TVOS/CONFIG: Avoid a crash if there is no backed up config file on tvOS
 It's not really usable as a game controller, but it is good for going
 through the menu as a simple LRUD.
 This also adds better support for names of mFI controllers, as well as
 being able to do the expected tvOS behavior of "backing out" of the app.
 - TVOS: AltKit support for tvOS
+- INTL: Fix language detection in Canada to English
 - LANGEXTRA: Enable language autodetect for all builds with LANGEXTRA
 - LIBRETRO: Add new context hardware render enums - enables autodetection of DX12 for PS2 core
 - LIBRETRO: Add API to check JIT availability on iOS
@@ -91,10 +101,13 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - LIBRETRO/MICROPHONE: Add new API for microphone support.
 - LIBRETRO: Add new API for querying the device's power state.
 - LINUX: Input driver fix 8+ joypads. It was reported that controllers beyond 8 worked only partially (analogs yes, but not buttons), and the found fix was also confirmed.
+- MIDI: Show MIDI output first
 - MENU: Start directory browsing from current value
 - MENU: Fix menu toggle combo hold with same 'enable_hotkey'
 - MENU: Add menu scroll home+end actions
 - MENU: Menu navigation acceleration adjustments
+- MENU: Audio synchronization menu cleanup
+- MENU: Menu value label cleanup
 - MENU: Show playlist history/favorites icons by default
 - MENU: Remove advanced option flag from video rotation + orientation
 - MENU: Combine audio resampler menu with audio output menu
@@ -109,12 +122,17 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - MENU: Replaced hack fix for focusing the first item after returning from core suggestion "Run" menu after association reset
 - MENU: Fixed setting core association in history/favorites after resetting it and running without setting
 - MENU: Relocate playlist manager core association options to prevent accidental resets with Start
+- MENU: Fraction setting wraparound rounding correction
+- MENU: Add more missing sublabels
 - MENU/RGUI: Implement 'Remember Selection' option
 - MENU/RGUI: Fix savestate thumbnail fullscreen cancel action
 - MENU/RGUI: Fix and add toggle for playlist thumbnails
 - MENU/OZONE: Update Dracula theme
 - MENU/OZONE: Return to sidebar from playlist manage quick access
 - MENU/OZONE: Sidebar multiline scrolling
+- MENU/OZONE: Avoid crash if ozone sidebar_index_size is 0
+- MENU/OZONE: Prevent metadata and footer overlap
+- MENU/OZONE: Sublabel width tweak
 - MENU/XMB: XMB menu playlist index bugfix
 - MENU/XMB: Playlist label limit fixes
 - MENU/XMB: Prevent playlist label truncating long items even when right thumbnail is not enabled/visible
@@ -157,12 +175,14 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - VIDEO/SDL2: Use "nearest" scaling in menus
 - TASKS: Fix corrupt task progress percentage
 - XVIDEO/MENU: Add menu support to xvideo gfx driver, making it usable
+- UWP: Fix modifier keys ( shift, ctrl, alt ) as well as F10 not being detected on the UWP platform
 - VULKAN: Ignore Fast-Forward Frameskip option
 - VULKAN/KHR_DISPLAY: Support screen refresh rate with Vulkan KHR_Display context
 - WIN32: Increase maximum window limit
 - WAYLAND: Remove splash screen
 - WAYLAND: Check for pointer before locking it
 - WAYLAND: Add mouse grab/lock functionality
+- WAYLAND: Get system wayland-protocols path via pkg-config
 
 # 1.15.0
 - AI SERVICE: Fix NVDA switching to Powershell on speak
