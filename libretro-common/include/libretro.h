@@ -1198,25 +1198,62 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
 
+/**
+ * Registers a core's ability to handle "subsystems",
+ * which are secondary platforms that augment a core's primary emulated hardware.
+ *
+ * A core doesn't need to emulate a secondary platform
+ * in order to use it as a subsystem;
+ * as long as it can load a secondary file for some practical use,
+ * then this environment call is most likely suitable.
+ *
+ * Possible use cases of a subsystem include:
+ *
+ * \li Installing software onto an emulated console's internal storage,
+ * such as the Nintendo DSi.
+ * \li Emulating accessories that are used to support another console's games,
+ * such as the Super Game Boy or the N64 Transfer Pak.
+ * \li Inserting a secondary ROM into a console
+ * that features multiple cartridge ports,
+ * such as the Nintendo DS's Slot-2.
+ * \li Loading a save data file created and used by another core.
+ *
+ * Cores should \em not use subsystems for:
+ *
+ * \li Emulators that support multiple "primary" platforms,
+ * such as a Game Boy/Game Boy Advance core
+ * or a Sega Genesis/Sega CD/32X core.
+ * Use \c retro_system_content_info_override, \c retro_system_info,
+ * and/or runtime detection instead.
+ * \li Selecting different memory card images.
+ * Use dynamically-populated core options instead.
+ * \li Different variants of a single console,
+ * such the Game Boy vs. the Game Boy Color.
+ * Use core options or runtime detection instead.
+ * \li Games that span multiple disks.
+ * Use \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ * and m3u-formatted playlists instead.
+ * \li Console system files (BIOS, firmware, etc.).
+ * Use \c RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
+ * and a common naming convention instead.
+ *
+ * When the frontend loads a game via a subsystem,
+ * it must call \c retro_load_game_special() instead of \c retro_load_game().
+ *
+ * @param data[in] <tt>const struct retro_subsystem_info *</tt>.
+ * Pointer to an array of subsystem descriptors,
+ * terminated by a zeroed-out \c retro_subsystem_info struct.
+ * The frontend should maintain its own copy
+ * of this array and the strings within it.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @note This environment call \em must be called from within \c retro_set_environment(),
+ * as frontends may need the registered information before loading a game.
+ * @see retro_subsystem_info
+ * @see retro_load_game_special
+ */
 #define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
-                                           /* const struct retro_subsystem_info * --
-                                            * This environment call introduces the concept of libretro "subsystems".
-                                            * A subsystem is a variant of a libretro core which supports
-                                            * different kinds of games.
-                                            * The purpose of this is to support e.g. emulators which might
-                                            * have special needs, e.g. Super Nintendo's Super GameBoy, Sufami Turbo.
-                                            * It can also be used to pick among subsystems in an explicit way
-                                            * if the libretro implementation is a multi-system emulator itself.
-                                            *
-                                            * Loading a game via a subsystem is done with retro_load_game_special(),
-                                            * and this environment call allows a libretro core to expose which
-                                            * subsystems are supported for use with retro_load_game_special().
-                                            * A core passes an array of retro_game_special_info which is terminated
-                                            * with a zeroed out retro_game_special_info struct.
-                                            *
-                                            * If a core wants to use this functionality, SET_SUBSYSTEM_INFO
-                                            * **MUST** be called from within retro_set_environment().
-                                            */
+
 #define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
                                            /* const struct retro_controller_info * --
                                             * This environment call lets a libretro core tell the frontend
@@ -2704,67 +2741,134 @@ struct retro_controller_info
    unsigned num_types;
 };
 
+/** @defgroup SET_SUBSYSTEM_INFO Subsystems
+ * @{
+ */
+
+/**
+ * Information about a type of memory associated with a subsystem.
+ * Usually used for SRAM (save RAM).
+ *
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ * @see retro_get_memory_data
+ * @see retro_get_memory_size
+ */
 struct retro_subsystem_memory_info
 {
-   /* The extension associated with a memory type, e.g. "psram". */
+   /**
+    * The file extension the frontend should use
+    * to save this memory region to disk, e.g. "srm" or "sav".
+    */
    const char *extension;
 
-   /* The memory type for retro_get_memory(). This should be at
-    * least 0x100 to avoid conflict with standardized
-    * libretro memory types. */
+   /**
+    * A constant that identifies this type of memory.
+    * Should be at least 0x100 (256) to avoid conflict
+    * with the standard libretro memory types,
+    * unless a subsystem uses the main platform's memory region.
+    * @see RETRO_MEMORY
+    */
    unsigned type;
 };
 
+/**
+ * Information about a type of ROM that a subsystem may use.
+ * Subsystems may use one or more ROMs at once,
+ * possibly of different types.
+ *
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ * @see retro_subsystem_info
+ */
 struct retro_subsystem_rom_info
 {
-   /* Describes what the content is (SGB BIOS, GB ROM, etc). */
+   /**
+    * Human-readable description of what the content represents,
+    * e.g. "Game Boy ROM".
+    */
    const char *desc;
 
-   /* Same definition as retro_get_system_info(). */
+   /** @copydoc retro_system_info::valid_extensions */
    const char *valid_extensions;
 
-   /* Same definition as retro_get_system_info(). */
+   /** @copydoc retro_system_info::need_fullpath */
    bool need_fullpath;
 
-   /* Same definition as retro_get_system_info(). */
+   /** @copydoc retro_system_info::block_extract */
    bool block_extract;
 
-   /* This is set if the content is required to load a game.
-    * If this is set to false, a zeroed-out retro_game_info can be passed. */
+   /**
+    * Indicates whether this particular subsystem ROM is required.
+    * If \c true and the user doesn't provide a ROM,
+    * the frontend should not load the core.
+    * If \c false and the user doesn't provide a ROM,
+    * the frontend should pass a zeroed-out \c retro_game_info
+    * to the corresponding entry in \c retro_load_game_special().
+    */
    bool required;
 
-   /* Content can have multiple associated persistent
-    * memory types (retro_get_memory()). */
+   /**
+    * Pointer to an array of memory descriptors that this subsystem ROM type uses.
+    * Useful for secondary cartridges that have their own save data.
+    * May be \c NULL, in which case this subsystem ROM's memory is not persisted by the frontend
+    * and \c num_memory should be zero.
+    */
    const struct retro_subsystem_memory_info *memory;
+
+   /** The number of elements in the array pointed to by \c memory. */
    unsigned num_memory;
 };
 
+/**
+ * Information about a secondary platform that a core supports.
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ */
 struct retro_subsystem_info
 {
-   /* Human-readable string of the subsystem type, e.g. "Super GameBoy" */
+   /**
+    * A human-readable description of the subsystem type,
+    * usually the brand name of the original platform
+    * (e.g. "Super Game Boy").
+    */
    const char *desc;
 
-   /* A computer friendly short string identifier for the subsystem type.
-    * This name must be [a-z].
-    * E.g. if desc is "Super GameBoy", this can be "sgb".
-    * This identifier can be used for command-line interfaces, etc.
+   /**
+    * A short machine-friendly identifier for the subsystem,
+    * usually an abbreviation of the platform name.
+    * For example, a Super Game Boy subsystem for a SNES core
+    * might use an identifier of "sgb".
+    * This identifier can be used for command-line interfaces,
+    * configuration, or other purposes.
+    * Must use lower-case alphabetical characters only (i.e. from a-z).
     */
    const char *ident;
 
-   /* Infos for each content file. The first entry is assumed to be the
-    * "most significant" content for frontend purposes.
+   /**
+    * The list of ROM types that this subsystem may use.
+    *
+    * The first entry is considered to be the "most significant" content,
+    * for the purposes of the frontend's categorization.
     * E.g. with Super GameBoy, the first content should be the GameBoy ROM,
     * as it is the most "significant" content to a user.
-    * If a frontend creates new file paths based on the content used
-    * (e.g. savestates), it should use the path for the first ROM to do so. */
+    *
+    * If a frontend creates new files based on the content used (e.g. for savestates),
+    * it should derive the filenames from the name of the first ROM in this list.
+    *
+    * @note \c roms can have a single element,
+    * but this is usually a sign that the core should broaden its
+    * primary system info instead.
+    *
+    * @see \c retro_system_info
+    */
    const struct retro_subsystem_rom_info *roms;
 
-   /* Number of content files associated with a subsystem. */
+   /** The length of the array given in \c roms. */
    unsigned num_roms;
 
-   /* The type passed to retro_load_game_special(). */
+   /** A unique identifier passed to retro_load_game_special(). */
    unsigned id;
 };
+
+/** @} */
 
 /** @defgroup SET_PROC_ADDRESS_CALLBACK Core Function Pointers
  * @{ */
@@ -5817,16 +5921,20 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game);
  * @note Only necessary for cores that support subsystems.
  * Others may return \c false or delegate to <tt>retro_load_game</tt>.
  *
- * @param game_type The type of game to load.
+ * @param game_type The type of game to load,
+ * as determined by \c retro_subsystem_info.
  * @param info A pointer to an array of \c retro_game_info objects
  * providing information about the loaded content.
  * @param num_info The number of \c retro_game_info objects passed into the info parameter.
- *
- * @return Will return \c true when loading is successful, false otherwise.
+ * @return \c true if loading is successful, false otherwise.
+ * If the core returns \c false,
+ * the frontend should abort the core
+ * and return to its main menu (if applicable).
  *
  * @see RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
  * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
  * @see retro_load_game()
+ * @see retro_subsystem_info
  */
 RETRO_API bool retro_load_game_special(
   unsigned game_type,
