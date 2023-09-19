@@ -46,7 +46,6 @@ namespace RetroArchUWP
       void OnVisibilityChanged(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::VisibilityChangedEventArgs^ args);
       void OnWindowClosed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CoreWindowEventArgs^ args);
       void OnWindowActivated(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowActivatedEventArgs^ args);
-      void OnKey(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args);
       void OnAcceleratorKey(Windows::UI::Core::CoreDispatcher^ sender, Windows::UI::Core::AcceleratorKeyEventArgs^ args);
       void OnPointer(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args);
 
@@ -75,7 +74,6 @@ namespace RetroArchUWP
       Platform::String^ m_launchOnExit;
       bool m_launchOnExitShutdown;
       void ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp);
-      bool GetKey(Windows::UI::Core::CoreWindow^ window, Windows::System::VirtualKey vkey, bool down, bool extended, unsigned& keycode, uint16_t& mod);
       static App^ m_instance;
    };
 }
