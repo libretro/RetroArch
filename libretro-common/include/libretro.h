@@ -2904,7 +2904,7 @@ typedef void (RETRO_CALLCONV *retro_proc_address_t)(void);
  * @note The functions exposed through this interface
  * don't need to be publicly exposed in the compiled library
  * (e.g. via \c __declspec(dllexport)).
- * @see RETRO_ENVIRONMENT_SET_PROC_ADDRESS_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK
  */
 typedef retro_proc_address_t (RETRO_CALLCONV *retro_get_proc_address_t)(const char *sym);
 
@@ -2915,7 +2915,7 @@ typedef retro_proc_address_t (RETRO_CALLCONV *retro_get_proc_address_t)(const ch
  * How and when that happens is up to the frontend.
  *
  * @see retro_get_proc_address_t
- * @see RETRO_ENVIRONMENT_GET_PROC_ADDRESS_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK
  */
 struct retro_get_proc_address_interface
 {
