@@ -244,7 +244,7 @@ static void woauth_handle_accesstoken_response
   
   //  Sets the device code in the configuration as well so that it is visible to the user.
   retro_time_t now = cpu_features_get_time_usec();
-  retro_time_t expiration_timestamp = now + 1000 * 1000 * (unsigned int)oauth_token_response.expires_in;
+  retro_time_t expiration_timestamp = now + 1000 * 1000 * (long long)oauth_token_response.expires_in;
   char expiration[64];
   sprintf(expiration, "%lld", expiration_timestamp);
   
