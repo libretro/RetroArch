@@ -243,6 +243,7 @@ void gfx_widgets_msg_queue_push(
          {
             title = msg_widget->msg             = strdup(task->title);
             msg_widget->msg_new                 = strdup(title);
+            title_length                        = strlen(title);
             msg_widget->msg_len                 = title_length;
 
             if (!string_is_empty(task->error))
