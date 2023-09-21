@@ -2110,6 +2110,14 @@ MSG_HASH(
    "디스플레이 드라이버가 보고한 화면 주사율입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "자동 새로고침 빈도 전환"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "현재 콘텐츠에 따라 화면 새로고침 빈도를 자동으로 전환합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "독점 전체화면 모드에서만"
    )
@@ -2120,6 +2128,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "모든 전체화면 모드에서"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "자동 새로고침 빈도 PAL 임계값"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "PAL로 간주되는 최대 새로고침 빈도입니다."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -4431,16 +4447,32 @@ MSG_HASH(
    "저장 파일을 콘텐츠 폴더에 저장"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "콘텐츠 디렉토리를 저장 파일 디렉토리로 사용합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "콘텐츠 폴더에 상태저장파일 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "콘텐츠 디렉토리를 저장 상태 디렉토리로 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "콘텐츠 폴더에 시스템 파일 포함"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "콘텐츠 디렉토리를 시스템 디렉토리로 사용합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "스크린샷을 콘텐츠 폴더에 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "콘텐츠 디렉토리를 스크린샷 디렉토리로 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -7050,6 +7082,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "업데이터 설정"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "코어 업데이터 설정에 접속"
+   )
 
 /* Settings > Network > Updater */
 
@@ -8591,8 +8627,32 @@ MSG_HASH(
    "게임 옵션 저장"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "현재 콘텐츠에만 적용되는 코어 옵션을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "게임 옵션 제거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "현재 콘텐츠에만 적용되는 코어 옵션을 삭제합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "콘텐츠 폴더 설정 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "현재 파일과 동일한 디렉토리에서 로드된 모든 콘텐츠에 적용되는 코어 옵션 저장입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "콘텐츠 디렉터리 제거 옵션"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "현재 파일과 동일한 디렉토리에서 로드된 모든 콘텐츠에 적용되는 코어 옵션을 삭제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
@@ -8655,16 +8715,64 @@ MSG_HASH(
    "입력설정 파일 불러오기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "현재 입력 매핑을 로드하고 바꿉니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "다른 이름으로 리매핑 파일 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "현재 입력 매핑을 새 리매핑 파일로 저장합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "코어 입력설정 파일 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "이 코어로 로드된 모든 콘텐츠에 적용될 리맵 파일을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   "코어 리매핑 파일 제거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "이 코어로 로드된 모든 콘텐츠에 적용될 리맵 파일을 삭제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "입력설정 파일을 콘텐츠 폴더에 저장"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "현재 파일과 동일한 디렉토리에서 로드된 모든 콘텐츠에 적용될 리매핑 파일을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "게임 콘텐츠 디렉토리 리매핑 파일 제거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "현재 파일과 동일한 디렉토리에서 로드된 모든 콘텐츠에 적용될 리매핑 파일을 삭제합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "게임 입력설정 파일 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "현재 콘텐츠에만 적용될 리매핑 파일을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "게임 리맵 파일 제거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "현재 콘텐츠에만 적용될 리맵 파일을 삭제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9319,6 +9427,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
    "현재 구성을 불러오고 교체합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "다른 이름으로 저장 재정의"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "현재 구성을 새 재정의 파일로 저장합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -13303,6 +13419,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
    "프리셋 파일명"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "입력 재정의 파일 이름"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "입력 리매핑 파일 이름"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
