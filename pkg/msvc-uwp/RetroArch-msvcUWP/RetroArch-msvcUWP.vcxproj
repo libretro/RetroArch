@@ -285,6 +285,10 @@
       <DeploymentContent>true</DeploymentContent>
       <Link>%(Filename)%(Extension)</Link>
     </None>
+    <None Include="ANGLE\$(Platform)\cores\*.lck">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>cores\%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
