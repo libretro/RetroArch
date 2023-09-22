@@ -2293,21 +2293,27 @@ enum retro_mod
                                             * input devices does not need to take any action on its own.
                                             */
 
+/**
+ * Returns the device's current power state as reported by the frontend.
+ * This is useful for emulating the battery level in handheld consoles,
+ * or for reducing power consumption when on battery power.
+ *
+ * The return value indicates whether the frontend can provide this information,
+ * even if the parameter is \c NULL.
+ *
+ * If the frontend does not support this functionality,
+ * then the provided argument will remain unchanged.
+ * @param data[out] <tt>retro_device_power *</tt>.
+ * Pointer to the information that the frontend returns about its power state.
+ * May be \c NULL.
+ * @return \c true if the environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_device_power
+ * @note This environment call describes the power state for the entire device,
+ * not for individual peripherals like controllers.
+*/
 #define RETRO_ENVIRONMENT_GET_DEVICE_POWER (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_device_power * --
-                                            * Returns the device's current power state as reported by the frontend.
-                                            * This is useful for emulating the battery level in handheld consoles,
-                                            * or for reducing power consumption when on battery power.
-                                            *
-                                            * The return value indicates whether the frontend can provide this information,
-                                            * even if the parameter is NULL.
-                                            *
-                                            * If the frontend does not support this functionality,
-                                            * then the provided argument will remain unchanged.
-                                            *
-                                            * Note that this environment call describes the power state for the entire device,
-                                            * not for individual peripherals like controllers.
-                                            */
+
 
 /**@}*/
 
@@ -5555,6 +5561,10 @@ struct retro_microphone_interface
 
 /** @} */
 
+/** @defgroup GET_DEVICE_POWER Device Power
+ * @{
+ */
+
 /**
  * Describes how a device is being powered.
  * @see RETRO_ENVIRONMENT_GET_DEVICE_POWER
@@ -5634,6 +5644,8 @@ struct retro_device_power
     */
    int8_t percent;
 };
+
+/** @} */
 
 /**
  * @defgroup Callbacks
