@@ -1426,11 +1426,22 @@ enum retro_mod
                                             * This interface will be used when the frontend is trying to create a HW rendering context,
                                             * so it will be used after SET_HW_RENDER, but before the context_reset callback.
                                             */
+
+/**
+ * Notifies the frontend of any quirks associated with serialization.
+ *
+ * Should be set in either \c retro_init or \c retro_load_game, but not both.
+ * @param data[in, out] <tt>uint64_t *</tt>.
+ * Pointer to the core's serialization quirks.
+ * The frontend will set the flags of the quirks it supports
+ * and clear the flags of those it doesn't.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is supported.
+ * @see retro_serialize
+ * @see retro_unserialize
+ * @see RETRO_SERIALIZATION_QUIRK
+ */
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
-                                           /* uint64_t * --
-                                            * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
-                                            * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
-                                            */
 
 /**
  * The frontend will try to use a "shared" context when setting up a hardware context.
@@ -2578,29 +2589,49 @@ struct retro_hw_render_context_negotiation_interface
    unsigned interface_version;
 };
 
-/* Serialized state is incomplete in some way. Set if serialization is
- * usable in typical end-user cases but should not be relied upon to
- * implement frame-sensitive frontend features such as netplay or
- * rerecording. */
+/** @defgroup RETRO_SERIALIZATION_QUIRK Serialization Quirks
+ * @{
+ */
+
+/**
+ * Indicates that serialized state is incomplete in some way.
+ *
+ * Set if serialization is usable for the common case of saving and loading game state,
+ * but should not be relied upon for frame-sensitive frontend features
+ * such as netplay or rerecording.
+ */
 #define RETRO_SERIALIZATION_QUIRK_INCOMPLETE (1 << 0)
-/* The core must spend some time initializing before serialization is
- * supported. retro_serialize() will initially fail; retro_unserialize()
- * and retro_serialize_size() may or may not work correctly either. */
+
+/**
+ * Indicates that core must spend some time initializing before serialization can be done.
+ *
+ * \c retro_serialize(), \c retro_unserialize(), and \c retro_serialize_size() will initially fail.
+ */
 #define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
-/* Serialization size may change within a session. */
+
+/** Set by the core to indicate that serialization size may change within a session. */
 #define RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE (1 << 2)
-/* Set by the frontend to acknowledge that it supports variable-sized
- * states. */
+
+/** Set by the frontend to acknowledge that it supports variable-sized states. */
 #define RETRO_SERIALIZATION_QUIRK_FRONT_VARIABLE_SIZE (1 << 3)
-/* Serialized state can only be loaded during the same session. */
+
+/** Serialized state can only be loaded during the same session. */
 #define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
-/* Serialized state cannot be loaded on an architecture with a different
- * endianness from the one it was saved on. */
+
+/**
+ * Serialized state cannot be loaded on an architecture
+ * with a different endianness from the one it was saved on.
+ */
 #define RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT (1 << 5)
-/* Serialized state cannot be loaded on a different platform from the one it
- * was saved on for reasons other than endianness, such as word size
- * dependence */
+
+/**
+ * Serialized state cannot be loaded on a different platform
+ * from the one it was saved on for reasons other than endianness,
+ * such as word size dependence.
+ */
 #define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
+
+/** @} */
 
 #define RETRO_MEMDESC_CONST      (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN  (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
