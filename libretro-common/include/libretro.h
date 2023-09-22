@@ -2256,17 +2256,18 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_JIT_CAPABLE 74
 
+/**
+ * Returns an interface that the core can use to receive microphone input.
+ *
+ * @param data[out] <tt>retro_microphone_interface *</tt>.
+ * Pointer to the microphone interface.
+ * @return \true if microphone support is available,
+ * even if no microphones are plugged in.
+ * \c false if microphone support is disabled unavailable,
+ * or if \c data is \c NULL.
+ * @see retro_microphone_interface
+ */
 #define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (75 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_microphone_interface * --
-                                            * Returns an interface that can be used to receive input from the microphone driver.
-                                            *
-                                            * Returns true if microphone support is available,
-                                            * even if no microphones are plugged in.
-                                            * Returns false if mic support is disabled or unavailable.
-                                            *
-                                            * This callback can be invoked at any time,
-                                            * even before the microphone driver is ready.
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE 76
                                            /* const struct retro_netpacket_callback * --
@@ -5345,6 +5346,10 @@ struct retro_throttle_state
    float rate;
 };
 
+/** @defgroup GET_MICROPHONE_INTERFACE Microphone Interface
+ * @{
+ */
+
 /**
  * Opaque handle to a microphone that's been opened for use.
  * The underlying object is accessed or created with \c retro_microphone_interface_t.
@@ -5547,6 +5552,8 @@ struct retro_microphone_interface
     */
    retro_read_mic_t read_mic;
 };
+
+/** @} */
 
 /**
  * Describes how a device is being powered.
