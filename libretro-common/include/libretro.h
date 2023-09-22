@@ -1521,10 +1521,18 @@ enum retro_mod
                                             *   never need an accurate audio state in the future.
                                             * * State will never be saved when using Hard Disable Audio.
                                             */
+
+/**
+ * Gets an interface that the core can use for raw MIDI I/O.
+ *
+ * @param data[out] <tt>struct retro_midi_interface **</tt>.
+ * Pointer to the MIDI interface.
+ * May be \c NULL.
+ * @return \c true if the environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_midi_interface
+ */
 #define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_midi_interface ** --
-                                            * Returns a MIDI interface that can be used for raw data I/O.
-                                            */
 
 /**
  * Asks the frontend if it's currently in fast-forward mode.
@@ -2545,35 +2553,71 @@ struct retro_led_interface
 
 /** @} */
 
-/* Retrieves the current state of the MIDI input.
- * Returns true if it's enabled, false otherwise. */
+/**
+ * @defgroup GET_MIDI_INTERFACE MIDI Interface
+ * @{
+ */
+
+/** @copydoc retro_midi_interface::input_enabled */
 typedef bool (RETRO_CALLCONV *retro_midi_input_enabled_t)(void);
 
-/* Retrieves the current state of the MIDI output.
- * Returns true if it's enabled, false otherwise */
+/** @copydoc retro_midi_interface::output_enabled */
 typedef bool (RETRO_CALLCONV *retro_midi_output_enabled_t)(void);
 
-/* Reads next byte from the input stream.
- * Returns true if byte is read, false otherwise. */
+/** @copydoc retro_midi_interface::read */
 typedef bool (RETRO_CALLCONV *retro_midi_read_t)(uint8_t *byte);
 
-/* Writes byte to the output stream.
- * 'delta_time' is in microseconds and represent time elapsed since previous write.
- * Returns true if byte is written, false otherwise. */
+/** @copydoc retro_midi_interface::write */
 typedef bool (RETRO_CALLCONV *retro_midi_write_t)(uint8_t byte, uint32_t delta_time);
 
-/* Flushes previously written data.
- * Returns true if successful, false otherwise. */
+/** @copydoc retro_midi_interface::flush */
 typedef bool (RETRO_CALLCONV *retro_midi_flush_t)(void);
 
+/**
+ * Interface that the core can use for raw MIDI I/O.
+ */
 struct retro_midi_interface
 {
+   /**
+    * Retrieves the current state of MIDI input.
+    *
+    * @return \c true if MIDI input is enabled.
+    */
    retro_midi_input_enabled_t input_enabled;
+
+   /**
+    * Retrieves the current state of MIDI output.
+    * @return \c true if MIDI output is enabled.
+    */
    retro_midi_output_enabled_t output_enabled;
+
+   /**
+    * Reads a byte from the MIDI input stream.
+    *
+    * @param byte[out] The byte received from the input stream.
+    * @return \c true if a byte was read,
+    * \c false if MIDI input is disabled or \c byte is \c NULL.
+    */
    retro_midi_read_t read;
+
+   /**
+    * Writes a byte to the output stream.
+    *
+    * @param byte The byte to write to the output stream.
+    * @param delta_time Time since the previous write, in microseconds.
+    * @return \c true if c\ byte was written, false otherwise.
+    */
    retro_midi_write_t write;
+
+   /**
+    * Flushes previously-written data.
+    *
+    * @return \c true if successful.
+    */
    retro_midi_flush_t flush;
 };
+
+/** @} */
 
 enum retro_hw_render_context_negotiation_interface_type
 {
