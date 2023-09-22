@@ -1454,11 +1454,21 @@ enum retro_mod
                                             * core supports VFS before it starts handing out paths.
                                             * It is recomended to do so in retro_set_environment
                                             */
+/**
+ * Returns an interface that the core can use
+ * to set the state of any accessible device LEDs.
+ *
+ * @param data[out] <tt>struct retro_led_interface *</tt>.
+ * Pointer to the LED interface that the frontend will populate.
+ * May be \c NULL, in which case the frontend will only return
+ * whether this environment callback is available.
+ * @returns \c true if the environment call is available,
+ * even if \c data is \c NULL
+ * or no LEDs are accessible.
+ * @see retro_led_interface
+ */
 #define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_led_interface * --
-                                            * Gets an interface which is used by a libretro core to set
-                                            * state of LEDs.
-                                            */
+
 #define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* int * --
                                             * Tells the core if the frontend wants audio or video.
@@ -2483,11 +2493,31 @@ struct retro_hw_render_interface
    unsigned interface_version;
 };
 
+/**
+ * @defgroup GET_LED_INTERFACE LED Interface
+ * @{
+ */
+
+/** @copydoc retro_led_interface::set_led_state */
 typedef void (RETRO_CALLCONV *retro_set_led_state_t)(int led, int state);
+
+/**
+ * Interface that the core can use to set the state of available LEDs.
+ * @see RETRO_ENVIRONMENT_GET_LED_INTERFACE
+ */
 struct retro_led_interface
 {
-    retro_set_led_state_t set_led_state;
+   /**
+    * Sets the state of an LED.
+    *
+    * @param led The LED to set the state of.
+    * @param state The state to set the LED to.
+    * \c true to enable, \c false to disable.
+    */
+   retro_set_led_state_t set_led_state;
 };
+
+/** @} */
 
 /* Retrieves the current state of the MIDI input.
  * Returns true if it's enabled, false otherwise. */
