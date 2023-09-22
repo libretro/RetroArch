@@ -2207,11 +2207,19 @@ enum retro_mod
                                             * the frontend is attempting to call retro_run().
                                             */
 
+/**
+ * Returns information about how the frontend will use savestates.
+ *
+ * @param data[out] <tt>retro_savestate_context *</tt>.
+ * Pointer to the current savestate context.
+ * May be \c NULL, in which case the environment call
+ * will return \c true to indicate its availability.
+ * @returns \c true if the environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_savestate_context
+ */
 #define RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT (72 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* int * --
-                                            * Tells the core about the context the frontend is asking for savestate.
-                                            * (see enum retro_savestate_context)
-                                            */
+
 
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT (73 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                             /* struct retro_hw_render_context_negotiation_interface * --
@@ -4400,34 +4408,74 @@ enum retro_pixel_format
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
+/** @defgroup GET_SAVESTATE_CONTEXT Savestate Context
+ * @{
+ */
+
+/**
+ * Details about how the frontend will use savestates.
+ *
+ * @see RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT
+ * @see retro_serialize
+ */
 enum retro_savestate_context
 {
-   /* Standard savestate written to disk. */
+   /**
+    * Standard savestate written to disk.
+    * May be loaded at any time,
+    * even in a separate session or on another device.
+    *
+    * Should not contain any pointers to code or data.
+    */
    RETRO_SAVESTATE_CONTEXT_NORMAL                 = 0,
 
-   /* Savestate where you are guaranteed that the same instance will load the save state.
-    * You can store internal pointers to code or data.
-    * It's still a full serialization and deserialization, and could be loaded or saved at any time.
-    * It won't be written to disk or sent over the network.
+   /**
+    * The savestate is guaranteed to be loaded
+    * within the same session, address space, and binary.
+    * Will not be written to disk or sent over the network;
+    * therefore, internal pointers to code or data are acceptable.
+    * May still be loaded or saved at any time.
+    *
+    * @note This context generally implies the use of runahead or rewinding,
+    * which may work by taking savestates multiple times per second.
+    * Savestate code that runs in this context should be fast.
     */
    RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE = 1,
 
-   /* Savestate where you are guaranteed that the same emulator binary will load that savestate.
-    * You can skip anything that would slow down saving or loading state but you can not store internal pointers.
-    * It won't be written to disk or sent over the network.
-    * Example: "Second Instance" runahead
+   /**
+    * The savestate is guaranteed to be loaded
+    * in the same session and by the same binary,
+    * but possibly by a different address space
+    * (e.g. for "second instance" runahead)
+    *
+    * Will not be written to disk or sent over the network,
+    * but may be loaded in a different address space.
+    * Therefore, the savestate <em>must not</em> contain pointers.
     */
    RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY   = 2,
 
-   /* Savestate used within a rollback netplay feature.
-    * You should skip anything that would unnecessarily increase bandwidth usage.
-    * It won't be written to disk but it will be sent over the network.
+   /**
+    * The savestate will not be written to disk,
+    * but no other guarantees are made.
+    * The savestate will almost certainly be loaded
+    * by a separate binary, device, and address space.
+    *
+    * This context is intended for use with frontends that support rollback netplay.
+    * Serialized state should omit any data that would unnecessarily increase bandwidth usage.
+    * Must not contain pointers, and integers must be saved in big-endian format.
+    * @see retro_endianness.h
+    * @see network_stream
     */
    RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY       = 3,
 
-   /* Ensure sizeof() == sizeof(int). */
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_savestate_context) == sizeof(int)</tt>.
+    * Do not use.
+    */
    RETRO_SAVESTATE_CONTEXT_UNKNOWN                = INT_MAX
 };
+
+/** @} */
 
 /**
  * Defines a message that the frontend will display to the user,
