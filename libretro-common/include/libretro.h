@@ -4701,10 +4701,17 @@ struct retro_input_descriptor
  */
 struct retro_system_info
 {
+   /**
+    * Descriptive name of the library.
+    *
+    * @note Should not contain any version numbers, etc.
+    */
+   const char *library_name;
 
-   const char *library_name;      /* Descriptive name of library. Should not
-                                   * contain any version numbers, etc. */
-   const char *library_version;   /* Descriptive version of core. */
+   /**
+    * Descriptive version of the core.
+    */
+   const char *library_version;
 
    /**
     * A pipe-delimited string list of file extensions that this core can load, e.g. "bin|rom|iso".
