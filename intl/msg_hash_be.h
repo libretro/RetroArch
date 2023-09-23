@@ -2050,28 +2050,32 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Павелічэнне гучнасці"
+   "Гучней"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "Павялічвае ўзровень гучнасці выходнага гуку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "Змяншэнне гучнасці"
+   "Цішэй"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
-   "Паменшыць узровень гучнасці выходнага гуку."
+   "Паменшае ўзровень гучнасці выходнага гуку."
    )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Загрузіць стан"
+   "Загрузка стану"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Загрузіць захаваны стан з выбранага на дадзены момант слота."
+   "Загружае захаваны стан з бягучага выбранага слота."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Захаваць стан"
+   "Захоўванне стану"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
