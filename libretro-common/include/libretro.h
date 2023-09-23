@@ -1480,47 +1480,30 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Returns hints about certain steps that the core may skip for this frame.
+ *
+ * A frontend may not need a core to generate audio or video in certain situations;
+ * this environment call sets a bitmask that indicates
+ * which steps the core may skip for this frame.
+ *
+ * This can be used to increase performance for some frontend features.
+ *
+ * @note Emulation accuracy should not be compromised;
+ * for example, if a core emulates a platform that supports display capture
+ * (i.e. looking at its own VRAM), then it should perform its rendering as normal
+ * unless it can prove that the emulated game is not using display capture.
+ *
+ * @param data[out] <tt>retro_av_enable_flags *</tt>.
+ * Pointer to the bitmask of steps that the frontend will skip.
+ * Other bits are set to zero and are reserved for future use.
+ * If \c NULL, the frontend will only return whether this environment callback is available.
+ * @returns \c true if the environment call is available,
+ * regardless of the value output to \c data.
+ * If \c false, the core should assume that the frontend will not skip any steps.
+ * @see retro_av_enable_flags
+ */
 #define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* int * --
-                                            * Tells the core if the frontend wants audio or video.
-                                            * If disabled, the frontend will discard the audio or video,
-                                            * so the core may decide to skip generating a frame or generating audio.
-                                            * This is mainly used for increasing performance.
-                                            * Bit 0 (value 1): Enable Video
-                                            * Bit 1 (value 2): Enable Audio
-                                            * Bit 2 (value 4): Use Fast Savestates.
-                                            * Bit 3 (value 8): Hard Disable Audio
-                                            * Other bits are reserved for future use and will default to zero.
-                                            * If video is disabled:
-                                            * * The frontend wants the core to not generate any video,
-                                            *   including presenting frames via hardware acceleration.
-                                            * * The frontend's video frame callback will do nothing.
-                                            * * After running the frame, the video output of the next frame should be
-                                            *   no different than if video was enabled, and saving and loading state
-                                            *   should have no issues.
-                                            * If audio is disabled:
-                                            * * The frontend wants the core to not generate any audio.
-                                            * * The frontend's audio callbacks will do nothing.
-                                            * * After running the frame, the audio output of the next frame should be
-                                            *   no different than if audio was enabled, and saving and loading state
-                                            *   should have no issues.
-                                            * Fast Savestates:
-                                            * * Guaranteed to be created by the same binary that will load them.
-                                            * * Will not be written to or read from the disk.
-                                            * * Suggest that the core assumes loading state will succeed.
-                                            * * Suggest that the core updates its memory buffers in-place if possible.
-                                            * * Suggest that the core skips clearing memory.
-                                            * * Suggest that the core skips resetting the system.
-                                            * * Suggest that the core may skip validation steps.
-                                            * Hard Disable Audio:
-                                            * * Used for a secondary core when running ahead.
-                                            * * Indicates that the frontend will never need audio from the core.
-                                            * * Suggests that the core may stop synthesizing audio, but this should not
-                                            *   compromise emulation accuracy.
-                                            * * Audio output for the next frame does not matter, and the frontend will
-                                            *   never need an accurate audio state in the future.
-                                            * * State will never be saved when using Hard Disable Audio.
-                                            */
 
 /**
  * Gets an interface that the core can use for raw MIDI I/O.
@@ -2549,6 +2532,93 @@ struct retro_led_interface
     * \c true to enable, \c false to disable.
     */
    retro_set_led_state_t set_led_state;
+};
+
+/** @} */
+
+/** @defgroup GET_AUDIO_VIDEO_ENABLE Skipped A/V Steps
+ * @{
+ */
+
+/**
+ * Flags that define A/V steps that the core may skip for this frame.
+ *
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE
+ */
+enum retro_av_enable_flags
+{
+   /**
+    * If set, the core should render video output with \c retro_video_refresh_t as normal.
+    *
+    * Otherwise, the frontend will discard any video data received this frame,
+    * including frames presented via hardware acceleration.
+    * \c retro_video_refresh_t will do nothing.
+    *
+    * @note After running the frame, the video output of the next frame
+    * should be no different than if video was enabled,
+    * and saving and loading state should have no issues.
+    * This implies that the emulated console's graphics pipeline state
+    * should not be affected by this flag.
+    *
+    * @note If emulating a platform that supports display capture
+    * (i.e. reading its own VRAM),
+    * the core may not be able to completely skip rendering,
+    * as the VRAM is part of the graphics pipeline's state.
+    */
+   RETRO_AV_ENABLE_VIDEO = (1 << 0),
+
+   /**
+    * If set, the core should render audio output
+    * with \c retro_audio_sample_t or \c retro_audio_sample_batch_t as normal.
+    *
+    * Otherwise, the frontend will discard any audio data received this frame.
+    * The core should skip audio rendering if possible.
+    *
+    * @note After running the frame, the audio output of the next frame
+    * should be no different than if audio was enabled,
+    * and saving and loading state should have no issues.
+    * This implies that the emulated console's audio pipeline state
+    * should not be affected by this flag.
+    */
+   RETRO_AV_ENABLE_AUDIO = (1 << 1),
+
+   /**
+    * If set, indicates that any savestates taken this frame
+    * are guaranteed to be created by the same binary that will load them,
+    * and will not be written to or read from the disk.
+    *
+    * The core may use these guarantees to:
+    *
+    * @li Assume that loading state will succeed.
+    * @li Update its memory buffers in-place if possible.
+    * @li Skip clearing memory.
+    * @li Skip resetting the system.
+    * @li Skip validation steps.
+    *
+    * @deprecated Use \c RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT instead,
+    * except for compatibility purposes.
+    */
+   RETRO_AV_ENABLE_FAST_SAVESTATES = (1 << 2),
+
+   /**
+    * If set, indicates that the frontend will never need audio from the core.
+    * Used by a frontend for implementing runahead via a secondary core instance.
+    *
+    * The core may stop synthesizing audio if it can do so
+    * without compromising emulation accuracy.
+    *
+    * Audio output for the next frame does not matter,
+    * and the frontend will never need an accurate audio state in the future.
+    *
+    * State will never be saved while this flag is set.
+    */
+   RETRO_AV_ENABLE_HARD_DISABLE_AUDIO = (1 << 3),
+
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_av_enable_flags) == sizeof(int)</tt>.
+    * Do not use.
+    */
+   RETRO_AV_ENABLE_DUMMY = INT_MAX
 };
 
 /** @} */
