@@ -1789,19 +1789,26 @@ enum retro_mod
                                             * fallback, stderr).
                                             */
 
+/**
+ * Returns the number of active input devices currently provided by the frontend.
+ *
+ * This may change between frames,
+ * but will remain constant for the duration of each frame.
+ *
+ * If this callback returns \c true,
+ * a core need not poll any input device
+ * with an index greater than or equal to the returned value.
+ *
+ * If callback returns \c false,
+ * the number of active input devices is unknown.
+ * In this case, all input devices should be considered active.
+ *
+ * @param data[out] <tt>unsigned *</tt>.
+ * Pointer to the result returned by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available.
+ */
 #define RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS 61
-                                           /* unsigned * --
-                                            * Unsigned value is the number of active input devices
-                                            * provided by the frontend. This may change between
-                                            * frames, but will remain constant for the duration
-                                            * of each frame.
-                                            * If callback returns true, a core need not poll any
-                                            * input device with an index greater than or equal to
-                                            * the number of active devices.
-                                            * If callback returns false, the number of active input
-                                            * devices is unknown. In this case, all input devices
-                                            * should be considered active.
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK 62
                                            /* const struct retro_audio_buffer_status_callback * --
