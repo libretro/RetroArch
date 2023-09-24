@@ -34,9 +34,17 @@ struct SimpleEntry: TimelineEntry {
 
 struct RetroArchImageView : View {
     var body: some View {
-       ZStack {
-          AccessoryWidgetBackground()
-          Image("logo")
+       if #available(iOSApplicationExtension 17.0, *) {
+          ZStack {
+             AccessoryWidgetBackground()
+             Image("logo")
+          }
+          .containerBackground(for: .widget) {}
+       } else {
+          ZStack {
+             AccessoryWidgetBackground()
+             Image("logo")
+          }
        }
     }
 }
