@@ -2857,7 +2857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "Benachrichtungs-Ton aktivieren"
+   "Aktiviere 'Benachrichtungs' Ton"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
