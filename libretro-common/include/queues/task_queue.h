@@ -36,15 +36,19 @@ RETRO_BEGIN_DECLS
 
 enum task_type
 {
+   /** A regular task. */
    TASK_TYPE_NONE,
-   /* Only one blocking task can exist in the queue at a time.
-    * Attempts to add a new one while another is running is
-    * ignored.
+
+   /**
+    * Only one blocking task can exist in the queue at a time.
+    * Attempts to add a new one while another is running will fail.
     */
    TASK_TYPE_BLOCKING
 };
 
 typedef struct retro_task retro_task_t;
+
+/** @copydoc task::callback */
 typedef void (*retro_task_callback_t)(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error);
@@ -60,6 +64,15 @@ typedef void (*retro_task_queue_msg_t)(retro_task_t *task,
 
 typedef bool (*retro_task_retriever_t)(retro_task_t *task, void *data);
 
+/**
+ * Called by \c task_queue_wait after each task executes
+ * (i.e. once per pass over the queue).
+ * @param data Arbitrary data.
+ * The function should cast this to a known type.
+ * @return \c true if \c task_queue_wait should continue waiting,
+ * \c false if it should return early.
+ * @see task_queue_wait
+ */
 typedef bool (*retro_task_condition_fn_t)(void *data);
 
 typedef struct
@@ -67,50 +80,143 @@ typedef struct
    char *source_file;
 } decompress_task_data_t;
 
+/**
+ * A unit of work executed by the task system,
+ * spread across one or more frames.
+ *
+ * Some fields are set by the caller,
+ * others are set by the task system.
+ */
 struct retro_task
 {
-   /* when the task should run (0 for as soon as possible) */
+   /**
+    * The time (in microseconds) when the task should start running,
+    * or 0 if it should start as soon as possible.
+    * The exact time this task starts will depend on when the queue is next updated.
+    * Set by the caller.
+    * @note This is a point in time, not a duration.
+    * It is not affected by a frontend's time manipulation (pausing, fast-forward, etc.).
+    * @see cpu_features_get_time_usec
+    */
    retro_time_t when;
 
+   /**
+    * The main body of work for a task.
+    * Should be as fast as possible,
+    * as it will be called with each task queue update
+    * (usually once per frame).
+    * Must not be \c NULL.
+    *
+    * @param task The task that this handler is associated with.
+    * Can be used to configure or query the task.
+    * Will never be \c NULL.
+    * @see task_queue_check
+    */
    retro_task_handler_t  handler;
 
-   /* always called from the main loop */
+   /**
+    * Called when this task finishes;
+    * executed during the next task queue update
+    * after \c finished is set to \c true.
+    * May be \c NULL, in which case this function is skipped.
+    *
+    * @param task The task that is being cleaned up.
+    * Will never be \c NULL.
+    * @param task_data \c task's \c task_data field.
+    * @param user_data \c task's \c user_data field.
+    * @param error \c task's \c error field.
+    * @see task_queue_check
+    * @see retro_task_callback_t
+    */
    retro_task_callback_t callback;
 
-   /* task cleanup handler to free allocated resources, will
-    * be called immediately after running the main callback */
+   /**
+    * Called when this task finishes immediately after \c callback is run.
+    * Used to clean up any resources or state owned by the task.
+    * May be \c NULL, in which case this function is skipped.
+    *
+    * @param task The task that is being cleaned up.
+    * Will never be \c NULL.
+    */
    retro_task_handler_t cleanup;
 
-   /* created by the handler, destroyed by the user */
+   /**
+    * Pointer to arbitrary data, intended for "returning" an object from the task
+    * (although it can be used for any purpose).
+    * If owned by the task, it should be cleaned up within \c cleanup.
+    * Not modified or freed by the task queue.
+    */
    void *task_data;
 
-   /* owned by the user */
+   /**
+    * Pointer to arbitrary data, intended for passing parameters to the task.
+    * If owned by the task, it should be cleaned up within \c cleanup.
+    * Not modified or freed by the task queue.
+    */
    void *user_data;
 
-   /* created and destroyed by the code related to the handler */
+   /**
+    * Pointer to arbitrary data, intended for state that exists for the task's lifetime.
+    * If owned by the task, it should be cleaned up within \c cleanup.
+    * Not modified or freed by the task queue.
+    */
    void *state;
 
-   /* created by task handler; destroyed by main loop
-    * (after calling the callback) */
+   /**
+    * Human-readable details about an error that occurred while running the task.
+    * Should be created and assigned within \c handler if there was an error.
+    * Will be cleaned up by the task queue with \c free() upon this task's completion.
+    * @see task_set_error
+    */
    char *error;
 
+   /**
+    * Called to update a task's \c progress,
+    * or to update some view layer (e.g. an on-screen display)
+    * about the task's progress.
+    *
+    * Skipped if \c NULL or if \c mute is set.
+    *
+    * @param task The task whose progress is being updated or reported.
+    */
    void (*progress_cb)(retro_task_t*);
 
-   /* handler can modify but will be
-    * free()d automatically if non-NULL. */
+   /**
+    * Human-readable description of this task.
+    * May be \c NULL,
+    * but if not then it will be disposed of by the task system with \c free()
+    * upon this task's completion.
+    * Can be modified or replaced at any time.
+    * @see strdup
+    */
    char *title;
 
-   /* frontend userdata
-    * (e.g. associate a sticky notification to a task) */
+   /**
+    * Pointer to arbitrary data, intended for use by a frontend
+    * (for example, to associate a sticky notification with a task).
+    *
+    * This should be cleaned up within \c cleanup if necessary.
+    * Cores may use this for any purpose.
+    */
    void *frontend_userdata;
 
-   /* don't touch this. */
+   /**
+    * @private Pointer to the next task in the queue.
+    * Do not touch this; it is managed by the task system.
+    */
    retro_task_t *next;
 
-   /* -1 = unmetered/indeterminate, 0-100 = current progress percentage */
+   /**
+    * Indicates the current progress of the task.
+    *
+    * -1 means the task is indefinite or not measured,
+    * 0-100 is a percentage of the task's completion.
+    */
    int8_t progress;
 
-   /* task identifier */
+   /**
+    * A unique identifier assigned to a task when it's created.
+    */
    uint32_t ident;
 
    enum task_type type;
@@ -161,42 +267,209 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
  * it to complete. */
 void task_queue_cancel_task(void *task);
 
+/**
+ * Sets \c task::finished to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param finished Whether the task should be considered finished.
+ * @see retro_task::finished
+ */
 void task_set_finished(retro_task_t *task, bool finished);
 
+/**
+ * Sets \c task::mute to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param mute Whether the task should be considered muted.
+ * @see retro_task::mute
+ */
 void task_set_mute(retro_task_t *task, bool mute);
 
+/**
+ * Sets \c task::error to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param error The error message to set.
+ * @see retro_task::error
+ * @warning This does not free the existing error message.
+ * The caller must do that itself.
+ */
 void task_set_error(retro_task_t *task, char *error);
 
+/**
+ * Sets \c task::progress to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param progress The progress value to set.
+ * @see retro_task::progress
+ */
 void task_set_progress(retro_task_t *task, int8_t progress);
 
+/**
+ * Sets \c task::title to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param title The title to set.
+ * @see retro_task::title
+ * @see task_free_title
+ * @warning This does not free the existing title.
+ * The caller must do that itself.
+ */
 void task_set_title(retro_task_t *task, char *title);
 
+/**
+ * Sets \c task::data to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param data The data to set.
+ * @see retro_task::data
+ */
 void task_set_data(retro_task_t *task, void *data);
 
+/**
+ * Sets \c task::cancelled to the given value.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * Behavior is undefined if \c NULL.
+ * @param cancelled Whether the task should be considered cancelled.
+ * @see retro_task::cancelled
+ */
 void task_set_cancelled(retro_task_t *task, bool cancelled);
 
+/**
+ * Frees the \c task's title, if any.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to modify.
+ * @see task_set_title
+ */
 void task_free_title(retro_task_t *task);
 
+/**
+ * Returns \c task::cancelled.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::cancelled.
+ * @see retro_task::cancelled
+ */
 bool task_get_cancelled(retro_task_t *task);
 
+/**
+ * Returns \c task::finished.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::finished.
+ * @see retro_task::finished
+ */
 bool task_get_finished(retro_task_t *task);
 
+/**
+ * Returns \c task::mute.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::mute.
+ * @see retro_task::mute
+ */
 bool task_get_mute(retro_task_t *task);
 
+/**
+ * Returns \c task::error.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::error.
+ * @see retro_task::error
+ */
 char* task_get_error(retro_task_t *task);
 
+/**
+ * Returns \c task::progress.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::progress.
+ * @see retro_task::progress
+ */
 int8_t task_get_progress(retro_task_t *task);
 
+/**
+ * Returns \c task::title.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::title.
+ * @see retro_task::title
+ */
 char* task_get_title(retro_task_t *task);
 
+/**
+ * Returns \c task::data.
+ * Thread-safe if the task queue is threaded.
+ *
+ * @param task The task to query.
+ * Behavior is undefined if \c NULL.
+ * @return The value of \c task::data.
+ * @see retro_task::data
+ */
 void* task_get_data(retro_task_t *task);
 
+/**
+ * Returns whether the task queue is running
+ * on the same thread that called \c task_queue_init.
+ *
+ * @return \c true if the caller is running
+ * on the same thread that called \c task_queue_init.
+ */
 bool task_is_on_main_thread(void);
 
+/**
+ * Ensures that the task queue is in threaded mode.
+ *
+ * Next time \c retro_task_queue_check is called,
+ * the task queue will be recreated with threading enabled.
+ * Existing tasks will continue to run on the new thread.
+ */
 void task_queue_set_threaded(void);
 
+/**
+ * Ensures that the task queue is not in threaded mode.
+ *
+ * Next time \c retro_task_queue_check is called,
+ * the task queue will be recreated with threading disabled.
+ * Existing tasks will continue to run on whichever thread updates the queue.
+ *
+ * @see task_queue_set_threaded
+ * @see task_queue_is_threaded
+ */
 void task_queue_unset_threaded(void);
 
+/**
+ * Returns whether the task queue is running in threaded mode.
+ *
+ * @return \c true if the task queue is running its tasks on a separate thread.
+ */
 bool task_queue_is_threaded(void);
 
 /**
@@ -214,47 +487,110 @@ bool task_queue_find(task_finder_data_t *find_data);
  */
 void task_queue_retrieve(task_retriever_data_t *data);
 
- /* Checks for finished tasks
-  * Takes the finished tasks, if any,
-  * and runs their callbacks.
-  * This must only be called from the main thread. */
+ /**
+  * Runs each task.
+  * If a task is finished or cancelled,
+  * its callback and cleanup handler will be called.
+  * Afterwards, the task will be deallocated.
+  * If used in a core, generally called in \c retro_run
+  * and just before \c task_queue_deinit.
+  * @warning This must only be called from the main thread.
+  */
 void task_queue_check(void);
 
-/* Pushes a task
- * The task will start as soon as possible.
- * If a second blocking task is attempted, false will be returned
- * and the task will be ignored. */
+/**
+ * Schedules a task to start running.
+ * If \c task::when is 0, it will start as soon as possible.
+ *
+ * Tasks with the same \c task::when value
+ * will be executed in the order they were scheduled.
+ *
+ * @param task The task to schedule.
+ * @return \c true unless \c task's type is \c TASK_TYPE_BLOCKING
+ * and there's already a blocking task in the queue.
+ */
 bool task_queue_push(retro_task_t *task);
 
-/* Blocks until all non-scheduled tasks have finished.
- * Will return early if cond is not NULL
- * and cond(data) returns false.
- * This must only be called from the main thread. */
+/**
+ * Block until all active (i.e. current time > \c task::when) tasks have finished,
+ * or until the given function returns \c false.
+ * If a scheduled task's \c when is passed while within this function,
+ * it will start executing.
+ *
+ * Must only be called from the main thread.
+ *
+ * @param cond Function to call after all tasks in the queue have executed
+ * (i.e. once per pass over the task queue).
+ * May be \c NULL, in which case the task queue will wait unconditionally.
+ * @param data Pointer to arbitrary data, passed directly into \c cond.
+ * May be \c NULL.
+ * @see retro_task_condition_fn_t
+ * @see task_queue_deinit
+ * @see task_queue_reset
+ * @warning Passing \c NULL to \c cond is strongly discouraged.
+ * If you use tasks that run indefinitely
+ * (e.g. for the lifetime of the core),
+ * you will need a way to stop these tasks externally;
+ * otherwise, you risk the frontend and core freezing.
+ */
 void task_queue_wait(retro_task_condition_fn_t cond, void* data);
 
-/* Sends a signal to terminate all the tasks.
+/**
+ * Marks all tasks in the queue as cancelled.
  *
- * This won't terminate the tasks immediately.
- * They will finish as soon as possible.
+ * The tasks won't immediately be terminated;
+ * each task may finish its work,
+ * but must do so as quickly as possible.
  *
- * This must only be called from the main thread. */
+ * Must only be called from the main thread.
+ *
+ * @see task_queue_wait
+ * @see task_queue_deinit
+ * @see task_set_finished
+ * @see task_get_cancelled
+ */
 void task_queue_reset(void);
 
-/* Deinitializes the task system.
- * This deinitializes the task system.
- * The tasks that are running at
- * the moment will stay on hold */
+/**
+ * Deinitializes the task system.
+ *
+ * Outstanding tasks will not be cleaned up;
+ * if the intent is to finish the core or frontend's work,
+ * then all tasks must be finished before calling this function.
+ * May be safely called multiple times in a row,
+ * but only from the main thread.
+ * @see task_queue_wait
+ * @see task_queue_reset
+ */
 void task_queue_deinit(void);
 
-/* Initializes the task system.
- * This initializes the task system
- * and chooses an appropriate
- * implementation according to the settings.
+/**
+ * Initializes the task system with the provided parameters.
+ * Must be called before any other task_queue_* function,
+ * and must only be called from the main thread.
  *
- * This must only be called from the main thread. */
+ * @param threaded \c true if tasks should run on a separate thread,
+ * \c false if they should remain on the calling thread.
+ * All tasks run in sequence on a single thread.
+ * If you want to scale a task to multiple threads,
+ * you must do so within the task itself.
+ * @param msg_push The task system will call this function to output messages.
+ * If \c NULL, no messages will be output.
+ * @note Calling this function while the task system is already initialized
+ * will reinitialize it with the new parameters,
+ * but it will not reset the task queue.
+ * @see task_queue_deinit
+ * @see retro_task_queue_msg_t
+ */
 void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push);
 
-/* Allocates and inits a new retro_task_t */
+/**
+ * Allocates and initializes a new task.
+ * Deallocated by the task queue after it finishes executing.
+ *
+ * @returns Pointer to a newly allocated task,
+ * or \c NULL if allocation fails.
+ */
 retro_task_t *task_init(void);
 
 RETRO_END_DECLS
