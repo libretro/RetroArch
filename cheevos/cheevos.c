@@ -264,7 +264,6 @@ static void rcheevos_activate_achievements(void)
          {
             char buffer[256];
             buffer[0] = '\0';
-            /* TODO/FIXME - localize */
             snprintf(buffer, sizeof(buffer),
                "Could not activate achievement %u \"%s\": %s",
                achievement->id, achievement->title, rc_error_str(result));
@@ -682,17 +681,18 @@ int rcheevos_get_richpresence(char *s, size_t len)
 
       if (ret <= 0 && rcheevos_locals.game.title)
       {
-         /* TODO/FIXME - localize */
-         size_t _len = strlcpy(s, "Playing ", len);
-         strlcpy(s + _len, rcheevos_locals.game.title, len - _len);
+         int _len = snprintf(s, len, msg_hash_to_str(MSG_CHEEVOS_RICH_PRESENCE_PLAYING),
+                            rcheevos_locals.game.title);
+
+         if (_len < 0)
+            return -1;
       }
       return ret;
    }
    if (rcheevos_locals.game.title)
    {
-      /* TODO/FIXME - localize */
-      size_t _len = strlcpy(s, "Spectating ", len);
-      return (int)strlcpy(s + _len, rcheevos_locals.game.title, len - _len);
+      return snprintf(s, len, msg_hash_to_str(MSG_CHEEVOS_RICH_PRESENCE_SPECTATING),
+                      rcheevos_locals.game.title);
    }
    return 0;
 }
@@ -936,7 +936,6 @@ static void rcheevos_activate_leaderboards(void)
       {
          char buffer[256];
          buffer[0] = '\0';
-         /* TODO/FIXME - localize */
          snprintf(buffer, sizeof(buffer),
             "Could not activate leaderboard %u \"%s\": %s",
             leaderboard->id, leaderboard->title, rc_error_str(result));
@@ -1229,9 +1228,8 @@ void rcheevos_validate_config_settings(void)
    {
       char buffer[256];
       buffer[0] = '\0';
-      /* TODO/FIXME - localize */
       snprintf(buffer, sizeof(buffer),
-            "Hardcore paused. You cannot earn hardcore achievements for %s using %s",
+            msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_INVALID_CORE),
             rc_console_name(rcheevos_locals.game.console_id), sysinfo->library_name);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
       rcheevos_pause_hardcore();
@@ -1742,31 +1740,44 @@ static void rcheevos_show_game_placard(void)
          number_of_active++;
    }
 
-   /* TODO/FIXME - localize strings */
    if (number_of_core == 0)
-      strlcpy(msg, "This game has no achievements.", sizeof(msg));
+      strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS), sizeof(msg));
    else if (!number_of_unsupported)
    {
       if (settings->bools.cheevos_start_active)
          snprintf(msg, sizeof(msg),
-            "All %d achievements activated for this session.",
+            msg_hash_to_str(MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED),
             number_of_core);
       else
          snprintf(msg, sizeof(msg),
-            "You have %d of %d achievements unlocked.",
+            msg_hash_to_str(MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED),
             number_of_core - number_of_active, number_of_core);
    }
    else
    {
+      char number_of_unsupported_msg[64];
+      int _len;
+
+      snprintf(number_of_unsupported_msg,
+               sizeof(number_of_unsupported_msg),
+               msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_COUNT),
+               number_of_unsupported);
+
       if (settings->bools.cheevos_start_active)
-         snprintf(msg, sizeof(msg),
-            "All %d achievements activated for this session (%d unsupported).",
-            number_of_core, number_of_unsupported);
+         _len = snprintf(msg, sizeof(msg),
+                         msg_hash_to_str(MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED),
+                         number_of_core);
       else
-         snprintf(msg, sizeof(msg),
-            "You have %d of %d achievements unlocked (%d unsupported).",
-            number_of_core - number_of_active - number_of_unsupported,
-            number_of_core, number_of_unsupported);
+         _len = snprintf(msg, sizeof(msg),
+                         msg_hash_to_str(MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED),
+                         number_of_core - number_of_active - number_of_unsupported,
+                         number_of_core);
+
+      _len += snprintf(msg + _len, sizeof(msg) - _len,
+                       " (%s)", number_of_unsupported_msg);
+
+      if (_len < 0)
+         return;
    }
 
    msg[sizeof(msg) - 1] = 0;
@@ -2164,9 +2175,8 @@ static void rcheevos_login_callback(void* userdata)
       {
          char msg[256];
          msg[0] = '\0';
-         /* TODO/FIXME - localize */
          snprintf(msg, sizeof(msg),
-            "RetroAchievements: Logged in as \"%s\".",
+            msg_hash_to_str(MSG_CHEEVOS_LOGGED_IN_AS_USER),
             rcheevos_locals.displayname);
          runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
