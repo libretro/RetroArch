@@ -28,6 +28,10 @@
 
 #include <boolean.h>
 
+/** @defgroup dirent Directory Entries
+ * @{
+ */
+
 RETRO_BEGIN_DECLS
 
 /**
@@ -159,5 +163,7 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused);
 void retro_closedir(struct RDIR *rdir);
 
 RETRO_END_DECLS
+
+/** @} */
 
 #endif
