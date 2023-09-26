@@ -36,7 +36,7 @@ RETRO_BEGIN_DECLS
 
 enum task_type
 {
-   /** A regular task. */
+   /** A regular task. The vast majority of tasks will use this type. */
    TASK_TYPE_NONE,
 
    /**
@@ -48,20 +48,26 @@ enum task_type
 
 typedef struct retro_task retro_task_t;
 
-/** @copydoc task::callback */
+/** @copydoc retro_task::callback */
 typedef void (*retro_task_callback_t)(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error);
 
+/** @copydoc retro_task::handler */
 typedef void (*retro_task_handler_t)(retro_task_t *task);
 
+/** @copydoc task_finder_data::func */
 typedef bool (*retro_task_finder_t)(retro_task_t *task,
       void *userdata);
 
+/**
+ * Displays a message output by a task.
+ */
 typedef void (*retro_task_queue_msg_t)(retro_task_t *task,
       const char *msg,
       unsigned prio, unsigned duration, bool flush);
 
+/** @copydoc task_retriever_data::func */
 typedef bool (*retro_task_retriever_t)(retro_task_t *task, void *data);
 
 /**
@@ -178,6 +184,7 @@ struct retro_task
     * Skipped if \c NULL or if \c mute is set.
     *
     * @param task The task whose progress is being updated or reported.
+    * @see progress
     */
    void (*progress_cb)(retro_task_t*);
 
@@ -211,60 +218,183 @@ struct retro_task
     *
     * -1 means the task is indefinite or not measured,
     * 0-100 is a percentage of the task's completion.
+    *
+    * Set by the caller.
+    *
+    * @see progress_cb
     */
    int8_t progress;
 
    /**
     * A unique identifier assigned to a task when it's created.
+    * Set by the task system.
     */
    uint32_t ident;
 
+   /**
+    * The type of task this is.
+    * Set by the caller.
+    */
    enum task_type type;
 
-   /* if set to true, frontend will
-   use an alternative look for the
-   task progress display */
+   /**
+    * If \c true, the frontend should use some alternative means
+    * of displaying this task's progress or messages.
+    * Not used within cores.
+    */
    bool alternative_look;
 
-   /* set to true by the handler to signal
-    * the task has finished executing. */
+   /**
+    * Set to \c true by \c handler to indicate that this task has finished.
+    * At this point the task queue will call \c callback and \c cleanup,
+    * then deallocate the task.
+    */
    bool finished;
 
-   /* set to true by the task system
-    * to signal the task *must* end. */
+   /**
+    * Set to true by the task queue to signal that this task \em must end.
+    * \c handler should check to see if this is set,
+    * aborting or completing its work as soon as possible afterward.
+    * \c callback and \c cleanup will still be called as normal.
+    *
+    * @see task_queue_reset
+    */
    bool cancelled;
 
-   /* if true no OSD messages will be displayed. */
+   /**
+    * If set, the task queue will not call \c progress_cb
+    * and will not display any messages from this task.
+    */
    bool mute;
 };
 
+/**
+ * Parameters for \c task_queue_find.
+ *
+ * @see task_queue_find
+ */
 typedef struct task_finder_data
 {
+   /**
+    * Predicate to call for each task.
+    * Must not be \c NULL.
+    *
+    * @param task The task to query.
+    * @param userdata \c userdata from this struct.
+    * @return \c true if this task matches the search criteria,
+    * at which point \c task_queue_find will stop searching and return \c true.
+    */
    retro_task_finder_t func;
+
+   /**
+    * Pointer to arbitrary data.
+    * Passed directly to \c func.
+    * May be \c NULL.
+    */
    void *userdata;
 } task_finder_data_t;
 
+/**
+ * Contains the result of a call to \c task_retriever_data::func.
+ * Implemented as an intrusive singly-linked list.
+ */
 typedef struct task_retriever_info
 {
+   /**
+    * The next item in the result list,
+    * or \c NULL if this is the last one.
+    */
    struct task_retriever_info *next;
+
+   /**
+    * Arbitrary data returned by \c func.
+    * Can be anything, but should be a simple \c struct
+    * so that it can be freed by \c task_queue_retriever_info_free.
+    */
    void *data;
 } task_retriever_info_t;
 
+/**
+ * Parameters for \c task_queue_retrieve.
+ *
+ * @see task_queue_retrieve
+ */
 typedef struct task_retriever_data
 {
+   /**
+    * Contains the result of each call to \c func that returned \c true.
+    * Should be initialized to \c NULL.
+    * Will remain \c NULL after \c task_queue_retrieve if no tasks matched.
+    * Must be freed by \c task_queue_retriever_info_free.
+    * @see task_queue_retriever_info_free
+    */
    task_retriever_info_t *list;
+
+   /**
+    * The handler to compare against.
+    * Only tasks with this handler will be considered for retrieval.
+    * Must not be \c NULL.
+    */
    retro_task_handler_t handler;
+
+   /**
+    * The predicate that determines if the given task will be retrieved.
+    * Must not be \c NULL.
+    *
+    * @param task[in] The task to query.
+    * @param data[out] Arbitrary data that the retriever should return.
+    * Allocated by the task queue based on \c element_size.
+    * @return \c true if \c data should be appended to \c list.
+    */
    retro_task_retriever_t func;
+
+   /**
+    * The size of the output that \c func may write to.
+    * Must not be zero.
+    */
    size_t element_size;
 } task_retriever_data_t;
 
+/**
+ * Returns the next item in the result list.
+ * Here's a usage example, assuming that \c results is used to store strings:
+ *
+ * @code{.c}
+ * void print_results(task_retriever_info_t *results)
+ * {
+ *    char* text = NULL;
+ *    task_retriever_info_t *current = results;
+ *    while (text = task_queue_retriever_info_next(&current))
+ *    {
+ *       printf("%s\n", text);
+ *    }
+ * }
+ * @endcode
+ *
+ * @param link Pointer to the first element in the result list.
+ * Must not be \c NULL.
+ * @return The next item in the result list.
+ */
 void *task_queue_retriever_info_next(task_retriever_info_t **link);
 
+/**
+ * Frees the result of a call to \c task_queue_retrieve.
+ * @param list The result list to free.
+ * May be \c NULL, in which case this function does nothing.
+ * The list, its nodes, and its elements will all be freed.
+ *
+ * If the list's elements must be cleaned up with anything besides \c free,
+ * then the caller must do that itself before invoking this function.
+ */
 void task_queue_retriever_info_free(task_retriever_info_t *list);
 
 /**
- * Signals a task to end without waiting for
- * it to complete. */
+ * Cancels the provided task.
+ * The task should finish its work as soon as possible afterward.
+ *
+ * @param task The task to cancel.
+ * @see task_set_cancelled
+ */
 void task_queue_cancel_task(void *task);
 
 /**
@@ -473,17 +603,25 @@ void task_queue_unset_threaded(void);
 bool task_queue_is_threaded(void);
 
 /**
- * Calls func for every running task
- * until it returns true.
- * Returns a task or NULL if not found.
+ * Calls the function given in \c find_data for each task
+ * until it returns \c true for one of them,
+ * or until all tasks have been searched.
+ *
+ * @param find_data Parameters for the search.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if \c find_data::func returned \c true for any task.
+ * @see task_finder_data_t
  */
 bool task_queue_find(task_finder_data_t *find_data);
 
 /**
- * Calls func for every running task when handler
- * parameter matches task handler, allowing the
- * list parameter to be filled with user-defined
- * data.
+ * Retrieves arbitrary data from every task
+ * whose handler matches \c data::handler.
+ *
+ * @param data[in, out] Parameters for retrieving data from the task queue,
+ * including the results themselves.
+ * Behavior is undefined if \c NULL.
+ * @see task_retriever_data_t
  */
 void task_queue_retrieve(task_retriever_data_t *data);
 
@@ -578,7 +716,9 @@ void task_queue_deinit(void);
  * If \c NULL, no messages will be output.
  * @note Calling this function while the task system is already initialized
  * will reinitialize it with the new parameters,
- * but it will not reset the task queue.
+ * but it will not reset the task queue;
+ * all existing tasks will continue to run
+ * when the queue is updated.
  * @see task_queue_deinit
  * @see retro_task_queue_msg_t
  */
