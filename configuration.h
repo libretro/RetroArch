@@ -992,6 +992,7 @@ typedef struct settings
       bool playlist_show_entry_idx;
       bool playlist_fuzzy_archive_match;
       bool playlist_portable_paths;
+      bool playlist_use_filename;
 
       bool quit_press_twice;
       bool vibrate_on_keypress;

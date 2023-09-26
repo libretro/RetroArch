@@ -1439,6 +1439,8 @@
 
 #define DEFAULT_PLAYLIST_PORTABLE_PATHS false
 
+#define DEFAULT_PLAYLIST_USE_FILENAME false
+
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 

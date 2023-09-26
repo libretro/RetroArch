@@ -20634,6 +20634,22 @@ static bool setting_append_list(
                SD_FLAG_NONE
             );
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_use_filename,
+               MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+               DEFAULT_PLAYLIST_USE_FILENAME,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+            );
+
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
          if (string_is_equal(settings->arrays.menu_driver, "ozone") ||
              string_is_equal(settings->arrays.menu_driver, "xmb"))

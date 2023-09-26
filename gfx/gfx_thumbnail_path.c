@@ -380,6 +380,7 @@ bool gfx_thumbnail_set_content_playlist(
    const char *core_name              = NULL;
    const char *db_name                = NULL;
    const struct playlist_entry *entry = NULL;
+   settings_t* settings = config_get_ptr();
 
    if (!path_data)
       return false;
@@ -443,8 +444,26 @@ bool gfx_thumbnail_set_content_playlist(
             "", sizeof(path_data->content_label));
 
    /* Determine content image name */
-   gfx_thumbnail_fill_content_img(path_data->content_img,
+   if (settings->bools.playlist_use_filename)
+   {
+      char* content_name_no_ext = NULL;
+      char tmp_buf[PATH_MAX_LENGTH];
+      /* Remove rom file extension
+       * > path_remove_extension() requires a char * (not const)
+       *   so have to use a temporary buffer... */
+
+      const char* base_name = path_basename(path_data->content_path);
+      strlcpy(tmp_buf, base_name, sizeof(tmp_buf));
+      content_name_no_ext = path_remove_extension(tmp_buf);
+      
+      gfx_thumbnail_fill_content_img(path_data->content_img,
+         sizeof(path_data->content_img), content_name_no_ext);
+   }
+   else
+   {
+      gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label);
+   }
 
    /* Store playlist index */
    path_data->playlist_index = idx;
