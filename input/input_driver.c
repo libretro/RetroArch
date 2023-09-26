@@ -6170,6 +6170,13 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          int k;
          int s;
 
+         /* Remember original analog D-pad binds. */
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
+            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
+         }
+
          /* Read input from both analog sticks. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
@@ -6235,6 +6242,15 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
+         int k;
+
+         /* Restore analog D-pad binds temporarily overridden. */
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].joyaxis    = (auto_binds)[k].orig_joyaxis;
+            (general_binds)[k].joyaxis = (general_binds)[k].orig_joyaxis;
+         }
+
          if (!all_users_control_menu)
             break;
       }
