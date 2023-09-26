@@ -6611,11 +6611,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "Включить тестирование неофициальных достижений и/или бета-функций."
+   "Включает тестирование неофициальных достижений и/или бета-функций."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Звук разблокировки"
+   "Сигнал разблокирования"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -6721,7 +6721,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Показывает информацию по загружаемой игре и текущий прогресс пользователя. В режиме 'Для всех опознанных игр' будет отображаться сводка по играм без доступных достижений."
+   "Показывать информацию по загружаемой игре и текущий прогресс пользователя. В режиме 'Для всех опознанных игр' будет отображаться сводка по играм без доступных достижений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -6733,11 +6733,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "Индикатор разблокировки"
+   "Индикатор разблокирования"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "Показывать сообщение при разблокировке достижения."
+   "Показывать уведомление при разблокировании достижения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
@@ -6745,7 +6745,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
-   "Показывать сообщение при разблокировке всех достижений для игры."
+   "Показывать уведомление при разблокировании всех достижений в игре."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
@@ -6761,7 +6761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   "Показывает на экране индикатор при прогрессе в получении достижения."
+   "Показывать на экране индикатор при прогрессе в получении достижения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
@@ -6793,7 +6793,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
-   "Показывает на экране счётчик текущего значения для активной таблицы лидеров."
+   "Выводить на экран текущий счёт для активной таблицы лидеров."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
