@@ -7304,7 +7304,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Bekapcsolt állapotban, ha a fájlböngésző könyvtára is ki van választva, ennek értékét eltárolja a játéklistába. Ha más rendszeren töltik be a játéklistát, ahol ez a lehetőség ugyancsak engedélyezve van, a játéklista elérési útjait automatikusan hozzáigazítja a fájlböngésző könyvtárához, ha nem ugyanaz az értéke."
    )
-MSG_HASH(
+   MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Kezelés"
    )

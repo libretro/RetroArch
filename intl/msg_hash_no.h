@@ -2132,7 +2132,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Kjerne:"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 

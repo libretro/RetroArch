@@ -1220,7 +1220,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Select which type of runtime log record to display on playlist sub-labels.\nThe corresponding runtime log must be enabled with the 'Saving' options menu."
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

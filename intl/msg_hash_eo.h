@@ -780,7 +780,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
    "Enable or disable recent playlist for games, images, music, and videos."
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

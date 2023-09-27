@@ -7356,16 +7356,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "활성 및 '파일 탐색기' 디렉토리가 선택되면 '파일 탐색기' 매개 변수의 현재 값이 실행목록에 저장됩니다. 동일 옵션이 활성화 된 다른 시스템에서 실행목록을 불러오면 '파일 탐색기' 매개 변수 값이 실행목록 값과 비교되고 다를 경우 자동으로 교정됩니다."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "파일이름으로 썸네일 사용"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "플레이리스트의 이름 대신 롬 파일이름과 일치하는 썸네일을 사용합니다."
-   )
-
-MSG_HASH(
+   MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "관리"
    )
