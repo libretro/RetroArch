@@ -5228,7 +5228,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
    "secondes"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

@@ -1872,7 +1872,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Núcleo:"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 

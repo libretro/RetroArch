@@ -2868,7 +2868,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Gestiona les llistes de reproducció"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 

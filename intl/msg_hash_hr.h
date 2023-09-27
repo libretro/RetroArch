@@ -792,7 +792,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jezgra:"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 
