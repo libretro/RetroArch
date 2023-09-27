@@ -7410,11 +7410,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Use Filename"
+   "Use Filenames for Thumbnail Matching"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Find thumbnails by rom filename instead of label."
+   "When enabled, will find thumbnails by the entry's filename, rather than its label."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
