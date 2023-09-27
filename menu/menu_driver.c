@@ -5239,8 +5239,9 @@ unsigned menu_event(
 
    ok_old                                          = ok_current;
 
-   /* Menu must be alive */
-   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+   /* Menu must be alive, and input must be released after menu toggle. */
+   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+         || menu_st->input_driver_flushing_input > 0)
       return ret;
 
    /* Get pointer (mouse + touchscreen) input
