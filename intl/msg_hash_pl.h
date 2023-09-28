@@ -6570,11 +6570,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Użyj nazwy pliku"
+   "Użyj nazw plików do dopasowywania miniatur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Znajdź miniaturki według nazwy pliku romu zamiast etykiety."
+   "Gdy włączone, znajdziesz miniaturki według nazwy pliku wpisu, a nie jego etykiety."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,

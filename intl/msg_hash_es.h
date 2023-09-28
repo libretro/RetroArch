@@ -7314,11 +7314,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Utilizar nombres de archivos"
+   "Utilizar nombres de archivo para buscar miniaturas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Busca miniaturas utilizando el nombre de archivo de la ROM en vez de su etiqueta."
+   "Al activar esta opción, se buscarán las miniaturas basándose en el nombre del archivo del elemento y no en su etiqueta."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
