@@ -7346,11 +7346,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Использовать имена файлов"
+   "Исп. имена файлов для поиска миниатюр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Искать миниатюры, используя имена файлов вместо названий игр."
+   "Если вкл., поиск миниатюр будет производиться по именам файлов вместо названий записей."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
