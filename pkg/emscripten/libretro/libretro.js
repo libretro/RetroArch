@@ -6,6 +6,7 @@
 var BrowserFS = BrowserFS;
 var afs;
 var initializationCount = 0;
+var setImmediate;
 
 var Module = {
    noInitialRun: true,
@@ -15,7 +16,7 @@ var Module = {
    message_queue:[],
    message_out:[],
    message_accum:"",
-          
+
    retroArchSend: function(msg) {
       let bytes = this.encoder.encode(msg+"\n");
       this.message_queue.push([bytes,0]);

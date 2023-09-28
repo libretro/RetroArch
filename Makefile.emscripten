@@ -49,7 +49,6 @@ HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
 
-
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
 #  minor crackling, or the entire page freezing/crashing.
@@ -145,6 +144,8 @@ endif
 
 # 128 * 1024, double the usual emscripten stack size
 LDFLAGS += -s STACK_SIZE=131072
+
+LDFLAGS += --extern-pre-js emscripten/pre.js
 
 CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) #\
 #          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
