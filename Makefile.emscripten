@@ -143,7 +143,7 @@ endif
 LDFLAGS += -s STACK_SIZE=131072
 
 CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) #\
-#          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
+#         -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
