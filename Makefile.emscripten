@@ -48,7 +48,6 @@ HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
 
-
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
 #  minor crackling, or the entire page freezing/crashing.
