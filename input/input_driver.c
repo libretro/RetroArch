@@ -5150,7 +5150,9 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    settings_t *settings           = config_get_ptr();
    unsigned checkpoint_interval   = settings->uints.replay_checkpoint_interval;
-   // if bsv_movie_state_next_handle is not null, deinit and set bsv_movie_state_handle to bsv_movie_state_next_handle and clear next_handle
+   /* if bsv_movie_state_next_handle is not null, deinit and set
+      bsv_movie_state_handle to bsv_movie_state_next_handle and clear
+      next_handle */
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
    if (input_st->bsv_movie_state_next_handle)
    {
