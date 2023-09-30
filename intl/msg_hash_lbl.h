@@ -3679,6 +3679,21 @@ MSG_HASH(
    "ssh_enable"
    )
 #endif
+
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST,
+   "deferred_lakka_switch_options_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,
+   "Switch_Options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_OC_ENABLE,
+   "Switch_OC_enable"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_START_CORE,
    "start_core"

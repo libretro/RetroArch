@@ -61,6 +61,10 @@
 
 #include "lakka.h"
 
+#ifdef HAVE_LAKKA_SWITCH
+#include "lakka-switch.h"
+#endif
+
 #if defined(HAVE_LIBNX)
 #include "switch_performance_profiles.h"
 #endif
@@ -1749,7 +1753,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("ai_service_pause",              &settings->bools.ai_service_pause, true, DEFAULT_AI_SERVICE_PAUSE, false);
    SETTING_BOOL("wifi_enabled",                  &settings->bools.wifi_enabled, true, DEFAULT_WIFI_ENABLE, false);
    SETTING_BOOL("gamemode_enable",               &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
-
+#ifdef HAVE_LAKKA_SWITCH
+   SETTING_BOOL("switch_oc",                     &settings->bools.switch_oc, true, DEFAULT_SWITCH_OC, false);
+#endif
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
    SETTING_BOOL("audio_sync",                    &settings->bools.audio_sync, true, DEFAULT_AUDIO_SYNC, false);
    SETTING_BOOL("audio_rate_control",            &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
@@ -4068,6 +4074,16 @@ static bool config_load_file(global_t *global,
    libnx_apply_overclock();
 #endif
 
+#ifdef HAVE_LAKKA_SWITCH
+    FILE* f = fopen(SWITCH_OC_TOGGLE_PATH, "w");
+    if (settings->bools.switch_oc == true) {
+	  fprintf(f, "1\n");
+	} else {
+	  fprintf(f, "0\n");	
+    }
+    fclose(f);
+#endif   
+ 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
 

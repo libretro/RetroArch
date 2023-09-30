@@ -377,6 +377,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_enable,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_localap_enable,                MENU_ENUM_SUBLABEL_LOCALAP_ENABLE )
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timezone,                      MENU_ENUM_SUBLABEL_TIMEZONE)
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_options,                MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_oc_enable,              MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_language,                 MENU_ENUM_SUBLABEL_USER_LANGUAGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_max_swapchain_images,          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_waitable_swapchains,           MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS)
@@ -5093,6 +5097,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CPU_PERF_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cpu_perf_mode);
+            break;
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+         case MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_options);
+            break;
+         case MENU_ENUM_LABEL_SWITCH_OC_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_oc_enable);
             break;
 #endif
          case MENU_ENUM_LABEL_USER_LANGUAGE:
