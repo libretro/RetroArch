@@ -24,6 +24,8 @@
 #define SWITCH_GPU_PROFILE_FILE_AVAILABLE_GOVERNORS_PATH "/sys/devices/57000000.gpu/devfreq/57000000.gpu/available_governors"
 #define SWITCH_GPU_PROFILE_FILE_AVAILABLE_FREQ_PATH "/sys/devices/57000000.gpu/devfreq/57000000.gpu/available_governors"
 
+#define BLUETOOTH_ERTM_TOGGLE_PATH "/sys/module/bluetooth/parameters/disable_ertm"
+
 #define SWITCH_R2P_ENABLED_PATH "/sys/module/pmc_r2p/parameters/enabled" 
 #define SWITCH_R2P_ACTION_PATH /sys/module/pmc_r2p/parameters/action 
 #define SWITCH_R2P_ENTRY_ID_PATH /sys/module/pmc_r2p/parameters/entry_id 

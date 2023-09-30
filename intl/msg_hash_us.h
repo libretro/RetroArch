@@ -15558,6 +15558,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
    "Enable CEC Handshaking with TV when docking"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Bluetooth ERTM Disable"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Disable Bluetooth ERTM to fix pairing of some devices"
+   )
 #endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,

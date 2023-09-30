@@ -976,6 +976,7 @@ typedef struct settings
 #ifdef HAVE_LAKKA_SWITCH
       bool switch_oc;
       bool switch_cec;
+      bool bluetooth_ertm_disable;
 #endif
       bool samba_enable;
       bool bluetooth_enable;
