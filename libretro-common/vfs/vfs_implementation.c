@@ -924,7 +924,10 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
             path_buf[len - 1] = '\0';
 
       if (stat(path_buf, &stat_buf) < 0)
+      {
+         free(path_buf);
          return 0;
+      }
 
       free(path_buf);
       
