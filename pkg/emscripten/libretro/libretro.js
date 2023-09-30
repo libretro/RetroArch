@@ -79,7 +79,7 @@ var Module = {
       },
    printErr: function(text)
       {
-         console.log(text);
+         console.error(text);
       },
     canvas: document.getElementById("canvas"),
    totalDependencies: 0,
