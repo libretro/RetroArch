@@ -15550,6 +15550,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
    "Enable CPU Overclock frequencies"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "CEC Support"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "Enable CEC Handshaking with TV when docking"
+   )
 #endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,

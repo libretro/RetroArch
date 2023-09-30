@@ -8845,6 +8845,18 @@ static void switch_oc_enable_toggle_change_handler(rarch_setting_t *setting)
     }
     fclose(f);
 }
+
+static void switch_cec_enable_toggle_change_handler(rarch_setting_t *setting)
+{
+    if (*setting->value.target.boolean == true) {
+      FILE* f = fopen(SWITCH_CEC_TOGGLE_PATH, "w");
+	  fprintf(f, "\n");
+      fclose(f);
+	} else {
+	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);	
+    }
+    
+}
 #endif
 
 static void ssh_enable_toggle_change_handler(rarch_setting_t *setting)
@@ -21988,6 +22000,22 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = switch_oc_enable_toggle_change_handler;
+ 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.switch_cec,
+                  MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+                  DEFAULT_SWITCH_CEC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = switch_cec_enable_toggle_change_handler;
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);

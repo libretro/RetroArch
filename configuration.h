@@ -975,6 +975,7 @@ typedef struct settings
       bool ssh_enable;
 #ifdef HAVE_LAKKA_SWITCH
       bool switch_oc;
+      bool switch_cec;
 #endif
       bool samba_enable;
       bool bluetooth_enable;
