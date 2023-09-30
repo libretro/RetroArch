@@ -61,7 +61,7 @@
 
 #include "lakka.h"
 
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 #include "switch_performance_profiles.h"
 #endif
 
