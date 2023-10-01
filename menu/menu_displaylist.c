@@ -9914,9 +9914,11 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 #endif
+#ifndef HAVE_LAKKA
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_GAMEMODE_ENABLE, PARSE_ONLY_BOOL, false) == 0)
                count++;
+#endif /*HAVE_LAKKA?*/
          }
          break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
@@ -10425,7 +10427,9 @@ unsigned menu_displaylist_build_list(
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CPU_PERFPOWER,              PARSE_ACTION},
+#ifdef HAVE_LAKKA
                {MENU_ENUM_LABEL_GAMEMODE_ENABLE,            PARSE_ONLY_BOOL},
+#endif /*HAVE_LAKKA*/
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

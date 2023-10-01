@@ -1221,11 +1221,13 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_discord_allow,                      
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_cpu_profile,             MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE)
 #endif
 
+#ifndef HAVE_LAKKA
 #ifdef __linux__
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_gamemode_enable,                MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX)
 #else
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_gamemode_enable,                MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE)
 #endif
+#endif /*HAVE_LAKKA*/
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_brightness_control,             MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL)
 
@@ -5206,9 +5208,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_cpu_profile);
             break;
 #endif
+#ifndef HAVE_LAKKA
          case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_gamemode_enable);
             break;
+#endif /*HAVE_LAKKA*/
          case MENU_ENUM_LABEL_BRIGHTNESS_CONTROL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_brightness_control);
             break;

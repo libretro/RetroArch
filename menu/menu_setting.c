@@ -7949,6 +7949,7 @@ static void general_write_handler(rarch_setting_t *setting)
          else
             task_queue_unset_threaded();
          break;
+#ifndef HAVE_LAKKA
       case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
          if (frontend_driver_has_gamemode())
          {
@@ -7972,7 +7973,7 @@ static void general_write_handler(rarch_setting_t *setting)
             }
          }
          break;
-
+#endif /*HAVE_LAKKA*/
      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
@@ -19098,6 +19099,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
+#ifndef HAVE_LAKKA
          if (frontend_driver_has_gamemode())
             CONFIG_BOOL(
                   list, list_info,
@@ -19117,6 +19119,7 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+#endif /*HAVE_LAKKA*/
       case SETTINGS_LIST_WIFI_MANAGEMENT:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS),
