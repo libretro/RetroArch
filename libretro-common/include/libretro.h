@@ -1457,14 +1457,23 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Returns an interface that the core can use to access the file system.
+ * Should be called as early as possible.
+ *
+ * @param data[in,out] <tt>struct retro_vfs_interface_info *</tt>.
+ * Information about the desired VFS interface,
+ * as well as the interface itself.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available
+ * and the frontend can provide a VFS interface of the requested version or newer.
+ * @see retro_vfs_interface_info
+ * @see file_path
+ * @see retro_dirent
+ * @see file_stream
+ */
 #define RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_vfs_interface_info * --
-                                            * Gets access to the VFS interface.
-                                            * VFS presence needs to be queried prior to load_game or any
-                                            * get_system/save/other_directory being called to let front end know
-                                            * core supports VFS before it starts handing out paths.
-                                            * It is recomended to do so in retro_set_environment
-                                            */
+
 /**
  * Returns an interface that the core can use
  * to set the state of any accessible device LEDs.
@@ -2326,177 +2335,521 @@ enum retro_mod
 
 /**@}*/
 
-/* VFS functionality */
-
-/* File paths:
- * File paths passed as parameters when using this API shall be well formed UNIX-style,
- * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
- * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
- * Other than the directory separator, cores shall not make assumptions about path format:
- * "C:/path/game.bin", "http://example.com/game.bin", "#game/game.bin", "./game.bin" (without quotes) are all valid paths.
+/**
+ * @defgroup GET_VFS_INTERFACE File System Interface
+ * @brief File system functionality.
+ *
+ * @section File Paths
+ * File paths passed to all libretro filesystem APIs shall be well formed UNIX-style,
+ * using "/" (unquoted forward slash) as the directory separator
+ * regardless of the platform's native separator.
+ *
+ * Paths shall also include at least one forward slash
+ * (e.g. use "./game.bin" instead of "game.bin").
+ *
+ * Other than the directory separator, cores shall not make assumptions about path format.
+ * The following paths are all valid:
+ * @li \c C:/path/game.bin
+ * @li \c http://example.com/game.bin
+ * @li \c #game/game.bin
+ * @li \c ./game.bin
+ *
  * Cores may replace the basename or remove path components from the end, and/or add new components;
- * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request to front end.
- * The frontend is encouraged to make such paths work as well as it can, but is allowed to give up if the core alters paths too much.
- * Frontends are encouraged, but not required, to support native file system paths (modulo replacing the directory separator, if applicable).
- * Cores are allowed to try using them, but must remain functional if the front rejects such requests.
+ * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request from the front end.
+ *
+ * The frontend is encouraged to do the best it can when given an ill-formed path,
+ * but it is allowed to give up.
+ *
+ * Frontends are encouraged, but not required, to support native file system paths
+ * (including replacing the directory separator, if applicable).
+ *
+ * Cores are allowed to try using them, but must remain functional if the frontend rejects such requests.
+ *
  * Cores are encouraged to use the libretro-common filestream functions for file I/O,
- * as they seamlessly integrate with VFS, deal with directory separator replacement as appropriate
- * and provide platform-specific fallbacks in cases where front ends do not support VFS. */
+ * as they seamlessly integrate with VFS,
+ * deal with directory separator replacement as appropriate
+ * and provide platform-specific fallbacks
+ * in cases where front ends do not provide their own VFS interface.
+ *
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ * @see retro_vfs_interface_info
+ * @see file_path
+ * @see retro_dirent
+ * @see file_stream
+ *
+ * @{
+ */
 
-/* Opaque file handle
- * Introduced in VFS API v1 */
+/**
+ * Opaque file handle.
+ * @since VFS API v1
+ */
 struct retro_vfs_file_handle;
 
-/* Opaque directory handle
- * Introduced in VFS API v3 */
+/**
+ * Opaque directory handle.
+ * @since VFS API v3
+ */
 struct retro_vfs_dir_handle;
 
-/* File open flags
- * Introduced in VFS API v1 */
-#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0) /* Read only mode */
-#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1) /* Write only mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified */
-#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
+/** @defgroup RETRO_VFS_FILE_ACCESS File Access Flags
+ * File access flags.
+ * @since VFS API v1
+ * @{
+ */
+
+/** Opens a file for read-only access. */
+#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0)
+
+/**
+ * Opens a file for write-only access.
+ * Any existing file at this path will be discarded and overwritten
+ * unless \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is also specified.
+ */
+#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1)
+
+/**
+ * Opens a file for reading and writing.
+ * Any existing file at this path will be discarded and overwritten
+ * unless \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is also specified.
+ */
+#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE)
+
+/**
+ * Opens a file without discarding its existing contents.
+ * Only meaningful if \c RETRO_VFS_FILE_ACCESS_WRITE is specified.
+ */
 #define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
 
-/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use,
-   and how they react to unlikely external interference (for example someone else writing to that file,
-   or the file's server going down), behavior will not change. */
+/** @} */
+
+/** @defgroup RETRO_VFS_FILE_ACCESS_HINT File Access Hints
+ *
+ * Hints to the frontend for how a file will be accessed.
+ * The VFS implementation may use these to optimize performance,
+ * react to external interference (such as concurrent writes),
+ * or it may ignore them entirely.
+ *
+ * Hint flags do not change the behavior of each VFS function
+ * unless otherwise noted.
+ * @{
+ */
+
+/** No particular hints are given. */
 #define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
-/* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
+
+/**
+ * Indicates that the file will be accessed frequently.
+ *
+ * The frontend should cache it or map it into memory.
+ */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
 
-/* Seek positions */
+/** @} */
+
+/** @defgroup RETRO_VFS_SEEK_POSITION File Seek Positions
+ * File access flags and hints.
+ * @{
+ */
 #define RETRO_VFS_SEEK_POSITION_START    0
 #define RETRO_VFS_SEEK_POSITION_CURRENT  1
 #define RETRO_VFS_SEEK_POSITION_END      2
 
-/* stat() result flags
- * Introduced in VFS API v3 */
+/** @} */
+
+/** @defgroup RETRO_VFS_STAT File Status Flags
+ * File stat flags.
+ * @see retro_vfs_stat_t
+ * @since VFS API v3
+ * @{
+ */
+
+/** Indicates that the given path refers to a valid file. */
 #define RETRO_VFS_STAT_IS_VALID               (1 << 0)
+
+/** Indicates that the given path refers to a directory. */
 #define RETRO_VFS_STAT_IS_DIRECTORY           (1 << 1)
+
+/**
+ * Indicates that the given path refers to a character special file,
+ * such as \c /dev/null.
+ */
 #define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
 
-/* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
- * Introduced in VFS API v1 */
+/** @} */
+
+/**
+ * Returns the path that was used to open this file.
+ *
+ * @param stream The opened file handle to get the path of.
+ * Behavior is undefined if \c NULL or closed.
+ * @return The path that was used to open \c stream.
+ * The string is owned by \c stream and must not be modified.
+ * @since VFS API v1
+ * @see filestream_get_path
+ */
 typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
 
-/* Open a file for reading or writing. If path points to a directory, this will
- * fail. Returns the opaque file handle, or NULL for error.
- * Introduced in VFS API v1 */
+/**
+ * Open a file for reading or writing.
+ *
+ * @param path The path to open.
+ * @param mode A bitwise combination of \c RETRO_VFS_FILE_ACCESS flags.
+ * At a minimum, one of \c RETRO_VFS_FILE_ACCESS_READ or \c RETRO_VFS_FILE_ACCESS_WRITE must be specified.
+ * @param hints A bitwise combination of \c RETRO_VFS_FILE_ACCESS_HINT flags.
+ * @return A handle to the opened file,
+ * or \c NULL upon failure.
+ * Note that this will return \c NULL if \c path names a directory.
+ * The returned file handle must be closed with \c retro_vfs_close_t.
+ * @since VFS API v1
+ * @see File Paths
+ * @see RETRO_VFS_FILE_ACCESS
+ * @see RETRO_VFS_FILE_ACCESS_HINT
+ * @see retro_vfs_close_t
+ * @see filestream_open
+ */
 typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_open_t)(const char *path, unsigned mode, unsigned hints);
 
-/* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on success, -1 on failure.
- * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
- * Introduced in VFS API v1 */
+/**
+ * Close the file and release its resources.
+ * All files returned by \c retro_vfs_open_t must be closed with this function.
+ *
+ * @param stream The file handle to close.
+ * Behavior is undefined if already closed.
+ * Upon completion of this function, \c stream is no longer valid
+ * (even if it returns failure).
+ * @return 0 on success, -1 on failure or if \c stream is \c NULL.
+ * @see retro_vfs_open_t
+ * @see filestream_close
+ * @since VFS API v1
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *stream);
 
-/* Return the size of the file in bytes, or -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Return the size of the file in bytes.
+ *
+ * @param stream The file to query the size of.
+ * @return Size of the file in bytes, or -1 if there was an error.
+ * @see filestream_get_size
+ * @since VFS API v1
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
 
-/* Truncate file to specified size. Returns 0 on success or -1 on error
- * Introduced in VFS API v2 */
+/**
+ * Set the file's length.
+ *
+ * @param stream The file whose length will be adjusted.
+ * @param length The new length of the file, in bytes.
+ * If shorter than the original length, the extra bytes will be discarded.
+ * If longer, the file's padding is unspecified (and likely platform-dependent).
+ * @return 0 on success,
+ * -1 on failure.
+ * @see filestream_truncate
+ * @since VFS API v2
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
 
-/* Get the current read / write position for the file. Returns -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Gets the given file's current read/write position.
+ * This position is advanced with each call to \c retro_vfs_read_t or \c retro_vfs_write_t.
+ *
+ * @param stream The file to query the position of.
+ * @return The current stream position in bytes
+ * or -1 if there was an error.
+ * @see filestream_tell
+ * @since VFS API v1
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
 
-/* Set the current read/write position for the file. Returns the new position, -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Sets the given file handle's current read/write position.
+ *
+ * @param stream The file to set the position of.
+ * @param offset The new position, in bytes.
+ * @param seek_position The position to seek from.
+ * @return The new position,
+ * or -1 if there was an error.
+ * @since VFS API v1
+ * @see File Seek Positions
+ * @see filestream_seek
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int seek_position);
 
-/* Read data from a file. Returns the number of bytes read, or -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Read data from a file, if it was opened for reading.
+ *
+ * @param stream The file to read from.
+ * @param s The buffer to read into.
+ * @param len The number of bytes to read.
+ * The buffer pointed to by \c s must be this large.
+ * @return The number of bytes read,
+ * or -1 if there was an error.
+ * @since VFS API v1
+ * @see filestream_read
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_read_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len);
 
-/* Write data to a file. Returns the number of bytes written, or -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Write data to a file, if it was opened for writing.
+ *
+ * @param stream The file handle to write to.
+ * @param s The buffer to write from.
+ * @param len The number of bytes to write.
+ * The buffer pointed to by \c s must be this large.
+ * @return The number of bytes written,
+ * or -1 if there was an error.
+ * @since VFS API v1
+ * @see filestream_write
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_write_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len);
 
-/* Flush pending writes to file, if using buffered IO. Returns 0 on sucess, or -1 on failure.
- * Introduced in VFS API v1 */
+/**
+ * Flush pending writes to the file, if applicable.
+ *
+ * This does not mean that the changes will be immediately persisted to disk;
+ * that may be scheduled for later, depending on the platform.
+ *
+ * @param stream The file handle to flush.
+ * @return 0 on success, -1 on failure.
+ * @since VFS API v1
+ * @see filestream_flush
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_flush_t)(struct retro_vfs_file_handle *stream);
 
-/* Delete the specified file. Returns 0 on success, -1 on failure
- * Introduced in VFS API v1 */
+/**
+ * Deletes the file at the given path.
+ *
+ * @param path The path to the file that will be deleted.
+ * @return 0 on success, -1 on failure.
+ * @see filestream_delete
+ * @since VFS API v1
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_remove_t)(const char *path);
 
-/* Rename the specified file. Returns 0 on success, -1 on failure
- * Introduced in VFS API v1 */
+/**
+ * Rename the specified file.
+ *
+ * @param old_path Path to an existing file.
+ * @param new_path The destination path.
+ * Must not name an existing file.
+ * @return 0 on success, -1 on failure
+ * @see filestream_rename
+ * @since VFS API v1
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const char *new_path);
 
-/* Stat the specified file. Retruns a bitmask of RETRO_VFS_STAT_* flags, none are set if path was not valid.
- * Additionally stores file size in given variable, unless NULL is given.
- * Introduced in VFS API v3 */
+/**
+ * Gets information about the given file.
+ *
+ * @param path The path to the file to query.
+ * @param size[out] The reported size of the file in bytes.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags,
+ * or 0 if \c path doesn't refer to a valid file.
+ * @see path_stat
+ * @see path_get_size
+ * @see RETRO_VFS_STAT
+ * @since VFS API v3
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
 
-/* Create the specified directory. Returns 0 on success, -1 on unknown failure, -2 if already exists.
- * Introduced in VFS API v3 */
+/**
+ * Creates a directory at the given path.
+ *
+ * @param dir The desired location of the new directory.
+ * @return 0 if the directory was created,
+ * -2 if the directory already exists,
+ * or -1 if some other error occurred.
+ * @see path_mkdir
+ * @since VFS API v3
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_mkdir_t)(const char *dir);
 
-/* Open the specified directory for listing. Returns the opaque dir handle, or NULL for error.
- * Support for the include_hidden argument may vary depending on the platform.
- * Introduced in VFS API v3 */
+/**
+ * Opens a handle to a directory so its contents can be inspected.
+ *
+ * @param dir The path to the directory to open.
+ * Must be an existing directory.
+ * @param include_hidden Whether to include hidden files in the directory listing.
+ * The exact semantics of this flag will depend on the platform.
+ * @return A handle to the opened directory,
+ * or \c NULL if there was an error.
+ * @see retro_opendir
+ * @since VFS API v3
+ */
 typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const char *dir, bool include_hidden);
 
-/* Read the directory entry at the current position, and move the read pointer to the next position.
- * Returns true on success, false if already on the last entry.
- * Introduced in VFS API v3 */
+/**
+ * Gets the next dirent ("directory entry")
+ * within the given directory.
+ *
+ *
+ * @param dirstream[in,out] The directory to read from.
+ * Updated to point to the next file, directory, or other path.
+ * @return \c true when the next dirent was retrieved,
+ * \c false if there are no more dirents to read.
+ * @note This API iterates over all files and directories within \c dirstream.
+ * Remember to check what the type of the current dirent is.
+ * @note This function does not recurse,
+ * i.e. it does not return the contents of subdirectories.
+ * @note This may include "." and ".." on Unix-like platforms.
+ * @see retro_readdir
+ * @see retro_vfs_dirent_is_dir_t
+ * @since VFS API v3 */
 typedef bool (RETRO_CALLCONV *retro_vfs_readdir_t)(struct retro_vfs_dir_handle *dirstream);
 
-/* Get the name of the last entry read. Returns a string on success, or NULL for error.
- * The returned string pointer is valid until the next call to readdir or closedir.
- * Introduced in VFS API v3 */
+/**
+ * Gets the filename of the current dirent.
+ *
+ * The returned string pointer is valid
+ * until the next call to \c retro_vfs_readdir_t or \c retro_vfs_closedir_t.
+ *
+ * @param dirstream The directory to read from.
+ * @return The current dirent's name,
+ * or \c NULL if there was an error.
+ * @note This function only returns the file's \em name,
+ * not a complete path to it.
+ * @see retro_dirent_get_name
+ * @since VFS API v3
+ */
 typedef const char *(RETRO_CALLCONV *retro_vfs_dirent_get_name_t)(struct retro_vfs_dir_handle *dirstream);
 
-/* Check if the last entry read was a directory. Returns true if it was, false otherwise (or on error).
- * Introduced in VFS API v3 */
+/**
+ * Checks whether the current dirent names a directory.
+ *
+ * @param dirstream The directory to read from.
+ * @return \c true if \c dirstream's current dirent points to a directory,
+ * \c false if not or if there was an error.
+ * @see retro_dirent_is_dir
+ * @since VFS API v3
+ */
 typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_handle *dirstream);
 
-/* Close the directory and release its resources. Must be called if opendir returns non-NULL. Returns 0 on success, -1 on failure.
- * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
- * Introduced in VFS API v3 */
+/**
+ * Closes the given directory and release its resources.
+ *
+ * Must be called on any \c retro_vfs_dir_handle returned by \c retro_vfs_open_t.
+ *
+ * @param dirstream The directory to close.
+ * When this function returns (even failure),
+ * \c dirstream will no longer be valid and must not be used.
+ * @return 0 on success, -1 on failure.
+ * @see retro_closedir
+ * @since VFS API v3
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_closedir_t)(struct retro_vfs_dir_handle *dirstream);
 
+/**
+ * File system interface exposed by the frontend.
+ *
+ * @see dirent_vfs_init
+ * @see filestream_vfs_init
+ * @see path_vfs_init
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ */
 struct retro_vfs_interface
 {
    /* VFS API v1 */
+   /** @copydoc retro_vfs_get_path_t */
 	retro_vfs_get_path_t get_path;
+
+   /** @copydoc retro_vfs_open_t */
 	retro_vfs_open_t open;
+
+   /** @copydoc retro_vfs_close_t */
 	retro_vfs_close_t close;
+
+   /** @copydoc retro_vfs_size_t */
 	retro_vfs_size_t size;
+
+   /** @copydoc retro_vfs_tell_t */
 	retro_vfs_tell_t tell;
+
+   /** @copydoc retro_vfs_seek_t */
 	retro_vfs_seek_t seek;
+
+   /** @copydoc retro_vfs_read_t */
 	retro_vfs_read_t read;
+
+   /** @copydoc retro_vfs_write_t */
 	retro_vfs_write_t write;
+
+   /** @copydoc retro_vfs_flush_t */
 	retro_vfs_flush_t flush;
+
+   /** @copydoc retro_vfs_remove_t */
 	retro_vfs_remove_t remove;
+
+   /** @copydoc retro_vfs_rename_t */
 	retro_vfs_rename_t rename;
    /* VFS API v2 */
+
+   /** @copydoc retro_vfs_truncate_t */
    retro_vfs_truncate_t truncate;
    /* VFS API v3 */
+
+   /** @copydoc retro_vfs_stat_t */
    retro_vfs_stat_t stat;
+
+   /** @copydoc retro_vfs_mkdir_t */
    retro_vfs_mkdir_t mkdir;
+
+   /** @copydoc retro_vfs_opendir_t */
    retro_vfs_opendir_t opendir;
+
+   /** @copydoc retro_vfs_readdir_t */
    retro_vfs_readdir_t readdir;
+
+   /** @copydoc retro_vfs_dirent_get_name_t */
    retro_vfs_dirent_get_name_t dirent_get_name;
+
+   /** @copydoc retro_vfs_dirent_is_dir_t */
    retro_vfs_dirent_is_dir_t dirent_is_dir;
+
+   /** @copydoc retro_vfs_closedir_t */
    retro_vfs_closedir_t closedir;
 };
 
+/**
+ * Represents a request by the core for the frontend's file system interface,
+ * as well as the interface itself returned by the frontend.
+ *
+ * You do not need to use these functions directly;
+ * you may pass this struct to \c dirent_vfs_init,
+ * \c filestream_vfs_init, or \c path_vfs_init
+ * so that you can use the wrappers provided by these modules.
+ *
+ * @see dirent_vfs_init
+ * @see filestream_vfs_init
+ * @see path_vfs_init
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ */
 struct retro_vfs_interface_info
 {
-   /* Set by core: should this be higher than the version the front end supports,
-    * front end will return false in the RETRO_ENVIRONMENT_GET_VFS_INTERFACE call
-    * Introduced in VFS API v1 */
+   /**
+    * The minimum version of the VFS API that the core requires.
+    * libretro-common's wrapper API initializers will check this value as well.
+    *
+    * Set to the core's desired VFS version when requesting an interface,
+    * and set by the frontend to indicate its actual API version.
+    *
+    * If the core asks for a newer VFS API version than the frontend supports,
+    * the frontend must return \c false within the \c RETRO_ENVIRONMENT_GET_VFS_INTERFACE call.
+    * @since VFS API v1
+    */
    uint32_t required_interface_version;
 
-   /* Frontend writes interface pointer here. The frontend also sets the actual
-    * version, must be at least required_interface_version.
-    * Introduced in VFS API v1 */
+   /**
+    * Set by the frontend.
+    * The frontend will set this to the VFS interface it provides.
+    *
+    * The interface is owned by the frontend
+    * and must not be modified or freed by the core.
+    * @since VFS API v1 */
    struct retro_vfs_interface *iface;
 };
+
+/** @} */
 
 enum retro_hw_render_interface_type
 {
