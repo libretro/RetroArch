@@ -91,21 +91,15 @@ extern "C" {
 
 /**
  * @defgroup RETRO_DEVICE Input Devices
+ * @brief Libretro's fundamental device abstractions.
+ *
+ * Libretro's input system consists of abstractions over standard device types,
+ * such as a joypad (with or without analog), mouse, keyboard, light gun, or an abstract pointer.
+ * Instead of managing input devices themselves,
+ * cores need only to map their own concept of a controller to libretro's abstractions.
+ * This makes it possible for frontends to map the abstract types to a real input device
+ * without having to worry about the correct use of arbitrary (real) controller layouts.
  * @{
- */
-
-/*
- * Libretro's fundamental device abstractions.
- *
- * Libretro's input system consists of some standardized device types,
- * such as a joypad (with/without analog), mouse, keyboard, lightgun
- * and a pointer.
- *
- * The functionality of these devices are fixed, and individual cores
- * map their own concept of a controller to libretro's abstractions.
- * This makes it possible for frontends to map the abstract types to a
- * real input device, and not having to worry about binding input
- * correctly to arbitrary controller layouts.
  */
 
 #define RETRO_DEVICE_TYPE_SHIFT         8
@@ -118,50 +112,92 @@ extern "C" {
  */
 
 /**
- * Input Device: Disabled.
+ * Indicates no input.
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * all other arguments are ignored and zero is returned.
+ *
+ * @see retro_input_state_t
  */
 #define RETRO_DEVICE_NONE         0
 
 /**
- * Input Device: JoyPad.
+ * An abstraction around a game controller, known as a "RetroPad".
  *
- * This is often referred to as "RetroPad", which is essentially a
- * Super Nintendo controller, but with additional L2/R2/L3/R3 buttons,
- * similar to a PS1 DualShock.
+ * The RetroPad is modelled after a SNES controller,
+ * but with additional L2/R2/L3/R3 buttons
+ * (similar to a PlayStation controller).
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes the button (including D-Pad directions) to query.
+ * The result of said query will be 1 if the button is down, 0 if not.
+ *
+ * There is one exception; if \c RETRO_DEVICE_ID_JOYPAD_MASK is queried
+ * (and the frontend supports this query),
+ * the result will be a bitmask of all pressed buttons.
+ *
+ * @see retro_input_state_t
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_ID_JOYPAD
+ * @see RETRO_DEVICE_ID_JOYPAD_MASK
+ * @see RETRO_ENVIRONMENT_GET_INPUT_BITMASKS
  */
 #define RETRO_DEVICE_JOYPAD       1
 
 /**
- * Input Device: Mouse.
+ * An abstraction around a mouse, similar to the SNES Mouse but with more buttons.
  *
- * A simple mouse, similar to Super Nintendo's mouse. X and Y coordinates
- * are reported relatively to last poll (poll callback). It is up to the
- * libretro implementation to keep track of where the mouse pointer is
- * supposed to be on the screen. The frontend must make sure not to
- * interfere with its own hardware mouse pointer.
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes the button or axis to query.
+ * For buttons, the result of said query
+ * will be 1 if the button is down or 0 if not.
+ * For mouse wheel axes, the result
+ * will be 1 if the wheel was rotated in that direction and 0 if not.
+ * For the mouse pointer axis, the result will be thee mouse's movement
+ * relative to the last poll.
+ * The core is responsible for tracking the mouse's position,
+ * and the frontend is responsible for preventing interference
+ * by the real hardware pointer (if applicable).
+ *
+ * @note This should only be used for cores that emulate mouse input,
+ * such as for home computers
+ * or consoles with mouse attachments.
+ * Cores that emulate light guns should use \c RETRO_DEVICE_LIGHTGUN,
+ * and cores that emulate touch screens should use \c RETRO_DEVICE_POINTER.
  *
  * @see RETRO_DEVICE_POINTER
+ * @see RETRO_DEVICE_LIGHTGUN
  */
 #define RETRO_DEVICE_MOUSE        2
 
 /**
- * Input Device: Keyboard.
+ * An abstraction around a keyboard.
  *
- * The keyboard device lets one poll for raw key pressed. It is poll based,
- * so input callback will return with the current pressed state.
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes the key to poll.
+ *
+ * @note This should only be used for cores that emulate keyboard input,
+ * such as for home computers
+ * or consoles with keyboard attachments.
+ * Cores that emulate gamepads should use \c RETRO_DEVICE_JOYPAD or \c RETRO_DEVICE_ANALOG,
+ * and leave keyboard compatibility to the frontend.
  *
  * @see RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK
+ * @see retro_key
  */
 #define RETRO_DEVICE_KEYBOARD     3
 
 /**
- * Input Device: Lightgun.
+ * An abstraction around a light gun, simular to the PlayStation's Guncon.
  *
- * Similar to the Guncon-2 for PlayStation 2. It reports X/Y coordinates
- * in screen space (similar to the pointer) in the range [-0x8000, 0x7fff]
- * in both axes, with zero being center and -0x8000 being out of bounds. As
- * well as reporting on/off screen state. It features a trigger, start/select
- * buttons, auxiliary action buttons and a directional pad.
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes one of several possible inputs.
+ *
+ * The gun's coordinates are reported in screen space (similar to the pointer)
+ * in the range of [-0x8000, 0x7fff].
+ * Zero is the center of the game's screen
+ * and -0x8000 represents out-of-bounds.
+ * The trigger and various auxiliary buttons are also reported.
  *
  * @note A forced off-screen shot can be requested for auto-reloading
  * function in some games.
@@ -171,19 +207,23 @@ extern "C" {
 #define RETRO_DEVICE_LIGHTGUN     4
 
 /**
- * Input Device: Analog.
+ * An extension of the RetroPad that supports analog input.
  *
- * An extension to \c RETRO_DEVICE_JOYPAD (RetroPad). Similar to DualShock2 it adds
- * two analog sticks and all buttons can be analog. This is treated
- * as a separate device type as it returns axis values in the full
- * analog range of [-0x7fff, 0x7fff], although some devices may
- * return -0x8000.
+ * The analog RetroPad provides two virtual analog sticks (similar to DualShock controllers)
+ * and allows any button to be treated as analog (similar to Xbox shoulder triggers).
  *
- * @note Positive X axis is right. Positive Y axis is down. Buttons
- * are returned in the range [0, 0x7fff].
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes an analog axis or an analog button.
  *
- * @note Only use \c RETRO_DEVICE_ANALOG type when polling for analog values.
+ * Analog axes are reported in the range of [-0x8000, 0x7fff],
+ * with the X axis being positive towards the right
+ * and the Y axis being positive towards the bottom.
  *
+ * Analog buttons are reported in the range of [0, 0x7fff],
+ * where 0 is unpressed and 0x7fff is fully pressed.
+ *
+ * @note Cores should only use this type if they need analog input.
+ * Otherwise, \c RETRO_DEVICE_JOYPAD should be used.
  * @see RETRO_DEVICE_JOYPAD
  */
 #define RETRO_DEVICE_ANALOG       5
@@ -233,29 +273,67 @@ extern "C" {
 /** @} */
 
 /** @defgroup RETRO_DEVICE_ID_JOYPAD RetroPad Input
+ * @brief Digital buttons for the RetroPad.
+ *
+ * Button placement is comparable to that of a SNES controller,
+ * combined with the shoulder buttons of a PlayStation controller.
+ * These values can also be used for the \c id field of \c RETRO_DEVICE_INDEX_ANALOG_BUTTON
+ * to represent analog buttons (usually shoulder triggers).
  * @{
  */
 
-/* Buttons for the RetroPad (JOYPAD).
- * The placement of these is equivalent to placements on the
- * Super Nintendo controller.
- * L2/R2/L3/R3 buttons correspond to the PS1 DualShock.
- * Also used as id values for RETRO_DEVICE_INDEX_ANALOG_BUTTON */
+/** The equivalent of the SNES controller's south face button. */
 #define RETRO_DEVICE_ID_JOYPAD_B        0
+
+/** The equivalent of the SNES controller's west face button. */
 #define RETRO_DEVICE_ID_JOYPAD_Y        1
+
+/** The equivalent of the SNES controller's left-center button. */
 #define RETRO_DEVICE_ID_JOYPAD_SELECT   2
+
+/** The equivalent of the SNES controller's right-center button. */
 #define RETRO_DEVICE_ID_JOYPAD_START    3
+
+/** Up on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_UP       4
+
+/** Down on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_DOWN     5
+
+/** Left on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_LEFT     6
+
+/** Right on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_RIGHT    7
+
+/** The equivalent of the SNES controller's east face button. */
 #define RETRO_DEVICE_ID_JOYPAD_A        8
+
+/** The equivalent of the SNES controller's north face button. */
 #define RETRO_DEVICE_ID_JOYPAD_X        9
+
+/** The equivalent of the SNES controller's left shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_L       10
+
+/** The equivalent of the SNES controller's right shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_R       11
+
+/** The equivalent of the PlayStation's rear left shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_L2      12
+
+/** The equivalent of the PlayStation's rear right shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_R2      13
+
+/**
+ * The equivalent of the PlayStation's left analog stick button,
+ * although the actual button need not be in this position.
+ */
 #define RETRO_DEVICE_ID_JOYPAD_L3      14
+
+/**
+ * The equivalent of the PlayStation's right analog stick button,
+ * although the actual button need not be in this position.
+ */
 #define RETRO_DEVICE_ID_JOYPAD_R3      15
 
 /**
