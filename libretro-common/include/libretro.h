@@ -117,54 +117,81 @@ extern "C" {
  * @{
  */
 
-/* Input disabled. */
+/**
+ * Input Device: Disabled.
+ */
 #define RETRO_DEVICE_NONE         0
 
-/* The JOYPAD is called RetroPad. It is essentially a Super Nintendo
- * controller, but with additional L2/R2/L3/R3 buttons, similar to a
- * PS1 DualShock. */
+/**
+ * Input Device: JoyPad.
+ *
+ * This is often referred to as "RetroPad", which is essentially a
+ * Super Nintendo controller, but with additional L2/R2/L3/R3 buttons,
+ * similar to a PS1 DualShock.
+ */
 #define RETRO_DEVICE_JOYPAD       1
 
-/* The mouse is a simple mouse, similar to Super Nintendo's mouse.
- * X and Y coordinates are reported relatively to last poll (poll callback).
- * It is up to the libretro implementation to keep track of where the mouse
- * pointer is supposed to be on the screen.
- * The frontend must make sure not to interfere with its own hardware
- * mouse pointer.
+/**
+ * Input Device: Mouse.
+ *
+ * A simple mouse, similar to Super Nintendo's mouse. X and Y coordinates
+ * are reported relatively to last poll (poll callback). It is up to the
+ * libretro implementation to keep track of where the mouse pointer is
+ * supposed to be on the screen. The frontend must make sure not to
+ * interfere with its own hardware mouse pointer.
+ *
+ * @see RETRO_DEVICE_POINTER
  */
 #define RETRO_DEVICE_MOUSE        2
 
-/* KEYBOARD device lets one poll for raw key pressed.
- * It is poll based, so input callback will return with the current
- * pressed state.
- * For event/text based keyboard input, see
- * RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK.
+/**
+ * Input Device: Keyboard.
+ *
+ * The keyboard device lets one poll for raw key pressed. It is poll based,
+ * so input callback will return with the current pressed state.
+ *
+ * @see RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK
  */
 #define RETRO_DEVICE_KEYBOARD     3
 
-/* LIGHTGUN device is similar to Guncon-2 for PlayStation 2.
- * It reports X/Y coordinates in screen space (similar to the pointer)
- * in the range [-0x8000, 0x7fff] in both axes, with zero being center and
- * -0x8000 being out of bounds.
- * As well as reporting on/off screen state. It features a trigger,
- * start/select buttons, auxiliary action buttons and a
- * directional pad. A forced off-screen shot can be requested for
- * auto-reloading function in some games.
+/**
+ * Input Device: Lightgun.
+ *
+ * Similar to the Guncon-2 for PlayStation 2. It reports X/Y coordinates
+ * in screen space (similar to the pointer) in the range [-0x8000, 0x7fff]
+ * in both axes, with zero being center and -0x8000 being out of bounds. As
+ * well as reporting on/off screen state. It features a trigger, start/select
+ * buttons, auxiliary action buttons and a directional pad.
+ *
+ * @note A forced off-screen shot can be requested for auto-reloading
+ * function in some games.
+ *
+ * @see RETRO_DEVICE_POINTER
  */
 #define RETRO_DEVICE_LIGHTGUN     4
 
-/* The ANALOG device is an extension to JOYPAD (RetroPad).
- * Similar to DualShock2 it adds two analog sticks and all buttons can
- * be analog. This is treated as a separate device type as it returns
- * axis values in the full analog range of [-0x7fff, 0x7fff],
- * although some devices may return -0x8000.
- * Positive X axis is right. Positive Y axis is down.
- * Buttons are returned in the range [0, 0x7fff].
- * Only use ANALOG type when polling for analog values.
+/**
+ * Input Device: Analog.
+ *
+ * An extension to \c RETRO_DEVICE_JOYPAD (RetroPad). Similar to DualShock2 it adds
+ * two analog sticks and all buttons can be analog. This is treated
+ * as a separate device type as it returns axis values in the full
+ * analog range of [-0x7fff, 0x7fff], although some devices may
+ * return -0x8000.
+ *
+ * @note Positive X axis is right. Positive Y axis is down. Buttons
+ * are returned in the range [0, 0x7fff].
+ *
+ * @note Only use \c RETRO_DEVICE_ANALOG type when polling for analog values.
+ *
+ * @see RETRO_DEVICE_JOYPAD
  */
 #define RETRO_DEVICE_ANALOG       5
 
-/* Abstracts the concept of a pointing mechanism, e.g. touch.
+/**
+ * Input Device: Pointer.
+ *
+ * Abstracts the concept of a pointing mechanism, e.g. touch.
  * This allows libretro to query in absolute coordinates where on the
  * screen a mouse (or something similar) is being placed.
  * For a touch centric device, coordinates reported are the coordinates
@@ -181,19 +208,26 @@ extern "C" {
  * game image, etc.
  *
  * To check if the pointer coordinates are valid (e.g. a touch display
- * actually being touched), PRESSED returns 1 or 0.
+ * actually being touched), \c RETRO_DEVICE_ID_POINTER_PRESSED returns 1 or 0.
  *
- * If using a mouse on a desktop, PRESSED will usually correspond to the
- * left mouse button, but this is a frontend decision.
- * PRESSED will only return 1 if the pointer is inside the game screen.
+ * If using a mouse on a desktop, \c RETRO_DEVICE_ID_POINTER_PRESSED will
+ * usually correspond to the left mouse button, but this is a frontend decision.
+ * \c RETRO_DEVICE_ID_POINTER_PRESSED will only return 1 if the pointer is
+ * inside the game screen.
  *
  * For multi-touch, the index variable can be used to successively query
  * more presses.
- * If index = 0 returns true for _PRESSED, coordinates can be extracted
- * with _X, _Y for index = 0. One can then query _PRESSED, _X, _Y with
+ * If index = 0 returns true for \c _PRESSED, coordinates can be extracted
+ * with \c _X, \c _Y for index = 0. One can then query \c _PRESSED, \c _X, \c _Y with
  * index = 1, and so on.
- * Eventually _PRESSED will return false for an index. No further presses
- * are registered at this point. */
+ * Eventually \c _PRESSED will return false for an index. No further presses
+ * are registered at this point.
+ *
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_ID_POINTER_X
+ * @see RETRO_DEVICE_ID_POINTER_Y
+ * @see RETRO_DEVICE_ID_POINTER_PRESSED
+ */
 #define RETRO_DEVICE_POINTER      6
 
 /** @} */
