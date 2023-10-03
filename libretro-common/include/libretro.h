@@ -2717,7 +2717,6 @@ typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const
  * Gets the next dirent ("directory entry")
  * within the given directory.
  *
- *
  * @param dirstream[in,out] The directory to read from.
  * Updated to point to the next file, directory, or other path.
  * @return \c true when the next dirent was retrieved,
@@ -2729,7 +2728,8 @@ typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const
  * @note This may include "." and ".." on Unix-like platforms.
  * @see retro_readdir
  * @see retro_vfs_dirent_is_dir_t
- * @since VFS API v3 */
+ * @since VFS API v3
+ */
 typedef bool (RETRO_CALLCONV *retro_vfs_readdir_t)(struct retro_vfs_dir_handle *dirstream);
 
 /**
