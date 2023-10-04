@@ -17,7 +17,7 @@
 #define RC_RUNTIME_CHUNK_DONE         0x454E4F44 /* DONE */
 
 typedef struct rc_runtime_progress_t {
-  rc_runtime_t* runtime;
+  const rc_runtime_t* runtime;
 
   int offset;
   unsigned char* buffer;
@@ -81,17 +81,6 @@ static int rc_runtime_progress_match_md5(rc_runtime_progress_t* progress, unsign
   return result;
 }
 
-static unsigned rc_runtime_progress_djb2(const char* input)
-{
-  unsigned result = 5381;
-  char c;
-
-  while ((c = *input++) != '\0')
-    result = ((result << 5) + result) + c; /* result = result * 33 + c */
-
-  return result;
-}
-
 static void rc_runtime_progress_start_chunk(rc_runtime_progress_t* progress, unsigned chunk_id)
 {
   rc_runtime_progress_write_uint(progress, chunk_id);
@@ -120,7 +109,7 @@ static void rc_runtime_progress_end_chunk(rc_runtime_progress_t* progress)
   }
 }
 
-static void rc_runtime_progress_init(rc_runtime_progress_t* progress, rc_runtime_t* runtime, lua_State* L)
+static void rc_runtime_progress_init(rc_runtime_progress_t* progress, const rc_runtime_t* runtime, lua_State* L)
 {
   memset(progress, 0, sizeof(rc_runtime_progress_t));
   progress->runtime = runtime;
@@ -352,7 +341,7 @@ static int rc_runtime_progress_write_variables(rc_runtime_progress_t* progress)
 
   for (variable = progress->runtime->variables; variable; variable = variable->next)
   {
-    unsigned djb2 = rc_runtime_progress_djb2(variable->name);
+    unsigned djb2 = rc_djb2(variable->name);
     rc_runtime_progress_write_uint(progress, djb2);
 
     rc_runtime_progress_write_variable(progress, variable);
@@ -418,7 +407,7 @@ static int rc_runtime_progress_read_variables(rc_runtime_progress_t* progress)
   count = 0;
   for (variable = progress->runtime->variables; variable; variable = variable->next) {
     pending_variables[count].variable = variable;
-    pending_variables[count].djb2 = rc_runtime_progress_djb2(variable->name);
+    pending_variables[count].djb2 = rc_djb2(variable->name);
     ++count;
   }
 
@@ -751,7 +740,7 @@ int rc_runtime_progress_size(const rc_runtime_t* runtime, lua_State* L)
   rc_runtime_progress_t progress;
   int result;
 
-  rc_runtime_progress_init(&progress, (rc_runtime_t*)runtime, L);
+  rc_runtime_progress_init(&progress, runtime, L);
 
   result = rc_runtime_progress_serialize_internal(&progress);
   if (result != RC_OK)
@@ -764,7 +753,10 @@ int rc_runtime_serialize_progress(void* buffer, const rc_runtime_t* runtime, lua
 {
   rc_runtime_progress_t progress;
 
-  rc_runtime_progress_init(&progress, (rc_runtime_t*)runtime, L);
+  if (!buffer)
+    return RC_INVALID_STATE;
+
+  rc_runtime_progress_init(&progress, runtime, L);
   progress.buffer = (unsigned char*)buffer;
 
   return rc_runtime_progress_serialize_internal(&progress);
@@ -781,6 +773,11 @@ int rc_runtime_deserialize_progress(rc_runtime_t* runtime, const unsigned char* 
   unsigned i;
   int seen_rich_presence = 0;
   int result = RC_OK;
+
+  if (!serialized) {
+    rc_runtime_reset(runtime);
+    return RC_INVALID_STATE;
+  }
 
   rc_runtime_progress_init(&progress, runtime, L);
   progress.buffer = (unsigned char*)serialized;

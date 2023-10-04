@@ -10,6 +10,7 @@ extern "C" {
 \*****************************************************************************/
 
 enum {
+  RC_CONSOLE_UNKNOWN = 0,
   RC_CONSOLE_MEGA_DRIVE = 1,
   RC_CONSOLE_NINTENDO_64 = 2,
   RC_CONSOLE_SUPER_NINTENDO = 3,

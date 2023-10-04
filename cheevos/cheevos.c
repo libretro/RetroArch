@@ -75,7 +75,7 @@
 #include "../deps/rcheevos/include/rc_runtime.h"
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_hash.h"
-#include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
+#include "../deps/rcheevos/src/rc_libretro.h"
 
 /* Define this macro to prevent cheevos from being deactivated when they trigger. */
 #undef CHEEVOS_DONT_DEACTIVATE

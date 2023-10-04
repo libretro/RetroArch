@@ -1,6 +1,6 @@
 #include "rc_internal.h"
 
-#include "rc_compat.h"
+#include "../rc_compat.h"
 
 #include <ctype.h>
 
@@ -280,7 +280,6 @@ static void rc_rebalance_richpresence_lookup(rc_richpresence_lookup_item_t** roo
 {
   rc_richpresence_lookup_item_t** items;
   rc_scratch_buffer_t* buffer;
-  const int alignment = sizeof(rc_richpresence_lookup_item_t*);
   int index;
   int size;
 
@@ -293,7 +292,7 @@ static void rc_rebalance_richpresence_lookup(rc_richpresence_lookup_item_t** roo
   size = count * sizeof(rc_richpresence_lookup_item_t*);
   buffer = &parse->scratch.buffer;
   do {
-    const int aligned_offset = (buffer->offset + alignment - 1) & ~(alignment - 1);
+    const int aligned_offset = RC_ALIGN(buffer->offset);
     const int remaining = sizeof(buffer->buffer) - aligned_offset;
 
     if (remaining >= size) {

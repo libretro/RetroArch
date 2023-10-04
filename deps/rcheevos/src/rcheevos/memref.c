@@ -94,6 +94,7 @@ int rc_parse_memref(const char** memaddr, char* size, unsigned* address) {
     ++aux;
     switch (*aux++) {
       case 'f': case 'F': *size = RC_MEMSIZE_FLOAT; break;
+      case 'b': case 'B': *size = RC_MEMSIZE_FLOAT_BE; break;
       case 'm': case 'M': *size = RC_MEMSIZE_MBF32; break;
       case 'l': case 'L': *size = RC_MEMSIZE_MBF32_LE; break;
 
@@ -181,6 +182,18 @@ static void rc_transform_memref_float(rc_typed_value_t* value) {
   const unsigned mantissa = (value->value.u32 & 0x7FFFFF);
   const int exponent = (int)((value->value.u32 >> 23) & 0xFF) - 127;
   const int sign = (value->value.u32 & 0x80000000);
+  value->value.f32 = rc_build_float(mantissa, exponent, sign);
+  value->type = RC_VALUE_TYPE_FLOAT;
+}
+
+static void rc_transform_memref_float_be(rc_typed_value_t* value) {
+  /* decodes an IEEE 754 float in big endian format */
+  const unsigned mantissa = ((value->value.u32 & 0xFF000000) >> 24) |
+                            ((value->value.u32 & 0x00FF0000) >> 8) |
+                            ((value->value.u32 & 0x00007F00) << 8);
+  const int exponent = (int)(((value->value.u32 & 0x0000007F) << 1) |
+                             ((value->value.u32 & 0x00008000) >> 15)) - 127;
+  const int sign = (value->value.u32 & 0x00000080);
   value->value.f32 = rc_build_float(mantissa, exponent, sign);
   value->type = RC_VALUE_TYPE_FLOAT;
 }
@@ -305,6 +318,10 @@ void rc_transform_memref_value(rc_typed_value_t* value, char size) {
       rc_transform_memref_float(value);
       break;
 
+    case RC_MEMSIZE_FLOAT_BE:
+      rc_transform_memref_float_be(value);
+      break;
+
     case RC_MEMSIZE_MBF32:
       rc_transform_memref_mbf32(value);
       break;
@@ -340,6 +357,7 @@ static const unsigned rc_memref_masks[] = {
   0xffffffff, /* RC_MEMSIZE_FLOAT      */
   0xffffffff, /* RC_MEMSIZE_MBF32      */
   0xffffffff, /* RC_MEMSIZE_MBF32_LE   */
+  0xffffffff, /* RC_MEMSIZE_FLOAT_BE   */
   0xffffffff  /* RC_MEMSIZE_VARIABLE   */
 };
 
@@ -376,6 +394,7 @@ static const char rc_memref_shared_sizes[] = {
   RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_FLOAT      */
   RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_MBF32      */
   RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_MBF32_LE   */
+  RC_MEMSIZE_32_BITS, /* RC_MEMSIZE_FLOAT_BE   */
   RC_MEMSIZE_32_BITS  /* RC_MEMSIZE_VARIABLE   */
 };
 
@@ -387,7 +406,7 @@ char rc_memref_shared_size(char size) {
   return rc_memref_shared_sizes[index];
 }
 
-static unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void* ud) {
+unsigned rc_peek_value(unsigned address, char size, rc_peek_t peek, void* ud) {
   if (!peek)
     return 0;
 

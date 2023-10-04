@@ -1,6 +1,6 @@
 #include "rc_hash.h"
 
-#include "../rcheevos/rc_compat.h"
+#include "../rc_compat.h"
 
 #include "md5.h"
 
@@ -1215,6 +1215,8 @@ static int rc_hash_gamecube(char hash[33], const char* path)
   uint32_t ix;
 
   file_handle = rc_file_open(path);
+  if (!file_handle)
+    return rc_hash_error("Could not open file");
 
   /* Verify Gamecube */
   rc_file_seek(file_handle, 0x1c, SEEK_SET);
@@ -1866,6 +1868,21 @@ static int rc_hash_sega_cd(char hash[33], const char* path)
   return rc_hash_buffer(hash, buffer, sizeof(buffer));
 }
 
+static int rc_hash_scv(char hash[33], const uint8_t* buffer, size_t buffer_size)
+{
+  /* if the file contains a header, ignore it */
+  /* https://gitlab.com/MaaaX-EmuSCV/libretro-emuscv/-/blob/master/readme.txt#L211 */
+  if (memcmp(buffer, "EmuSCV", 6) == 0)
+  {
+    rc_hash_verbose("Ignoring SCV header");
+
+    buffer += 32;
+    buffer_size -= 32;
+  }
+
+  return rc_hash_buffer(hash, buffer, buffer_size);
+}
+
 static int rc_hash_snes(char hash[33], const uint8_t* buffer, size_t buffer_size)
 {
   /* if the file contains a header, ignore it */
@@ -2025,6 +2042,9 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* b
 
     case RC_CONSOLE_PC_ENGINE: /* NOTE: does not support PCEngine CD */
       return rc_hash_pce(hash, buffer, buffer_size);
+
+    case RC_CONSOLE_SUPER_CASSETTEVISION:
+      return rc_hash_scv(hash, buffer, buffer_size);
 
     case RC_CONSOLE_SUPER_NINTENDO:
       return rc_hash_snes(hash, buffer, buffer_size);
@@ -2322,6 +2342,7 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
     case RC_CONSOLE_ATARI_LYNX:
     case RC_CONSOLE_NINTENDO:
     case RC_CONSOLE_PC_ENGINE:
+    case RC_CONSOLE_SUPER_CASSETTEVISION:
     case RC_CONSOLE_SUPER_NINTENDO:
       /* additional logic whole-file hash - buffer then call rc_hash_generate_from_buffer */
       return rc_hash_buffered_file(hash, console_id, path);
@@ -2463,7 +2484,7 @@ static void rc_hash_initialize_dsk_iterator(struct rc_hash_iterator* iterator, c
   rc_hash_iterator_append_console(iterator, RC_CONSOLE_APPLE_II);
 }
 
-void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, uint8_t* buffer, size_t buffer_size)
+void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, const uint8_t* buffer, size_t buffer_size)
 {
   int need_path = !buffer;
 
@@ -2540,7 +2561,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
            }
 
           /* bin is associated with MegaDrive, Sega32X, Atari 2600, Watara Supervision, MegaDuck,
-           * Fairchild Channel F, Arcadia 2001, and Interton VC 4000.
+           * Fairchild Channel F, Arcadia 2001, Interton VC 4000, and Super Cassette Vision.
            * Since they all use the same hashing algorithm, only specify one of them */
           iterator->consoles[0] = RC_CONSOLE_MEGA_DRIVE;
         }
@@ -2587,6 +2608,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_FAIRCHILD_CHANNEL_F;
         }
+        else if (rc_path_compare_extension(ext, "cart"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_SUPER_CASSETTEVISION;
+        }
         break;
 
       case 'd':
@@ -2596,7 +2621,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         else if (rc_path_compare_extension(ext, "d64"))
         {
-            iterator->consoles[0] = RC_CONSOLE_COMMODORE_64;
+          iterator->consoles[0] = RC_CONSOLE_COMMODORE_64;
         }
         else if (rc_path_compare_extension(ext, "d88"))
         {
@@ -2616,7 +2641,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         else if (rc_path_compare_extension(ext, "fd"))
         {
-            iterator->consoles[0] = RC_CONSOLE_THOMSONTO8; /* disk */
+          iterator->consoles[0] = RC_CONSOLE_THOMSONTO8; /* disk */
         }
         break;
 

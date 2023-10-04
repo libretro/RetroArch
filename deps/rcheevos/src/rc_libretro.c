@@ -316,6 +316,31 @@ unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regio
   return rc_libretro_memory_find_avail(regions, address, NULL);
 }
 
+uint32_t rc_libretro_memory_read(const rc_libretro_memory_regions_t* regions, unsigned address,
+      uint8_t* buffer, uint32_t num_bytes) {
+  unsigned i;
+  uint32_t avail;
+
+  for (i = 0; i < regions->count; ++i) {
+    const size_t size = regions->size[i];
+    if (address < size) {
+      if (regions->data[i] == NULL)
+        break;
+
+      avail = (unsigned)(size - address);
+      if (avail < num_bytes)
+         return avail;
+
+      memcpy(buffer, &regions->data[i][address], num_bytes);
+      return num_bytes;
+    }
+
+    address -= (unsigned)size;
+  }
+
+  return 0;
+}
+
 void rc_libretro_init_verbose_message_callback(rc_libretro_message_callback callback) {
   rc_libretro_verbose_message_callback = callback;
 }
@@ -650,7 +675,7 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
   file_len = rc_file_tell(file_handle);
   rc_file_seek(file_handle, 0, SEEK_SET);
 
-  m3u_contents = (char*)malloc(file_len + 1);
+  m3u_contents = (char*)malloc((size_t)file_len + 1);
   rc_file_read(file_handle, m3u_contents, (int)file_len);
   m3u_contents[file_len] = '\0';
 

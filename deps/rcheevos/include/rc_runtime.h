@@ -88,9 +88,12 @@ typedef struct rc_runtime_t {
 
   rc_value_t* variables;
   rc_value_t** next_variable;
+
+  char owns_self;
 }
 rc_runtime_t;
 
+rc_runtime_t* rc_runtime_alloc(void);
 void rc_runtime_init(rc_runtime_t* runtime);
 void rc_runtime_destroy(rc_runtime_t* runtime);
 

@@ -1,13 +1,24 @@
 #include "rc_runtime.h"
 #include "rc_internal.h"
-#include "rc_compat.h"
 
+#include "../rc_compat.h"
 #include "../rhash/md5.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #define RC_RICHPRESENCE_DISPLAY_BUFFER_SIZE 256
+
+rc_runtime_t* rc_runtime_alloc(void) {
+  rc_runtime_t* self = malloc(sizeof(rc_runtime_t));
+
+  if (self) {
+    rc_runtime_init(self);
+    self->owns_self = 1;
+  }
+
+  return self;
+}
 
 void rc_runtime_init(rc_runtime_t* self) {
   memset(self, 0, sizeof(rc_runtime_t));
@@ -48,9 +59,13 @@ void rc_runtime_destroy(rc_runtime_t* self) {
 
   self->next_memref = 0;
   self->memrefs = 0;
+
+  if (self->owns_self) {
+    free(self);
+  }
 }
 
-static void rc_runtime_checksum(const char* memaddr, unsigned char* md5) {
+void rc_runtime_checksum(const char* memaddr, unsigned char* md5) {
   md5_state_t state;
   md5_init(&state);
   md5_append(&state, (unsigned char*)memaddr, (int)strlen(memaddr));
@@ -712,13 +727,8 @@ void rc_runtime_reset(rc_runtime_t* self) {
       rc_reset_lboard(self->lboards[i].lboard);
   }
 
-  if (self->richpresence && self->richpresence->richpresence) {
-    rc_richpresence_display_t* display = self->richpresence->richpresence->first_display;
-    while (display != 0) {
-      rc_reset_trigger(&display->trigger);
-      display = display->next;
-    }
-  }
+  if (self->richpresence && self->richpresence->richpresence)
+    rc_reset_richpresence(self->richpresence->richpresence);
 
   for (variable = self->variables; variable; variable = variable->next)
     rc_reset_value(variable);
@@ -739,7 +749,7 @@ static int rc_condset_contains_memref(const rc_condset_t* condset, const rc_memr
   return 0;
 }
 
-static int rc_value_contains_memref(const rc_value_t* value, const rc_memref_t* memref) {
+int rc_value_contains_memref(const rc_value_t* value, const rc_memref_t* memref) {
   rc_condset_t* condset;
   if (!value)
     return 0;
@@ -752,7 +762,7 @@ static int rc_value_contains_memref(const rc_value_t* value, const rc_memref_t* 
   return 0;
 }
 
-static int rc_trigger_contains_memref(const rc_trigger_t* trigger, const rc_memref_t* memref) {
+int rc_trigger_contains_memref(const rc_trigger_t* trigger, const rc_memref_t* memref) {
   rc_condset_t* condset;
   if (!trigger)
     return 0;

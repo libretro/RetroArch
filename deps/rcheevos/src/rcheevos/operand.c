@@ -301,6 +301,7 @@ static int rc_luapeek(lua_State* L) {
 int rc_operand_is_float_memref(const rc_operand_t* self) {
   switch (self->size) {
     case RC_MEMSIZE_FLOAT:
+    case RC_MEMSIZE_FLOAT_BE:
     case RC_MEMSIZE_MBF32:
     case RC_MEMSIZE_MBF32_LE:
       return 1;

@@ -54,6 +54,7 @@ void rc_libretro_memory_destroy(rc_libretro_memory_regions_t* regions);
 
 unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, unsigned address);
 unsigned char* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t* regions, unsigned address, unsigned* avail);
+uint32_t rc_libretro_memory_read(const rc_libretro_memory_regions_t* regions, unsigned address, uint8_t* buffer, uint32_t num_bytes);
 
 /*****************************************************************************\
 | Disk Identification                                                         |

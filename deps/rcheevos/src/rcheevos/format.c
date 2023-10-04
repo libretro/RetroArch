@@ -1,6 +1,6 @@
 #include "rc_internal.h"
 
-#include "rc_compat.h"
+#include "../rc_compat.h"
 
 #include <string.h>
 #include <stdio.h>

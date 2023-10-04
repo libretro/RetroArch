@@ -285,6 +285,20 @@ void rc_reset_value(rc_value_t* self) {
   self->value.changed = 0;
 }
 
+int rc_value_from_hits(rc_value_t* self)
+{
+  rc_condset_t* condset = self->conditions;
+  for (; condset != NULL; condset = condset->next) {
+    rc_condition_t* condition = condset->conditions;
+    for (; condition != NULL; condition = condition->next) {
+      if (condition->type == RC_CONDITION_MEASURED)
+        return (condition->required_hits != 0);
+    }
+  }
+
+  return 0;
+}
+
 void rc_init_parse_state_variables(rc_parse_state_t* parse, rc_value_t** variables) {
   parse->variables = variables;
   *variables = 0;

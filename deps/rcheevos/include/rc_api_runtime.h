@@ -59,6 +59,7 @@ rc_api_resolve_hash_response_t;
 
 int rc_api_init_resolve_hash_request(rc_api_request_t* request, const rc_api_resolve_hash_request_t* api_params);
 int rc_api_process_resolve_hash_response(rc_api_resolve_hash_response_t* response, const char* server_response);
+int rc_api_process_resolve_hash_server_response(rc_api_resolve_hash_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_resolve_hash_response(rc_api_resolve_hash_response_t* response);
 
 /* --- Fetch Game Data --- */
@@ -155,6 +156,7 @@ rc_api_fetch_game_data_response_t;
 
 int rc_api_init_fetch_game_data_request(rc_api_request_t* request, const rc_api_fetch_game_data_request_t* api_params);
 int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* response, const char* server_response);
+int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_fetch_game_data_response(rc_api_fetch_game_data_response_t* response);
 
 /* --- Ping --- */
@@ -185,6 +187,7 @@ rc_api_ping_response_t;
 
 int rc_api_init_ping_request(rc_api_request_t* request, const rc_api_ping_request_t* api_params);
 int rc_api_process_ping_response(rc_api_ping_response_t* response, const char* server_response);
+int rc_api_process_ping_server_response(rc_api_ping_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_ping_response(rc_api_ping_response_t* response);
 
 /* --- Award Achievement --- */
@@ -214,6 +217,8 @@ typedef struct rc_api_award_achievement_response_t {
   unsigned awarded_achievement_id;
   /* The updated player score */
   unsigned new_player_score;
+  /* The updated player softcore score */
+  unsigned new_player_score_softcore;
   /* The number of achievements the user has not yet unlocked for this game
    * (in hardcore/non-hardcore per hardcore flag in request) */
   unsigned achievements_remaining;
@@ -225,6 +230,7 @@ rc_api_award_achievement_response_t;
 
 int rc_api_init_award_achievement_request(rc_api_request_t* request, const rc_api_award_achievement_request_t* api_params);
 int rc_api_process_award_achievement_response(rc_api_award_achievement_response_t* response, const char* server_response);
+int rc_api_process_award_achievement_server_response(rc_api_award_achievement_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_award_achievement_response(rc_api_award_achievement_response_t* response);
 
 /* --- Submit Leaderboard Entry --- */
@@ -282,6 +288,7 @@ rc_api_submit_lboard_entry_response_t;
 
 int rc_api_init_submit_lboard_entry_request(rc_api_request_t* request, const rc_api_submit_lboard_entry_request_t* api_params);
 int rc_api_process_submit_lboard_entry_response(rc_api_submit_lboard_entry_response_t* response, const char* server_response);
+int rc_api_process_submit_lboard_entry_server_response(rc_api_submit_lboard_entry_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_submit_lboard_entry_response(rc_api_submit_lboard_entry_response_t* response);
 
 #ifdef __cplusplus
