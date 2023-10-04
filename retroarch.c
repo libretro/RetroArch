@@ -3782,16 +3782,17 @@ bool command_event(enum event_command cmd, void *data)
                netplay_session = tmp_netplay_session;
             }
             
-            if (p_rarch->connect_mitm_id) {
+            if (p_rarch->connect_mitm_id) 
                 netplay_session = strdup(p_rarch->connect_mitm_id);
-            }
                        
-            if (p_rarch->connect_host) {
+            if (p_rarch->connect_host) 
+            {
                 free(p_rarch->connect_host);
                 p_rarch->connect_host = NULL;
             }
 
-            if (p_rarch->connect_mitm_id) {
+            if (p_rarch->connect_mitm_id) 
+            {
                 free(p_rarch->connect_mitm_id);
                 p_rarch->connect_mitm_id = NULL;
             }
