@@ -5039,11 +5039,27 @@ static void input_keys_pressed(
 /* Forward declaration */
 void bsv_movie_free(bsv_movie_t*);
 
+void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t * state, enum bsv_flags flags)
+{ 
+   if (input_st->bsv_movie_state_next_handle)
+      bsv_movie_free(input_st->bsv_movie_state_next_handle);
+   input_st->bsv_movie_state_next_handle    = state;
+   input_st->bsv_movie_state.flags          = flags;
+}
+
 void bsv_movie_deinit(input_driver_state_t *input_st)
 {
    if (input_st->bsv_movie_state_handle)
       bsv_movie_free(input_st->bsv_movie_state_handle);
    input_st->bsv_movie_state_handle = NULL;
+}
+
+void bsv_movie_deinit_full(input_driver_state_t *input_st)
+{
+   bsv_movie_deinit(input_st);
+   if (input_st->bsv_movie_state_next_handle)
+      bsv_movie_free(input_st->bsv_movie_state_next_handle);
+   input_st->bsv_movie_state_next_handle = NULL;
 }
 
 void bsv_movie_frame_rewind(void)
@@ -5134,7 +5150,18 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    settings_t *settings           = config_get_ptr();
    unsigned checkpoint_interval   = settings->uints.replay_checkpoint_interval;
+   /* if bsv_movie_state_next_handle is not null, deinit and set
+      bsv_movie_state_handle to bsv_movie_state_next_handle and clear
+      next_handle */
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+   if (input_st->bsv_movie_state_next_handle)
+   {
+      if(handle)
+         bsv_movie_deinit(input_st);
+      handle = input_st->bsv_movie_state_next_handle;
+      input_st->bsv_movie_state_handle = handle;
+      input_st->bsv_movie_state_next_handle = NULL;
+   }
 
    if (!handle)
       return;
