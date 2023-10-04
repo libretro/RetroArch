@@ -512,6 +512,7 @@ typedef struct
 #endif
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
+   bsv_movie_t     *bsv_movie_state_next_handle;         /* ptr alignment */
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -1003,6 +1004,8 @@ void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
+void bsv_movie_deinit_full(input_driver_state_t *input_st);
+void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
 
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
