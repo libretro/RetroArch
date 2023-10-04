@@ -380,7 +380,9 @@ void gfx_widgets_ai_service_overlay_unload(void);
 void gfx_widgets_update_cheevos_appearance(void);
 void gfx_widgets_push_achievement(const char *title, const char* subtitle, const char *badge);
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
+void gfx_widgets_clear_leaderboard_displays(void);
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
+void gfx_widgets_clear_challenge_displays(void);
 void gfx_widget_set_achievement_progress(const char* badge, const char* progress);
 #endif
 

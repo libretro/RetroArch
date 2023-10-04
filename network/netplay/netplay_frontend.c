@@ -75,6 +75,10 @@
 #include "../discord.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos/cheevos.h"
+#endif
+
 #include "netplay_private.h"
 
 #ifdef TCP_NODELAY
@@ -1926,6 +1930,11 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    /* Ask to switch to playing mode if we should */
    if (!settings->bools.netplay_start_as_spectator)
       return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+
+#ifdef HAVE_CHEEVOS
+   /* Not going to be promoted to player - let achievement system know that we're spectating */
+   rcheevos_spectating_changed();
+#endif
 
    return true;
 }
@@ -4619,6 +4628,10 @@ static void netplay_announce_play_spectate(netplay_t *netplay,
          return;
    }
 
+#ifdef HAVE_CHEEVOS
+   rcheevos_spectating_changed();
+#endif
+
    RARCH_LOG("[Netplay] %s\n", dmsg);
    runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -5728,6 +5741,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
             else /* YOU && !PLAYING */
             {
+#ifdef HAVE_CHEEVOS
+               rcheevos_spectating_changed(); /* should be a no-op, but synchronize anyway */
+#endif
                /* I'm no longer playing, but I should already know this */
                if (netplay->self_mode != NETPLAY_CONNECTION_SPECTATING)
                {
@@ -5832,6 +5848,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
+#ifdef HAVE_CHEEVOS
+         rcheevos_spectating_changed(); /* synchronize mode */
+#endif
          break;
 
       case NETPLAY_CMD_DISCONNECT:
@@ -8998,6 +9017,14 @@ static bool netplay_have_any_active_connection(netplay_t *netplay)
             && (netplay->connections[i].mode >= NETPLAY_CONNECTION_CONNECTED))
          return true;
    return false;
+}
+
+bool netplay_is_spectating(void)
+{
+   /* helper function to check the spectating flag without being blocked by the netplay_driver_ctl guard */
+   net_driver_state_t* net_st = &networking_driver_st;
+   netplay_t* netplay = net_st->data;
+   return (netplay && (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING));
 }
 
 /**
