@@ -61,7 +61,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Загрузка ядра"
+   "Загрузіць ядро"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -77,7 +77,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Загрузка дыска"
+   "Загрузіць дыск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
@@ -94,7 +94,7 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Выманне дыска"
+   "Выняць дыск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
@@ -314,6 +314,10 @@ MSG_HASH(
    "Абнаўляльнік мініяцюр плэй-лістоў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Сцягнуць мініяцюры для запісаў выбранага плэй-лісту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Пампавальнік змесціва"
    )
@@ -324,6 +328,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Пампавальнік сістэмных файлаў ядраў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   "Абнавіць файлы звестак ядраў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   "Абнавіць профілі кантролераў"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -5050,7 +5062,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Загрузка ядра"
+   "Загрузіць ядро"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
