@@ -2055,10 +2055,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_UI];
-#ifdef HAVE_LAKKA_SWITCH
-      case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
       case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POWER];
 #endif
@@ -9649,18 +9646,10 @@ static int ozone_list_push(void *data, void *userdata,
                      false);
             }
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
             MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                   info->list,
                   MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
-                  PARSE_ACTION,
-                  false);
-#endif
-
-#ifdef HAVE_LAKKA_SWITCH
-            MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-                  info->list,
-                  MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
                   PARSE_ACTION,
                   false);
 #endif

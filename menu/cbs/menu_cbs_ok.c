@@ -98,7 +98,7 @@
 #include "../../play_feature_delivery/play_feature_delivery.h"
 #endif
 
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 #include "../../switch_performance_profiles.h"
 #endif
 
@@ -453,6 +453,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST;
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST;
+#ifdef HAVE_LAKKA_SWITCH
+      case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST;
+#endif
       case ACTION_OK_DL_USER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST;
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
@@ -1717,6 +1721,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
+#ifdef HAVE_LAKKA_SWITCH
+      case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
+#endif
       case ACTION_OK_DL_USER_SETTINGS_LIST:
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
       case ACTION_OK_DL_PRIVACY_SETTINGS_LIST:
@@ -4052,19 +4059,11 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char command[PATH_MAX_LENGTH] = {0};
-#ifdef HAVE_LAKKA_SWITCH
-   char* profile_name            = SWITCH_CPU_PROFILES[entry_idx];
-   /* TODO/FIXME - localize */
-   snprintf(command, sizeof(command), "cpu-profile set '%s'", profile_name);
-   system(command);
-   /* TODO/FIXME - localize */
-   snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
-#else
    unsigned profile_clock          = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
    settings_t *settings            = config_get_ptr();
 
@@ -4082,33 +4081,12 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    /* TODO/FIXME - localize */
    snprintf(command, sizeof(command),
          "Current Clock set to %i", profile_clock);
-#endif
 
    runloop_msg_queue_push(command, 1, 90, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return -1;
 }
-#endif
-
-#ifdef HAVE_LAKKA_SWITCH
-static int action_ok_set_switch_gpu_profile(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   size_t _len;
-   char command[PATH_MAX_LENGTH];
-   char *profile_name  = SWITCH_GPU_PROFILES[entry_idx];
-   size_t _len         = strlcpy(command, "gpu-profile set ", sizeof(command));
-   snprintf(command + _len, sizeof(command) - _len, "'%s'", profile_name);
-   system(command);
-   /* TODO/FIXME - localize */
-   _len = strlcpy(command, "Current profile set to ", sizeof(command));
-   strlcpy(command + _len, profile_name, sizeof(command) - _len);
-   runloop_msg_queue_push(command, 1, 90, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   return -1;
-}
-
 #endif
 
 static int action_ok_load_core_deferred(const char *path,
@@ -6084,6 +6062,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_appearance_list, ACTION_OK_DL_CH
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_visibility_list, ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_updater_list, ACTION_OK_DL_UPDATER_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_services, ACTION_OK_DL_LAKKA_SERVICES_LIST)
+#ifdef HAVE_LAKKA_SWITCH
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_switch_options, ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_user_list, ACTION_OK_DL_USER_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_sublist, ACTION_OK_DL_NETPLAY)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST)
@@ -8469,10 +8450,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN,                 action_ok_push_netplay_refresh_lan},
 #endif
 #endif
-#ifdef HAVE_LAKKA_SWITCH
-         {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,                  action_ok_push_default},
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
          {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,                  action_ok_push_default},
 #endif
          {MENU_ENUM_LABEL_MENU_WALLPAPER,                      action_ok_menu_wallpaper},
@@ -8730,6 +8708,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
          {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},
+#ifdef HAVE_LAKKA_SWITCH
+         {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,                action_ok_lakka_switch_options},
+#endif
          {MENU_ENUM_LABEL_NETPLAY_SETTINGS,                    action_ok_netplay_sublist},
          {MENU_ENUM_LABEL_USER_SETTINGS,                       action_ok_user_list},
          {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,                  action_ok_directory_list},
@@ -9007,12 +8988,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_PLAYLIST_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             break;
-#ifdef HAVE_LAKKA_SWITCH
-         case MENU_SET_SWITCH_GPU_PROFILE:
-            BIND_ACTION_OK(cbs, action_ok_set_switch_gpu_profile);
-            break;
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
          case MENU_SET_SWITCH_CPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
             break;

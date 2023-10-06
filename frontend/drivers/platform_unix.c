@@ -796,6 +796,23 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       }
    }
 
+   fill_pathname_join_special(path, basenode, "type", sizeof(path));
+ 
+   if (!filestream_exists(path))
+      goto status;
+
+   if (filestream_read_file(path, (void**)&buf, &length) != 1)
+      goto status;
+
+    if (buf)
+   {
+      if (strstr((char*)buf, "Battery"))
+      *have_battery = true;
+      free(buf);
+      buf = NULL;
+   }
+
+status:     
    fill_pathname_join_special(path, basenode, "status", sizeof(path));
 
    if (!filestream_exists(path))

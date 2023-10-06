@@ -973,6 +973,11 @@ typedef struct settings
       bool screenshots_in_content_dir;
       bool systemfiles_in_content_dir;
       bool ssh_enable;
+#ifdef HAVE_LAKKA_SWITCH
+      bool switch_oc;
+      bool switch_cec;
+      bool bluetooth_ertm_disable;
+#endif
       bool samba_enable;
       bool bluetooth_enable;
       bool localap_enable;

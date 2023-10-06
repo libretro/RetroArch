@@ -601,7 +601,6 @@ static void menu_action_setting_disp_set_label_contentless_core(
       strlcpy(s2, alt, len2);
 }
 
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static void menu_action_setting_disp_cpu_gov_mode(
       file_list_t* list,
@@ -756,7 +755,6 @@ static void menu_action_cpu_governor_label(
       MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
    strlcpy(s, d->scaling_governor, len);
 }
-#endif
 #endif
 
 static void menu_action_setting_disp_set_label_core_lock(
@@ -2056,7 +2054,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_core_option_override_info);
             break;
-         #ifndef HAVE_LAKKA_SWITCH
          #ifdef HAVE_LAKKA
          case MENU_ENUM_LABEL_CPU_PERF_MODE:
             BIND_ACTION_GET_VALUE(cbs,
@@ -2082,7 +2079,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
             BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_governor_label);
             break;
-         #endif
          #endif
          default:
             return -1;

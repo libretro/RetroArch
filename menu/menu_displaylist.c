@@ -50,7 +50,7 @@
 #include "../core_updater_list.h"
 #endif
 
-#ifdef HAVE_LAKKA_SWITCH
+#ifdef HAVE_LAKKA
 #include "../../lakka.h"
 #endif
 
@@ -58,7 +58,7 @@
 #include <switch.h>
 #endif
 
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 #include "../../switch_performance_profiles.h"
 #endif
 
@@ -9521,6 +9521,25 @@ unsigned menu_displaylist_build_list(
          }
          break;
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+      case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_SWITCH_OC_ENABLE,                                            PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,                                           PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,                                      PARSE_ONLY_BOOL},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+#endif
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -9895,9 +9914,11 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 #endif
+#ifndef HAVE_LAKKA
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_GAMEMODE_ENABLE, PARSE_ONLY_BOOL, false) == 0)
                count++;
+#endif /*HAVE_LAKKA?*/
          }
          break;
       case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
@@ -10297,6 +10318,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_USER_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,          PARSE_ACTION, true},
                {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},
+#ifdef HAVE_LAKKA_SWITCH
+               {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,        PARSE_ACTION, true},
+#endif
 #ifdef HAVE_MIST
                {MENU_ENUM_LABEL_STEAM_SETTINGS,              PARSE_ACTION, true},
 #endif
@@ -10403,7 +10427,9 @@ unsigned menu_displaylist_build_list(
             menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CPU_PERFPOWER,              PARSE_ACTION},
+#ifdef HAVE_LAKKA
                {MENU_ENUM_LABEL_GAMEMODE_ENABLE,            PARSE_ONLY_BOOL},
+#endif /*HAVE_LAKKA*/
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11979,7 +12005,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             /* No-op */
             break;
 #endif
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
          case DISPLAYLIST_CPU_POLICY_LIST:
             menu_entries_clear(info->list);
@@ -12080,30 +12105,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                break;
             }
 #endif
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
          case DISPLAYLIST_SWITCH_CPU_PROFILE:
             {
                size_t _len;
                unsigned i;
                char text[PATH_MAX_LENGTH];
-#ifdef HAVE_LAKKA_SWITCH
-               char current_profile[PATH_MAX_LENGTH];
-               FILE               *profile = NULL;
-#endif
                const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
                /* TODO/FIXME - localize */
                runloop_msg_queue_push("Warning : extended overclocking can damage the Switch",
                      1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                menu_entries_clear(info->list);
-#ifdef HAVE_LAKKA_SWITCH
-               profile = popen("cpu-profile get", "r");
-               fgets(current_profile, PATH_MAX_LENGTH, profile);
-               pclose(profile);
-               /* TODO/FIXME - localize */
-               _len = strlcpy(text, "Current profile: ", sizeof(text));
-               strlcpy(text + _len, current_profile, sizeof(text) - _len);
-#else
                {
                   u32 currentClock = 0;
                   if (hosversionBefore(8, 0, 0))
@@ -12119,7 +12131,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   _len = strlcpy(text, "Current clock: ", sizeof(text));
                   snprintf(text + _len, sizeof(text) - _len, "%i", currentClock);
                }
-#endif
                if (menu_entries_append(info->list,
                         text, "", 0, MENU_INFO_MESSAGE,
                         0, 0, NULL))
@@ -12142,51 +12153,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                   | MD_FLAG_NEED_CLEAR;
                break;
             }
-#if defined(HAVE_LAKKA_SWITCH)
-         case DISPLAYLIST_SWITCH_GPU_PROFILE:
-            {
-               size_t _len;
-               unsigned i;
-               char text[PATH_MAX_LENGTH];
-               char current_profile[PATH_MAX_LENGTH];
-               FILE               *profile = NULL;
-               const size_t profiles_count = sizeof(SWITCH_GPU_PROFILES)/sizeof(SWITCH_GPU_PROFILES[1]);
-
-               runloop_msg_queue_push("Warning : extended overclocking can damage the Switch",
-                     1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-               profile = popen("gpu-profile get", "r");
-               fgets(current_profile, PATH_MAX_LENGTH, profile);
-               pclose(profile);
-
-               menu_entries_clear(info->list);
-
-               /* TODO/FIXME - Localize */
-               _len = strlcpy(text, "Current profile : ", sizeof(text));
-               strlcpy(text + _len, current_profile, sizeof(text) - _len);
-
-               if (menu_entries_append(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0, NULL))
-                  count++;
-
-               for (i = 0; i < profiles_count; i++)
-               {
-                  char title[PATH_MAX_LENGTH];
-                  char* profile               = SWITCH_GPU_PROFILES[i];
-                  char* speed                 = SWITCH_GPU_SPEEDS[i];
-                  _len                        = strlcpy(title, profile, sizeof(title));
-                  snprintf(title + _len, sizeof(title) - _len, " (%s)", speed);
-                  if (menu_entries_append(info->list, title, "", 0,
-                           MENU_SET_SWITCH_GPU_PROFILE, 0, i, NULL))
-                     count++;
-               }
-
-               info->flags       |= MD_FLAG_NEED_REFRESH
-                                  | MD_FLAG_NEED_PUSH
-                                  | MD_FLAG_NEED_CLEAR;
-               break;
-            }
-#endif /* HAVE_LAKKA_SWITCH */
-#endif /* HAVE_LAKKA_SWITCH || HAVE_LIBNX */
+#endif /* HAVE_LIBNX */
          case DISPLAYLIST_MUSIC_LIST:
             {
                menu_entries_clear(info->list);
@@ -13739,6 +13706,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
          case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          case DISPLAYLIST_LAKKA_SERVICES_LIST:
+#ifdef HAVE_LAKKA_SWITCH
+         case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
+#endif
          case DISPLAYLIST_MIDI_SETTINGS_LIST:
          case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
