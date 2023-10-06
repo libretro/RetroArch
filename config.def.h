@@ -177,6 +177,12 @@
 
 #define DEFAULT_GAMEMODE_ENABLE true
 
+#ifdef HAVE_LAKKA_SWITCH
+#define DEFAULT_SWITCH_OC false
+#define DEFAULT_SWITCH_CEC true
+#define DEFAULT_BLUETOOTH_ERTM false
+#endif
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else

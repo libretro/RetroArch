@@ -73,9 +73,6 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#endif
-
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
 #include "../switch_performance_profiles.h"
 #endif
 
@@ -6293,11 +6290,9 @@ void menu_driver_toggle(
 
    if (on)
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
 #ifdef HAVE_OVERLAY
       /* If an overlay was displayed before the toggle
        * and overlays are disabled in menu, need to
@@ -6316,11 +6311,9 @@ void menu_driver_toggle(
    }
    else
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
 #ifdef HAVE_OVERLAY
       /* Inhibits pointer 'select' and 'cancel' actions
        * (until the next time 'select'/'cancel' are released) */

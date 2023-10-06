@@ -1,10 +1,4 @@
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
-   "switch_gpu_profile"
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
    "switch_cpu_profile"
@@ -3683,6 +3677,29 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SSH_ENABLE,
    "ssh_enable"
+   )
+#endif
+
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST,
+   "deferred_lakka_switch_options_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,
+   "Switch_Options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_OC_ENABLE,
+   "Switch_OC_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,
+   "Switch_CEC_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,
+   "Switch_ERTM_Disable"
    )
 #endif
 MSG_HASH(

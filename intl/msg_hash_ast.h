@@ -3766,10 +3766,7 @@ MSG_HASH(
    MSG_READ_ONLY,
    "Estáu del almacenamientu internu: namás llectura"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -3804,6 +3801,8 @@ MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_PARSE,
    "El ficheru de configuración ye incorreutu - nun se pudo atopar APNAME o PASSWORD en %s"
    )
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

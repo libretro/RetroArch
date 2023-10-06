@@ -8243,13 +8243,7 @@ MSG_HASH(
    "Місцеві"
    )
 
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "Розгін GPU"
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "Розгін CPU"
@@ -8280,6 +8274,8 @@ MSG_HASH(
    MSG_LOCALAP_NOT_RUNNING,
    "Точка доступу Wi-Fi не запущена"
    )
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 MSG_HASH(
