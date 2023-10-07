@@ -842,12 +842,13 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    "ପ୍ରଦର୍ଶନ ମୋଡ୍ ଚୟନ କରନ୍ତୁ (ପୁନଃଆରମ୍ଭ ଦରକାର ପଡ଼ିବ)"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif
