@@ -681,8 +681,11 @@ MSG_HASH(
 #ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
+#endif
 #ifdef GEKKO
 #endif
 #ifdef UDEV_TOUCH_SUPPORT

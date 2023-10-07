@@ -3789,6 +3789,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEZONE,
    "Fusu horariu"
    )
+#ifdef HAVE_LAKKA_SWITCH
+#endif
 MSG_HASH(
    MSG_LOCALAP_NOT_RUNNING,
    "El puntu d'accesu Wi-Fi nun ta n'execución"

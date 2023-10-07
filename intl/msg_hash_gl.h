@@ -2329,6 +2329,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
    "Activar ou desactivar o punto de acceso wifi."
    )
+#ifdef HAVE_LAKKA_SWITCH
+#endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Apagando o punto de acceso wifi."
