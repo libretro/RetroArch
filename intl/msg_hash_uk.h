@@ -8242,7 +8242,6 @@ MSG_HASH(
    MSG_LOCAL,
    "Місцеві"
    )
-
 #ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
@@ -8266,6 +8265,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Виберіть свій часовий пояс, щоб налаштувати дату та час відповідно до вашого місцезнаходження."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "Розгін CPU"
+   )
+#endif
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,
    "Точка доступу Wi-Fi вже запущена"

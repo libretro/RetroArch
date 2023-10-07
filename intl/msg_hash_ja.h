@@ -11257,6 +11257,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "タイムゾーンを選択して, 場所に合わせて日付と時刻を調整します."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "CPUオーバークロック"
+   )
+#endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi アクセスポイントを切り替えます。"

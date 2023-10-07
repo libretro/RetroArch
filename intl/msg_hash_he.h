@@ -954,10 +954,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "אתחול RetroArch"
    )
-
 #ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif

@@ -14473,6 +14473,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Az elérhető időzónák listájának megjelenítése. Időzóna választása után a dátum és az idő a kiválasztott időzónához lesz igazítva. Feltételezi, hogy a rendszer/hardver órája UTC-re van állítva."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "CPU túlhajtás"
+   )
+#endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi hozzáférési pont kikapcsolása."

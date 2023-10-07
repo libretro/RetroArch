@@ -4962,7 +4962,6 @@ MSG_HASH(
    MSG_LOCAL,
    "Lokal"
    )
-
 #ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
@@ -4986,6 +4985,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEZONE,
    "Tidszon"
    )
+#ifdef HAVE_LAKKA_SWITCH
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif

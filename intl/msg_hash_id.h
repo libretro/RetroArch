@@ -3993,6 +3993,12 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "Percepatan CPU"
+   )
+#endif
 MSG_HASH(
    MSG_WIFI_DISCONNECT_FROM,
    "Memutus sambungan dari Wi-Fi '%s'"

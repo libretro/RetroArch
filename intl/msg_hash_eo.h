@@ -1169,6 +1169,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
    "Enable or disable remote command line access."
    )
+#ifdef HAVE_LAKKA_SWITCH
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
