@@ -2451,6 +2451,14 @@ MSG_HASH(
    "Počet sekúnd, počas ktorých sa má tlačidlo podržať, aby sa spárovalo."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Časový limit"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Držať"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo režim"
    )
