@@ -401,7 +401,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
       check_lib '' OPENGL -lopengl32
    else
       check_header '' OPENGL "GL/gl.h"
-      check_lib '' OPENGL -lGL
+      check_lib '' OPENGL -lOpenGL
    fi
 
    if [ "$HAVE_OPENGL" = 'yes' ]; then
