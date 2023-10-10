@@ -3758,7 +3758,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT:
          {
             char tmp_netplay_server[256];
-            char tmp_netplay_session[sizeof(tmp_netplay_server)];
+            char tmp_netplay_session[256];
             char *netplay_server  = NULL;
             char *netplay_session = NULL;
             unsigned netplay_port = 0;
@@ -3774,20 +3774,14 @@ bool command_event(enum event_command cmd, void *data)
                netplay_server  = tmp_netplay_server;
                netplay_session = tmp_netplay_session;
             }
-            
-            if (p_rarch->connect_mitm_id) 
+
+            if (p_rarch->connect_mitm_id)
                 netplay_session = strdup(p_rarch->connect_mitm_id);
-                       
-            if (p_rarch->connect_host) 
+
+            if (p_rarch->connect_host)
             {
                 free(p_rarch->connect_host);
                 p_rarch->connect_host = NULL;
-            }
-
-            if (p_rarch->connect_mitm_id) 
-            {
-                free(p_rarch->connect_mitm_id);
-                p_rarch->connect_mitm_id = NULL;
             }
 
             if (string_is_empty(netplay_server))
@@ -3798,7 +3792,22 @@ bool command_event(enum event_command cmd, void *data)
             if (!init_netplay(netplay_server, netplay_port, netplay_session))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+               if (p_rarch->connect_mitm_id)
+               {
+                  free(p_rarch->connect_mitm_id);
+                  free(netplay_session);
+                  p_rarch->connect_mitm_id = NULL;
+                  netplay_session          = NULL;
+               }
                return false;
+            }
+
+            if (p_rarch->connect_mitm_id)
+            {
+               free(p_rarch->connect_mitm_id);
+               free(netplay_session);
+               p_rarch->connect_mitm_id = NULL;
+               netplay_session          = NULL;
             }
 
             /* Disable rewind & SRAM autosave if it was enabled
@@ -3816,7 +3825,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
          {
             char netplay_server[256];
-            char netplay_session[sizeof(netplay_server)];
+            char netplay_session[256];
             unsigned netplay_port = 0;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -3853,7 +3862,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
          {
             char netplay_server[256];
-            char netplay_session[sizeof(netplay_server)];
+            char netplay_session[256];
             unsigned netplay_port = 0;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -6061,7 +6070,7 @@ static bool retroarch_parse_input_and_config(
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
                p_rarch->connect_host = strdup(optarg);
                break;
-            
+
             case 'T':
                p_rarch->connect_mitm_id = strdup(optarg);
                break;
