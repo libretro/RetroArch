@@ -1931,6 +1931,7 @@
 				PRODUCT_NAME = RetroArch;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
+				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
@@ -2014,6 +2015,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = macosx;
+				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
