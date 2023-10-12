@@ -10929,10 +10929,6 @@ MSG_HASH(
    "Зелёный лайм"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW,
-   "Жёлтый Пикачу"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE,
    "Фиолетовая GameCube"
    )
