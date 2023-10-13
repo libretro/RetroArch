@@ -1268,15 +1268,19 @@ static bool netplay_handshake_sync(netplay_t *netplay,
    if (netplay->local_paused || netplay->remote_paused)
       client_num |= NETPLAY_CMD_SYNC_BIT_PAUSED;
 
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+   /* send sram unless running with netpacket interface */
+   if (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+   {
+      mem_info.id = RETRO_MEMORY_SAVE_RAM;
 #ifdef HAVE_THREADS
-   autosave_lock();
+      autosave_lock();
 #endif
-   core_get_memory(&mem_info);
-   sram_size = mem_info.size;
+      core_get_memory(&mem_info);
+      sram_size = mem_info.size;
 #ifdef HAVE_THREADS
-   autosave_unlock();
+      autosave_unlock();
 #endif
+   }
 
    /* Send basic sync info */
    cmd[0] = htonl(NETPLAY_CMD_SYNC);
@@ -1700,7 +1704,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    uint32_t cmd[2];
    uint32_t cmd_size;
    uint32_t new_frame_count, client_num;
-   uint32_t local_sram_size, remote_sram_size;
+   uint32_t local_sram_size = 0, remote_sram_size;
    size_t i, j;
    ssize_t recvd;
    char new_nick[NETPLAY_NICK_LEN];
@@ -1825,16 +1829,20 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
-   /* Now check the SRAM */
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+   /* Now check the SRAM, but ignore it when using netpacket interface */
+   if (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+   {
+      mem_info.id = RETRO_MEMORY_SAVE_RAM;
 #ifdef HAVE_THREADS
-   autosave_lock();
+      autosave_lock();
 #endif
-   core_get_memory(&mem_info);
-   local_sram_size  = (unsigned)mem_info.size;
+      core_get_memory(&mem_info);
+      local_sram_size = (unsigned)mem_info.size;
 #ifdef HAVE_THREADS
-   autosave_unlock();
+      autosave_unlock();
 #endif
+   }
+
    remote_sram_size = cmd_size - (2*sizeof(uint32_t)
       /* Controller devices */
       + MAX_INPUT_DEVICES*sizeof(uint32_t)
@@ -4161,11 +4169,29 @@ static void netplay_hangup(netplay_t *netplay,
          uint32_t client_num = (uint32_t)
             (connection - netplay->connections + 1);
 
-         /* This special mode keeps the connection object
-            alive long enough to send the disconnection
-            message at the correct time */
-         connection->mode         = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
-         connection->delay_frame  = netplay->read_frame_count[client_num];
+         if (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+         {
+            /* This special mode keeps the connection object 
+               alive long enough to send the disconnection 
+               message at the correct time */
+            connection->mode         = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
+            connection->delay_frame  = netplay->read_frame_count[client_num];
+         }
+         else
+         {
+            /* With netpacket interface we can send the mode change now */
+            struct mode_payload payload;
+            payload.frame   = htonl(netplay->self_frame_count);
+            payload.mode    = htonl(client_num);
+            payload.devices = 0;
+            memcpy(payload.share_modes, netplay->device_share_modes,
+                  sizeof(payload.share_modes));
+            memcpy(payload.nick, connection->nick, sizeof(payload.nick));
+            netplay_send_raw_cmd_all(netplay, connection,
+                  NETPLAY_CMD_MODE, &payload, sizeof(payload));
+
+            connection->mode         = NETPLAY_CONNECTION_NONE;
+         }
 
          /* Mark them as not playing anymore */
          netplay->connected_players &= ~(1L<<client_num);
@@ -4191,6 +4217,7 @@ static void netplay_delayed_state_change(netplay_t *netplay)
 {
    size_t i;
    struct mode_payload payload;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    payload.devices = 0;
    memcpy(payload.share_modes, netplay->device_share_modes,
@@ -7768,10 +7795,6 @@ static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
 
       /* Read netplay input. */
       netplay_poll_net_input(netplay);
-
-      /* Handle any delayed state changes */
-      if (netplay->is_server)
-         netplay_delayed_state_change(netplay);
 
       if (networking_driver_st.core_netpacket_interface
             && networking_driver_st.core_netpacket_interface->poll
