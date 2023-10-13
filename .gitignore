@@ -154,6 +154,7 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/shaders_cg/
 /media/libretrodb/
 
+compile_commands.json
 pkg/apple/iOS/build/
 pkg/apple/build/
 ui/drivers/qt/moc_*
