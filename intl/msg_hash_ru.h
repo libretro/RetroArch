@@ -6587,7 +6587,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Списки лидеров"
+   "Таблицы лидеров"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -6753,7 +6753,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Показывать на экране индикаторы, когда есть возможность открыть определённые достижения."
+   "Показывать на экране значки достижений для которых выполняются условия получения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
@@ -6765,7 +6765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
-   "Сообщение об активации таблицы лидеров"
+   "Сообщение о запуске таблицы лидеров"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
@@ -6773,11 +6773,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-   "Сообщение о записи в таблицу лидеров"
+   "Сообщение о занесении в таблицу лидеров"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-   "Показывать отправленное значение при занесении в таблицу лидеров."
+   "Показывать значение, отправленное при успешной попытке войти в таблицу лидеров."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
@@ -13714,7 +13714,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LEADERBOARD_FAILED,
-   "Попытка войти в таблицу лидеров не удалась"
+   "Не удалось войти в таблицу лидеров"
    )
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
@@ -14106,7 +14106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "Активирован чит-код. Хардкорный режим достижений для текущего сеанса выключен."
+   "Активирован чит-код. Режим харкдора для достижений в текущем сеансе отключен."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
