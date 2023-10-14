@@ -51,6 +51,7 @@
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/kd.h>
+#include <linux/version.h>
 #elif defined(__FreeBSD__)
 #include <dev/evdev/input.h>
 #endif
@@ -956,8 +957,13 @@ static void udev_handle_mouse(void *data,
  */
 static void udev_touch_event_ts_copy(const struct input_event *event, udev_touch_ts_t *ts)
 {
-   ts->s  = event->input_event_sec;
-   ts->us = event->input_event_usec;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0)
+  ts->s  = event->input_event_sec;
+  ts->us = event->input_event_usec;
+#else
+  ts->s  = event->time.tv_sec;
+  ts->us = event->time.tv_usec;
+#endif
 }
 
 /**
