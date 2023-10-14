@@ -601,12 +601,24 @@ static float audio_driver_monitor_adjust_system_rates(
       double input_fps,
       float video_refresh_rate,
       unsigned video_swap_interval,
+      unsigned black_frame_insertion,
       float audio_max_timing_skew)
 {
    float inp_sample_rate        = input_sample_rate;
-   float target_video_sync_rate = video_refresh_rate
-         / (float)video_swap_interval;
-   float timing_skew            =
+
+   /*  This much like the auto swap interval algorithm and will
+    *  find the correct desired target rate the majority of sane
+    *  cases. Any failures should be no worse than the previous
+    *  very incomplete high hz skew adjustments. */
+   float refresh_ratio                   = video_refresh_rate/input_fps;
+   unsigned refresh_closest_multiple     = (unsigned)(refresh_ratio + 0.5f);
+   float target_video_sync_rate          = video_refresh_rate;
+   float timing_skew                     = 0.0f;
+
+   if (refresh_closest_multiple > 1)
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+
+   timing_skew            =
       fabs(1.0f - input_fps / target_video_sync_rate);
    if (timing_skew <= audio_max_timing_skew)
       return (inp_sample_rate * target_video_sync_rate / input_fps);
@@ -620,18 +632,23 @@ static bool video_driver_monitor_adjust_system_rates(
       bool vrr_runloop_enable,
       float audio_max_timing_skew,
       unsigned video_swap_interval,
+      unsigned black_frame_insertion,
       double input_fps)
 {
    float target_video_sync_rate = timing_skew_hz;
 
-   /* Divide target rate only when using Auto interval */
-   if (_video_swap_interval == 0)
-      target_video_sync_rate /= (float)video_swap_interval;
+   /* Same concept as for audio driver adjust. */
+   float refresh_ratio                   = target_video_sync_rate/input_fps;
+   unsigned refresh_closest_multiple     = (unsigned)(refresh_ratio + 0.5f);
+   float timing_skew                     = 0.0f;
+
+   if (refresh_closest_multiple > 1)
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
 
    if (!vrr_runloop_enable)
    {
-      float timing_skew                    = fabs(
-            1.0f - input_fps / target_video_sync_rate);
+      timing_skew         =
+         fabs(1.0f - input_fps / target_video_sync_rate);
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
       if (timing_skew <= audio_max_timing_skew)
@@ -652,7 +669,8 @@ static void driver_adjust_system_rates(
       float video_refresh_rate,
       float audio_max_timing_skew,
       bool video_adaptive_vsync,
-      unsigned video_swap_interval)
+      unsigned video_swap_interval,
+      unsigned black_frame_insertion)
 {
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
@@ -666,6 +684,7 @@ static void driver_adjust_system_rates(
          vrr_runloop_enable,
          (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
          video_swap_interval,
+         black_frame_insertion,
          audio_max_timing_skew,
          video_refresh_rate,
          input_fps);
@@ -684,6 +703,7 @@ static void driver_adjust_system_rates(
                   input_fps,
                   video_refresh_rate,
                   video_swap_interval,
+                  black_frame_insertion,
                   audio_max_timing_skew);
 
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
@@ -707,6 +727,7 @@ static void driver_adjust_system_rates(
                vrr_runloop_enable,
                audio_max_timing_skew,
                video_swap_interval,
+               black_frame_insertion,
                input_fps))
       {
          /* We won't be able to do VSync reliably
@@ -826,7 +847,8 @@ void drivers_init(
                                  settings->floats.video_refresh_rate,
                                  settings->floats.audio_max_timing_skew,
                                  settings->bools.video_adaptive_vsync,
-                                 settings->uints.video_swap_interval
+                                 settings->uints.video_swap_interval,
+                                 settings->uints.video_black_frame_insertion
                                  );
 
    /* Initialize video driver */
@@ -1260,6 +1282,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             float audio_max_timing_skew   = settings->floats.audio_max_timing_skew;
             bool video_adaptive_vsync     = settings->bools.video_adaptive_vsync;
             unsigned video_swap_interval  = settings->uints.video_swap_interval;
+            unsigned
+               black_frame_insertion      = settings->uints.video_black_frame_insertion;
 
             video_monitor_set_refresh_rate(*hz);
 
@@ -1273,7 +1297,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                                        video_refresh_rate,
                                        audio_max_timing_skew,
                                        video_adaptive_vsync,
-                                       video_swap_interval
+                                       video_swap_interval,
+                                       black_frame_insertion
                                        );
          }
          break;
