@@ -120,12 +120,11 @@
 /* UDEV_TOUCH_PRINTF_DEBUG */
 
 #ifdef UDEV_TOUCH_DEEP_DEBUG
-#define RARCH_DDBG(msg, ...) do{ \
-    RARCH_DBG(msg, __VA_ARGS__); \
+#define RARCH_DDBG(...) do{ \
+    RARCH_DBG(__VA_ARGS__); \
 } while (0)
 #else
-/* TODO - Since C89 doesn't allow variadic macros, we have an empty function instead... */
-void RARCH_DDBG(const char *fmt, ...) { }
+#define RARCH_DDBG(msg, ...)
 #endif
 /* UDEV_TOUCH_DEEP_DEBUG */
 
