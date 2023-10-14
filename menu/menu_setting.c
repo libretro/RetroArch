@@ -13346,6 +13346,8 @@ static bool setting_append_list(
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                   menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
                }
             }
 #endif
