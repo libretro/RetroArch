@@ -613,11 +613,12 @@ static float audio_driver_monitor_adjust_system_rates(
    float refresh_ratio                   = video_refresh_rate/input_fps;
    unsigned refresh_closest_multiple     = (unsigned)(refresh_ratio + 0.5f);
    float target_video_sync_rate          = video_refresh_rate;
+   float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
       target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
 
-   float timing_skew            =
+   timing_skew            =
       fabs(1.0f - input_fps / target_video_sync_rate);
    if (timing_skew <= audio_max_timing_skew)
       return (inp_sample_rate * target_video_sync_rate / input_fps);
@@ -639,14 +640,15 @@ static bool video_driver_monitor_adjust_system_rates(
    /* Same concept as for audio driver adjust. */
    float refresh_ratio                   = target_video_sync_rate/input_fps;
    unsigned refresh_closest_multiple     = (unsigned)(refresh_ratio + 0.5f);
+   float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
       target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
 
    if (!vrr_runloop_enable)
    {
-      float timing_skew                    = fabs(
-            1.0f - input_fps / target_video_sync_rate);
+      timing_skew         =
+         fabs(1.0f - input_fps / target_video_sync_rate);
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
       if (timing_skew <= audio_max_timing_skew)
