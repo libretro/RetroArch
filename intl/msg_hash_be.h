@@ -1849,6 +1849,10 @@ MSG_HASH(
    "Адаптыўны VSync"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   "Аўтаматычная затрымка кадраў"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Аўта"
    )
@@ -1861,12 +1865,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Змяніць налады вываду аўдыя."
+   "Змяніць налады вываду гука."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
    "Мікрафон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Змяніць налады ўводу гука."
    )
 #endif
 MSG_HASH(
@@ -1938,15 +1946,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "Аўдыя"
+   "Гук"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "Уключыць вывад аўдыя."
+   "Уключыць вывад гука."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "Прылада"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   "Затрымка гука (мс)"
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2111,12 +2123,16 @@ MSG_HASH(
    "Выявіць"
    )
 MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Тайм-аўт"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    "Класічны"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
-   "Адна кнопка (Пераключэнне)"
+   "Адна кнопка (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
@@ -2146,6 +2162,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
    "Закрыць змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   "Скінуць змесціва"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -2207,6 +2227,10 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+   "Выняць дыск (пераключэнне)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
    "Наступны дыск"
    )
@@ -2217,7 +2241,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
-   "Шэйдары (пераключальнік)"
+   "Шэйдары (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
@@ -2239,15 +2263,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-   "Запіс (пераключальнік)"
+   "Запіс (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-   "Стрымінг (пераключальнік)"
+   "Стрымінг (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Поўнаэкранны (пераключальнік)"
+   "Поўнаэкранны (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -2379,6 +2403,14 @@ MSG_HASH(
 #endif
 /* Settings > Configuration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   "Захоўваць канфігурацыю падчас выхаду"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   "Захоўваць змены ў файл канфігурацыі падчас выхаду."
+   )
 
 /* Settings > Saving */
 
@@ -2599,6 +2631,18 @@ MSG_HASH(
    "Імгненная"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Эфект успышкі здымка экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "УКЛ (звычайна)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "УКЛ (хутка)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Шрыфт апавяшчэнняў"
    )
@@ -2656,6 +2700,10 @@ MSG_HASH(
    "Рэжым кіёска"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Выхад падчас закрыцця змесціва"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
    "Снег"
    )
@@ -2674,6 +2722,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    "Падтрымка дотыкаў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Паскарэнне прагорткі меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Затрымка прагорткі меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   "Меню працоўнага стала (патрабуецца перазапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+   "Адкрываць меню працоўнага стала падчас запуску"
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -2709,6 +2773,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    "Паказваць опцыю 'Загрузіць дыск' у галоўным меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+   "Паказваць 'Дамп дыска'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+   "Паказваць опцыю 'Дамп дыска' у галоўным меню."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -2845,6 +2917,14 @@ MSG_HASH(
    "Паказваць 'Плэй-лісты'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+   "Паказваць плэй-лісты (патрабуецца перазапуск на Ozone/XMB)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
+   "Паказваць 'Агляд'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Усе"
    )
@@ -2942,6 +3022,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
    "Паказваць опцыю 'Стварыць здымак экрана'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   "Паказваць 'Пачаць запіс'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   "Паказваць опцыю 'Пачаць запіс'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   "Паказваць 'Пачаць стрымінг'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   "Паказваць опцыю 'Пачаць стрымінг'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
@@ -3064,11 +3160,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
-   "Паказаць 'Плэй-ліст'"
+   "Паказаць 'Плэй-лісты'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
-   "Паказаць налады 'Плэй-ліста'."
+   "Паказаць налады 'Плэй-лісты'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -3103,8 +3199,32 @@ MSG_HASH(
    "Фонавы відарыс"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "Выбар відарысу для ўжывання ў якасці фону меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Непразрыстасць фону"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+   "Змена непразрыстасці фонавага відарысу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Непразрыстасць"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   "Змена непразрыстасці прадвызначанага фону меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "Ужываць пажаданую сістэмную колеравую тэму"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "Ужываць колеравую тэму аперацыйнай сістэмы (калі існуе). Перавызначае налады тэмы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
@@ -3134,6 +3254,14 @@ MSG_HASH(
 /* Settings > AI Service */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+   "Паўза падчас перакладу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+   "Прыпыняць ядро пакуль перакладаецца экран."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
    "Мова арыгінала"
    )
@@ -3154,8 +3282,24 @@ MSG_HASH(
    "Дасягненні"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+   "Значкі дасягненняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   "Адлюстроўваць значкі ў спісе дасягненняў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   "Тэставыя неафіцыйныя дасягненні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   "Выкарыстоўваць неафіцыйныя дасягненні ды/або бэта функцыі ў мэтах тэставання."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Гук разблакавання"
+   "Гук раскрыцця"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -3200,12 +3344,92 @@ MSG_HASH(
 /* Settings > Achievements > Visibility */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "Бачнасць"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   "Апавяшчэнні аб раскрыцці"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   "Паказвае апавяшчэнне пры раскрыцці дасягнення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   "Апавяшчэнні аб майстэрстве"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Паказвае апавяшчэнне пры раскрыцці ўсіх дасягненняў гульні."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
    "Індыкатар хода выканання"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Паведамленні аб адкрыцці дошкі лідараў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Паказвае апісанне дошкі лідараў, калі яна становіцца актыўнай."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Паведамленні аб унясенні на дошку лідараў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Паведамленні аб няўдачы на дошцы лідараў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Паказвае паведамленне пры няўдалай спробе трапіць на дошку лідараў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Паведамленне аб уваходзе"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   "Падрабязныя паведамленні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "Паказвае дадатковыя дыягнастычныя паведамленні ды памылкі."
    )
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "Паўночная Амерыка (усходняе ўзбярэжжа, ЗША)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   "Заходняя Еўропа"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Паўднёвая Амерыка (паўднёвы ўсход, Бразілія)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "Паўднёва-Усходняя Азія"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   "Адрас сервера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   "Адрас вузла для злучэння."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+   "Пароль сервера"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
    "Сеціўныя каманды"

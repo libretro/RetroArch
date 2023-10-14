@@ -2290,11 +2290,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Повышать целочисленное масштабирование"
+   "Повышение целочисленного масштабирования"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "При целочисленном масштабировании делать округление в сторону ближайшего большего целого числа."
+   "Делать округление при целочисленном масштабировании в сторону большего, а не меньшего целого числа."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2326,7 +2326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
-   "Полная"
+   "На весь экран"
    )
 #if defined(DINGUX)
 MSG_HASH(
