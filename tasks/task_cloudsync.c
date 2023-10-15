@@ -840,9 +840,12 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
          if (!CS_FILE_DELETED(server_file))
             task_cloud_sync_delete_server_file(sync_state);
          else
+         {
             /* already deleted, oh well */
             task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), NULL, true);
+            task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), NULL, false);
             /* we don't mark need_manifest_uploaded here, nothing has changed */
+         }
          sync_state->local_idx++;
          sync_state->server_idx++;
       }
