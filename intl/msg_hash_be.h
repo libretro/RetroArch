@@ -961,7 +961,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Скід да прадвызначэнняў"
+   "Скід да прадвызначанага"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
@@ -2689,6 +2689,14 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Бачнасць пунктаў меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Змяніць адлюстраванне элементаў меню RetroArch."
+   )
 #ifdef _3DS
 #endif
 MSG_HASH(
@@ -2747,6 +2755,10 @@ MSG_HASH(
    "Хуткае меню"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+   "Змяніць адлюстраванне элементаў хуткага меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
    "Налады"
    )
@@ -2802,7 +2814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Паказваць 'пампавальнік ядраў'"
+   "Паказваць 'Пампавальнік ядраў'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -4714,7 +4726,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
-   "Закрытыя"
+   "Нераскрытае"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
@@ -6115,6 +6127,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Раскрыта дасягненне"
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Націсніце зноў каб выйсці..."
    )
 MSG_HASH(
    MSG_UNKNOWN,
