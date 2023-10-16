@@ -34,6 +34,7 @@ struct SimpleEntry: TimelineEntry {
 
 struct RetroArchImageView : View {
     var body: some View {
+#if swift(>=5.9)
        if #available(iOSApplicationExtension 17.0, *) {
           ZStack {
              AccessoryWidgetBackground()
@@ -46,6 +47,12 @@ struct RetroArchImageView : View {
              Image("logo")
           }
        }
+#else
+       ZStack {
+          AccessoryWidgetBackground()
+          Image("logo")
+       }
+#endif
     }
 }
 
