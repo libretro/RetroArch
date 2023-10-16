@@ -5239,11 +5239,6 @@ unsigned menu_event(
 
    ok_old                                          = ok_current;
 
-   /* Menu must be alive, and input must be released after menu toggle. */
-   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
-         || menu_st->input_driver_flushing_input > 0)
-      return ret;
-
    /* Get pointer (mouse + touchscreen) input
     * Note: Must be done regardless of menu screensaver
     *       state */
@@ -5632,6 +5627,11 @@ unsigned menu_event(
       if (ret != MENU_ACTION_NOOP)
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
+
+   /* Menu must be alive, and input must be released after menu toggle. */
+   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+         || menu_st->input_driver_flushing_input > 0)
+      return MENU_ACTION_NOOP;
 
    return ret;
 }
