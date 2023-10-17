@@ -2563,8 +2563,21 @@ struct retro_vfs_dir_handle;
  * File access flags and hints.
  * @{
  */
+
+/**
+ * Indicates a seek relative to the start of the file.
+ */
 #define RETRO_VFS_SEEK_POSITION_START    0
+
+/**
+ * Indicates a seek relative to the current stream position.
+ */
 #define RETRO_VFS_SEEK_POSITION_CURRENT  1
+
+/**
+ * Indicates a seek relative to the end of the file.
+ * @note The offset passed to \c retro_vfs_seek_t should be negative.
+ */
 #define RETRO_VFS_SEEK_POSITION_END      2
 
 /** @} */
