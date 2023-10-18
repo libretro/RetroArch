@@ -192,85 +192,97 @@ scond_t *scond_new(void);
 void scond_free(scond_t *cond);
 
 /**
- * scond_wait:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
+ * Blocks until the given condition variable is signaled or broadcast.
  *
- * Block on a condition variable (i.e. wait on a condition).
- **/
+ * @param cond Condition variable to wait on.
+ * This function blocks until another thread
+ * calls \c scond_signal or \c scond_broadcast with this condition variable.
+ * @param lock Mutex to lock while waiting.
+ *
+ * @see scond_signal
+ * @see scond_broadcast
+ * @see scond_wait_timeout
+ */
 void scond_wait(scond_t *cond, slock_t *lock);
 
 /**
- * scond_wait_timeout:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
- * @timeout_us              : timeout (in microseconds)
+ * Blocks until the given condition variable is signaled or broadcast,
+ * or until the specified time has passed.
  *
- * Try to block on a condition variable (i.e. wait on a condition) until
- * @timeout_us elapses.
+ * @param cond Condition variable to wait on.
+ * This function blocks until another thread
+ * calls \c scond_signal or \c scond_broadcast with this condition variable.
+ * @param lock Mutex to lock while waiting.
+ * @param timeout_us Time to wait for a signal, in microseconds.
  *
- * Returns: false (0) if timeout elapses before condition variable is
- * signaled or broadcast, otherwise true (1).
- **/
+ * @return \c false if \c timeout_us elapses
+ * before \c cond is signaled or broadcast, otherwise \c true.
+ */
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us);
 
 /**
- * scond_broadcast:
- * @cond                    : pointer to condition variable object
+ * Unblocks all threads waiting on the specified condition variable.
  *
- * Broadcast a condition. Unblocks all threads currently blocked
- * on the specified condition variable @cond.
- **/
+ * @param cond Condition variable to broadcast.
+ * @return 0 on success, non-zero on failure.
+ */
 int scond_broadcast(scond_t *cond);
 
 /**
- * scond_signal:
- * @cond                    : pointer to condition variable object
+ * Unblocks at least one thread waiting on the specified condition variable.
  *
- * Signal a condition. Unblocks at least one of the threads currently blocked
- * on the specified condition variable @cond.
- **/
+ * @param cond Condition variable to signal.
+ */
 void scond_signal(scond_t *cond);
 
 #ifdef HAVE_THREAD_STORAGE
 /**
- * @brief Creates a thread-local storage key.
+ * Creates a thread-local storage key.
  *
- * This function shall create thread-specific data key visible to all threads in
- * the process. The same key can be used by multiple threads to store
- * thread-local data.
+ * Thread-local storage keys have a single value associated with them
+ * that is unique to the thread that uses them.
  *
- * When the key is created NULL shall be associated with it in all active
- * threads. Whenever a new thread is spawned the all defined keys will be
- * associated with NULL on that thread.
+ * New thread-local storage keys have a value of \c NULL for all threads,
+ * and new threads initialize all existing thread-local storage to \c NULL.
  *
- * @param tls Pointer to the thread local storage key that will be initialized.
+ * @param tls[in,out] Pointer to the thread local storage key that will be initialized.
+ * Must be cleaned up with \c sthread_tls_delete.
  * Behavior is undefined if \c NULL.
  * @return \c true if the operation succeeded, \c false otherwise.
+ * @see sthread_tls_delete
  */
 bool sthread_tls_create(sthread_tls_t *tls);
 
 /**
- * @brief Deletes a thread local storage
- * @param tls
- * @return whether the operation suceeded or not
+ * Deletes a thread local storage key.
+ *
+ * The value must be cleaned up separately \em before calling this function,
+ * if necessary.
+ *
+ * @param tls The thread local storage key to delete.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if the operation succeeded, \c false otherwise.
  */
 bool sthread_tls_delete(sthread_tls_t *tls);
 
 /**
- * @brief Retrieves thread specific data associated with a key
+ * Gets the calling thread's local data for the given key.
  *
- * There is no way to tell whether this function failed.
- *
- * @param tls
- * @return
+ * @param tls The thread-local storage key to get the data for.
+ * @return The calling thread's local data associated with \c tls,
+ * which should previously have been set with \c sthread_tls_set.
+ * Will be \c NULL if this thread has not set a value or if there was an error.
  */
 void *sthread_tls_get(sthread_tls_t *tls);
 
 /**
- * @brief Binds thread specific data to a key
- * @param tls
- * @return Whether the operation suceeded or not
+ * Sets the calling thread's local data for the given key.
+ *
+ * @param tls The thread-local storage key to set the data for.
+ * @param data Pointer to the data that will be associated with \c tls.
+ * May be \c NULL.
+ * @return \c true if \c data was successfully assigned to \c tls,
+ * \c false if there was an error.
  */
 bool sthread_tls_set(sthread_tls_t *tls, const void *data);
 #endif

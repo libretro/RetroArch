@@ -202,7 +202,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    pthread_attr_setstacksize(&thread_attr , 0x10000 );
    thread_attr_needed = true;
 #elif defined(__APPLE__)
-   /* Default stack size on Apple is 512Kb; 
+   /* Default stack size on Apple is 512Kb;
     * for PS2 disc scanning and other reasons, we'd like 2MB. */
    pthread_attr_setstacksize(&thread_attr , 0x200000 );
    thread_attr_needed = true;
@@ -325,15 +325,6 @@ void slock_unlock(slock_t *lock)
 #endif
 }
 
-/**
- * scond_new:
- *
- * Creates and initializes a condition variable. Must
- * be manually freed.
- *
- * Returns: pointer to new condition variable on success,
- * otherwise NULL.
- **/
 scond_t *scond_new(void)
 {
    scond_t      *cond = (scond_t*)calloc(1, sizeof(*cond));
@@ -609,13 +600,6 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 }
 #endif
 
-/**
- * scond_wait:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
- *
- * Block on a condition variable (i.e. wait on a condition).
- **/
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
@@ -625,13 +609,6 @@ void scond_wait(scond_t *cond, slock_t *lock)
 #endif
 }
 
-/**
- * scond_broadcast:
- * @cond                    : pointer to condition variable object
- *
- * Broadcast a condition. Unblocks all threads currently blocked
- * on the specified condition variable @cond.
- **/
 int scond_broadcast(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
@@ -652,13 +629,6 @@ int scond_broadcast(scond_t *cond)
 #endif
 }
 
-/**
- * scond_signal:
- * @cond                    : pointer to condition variable object
- *
- * Signal a condition. Unblocks at least one of the threads currently blocked
- * on the specified condition variable @cond.
- **/
 void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
@@ -698,18 +668,6 @@ void scond_signal(scond_t *cond)
 #endif
 }
 
-/**
- * scond_wait_timeout:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
- * @timeout_us              : timeout (in microseconds)
- *
- * Try to block on a condition variable (i.e. wait on a condition) until
- * @timeout_us elapses.
- *
- * Returns: false (0) if timeout elapses before condition variable is
- * signaled or broadcast, otherwise true (1).
- **/
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #ifdef USE_WIN32_THREADS
