@@ -451,6 +451,10 @@ enum retro_language
    RETRO_LANGUAGE_DUMMY          = INT_MAX
 };
 
+/** @defgroup RETRO_MEMORY Memory Types
+ * @{
+ */
+
 /* Passed to retro_get_memory_data/size().
  * If the memory type doesn't apply to the
  * implementation NULL/0 can be returned.
@@ -474,6 +478,8 @@ enum retro_language
 
 /* Video ram lets a frontend peek into a game systems video RAM (VRAM). */
 #define RETRO_MEMORY_VIDEO_RAM   3
+
+/** @} */
 
 /* Keysyms used for ID in input state callback when polling RETRO_KEYBOARD. */
 enum retro_key
