@@ -695,7 +695,7 @@ enum retro_mod
 /**
  * Requests the frontend to set the screen rotation.
  *
- * @param data[in] <tt>const unsigned*</tt>.
+ * @param[in] data <tt>const unsigned*</tt>.
  * Valid values are 0, 1, 2, and 3.
  * These numbers respectively set the screen rotation to 0, 90, 180, and 270 degrees counter-clockwise.
  * @returns \c true if the screen rotation was set successfully.
@@ -705,7 +705,7 @@ enum retro_mod
 /**
  * Queries whether the core should use overscan or not.
  *
- * @param data[out] <tt>bool*</tt>.
+ * @param[out] data <tt>bool*</tt>.
  * Set to \c true if the core should use overscan,
  * \c false if it should be cropped away.
  * @returns \c true if the environment call is available.
@@ -719,7 +719,7 @@ enum retro_mod
  * Queries whether the frontend supports frame duping,
  * in the form of passing \c NULL to the video frame callback.
  *
- * @param data[out] <tt>bool*</tt>.
+ * @param[out] data <tt>bool*</tt>.
  * Set to \c true if the frontend supports frame duping.
  * @returns \c true if the environment call is available.
  * @see retro_video_refresh_t
@@ -754,7 +754,7 @@ enum retro_mod
  * as it offers more features.
  * Only use this environment call for compatibility with older cores or frontends.
  *
- * @param data[in] <tt>const struct retro_message*</tt>.
+ * @param[in] data <tt>const struct retro_message*</tt>.
  * Details about the message to show to the user.
  * Behavior is undefined if <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
@@ -791,7 +791,7 @@ enum retro_mod
  * This function can be called on a per-game basis,
  * as a core may have different demands for different games or settings.
  * If called, it should be called in <tt>retro_load_game()</tt>.
- * @param data[in] <tt>const unsigned*</tt>.
+ * @param[in] data <tt>const unsigned*</tt>.
 */
 #define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL 8
 
@@ -800,7 +800,7 @@ enum retro_mod
  * which can be used to store system-specific configuration
  * such as BIOS files or cached data.
  *
- * @param data[out] <tt>const char**</tt>.
+ * @param[out] data <tt>const char**</tt>.
  * Pointer to the \c char* in which the system directory will be saved.
  * The string is managed by the frontend and must not be modified or freed by the core.
  * May be \c NULL if no system directory is defined,
@@ -818,7 +818,7 @@ enum retro_mod
  * The default pixel format is \c RETRO_PIXEL_FORMAT_0RGB1555 for compatibility reasons,
  * although it's considered deprecated and shouldn't be used by new code.
  *
- * @param data[in] <tt>const enum retro_pixel_format *</tt>.
+ * @param[in] data <tt>const enum retro_pixel_format *</tt>.
  * Pointer to the pixel format to use.
  * @returns \c true if the pixel format was set successfully,
  * \c false if it's not supported or this callback is unavailable.
@@ -836,7 +836,7 @@ enum retro_mod
  * preferably early in the core's life cycle.
  * Ideally, no later than <tt>retro_load_game()<tt>.
  *
- * @param data[in] <tt>const struct retro_input_descriptor *</tt>.
+ * @param[in] data <tt>const struct retro_input_descriptor *</tt>.
  * An array of input descriptors terminated by one whose
  * \c retro_input_descriptor::description field is set to <tt>NULL</tt>.
  * Behavior is undefined if <tt>NULL</tt>.
@@ -850,7 +850,7 @@ enum retro_mod
  * This should only be used for cores that specifically need keyboard input,
  * such as for home computer emulators or games with text entry.
  *
- * @param data[in] <tt>const struct retro_keyboard_callback *</tt>.
+ * @param[in] data <tt>const struct retro_keyboard_callback *</tt>.
  * Pointer to the callback function.
  * Behavior is undefined if <tt>NULL</tt>.
  * @return \c true if the environment call is recognized.
@@ -864,7 +864,7 @@ enum retro_mod
  *
  * @note This is intended for games that span multiple disks that are
  * manually swapped out by the user (e.g. PSX).
- * @param data[in] <tt>const struct retro_disk_control_callback *</tt>.
+ * @param[in] data <tt>const struct retro_disk_control_callback *</tt>.
  * Pointer to the callback functions to use.
  * @see retro_disk_control_callback
  * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
@@ -879,7 +879,7 @@ enum retro_mod
  * The framebuffer will be at least as large as
  * the maximum dimensions provided in <tt>retro_get_system_av_info</tt>.
  *
- * @param data[in, out] <tt>struct retro_hw_render_callback *</tt>.
+ * @param[in, out] data <tt>struct retro_hw_render_callback *</tt>.
  * Pointer to the hardware render callback struct.
  * Used to define callbacks for the hardware-rendering life cycle,
  * as well as to request a particular rendering API.
@@ -902,7 +902,7 @@ enum retro_mod
  * that was previously set in \c RETRO_ENVIRONMENT_SET_VARIABLES
  * (or a similar environment call).
  *
- * @param data[in,out] <tt>struct retro_variable *</tt>.
+ * @param[in,out] data <tt>struct retro_variable *</tt>.
  * Pointer to a single \c retro_variable struct.
  * See the documentation for \c retro_variable for details
  * on which fields are set by the frontend or core.
@@ -962,7 +962,7 @@ enum retro_mod
  * with older frontends or cores.
  * @note Keep the available options (and their possible values) as low as possible;
  * it should be feasible to cycle through them without a keyboard.
- * @param data[in] <tt>const struct retro_variable *</tt>.
+ * @param[in] data <tt>const struct retro_variable *</tt>.
  * Pointer to an array of \c retro_variable structs that define available core options,
  * terminated by a <tt>{ NULL, NULL }</tt> element.
  * The frontend must maintain its own copy of this array.
@@ -984,7 +984,7 @@ enum retro_mod
  * Cores usually call this each frame before the core's main emulation logic.
  * Specific options can then be queried with <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
  *
- * @param data[out] <tt>bool *</tt>.
+ * @param[out] data <tt>bool *</tt>.
  * Set to \c true if at least one core option was updated
  * since the last call to <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
  * Behavior is undefined if this pointer is <tt>NULL</tt>.
@@ -1001,7 +1001,7 @@ enum retro_mod
  * \c retro_load_game receives an argument of <tt>NULL</tt>.
  * This should be called within \c retro_set_environment() only.
  *
- * @param data[in] <tt>const bool *</tt>.
+ * @param[in] data <tt>const bool *</tt>.
  * Pointer to a single \c bool that indicates whether this frontend can run without content.
  * Can point to a value of \c false but this isn't necessary,
  * as contentless support is opt-in.
@@ -1016,7 +1016,7 @@ enum retro_mod
  * Useful when loading assets from paths relative to the core,
  * as is sometimes the case when using <tt>RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME</tt>.
  *
- * @param data[out] <tt>const char **</tt>.
+ * @param[out] data <tt>const char **</tt>.
  * Pointer to a string in which the core's path will be saved.
  * The string is managed by the frontend and must not be modified or freed by the core.
  * May be \c NULL if the core is statically linked to the frontend
@@ -1038,7 +1038,7 @@ enum retro_mod
  * (e.g. it's frame-stepping or running in slow motion),
  * then the reference value will be provided to the callback instead.
  *
- * @param data[in] <tt>const struct retro_frame_time_callback *</tt>.
+ * @param[in] data <tt>const struct retro_frame_time_callback *</tt>.
  * Pointer to a single \c retro_frame_time_callback struct.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
@@ -1066,7 +1066,7 @@ enum retro_mod
  * A frontend may disable this callback in certain situations.
  * The core must be able to render audio with the "normal" interface.
  *
- * @param data[in] <tt>const struct retro_audio_callback *</tt>.
+ * @param[in] data <tt>const struct retro_audio_callback *</tt>.
  * Pointer to a set of functions that the frontend will call to notify the core
  * when it's ready to receive audio data.
  * May be \c NULL, in which case the frontend will return
@@ -1093,7 +1093,7 @@ enum retro_mod
  * Should be called from either \c retro_init() or \c retro_load_game(),
  * but not from \c retro_set_environment().
  *
- * @param data[out] <tt>struct retro_rumble_interface *</tt>.
+ * @param[out] data <tt>struct retro_rumble_interface *</tt>.
  * Pointer to the interface struct.
  * Behavior is undefined if \c NULL.
  * @returns \c true if the environment call is available,
@@ -1121,7 +1121,7 @@ enum retro_mod
  * }
  * @endcode
  *
- * @param data[out] <tt>uint64_t *</tt>.
+ * @param[out] data <tt>uint64_t *</tt>.
  * Pointer to a bitmask of supported input device types.
  * If the frontend supports a particular \c RETRO_DEVICE_* type,
  * then the bit <tt>(1 << RETRO_DEVICE_*)</tt> will be set.
@@ -1146,7 +1146,7 @@ enum retro_mod
  * Returns an interface that the core can use to access and configure available sensors,
  * such as an accelerometer or gyroscope.
  *
- * @param data[out] <tt>struct retro_sensor_interface *</tt>.
+ * @param[out] data <tt>struct retro_sensor_interface *</tt>.
  * Pointer to the sensor interface that the frontend will populate.
  * Behavior is undefined if is \c NULL.
  * @returns \c true if the environment call is available,
@@ -1165,7 +1165,7 @@ enum retro_mod
  * that runs in the same thread as \c retro_run().
  * Should be called in \c retro_load_game().
  *
- * @param data[in,out] <tt>struct retro_camera_callback *</tt>.
+ * @param[in,out] data <tt>struct retro_camera_callback *</tt>.
  * Pointer to the camera driver interface.
  * Some fields in the struct must be filled in by the core,
  * others are provided by the frontend.
@@ -1186,7 +1186,7 @@ enum retro_mod
  * or they have their own preferred logging methods.
  * The frontend itself may also display log output.
  *
- * @param data[out] <tt>struct retro_log_callback *</tt>.
+ * @param[out] data <tt>struct retro_log_callback *</tt>.
  * Pointer to the callback where the function pointer will be saved.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
@@ -1202,7 +1202,7 @@ enum retro_mod
  * This callback supports performance counters, a high-resolution timer,
  * and listing available CPU features (mostly SIMD instructions).
  *
- * @param data[out] <tt>struct retro_perf_callback *</tt>.
+ * @param[out] data <tt>struct retro_perf_callback *</tt>.
  * Pointer to the callback interface.
  * Behavior is undefined if \c NULL.
  * @returns \c true if the environment call is available.
@@ -1214,7 +1214,7 @@ enum retro_mod
  * Returns an interface that the core can use to retrieve the device's location,
  * including its current latitude and longitude.
  *
- * @param data[out] <tt>struct retro_location_callback *</tt>.
+ * @param[out] data <tt>struct retro_location_callback *</tt>.
  * Pointer to the callback interface.
  * Behavior is undefined if \c NULL.
  * @return \c true if the environment call is available,
@@ -1234,7 +1234,7 @@ enum retro_mod
  * which can be used to store assets that the core needs
  * such as art assets or level data.
  *
- * @param data[out] <tt>const char **</tt>.
+ * @param[out] data <tt>const char **</tt>.
  * Pointer to a string in which the core assets directory will be saved.
  * This string is managed by the frontend and must not be modified or freed by the core.
  * May be \c NULL if no core assets directory is defined,
@@ -1258,7 +1258,7 @@ enum retro_mod
  * Cores that use this environment callback
  * should flush their save data to disk periodically and when unloading.
  *
- * @param data[out] <tt>const char **</tt>.
+ * @param[out] data <tt>const char **</tt>.
  * Pointer to the string in which the save data directory will be saved.
  * This string is managed by the frontend and must not be modified or freed by the core.
  * May return \c NULL if no save data directory is defined.
@@ -1307,7 +1307,7 @@ enum retro_mod
  * This callback makes it possible to support configurable resolutions
  * while avoiding the need to compute the "worst case" values of \c max_width and \c max_height.
  *
- * @param data[in] <tt>const struct retro_system_av_info *</tt>.
+ * @param[in] data <tt>const struct retro_system_av_info *</tt>.
  * Pointer to the new video and audio parameters that the frontend should adopt.
  * @returns \c true if the environment call is available
  * and the new av_info struct was accepted.
@@ -1324,7 +1324,7 @@ enum retro_mod
  * This allows cores to define their own extensions to the libretro API,
  * or to expose implementations of a frontend's libretro extensions.
  *
- * @param data[in] <tt>const struct retro_get_proc_address_interface *</tt>.
+ * @param[in] data <tt>const struct retro_get_proc_address_interface *</tt>.
  * Pointer to the interface that the frontend can use to get function pointers from the core.
  * The frontend must maintain its own copy of this interface.
  * @returns \c true if the environment call is available
@@ -1382,7 +1382,7 @@ enum retro_mod
  * When the frontend loads a game via a subsystem,
  * it must call \c retro_load_game_special() instead of \c retro_load_game().
  *
- * @param data[in] <tt>const struct retro_subsystem_info *</tt>.
+ * @param[in] data <tt>const struct retro_subsystem_info *</tt>.
  * Pointer to an array of subsystem descriptors,
  * terminated by a zeroed-out \c retro_subsystem_info struct.
  * The frontend should maintain its own copy
@@ -1483,7 +1483,7 @@ enum retro_mod
  * A frontend must guarantee that this environment call completes in
  * constant time.
  *
- * @param data[in] <tt>const struct retro_game_geometry *</tt>.
+ * @param[in] data <tt>const struct retro_game_geometry *</tt>.
  * Pointer to the new video parameters that the frontend should adopt.
  * \c retro_game_geometry::base_width and \c retro_game_geometry::base_height
  * will be ignored.
@@ -1497,7 +1497,7 @@ enum retro_mod
  * Returns the name of the user, if possible.
  * This callback is suitable for cores that offer personalization,
  * such as online facilities or user profiles on the emulated system.
- * @param data[out] <tt>const char **</tt>.
+ * @param[out] data <tt>const char **</tt>.
  * Pointer to the user name string.
  * May be \c NULL, in which case the core should use a default name.
  * The returned pointer is owned by the frontend and must not be modified or freed by the core.
@@ -1512,7 +1512,7 @@ enum retro_mod
  * It can be used to localize the core's UI,
  * or to customize the emulated firmware if applicable.
  *
- * @param data[out] <tt>retro_language *</tt>.
+ * @param[out] data <tt>retro_language *</tt>.
  * Pointer to the language identifier.
  * Behavior is undefined if \c NULL.
  * @returns \c true if the environment call is available.
@@ -1573,7 +1573,7 @@ enum retro_mod
  *
  * Must be called before the first call to <tt>retro_run</tt>.
  *
- * @param data[in] <tt>const bool *</tt>.
+ * @param[in] data <tt>const bool *</tt>.
  * Pointer to a single \c bool that indicates whether this core supports achievements.
  * Can be \c false but this isn't necessary,
  * as cores must opt in to achievement support.
@@ -1596,7 +1596,7 @@ enum retro_mod
  * Notifies the frontend of any quirks associated with serialization.
  *
  * Should be set in either \c retro_init or \c retro_load_game, but not both.
- * @param data[in, out] <tt>uint64_t *</tt>.
+ * @param[in, out] data <tt>uint64_t *</tt>.
  * Pointer to the core's serialization quirks.
  * The frontend will set the flags of the quirks it supports
  * and clear the flags of those it doesn't.
@@ -1626,7 +1626,7 @@ enum retro_mod
  * Returns an interface that the core can use to access the file system.
  * Should be called as early as possible.
  *
- * @param data[in,out] <tt>struct retro_vfs_interface_info *</tt>.
+ * @param[in,out] data <tt>struct retro_vfs_interface_info *</tt>.
  * Information about the desired VFS interface,
  * as well as the interface itself.
  * Behavior is undefined if \c NULL.
@@ -1643,7 +1643,7 @@ enum retro_mod
  * Returns an interface that the core can use
  * to set the state of any accessible device LEDs.
  *
- * @param data[out] <tt>struct retro_led_interface *</tt>.
+ * @param[out] data <tt>struct retro_led_interface *</tt>.
  * Pointer to the LED interface that the frontend will populate.
  * May be \c NULL, in which case the frontend will only return
  * whether this environment callback is available.
@@ -1668,7 +1668,7 @@ enum retro_mod
  * (i.e. looking at its own VRAM), then it should perform its rendering as normal
  * unless it can prove that the emulated game is not using display capture.
  *
- * @param data[out] <tt>retro_av_enable_flags *</tt>.
+ * @param[out] data <tt>retro_av_enable_flags *</tt>.
  * Pointer to the bitmask of steps that the frontend will skip.
  * Other bits are set to zero and are reserved for future use.
  * If \c NULL, the frontend will only return whether this environment callback is available.
@@ -1682,7 +1682,7 @@ enum retro_mod
 /**
  * Gets an interface that the core can use for raw MIDI I/O.
  *
- * @param data[out] <tt>struct retro_midi_interface **</tt>.
+ * @param[out] data <tt>struct retro_midi_interface **</tt>.
  * Pointer to the MIDI interface.
  * May be \c NULL.
  * @return \c true if the environment call is available,
@@ -1693,7 +1693,7 @@ enum retro_mod
 
 /**
  * Asks the frontend if it's currently in fast-forward mode.
- * @param data[out] <tt>bool *</tt>.
+ * @param[out] data <tt>bool *</tt>.
  * Set to \c true if the frontend is currently fast-forwarding its main loop.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if this environment call is available,
@@ -1705,7 +1705,7 @@ enum retro_mod
  * Returns the refresh rate the frontend is targeting, in Hz.
  * The intended use case is for the core to use the result to select an ideal refresh rate.
  *
- * @param data[out] <tt>float *</tt>.
+ * @param[out] data <tt>float *</tt>.
  * Pointer to the \c float in which the frontend will store its target refresh rate.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @return \c true if this environment call is available,
@@ -1883,7 +1883,7 @@ enum retro_mod
 /**
  * Returns the frontend's preferred hardware rendering API.
  * Cores should use this information to decide which API to use with \c RETRO_ENVIRONMENT_SET_HW_RENDER.
- * @param data[out] <tt>retro_hw_context_type *</tt>.
+ * @param[out] data <tt>retro_hw_context_type *</tt>.
  * Pointer to the hardware context type.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * This value will be set even if the environment call returns <tt>false</tt>,
@@ -1977,7 +1977,7 @@ enum retro_mod
  * the number of active input devices is unknown.
  * In this case, all input devices should be considered active.
  *
- * @param data[out] <tt>unsigned *</tt>.
+ * @param[out] data <tt>unsigned *</tt>.
  * Pointer to the result returned by the frontend.
  * Behavior is undefined if \c NULL.
  * @return \c true if this environment call is available.
@@ -2393,7 +2393,7 @@ enum retro_mod
 /**
  * Returns information about how the frontend will use savestates.
  *
- * @param data[out] <tt>retro_savestate_context *</tt>.
+ * @param[out] data <tt>retro_savestate_context *</tt>.
  * Pointer to the current savestate context.
  * May be \c NULL, in which case the environment call
  * will return \c true to indicate its availability.
@@ -2433,7 +2433,7 @@ enum retro_mod
 /**
  * Asks the frontend whether JIT compilation can be used.
  * Primarily used by iOS and tvOS.
- * @param data[out] <tt>bool *</tt>.
+ * @param[out] data <tt>bool *</tt>.
  * Set to \c true if the frontend has verified that JIT compilation is possible.
  * @return \c true if the environment call is available.
  */
@@ -2442,7 +2442,7 @@ enum retro_mod
 /**
  * Returns an interface that the core can use to receive microphone input.
  *
- * @param data[out] <tt>retro_microphone_interface *</tt>.
+ * @param[out] data <tt>retro_microphone_interface *</tt>.
  * Pointer to the microphone interface.
  * @return \true if microphone support is available,
  * even if no microphones are plugged in.
@@ -2486,7 +2486,7 @@ enum retro_mod
  *
  * If the frontend does not support this functionality,
  * then the provided argument will remain unchanged.
- * @param data[out] <tt>retro_device_power *</tt>.
+ * @param[out] data <tt>retro_device_power *</tt>.
  * Pointer to the information that the frontend returns about its power state.
  * May be \c NULL.
  * @return \c true if the environment call is available,
@@ -2820,7 +2820,7 @@ typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const cha
  * Gets information about the given file.
  *
  * @param path The path to the file to query.
- * @param size[out] The reported size of the file in bytes.
+ * @param[out] size The reported size of the file in bytes.
  * May be \c NULL, in which case this value is ignored.
  * @return A bitmask of \c RETRO_VFS_STAT flags,
  * or 0 if \c path doesn't refer to a valid file.
@@ -2861,7 +2861,7 @@ typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const
  * Gets the next dirent ("directory entry")
  * within the given directory.
  *
- * @param dirstream[in,out] The directory to read from.
+ * @param[in,out] dirstream The directory to read from.
  * Updated to point to the next file, directory, or other path.
  * @return \c true when the next dirent was retrieved,
  * \c false if there are no more dirents to read.
@@ -3202,7 +3202,7 @@ struct retro_midi_interface
    /**
     * Reads a byte from the MIDI input stream.
     *
-    * @param byte[out] The byte received from the input stream.
+    * @param[out] byte The byte received from the input stream.
     * @return \c true if a byte was read,
     * \c false if MIDI input is disabled or \c byte is \c NULL.
     */
@@ -6170,7 +6170,7 @@ struct retro_microphone_interface
     *
     * This function is not guaranteed to be thread-safe.
     *
-    * @param args[in] Parameters used to create the microphone.
+    * @param[in] args Parameters used to create the microphone.
     * May be \c NULL, in which case the default value of each parameter will be used.
     *
     * @returns Pointer to the newly-opened microphone,
@@ -6210,9 +6210,9 @@ struct retro_microphone_interface
     *
     * Will not change after the mic was opened.
     *
-    * @param microphone[in] Opaque handle to the microphone
+    * @param[in] microphone Opaque handle to the microphone
     * whose parameters will be retrieved.
-    * @param params[out] The parameters object that the
+    * @param[out] params The parameters object that the
     * microphone's parameters will be copied to.
     *
     * @return \c true if the parameters were retrieved,
