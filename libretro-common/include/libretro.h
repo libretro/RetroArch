@@ -104,10 +104,34 @@ extern "C" {
 
 #define RETRO_DEVICE_TYPE_SHIFT         8
 #define RETRO_DEVICE_MASK               ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
+
+/**
+ * Defines an ID for a subclass of a known device type.
+ *
+ * To define a subclass ID, use this macro like so:
+ * @code{c}
+ * #define RETRO_DEVICE_SUPER_SCOPE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 1)
+ * #define RETRO_DEVICE_JUSTIFIER RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 2)
+ * @endcode
+ *
+ * Correct use of this macro allows a frontend to select a suitable physical device
+ * to map to the emulated device.
+ *
+ * @note Cores must use the base ID when polling for input,
+ * and frontends must only accept the base ID for this purpose.
+ * Polling for input using subclass IDs is reserved for future definition.
+ *
+ * @param base One of the \ref RETRO_DEVICE "base device types".
+ * @param id A unique ID, with respect to \c base.
+ * Must be a non-negative integer.
+ * @return A unique subclass ID.
+ * @see retro_controller_description
+ * @see retro_set_controller_port_device
+ */
 #define RETRO_DEVICE_SUBCLASS(base, id) (((id + 1) << RETRO_DEVICE_TYPE_SHIFT) | base)
 
 /**
- * @defgroup RETRO_DEVICE Input Device Types
+ * @defgroup RETRO_DEVICE Input Device Classes
  * @{
  */
 
@@ -1372,44 +1396,67 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
 
+/**
+ * Declares one or more types of controllers supported by this core.
+ * The frontend may then allow the player to select one of these controllers in its menu.
+ *
+ * Many consoles had controllers that came in different versions,
+ * were extensible with peripherals,
+ * or could be held in multiple ways;
+ * this environment call can be used to represent these differences
+ * and adjust the core's behavior to match.
+ *
+ * Possible use cases include:
+ *
+ * \li Supporting different classes of a single controller that supported their own sets of games.
+ *     For example, the SNES had two different lightguns (the Super Scope and the Justifier)
+ *     whose games were incompatible with each other.
+ * \li Representing a platform's alternative controllers.
+ *     For example, several platforms had music/rhythm games that included controllers
+ *     shaped like musical instruments.
+ * \li Representing variants of a standard controller with additional inputs.
+ *     For example, numerous consoles in the 90's introduced 6-button controllers for fighting games,
+ *     steering wheels for racing games,
+ *     or analog sticks for 3D platformers.
+ * \li Representing add-ons for consoles or standard controllers.
+ *     For example, the 3DS had a Circle Pad Pro attachment that added a second analog stick.
+ * \li Selecting different configurations for a single controller.
+ *     For example, the Wii Remote could be held sideways like a traditional game pad
+ *     or in one hand like a wand.
+ * \li Providing multiple ways to simulate the experience of using a particular controller.
+ *     For example, the Game Boy Advance featured several games
+ *     with motion or light sensors in their cartridges;
+ *     a core could provide controller configurations
+ *     that allow emulating the sensors with either analog axes
+ *     or with their host device's sensors.
+ *
+ * Should be called in retro_load_game.
+ * The frontend must maintain its own copy of the provided array,
+ * including all strings and subobjects.
+ * A core may exclude certain controllers for known incompatible games.
+ *
+ * When the frontend changes the active device for a particular port,
+ * it must call \c retro_set_controller_port_device() with that port's index
+ * and one of the IDs defined in its retro_controller_info::types field.
+ *
+ * Input ports are generally associated with different players
+ * (and the frontend's UI may reflect this with "Player 1" labels),
+ * but this is not required.
+ * Some games use multiple controllers for a single player,
+ * or some cores may use port indexes to represent an emulated console's
+ * alternative input peripherals.
+ *
+ * @param[in] data <tt>const struct retro_controller_info *</tt>.
+ * Pointer to an array of controller types defined by this core,
+ * terminated by a zeroed-out \c retro_controller_info.
+ * Each element of this array represents a controller port on the emulated device.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @see retro_controller_info
+ * @see retro_set_controller_port_device
+ * @see RETRO_DEVICE_SUBCLASS
+ */
 #define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
-                                           /* const struct retro_controller_info * --
-                                            * This environment call lets a libretro core tell the frontend
-                                            * which controller subclasses are recognized in calls to
-                                            * retro_set_controller_port_device().
-                                            *
-                                            * Some emulators such as Super Nintendo support multiple lightgun
-                                            * types which must be specifically selected from. It is therefore
-                                            * sometimes necessary for a frontend to be able to tell the core
-                                            * about a special kind of input device which is not specifcally
-                                            * provided by the Libretro API.
-                                            *
-                                            * In order for a frontend to understand the workings of those devices,
-                                            * they must be defined as a specialized subclass of the generic device
-                                            * types already defined in the libretro API.
-                                            *
-                                            * The core must pass an array of const struct retro_controller_info which
-                                            * is terminated with a blanked out struct. Each element of the
-                                            * retro_controller_info struct corresponds to the ascending port index
-                                            * that is passed to retro_set_controller_port_device() when that function
-                                            * is called to indicate to the core that the frontend has changed the
-                                            * active device subclass. SEE ALSO: retro_set_controller_port_device()
-                                            *
-                                            * The ascending input port indexes provided by the core in the struct
-                                            * are generally presented by frontends as ascending User # or Player #,
-                                            * such as Player 1, Player 2, Player 3, etc. Which device subclasses are
-                                            * supported can vary per input port.
-                                            *
-                                            * The first inner element of each entry in the retro_controller_info array
-                                            * is a retro_controller_description struct that specifies the names and
-                                            * codes of all device subclasses that are available for the corresponding
-                                            * User or Player, beginning with the generic Libretro device that the
-                                            * subclasses are derived from. The second inner element of each entry is the
-                                            * total number of subclasses that are listed in the retro_controller_description.
-                                            *
-                                            * NOTE: Even if special device types are set in the libretro core,
-                                            * libretro should only poll input based on the base input device types.
-                                            */
 #define RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_memory_map * --
                                             * This environment call lets a libretro core tell the frontend
@@ -3401,26 +3448,57 @@ struct retro_memory_map
    unsigned num_descriptors;
 };
 
+/** @defgroup SET_CONTROLLER_INFO Controller Info
+ * @{
+ */
+
+/**
+ * Details about a controller (or controller configuration)
+ * supported by one of a core's emulated input ports.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
+ */
 struct retro_controller_description
 {
-   /* Human-readable description of the controller. Even if using a generic
-    * input device type, this can be set to the particular device type the
-    * core uses. */
+   /**
+    * A human-readable label for the controller or configuration
+    * represented by this device type.
+    * Most likely the device's original brand name.
+    */
    const char *desc;
 
-   /* Device type passed to retro_set_controller_port_device(). If the device
-    * type is a sub-class of a generic input device type, use the
-    * RETRO_DEVICE_SUBCLASS macro to create an ID.
+   /**
+    * A unique identifier that will be passed to \c retro_set_controller_port_device()'s \c device parameter.
+    * May be the ID of one of \ref RETRO_DEVICE "the generic controller types",
+    * or a subclass ID defined with \c RETRO_DEVICE_SUBCLASS.
     *
-    * E.g. RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1). */
+    * @see RETRO_DEVICE_SUBCLASS
+    */
    unsigned id;
 };
 
+/**
+ * Lists the types of controllers supported by
+ * one of core's emulated input ports.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
+ */
 struct retro_controller_info
 {
+
+   /**
+    * A pointer to an array of device types supported by this controller port.
+    *
+    * @note Ports that support the same devices
+    * may share the same underlying array.
+    */
    const struct retro_controller_description *types;
+
+   /** The number of elements in \c types. */
    unsigned num_types;
 };
+
+/** @} */
 
 /** @defgroup SET_SUBSYSTEM_INFO Subsystems
  * @{
