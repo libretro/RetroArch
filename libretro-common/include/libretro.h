@@ -1524,36 +1524,33 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_LANGUAGE 39
 
+/**
+ * Returns a frontend-managed framebuffer
+ * that the core may render directly into
+ *
+ * This environment call is provided as an optimization
+ * for cores that use software rendering
+ * (i.e. that don't use \refitem RETRO_ENVIRONMENT_SET_HW_RENDER "a graphics hardware API");
+ * specifically, the intended use case is to allow a core
+ * to render directly into frontend-managed video memory,
+ * avoiding the bandwidth use that copying a whole framebuffer from core to video memory entails.
+ *
+ * Must be called every frame if used,
+ * as this may return a different framebuffer each frame
+ * (e.g. for swap chains).
+ * However, a core may render to a different buffer even if this call succeeds.
+ *
+ * @param[in,out] data <tt>struct retro_framebuffer *</tt>.
+ * Pointer to a frontend's frame buffer and accompanying data.
+ * Some fields are set by the core, others are set by the frontend.
+ * Only guaranteed to be valid for the duration of the current \c retro_run call,
+ * and must not be used afterwards.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if the environment call was recognized
+ * and the framebuffer was successfully returned.
+ * @see retro_framebuffer
+ */
 #define RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_framebuffer * --
-                                            * Returns a preallocated framebuffer which the core can use for rendering
-                                            * the frame into when not using SET_HW_RENDER.
-                                            * The framebuffer returned from this call must not be used
-                                            * after the current call to retro_run() returns.
-                                            *
-                                            * The goal of this call is to allow zero-copy behavior where a core
-                                            * can render directly into video memory, avoiding extra bandwidth cost by copying
-                                            * memory from core to video memory.
-                                            *
-                                            * If this call succeeds and the core renders into it,
-                                            * the framebuffer pointer and pitch can be passed to retro_video_refresh_t.
-                                            * If the buffer from GET_CURRENT_SOFTWARE_FRAMEBUFFER is to be used,
-                                            * the core must pass the exact
-                                            * same pointer as returned by GET_CURRENT_SOFTWARE_FRAMEBUFFER;
-                                            * i.e. passing a pointer which is offset from the
-                                            * buffer is undefined. The width, height and pitch parameters
-                                            * must also match exactly to the values obtained from GET_CURRENT_SOFTWARE_FRAMEBUFFER.
-                                            *
-                                            * It is possible for a frontend to return a different pixel format
-                                            * than the one used in SET_PIXEL_FORMAT. This can happen if the frontend
-                                            * needs to perform conversion.
-                                            *
-                                            * It is still valid for a core to render to a different buffer
-                                            * even if GET_CURRENT_SOFTWARE_FRAMEBUFFER succeeds.
-                                            *
-                                            * A frontend must make sure that the pointer obtained from this function is
-                                            * writeable (and readable).
-                                            */
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --
                                             * Returns an API specific rendering interface for accessing API specific data.
@@ -5921,35 +5918,121 @@ struct retro_game_info
    const char *meta;       /* String of implementation specific meta-data. */
 };
 
+/** @defgroup GET_CURRENT_SOFTWARE_FRAMEBUFFER Frontend-Owned Framebuffers
+ * @{
+ */
+
+/** @defgroup RETRO_MEMORY_ACCESS Framebuffer Memory Access Types
+ * @{
+ */
+
+/** Indicates that core will write to the framebuffer returned by the frontend. */
 #define RETRO_MEMORY_ACCESS_WRITE (1 << 0)
-   /* The core will write to the buffer provided by retro_framebuffer::data. */
+
+/** Indicates that the core will read from the framebuffer returned by the frontend. */
 #define RETRO_MEMORY_ACCESS_READ (1 << 1)
-   /* The core will read from retro_framebuffer::data. */
+
+/** @} */
+
+/** @defgroup RETRO_MEMORY_TYPE Framebuffer Memory Types
+ * @{
+ */
+
+/**
+ * Indicates that the returned framebuffer's memory is cached.
+ * If not set, random access to the buffer may be very slow.
+ */
 #define RETRO_MEMORY_TYPE_CACHED (1 << 0)
-   /* The memory in data is cached.
-    * If not cached, random writes and/or reading from the buffer is expected to be very slow. */
+
+/** @} */
+
+/**
+ * A frame buffer owned by the frontend that a core may use for rendering.
+ *
+ * @see GET_CURRENT_SOFTWARE_FRAMEBUFFER
+ * @see retro_video_refresh_t
+ */
 struct retro_framebuffer
 {
-   void *data;                      /* The framebuffer which the core can render into.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER.
-                                       The initial contents of data are unspecified. */
-   unsigned width;                  /* The framebuffer width used by the core. Set by core. */
-   unsigned height;                 /* The framebuffer height used by the core. Set by core. */
-   size_t pitch;                    /* The number of bytes between the beginning of a scanline,
-                                       and beginning of the next scanline.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
-   enum retro_pixel_format format;  /* The pixel format the core must use to render into data.
-                                       This format could differ from the format used in
-                                       SET_PIXEL_FORMAT.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+   /**
+    * Pointer to the beginning of the framebuffer provided by the frontend.
+    * The initial contents of this buffer are unspecified,
+    * as is the means used to map the memory;
+    * this may be defined in software,
+    * or it may be GPU memory mapped to RAM.
+    *
+    * If the framebuffer is used,
+    * this pointer must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined behavior to pass an offset to this pointer.
+    *
+    * @warning This pointer is only guaranteed to be valid
+    * for the duration of the same \c retro_run iteration
+    * \ref GET_CURRENT_SOFTWARE_FRAMEBUFFER "that requested the framebuffer".
+    * Reuse of this pointer is undefined.
+    */
+   void *data;
 
-   unsigned access_flags;           /* How the core will access the memory in the framebuffer.
-                                       RETRO_MEMORY_ACCESS_* flags.
-                                       Set by core. */
-   unsigned memory_flags;           /* Flags telling core how the memory has been mapped.
-                                       RETRO_MEMORY_TYPE_* flags.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+   /**
+    * The width of the framebuffer given in \c data, in pixels.
+    * Set by the core.
+    *
+    * @warning If the framebuffer is used,
+    * this value must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined behavior to try to render \c data with any other width.
+    */
+   unsigned width;
+
+   /**
+    * The height of the framebuffer given in \c data, in pixels.
+    * Set by the core.
+    *
+    * @warning If the framebuffer is used,
+    * this value must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined behavior to try to render \c data with any other height.
+    */
+   unsigned height;
+
+   /**
+    * The distance between the start of one scanline and the beginning of the next, in bytes.
+    * In practice this is usually equal to \c width times the pixel size,
+    * but that's not guaranteed.
+    * Sometimes called the "stride".
+    *
+    * @setby{frontend}
+    * @warning If the framebuffer is used,
+    * this value must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined to try to render \c data with any other pitch.
+    */
+   size_t pitch;
+
+   /**
+    * The pixel format of the returned framebuffer.
+    * May be different than the format specified by the core in \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
+    * e.g. due to conversions.
+    * Set by the frontend.
+    *
+    * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+    */
+   enum retro_pixel_format format;
+
+   /**
+    * One or more \ref RETRO_MEMORY_ACCESS "memory access flags"
+    * that specify how the core will access the memory in \c data.
+    *
+    * @setby{core}
+    */
+   unsigned access_flags;
+
+   /**
+    * Zero or more \ref RETRO_MEMORY_TYPE "memory type flags"
+    * that describe how the framebuffer's memory has been mapped.
+    *
+    * @setby{frontend}
+    */
+   unsigned memory_flags;
 };
+
+/** @} */
 
 /* Used by a libretro core to override the current
  * fastforwarding mode of the frontend */
