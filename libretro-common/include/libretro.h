@@ -1731,32 +1731,32 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_INPUT_BITMASKS (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
-
+/**
+ * Returns the version of the core options API supported by the frontend.
+ *
+ * Over the years, libretro has used several interfaces
+ * for allowing cores to define customizable options.
+ * \ref SET_CORE_OPTIONS_V2 "Version 2 of the interface"
+ * is currently preferred due to its extra features,
+ * but cores and frontends should strive to support
+ * versions \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS "1"
+ * and \ref RETRO_ENVIRONMENT_SET_VARIABLES "0" as well.
+ * This environment call provides the information that cores need for that purpose.
+ *
+ * If this environment call returns \c false,
+ * then the core should assume version 0 of the core options API.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the integer that will store the frontend's
+ * supported core options API version.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available,
+ * \c false otherwise.
+ * @see RETRO_ENVIRONMENT_SET_VARIABLES
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION 52
-                                           /* unsigned * --
-                                            * Unsigned value is the API version number of the core options
-                                            * interface supported by the frontend. If callback return false,
-                                            * API version is assumed to be 0.
-                                            *
-                                            * In legacy code, core options are set by passing an array of
-                                            * retro_variable structs to RETRO_ENVIRONMENT_SET_VARIABLES.
-                                            * This may be still be done regardless of the core options
-                                            * interface version.
-                                            *
-                                            * If version is >= 1 however, core options may instead be set by
-                                            * passing an array of retro_core_option_definition structs to
-                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS, or a 2D array of
-                                            * retro_core_option_definition structs to RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.
-                                            * This allows the core to additionally set option sublabel information
-                                            * and/or provide localisation support.
-                                            *
-                                            * If version is >= 2, core options may instead be set by passing
-                                            * a retro_core_options_v2 struct to RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
-                                            * or an array of retro_core_options_v2 structs to
-                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL. This allows the core
-                                            * to additionally set optional core option category information
-                                            * for frontends with core option category support.
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS 53
                                            /* const struct retro_core_option_definition ** --
