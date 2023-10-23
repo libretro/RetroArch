@@ -770,6 +770,10 @@ MSG_HASH(
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+   "ଦିଗଚଳନ ଦଣ୍ଡିକା ଦେଖାଇବା"
+   )
 
 /* MaterialUI: Settings Options */
 
