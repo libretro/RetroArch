@@ -834,12 +834,12 @@ enum retro_mod
  *
  * This function can be called at any time,
  * preferably early in the core's life cycle.
- * Ideally, no later than <tt>retro_load_game()<tt>.
+ * Ideally, no later than \c retro_load_game().
  *
  * @param[in] data <tt>const struct retro_input_descriptor *</tt>.
  * An array of input descriptors terminated by one whose
- * \c retro_input_descriptor::description field is set to <tt>NULL</tt>.
- * Behavior is undefined if <tt>NULL</tt>.
+ * \c retro_input_descriptor::description field is set to \c NULL.
+ * Behavior is undefined if \c NULL.
  * @return \c true if the environment call is recognized.
  * @see retro_input_descriptor
  */
