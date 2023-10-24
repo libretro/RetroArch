@@ -1603,13 +1603,25 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Defines an interface that the frontend can use
+ * to ask the core for the parameters it needs for a hardware rendering context.
+ * The exact semantics depend on \ref RETRO_ENVIRONMENT_SET_HW_RENDER "the active rendering API".
+ * Will be used some time after \c RETRO_ENVIRONMENT_SET_HW_RENDER is called,
+ * but before \c retro_hw_render_callback::context_reset is called.
+ *
+ * @param[in] data <tt>const struct retro_hw_render_context_negotiation_interface *</tt>.
+ * Pointer to the context negotiation interface.
+ * Will be populated by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is supported,
+ * even if the current graphics API doesn't use
+ * a context negotiation interface (in which case the argument is ignored).
+ * @see retro_hw_render_context_negotiation_interface
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ */
 #define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_hw_render_context_negotiation_interface * --
-                                            * Sets an interface which lets the libretro core negotiate with frontend how a context is created.
-                                            * The semantics of this interface depends on which API is used in SET_HW_RENDER earlier.
-                                            * This interface will be used when the frontend is trying to create a HW rendering context,
-                                            * so it will be used after SET_HW_RENDER, but before the context_reset callback.
-                                            */
 
 /**
  * Notifies the frontend of any quirks associated with serialization.
@@ -3315,19 +3327,63 @@ struct retro_midi_interface
 
 /** @} */
 
+/** @defgroup SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE Render Context Negotiation
+ * @{
+ */
+
+/**
+ * Describes the hardware rendering API used by
+ * a particular subtype of \c retro_hw_render_context_negotiation_interface.
+ *
+ * Not every rendering API supported by libretro has a context negotiation interface,
+ * or even needs one.
+ *
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ */
 enum retro_hw_render_context_negotiation_interface_type
 {
+   /**
+    * Denotes a context negotiation interface for Vulkan.
+    * @see retro_hw_render_context_negotiation_interface_vulkan
+    */
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN = 0,
+
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_hw_render_context_negotiation_interface_type) == sizeof(int)</tt>.
+    * Do not use.
+    */
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_DUMMY = INT_MAX
 };
 
-/* Base struct. All retro_hw_render_context_negotiation_interface_* types
- * contain at least these fields. */
+/**
+ * Base context negotiation interface type.
+ * All \c retro_hw_render_context_negotiation_interface implementations
+ * will start with these two fields set to particular values.
+ *
+ * @see retro_hw_render_interface_type
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE
+ */
 struct retro_hw_render_context_negotiation_interface
 {
+   /**
+    * Denotes the particular rendering API that this interface is for.
+    * Each interface requires this field to be set to a particular value.
+    * Use it to cast this interface to the appropriate pointer.
+    */
    enum retro_hw_render_context_negotiation_interface_type interface_type;
+
+   /**
+    * The version of this negotiation interface.
+    * @note This is not related to the version of the API itself.
+    */
    unsigned interface_version;
 };
+
+/** @} */
 
 /** @defgroup RETRO_SERIALIZATION_QUIRK Serialization Quirks
  * @{
