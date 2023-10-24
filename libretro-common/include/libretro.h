@@ -1879,25 +1879,34 @@ enum retro_mod
                                             * retro_core_options_intl::local array will be ignored.
                                             */
 
+/**
+ * Notifies the frontend that it should show or hide the named core option.
+ *
+ * Some core options aren't relevant in all scenarios,
+ * such as a submenu for hardware rendering flags
+ * when the software renderer is configured.
+ * This environment call asks the frontend to stop (or start)
+ * showing the named core option to the player.
+ * This is only a hint, not a requirement;
+ * the frontend may ignore this environment call.
+ * By default, all core options are visible.
+ *
+ * @note This environment call must \em only affect a core option's visibility,
+ * not its functionality or availability.
+ * \ref RETRO_ENVIRONMENT_GET_VARIABLE "Getting an invisible core option"
+ * must behave normally.
+ *
+ * @param[in] data <tt>const struct retro_core_option_display *</tt>.
+ * Pointer to a descriptor for the option that the frontend should show or hide.
+ * May be \c NULL, in which case the frontend will only return
+ * whether this environment callback is available.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL
+ * or the specified option doesn't exist.
+ * @see retro_core_option_display
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY 55
-                                           /* struct retro_core_option_display * --
-                                            *
-                                            * Allows an implementation to signal the environment to show
-                                            * or hide a variable when displaying core options. This is
-                                            * considered a *suggestion*. The frontend is free to ignore
-                                            * this callback, and its implementation not considered mandatory.
-                                            *
-                                            * 'data' points to a retro_core_option_display struct
-                                            *
-                                            * retro_core_option_display::key is a variable identifier
-                                            * which has already been set by SET_VARIABLES/SET_CORE_OPTIONS.
-                                            *
-                                            * retro_core_option_display::visible is a boolean, specifying
-                                            * whether variable should be displayed
-                                            *
-                                            * Note that all core option variables will be set visible by
-                                            * default when calling SET_VARIABLES/SET_CORE_OPTIONS.
-                                            */
 
 /**
  * Returns the frontend's preferred hardware rendering API.
@@ -5755,6 +5764,10 @@ struct retro_system_av_info
    struct retro_system_timing timing;
 };
 
+/** @defgroup SET_CORE_OPTIONS Core Options
+ *  @{
+ */
+
 struct retro_variable
 {
    /**
@@ -5773,13 +5786,27 @@ struct retro_variable
    const char *value;
 };
 
+/**
+ * An argument that's used to show or hide a core option in the frontend.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY
+ */
 struct retro_core_option_display
 {
-   /* Variable to configure in RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY */
+   /**
+    * The key for a core option that was defined with \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
+    * \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL,
+    * or their legacy equivalents.
+    */
    const char *key;
 
-   /* Specifies whether variable should be displayed
-    * when presenting core options to the user */
+   /**
+    * Whether the option named by \c key
+    * should be displayed to the player in the frontend's core options menu.
+    *
+    * @note This value is a hint, \em not a requirement;
+    * the frontend is free to ignore this field.
+    */
    bool visible;
 };
 
@@ -5983,6 +6010,8 @@ struct retro_core_options_update_display_callback
 {
    retro_core_options_update_display_callback_t callback;
 };
+
+/** @} */
 
 struct retro_game_info
 {
