@@ -654,6 +654,12 @@ static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_cli
    case RC_CLIENT_EVENT_SERVER_ERROR:
       rcheevos_server_error(event->server_error->api, event->server_error->error_message);
       break;
+   case RC_CLIENT_EVENT_DISCONNECTED:
+      CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server");
+      break;
+   case RC_CLIENT_EVENT_RECONNECTED:
+      CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server");
+      break;
    default:
 #ifndef NDEBUG
       CHEEVOS_LOG(RCHEEVOS_TAG "Unsupported rc_client event %u\n", event->type);
