@@ -69,6 +69,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       ui_companion_cocoatouch_event_command(
             NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
+      exit(0);
       return;
    }
 

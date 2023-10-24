@@ -97,9 +97,6 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#endif
-
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
 #include "switch_performance_profiles.h"
 #endif
 
@@ -1999,8 +1996,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         RARCH_LOG("[Environ]: GET_SAVE_DIRECTORY.\n");
          *(const char**)data = runloop_st->savefile_dir;
+         RARCH_LOG("[Environ]: SAVE_DIRECTORY: \"%s\".\n",
+               runloop_st->savefile_dir);
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -4402,6 +4400,7 @@ void runloop_set_video_swap_interval(
       bool vrr_runloop_enable,
       bool crt_switching_active,
       unsigned swap_interval_config,
+      unsigned black_frame_insertion,
       float audio_max_timing_skew,
       float video_refresh_rate,
       double input_fps)
@@ -4428,11 +4427,13 @@ void runloop_set_video_swap_interval(
     * > If core fps is higher than display refresh rate,
     *   set swap interval to 1
     * > If core fps or display refresh rate are zero,
-    *   set swap interval to 1 */
+    *   set swap interval to 1
+    * > If BFI is active set swap interval to 1 */
    if (   (vrr_runloop_enable)
        || (core_hz    > timing_hz)
        || (core_hz   <= 0.0f)
-       || (timing_hz <= 0.0f))
+       || (timing_hz <= 0.0f)
+       || (black_frame_insertion))
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
@@ -4631,7 +4632,7 @@ bool runloop_event_init_core(
             type, &runloop_st->current_core, NULL, NULL))
       return false;
 #ifdef HAVE_RUNAHEAD
-   /* remember last core type created, so creating a
+   /* Remember last core type created, so creating a
     * secondary core will know what core type to use. */
    runloop_st->last_core_type              = type;
 #endif
@@ -4690,7 +4691,7 @@ bool runloop_event_init_core(
          settings, &runloop_st->fastmotion_override.current);
 
 #ifdef HAVE_CHEEVOS
-   /* assume the core supports achievements unless it tells us otherwise */
+   /* Assume the core supports achievements unless it tells us otherwise */
    rcheevos_set_support_cheevos(true);
 #endif
 
@@ -4701,9 +4702,13 @@ bool runloop_event_init_core(
    runloop_st->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
 
-   /* reset video format to libretro's default */
+   /* Reset video format to libretro's default */
    video_st->pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
+   /* Set save redirection paths */
+   runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
+
+   /* Set core environment */
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
    /* Load any input remap files
@@ -4719,9 +4724,6 @@ bool runloop_event_init_core(
    if (auto_remaps_enable)
       config_load_remap(dir_input_remapping, &runloop_st->system);
 #endif
-
-   /* Per-core saves: reset redirection paths */
-   runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
    video_st->frame_cache_data              = NULL;
 
@@ -4794,19 +4796,15 @@ void runloop_pause_checks(void)
       command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
 #endif
 
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
    }
    else
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)

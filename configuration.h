@@ -334,6 +334,9 @@ typedef struct settings
       unsigned ai_service_mode;
       unsigned ai_service_target_lang;
       unsigned ai_service_source_lang;
+      unsigned ai_service_poll_delay;
+      unsigned ai_service_text_position;
+      unsigned ai_service_text_padding;
 
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
@@ -973,6 +976,11 @@ typedef struct settings
       bool screenshots_in_content_dir;
       bool systemfiles_in_content_dir;
       bool ssh_enable;
+#ifdef HAVE_LAKKA_SWITCH
+      bool switch_oc;
+      bool switch_cec;
+      bool bluetooth_ertm_disable;
+#endif
       bool samba_enable;
       bool bluetooth_enable;
       bool localap_enable;

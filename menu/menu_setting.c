@@ -21,7 +21,6 @@
 #else
 #include <unistd.h>
 #endif
-
 #include <libretro.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
@@ -101,6 +100,9 @@
 #include "../performance_counters.h"
 #include "../setting_list.h"
 #include "../lakka.h"
+#ifdef HAVE_LAKKA_SWITCH
+#include "../lakka-switch.h"
+#endif 
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
 #ifdef HAVE_CHEATS
@@ -313,6 +315,9 @@ enum settings_list_type
    SETTINGS_LIST_CORE_UPDATER,
    SETTINGS_LIST_NETPLAY,
    SETTINGS_LIST_LAKKA_SERVICES,
+#ifdef HAVE_LAKKA_SWITCH
+   SETTINGS_LIST_LAKKA_SWITCH_OPTIONS,
+#endif
    SETTINGS_LIST_USER,
    SETTINGS_LIST_USER_ACCOUNTS,
    SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
@@ -3008,6 +3013,42 @@ static void setting_get_string_representation_uint_ai_service_mode(
          break;
       case 2:
          enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE;
+         break;
+      case 3:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE;
+         break;
+      case 4:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE;
+         break;
+      case 5:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE;
+         break;
+      default:
+         break;
+   }
+
+   if (enum_idx != 0)
+      strlcpy(s, msg_hash_to_str(enum_idx), len);
+}
+
+static void setting_get_string_representation_uint_ai_service_text_position(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         enum_idx = MENU_ENUM_LABEL_VALUE_NONE;
+         break;
+      case 1:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM;
+         break;
+      case 2:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP;
          break;
       default:
          break;
@@ -7944,6 +7985,7 @@ static void general_write_handler(rarch_setting_t *setting)
          else
             task_queue_unset_threaded();
          break;
+#ifndef HAVE_LAKKA
       case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
          if (frontend_driver_has_gamemode())
          {
@@ -7967,7 +8009,8 @@ static void general_write_handler(rarch_setting_t *setting)
             }
          }
          break;
-      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+#endif /*HAVE_LAKKA*/
+     case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
@@ -8827,6 +8870,45 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
       execvp(args[0], args);
    }
 }
+
+#ifdef HAVE_LAKKA_SWITCH
+static void switch_oc_enable_toggle_change_handler(rarch_setting_t *setting)
+{
+   FILE* f = fopen(SWITCH_OC_TOGGLE_PATH, "w");
+    if (*setting->value.target.boolean == true) {
+	  fprintf(f, "1\n");
+	} else {
+	  fprintf(f, "0\n");	
+    }
+    fclose(f);
+}
+
+static void switch_cec_enable_toggle_change_handler(rarch_setting_t *setting)
+{
+    if (*setting->value.target.boolean == true) {
+      FILE* f = fopen(SWITCH_CEC_TOGGLE_PATH, "w");
+	  fprintf(f, "\n");
+      fclose(f);
+	} else {
+	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);	
+    }
+    
+}
+
+static void bluetooth_ertm_disable_toggle_change_handler(rarch_setting_t *setting)
+{
+    if (*setting->value.target.boolean == true) {
+      FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
+	  fprintf(f, "1\n");
+      fclose(f);
+	} else {
+      FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
+	  fprintf(f, "0\n");
+      fclose(f);
+    }
+    
+}
+#endif
 
 static void ssh_enable_toggle_change_handler(rarch_setting_t *setting)
 {
@@ -9795,7 +9877,7 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_QUIT);
 #endif
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
         CONFIG_ACTION(
               list, list_info,
               MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
@@ -9806,15 +9888,6 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_LAKKA)
-#ifdef HAVE_LAKKA_SWITCH
-        CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
-               MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,
@@ -10121,7 +10194,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -10214,7 +10286,15 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
-
+#ifdef HAVE_LAKKA_SWITCH
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,
+               MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_PLAYLIST_SETTINGS,
@@ -13302,6 +13382,8 @@ static bool setting_append_list(
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
                   menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+                  MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+                  SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
                }
             }
 #endif
@@ -19047,7 +19129,6 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_LAKKA
-#ifndef HAVE_LAKKA_SWITCH
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_CPU_PERFPOWER,
@@ -19056,8 +19137,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
-#endif
-
+#ifndef HAVE_LAKKA
          if (frontend_driver_has_gamemode())
             CONFIG_BOOL(
                   list, list_info,
@@ -19077,6 +19157,7 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+#endif /*HAVE_LAKKA*/
       case SETTINGS_LIST_WIFI_MANAGEMENT:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS),
@@ -19189,7 +19270,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_ai_service_mode;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
 
          CONFIG_STRING(
                list, list_info,
@@ -19271,6 +19352,50 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_ai_service_lang;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
+         
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ai_service_poll_delay,
+               MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
+               DEFAULT_AI_SERVICE_POLL_DELAY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_AI_SERVICE_POLL_DELAY, 50, true, true);
+         
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ai_service_text_position,
+               MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
+               DEFAULT_AI_SERVICE_TEXT_POSITION,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_ai_service_text_position;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+         
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ai_service_text_padding,
+               MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
+               DEFAULT_AI_SERVICE_TEXT_PADDING,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 20, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -21858,7 +21983,6 @@ static bool setting_append_list(
             START_SUB_GROUP(list, list_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
                   &group_info, &subgroup_info, parent_group);
-
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.ssh_enable,
@@ -21947,6 +22071,71 @@ static bool setting_append_list(
 #endif
          }
          break;
+#ifdef HAVE_LAKKA_SWITCH
+      case SETTINGS_LIST_LAKKA_SWITCH_OPTIONS:
+         {
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS),
+                  parent_group);
+
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+
+            START_SUB_GROUP(list, list_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS),
+                  &group_info, &subgroup_info, parent_group);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.switch_oc,
+                  MENU_ENUM_LABEL_SWITCH_OC_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+                  DEFAULT_SWITCH_OC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = switch_oc_enable_toggle_change_handler;
+ 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.switch_cec,
+                  MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+                  DEFAULT_SWITCH_CEC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = switch_cec_enable_toggle_change_handler;
+ 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.bluetooth_ertm_disable,
+                  MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,
+                  MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+                  DEFAULT_BLUETOOTH_ERTM,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = bluetooth_ertm_disable_toggle_change_handler;
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+         }
+         break;
+#endif
       case SETTINGS_LIST_USER:
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_SETTINGS),
@@ -23159,6 +23348,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
       SETTINGS_LIST_LAKKA_SERVICES,
+#ifdef HAVE_LAKKA_SWITCH
+      SETTINGS_LIST_LAKKA_SWITCH_OPTIONS,
+#endif
       SETTINGS_LIST_USER,
       SETTINGS_LIST_USER_ACCOUNTS,
       SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,

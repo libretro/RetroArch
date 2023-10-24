@@ -73,9 +73,6 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#endif
-
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
 #include "../switch_performance_profiles.h"
 #endif
 
@@ -5242,11 +5239,6 @@ unsigned menu_event(
 
    ok_old                                          = ok_current;
 
-   /* Menu must be alive, and input must be released after menu toggle. */
-   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
-         || menu_st->input_driver_flushing_input > 0)
-      return ret;
-
    /* Get pointer (mouse + touchscreen) input
     * Note: Must be done regardless of menu screensaver
     *       state */
@@ -5635,6 +5627,11 @@ unsigned menu_event(
       if (ret != MENU_ACTION_NOOP)
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
+
+   /* Menu must be alive, and input must be released after menu toggle. */
+   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+         || menu_st->input_driver_flushing_input > 0)
+      return MENU_ACTION_NOOP;
 
    return ret;
 }
@@ -6293,11 +6290,9 @@ void menu_driver_toggle(
 
    if (on)
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
 #ifdef HAVE_OVERLAY
       /* If an overlay was displayed before the toggle
        * and overlays are disabled in menu, need to
@@ -6316,11 +6311,9 @@ void menu_driver_toggle(
    }
    else
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
 #ifdef HAVE_OVERLAY
       /* Inhibits pointer 'select' and 'cancel' actions
        * (until the next time 'select'/'cancel' are released) */
@@ -6353,6 +6346,9 @@ void menu_driver_toggle(
 
       if (pause_libretro)
       {
+#ifdef PS2
+         command_event(CMD_EVENT_AUDIO_STOP, NULL);
+#endif
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
@@ -6383,6 +6379,9 @@ void menu_driver_toggle(
 
       if (pause_libretro)
       {
+#ifdef PS2
+         command_event(CMD_EVENT_AUDIO_START, NULL);
+#endif
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif

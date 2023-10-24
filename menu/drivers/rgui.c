@@ -6093,7 +6093,7 @@ static bool rgui_set_aspect_ratio(
    {
       case RGUI_ASPECT_RATIO_16_9:
          if (rgui->frame_buf.height == 240)
-            rgui->frame_buf.width = max_frame_buf_width;
+            rgui->frame_buf.width = 424;
          else
             rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                   (16.0f / 9.0f) * (float)rgui->frame_buf.height);
@@ -6102,7 +6102,7 @@ static bool rgui_set_aspect_ratio(
       case RGUI_ASPECT_RATIO_16_9_CENTRE:
          if (rgui->frame_buf.height == 240)
          {
-            rgui->frame_buf.width = max_frame_buf_width;
+            rgui->frame_buf.width = 424;
             base_term_width       = 320;
          }
          else
