@@ -2,6 +2,7 @@
 #define RC_UTIL_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,11 +13,11 @@ extern "C" {
  */
 typedef struct rc_buffer_chunk_t {
   /* The current location where data is being written */
-  char* write;
+  uint8_t* write;
   /* The first byte past the end of data where writing cannot occur */
-  char* end;
+  uint8_t* end;
   /* The first byte of the data */
-  char* start;
+  uint8_t* start;
   /* The next block in the allocated memory chain */
   struct rc_buffer_chunk_t* next;
 }
@@ -29,21 +30,21 @@ typedef struct rc_buffer_t {
   /* The chunk data (will point at the local data member) */
   struct rc_buffer_chunk_t chunk;
   /* Small chunk of memory pre-allocated for the chunk */
-  char data[256];
+  uint8_t data[256];
 }
 rc_buffer_t;
 
 void rc_buffer_init(rc_buffer_t* buffer);
 void rc_buffer_destroy(rc_buffer_t* buffer);
-char* rc_buffer_reserve(rc_buffer_t* buffer, size_t amount);
-void rc_buffer_consume(rc_buffer_t* buffer, const char* start, char* end);
+uint8_t* rc_buffer_reserve(rc_buffer_t* buffer, size_t amount);
+void rc_buffer_consume(rc_buffer_t* buffer, const uint8_t* start, uint8_t* end);
 void* rc_buffer_alloc(rc_buffer_t* buffer, size_t amount);
 char* rc_buffer_strcpy(rc_buffer_t* buffer, const char* src);
 char* rc_buffer_strncpy(rc_buffer_t* buffer, const char* src, size_t len);
 
-unsigned rc_djb2(const char* input);
+uint32_t rc_djb2(const char* input);
 
-void rc_format_md5(char checksum[33], const unsigned char digest[16]);
+void rc_format_md5(char checksum[33], const uint8_t digest[16]);
 
 #ifdef __cplusplus
 }

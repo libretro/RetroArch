@@ -225,11 +225,11 @@ static void rc_cd_close_track(void* track_handle)
   rc_hash_error("no hook registered for cdreader_close_track");
 }
 
-static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, unsigned* size)
+static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uint32_t* size)
 {
   uint8_t buffer[2048], *tmp;
   int sector;
-  unsigned num_sectors = 0;
+  uint32_t num_sectors = 0;
   size_t filename_length;
   const char* slash;
 
@@ -258,7 +258,7 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
   }
   else
   {
-    unsigned logical_block_size;
+    uint32_t logical_block_size;
 
     /* find the cd information */
     if (!rc_cd_read_sector(track_handle, rc_cd_first_track_sector(track_handle) + 16, buffer, 256))
@@ -452,7 +452,7 @@ static int rc_hash_buffer(char hash[33], const uint8_t* buffer, size_t buffer_si
   return rc_hash_finalize(&md5, hash);
 }
 
-static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector, const char* name, unsigned size, const char* description)
+static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector, const char* name, uint32_t size, const char* description)
 {
   uint8_t buffer[2048];
   size_t num_read;
@@ -760,11 +760,11 @@ static int rc_hash_jaguar_cd(char hash[33], const char* path)
   void* track_handle;
   md5_state_t md5;
   int byteswapped = 0;
-  unsigned size = 0;
-  unsigned offset = 0;
-  unsigned sector = 0;
-  unsigned remaining;
-  unsigned i;
+  uint32_t size = 0;
+  uint32_t offset = 0;
+  uint32_t sector = 0;
+  uint32_t remaining;
+  uint32_t i;
 
   /* Jaguar CD header is in the first sector of the first data track OF THE SECOND SESSION.
    * The first track must be an audio track, but may be a warning message or actual game audio */
@@ -905,7 +905,7 @@ static int rc_hash_neogeo_cd(char hash[33], const char* path)
   char buffer[1024], *ptr;
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   md5_state_t md5;
 
   track_handle = rc_cd_open_track(path, 1);
@@ -1091,7 +1091,7 @@ static int rc_hash_nintendo_ds(char hash[33], const char* path)
 {
   uint8_t header[512];
   uint8_t* hash_buffer;
-  unsigned int hash_size, arm9_size, arm9_addr, arm7_size, arm7_addr, icon_addr;
+  uint32_t hash_size, arm9_size, arm9_addr, arm7_size, arm7_addr, icon_addr;
   size_t num_read;
   int64_t offset = 0;
   md5_state_t md5;
@@ -1332,8 +1332,8 @@ static int rc_hash_pce_track(char hash[33], void* track_handle)
 {
   uint8_t buffer[2048];
   md5_state_t md5;
-  int sector, num_sectors;
-  unsigned size;
+  uint32_t sector, num_sectors;
+  uint32_t size;
 
   /* the PC-Engine uses the second sector to specify boot information and program name.
    * the string "PC Engine CD-ROM SYSTEM" should exist at 32 bytes into the sector
@@ -1518,7 +1518,7 @@ static int rc_hash_dreamcast(char hash[33], const char* path)
   uint8_t buffer[256] = "";
   void* track_handle;
   char exe_file[32] = "";
-  unsigned size;
+  uint32_t size;
   uint32_t sector;
   int result = 0;
   md5_state_t md5;
@@ -1612,10 +1612,10 @@ static int rc_hash_dreamcast(char hash[33], const char* path)
 }
 
 static int rc_hash_find_playstation_executable(void* track_handle, const char* boot_key, const char* cdrom_prefix, 
-                                               char exe_name[], unsigned exe_name_size, unsigned* exe_size)
+                                               char exe_name[], uint32_t exe_name_size, unsigned* exe_size)
 {
   uint8_t buffer[2048];
-  unsigned size;
+  uint32_t size;
   char* ptr;
   char* start;
   const size_t boot_key_len = strlen(boot_key);
@@ -1685,7 +1685,7 @@ static int rc_hash_psx(char hash[33], const char* path)
   char exe_name[64] = "";
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   int result = 0;
   md5_state_t md5;
 
@@ -1749,7 +1749,7 @@ static int rc_hash_ps2(char hash[33], const char* path)
   char exe_name[64] = "";
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   int result = 0;
   md5_state_t md5;
 
@@ -1797,7 +1797,7 @@ static int rc_hash_psp(char hash[33], const char* path)
 {
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   md5_state_t md5;
 
   track_handle = rc_cd_open_track(path, 1);
@@ -2591,9 +2591,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           iterator->consoles[1] = RC_CONSOLE_PLAYSTATION_2;
           iterator->consoles[2] = RC_CONSOLE_DREAMCAST;
           iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
-          iterator->consoles[4] = RC_CONSOLE_PC_ENGINE_CD;
-          iterator->consoles[5] = RC_CONSOLE_3DO;
-          iterator->consoles[6] = RC_CONSOLE_PCFX;
+          iterator->consoles[4] = RC_CONSOLE_PSP;
+          iterator->consoles[5] = RC_CONSOLE_PC_ENGINE_CD;
+          iterator->consoles[6] = RC_CONSOLE_3DO;
+          iterator->consoles[7] = RC_CONSOLE_PCFX;
           need_path = 1;
         }
         else if (rc_path_compare_extension(ext, "col"))

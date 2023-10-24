@@ -3,6 +3,7 @@
 
 #include "rc_api_request.h"
 
+#include <stdint.h>
 #include <time.h>
 
 #ifdef __cplusplus
@@ -34,11 +35,11 @@ typedef struct rc_api_login_response_t {
   /* The API token to use for all future requests */
   const char* api_token;
   /* The current score of the player */
-  unsigned score;
+  uint32_t score;
   /* The current softcore score of the player */
-  unsigned score_softcore;
+  uint32_t score_softcore;
   /* The number of unread messages waiting for the player on the web site */
-  unsigned num_unread_messages;
+  uint32_t num_unread_messages;
   /* The preferred name to display for the player */
   const char* display_name;
 
@@ -63,7 +64,7 @@ typedef struct rc_api_start_session_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the game */
-  unsigned game_id;
+  uint32_t game_id;
 }
 rc_api_start_session_request_t;
 
@@ -72,7 +73,7 @@ rc_api_start_session_request_t;
  */
 typedef struct rc_api_unlock_entry_t {
   /* The unique identifier of the unlocked achievement */
-  unsigned achievement_id;
+  uint32_t achievement_id;
   /* When the achievement was unlocked */
   time_t when;
 }
@@ -88,9 +89,9 @@ typedef struct rc_api_start_session_response_t {
   rc_api_unlock_entry_t* unlocks;
 
   /* The number of items in the hardcore_unlocks array */
-  unsigned num_hardcore_unlocks;
+  uint32_t num_hardcore_unlocks;
   /* The number of items in the unlocks array */
-  unsigned num_unlocks;
+  uint32_t num_unlocks;
 
   /* The server timestamp when the response was generated */
   time_t server_now;
@@ -116,9 +117,9 @@ typedef struct rc_api_fetch_user_unlocks_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the game */
-  unsigned game_id;
+  uint32_t game_id;
   /* Non-zero to fetch hardcore unlocks, 0 to fetch non-hardcore unlocks */
-  int hardcore;
+  uint32_t hardcore;
 }
 rc_api_fetch_user_unlocks_request_t;
 
@@ -127,9 +128,9 @@ rc_api_fetch_user_unlocks_request_t;
  */
 typedef struct rc_api_fetch_user_unlocks_response_t {
   /* An array of achievement IDs previously unlocked by the user */
-  unsigned* achievement_ids;
+  uint32_t* achievement_ids;
   /* The number of items in the achievement_ids array */
-  unsigned num_achievement_ids;
+  uint32_t num_achievement_ids;
 
   /* Common server-provided response information */
   rc_api_response_t response;

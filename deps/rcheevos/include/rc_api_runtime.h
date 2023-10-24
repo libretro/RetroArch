@@ -3,6 +3,7 @@
 
 #include "rc_api_request.h"
 
+#include <stdint.h>
 #include <time.h>
 
 #ifdef __cplusplus
@@ -19,7 +20,7 @@ typedef struct rc_api_fetch_image_request_t {
   /* The name of the image to fetch */
   const char* image_name;
   /* The type of image to fetch */
-  int image_type;
+  uint32_t image_type;
 }
 rc_api_fetch_image_request_t;
 
@@ -50,7 +51,7 @@ rc_api_resolve_hash_request_t;
  */
 typedef struct rc_api_resolve_hash_response_t {
   /* The unique identifier of the game, 0 if no match was found */
-  unsigned game_id;
+  uint32_t game_id;
 
   /* Common server-provided response information */
   rc_api_response_t response;
@@ -73,14 +74,14 @@ typedef struct rc_api_fetch_game_data_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the game */
-  unsigned game_id;
+  uint32_t game_id;
 }
 rc_api_fetch_game_data_request_t;
 
 /* A leaderboard definition */
 typedef struct rc_api_leaderboard_definition_t {
   /* The unique identifier of the leaderboard */
-  unsigned id;
+  uint32_t id;
   /* The format to pass to rc_format_value to format the leaderboard value */
   int format;
   /* The title of the leaderboard */
@@ -90,20 +91,20 @@ typedef struct rc_api_leaderboard_definition_t {
   /* The definition of the leaderboard to be passed to rc_runtime_activate_lboard */
   const char* definition;
   /* Non-zero if lower values are better for this leaderboard */
-  int lower_is_better;
+  uint8_t lower_is_better;
   /* Non-zero if the leaderboard should not be displayed in a list of leaderboards */
-  int hidden;
+  uint8_t hidden;
 }
 rc_api_leaderboard_definition_t;
 
 /* An achievement definition */
 typedef struct rc_api_achievement_definition_t {
   /* The unique identifier of the achievement */
-  unsigned id;
+  uint32_t id;
   /* The number of points the achievement is worth */
-  unsigned points;
+  uint32_t points;
   /* The achievement category (core, unofficial) */
-  unsigned category;
+  uint32_t category;
   /* The title of the achievement */
   const char* title;
   /* The dscription of the achievement */
@@ -129,9 +130,9 @@ rc_api_achievement_definition_t;
  */
 typedef struct rc_api_fetch_game_data_response_t {
   /* The unique identifier of the game */
-  unsigned id;
+  uint32_t id;
   /* The console associated to the game */
-  unsigned console_id;
+  uint32_t console_id;
   /* The title of the game */
   const char* title;
   /* The image name for the game badge */
@@ -142,12 +143,12 @@ typedef struct rc_api_fetch_game_data_response_t {
   /* An array of achievements for the game */
   rc_api_achievement_definition_t* achievements;
   /* The number of items in the achievements array */
-  unsigned num_achievements;
+  uint32_t num_achievements;
 
   /* An array of leaderboards for the game */
   rc_api_leaderboard_definition_t* leaderboards;
   /* The number of items in the leaderboards array */
-  unsigned num_leaderboards;
+  uint32_t num_leaderboards;
 
   /* Common server-provided response information */
   rc_api_response_t response;
@@ -170,7 +171,7 @@ typedef struct rc_api_ping_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the game */
-  unsigned game_id;
+  uint32_t game_id;
   /* (optional) The current rich presence evaluation for the user */
   const char* rich_presence;
 }
@@ -201,9 +202,9 @@ typedef struct rc_api_award_achievement_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the achievement */
-  unsigned achievement_id;
+  uint32_t achievement_id;
   /* Non-zero if the achievement was earned in hardcore */
-  int hardcore;
+  uint32_t hardcore;
   /* The hash associated to the game being played */
   const char* game_hash;
 }
@@ -214,14 +215,14 @@ rc_api_award_achievement_request_t;
  */
 typedef struct rc_api_award_achievement_response_t {
   /* The unique identifier of the achievement that was awarded */
-  unsigned awarded_achievement_id;
+  uint32_t awarded_achievement_id;
   /* The updated player score */
-  unsigned new_player_score;
+  uint32_t new_player_score;
   /* The updated player softcore score */
-  unsigned new_player_score_softcore;
+  uint32_t new_player_score_softcore;
   /* The number of achievements the user has not yet unlocked for this game
    * (in hardcore/non-hardcore per hardcore flag in request) */
-  unsigned achievements_remaining;
+  uint32_t achievements_remaining;
 
   /* Common server-provided response information */
   rc_api_response_t response;
@@ -244,9 +245,9 @@ typedef struct rc_api_submit_lboard_entry_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the leaderboard */
-  unsigned leaderboard_id;
+  uint32_t leaderboard_id;
   /* The value being submitted */
-  int score;
+  int32_t score;
   /* The hash associated to the game being played */
   const char* game_hash;
 }
@@ -257,9 +258,9 @@ typedef struct rc_api_lboard_entry_t {
   /* The user associated to the entry */
   const char* username;
   /* The rank of the entry */
-  unsigned rank;
+  uint32_t rank;
   /* The value of the entry */
-  int score;
+  int32_t score;
 }
 rc_api_lboard_entry_t;
 
@@ -268,18 +269,18 @@ rc_api_lboard_entry_t;
  */
 typedef struct rc_api_submit_lboard_entry_response_t {
   /* The value that was submitted */
-  int submitted_score;
+  int32_t submitted_score;
   /* The player's best submitted value */
-  int best_score;
+  int32_t best_score;
   /* The player's new rank within the leaderboard */
-  unsigned new_rank;
+  uint32_t new_rank;
   /* The total number of entries in the leaderboard */
-  unsigned num_entries;
+  uint32_t num_entries;
 
   /* An array of the top entries for the leaderboard */
   rc_api_lboard_entry_t* top_entries;
   /* The number of items in the top_entries array */
-  unsigned num_top_entries;
+  uint32_t num_top_entries;
 
   /* Common server-provided response information */
   rc_api_response_t response;

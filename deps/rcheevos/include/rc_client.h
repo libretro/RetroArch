@@ -146,8 +146,7 @@ void rc_client_abort_async(rc_client_t* client, rc_client_async_handle_t* async_
  * Sets the logging level and provides a callback to be called to do the logging.
  */
 void rc_client_enable_logging(rc_client_t* client, int level, rc_client_message_callback_t callback);
-enum
-{
+enum {
   RC_CLIENT_LOG_LEVEL_NONE = 0,
   RC_CLIENT_LOG_LEVEL_ERROR = 1,
   RC_CLIENT_LOG_LEVEL_WARN = 2,

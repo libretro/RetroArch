@@ -255,7 +255,7 @@ int rc_evaluate_value_typed(rc_value_t* self, rc_typed_value_t* value, rc_peek_t
   return valid;
 }
 
-int rc_evaluate_value(rc_value_t* self, rc_peek_t peek, void* ud, lua_State* L) {
+int32_t rc_evaluate_value(rc_value_t* self, rc_peek_t peek, void* ud, lua_State* L) {
   rc_typed_value_t result;
   int valid = rc_evaluate_value_typed(self, &result, peek, ud, L);
 
@@ -304,12 +304,12 @@ void rc_init_parse_state_variables(rc_parse_state_t* parse, rc_value_t** variabl
   *variables = 0;
 }
 
-rc_value_t* rc_alloc_helper_variable(const char* memaddr, int memaddr_len, rc_parse_state_t* parse)
+rc_value_t* rc_alloc_helper_variable(const char* memaddr, size_t memaddr_len, rc_parse_state_t* parse)
 {
   rc_value_t** variables = parse->variables;
   rc_value_t* value;
   const char* name;
-  unsigned measured_target;
+  uint32_t measured_target;
 
   while ((value = *variables) != NULL) {
     if (strncmp(value->name, memaddr, memaddr_len) == 0 && value->name[memaddr_len] == 0)

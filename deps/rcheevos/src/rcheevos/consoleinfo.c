@@ -882,7 +882,7 @@ static const rc_memory_regions_t rc_memory_regions_wonderswan = { _rc_memory_reg
 /* ===== default ===== */
 static const rc_memory_regions_t rc_memory_regions_none = { 0, 0 };
 
-const rc_memory_regions_t* rc_console_memory_regions(int console_id)
+const rc_memory_regions_t* rc_console_memory_regions(uint32_t console_id)
 {
   switch (console_id)
   {

@@ -49,7 +49,7 @@ void rc_buffer_destroy(rc_buffer_t* buffer)
 #endif
 }
 
-char* rc_buffer_reserve(rc_buffer_t* buffer, size_t amount)
+uint8_t* rc_buffer_reserve(rc_buffer_t* buffer, size_t amount)
 {
   rc_buffer_chunk_t* chunk = &buffer->chunk;
   size_t remaining;
@@ -70,9 +70,9 @@ char* rc_buffer_reserve(rc_buffer_t* buffer, size_t amount)
       if (!chunk->next)
         break;
 
-      chunk->next->start = (char*)chunk->next + chunk_header_size;
+      chunk->next->start = (uint8_t*)chunk->next + chunk_header_size;
       chunk->next->write = chunk->next->start;
-      chunk->next->end = (char*)chunk->next + alloc_size;
+      chunk->next->end = (uint8_t*)chunk->next + alloc_size;
       chunk->next->next = NULL;
     }
 
@@ -82,7 +82,7 @@ char* rc_buffer_reserve(rc_buffer_t* buffer, size_t amount)
   return NULL;
 }
 
-void rc_buffer_consume(rc_buffer_t* buffer, const char* start, char* end)
+void rc_buffer_consume(rc_buffer_t* buffer, const uint8_t* start, uint8_t* end)
 {
   rc_buffer_chunk_t* chunk = &buffer->chunk;
   do
@@ -104,18 +104,18 @@ void rc_buffer_consume(rc_buffer_t* buffer, const char* start, char* end)
 
 void* rc_buffer_alloc(rc_buffer_t* buffer, size_t amount)
 {
-  char* ptr = rc_buffer_reserve(buffer, amount);
+  uint8_t* ptr = rc_buffer_reserve(buffer, amount);
   rc_buffer_consume(buffer, ptr, ptr + amount);
   return (void*)ptr;
 }
 
 char* rc_buffer_strncpy(rc_buffer_t* buffer, const char* src, size_t len)
 {
-  char* dst = rc_buffer_reserve(buffer, len + 1);
+  uint8_t* dst = rc_buffer_reserve(buffer, len + 1);
   memcpy(dst, src, len);
   dst[len] = '\0';
   rc_buffer_consume(buffer, dst, dst + len + 2);
-  return dst;
+  return (char*)dst;
 }
 
 char* rc_buffer_strcpy(rc_buffer_t* buffer, const char* src)
@@ -125,7 +125,7 @@ char* rc_buffer_strcpy(rc_buffer_t* buffer, const char* src)
 
 /* --- other --- */
 
-void rc_format_md5(char checksum[33], const unsigned char digest[16])
+void rc_format_md5(char checksum[33], const uint8_t digest[16])
 {
   snprintf(checksum, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
     digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
@@ -133,9 +133,9 @@ void rc_format_md5(char checksum[33], const unsigned char digest[16])
   );
 }
 
-unsigned rc_djb2(const char* input)
+uint32_t rc_djb2(const char* input)
 {
-  unsigned result = 5381;
+  uint32_t result = 5381;
   char c;
 
   while ((c = *input++) != '\0')

@@ -56,6 +56,11 @@ typedef struct rc_api_server_response_t {
   int http_status_code;
 } rc_api_server_response_t;
 
+enum {
+  RC_API_SERVER_RESPONSE_CLIENT_ERROR = -1,
+  RC_API_SERVER_RESPONSE_RETRYABLE_CLIENT_ERROR = -2
+};
+
 #ifdef __cplusplus
 }
 #endif

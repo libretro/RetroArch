@@ -102,7 +102,7 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
   const char* last_author_field = "";
   size_t last_author_len = 0;
   size_t len;
-  unsigned timet;
+  uint32_t timet;
   int result;
   char format[16];
 
@@ -273,8 +273,10 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
         return RC_MISSING_VALUE;
       if (!rc_json_get_required_string(&leaderboard->definition, &response->response, &leaderboard_fields[3], "Mem"))
         return RC_MISSING_VALUE;
-      rc_json_get_optional_bool(&leaderboard->lower_is_better, &leaderboard_fields[5], "LowerIsBetter", 0);
-      rc_json_get_optional_bool(&leaderboard->hidden, &leaderboard_fields[6], "Hidden", 0);
+      rc_json_get_optional_bool(&result, &leaderboard_fields[5], "LowerIsBetter", 0);
+      leaderboard->lower_is_better = (uint8_t)result;
+      rc_json_get_optional_bool(&result, &leaderboard_fields[6], "Hidden", 0);
+      leaderboard->hidden = (uint8_t)result;
 
       if (!leaderboard_fields[4].value_end)
         return RC_MISSING_VALUE;

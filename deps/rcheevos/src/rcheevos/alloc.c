@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void* rc_alloc_scratch(void* pointer, int* offset, int size, int alignment, rc_scratch_t* scratch, int scratch_object_pointer_offset)
+void* rc_alloc_scratch(void* pointer, int32_t* offset, uint32_t size, uint32_t alignment, rc_scratch_t* scratch, uint32_t scratch_object_pointer_offset)
 {
   rc_scratch_buffer_t* buffer;
 
@@ -13,7 +13,7 @@ void* rc_alloc_scratch(void* pointer, int* offset, int size, int alignment, rc_s
 
   /* update how much space will be required in the real buffer */
   {
-    const int aligned_offset = (*offset + alignment - 1) & ~(alignment - 1);
+    const int32_t aligned_offset = (*offset + alignment - 1) & ~(alignment - 1);
     *offset += (aligned_offset - *offset);
     *offset += size;
   }
@@ -21,8 +21,8 @@ void* rc_alloc_scratch(void* pointer, int* offset, int size, int alignment, rc_s
   /* find a scratch buffer to hold the temporary data */
   buffer = &scratch->buffer;
   do {
-    const int aligned_buffer_offset = (buffer->offset + alignment - 1) & ~(alignment - 1);
-    const int remaining = sizeof(buffer->buffer) - aligned_buffer_offset;
+    const uint32_t aligned_buffer_offset = (buffer->offset + alignment - 1) & ~(alignment - 1);
+    const uint32_t remaining = sizeof(buffer->buffer) - aligned_buffer_offset;
 
     if (remaining >= size) {
       /* claim the required space from an existing buffer */
@@ -36,13 +36,13 @@ void* rc_alloc_scratch(void* pointer, int* offset, int size, int alignment, rc_s
   } while (1);
 
   /* not enough space in any existing buffer, allocate more */
-  if (size > (int)sizeof(buffer->buffer)) {
+  if (size > (uint32_t)sizeof(buffer->buffer)) {
     /* caller is asking for more than we can fit in a standard rc_scratch_buffer_t.
      * leverage the fact that the buffer is the last field and extend its size.
      * this chunk will be exactly large enough to hold the needed data, and since offset
      * will exceed sizeof(buffer->buffer), it will never be eligible to hold anything else.
      */
-    const int needed = sizeof(rc_scratch_buffer_t) - sizeof(buffer->buffer) + size;
+    const size_t needed = sizeof(rc_scratch_buffer_t) - sizeof(buffer->buffer) + size;
     buffer->next = (rc_scratch_buffer_t*)malloc(needed);
   }
   else {
@@ -62,7 +62,7 @@ void* rc_alloc_scratch(void* pointer, int* offset, int size, int alignment, rc_s
   return rc_alloc(buffer->buffer, &buffer->offset, size, alignment, NULL, -1);
 }
 
-void* rc_alloc(void* pointer, int* offset, int size, int alignment, rc_scratch_t* scratch, int scratch_object_pointer_offset) {
+void* rc_alloc(void* pointer, int32_t* offset, uint32_t size, uint32_t alignment, rc_scratch_t* scratch, uint32_t scratch_object_pointer_offset) {
   void* ptr;
 
   *offset = (*offset + alignment - 1) & ~(alignment - 1);
@@ -89,8 +89,8 @@ void* rc_alloc(void* pointer, int* offset, int size, int alignment, rc_scratch_t
   return ptr;
 }
 
-char* rc_alloc_str(rc_parse_state_t* parse, const char* text, int length) {
-  int used = 0;
+char* rc_alloc_str(rc_parse_state_t* parse, const char* text, size_t length) {
+  int32_t used = 0;
   char* ptr;
 
   rc_scratch_string_t** next = &parse->scratch.strings;
@@ -109,7 +109,7 @@ char* rc_alloc_str(rc_parse_state_t* parse, const char* text, int length) {
   }
 
   *next = (rc_scratch_string_t*)rc_alloc_scratch(NULL, &used, sizeof(rc_scratch_string_t), RC_ALIGNOF(rc_scratch_string_t), &parse->scratch, RC_OFFSETOF(parse->scratch.objs, __rc_scratch_string_t));
-  ptr = (char*)rc_alloc_scratch(parse->buffer, &parse->offset, length + 1, RC_ALIGNOF(char), &parse->scratch, -1);
+  ptr = (char*)rc_alloc_scratch(parse->buffer, &parse->offset, (uint32_t)length + 1, RC_ALIGNOF(char), &parse->scratch, -1);
 
   if (!ptr || !*next) {
     if (parse->offset >= 0)
