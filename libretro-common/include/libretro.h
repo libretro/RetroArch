@@ -1551,17 +1551,33 @@ enum retro_mod
  * @see retro_framebuffer
  */
 #define RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Returns an interface for accessing the data of specific rendering APIs.
+ * Not all hardware rendering APIs support or need this.
+ *
+ * The details of these interfaces are specific to each rendering API.
+ *
+ * @note \c retro_hw_render_callback::context_reset must be called by the frontend
+ * before this environment call can be used.
+ * Additionally, the contents of the returned interface are invalidated
+ * after \c retro_hw_render_callback::context_destroyed has been called.
+ * @param[out] data <tt>const struct retro_hw_render_interface **</tt>.
+ * The render interface for the currently-enabled hardware rendering API, if any.
+ * The frontend will store a pointer to the interface at the address provided here.
+ * The returned interface is owned by the frontend and must not be modified or freed by the core.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available,
+ * the active graphics API has a libretro rendering interface,
+ * and the frontend is able to return said interface.
+ * \c false otherwise.
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see retro_hw_render_interface
+ * @note Since not every libretro-supported hardware rendering API
+ * has a \c retro_hw_render_interface implementation,
+ * a result of \c false is not necessarily an error.
+ */
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_hw_render_interface ** --
-                                            * Returns an API specific rendering interface for accessing API specific data.
-                                            * Not all HW rendering APIs support or need this.
-                                            * The contents of the returned pointer is specific to the rendering API
-                                            * being used. See the various headers like libretro_vulkan.h, etc.
-                                            *
-                                            * GET_HW_RENDER_INTERFACE cannot be called before context_reset has been called.
-                                            * Similarly, after context_destroyed callback returns,
-                                            * the contents of the HW_RENDER_INTERFACE are invalidated.
-                                            */
 
 /**
  * Notifies the frontend that this core supports achievements.
@@ -3026,24 +3042,84 @@ struct retro_vfs_interface_info
 
 /** @} */
 
+/** @defgroup GET_HW_RENDER_INTERFACE Hardware Rendering Interface
+ * @{
+ */
+
+/**
+ * Describes the hardware rendering API supported by
+ * a particular subtype of \c retro_hw_render_interface.
+ *
+ * Not every rendering API supported by libretro has its own interface,
+ * or even needs one.
+ *
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ */
 enum retro_hw_render_interface_type
 {
+   /**
+    * Indicates a \c retro_hw_render_interface for Vulkan.
+    * @see retro_hw_render_interface_vulkan
+    */
    RETRO_HW_RENDER_INTERFACE_VULKAN     = 0,
+
+   /** Indicates a \c retro_hw_render_interface for Direct3D 9. */
    RETRO_HW_RENDER_INTERFACE_D3D9       = 1,
+
+   /** Indicates a \c retro_hw_render_interface for Direct3D 10. */
    RETRO_HW_RENDER_INTERFACE_D3D10      = 2,
+
+   /**
+    * Indicates a \c retro_hw_render_interface for Direct3D 11.
+    * @see retro_hw_render_interface_d3d11
+    */
    RETRO_HW_RENDER_INTERFACE_D3D11      = 3,
+
+   /**
+    * Indicates a \c retro_hw_render_interface for Direct3D 12.
+    * @see retro_hw_render_interface_d3d12
+    */
    RETRO_HW_RENDER_INTERFACE_D3D12      = 4,
+
+   /**
+    * Indicates a \c retro_hw_render_interface for
+    * the PlayStation's 2 PSKit API.
+    * @see retro_hw_render_interface_gskit_ps2
+    */
    RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
+
+   /** @private Defined to ensure <tt>sizeof(retro_hw_render_interface_type) == sizeof(int)</tt>.
+    * Do not use. */
    RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
 };
 
-/* Base struct. All retro_hw_render_interface_* types
- * contain at least these fields. */
+/**
+ * Base render interface type.
+ * All \c retro_hw_render_interface implementations
+ * will start with these two fields set to particular values.
+ *
+ * @see retro_hw_render_interface_type
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ */
 struct retro_hw_render_interface
 {
+   /**
+    * Denotes the particular rendering API that this interface is for.
+    * Each interface requires this field to be set to a particular value.
+    * Use it to cast this interface to the appropriate pointer.
+    */
    enum retro_hw_render_interface_type interface_type;
+
+   /**
+    * The version of this rendering interface.
+    * @note This is not related to the version of the API itself.
+    */
    unsigned interface_version;
 };
+
+/** @} */
 
 /**
  * @defgroup GET_LED_INTERFACE LED Interface
