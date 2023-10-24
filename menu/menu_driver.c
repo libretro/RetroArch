@@ -6346,6 +6346,9 @@ void menu_driver_toggle(
 
       if (pause_libretro)
       {
+#ifdef PS2
+         command_event(CMD_EVENT_AUDIO_STOP, NULL);
+#endif
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
@@ -6376,6 +6379,9 @@ void menu_driver_toggle(
 
       if (pause_libretro)
       {
+#ifdef PS2
+         command_event(CMD_EVENT_AUDIO_START, NULL);
+#endif
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
