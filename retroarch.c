@@ -2236,6 +2236,9 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
    access_state_t *access_st       = access_state_get_ptr();
 #endif
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
+   dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
+#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
 #endif
@@ -2252,12 +2255,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          input_overlay_unload();
 #endif
-#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-         /* Because the overlay is a display widget,
-          * it's going to be written
-          * over the menu, so we unset it here. */
-         if (dispwidget_get_ptr()->ai_service_overlay_state != 0)
+#ifdef HAVE_TRANSLATE
+         translation_release(true);
+#ifdef HAVE_GFX_WIDGETS
+         if (p_dispwidget->ai_service_overlay_state != 0)
             gfx_widgets_ai_service_overlay_unload();
+#endif
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -2331,6 +2334,11 @@ bool command_event(enum event_command cmd, void *data)
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
+#ifdef HAVE_GFX_WIDGETS
+                  if (p_dispwidget->ai_service_overlay_state != 0)
+                     gfx_widgets_ai_service_overlay_unload();
+#endif
+                  translation_release(true);
                   command_event(CMD_EVENT_UNPAUSE, NULL);
                }
                else /* Pause on call */
@@ -2349,17 +2357,25 @@ bool command_event(enum event_command cmd, void *data)
                 * Also, this mode is required for "auto" translation
                 * packages, since you don't want to pause for that.
                 */
-               if (access_st->ai_service_auto == 2)
+               if (access_st->ai_service_auto != 0)
                {
                   /* Auto mode was turned on, but we pressed the
                    * toggle button, so turn it off now. */
-                  access_st->ai_service_auto = 0;
-#ifdef HAVE_MENU_WIDGETS
-                  gfx_widgets_ai_service_overlay_unload();
+                  translation_release(true);
+#ifdef HAVE_GFX_WIDGETS
+                  if (p_dispwidget->ai_service_overlay_state != 0)
+                     gfx_widgets_ai_service_overlay_unload();
 #endif
                }
-               else
-                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+               else 
+               {
+#ifdef HAVE_GFX_WIDGETS
+                  if (p_dispwidget->ai_service_overlay_state != 0)
+                     gfx_widgets_ai_service_overlay_unload();
+                  else
+#endif
+                     command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+               }
             }
 #endif
             break;
@@ -4472,10 +4488,6 @@ bool command_event(enum event_command cmd, void *data)
                bool paused = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
                if (data)
                   paused = *((bool*)data);
-
-               if (     (access_st->ai_service_auto == 0)
-                     && !settings->bools.ai_service_pause)
-                  access_st->ai_service_auto = 1;
 
                run_translation_service(settings, paused);
             }
@@ -7165,6 +7177,9 @@ bool retroarch_main_quit(void)
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
+#ifdef HAVE_ACCESSIBILITY
+   access_state_t *access_st     = access_state_get_ptr();
+#endif
    struct retro_system_av_info *av_info = &video_st->av_info;
 
    /* Restore video driver before saving */
@@ -7261,6 +7276,17 @@ bool retroarch_main_quit(void)
    runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
+#endif
+
+#ifdef HAVE_ACCESSIBILITY
+   translation_release(false);
+#ifdef HAVE_THREADS
+   if (access_st->image_lock)
+   {
+      slock_free(access_st->image_lock);
+      access_st->image_lock = NULL;
+   }
+#endif
 #endif
 
    return true;
