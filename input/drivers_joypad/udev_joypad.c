@@ -506,6 +506,12 @@ static void udev_joypad_poll(void)
             /* Hotplug removal */
             else if (string_is_equal(action, "remove"))
                udev_joypad_remove_device(devnode);
+            /* Device change */
+            else if  (string_is_equal(action, "change"))
+            {
+               udev_joypad_remove_device(devnode);
+               udev_check_device(dev, devnode);
+            }
          }
 
          udev_device_unref(dev);

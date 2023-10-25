@@ -1050,6 +1050,10 @@ ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
    DEFINES += -DHAVE_LAKKA_NIGHTLY
 endif
 
+ifneq ($(HAVE_LAKKA_CANARY), "")
+   DEFINES += -DHAVE_LAKKA_CANARY=\"${HAVE_LAKKA_CANARY}\"
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
