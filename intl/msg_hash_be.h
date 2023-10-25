@@ -65,7 +65,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Загрузіць ядро"
+   "Загрузка ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Загрузіць змесціва"
+   "Загрузка змесціва"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Загрузіць дыск"
+   "Загрузка дыска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
@@ -102,7 +102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Выняць дыск з фізічнага CD/DVD-прывада."
+   "Вымае дыск з фізічнага CD/DVD-прывада."
    )
 #endif
 MSG_HASH(
@@ -179,7 +179,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Перазапусціць RetroArch"
+   "Перазапуск RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
@@ -187,7 +187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Выйсці з RetroArch"
+   "Выхад з RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
@@ -381,6 +381,10 @@ MSG_HASH(
    "Звесткі аб ядры"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   "Праглядзець датычныя да праграмы/ядра звесткі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
    "Звесткі аб дыску"
    )
@@ -394,7 +398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Праглядзець сеціўныя інтэрфейсы ды асацыяваныя адрасы IP."
+   "Праглядзець сеткавыя інтэрфейсы з асацыяванымі адрасамі IP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -480,6 +484,14 @@ MSG_HASH(
    "Базавая (захаванне/загрузка)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Серыялізаваная (захаванне/загрузка, перамотка)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Дэтэрмінаваная (захаванне/загрузка, забяганне, сеткавая гульня)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Прашыўка"
    )
@@ -502,6 +514,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Блакаванне ўсталяванага ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Выключыць з меню 'Бяззмесціўныя ядры'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -608,11 +624,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Падтрымка сеціўнага каманднага інтэрфейсу"
+   "Падтрымка сеткавага каманднага інтэрфейсу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Падтрымка сеціўнага кантролера"
+   "Падтрымка сеткавага кантролера"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
@@ -1189,6 +1205,14 @@ MSG_HASH(
    "Відарыс. Выберыце, каб адкрыць гэты файл праз праглядальнік відарысаў."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Ядро libretro. Выберыце, каб спалучыць гэтае ядро з гульнёй."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Ядро libretro. Выберыце гэты файл каб RetroArch загружаў гэтае ядро."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
    "Каталог. Выберыце, каб адкрыць гэты каталог."
    )
@@ -1532,6 +1556,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Змяніць налады сінхранізацыі відэа."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   "Устаўка чорнага кадра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Здымак экрана GPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -3472,23 +3504,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-   "Сеціўныя каманды"
+   "Сеткавыя каманды"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
-   "Сеціўны камандны порт"
+   "Сеткавы камандны порт"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
-   "Сеціўны RetroPad"
+   "Сеткавы RetroPad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-   "Базавы порт сеціўнага RetroPad"
+   "Базавы порт сеткавага RetroPad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-   "Сеціўны RetroPad карыстальніка %d"
+   "Сеткавы RetroPad карыстальніка %d"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -4471,7 +4503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-   "Сеціва не знойдзена"
+   "Сеткі не знойдзены"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SEARCH,
@@ -5422,7 +5454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Загрузіць ядро"
+   "Загрузка ядра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
@@ -6176,15 +6208,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
-   "Злучыцца з сецівам"
+   "Злучыцца з сеткай"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
-   "Злучыцца з сецівам"
+   "Злучыцца з сеткай"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "Перазапусціць RetroArch"
+   "Перазапуск RetroArch"
    )
 #ifdef HAVE_LIBNX
 #endif

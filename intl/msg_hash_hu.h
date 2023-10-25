@@ -6461,10 +6461,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "Az AI szolgáltatás eredménye"
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "A fordítást szöveges rátétként jelenítse-e meg (Kép mód), vagy olvassa fel (Beszéd mód)."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Az AI szolgáltatás URL-je"
@@ -9699,6 +9695,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Narrátor mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
+   "Felfordítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
+   "Felül"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,

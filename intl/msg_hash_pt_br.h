@@ -5697,10 +5697,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "Formato de saída do serviço de IA"
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Mostre a tradução como uma sobreposição de texto (modo imagem) ou reproduzir como conversão de texto em fala (modo de fala)."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL do serviço de IA"
@@ -8485,6 +8481,14 @@ MSG_HASH(
    "Modo narrador"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
+   "Embaixo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
+   "Topo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Histórico e favoritos"
    )
@@ -11050,6 +11054,18 @@ MSG_HASH( /* FIXME Should be MSG_ */
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "Falha na instalação do núcleo"
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_ENABLED,
+   "Tradução automática ativada."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_DISABLED,
+   "Tradução automática desativada."
+   )
+MSG_HASH(
+   MSG_AI_NOTHING_TO_TRANSLATE,
+   "Nada para traduzir."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,

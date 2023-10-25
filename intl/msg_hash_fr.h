@@ -6429,10 +6429,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "Sortie du service IA "
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Afficher la traduction en tant que surimpression de texte (mode image), ou lue en tant que Text-To-Speech (mode parole)."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL du service IA "
@@ -9635,6 +9631,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Mode narrateur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
+   "Bas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
+   "Haut"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,

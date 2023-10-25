@@ -4501,10 +4501,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "Sortida del servei d’IA"
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Mostra la traducció com una superposició de text (mode d’imatge) o reprodueix-la com a «text a parla» (mode de parla)."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL del servei d’IA"
