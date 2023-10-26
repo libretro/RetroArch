@@ -1611,6 +1611,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    "Індэкс манітора"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   "Выбраць, які дысплэй будзе выкарыстоўвацца."
+   )
 #if defined (WIIU)
 #endif
 MSG_HASH(
