@@ -4083,9 +4083,14 @@ void runloop_event_deinit_core(void)
       av_info->timing.fps = video_st->video_refresh_rate_original;
       video_display_server_restore_refresh_rate();
    }
+
    /* Recalibrate frame delay target */
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
+
+   /* Reset frame rest counter */
+   if (settings->bools.video_frame_rest)
+      video_st->frame_rest_time_count = video_st->frame_rest = 0;
 
    driver_uninit(DRIVERS_CMD_ALL, 0);
 
@@ -7288,6 +7293,11 @@ end:
 
       runloop_st->frame_limit_last_time = end_frame_time;
    }
+
+   /* Post-frame power saving sleep resting */
+   if (      settings->bools.video_frame_rest
+         && !(input_st->flags & INP_FLAG_NONBLOCKING))
+      video_frame_rest(video_st, settings, current_time);
 
    /* Set paused state after x frames */
    if (runloop_st->run_frames_and_pause > 0)

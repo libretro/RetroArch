@@ -391,6 +391,9 @@
 #define MAXIMUM_FRAME_DELAY 19
 #define DEFAULT_FRAME_DELAY_AUTO false
 
+/* Try to sleep the spare time after frame is presented in order to reduce vsync CPU usage. */
+#define DEFAULT_FRAME_REST false
+
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
  * material with eliminated  ghosting. video_refresh_rate should still be configured
