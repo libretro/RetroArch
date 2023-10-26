@@ -48,10 +48,10 @@ static void woauth_schedule_accesstoken_retrieval();
 static void woauth_trigger_accesstoken_retrieval();
 
 //  ------------------------------------------------------------------------------
-//  Drops the Device Code from the configuration.
+//  Drops the User Code from the configuration.
 //  This instance can't be linked to another webhook server.
 //  ------------------------------------------------------------------------------
-static void woauth_clear_devicecode()
+static void woauth_clear_usercode()
 {
   settings_t *settings = config_get_ptr();
   configuration_set_string(settings, settings->arrays.cheevos_webhook_usercode, "");
@@ -253,7 +253,7 @@ static void woauth_handle_accesstoken_response
   configuration_set_string(settings, settings->arrays.cheevos_webhook_accesstoken, oauth_token_response.access_token);
   configuration_set_string(settings, settings->arrays.cheevos_webhook_refreshtoken, oauth_token_response.refresh_token);
 
-  woauth_clear_devicecode();
+  woauth_clear_usercode();
   token_refresh_scheduled = false;
     
   free(request);
@@ -272,7 +272,7 @@ static void woauth_initialize_accesstoken_request
       
   const settings_t *settings = config_get_ptr();
       
-  const char* client_id = oauth_code_response.client_id;
+  const char* client_id = DEFAULT_CLIENT_ID;
   const char* device_code = oauth_code_response.device_code;
       
   rc_url_builder_init(&builder, &(request->request.buffer), 48);
@@ -413,7 +413,7 @@ void woauth_schedule_devicecode_retrieval()
 //  ------------------------------------------------------------------------------
 void woauth_initiate()
 {
-  woauth_clear_devicecode();
+  woauth_clear_usercode();
 
   strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
   woauth_schedule_devicecode_retrieval();
@@ -427,8 +427,8 @@ const char* woauth_get_accesstoken()
   const settings_t *settings = config_get_ptr();
   const int EXPIRATION_WINDOW = 1000 * 10 * 5;
 
-  strncpy(&oauth_code_response.client_id[0], DEFAULT_CLIENT_ID, strlen(DEFAULT_CLIENT_ID));
-    
+  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
+
   retro_time_t now = cpu_features_get_time_usec();
 
   char * e;
