@@ -221,23 +221,28 @@ static void woauth_handle_accesstoken_response
   
   int result = rc_json_parse_response(api_response, data->data, fields, sizeof(fields) / sizeof(fields[0]));
 
-  if (result != 0)
+  if (result != 0) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to parse the response for a new access token request\n");
     return;
+  }
 
   rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
   rc_buf_init(api_buffer);
 
   if (!rc_json_get_required_string(&oauth_token_response.access_token, api_response, &fields[2], "access_token")) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "No access token received in the response\n");
     free(api_buffer);
     return;
   }
 
   if (!rc_json_get_required_string(&oauth_token_response.refresh_token, api_response, &fields[3], "refresh_token")) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "No refresh token received in the response\n");
     free(api_buffer);
     return;
   }
   
   if (!rc_json_get_required_num(&oauth_token_response.expires_in, api_response, &fields[4], "expires_in")) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "No expiration received in the response\n");
     free(api_buffer);
     return;
   }
@@ -256,6 +261,8 @@ static void woauth_handle_accesstoken_response
   woauth_clear_usercode();
   token_refresh_scheduled = false;
     
+  CHEEVOS_LOG(RCHEEVOS_TAG "Access token received\n");
+  
   free(request);
   request = NULL;
 }
