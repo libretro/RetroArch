@@ -14451,6 +14451,14 @@ MSG_HASH(
    "Abilitare Linux GameMode può migliorare la latenza, correggere i problemi di crackling audio e massimizzare le prestazioni complessive configurando automaticamente la CPU e la GPU per le migliori prestazioni.\nIl software GameMode deve essere installato per funzionare. Vedi https://github.com/FeralInteractive/gamemode per informazioni su come installare GameMode."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+   "Riposo fotogramma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
+   "Prova a ridurre l'utilizzo della CPU vsync dormendo il più possibile dopo la presentazione del quadro. Progettato principalmente per la sincronizzazione di scanline di terze parti."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Usa modalità PAL60"
    )
