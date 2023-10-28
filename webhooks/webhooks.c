@@ -303,7 +303,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 }
 
 //  ---------------------------------------------------------------------------
-//  Called for each frame.
+//  Called when a game is being unloaded.
 //  ---------------------------------------------------------------------------
 void webhooks_game_unloaded()
 {

@@ -6796,6 +6796,10 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_REWIND
             command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 #endif
+           
+            // TODO Can't use it as is since the task_queue seems to have been cleared at this point.
+            webhooks_game_unloaded();
+           
 #ifdef HAVE_CHEATS
             cheat_manager_state_free();
 #endif
@@ -7121,7 +7125,7 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
    }
 #endif
-   webhooks_game_unloaded();
+
 #ifdef HAVE_DISCORD
    {
       discord_state_t *discord_st = discord_state_get_ptr();
