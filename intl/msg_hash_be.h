@@ -2524,6 +2524,10 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Фільтраваць невядомыя пашырэнні"
+   )
 
 /* Settings > Frame Throttle */
 
@@ -6194,7 +6198,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESET,
-   "Скінуць"
+   "Скід"
    )
 MSG_HASH(
    MSG_SHADER,
