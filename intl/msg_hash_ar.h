@@ -1157,8 +1157,12 @@ MSG_HASH(
    "ملف الإعدادات."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "مِلف الإعدادات المسبقة للمظلل."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   "مِلف التظليل."
+   "مِلف المظلل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
@@ -1568,11 +1572,11 @@ MSG_HASH(
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "إستيفاء الصورة"
+   "استيفاء الصورة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "تحديد طريقة استخراج الصور عند قياس المحتوى عن طريق ال IPU. \"ثنائي تكعيبي\" او \"ثنائي خطي\" ينصح عند استخدام فلاتر الفيديو التي تعمل بالمعالج. هذا الخيار ليس له تأثير على الأداء."
+   "تحديد طريقة استخراج الصور عند قياس المحتوى عن طريق IPU. \"ثنائي تكعيبي\" أو \"ثنائي خطي\" ينصح عند استخدام فلاتر الفيديو التي تعمل بالمعالج. هذا الخِيار ليس له تأثير على الأداء."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -1589,7 +1593,11 @@ MSG_HASH(
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "إستيفاء الصورة"
+   "استيفاء الصورة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "حدد طريقة استيفاء الصورة عندما يكونُ الخِيار 'تحجيم صحيح' معطل. أما 'أقرب جار' هو الأقل تأثيرًا على الأداء."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -2531,6 +2539,14 @@ MSG_HASH(
    "القرص السابق"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "المظلل (تبديل)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "تفعيل/تعطيل المظلل الحالي."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "المشهد التالي"
@@ -3747,6 +3763,14 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   "إظهار 'الأظلال'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   "إظهار خيارات 'الأظلال'."
+   )
 
 /* Settings > User Interface > Views > Settings */
 
