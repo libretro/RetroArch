@@ -383,30 +383,23 @@ static void cocoa_input_poll(void *data)
    cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
 #ifndef IOS
    float   backing_scale_factor = cocoa_screen_get_backing_scale_factor();
+#else
+   int     backing_scale_factor = 1;
 #endif
 
    if (!apple)
       return;
 
-   for (i = 0; i < apple->touch_count; i++)
+   for (i = 0; i < apple->touch_count || i == 0; i++)
    {
       struct video_viewport vp;
 
-      vp.x                        = 0;
-      vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
+      memset(&vp, 0, sizeof(vp));
 
-#ifndef IOS
-      apple->touches[i].screen_x *= backing_scale_factor;
-      apple->touches[i].screen_y *= backing_scale_factor;
-#endif
       video_driver_translate_coord_viewport_wrap(
             &vp,
-            apple->touches[i].screen_x,
-            apple->touches[i].screen_y,
+            apple->touches[i].screen_x * backing_scale_factor,
+            apple->touches[i].screen_y * backing_scale_factor,
             &apple->touches[i].fixed_x,
             &apple->touches[i].fixed_y,
             &apple->touches[i].full_x,
@@ -568,8 +561,13 @@ static int16_t cocoa_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          {
-
-            if (idx < apple->touch_count && (idx < MAX_TOUCHES))
+#ifdef IOS
+            if (!apple->touch_count)
+                return 0;
+#endif
+            // with a physical mouse that is hovering, the touch_count will be 0
+            // and apple->touches[0] will have the hover position
+            if ((idx == 0 || idx < apple->touch_count) && (idx < MAX_TOUCHES))
             {
                const cocoa_touch_data_t *touch = (const cocoa_touch_data_t *)
                   &apple->touches[idx];
@@ -579,6 +577,8 @@ static int16_t cocoa_input_state(
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
+                        if (!apple->touch_count)
+                           return 0;
                         if (device == RARCH_DEVICE_POINTER_SCREEN)
                            return (touch->full_x  != -0x8000) && (touch->full_y  != -0x8000); /* Inside? */
                         return    (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
