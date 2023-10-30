@@ -1118,11 +1118,12 @@ enum retro_mod
  * Should only be called in \c retro_run().
  *
  * @code
+ * #define REQUIRED_DEVICES ((1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG))
  * void get_input_device_capabilities_example(void)
  * {
  *    uint64_t capabilities;
  *    environ_cb(RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES, &capabilities);
- *    if (capabilities & ((1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG)))
+ *    if ((capabilities & REQUIRED_DEVICES) == REQUIRED_DEVICES)
  *      printf("Joypad and analog device types are supported");
  * }
  * @endcode
@@ -1491,7 +1492,7 @@ enum retro_mod
  *
  * @param[in] data <tt>const struct retro_game_geometry *</tt>.
  * Pointer to the new video parameters that the frontend should adopt.
- * \c retro_game_geometry::base_width and \c retro_game_geometry::base_height
+ * \c retro_game_geometry::max_width and \c retro_game_geometry::max_height
  * will be ignored.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @return \c true if the environment call is available.
