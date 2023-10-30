@@ -4152,7 +4152,7 @@ static unsigned menu_displaylist_parse_playlists(
 
    content_count = count;
 
-   dir_list_sort(&str_list, true);
+   dir_list_sort_ignore_ext(&str_list, true);
 
    list_size = str_list.size;
 
