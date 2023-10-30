@@ -539,7 +539,16 @@ static bool sdl2_gfx_focus(void *data)
    return (SDL_GetWindowFlags(vid->window) & flags) == flags;
 }
 
-static bool sdl2_gfx_suspend_screensaver(void *data, bool enable) { return false; }
+static bool sdl2_gfx_suspend_screensaver(void *data, bool enable)
+{
+#ifdef HAVE_X11
+   /* Use X11's suspend screensaver if X11 available. */
+   return x11_suspend_screensaver(data, enable);
+#else
+   return false;
+#endif
+}
+
 /* TODO/FIXME - implement */
 static bool sdl2_gfx_has_windowed(void *data) { return true; }
 
@@ -714,11 +723,7 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_set_nonblock_state,
    sdl2_gfx_alive,
    sdl2_gfx_focus,
-#ifdef HAVE_X11
-   x11_suspend_screensaver,
-#else
    sdl2_gfx_suspend_screensaver,
-#endif
    sdl2_gfx_has_windowed,
    sdl2_gfx_set_shader,
    sdl2_gfx_free,
