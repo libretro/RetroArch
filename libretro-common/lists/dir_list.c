@@ -184,6 +184,11 @@ static int dir_list_read(const char *dir,
 
       if (retro_dirent_is_dir(entry, NULL))
       {
+         /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
+#ifndef _WIN32
+         if (!include_hidden && strcmp(name, "System Volume Information") == 0)
+            continue;
+#endif
          if (recursive)
             dir_list_read(file_path, list, ext_list, include_dirs,
                   include_hidden, include_compressed, recursive);
