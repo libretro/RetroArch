@@ -984,16 +984,16 @@ enum retro_mod
 
 /**
  * Queries whether at least one core option was updated by the frontend
- * since the last call to <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
+ * since the last call to \ref RETRO_ENVIRONMENT_GET_VARIABLE.
  * This typically means that the user opened the core options menu and made some changes.
  *
  * Cores usually call this each frame before the core's main emulation logic.
- * Specific options can then be queried with <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
+ * Specific options can then be queried with \ref RETRO_ENVIRONMENT_GET_VARIABLE.
  *
  * @param[out] data <tt>bool *</tt>.
  * Set to \c true if at least one core option was updated
- * since the last call to <tt>RETRO_ENVIRONMENT_GET_VARIABLE</tt>.
- * Behavior is undefined if this pointer is <tt>NULL</tt>.
+ * since the last call to \ref RETRO_ENVIRONMENT_GET_VARIABLE.
+ * Behavior is undefined if this pointer is \c NULL.
  * @returns \c true if the environment call is available.
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
