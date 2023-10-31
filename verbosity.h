@@ -32,10 +32,10 @@
 
 RETRO_BEGIN_DECLS
 
-#define FILE_PATH_LOG_DBG   "[DEBUG]"
-#define FILE_PATH_LOG_INFO  "[INFO]"
-#define FILE_PATH_LOG_ERROR "[ERROR]"
-#define FILE_PATH_LOG_WARN  "[WARN]"
+#define FILE_PATH_LOG_DBG   "[DBG]"
+#define FILE_PATH_LOG_INFO  "[NFO]"
+#define FILE_PATH_LOG_ERROR "[ERR]"
+#define FILE_PATH_LOG_WARN  "[WRN]"
 
 bool verbosity_is_enabled(void);
 
