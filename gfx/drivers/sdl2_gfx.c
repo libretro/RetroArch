@@ -539,7 +539,10 @@ static bool sdl2_gfx_focus(void *data)
    return (SDL_GetWindowFlags(vid->window) & flags) == flags;
 }
 
+#if !defined(HAVE_X11)
 static bool sdl2_gfx_suspend_screensaver(void *data, bool enable) { return false; }
+#endif
+
 /* TODO/FIXME - implement */
 static bool sdl2_gfx_has_windowed(void *data) { return true; }
 
