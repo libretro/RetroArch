@@ -1522,6 +1522,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
       }
 
       case RETRO_LANGUAGE_RUSSIAN:
+      case RETRO_LANGUAGE_BELARUSIAN:
       {
          rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.rus_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_RUSSIAN);
@@ -4343,6 +4344,7 @@ static void rgui_set_blit_functions(
             rgui_blit_line    = rgui_blit_line_cjk_shadow;
             break;
          case RETRO_LANGUAGE_RUSSIAN:
+         case RETRO_LANGUAGE_BELARUSIAN:
             rgui_blit_line    = rgui_blit_line_rus_shadow;
             break;
          case RETRO_LANGUAGE_ESPERANTO:
@@ -4381,6 +4383,7 @@ static void rgui_set_blit_functions(
             rgui_blit_line = rgui_blit_line_cjk;
             break;
          case RETRO_LANGUAGE_RUSSIAN:
+         case RETRO_LANGUAGE_BELARUSIAN:
             rgui_blit_line = rgui_blit_line_rus;
             break;
          case RETRO_LANGUAGE_ESPERANTO:

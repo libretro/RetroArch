@@ -456,6 +456,8 @@ static const char* ai_service_get_str(enum translation_lang id)
          return "tr";
       case TRANSLATION_LANG_UK:
          return "uk";
+      case TRANSLATION_LANG_BE:
+         return "be";
       case TRANSLATION_LANG_UR:
          return "ur";
       case TRANSLATION_LANG_VI:

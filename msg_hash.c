@@ -128,6 +128,8 @@ const char *get_user_language_iso639_1(bool limit)
          return "en_gb";
       case RETRO_LANGUAGE_HUNGARIAN:
          return "hu";
+      case RETRO_LANGUAGE_BELARUSIAN:
+         return "be";
    }
    return "en";
 }
@@ -210,6 +212,18 @@ static const char *msg_hash_to_str_hu(enum msg_hash_enums msg)
    switch (msg)
    {
 #include "intl/msg_hash_hu.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_be(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_be.h"
       default:
          break;
    }
@@ -606,6 +620,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_HUNGARIAN:
          ret = msg_hash_to_str_hu(msg);
+         break;
+      case RETRO_LANGUAGE_BELARUSIAN:
+         ret = msg_hash_to_str_be(msg);
          break;
       default:
          break;

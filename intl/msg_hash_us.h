@@ -9881,6 +9881,10 @@ MSG_HASH(
    "Basque - Euskara"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_BELARUSIAN,
+   "Belarusian - Беларуская мова"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
    "Bengali - বাংলা (Restart Required)"
    )

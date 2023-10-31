@@ -3219,6 +3219,9 @@ static void setting_get_string_representation_uint_ai_service_lang(
       case TRANSLATION_LANG_UK:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN;
          break;
+      case TRANSLATION_LANG_BE:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_BELARUSIAN;
+         break;
       case TRANSLATION_LANG_UR:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_URDU;
          break;
@@ -6924,6 +6927,7 @@ static void setting_get_string_representation_uint_user_language(
    translated[RETRO_LANGUAGE_BRITISH_ENGLISH]  = LANGUAGE_PROGRESS_ENGLISH_UNITED_KINGDOM_TRANSLATED;
 
    LANG_DATA(HUNGARIAN)
+   LANG_DATA(BELARUSIAN)
 
    if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
       strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
