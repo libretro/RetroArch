@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <locale.h>
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -1166,6 +1167,10 @@ bool command_event_save_config(
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
+   /* Workaround for libdecor 0.2.0 setting unwanted locale */
+#if defined(HAVE_WAYLAND) && defined(HAVE_DYNAMIC)
+   setlocale(LC_NUMERIC,"C");
+#endif
    if (path_exists && config_save_file(config_path))
    {
       snprintf(s, len, "%s \"%s\".",
