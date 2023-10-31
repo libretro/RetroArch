@@ -6266,7 +6266,7 @@ void menu_driver_toggle(
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = (runloop_st->flags &
-      RUNLOOP_FLAG_SHUTDOWN_INITIATED) ? true : false;
+         RUNLOOP_FLAG_SHUTDOWN_INITIATED) ? true : false;
 #ifdef HAVE_OVERLAY
    bool input_overlay_hide_in_menu    = false;
    bool input_overlay_enable          = false;
@@ -6277,7 +6277,7 @@ void menu_driver_toggle(
    {
 #ifdef HAVE_NETWORKING
       pause_libretro                  = settings->bools.menu_pause_libretro &&
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
       pause_libretro                  = settings->bools.menu_pause_libretro;
 #endif
@@ -6285,7 +6285,6 @@ void menu_driver_toggle(
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
-      video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
    }
 
    if (on)
@@ -6329,18 +6328,18 @@ void menu_driver_toggle(
       IMEnableDim();
 #endif
 
-      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Menu should always run with vsync on and
-       * a video swap interval of 1 */
-      if (current_video->set_nonblock_state)
-         current_video->set_nonblock_state(
-               video_driver_data,
-               false,
-               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               video_adaptive_vsync,
-               1
-               );
+      /* Always disable FF & SM when entering menu. */
+      runloop_st->flags            &= ~RUNLOOP_FLAG_FASTMOTION;
+      runloop_st->flags            &= ~RUNLOOP_FLAG_SLOWMOTION;
+#if defined(HAVE_GFX_WIDGETS)
+      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
+#endif
+      input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
+      driver_set_nonblock_state();
+
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
