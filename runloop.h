@@ -76,11 +76,10 @@
  */
 #define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) ((runloop_state.flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED) || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
-enum  runloop_state_enum
+enum runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
    RUNLOOP_STATE_PAUSE,
    RUNLOOP_STATE_END,
    RUNLOOP_STATE_QUIT
@@ -363,7 +362,7 @@ bool libretro_get_system_info(
       bool *load_no_content);
 
 void runloop_performance_counter_register(
-		struct retro_perf_counter *perf);
+      struct retro_perf_counter *perf);
 
 void runloop_runtime_log_deinit(
       runloop_state_t *runloop_st,
@@ -452,7 +451,7 @@ void runloop_path_deinit_subsystem(void);
  * @return true on success, or false if symbols could not be loaded.
  **/
 bool runloop_init_libretro_symbols(
-		void *data,
+      void *data,
       enum rarch_core_type type,
       struct retro_core_t *current_core,
       const char *lib_path,
