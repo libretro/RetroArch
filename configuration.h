@@ -706,13 +706,11 @@ typedef struct settings
       bool menu_core_enable;
       bool menu_show_sublabels;
       bool menu_dynamic_wallpaper_enable;
-      bool menu_throttle;
       bool menu_mouse_enable;
       bool menu_pointer_enable;
       bool menu_navigation_wraparound_enable;
       bool menu_navigation_browser_filter_supported_extensions_enable;
       bool menu_show_advanced_settings;
-      bool menu_throttle_framerate;
       bool menu_linear_filter;
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
