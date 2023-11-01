@@ -4476,10 +4476,6 @@ MSG_HASH(
    "快速转发帧数"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "根据快速前进速率跳过帧。这将节省电力，并允许使用第三方帧限制。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "慢放倍率"
    )

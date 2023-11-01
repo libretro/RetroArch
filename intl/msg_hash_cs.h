@@ -4516,10 +4516,6 @@ MSG_HASH(
    "Rychlost Posunu Vpřed Přeskočením Snímků"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Přeskakování snímků podle rychlosti převíjení. To šetří energii a umožňuje použití omezování snímků třetích stran."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Hodnota Zpomalení"
    )

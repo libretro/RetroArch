@@ -167,7 +167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Кіраванне і стварэнне файлаў канфігурацыі."
+   "Кіраваць ды ствараць файлы канфігурацыі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -1287,6 +1287,10 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Супастаўленні"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "Носьбіт"
    )
@@ -1393,12 +1397,40 @@ MSG_HASH(
    "Драйвер Direct3D 12 з падтрымкай HDR ды фармату шэйдараў Slang."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "Драйвер DispmanX. Ужывае DispmanX API для Videocore IV GPU у Raspberry Pi 0..3. Накладкі ды шэйдары не падтрымліваюцца."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "Драйвер LibCACA. Стварае сімвальны вывад замест графічнага. Не рэкамендуецца для практычнага выкарыстання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Нізкаўзроўневы драйвер Exynos, які ўжывае блок G2D для аперацый блітавання ў аднакрыштальных сістэмах Samsung Exynos. Забяспечвае аптымальную прадукцыйнасць для ядраў з праграмным рэндэрынгам."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Просты драйвер відэа DRM. Гэты нізкаўзроўневы драйвер відэа ўжывае libdrm для апаратнага маштабавання з дапамогай накладак GPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Нізкаўзроўневы драйвер відэа Sunxi, які ўжывае блок G2D у аднакрыштальных сістэмах Allwinner."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    "Драйвер Wii U. Падтрымлівае шэйдары Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
    "Драйвер Switch. Падтрымлівае фармат шэйдараў GLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "Драйвер OpenVG. Ужывае графічны API вектарнай 2D-графікі з апаратнай акселерацыяй OpenVG."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "Драйвер GDI. Ужывае састарэлы інтэрфейс Windows. Не рэкамендуецца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
@@ -1465,7 +1497,23 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
    "Ужыты драйвер мікрафона."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Перадыскрэтызацыя мікрафона"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Ужыты драйвер перадыскрэтызацыі мікрафона."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   "Перадыскрэтызацыя гуку"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   "Ужыты драйвер перадыскрэтызацыі гуку."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    "Камера"
@@ -1558,6 +1606,18 @@ MSG_HASH(
    "Змяніць налады сінхранізацыі відэа."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   "Прыпыніць ахоўнік экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   "Прадухіліць актыўнасць вашага сістэмнага ахоўніка экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Прыпыняе ахоўнік экрана. Служыць падказкай драйверу відэа; неабавязкова павінна выконвацца."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Устаўка чорнага кадра"
    )
@@ -1570,6 +1630,10 @@ MSG_HASH(
    "Білінейная фільтрацыя"
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "Інтэрпаляцыя выявы"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
    "Бікубічная"
@@ -1585,7 +1649,7 @@ MSG_HASH(
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Інтэрпаляцыя паказу"
+   "Інтэрпаляцыя выявы"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1597,12 +1661,52 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Відэафільтр"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Ужыць апрацоўчы ЦП відэафільтр. Можа значна знізіць прадукцыйнасць. Некаторыя відэафільтры працуюць толькі з ядрамі, якія выкарыстоўваюць 32- або 16-бітны колер."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Ужыць апрацоўчы ЦП відэафільтр. Можа значна знізіць прадукцыйнасць. Некаторыя відэафільтры працуюць толькі з ядрамі, якія выкарыстоўваюць 32- або 16-бітны колер. Могуць быць выбраныя дынамічна звязаныя бібліятэкі відэафільтраў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Ужыць апрацоўчы ЦП відэафільтр. Можа значна знізіць прадукцыйнасць. Некаторыя відэафільтры працуюць толькі з ядрамі, якія выкарыстоўваюць 32- або 16-бітны колер. Могуць быць выбраныя ўбудаваныя бібліятэкі відэафільтраў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   "Выдаліць відэафільтр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   "Выгрузіць любы актыўны апрацоўчы ЦП відэафільтр."
+   )
 
 /* Settings > Video > CRT SwitchRes */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "Суперраздзяляльнасць ЭПТ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Пераключэнне паміж роднымі ды ўльтрашырокімі суперраздзяляльнасцямі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Цэнтраванне па восі X"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Ужываць меню высокай раздзяляльнасці"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Уласная частата абнаўлення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Ужываць уласную частату абнаўлення, адзначаную ў файле канфігурацыі."
    )
 
 /* Settings > Video > Output */
@@ -1613,10 +1717,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   "Выбраць, які дысплэй будзе выкарыстоўвацца."
+   "Выбраць, які экран дысплэя будзе выкарыстоўвацца."
    )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Аптымізаваць для Wii U GamePad (патрабуецца перазапуск)"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   "Паварот відэа"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
    "Арыентацыя экрана"
@@ -2885,6 +2997,10 @@ MSG_HASH(
    "Паказваць 'Пампавальнік ядраў'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+   "Паказваць састарэлы 'Абнаўляльнік мініяцюр'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    "Паказваць 'Звесткі'"
    )
@@ -2942,11 +3058,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
-   "Паказваць 'Выявы'"
+   "Паказваць 'Відарысы'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Паказваць меню 'Выявы' (патрабуецца перазапуск на Ozone/XMB)."
+   "Паказваць меню 'Відарысы' (патрабуецца перазапуск на Ozone/XMB)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
@@ -3627,6 +3743,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    "таму"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   "Кіраванне плэй-лістамі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   "Выканаць дзеянні па абслугоўванню плэй-лістоў."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
@@ -6241,6 +6365,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    "Злучыцца з сеткай"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+   "Спакой кадраў"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,

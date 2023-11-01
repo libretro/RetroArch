@@ -4556,10 +4556,6 @@ MSG_HASH(
    "Saut d'images pour l'avance rapide"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Sauter des images en fonction de la vitesse d'avance rapide. Cela permet d'économiser de l'énergie et d'utiliser des limitateurs d'images de tierce partie."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Taux de ralentissement maximal "
    )
