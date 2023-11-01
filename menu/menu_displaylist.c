@@ -11922,7 +11922,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               else
                                  snprintf(mode_str      + strlen_mode_str,
                                        sizeof(mode_str) - strlen_mode_str,
-                                       "Mode %d", toc->track[i].mode);
+                                       "Mode %d", toc->track[i].mode%10);
 
                               if (menu_entries_append(info->list,
                                        mode_str,
