@@ -4592,10 +4592,6 @@ MSG_HASH(
    "Képkockák eldobása gyorsításkor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "A gyorsítás arányának megfelelő képkocka eldobása. Energiát takarít meg és megengedi külső képfrissítés-korlátozás használatát."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Lassítás aránya"
    )

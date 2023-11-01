@@ -4492,10 +4492,6 @@ MSG_HASH(
    "Frameskip beim Vorspulen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Einzelbilder je nach Vorspulgeschwindigkeit überspringen. Dies spart Energie und ermöglicht die Verwendung externer Frame-Begrenzung."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Zeitlupen-Rate"
    )
