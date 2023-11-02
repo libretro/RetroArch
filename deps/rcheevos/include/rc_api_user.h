@@ -3,6 +3,9 @@
 
 #include "rc_api_request.h"
 
+#include <stdint.h>
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,9 +35,11 @@ typedef struct rc_api_login_response_t {
   /* The API token to use for all future requests */
   const char* api_token;
   /* The current score of the player */
-  unsigned score;
+  uint32_t score;
+  /* The current softcore score of the player */
+  uint32_t score_softcore;
   /* The number of unread messages waiting for the player on the web site */
-  unsigned num_unread_messages;
+  uint32_t num_unread_messages;
   /* The preferred name to display for the player */
   const char* display_name;
 
@@ -45,6 +50,7 @@ rc_api_login_response_t;
 
 int rc_api_init_login_request(rc_api_request_t* request, const rc_api_login_request_t* api_params);
 int rc_api_process_login_response(rc_api_login_response_t* response, const char* server_response);
+int rc_api_process_login_server_response(rc_api_login_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_login_response(rc_api_login_response_t* response);
 
 /* --- Start Session --- */
@@ -58,14 +64,38 @@ typedef struct rc_api_start_session_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the game */
-  unsigned game_id;
+  uint32_t game_id;
 }
 rc_api_start_session_request_t;
+
+/**
+ * Response data for an achievement unlock.
+ */
+typedef struct rc_api_unlock_entry_t {
+  /* The unique identifier of the unlocked achievement */
+  uint32_t achievement_id;
+  /* When the achievement was unlocked */
+  time_t when;
+}
+rc_api_unlock_entry_t;
 
 /**
  * Response data for a start session request.
  */
 typedef struct rc_api_start_session_response_t {
+  /* An array of hardcore user unlocks */
+  rc_api_unlock_entry_t* hardcore_unlocks;
+  /* An array of user unlocks */
+  rc_api_unlock_entry_t* unlocks;
+
+  /* The number of items in the hardcore_unlocks array */
+  uint32_t num_hardcore_unlocks;
+  /* The number of items in the unlocks array */
+  uint32_t num_unlocks;
+
+  /* The server timestamp when the response was generated */
+  time_t server_now;
+
   /* Common server-provided response information */
   rc_api_response_t response;
 }
@@ -73,6 +103,7 @@ rc_api_start_session_response_t;
 
 int rc_api_init_start_session_request(rc_api_request_t* request, const rc_api_start_session_request_t* api_params);
 int rc_api_process_start_session_response(rc_api_start_session_response_t* response, const char* server_response);
+int rc_api_process_start_session_server_response(rc_api_start_session_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_start_session_response(rc_api_start_session_response_t* response);
 
 /* --- Fetch User Unlocks --- */
@@ -86,9 +117,9 @@ typedef struct rc_api_fetch_user_unlocks_request_t {
   /* The API token from the login request */
   const char* api_token;
   /* The unique identifier of the game */
-  unsigned game_id;
+  uint32_t game_id;
   /* Non-zero to fetch hardcore unlocks, 0 to fetch non-hardcore unlocks */
-  int hardcore;
+  uint32_t hardcore;
 }
 rc_api_fetch_user_unlocks_request_t;
 
@@ -97,9 +128,9 @@ rc_api_fetch_user_unlocks_request_t;
  */
 typedef struct rc_api_fetch_user_unlocks_response_t {
   /* An array of achievement IDs previously unlocked by the user */
-  unsigned* achievement_ids;
+  uint32_t* achievement_ids;
   /* The number of items in the achievement_ids array */
-  unsigned num_achievement_ids;
+  uint32_t num_achievement_ids;
 
   /* Common server-provided response information */
   rc_api_response_t response;
@@ -108,6 +139,7 @@ rc_api_fetch_user_unlocks_response_t;
 
 int rc_api_init_fetch_user_unlocks_request(rc_api_request_t* request, const rc_api_fetch_user_unlocks_request_t* api_params);
 int rc_api_process_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response, const char* server_response);
+int rc_api_process_fetch_user_unlocks_server_response(rc_api_fetch_user_unlocks_response_t* response, const rc_api_server_response_t* server_response);
 void rc_api_destroy_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response);
 
 #ifdef __cplusplus

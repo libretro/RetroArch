@@ -1,6 +1,6 @@
 #include "rc_hash.h"
 
-#include "../rcheevos/rc_compat.h"
+#include "../rc_compat.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -31,7 +31,7 @@ struct cdrom_t
 #endif
 };
 
-static int cdreader_get_sector(unsigned char header[16])
+static int cdreader_get_sector(uint8_t header[16])
 {
   int minutes = (header[12] >> 4) * 10 + (header[12] & 0x0F);
   int seconds = (header[13] >> 4) * 10 + (header[13] & 0x0F);
@@ -50,11 +50,11 @@ static void cdreader_determine_sector_size(struct cdrom_t* cdrom)
    * Then check for the presence of "CD001", which is gauranteed to be in either the
    * boot record or primary volume descriptor, one of which is always at sector 16.
    */
-  const unsigned char sync_pattern[] = {
+  const uint8_t sync_pattern[] = {
     0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00
   };
 
-  unsigned char header[32];
+  uint8_t header[32];
   const int64_t toc_sector = 16 + cdrom->track_pregap_sectors;
 
   cdrom->sector_size = 0;

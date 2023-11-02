@@ -5,11 +5,14 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /*****************************************************************************\
 | Console identifiers                                                         |
 \*****************************************************************************/
 
 enum {
+  RC_CONSOLE_UNKNOWN = 0,
   RC_CONSOLE_MEGA_DRIVE = 1,
   RC_CONSOLE_NINTENDO_64 = 2,
   RC_CONSOLE_SUPER_NINTENDO = 3,
@@ -112,21 +115,21 @@ enum {
 };
 
 typedef struct rc_memory_region_t {
-  unsigned start_address;             /* first address of block as queried by RetroAchievements */
-  unsigned end_address;               /* last address of block as queried by RetroAchievements */
-  unsigned real_address;              /* real address for first address of block */
-  char type;                          /* RC_MEMORY_TYPE_ for block */
+  uint32_t start_address;             /* first address of block as queried by RetroAchievements */
+  uint32_t end_address;               /* last address of block as queried by RetroAchievements */
+  uint32_t real_address;              /* real address for first address of block */
+  uint8_t type;                       /* RC_MEMORY_TYPE_ for block */
   const char* description;            /* short description of block */
 }
 rc_memory_region_t;
 
 typedef struct rc_memory_regions_t {
   const rc_memory_region_t* region;
-  unsigned num_regions;
+  uint32_t num_regions;
 }
 rc_memory_regions_t;
 
-const rc_memory_regions_t* rc_console_memory_regions(int console_id);
+const rc_memory_regions_t* rc_console_memory_regions(uint32_t console_id);
 
 
 #ifdef __cplusplus

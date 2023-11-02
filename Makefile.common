@@ -2101,12 +2101,24 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
+      ifneq ($(HAVE_THREADS), 1)
+         DEFINES += -DRC_NO_THREADS
+      else ifneq (,$(filter GEKKO,$(CFLAGS)))
+         # Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c)
+         DEFINES += -DRC_NO_THREADS
+      else ifneq (,$(filter _3DS,$(CFLAGS)))
+         DEFINES += -DRC_NO_THREADS
+      endif
+
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
+             deps/rcheevos/src/rc_client.o \
+             deps/rcheevos/src/rc_compat.o \
+             deps/rcheevos/src/rc_libretro.o \
+             deps/rcheevos/src/rc_util.o \
              deps/rcheevos/src/rcheevos/alloc.o \
-             deps/rcheevos/src/rcheevos/compat.o \
              deps/rcheevos/src/rcheevos/condition.o \
              deps/rcheevos/src/rcheevos/condset.o \
              deps/rcheevos/src/rcheevos/consoleinfo.o \
@@ -2114,7 +2126,6 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
              deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/rc_libretro.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rcheevos/runtime.o \
              deps/rcheevos/src/rcheevos/runtime_progress.o \
@@ -2123,6 +2134,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
+             deps/rcheevos/src/rapi/rc_api_info.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
 
