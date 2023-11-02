@@ -4,7 +4,8 @@
  * @file libretro.h
  * @version 1
  * @author libretro
- * @copyright Copyright (C) 2010-2020 The RetroArch team
+ * @copyright Copyright (C) 2010-2023 The RetroArch team
+ * ```
  *
  * @paragraph LICENSE
  * Copyright (C) 2010-2020 The RetroArch team
