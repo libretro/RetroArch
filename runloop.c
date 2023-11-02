@@ -896,19 +896,19 @@ static void libretro_log_cb(
    switch (level)
    {
       case RETRO_LOG_DEBUG:
-         RARCH_LOG_V("[libretro DEBUG]", fmt, vp);
+         RARCH_LOG_V("libretro " FILE_PATH_LOG_DBG, fmt, vp);
          break;
 
       case RETRO_LOG_INFO:
-         RARCH_LOG_OUTPUT_V("[libretro INFO]", fmt, vp);
+         RARCH_LOG_OUTPUT_V("libretro " FILE_PATH_LOG_INFO, fmt, vp);
          break;
 
       case RETRO_LOG_WARN:
-         RARCH_WARN_V("[libretro WARN]", fmt, vp);
+         RARCH_WARN_V("libretro " FILE_PATH_LOG_WARN, fmt, vp);
          break;
 
       case RETRO_LOG_ERROR:
-         RARCH_ERR_V("[libretro ERROR]", fmt, vp);
+         RARCH_ERR_V("libretro " FILE_PATH_LOG_ERROR, fmt, vp);
          break;
 
       default:
@@ -4083,9 +4083,14 @@ void runloop_event_deinit_core(void)
       av_info->timing.fps = video_st->video_refresh_rate_original;
       video_display_server_restore_refresh_rate();
    }
+
    /* Recalibrate frame delay target */
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
+
+   /* Reset frame rest counter */
+   if (settings->bools.video_frame_rest)
+      video_st->frame_rest_time_count = video_st->frame_rest = 0;
 
    driver_uninit(DRIVERS_CMD_ALL, 0);
 
@@ -6196,15 +6201,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_MENU
    /* Stop checking the rest of the hotkeys if menu is alive */
    if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-   {
-      float fastforward_ratio = runloop_get_fastforward_ratio(settings,
-            &runloop_st->fastmotion_override.current);
-
-      if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
-         return RUNLOOP_STATE_MENU_ITERATE;
-
       return RUNLOOP_STATE_END;
-   }
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -6949,13 +6946,14 @@ int runloop_iterate(void)
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #endif
-         goto end;
-      case RUNLOOP_STATE_MENU_ITERATE:
-#ifdef HAVE_NETWORKING
-         /* FIXME: This is an ugly way to tell Netplay this... */
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#ifdef HAVE_MENU
+         /* Always run menu in 1x speed. */
+         if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            runloop_set_frame_limit(&video_st->av_info, 1.0f);
+         else
+            runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
-         return 0;
+         goto end;
       case RUNLOOP_STATE_ITERATE:
          runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
          break;
@@ -7254,8 +7252,7 @@ end:
                runloop_get_fastforward_ratio(settings,
                   &runloop_st->fastmotion_override.current));
       else
-         runloop_set_frame_limit(&video_st->av_info,
-               1.0f);
+         runloop_set_frame_limit(&video_st->av_info, 1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
@@ -7288,6 +7285,11 @@ end:
 
       runloop_st->frame_limit_last_time = end_frame_time;
    }
+
+   /* Post-frame power saving sleep resting */
+   if (      settings->bools.video_frame_rest
+         && !(input_st->flags & INP_FLAG_NONBLOCKING))
+      video_frame_rest(video_st, settings, current_time);
 
    /* Set paused state after x frames */
    if (runloop_st->run_frames_and_pause > 0)

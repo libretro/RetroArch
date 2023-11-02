@@ -2304,10 +2304,6 @@ MSG_HASH(
    "xmb"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "menu_throttle_framerate"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
    "menu_file_browser_settings"
    )
@@ -4217,6 +4213,10 @@ MSG_HASH(
    "video_frame_delay_auto"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FRAME_REST,
+   "video_frame_rest"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
    "video_shader_delay"
    )
@@ -4743,10 +4743,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
    "deferred_rpl_entry_actions"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
-   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SETTINGS,

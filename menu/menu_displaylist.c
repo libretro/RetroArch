@@ -4152,7 +4152,7 @@ static unsigned menu_displaylist_parse_playlists(
 
    content_count = count;
 
-   dir_list_sort(&str_list, true);
+   dir_list_sort_ignore_ext(&str_list, true);
 
    list_size = str_list.size;
 
@@ -10434,6 +10434,8 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,      PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_VIDEO_FRAME_REST,           PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CPU_PERFPOWER,              PARSE_ACTION},
 #ifdef HAVE_LAKKA
@@ -10915,7 +10917,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,       PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_SLOWMOTION_RATIO,            PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,          PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,     PARSE_ONLY_BOOL , true},
+               {MENU_ENUM_LABEL_VIDEO_FRAME_REST,            PARSE_ONLY_BOOL,  true},
             };
 
 #ifdef HAVE_REWIND
@@ -11920,7 +11922,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               else
                                  snprintf(mode_str      + strlen_mode_str,
                                        sizeof(mode_str) - strlen_mode_str,
-                                       "Mode %d", toc->track[i].mode);
+                                       "Mode %d", toc->track[i].mode%10);
 
                               if (menu_entries_append(info->list,
                                        mode_str,

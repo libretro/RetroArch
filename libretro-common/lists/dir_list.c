@@ -46,6 +46,22 @@ static int qstrcmp_plain(const void *a_, const void *b_)
    return strcasecmp(a->data, b->data);
 }
 
+static int qstrcmp_plain_noext(const void *a_, const void *b_)
+{
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
+
+   const char *ext_a = path_get_extension(a->data);
+   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (ext_a - a->data - 1);
+   const char *ext_b = path_get_extension(b->data);
+   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (ext_b - b->data - 1);
+
+   int rv = strncasecmp(a->data, b->data, MIN(l_a, l_b));
+   if (rv == 0 && l_a != l_b)
+       return (int)(l_a - l_b);
+   return rv;
+}
+
 static int qstrcmp_dir(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
@@ -57,6 +73,19 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    if (a_type != b_type)
       return b_type - a_type;
    return strcasecmp(a->data, b->data);
+}
+
+static int qstrcmp_dir_noext(const void *a_, const void *b_)
+{
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   int a_type = a->attr.i;
+   int b_type = b->attr.i;
+
+   /* Sort directories before files. */
+   if (a_type != b_type)
+      return b_type - a_type;
+   return qstrcmp_plain_noext(a, b);
 }
 
 /**
@@ -71,6 +100,20 @@ void dir_list_sort(struct string_list *list, bool dir_first)
    if (list)
       qsort(list->elems, list->size, sizeof(struct string_list_elem),
             dir_first ? qstrcmp_dir : qstrcmp_plain);
+}
+
+/**
+ * dir_list_sort_ignore_ext:
+ * @list      : pointer to the directory listing.
+ * @dir_first : move the directories in the listing to the top?
+ *
+ * Sorts a directory listing. File extensions are ignored.
+ **/
+void dir_list_sort_ignore_ext(struct string_list *list, bool dir_first)
+{
+   if (list)
+      qsort(list->elems, list->size, sizeof(struct string_list_elem),
+            dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext);
 }
 
 /**
@@ -141,6 +184,11 @@ static int dir_list_read(const char *dir,
 
       if (retro_dirent_is_dir(entry, NULL))
       {
+         /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
+#ifndef _WIN32
+         if (!include_hidden && strcmp(name, "System Volume Information") == 0)
+            continue;
+#endif
          if (recursive)
             dir_list_read(file_path, list, ext_list, include_dirs,
                   include_hidden, include_compressed, recursive);

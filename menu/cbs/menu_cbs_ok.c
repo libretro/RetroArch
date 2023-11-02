@@ -247,6 +247,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 #ifdef HAVE_LAKKA
 static char *lakka_get_project(void)
 {
+#ifndef HAVE_LAKKA_CANARY
    size_t len;
    static char lakka_project[128];
    FILE *command_file = popen("cat /etc/release | cut -d - -f 1", "r");
@@ -259,6 +260,9 @@ static char *lakka_get_project(void)
 
    pclose(command_file);
    return lakka_project;
+#else
+   return "/";
+#endif
 }
 #endif
 #endif

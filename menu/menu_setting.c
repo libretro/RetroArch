@@ -3219,6 +3219,9 @@ static void setting_get_string_representation_uint_ai_service_lang(
       case TRANSLATION_LANG_UK:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN;
          break;
+      case TRANSLATION_LANG_BE:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_BELARUSIAN;
+         break;
       case TRANSLATION_LANG_UR:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_URDU;
          break;
@@ -6924,6 +6927,7 @@ static void setting_get_string_representation_uint_user_language(
    translated[RETRO_LANGUAGE_BRITISH_ENGLISH]  = LANGUAGE_PROGRESS_ENGLISH_UNITED_KINGDOM_TRANSLATED;
 
    LANG_DATA(HUNGARIAN)
+   LANG_DATA(BELARUSIAN)
 
    if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
       strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
@@ -15632,22 +15636,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
 #endif
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_throttle_framerate,
-               MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
-               MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED
-               );
-
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
@@ -19153,6 +19141,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_frame_rest,
+               MENU_ENUM_LABEL_VIDEO_FRAME_REST,
+               MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+               DEFAULT_FRAME_REST,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
