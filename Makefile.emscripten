@@ -105,7 +105,10 @@ else
 endif
 
 ifeq ($(ASYNC), 1)
-   LDFLAGS += -s ASYNCIFY=$(ASYNC)
+   LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
+   ifeq ($(DEBUG), 1)
+     LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
+   endif
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -130,8 +133,8 @@ ifneq ($(V), 1)
 endif
 
 ifeq ($(DEBUG), 1)
-   LDFLAGS += -O3 -g -gsource-map -s SAFE_HEAP=1 -s SAFE_HEAP_LOG=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
-   CFLAGS += -O3 -g -gsource-map -s SAFE_HEAP=1 -s SAFE_HEAP_LOG=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
+   LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
+   CFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s SAFE_HEAP_LOG=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
 else
    LDFLAGS += -O3 -s WASM=1
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
