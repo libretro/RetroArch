@@ -476,7 +476,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
          snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
             settings->paths.directory_screenshot,
             path_basename(path_get(RARCH_PATH_BASENAME)),
-            cheevo->id);
+            (unsigned)cheevo->id);
          shotname[shotname_len - 1] = '\0';
 
          if (take_screenshot(settings->paths.directory_screenshot,
@@ -1210,7 +1210,10 @@ bool rcheevos_unload(void)
 
    if (was_loaded)
    {
+#ifndef HAVE_RC_CLIENT
       unsigned count = 0;
+#endif
+
 #ifdef HAVE_MENU
       rcheevos_menu_reset_badges();
 
@@ -2193,7 +2196,7 @@ static void rcheevos_show_game_placard(void)
    if (summary.num_unsupported_achievements)
    {
       snprintf(unsupported_clause, sizeof(unsupported_clause), " (%d unsupported)",
-         summary.num_unsupported_achievements);
+         (int)summary.num_unsupported_achievements);
    }
 
    /* TODO/FIXME - localize strings */
@@ -2204,22 +2207,22 @@ static void rcheevos_show_game_placard(void)
       else
          snprintf(msg, sizeof(msg),
             "Activated %d unofficial achievements%s.",
-            summary.num_unofficial_achievements,
+            (int)summary.num_unofficial_achievements,
             unsupported_clause);
    }
    else if (rc_client_get_encore_mode_enabled(rcheevos_locals.client))
    {
       snprintf(msg, sizeof(msg),
          "All %d achievements activated for this session%s.",
-         summary.num_core_achievements,
+         (int)summary.num_core_achievements,
          unsupported_clause);
    }
    else
    {
       snprintf(msg, sizeof(msg),
          "You have %d of %d achievements unlocked%s.",
-         summary.num_unlocked_achievements,
-         summary.num_core_achievements,
+         (int)summary.num_unlocked_achievements,
+         (int)summary.num_core_achievements,
          unsupported_clause);
    }
 
@@ -2360,7 +2363,6 @@ static void rcheevos_client_load_game_callback(int result,
    const settings_t* settings = config_get_ptr();
    const rc_client_game_t* game = rc_client_get_game_info(client);
    char msg[256];
-   unsigned subset_id = 0;
 
    if (result != RC_OK || !game)
    {

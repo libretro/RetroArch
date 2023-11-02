@@ -27,6 +27,7 @@
 #include "cheevos.h"
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
+#include "../deps/rcheevos/include/rc_api_runtime.h"
 
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"

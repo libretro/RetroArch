@@ -246,9 +246,8 @@ rcheevos_locals_t* get_rcheevos_locals(void);
 void rcheevos_begin_load_state(enum rcheevos_load_state state);
 int rcheevos_end_load_state(void);
 bool rcheevos_load_aborted(void);
-#endif
-
 void rcheevos_show_mastery_placard(void);
+#endif
 
 RETRO_END_DECLS
 
