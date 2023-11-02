@@ -150,7 +150,7 @@ LDFLAGS += -s STACK_SIZE=131072
 
 LDFLAGS += --extern-pre-js emscripten/pre.js
 
-CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) #\
+CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 #\
 #          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
