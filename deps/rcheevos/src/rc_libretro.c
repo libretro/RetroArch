@@ -255,7 +255,7 @@ const rc_disallowed_setting_t* rc_libretro_get_disallowed_settings(const char* l
 typedef struct rc_disallowed_core_systems_t
 {
     const char* library_name;
-    const int disallowed_consoles[4];
+    const uint32_t disallowed_consoles[4];
 } rc_disallowed_core_systems_t;
 
 static const rc_disallowed_core_systems_t rc_disallowed_core_systems[] = {
@@ -264,7 +264,7 @@ static const rc_disallowed_core_systems_t rc_disallowed_core_systems[] = {
   { NULL, { 0 } }
 };
 
-int rc_libretro_is_system_allowed(const char* library_name, int console_id) {
+int rc_libretro_is_system_allowed(const char* library_name, uint32_t console_id) {
   const rc_disallowed_core_systems_t* core_filter = rc_disallowed_core_systems;
   size_t library_name_length;
   size_t i;
@@ -288,8 +288,8 @@ int rc_libretro_is_system_allowed(const char* library_name, int console_id) {
   return 1;
 }
 
-unsigned char* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t* regions, unsigned address, unsigned* avail) {
-  unsigned i;
+uint8_t* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t* regions, uint32_t address, uint32_t* avail) {
+  uint32_t i;
 
   for (i = 0; i < regions->count; ++i) {
     const size_t size = regions->size[i];
@@ -298,12 +298,12 @@ unsigned char* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t*
         break;
 
       if (avail)
-        *avail = (unsigned)(size - address);
+        *avail = (uint32_t)(size - address);
 
       return &regions->data[i][address];
     }
 
-    address -= (unsigned)size;
+    address -= (uint32_t)size;
   }
 
   if (avail)
@@ -312,8 +312,33 @@ unsigned char* rc_libretro_memory_find_avail(const rc_libretro_memory_regions_t*
   return NULL;
 }
 
-unsigned char* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, unsigned address) {
+uint8_t* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, uint32_t address) {
   return rc_libretro_memory_find_avail(regions, address, NULL);
+}
+
+uint32_t rc_libretro_memory_read(const rc_libretro_memory_regions_t* regions, uint32_t address,
+      uint8_t* buffer, uint32_t num_bytes) {
+  uint32_t i;
+  uint32_t avail;
+
+  for (i = 0; i < regions->count; ++i) {
+    const size_t size = regions->size[i];
+    if (address < size) {
+      if (regions->data[i] == NULL)
+        break;
+
+      avail = (unsigned)(size - address);
+      if (avail < num_bytes)
+         return avail;
+
+      memcpy(buffer, &regions->data[i][address], num_bytes);
+      return num_bytes;
+    }
+
+    address -= (unsigned)size;
+  }
+
+  return 0;
 }
 
 void rc_libretro_init_verbose_message_callback(rc_libretro_message_callback callback) {
@@ -342,7 +367,7 @@ static const char* rc_memory_type_str(int type) {
 }
 
 static void rc_libretro_memory_register_region(rc_libretro_memory_regions_t* regions, int type,
-                                               unsigned char* data, size_t size, const char* description) {
+                                               uint8_t* data, size_t size, const char* description) {
   if (size == 0)
     return;
 
@@ -394,7 +419,7 @@ static void rc_libretro_memory_init_without_regions(rc_libretro_memory_regions_t
     rc_libretro_memory_register_region(regions, RC_MEMORY_TYPE_SAVE_RAM, info.data, info.size, description);
 }
 
-static const struct retro_memory_descriptor* rc_libretro_memory_get_descriptor(const struct retro_memory_map* mmap, unsigned real_address, size_t* offset)
+static const struct retro_memory_descriptor* rc_libretro_memory_get_descriptor(const struct retro_memory_map* mmap, uint32_t real_address, size_t* offset)
 {
   const struct retro_memory_descriptor* desc = mmap->descriptors;
   const struct retro_memory_descriptor* end = desc + mmap->num_descriptors;
@@ -412,14 +437,14 @@ static const struct retro_memory_descriptor* rc_libretro_memory_get_descriptor(c
       /* address is in the block if (addr & select) == (start & select) */
       if (((desc->start ^ real_address) & desc->select) == 0) {
         /* get the relative offset of the address from the start of the memory block */
-        unsigned reduced_address = real_address - (unsigned)desc->start;
+        uint32_t reduced_address = real_address - (unsigned)desc->start;
 
         /* remove any bits from the reduced_address that correspond to the bits in the disconnect
          * mask and collapse the remaining bits. this code was copied from the mmap_reduce function
          * in RetroArch. i'm not exactly sure how it works, but it does. */
-        unsigned disconnect_mask = (unsigned)desc->disconnect;
+        uint32_t disconnect_mask = (unsigned)desc->disconnect;
         while (disconnect_mask) {
-          const unsigned tmp = (disconnect_mask - 1) & ~disconnect_mask;
+          const uint32_t tmp = (disconnect_mask - 1) & ~disconnect_mask;
           reduced_address = (reduced_address & tmp) | ((reduced_address >> 1) & ~tmp);
           disconnect_mask = (disconnect_mask & (disconnect_mask - 1)) >> 1;
         }
@@ -441,24 +466,24 @@ static const struct retro_memory_descriptor* rc_libretro_memory_get_descriptor(c
 static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t* regions, const struct retro_memory_map* mmap,
                                                     const rc_memory_regions_t* console_regions) {
   char description[64];
-  unsigned i;
-  unsigned char* region_start;
-  unsigned char* desc_start;
+  uint32_t i;
+  uint8_t* region_start;
+  uint8_t* desc_start;
   size_t desc_size;
   size_t offset;
 
   for (i = 0; i < console_regions->num_regions; ++i) {
     const rc_memory_region_t* console_region = &console_regions->region[i];
     size_t console_region_size = console_region->end_address - console_region->start_address + 1;
-    unsigned real_address = console_region->real_address;
-    unsigned disconnect_size = 0;
+    uint32_t real_address = console_region->real_address;
+    uint32_t disconnect_size = 0;
 
     while (console_region_size > 0) {
       const struct retro_memory_descriptor* desc = rc_libretro_memory_get_descriptor(mmap, real_address, &offset);
       if (!desc) {
         if (rc_libretro_verbose_message_callback && console_region->type != RC_MEMORY_TYPE_UNUSED) {
           snprintf(description, sizeof(description), "Could not map region starting at $%06X",
-                   real_address - console_region->real_address + console_region->start_address);
+                   (unsigned)(real_address - console_region->real_address + console_region->start_address));
           rc_libretro_verbose(description);
         }
 
@@ -498,7 +523,7 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
         if (desc_size == 0) {
           if (rc_libretro_verbose_message_callback && console_region->type != RC_MEMORY_TYPE_UNUSED) {
             snprintf(description, sizeof(description), "Could not map region starting at $%06X",
-                     real_address - console_region->real_address + console_region->start_address);
+                     (unsigned)(real_address - console_region->real_address + console_region->start_address));
             rc_libretro_verbose(description);
           }
 
@@ -519,7 +544,7 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
   }
 }
 
-static unsigned rc_libretro_memory_console_region_to_ram_type(int region_type) {
+static uint32_t rc_libretro_memory_console_region_to_ram_type(uint8_t region_type) {
   switch (region_type)
   {
     case RC_MEMORY_TYPE_SAVE_RAM:
@@ -536,15 +561,15 @@ static unsigned rc_libretro_memory_console_region_to_ram_type(int region_type) {
 static void rc_libretro_memory_init_from_unmapped_memory(rc_libretro_memory_regions_t* regions,
     rc_libretro_get_core_memory_info_func get_core_memory_info, const rc_memory_regions_t* console_regions) {
   char description[64];
-  unsigned i, j;
+  uint32_t i, j;
   rc_libretro_core_memory_info_t info;
   size_t offset;
 
   for (i = 0; i < console_regions->num_regions; ++i) {
     const rc_memory_region_t* console_region = &console_regions->region[i];
     const size_t console_region_size = console_region->end_address - console_region->start_address + 1;
-    const unsigned type = rc_libretro_memory_console_region_to_ram_type(console_region->type);
-    unsigned base_address = 0;
+    const uint32_t type = rc_libretro_memory_console_region_to_ram_type(console_region->type);
+    uint32_t base_address = 0;
 
     for (j = 0; j <= i; ++j) {
       const rc_memory_region_t* console_region2 = &console_regions->region[j];
@@ -570,7 +595,7 @@ static void rc_libretro_memory_init_from_unmapped_memory(rc_libretro_memory_regi
     }
     else {
       if (rc_libretro_verbose_message_callback && console_region->type != RC_MEMORY_TYPE_UNUSED) {
-        snprintf(description, sizeof(description), "Could not map region starting at $%06X", console_region->start_address);
+        snprintf(description, sizeof(description), "Could not map region starting at $%06X", (unsigned)console_region->start_address);
         rc_libretro_verbose(description);
       }
 
@@ -595,7 +620,7 @@ int rc_libretro_memory_init(rc_libretro_memory_regions_t* regions, const struct 
   const rc_memory_regions_t* console_regions = rc_console_memory_regions(console_id);
   rc_libretro_memory_regions_t new_regions;
   int has_valid_region = 0;
-  unsigned i;
+  uint32_t i;
 
   if (!regions)
     return 0;
@@ -650,47 +675,50 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
   file_len = rc_file_tell(file_handle);
   rc_file_seek(file_handle, 0, SEEK_SET);
 
-  m3u_contents = (char*)malloc(file_len + 1);
-  rc_file_read(file_handle, m3u_contents, (int)file_len);
-  m3u_contents[file_len] = '\0';
-
-  rc_file_close(file_handle);
-
-  ptr = m3u_contents;
-  do
+  m3u_contents = (char*)malloc((size_t)file_len + 1);
+  if (m3u_contents)
   {
-    /* ignore whitespace */
-    while (isspace((int)*ptr))
-      ++ptr;
+    rc_file_read(file_handle, m3u_contents, (int)file_len);
+    m3u_contents[file_len] = '\0';
 
-    if (*ptr == '#')
+    rc_file_close(file_handle);
+
+    ptr = m3u_contents;
+    do
     {
-      /* ignore comment unless it's the special SAVEDISK extension */
-      if (memcmp(ptr, "#SAVEDISK:", 10) == 0)
+      /* ignore whitespace */
+      while (isspace((int)*ptr))
+        ++ptr;
+
+      if (*ptr == '#')
       {
-        /* get the path to the save disk from the frontend, assign it a bogus hash so
-         * it doesn't get hashed later */
-        if (get_image_path(index, image_path, sizeof(image_path)))
+        /* ignore comment unless it's the special SAVEDISK extension */
+        if (memcmp(ptr, "#SAVEDISK:", 10) == 0)
         {
-          const char save_disk_hash[33] = "[SAVE DISK]";
-          rc_libretro_hash_set_add(hash_set, image_path, -1, save_disk_hash);
-          ++index;
+          /* get the path to the save disk from the frontend, assign it a bogus hash so
+           * it doesn't get hashed later */
+          if (get_image_path(index, image_path, sizeof(image_path)))
+          {
+            const char save_disk_hash[33] = "[SAVE DISK]";
+            rc_libretro_hash_set_add(hash_set, image_path, -1, save_disk_hash);
+            ++index;
+          }
         }
       }
-    }
-    else
-    {
-      /* non-empty line, tally a file */
-      ++index;
-    }
+      else
+      {
+        /* non-empty line, tally a file */
+        ++index;
+      }
 
-    /* find the end of the line */
-    while (*ptr && *ptr != '\n')
-      ++ptr;
+      /* find the end of the line */
+      while (*ptr && *ptr != '\n')
+        ++ptr;
 
-  } while (*ptr);
+    } while (*ptr);
 
-  free(m3u_contents);
+    free(m3u_contents);
+  }
 
   if (hash_set->entries_count > 0)
   {
@@ -707,9 +735,9 @@ void rc_libretro_hash_set_destroy(struct rc_libretro_hash_set_t* hash_set) {
   memset(hash_set, 0, sizeof(*hash_set));
 }
 
-static unsigned rc_libretro_djb2(const char* input)
+static uint32_t rc_libretro_djb2(const char* input)
 {
-  unsigned result = 5381;
+  uint32_t result = 5381;
   char c;
 
   while ((c = *input++) != '\0')
@@ -719,8 +747,8 @@ static unsigned rc_libretro_djb2(const char* input)
 }
 
 void rc_libretro_hash_set_add(struct rc_libretro_hash_set_t* hash_set,
-                              const char* path, int game_id, const char hash[33]) {
-  const unsigned path_djb2 = (path != NULL) ? rc_libretro_djb2(path) : 0;
+                              const char* path, uint32_t game_id, const char hash[33]) {
+  const uint32_t path_djb2 = (path != NULL) ? rc_libretro_djb2(path) : 0;
   struct rc_libretro_hash_entry_t* entry = NULL;
   struct rc_libretro_hash_entry_t* scan;
   struct rc_libretro_hash_entry_t* stop = hash_set->entries + hash_set->entries_count;;
@@ -765,7 +793,7 @@ void rc_libretro_hash_set_add(struct rc_libretro_hash_set_t* hash_set,
 
 const char* rc_libretro_hash_set_get_hash(const struct rc_libretro_hash_set_t* hash_set, const char* path)
 {
-  const unsigned path_djb2 = rc_libretro_djb2(path);
+  const uint32_t path_djb2 = rc_libretro_djb2(path);
   struct rc_libretro_hash_entry_t* scan = hash_set->entries;
   struct rc_libretro_hash_entry_t* stop = scan + hash_set->entries_count;
   for (; scan < stop; ++scan)

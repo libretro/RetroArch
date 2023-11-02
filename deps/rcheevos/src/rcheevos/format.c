@@ -1,6 +1,6 @@
 #include "rc_internal.h"
 
-#include "rc_compat.h"
+#include "../rc_compat.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -75,16 +75,16 @@ int rc_parse_format(const char* format_str) {
   return RC_FORMAT_VALUE;
 }
 
-static int rc_format_value_minutes(char* buffer, int size, unsigned minutes) {
-    unsigned hours;
+static int rc_format_value_minutes(char* buffer, size_t size, uint32_t minutes) {
+  uint32_t hours;
 
     hours = minutes / 60;
     minutes -= hours * 60;
     return snprintf(buffer, size, "%uh%02u", hours, minutes);
 }
 
-static int rc_format_value_seconds(char* buffer, int size, unsigned seconds) {
-  unsigned hours, minutes;
+static int rc_format_value_seconds(char* buffer, size_t size, uint32_t seconds) {
+  uint32_t hours, minutes;
 
   /* apply modulus math to split the seconds into hours/minutes/seconds */
   minutes = seconds / 60;
@@ -98,8 +98,8 @@ static int rc_format_value_seconds(char* buffer, int size, unsigned seconds) {
   return snprintf(buffer, size, "%uh%02u:%02u", hours, minutes, seconds);
 }
 
-static int rc_format_value_centiseconds(char* buffer, int size, unsigned centiseconds) {
-  unsigned seconds;
+static int rc_format_value_centiseconds(char* buffer, size_t size, uint32_t centiseconds) {
+  uint32_t seconds;
   int chars, chars2;
 
   /* modulus off the centiseconds */
@@ -119,7 +119,7 @@ static int rc_format_value_centiseconds(char* buffer, int size, unsigned centise
   return chars;
 }
 
-int rc_format_typed_value(char* buffer, int size, const rc_typed_value_t* value, int format) {
+int rc_format_typed_value(char* buffer, size_t size, const rc_typed_value_t* value, int format) {
   int chars;
   rc_typed_value_t converted_value;
 
@@ -197,7 +197,7 @@ int rc_format_typed_value(char* buffer, int size, const rc_typed_value_t* value,
   return chars;
 }
 
-int rc_format_value(char* buffer, int size, int value, int format) {
+int rc_format_value(char* buffer, int size, int32_t value, int format) {
   rc_typed_value_t typed_value;
 
   typed_value.value.i32 = value;

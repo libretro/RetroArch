@@ -1,6 +1,6 @@
 #include "rc_internal.h"
 
-#include "rc_compat.h"
+#include "../rc_compat.h"
 
 #include <ctype.h>
 
@@ -16,8 +16,8 @@ enum {
 static rc_memref_value_t* rc_alloc_helper_variable_memref_value(const char* memaddr, int memaddr_len, rc_parse_state_t* parse) {
   const char* end;
   rc_value_t* variable;
-  unsigned address;
-  char size;
+  uint32_t address;
+  uint8_t size;
 
   /* single memory reference lookups without a modifier flag can be handled without a variable */
   end = memaddr;
@@ -78,7 +78,7 @@ static const char* rc_parse_line(const char* line, const char** end, rc_parse_st
 typedef struct rc_richpresence_builtin_macro_t {
   const char* name;
   size_t name_len;
-  unsigned short display_type;
+  uint8_t display_type;
 } rc_richpresence_builtin_macro_t;
 
 static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const char* line, const char* endline, rc_parse_state_t* parse, rc_richpresence_lookup_t* first_lookup) {
@@ -280,7 +280,6 @@ static void rc_rebalance_richpresence_lookup(rc_richpresence_lookup_item_t** roo
 {
   rc_richpresence_lookup_item_t** items;
   rc_scratch_buffer_t* buffer;
-  const int alignment = sizeof(rc_richpresence_lookup_item_t*);
   int index;
   int size;
 
@@ -293,7 +292,7 @@ static void rc_rebalance_richpresence_lookup(rc_richpresence_lookup_item_t** roo
   size = count * sizeof(rc_richpresence_lookup_item_t*);
   buffer = &parse->scratch.buffer;
   do {
-    const int aligned_offset = (buffer->offset + alignment - 1) & ~(alignment - 1);
+    const int aligned_offset = RC_ALIGN(buffer->offset);
     const int remaining = sizeof(buffer->buffer) - aligned_offset;
 
     if (remaining >= size) {
@@ -325,7 +324,7 @@ static void rc_rebalance_richpresence_lookup(rc_richpresence_lookup_item_t** roo
 }
 
 static void rc_insert_richpresence_lookup_item(rc_richpresence_lookup_t* lookup,
-    unsigned first, unsigned last, const char* label, int label_len, rc_parse_state_t* parse)
+    uint32_t first, uint32_t last, const char* label, size_t label_len, rc_parse_state_t* parse)
 {
   rc_richpresence_lookup_item_t** next;
   rc_richpresence_lookup_item_t* item;
@@ -371,7 +370,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
   const char* endline;
   const char* label;
   char* endptr = 0;
-  unsigned first, last;
+  uint32_t first, last;
   int base;
 
   do
@@ -526,7 +525,7 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
         memcpy(format, line, chars);
         format[chars] = '\0';
 
-        lookup->format = (unsigned short)rc_parse_format(format);
+        lookup->format = (uint8_t)rc_parse_format(format);
       } else {
         lookup->format = RC_FORMAT_VALUE;
       }
@@ -664,7 +663,7 @@ void rc_update_richpresence(rc_richpresence_t* richpresence, rc_peek_t peek, voi
   }
 }
 
-static int rc_evaluate_richpresence_display(rc_richpresence_display_part_t* part, char* buffer, unsigned buffersize)
+static int rc_evaluate_richpresence_display(rc_richpresence_display_part_t* part, char* buffer, size_t buffersize)
 {
   rc_richpresence_lookup_item_t* item;
   rc_typed_value_t value;
@@ -808,7 +807,7 @@ static int rc_evaluate_richpresence_display(rc_richpresence_display_part_t* part
   return (int)(ptr - buffer);
 }
 
-int rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
+int rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* buffer, size_t buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
   rc_richpresence_display_t* display;
 
   for (display = richpresence->first_display; display; display = display->next) {
@@ -829,7 +828,7 @@ int rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* bu
   return 0;
 }
 
-int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsigned buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
+int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, size_t buffersize, rc_peek_t peek, void* peek_ud, lua_State* L) {
   rc_update_richpresence(richpresence, peek, peek_ud, L);
   return rc_get_richpresence_display_string(richpresence, buffer, buffersize, peek, peek_ud, L);
 }

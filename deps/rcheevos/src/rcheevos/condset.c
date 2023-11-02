@@ -28,7 +28,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse, in
   rc_condset_t* self;
   rc_condition_t** next;
   int in_add_address;
-  unsigned measured_target = 0;
+  uint32_t measured_target = 0;
 
   self = RC_ALLOC(rc_condset_t, parse);
   self->has_pause = self->is_paused = self->has_indirect_memrefs = 0;
@@ -181,7 +181,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc
   rc_typed_value_t value;
   int set_valid, cond_valid, and_next, or_next, reset_next, measured_from_hits, can_measure;
   rc_typed_value_t measured_value;
-  unsigned total_hits;
+  uint32_t total_hits;
 
   measured_value.type = RC_VALUE_TYPE_NONE;
   measured_from_hits = 0;

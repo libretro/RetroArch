@@ -18,7 +18,7 @@
 #define __RARCH_CHEEVOS_LOCALS_H
 
 #include "../deps/rcheevos/include/rc_runtime.h"
-#include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
+#include "../deps/rcheevos/src/rc_libretro.h"
 
 #include <boolean.h>
 #include <queues/task_queue.h>

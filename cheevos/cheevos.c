@@ -75,7 +75,7 @@
 #include "../deps/rcheevos/include/rc_runtime.h"
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_hash.h"
-#include "../deps/rcheevos/src/rcheevos/rc_libretro.h"
+#include "../deps/rcheevos/src/rc_libretro.h"
 
 /* Define this macro to prevent cheevos from being deactivated when they trigger. */
 #undef CHEEVOS_DONT_DEACTIVATE
@@ -163,7 +163,7 @@ static void rcheevos_handle_log_message(const char* message)
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", message);
 }
 
-static void rcheevos_get_core_memory_info(unsigned id,
+static void rcheevos_get_core_memory_info(uint32_t id,
       rc_libretro_core_memory_info_t* info)
 {
    retro_ctx_memory_info_t ctx_info;
@@ -220,10 +220,10 @@ uint8_t* rcheevos_patch_address(unsigned address)
    return rc_libretro_memory_find(&rcheevos_locals.memory, address);
 }
 
-static unsigned rcheevos_peek(unsigned address,
-      unsigned num_bytes, void* ud)
+static uint32_t rcheevos_peek(uint32_t address,
+   uint32_t num_bytes, void* ud)
 {
-   unsigned avail;
+   uint32_t avail;
    uint8_t* data = rc_libretro_memory_find_avail(
          &rcheevos_locals.memory, address, &avail);
 
@@ -1321,7 +1321,7 @@ static void rcheevos_runtime_event_handler(
    }
 }
 
-static int rcheevos_runtime_address_validator(unsigned address)
+static int rcheevos_runtime_address_validator(uint32_t address)
 {
    return rc_libretro_memory_find(
             &rcheevos_locals.memory, address) != NULL;
@@ -2066,7 +2066,7 @@ static void rcheevos_identify_game_callback(void* userdata)
       rcheevos_fetch_game_data();
 }
 
-static int rcheevos_get_image_path(unsigned index, char* buffer, size_t buffer_size)
+static int rcheevos_get_image_path(uint32_t index, char* buffer, size_t buffer_size)
 {
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    if (!sys_info->disk_control.cb.get_image_path)
