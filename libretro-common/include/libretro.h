@@ -1,8 +1,13 @@
-/* Copyright (C) 2010-2020 The RetroArch team
+/**
+ * libretro.h is a simple API that allows for the creation of games and emulators.
  *
- * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this libretro API header (libretro.h).
- * ---------------------------------------------------------------------------------------
+ * @file libretro.h
+ * @version 1
+ * @author libretro
+ * @copyright Copyright (C) 2010-2020 The RetroArch team
+ *
+ * @paragraph LICENSE
+ * Copyright (C) 2010-2020 The RetroArch team
  *
  * Permission is hereby granted, free of charge,
  * to any person obtaining a copy of this software and associated documentation files (the "Software"),
