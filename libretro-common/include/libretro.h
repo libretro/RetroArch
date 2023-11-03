@@ -8,6 +8,8 @@
  * ```
  *
  * @paragraph LICENSE
+ * The following license statement only applies to this libretro API header (libretro.h).
+ *
  * Copyright (C) 2010-2023 The RetroArch team
  *
  * Permission is hereby granted, free of charge,
