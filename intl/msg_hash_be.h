@@ -1138,11 +1138,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Файлавы браўзер"
+   "Файлавы аглядальнік"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Змяніць налады файлавага браўзера."
+   "Змяніць налады файлавага аглядальніка."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -3384,11 +3384,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
-   "Паказ 'Файлавы браўзер'"
+   "Паказ 'Файлавы аглядальнік'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
-   "Паказваць налады 'Файлавы браўзер'."
+   "Паказваць налады 'Файлавы аглядальнік'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
@@ -3692,8 +3692,12 @@ MSG_HASH(
    "Паведамленні аб унясенні на дошку лідараў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Паказвае паведамленне з унесеным на дошку лідараў значэннем пры паспяховай спробе."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-   "Паведамленні аб няўдачы на дошцы лідараў"
+   "Паведамленні аб няўдачы з дошкай лідараў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
@@ -3714,6 +3718,10 @@ MSG_HASH(
 
 /* Settings > Network */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+   "Публічны анонс сеткавай гульні"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
    "Паўночная Амерыка (усходняе ўзбярэжжа, ЗША)"
@@ -3789,6 +3797,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
    "Дазваляць гульцу прыпыняцца падчас сеткавай гульні."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+   "Запыт прылады %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+   "Запытваць гульню з дадзенай прыладай уводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -3991,6 +4007,22 @@ MSG_HASH(
 
 /* Settings > Playlists > Playlist Management */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   "Ачысціць плэй-ліст"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Абнавіць плэй-ліст"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   "Выдаліць плэй-ліст"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   "Выдаліць плэй-ліст з файлавай сістэмы."
+   )
 
 /* Settings > User */
 
@@ -4060,6 +4092,10 @@ MSG_HASH(
    "Спампоўкі"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   "Сцягнутыя файлы захоўваюцца ў гэтым каталозе."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
    "Дынамічныя фоны"
    )
@@ -4069,11 +4105,27 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Файлавы браўзер"
+   "Файлавы аглядальнік"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   "Задаць пачатковы каталог для файлавага аглядальніка."
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Канфігурацыі"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   "Задаць пачатковы каталог для аглядальніка меню канфігурацыі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
    "Ядры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+   "Ядры libretro захоўваюцца ў гэтым каталозе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
@@ -4082,6 +4134,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
    "Базы даных"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+   "Базы даных захоўваюцца ў гэтым каталозе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
+   "Відэафільтры"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   "Аўдыяфільтры"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -4102,6 +4166,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
    "Канфігурацыі запісу захоўваюцца ў гэтым каталозе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+   "Накладкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   "Накладкі захоўваюцца ў гэтым каталозе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Накладкі клавіятур"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "Накладкі клавіятур захоўваюцца ў гэтым каталозе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
@@ -5866,7 +5946,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Файлавы браўзер"
+   "Файлавы аглядальнік"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
