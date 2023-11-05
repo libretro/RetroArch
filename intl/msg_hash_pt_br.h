@@ -2755,6 +2755,10 @@ MSG_HASH(
    "Quantidade de segundos para manter uma entrada para vinculá-la."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Pressione uma tecla do teclado, mouse ou controle"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Período do turbo"
    )
