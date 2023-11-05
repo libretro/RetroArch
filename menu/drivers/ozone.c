@@ -3612,8 +3612,8 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!(      (ozone->is_quick_menu && menu_is_running_quick_menu())
-            || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)))
+   if (!(   (ozone->is_quick_menu && menu_is_running_quick_menu())
+         || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)))
       return;
 
    if (savestate_thumbnail)
@@ -3694,13 +3694,8 @@ static void ozone_update_savestate_thumbnail_image(void *data)
    settings_t *settings  = config_get_ptr();
    unsigned thumbnail_upscale_threshold
                          = settings->uints.gfx_thumbnail_upscale_threshold;
-   if ((!ozone) || (ozone->flags & OZONE_FLAG_SKIP_THUMBNAIL_RESET))
-      return;
 
-   /* Savestate thumbnails are only relevant
-    * when viewing the running quick menu or state slots */
-   if (!((ozone->is_quick_menu && menu_is_running_quick_menu())
-         || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)))
+   if ((!ozone) || (ozone->flags & OZONE_FLAG_SKIP_THUMBNAIL_RESET))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -11957,6 +11952,10 @@ static void ozone_populate_entries(
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
          ozone_list_open(ozone, ozone_collapse_sidebar, (!(ozone->flags & OZONE_FLAG_FIRST_FRAME)));
+
+   /* Reset savestate thumbnails always */
+   ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_st->selection_ptr);
+   ozone_update_savestate_thumbnail_image(ozone);
 
    /* Thumbnails
     * > Note: Leave current thumbnails loaded when
