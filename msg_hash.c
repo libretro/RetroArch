@@ -800,16 +800,8 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_MOV;
       case MENU_VALUE_FILE_WMV:
          return FILE_TYPE_WMV;
-      case MENU_VALUE_FILE_MP3:
-         return FILE_TYPE_MP3;
       case MENU_VALUE_FILE_M4A:
          return FILE_TYPE_M4A;
-      case MENU_VALUE_FILE_OGG:
-         return FILE_TYPE_OGG;
-      case MENU_VALUE_FILE_FLAC:
-         return FILE_TYPE_FLAC;
-      case MENU_VALUE_FILE_WAV:
-         return FILE_TYPE_WAV;
       case MENU_VALUE_FILE_3G2:
          return FILE_TYPE_3G2;
       case MENU_VALUE_FILE_MPG:
@@ -835,13 +827,31 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_FILE_WMA:
          return FILE_TYPE_WMA;
 #endif
-#ifdef HAVE_IBXM
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
+      case MENU_VALUE_FILE_MP3:
+         return FILE_TYPE_MP3;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
+      case MENU_VALUE_FILE_OGG:
+         return FILE_TYPE_OGG;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
+      case MENU_VALUE_FILE_FLAC:
+         return FILE_TYPE_FLAC;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
+      case MENU_VALUE_FILE_WAV:
+         return FILE_TYPE_WAV;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
        case MENU_VALUE_FILE_MOD:
            return FILE_TYPE_MOD;
        case MENU_VALUE_FILE_S3M:
            return FILE_TYPE_S3M;
        case MENU_VALUE_FILE_XM:
            return FILE_TYPE_XM;
+#endif
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:

@@ -408,7 +408,7 @@ static int general_push(menu_displaylist_info_t *info,
    char newstring2[PATH_MAX_LENGTH];
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
 #endif
@@ -559,13 +559,29 @@ static int general_push(menu_displaylist_info_t *info,
                string_list_initialize(&str_list3);
                string_split_noalloc(&str_list3, newstring, "|");
 
-#ifdef HAVE_IBXM
+#if defined(HAVE_AUDIOMIXER)
+               if (multimedia_builtin_mediaplayer_enable)
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
+#if defined(HAVE_DR_MP3)
+                  string_list_append(&str_list3, "mp3", attr);
+#endif
+#if defined(HAVE_STB_VORBIS)
+                  string_list_append(&str_list3, "ogg", attr);
+#endif
+#if defined(HAVE_DR_FLAC)
+                  string_list_append(&str_list3, "flac", attr);
+#endif
+#if defined(HAVE_RWAV)
+                  string_list_append(&str_list3, "wav", attr);
+#endif
+#ifdef HAVE_IBXM
+
                   string_list_append(&str_list3, "s3m", attr);
                   string_list_append(&str_list3, "mod", attr);
                   string_list_append(&str_list3, "xm", attr);
+#endif
                }
 #endif
                string_list_join_concat(newstring2, sizeof(newstring2),
