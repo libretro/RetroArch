@@ -86,6 +86,9 @@
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 #include "menu_screensaver.h"
 #endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#include "../../cores/internal_cores.h"
+#endif
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -406,7 +409,7 @@ static int filebrowser_parse(
             switch (path_type)
             {
                case RARCH_CONTENT_MUSIC:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
                   if (builtin_mediaplayer_enable)
                      file_type = FILE_TYPE_MUSIC;
 #endif
@@ -12167,17 +12170,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif /* HAVE_LIBNX */
          case DISPLAYLIST_MUSIC_LIST:
             {
+               bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
+               char combined_path[PATH_MAX_LENGTH];
+               const char *ext  = NULL;
+
+               fill_pathname_join_special(combined_path, menu->scratch2_buf,
+                     menu->scratch_buf, sizeof(combined_path));
+               ext = path_get_extension(combined_path);
                menu_entries_clear(info->list);
+
 #ifdef HAVE_AUDIOMIXER
+               if (multimedia_builtin_mediaplayer_enable)
                {
-                  char combined_path[PATH_MAX_LENGTH];
-                  const char *ext  = NULL;
-
-                  fill_pathname_join_special(combined_path, menu->scratch2_buf,
-                        menu->scratch_buf, sizeof(combined_path));
-
-                  ext = path_get_extension(combined_path);
-
                   if (audio_driver_mixer_extension_supported(ext))
                   {
                      if (menu_entries_append(info->list,
@@ -12198,9 +12202,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+               if (multimedia_builtin_mediaplayer_enable)
                {
-                  bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
-                  if (multimedia_builtin_mediaplayer_enable)
+                  struct retro_system_info sysinfo = {0};
+#if defined(HAVE_FFMPEG)
+                  libretro_ffmpeg_retro_get_system_info(&sysinfo);
+#elif defined(HAVE_MPV)
+                  libretro_mpv_retro_get_system_info(&sysinfo);
+#endif
+                  if (strstr(sysinfo.valid_extensions,ext))
                   {
                      if (menu_entries_append(info->list,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_MUSIC),
