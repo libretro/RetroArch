@@ -60,6 +60,10 @@
 #include <sys/time.h>
 #endif
 
+#if defined(PS2)
+#include <ps2sdkapi.h>
+#endif
+
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
