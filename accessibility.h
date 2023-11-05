@@ -55,7 +55,7 @@ typedef struct
 
    /* Frame captured during the last call to the translation service */
    uint8_t *last_image;
-   int last_image_size;
+   unsigned last_image_size;
 
    /* 1 if the automatic mode has been enabled, 0 otherwise */
    int ai_service_auto;
