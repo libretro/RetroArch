@@ -598,7 +598,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
       
       if (type == RJSON_STRING && (rjson_get_context_count(json) & 1) == 1)
       {
-         int i;
+         unsigned i;
          string = rjson_get_string(json, &length);
          for (i = 0; i < ARRAY_SIZE(ACCESS_RESPONSE_KEYS) && key == -1; i++)
          {
@@ -1094,7 +1094,7 @@ static void translation_response_input(access_response_t *response)
 #ifdef HAVE_ACCESSIBILITY
          else
          {
-            int i      = 0;
+            unsigned i      = 0;
             bool found = false;
             
             for (; i < ARRAY_SIZE(ACCESS_INPUT_LABELS) && !found; i++)
