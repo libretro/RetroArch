@@ -896,19 +896,19 @@ static void libretro_log_cb(
    switch (level)
    {
       case RETRO_LOG_DEBUG:
-         RARCH_LOG_V("[libretro DEBUG]", fmt, vp);
+         RARCH_LOG_V("libretro " FILE_PATH_LOG_DBG, fmt, vp);
          break;
 
       case RETRO_LOG_INFO:
-         RARCH_LOG_OUTPUT_V("[libretro INFO]", fmt, vp);
+         RARCH_LOG_OUTPUT_V("libretro " FILE_PATH_LOG_INFO, fmt, vp);
          break;
 
       case RETRO_LOG_WARN:
-         RARCH_WARN_V("[libretro WARN]", fmt, vp);
+         RARCH_WARN_V("libretro " FILE_PATH_LOG_WARN, fmt, vp);
          break;
 
       case RETRO_LOG_ERROR:
-         RARCH_ERR_V("[libretro ERROR]", fmt, vp);
+         RARCH_ERR_V("libretro " FILE_PATH_LOG_ERROR, fmt, vp);
          break;
 
       default:
@@ -1996,8 +1996,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         RARCH_LOG("[Environ]: GET_SAVE_DIRECTORY.\n");
          *(const char**)data = runloop_st->savefile_dir;
+         RARCH_LOG("[Environ]: SAVE_DIRECTORY: \"%s\".\n",
+               runloop_st->savefile_dir);
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -4082,9 +4083,14 @@ void runloop_event_deinit_core(void)
       av_info->timing.fps = video_st->video_refresh_rate_original;
       video_display_server_restore_refresh_rate();
    }
+
    /* Recalibrate frame delay target */
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
+
+   /* Reset frame rest counter */
+   if (settings->bools.video_frame_rest)
+      video_st->frame_rest_time_count = video_st->frame_rest = 0;
 
    driver_uninit(DRIVERS_CMD_ALL, 0);
 
@@ -4399,6 +4405,7 @@ void runloop_set_video_swap_interval(
       bool vrr_runloop_enable,
       bool crt_switching_active,
       unsigned swap_interval_config,
+      unsigned black_frame_insertion,
       float audio_max_timing_skew,
       float video_refresh_rate,
       double input_fps)
@@ -4425,11 +4432,13 @@ void runloop_set_video_swap_interval(
     * > If core fps is higher than display refresh rate,
     *   set swap interval to 1
     * > If core fps or display refresh rate are zero,
-    *   set swap interval to 1 */
+    *   set swap interval to 1
+    * > If BFI is active set swap interval to 1 */
    if (   (vrr_runloop_enable)
        || (core_hz    > timing_hz)
        || (core_hz   <= 0.0f)
-       || (timing_hz <= 0.0f))
+       || (timing_hz <= 0.0f)
+       || (black_frame_insertion))
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
@@ -4628,7 +4637,7 @@ bool runloop_event_init_core(
             type, &runloop_st->current_core, NULL, NULL))
       return false;
 #ifdef HAVE_RUNAHEAD
-   /* remember last core type created, so creating a
+   /* Remember last core type created, so creating a
     * secondary core will know what core type to use. */
    runloop_st->last_core_type              = type;
 #endif
@@ -4687,7 +4696,7 @@ bool runloop_event_init_core(
          settings, &runloop_st->fastmotion_override.current);
 
 #ifdef HAVE_CHEEVOS
-   /* assume the core supports achievements unless it tells us otherwise */
+   /* Assume the core supports achievements unless it tells us otherwise */
    rcheevos_set_support_cheevos(true);
 #endif
 
@@ -4698,9 +4707,13 @@ bool runloop_event_init_core(
    runloop_st->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
 
-   /* reset video format to libretro's default */
+   /* Reset video format to libretro's default */
    video_st->pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
+   /* Set save redirection paths */
+   runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
+
+   /* Set core environment */
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
    /* Load any input remap files
@@ -4716,9 +4729,6 @@ bool runloop_event_init_core(
    if (auto_remaps_enable)
       config_load_remap(dir_input_remapping, &runloop_st->system);
 #endif
-
-   /* Per-core saves: reset redirection paths */
-   runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
    video_st->frame_cache_data              = NULL;
 
@@ -6191,15 +6201,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_MENU
    /* Stop checking the rest of the hotkeys if menu is alive */
    if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-   {
-      float fastforward_ratio = runloop_get_fastforward_ratio(settings,
-            &runloop_st->fastmotion_override.current);
-
-      if (!settings->bools.menu_throttle_framerate && !fastforward_ratio)
-         return RUNLOOP_STATE_MENU_ITERATE;
-
       return RUNLOOP_STATE_END;
-   }
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -6944,13 +6946,14 @@ int runloop_iterate(void)
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #endif
-         goto end;
-      case RUNLOOP_STATE_MENU_ITERATE:
-#ifdef HAVE_NETWORKING
-         /* FIXME: This is an ugly way to tell Netplay this... */
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#ifdef HAVE_MENU
+         /* Always run menu in 1x speed. */
+         if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            runloop_set_frame_limit(&video_st->av_info, 1.0f);
+         else
+            runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
-         return 0;
+         goto end;
       case RUNLOOP_STATE_ITERATE:
          runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
          break;
@@ -7249,8 +7252,7 @@ end:
                runloop_get_fastforward_ratio(settings,
                   &runloop_st->fastmotion_override.current));
       else
-         runloop_set_frame_limit(&video_st->av_info,
-               1.0f);
+         runloop_set_frame_limit(&video_st->av_info, 1.0f);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
@@ -7283,6 +7285,11 @@ end:
 
       runloop_st->frame_limit_last_time = end_frame_time;
    }
+
+   /* Post-frame power saving sleep resting */
+   if (      settings->bools.video_frame_rest
+         && !(input_st->flags & INP_FLAG_NONBLOCKING))
+      video_frame_rest(video_st, settings, current_time);
 
    /* Set paused state after x frames */
    if (runloop_st->run_frames_and_pause > 0)

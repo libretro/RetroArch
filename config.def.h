@@ -317,7 +317,7 @@
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
-#if defined(RARCH_CONSOLE) || defined(__APPLE__)
+#if defined(RARCH_CONSOLE)
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
 #else
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
@@ -390,6 +390,9 @@
 #define DEFAULT_FRAME_DELAY 0
 #define MAXIMUM_FRAME_DELAY 19
 #define DEFAULT_FRAME_DELAY_AUTO false
+
+/* Try to sleep the spare time after frame is presented in order to reduce vsync CPU usage. */
+#define DEFAULT_FRAME_REST false
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
@@ -1749,7 +1752,13 @@
 
 #define DEFAULT_AI_SERVICE_MODE 1
 
+#define DEFAULT_AI_SERVICE_TEXT_POSITION 0
+#define DEFAULT_AI_SERVICE_TEXT_PADDING 5
+
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
+
+#define DEFAULT_AI_SERVICE_POLL_DELAY 0
+#define MAXIMUM_AI_SERVICE_POLL_DELAY 500
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 #define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true

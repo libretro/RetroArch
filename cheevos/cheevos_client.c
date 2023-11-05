@@ -1756,7 +1756,7 @@ static void rcheevos_async_award_achievement_callback(
    {
       if ((int)api_response.awarded_achievement_id != request->id)
          snprintf(buffer, buffer_size, "Achievement %u awarded instead",
-               api_response.awarded_achievement_id);
+               (unsigned)api_response.awarded_achievement_id);
       else if (api_response.response.error_message)
       {
          /* previously unlocked achievements are returned as a "successful" error */
