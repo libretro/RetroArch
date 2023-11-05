@@ -4811,7 +4811,11 @@ void main_exit(void *args)
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
 #endif
-
+#ifdef PS2
+   /* PS2 frontend driver deinit also detaches filesystem,
+    * so make sure logs are written in advance. */
+   retro_main_log_file_deinit();
+#endif
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
