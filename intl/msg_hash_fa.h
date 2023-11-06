@@ -2584,10 +2584,6 @@ MSG_HASH(
    "پیشینه"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "اجرا"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "کاربر"
    )

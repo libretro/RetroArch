@@ -10556,10 +10556,6 @@ MSG_HASH(
    "Iniciar ou continuar a pesquisa de trapaça"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Executar"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "segundos"
    )

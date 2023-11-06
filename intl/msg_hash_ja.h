@@ -9180,10 +9180,6 @@ MSG_HASH(
    "チート検索を開始/続行"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "実行"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "秒"
    )
