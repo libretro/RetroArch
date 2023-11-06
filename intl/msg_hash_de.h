@@ -11664,10 +11664,6 @@ MSG_HASH(
    "Cheatsuche starten oder fortsetzen"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Abspielen"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "Sekunden"
    )

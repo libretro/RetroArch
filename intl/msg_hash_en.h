@@ -1037,6 +1037,10 @@ MSG_HASH(
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
+   "Vertical padding to apply to the text overlay, when the service is in Text mode. More padding will push the text towards the centre of the screen."
+   )
 
 /* Settings > Accessibility */
 

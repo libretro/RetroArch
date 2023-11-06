@@ -6988,10 +6988,6 @@ MSG_HASH(
    "Налаштування чита"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Запустити"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "секунди"
    )

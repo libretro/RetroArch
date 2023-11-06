@@ -7488,10 +7488,6 @@ MSG_HASH(
    "بدء أو مواصلة البحث عن الغش"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "تشغيل"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "ثواني"
    )

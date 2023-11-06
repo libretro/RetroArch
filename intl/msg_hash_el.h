@@ -4616,10 +4616,6 @@ MSG_HASH(
    "Έναρξη ή Συνέχιση Αναζήτησης Απάτης"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Εκκίνηση"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "δευτερόλεπτα"
    )

@@ -4516,10 +4516,6 @@ MSG_HASH(
    "Fuskinställningar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Kör"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "sekunder"
    )

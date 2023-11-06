@@ -6880,10 +6880,6 @@ MSG_HASH(
    "Comença o continua la cerca de trucs"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Executa"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "segons"
    )

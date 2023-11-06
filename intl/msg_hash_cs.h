@@ -11740,10 +11740,6 @@ MSG_HASH(
    "Spustit Nebo Pokračovat v Hledání Cheatu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Spustit"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "sekundy"
    )

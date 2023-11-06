@@ -11580,10 +11580,6 @@ MSG_HASH(
    "开始或继续金手指搜索"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "运行"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "秒"
    )

@@ -12008,10 +12008,6 @@ MSG_HASH(
    "Начать или продолжить поиск чит-кода"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Запустить"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "секунд"
    )

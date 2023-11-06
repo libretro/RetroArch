@@ -11756,10 +11756,6 @@ MSG_HASH(
    "手動搜尋金手指"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "執行"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "秒"
    )

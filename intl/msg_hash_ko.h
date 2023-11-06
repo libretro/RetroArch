@@ -12072,10 +12072,6 @@ MSG_HASH(
    "치트 검색 시작 또는 재개"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "재생"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "초"
    )

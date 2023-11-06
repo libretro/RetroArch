@@ -6220,10 +6220,6 @@ MSG_HASH(
    "Nastavenia cheatov"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Spustiť"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "sekúnd"
    )

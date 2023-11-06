@@ -1612,10 +1612,6 @@ MSG_HASH(
    "Hanes"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Rhedeg"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Defnyddiwr"
    )
