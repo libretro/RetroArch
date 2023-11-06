@@ -2256,15 +2256,26 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL 68
 
+/**
+ * Registers a callback that the frontend can use
+ * to notify the core that at least one core option
+ * should be made hidden or visible.
+ * Allows a frontend to signal that a core must update
+ * the visibility of any dynamically hidden core options,
+ * and enables the frontend to detect visibility changes.
+ * Used by the frontend to update the menu display status
+ * of core options without requiring a call of retro_run().
+ * Must be called in retro_set_environment().
+ *
+ * @param[in] data <tt>const struct retro_core_options_update_display_callback *</tt>.
+ * The callback that the frontend should use.
+ * May be \c NULL, in which case the frontend will unset any existing callback.
+ * Can be used to query visibility support.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_core_options_update_display_callback
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK 69
-                                           /* const struct retro_core_options_update_display_callback * --
-                                            * Allows a frontend to signal that a core must update
-                                            * the visibility of any dynamically hidden core options,
-                                            * and enables the frontend to detect visibility changes.
-                                            * Used by the frontend to update the menu display status
-                                            * of core options without requiring a call of retro_run().
-                                            * Must be called in retro_set_environment().
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_VARIABLE 70
                                            /* const struct retro_variable * --
@@ -5717,8 +5728,8 @@ struct retro_variable
 struct retro_core_option_display
 {
    /**
-    * The key for a core option that was defined with \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
-    * \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL,
+    * The key for a core option that was defined with \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
+    * \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL,
     * or their legacy equivalents.
     */
    const char *key;
@@ -5733,20 +5744,32 @@ struct retro_core_option_display
    bool visible;
 };
 
-/* Maximum number of values permitted for a core option
- * > Note: We have to set a maximum value due the limitations
- *   of the C language - i.e. it is not possible to create an
- *   array of structs each containing a variable sized array,
- *   so the retro_core_option_definition values array must
- *   have a fixed size. The size limit of 128 is a balancing
- *   act - it needs to be large enough to support all 'sane'
- *   core options, but setting it too large may impact low memory
- *   platforms. In practise, if a core option has more than
- *   128 values then the implementation is likely flawed.
- *   To quote the above API reference:
- *      "The number of possible options should be very limited
- *       i.e. it should be feasible to cycle through options
- *       without a keyboard."
+/**
+ * The maximum number of choices that can be defined for a given core option.
+ *
+ * This limit was chosen as a compromise between
+ * a core's flexibility and a streamlined user experience.
+ *
+ * @note A guiding principle of libretro's API design is that
+ * all common interactions (gameplay, menu navigation, etc.)
+ * should be possible without a keyboard.
+ *
+ * If you need more than 128 choices for a core option,
+ * consider simplifying your option structure.
+ * Here are some ideas:
+ *
+ * \li If a core option represents a numeric value,
+ *     consider reducing the option's granularity
+ *     (e.g. define time limits in increments of 5 seconds instead of 1 second).
+ *     Providing a fixed set of values based on experimentation
+ *     is also a good idea.
+ * \li If a core option represents a dynamically-built list of files,
+ *     consider leaving out files that won't be useful.
+ *     For example, if a core allows the player to choose a specific BIOS file,
+ *     it can omit files of the wrong length or without a valid header.
+ *
+ * @see retro_core_option_definition
+ * @see retro_core_option_v2_definition
  */
 #define RETRO_NUM_CORE_OPTION_VALUES_MAX 128
 
@@ -6052,22 +6075,44 @@ struct retro_core_options_v2_intl
    struct retro_core_options_v2 *local;
 };
 
-/* Used by the frontend to monitor changes in core option
- * visibility. May be called each time any core option
- * value is set via the frontend.
- * - On each invocation, the core must update the visibility
- *   of any dynamically hidden options using the
- *   RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY environment
- *   callback.
- * - On the first invocation, returns 'true' if the visibility
- *   of any core option has changed since the last call of
- *   retro_load_game() or retro_load_game_special().
- * - On each subsequent invocation, returns 'true' if the
- *   visibility of any core option has changed since the last
- *   time the function was called. */
+/**
+ * Called by the frontend to determine if any core option's visibility has changed.
+ *
+ * Each time a frontend sets a core option,
+ * it should call this function to see if
+ * any core option should be made visible or invisible.
+ *
+ * May also be called after \ref retro_load_game "loading a game",
+ * to determine what the initial visibility of each option should be.
+ *
+ * Within this function, the core must update the visibility
+ * of any dynamically-hidden options
+ * using \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.
+ *
+ * @note All core options are visible by default,
+ * even during this function's first call.
+ *
+ * @return \c true if any core option's visibility was adjusted
+ * since the last call to this function.
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY
+ * @see retro_core_option_display
+ */
 typedef bool (RETRO_CALLCONV *retro_core_options_update_display_callback_t)(void);
+
+/**
+ * Callback registered by the core for the frontend to use
+ * when setting the visibility of each core option.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY
+ * @see retro_core_option_display
+ */
 struct retro_core_options_update_display_callback
 {
+   /**
+    * @copydoc retro_core_options_update_display_callback_t
+    *
+    * Set by the core.
+    */
    retro_core_options_update_display_callback_t callback;
 };
 
