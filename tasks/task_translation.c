@@ -598,7 +598,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
       
       if (type == RJSON_STRING && (rjson_get_context_count(json) & 1) == 1)
       {
-         int i;
+         unsigned i;
          string = rjson_get_string(json, &length);
          for (i = 0; i < ARRAY_SIZE(ACCESS_RESPONSE_KEYS) && key == -1; i++)
          {
@@ -1094,7 +1094,7 @@ static void translation_response_input(access_response_t *response)
 #ifdef HAVE_ACCESSIBILITY
          else
          {
-            int i      = 0;
+            unsigned i      = 0;
             bool found = false;
             
             for (; i < ARRAY_SIZE(ACCESS_INPUT_LABELS) && !found; i++)
@@ -1547,17 +1547,17 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
                                    && video_st->poke->load_texture
                                    && video_st->poke->unload_texture;
 #endif
-      
-   _len = strlcpy(buffer, service_url, length);
-   buffer += _len;
-   length -= _len;
-   
+
    token[1] = '\0';
-   if (strrchr(buffer, '?'))
+   if (strrchr(service_url, '?'))
       token[0] = '&';
    else
       token[0] = '?';
-   
+
+   _len = strlcpy(buffer, service_url, length);
+   buffer += _len ;
+   length -= _len;
+
    if (service_source_lang != TRANSLATION_LANG_DONT_CARE)
    {
       const char *lang_source 
@@ -1569,7 +1569,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
          buffer += _len;
          length -= _len;
 
-         _len = strlcpy(buffer + _len, "source_lang=", length - _len);
+         _len = strlcpy(buffer, "source_lang=", length);
          buffer += _len;
          length -= _len;
 

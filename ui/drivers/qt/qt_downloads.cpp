@@ -1,4 +1,5 @@
 #include <QDir>
+#include <QHash>
 #include <QApplication>
 #include <QProgressDialog>
 

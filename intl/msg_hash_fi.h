@@ -11088,10 +11088,6 @@ MSG_HASH(
    "Käynnistä tai jatka huijaushakua"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Käynnistä"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "sekuntia"
    )

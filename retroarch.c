@@ -2036,11 +2036,26 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_MXF:
          return RARCH_CONTENT_MOVIE;
       case FILE_TYPE_WMA:
-      case FILE_TYPE_OGG:
-      case FILE_TYPE_MP3:
       case FILE_TYPE_M4A:
+#endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
+      case FILE_TYPE_OGG:
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
+      case FILE_TYPE_MP3:
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
       case FILE_TYPE_FLAC:
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
       case FILE_TYPE_WAV:
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
+      case FILE_TYPE_MOD:
+      case FILE_TYPE_S3M:
+      case FILE_TYPE_XM:
+#endif
          return RARCH_CONTENT_MUSIC;
 #endif
 #ifdef HAVE_IMAGEVIEWER
@@ -2050,13 +2065,6 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
-#ifdef HAVE_IBXM
-      case FILE_TYPE_MOD:
-      case FILE_TYPE_S3M:
-      case FILE_TYPE_XM:
-         return RARCH_CONTENT_MUSIC;
-#endif
-
       case FILE_TYPE_NONE:
       default:
          break;
@@ -4803,7 +4811,11 @@ void main_exit(void *args)
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
 #endif
-
+#ifdef PS2
+   /* PS2 frontend driver deinit also detaches filesystem,
+    * so make sure logs are written in advance. */
+   retro_main_log_file_deinit();
+#endif
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
