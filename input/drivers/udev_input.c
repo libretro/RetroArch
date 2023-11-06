@@ -3291,13 +3291,13 @@ static int udev_input_add_device(udev_input_t *udev,
          device->mouse.y_max = absinfo.maximum;
       }
 
-#ifdef UDEV_TOUCH_SUPPORT
       if (touch)
       {
+#ifdef UDEV_TOUCH_SUPPORT
           udev_init_touch_dev(device);
           udev_sync_touch(device);
-      }
 #endif
+      }
 
       if (!mouse)
          goto end;
