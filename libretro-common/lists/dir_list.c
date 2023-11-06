@@ -52,9 +52,9 @@ static int qstrcmp_plain_noext(const void *a_, const void *b_)
    const struct string_list_elem *b = (const struct string_list_elem*)b_;
 
    const char *ext_a = path_get_extension(a->data);
-   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (ext_a - a->data - 1);
+   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (size_t)(ext_a - a->data - 1);
    const char *ext_b = path_get_extension(b->data);
-   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (ext_b - b->data - 1);
+   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (size_t)(ext_b - b->data - 1);
 
    int rv = strncasecmp(a->data, b->data, MIN(l_a, l_b));
    if (rv == 0 && l_a != l_b)
