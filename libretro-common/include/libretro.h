@@ -938,15 +938,6 @@ enum retro_mod
  * to communicate updated options to the frontend,
  * but the number of core options must not change.
  *
- * retro_variable::value should be formatted as follows:
- *
- * <ul>
- * <li>The text before the first \c ';' is the option's human-readable title.</li>
- * <li>A single space follows the \c ';'.</li>
- * <li>The rest of the string is a <tt>'|'</tt>-delimited list of possible values,
- * with the first one being the default.</li>
- * </ul>
- *
  * Here's an example that sets two options.
  *
  * @code
@@ -5702,21 +5693,51 @@ struct retro_system_av_info
  *  @{
  */
 
+/**
+ * Represents \ref RETRO_ENVIRONMENT_GET_VARIABLE "a core option query".
+ *
+ * @note In \ref RETRO_ENVIRONMENT_SET_VARIABLES
+ * (which is a deprecated API),
+ * this \c struct serves as an option definition.
+ *
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ */
 struct retro_variable
 {
    /**
-    * Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE.
-    * If NULL, obtains the complete environment string if more
-    * complex parsing is necessary.
-    * The environment string is formatted as key-value pairs
-    * delimited by semicolons as so:
-    * "key1=value1;key2=value2;..."
+    * A unique key identifying this option.
+    *
+    * Should be a key for an option that was previously defined
+    * with \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 or similar.
+    *
     * Should be prefixed with the core's name
-    * to minimize the risk of collisions with another core's options.
+    * to minimize the risk of collisions with another core's options,
+    * as frontends are not required to use a namespacing scheme for storing options.
+    * For example, a core named "foo" might define an option named "foo_option".
+    *
+    * @note In \ref RETRO_ENVIRONMENT_SET_VARIABLES
+    * (which is a deprecated API),
+    * this field is used to define an option
+    * named by this key.
     */
    const char *key;
 
-   /* Value to be obtained. If key does not exist, it is set to NULL. */
+   /**
+    * Value to be obtained.
+    *
+    * Set by the frontend to \c NULL if
+    * the option named by \ref key does not exist.
+    *
+    * @note In \ref RETRO_ENVIRONMENT_SET_VARIABLES
+    * (which is a deprecated API),
+    * this field is set by the core to define the possible values
+    * for an option named by \ref key.
+    * When used this way, it must be formatted as follows:
+    * @li The text before the first ';' is the option's human-readable title.
+    * @li A single space follows the ';'.
+    * @li The rest of the string is a '|'-delimited list of possible values,
+    * with the first one being the default.
+    */
    const char *value;
 };
 
@@ -5773,13 +5794,58 @@ struct retro_core_option_display
  */
 #define RETRO_NUM_CORE_OPTION_VALUES_MAX 128
 
+/**
+ * A descriptor for a particular choice within a core option.
+ *
+ * @note All option values are represented as strings.
+ * If you need to represent any other type,
+ * parse the string in \ref value.
+ *
+ * @see retro_core_option_v2_category
+ */
 struct retro_core_option_value
 {
-   /* Expected option value */
+   /**
+    * The option value that the frontend will serialize.
+    *
+    * Must not be \c NULL or empty.
+    * No other hard limits are placed on this value's contents,
+    * but here are some suggestions:
+    *
+    * \li If the value represents a number,
+    *     don't include any non-digit characters (units, separators, etc.).
+    *     Instead, include that information in \c label.
+    *     This will simplify parsing.
+    * \li If the value represents a file path,
+    *     store it as a relative path with respect to one of the common libretro directories
+    *     (e.g. \ref RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY "the system directory"
+    *     or \ref RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY "the save directory"),
+    *     and use forward slashes (\c "/") as directory separators.
+    *     This will simplify cloud storage if supported by the frontend,
+    *     as the same file may be used on multiple devices.
+    */
    const char *value;
 
-   /* Human-readable value label. If NULL, value itself
-    * will be displayed by the frontend */
+   /**
+    * Human-readable name for \c value that the frontend should show to players.
+    *
+    * May be \c NULL, in which case the frontend
+    * should display \c value itself.
+    *
+    * Here are some guidelines for writing a good label:
+    *
+    * \li Make the option labels obvious
+    *     so that they don't need to be explained in the description.
+    * \li Keep labels short, and don't use unnecessary words.
+    *     For example, "OpenGL" is a better label than "OpenGL Mode".
+    * \li If the option represents a number,
+    *     consider adding units, separators, or other punctuation
+    *     into the label itself.
+    *     For example, "5 seconds" is a better label than "5".
+    * \li If the option represents a number, use intuitive units
+    *     that don't take a lot of digits to express.
+    *     For example, prefer "1 minute" over "60 seconds" or "60,000 milliseconds".
+    */
    const char *label;
 };
 
