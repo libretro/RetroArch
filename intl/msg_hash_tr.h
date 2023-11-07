@@ -12068,6 +12068,10 @@ MSG_HASH(
    "Hile Aramaya Başla veya Devam Et"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Medya Oynatıcıda Oynat"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "saniye"
    )
