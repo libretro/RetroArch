@@ -10824,6 +10824,10 @@ MSG_HASH(
    "Rozpocznij lub kontynuuj wyszukiwanie cheat-u"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Odtwarzaj w odtwarzaczu multimediów"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "sekundy"
    )

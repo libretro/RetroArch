@@ -11808,6 +11808,10 @@ MSG_HASH(
    "Inizia o continua la ricerca di trucchi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Riproduci nel lettore multimediale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "secondi"
    )

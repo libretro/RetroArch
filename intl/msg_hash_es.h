@@ -11972,6 +11972,10 @@ MSG_HASH(
    "Iniciar o reanudar búsqueda de trucos"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Reproducir en visor de medios"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "segundos"
    )
