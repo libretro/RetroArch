@@ -8603,6 +8603,16 @@ static void general_write_handler(rarch_setting_t *setting)
                            default_aspect;
          }
          break;
+      case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
+         {
+            /* Reset wallpaper by menu context reset */
+            struct menu_state *menu_st = menu_state_get_ptr();
+
+            if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
+               menu_st->driver_ctx->context_reset(menu_st->userdata,
+                     video_driver_is_threaded());
+         }
+         break;
       default:
          /* Special cases */
 
@@ -16885,7 +16895,6 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
          if (string_is_not_equal(settings->arrays.menu_driver, "rgui") &&
@@ -16905,7 +16914,6 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -16925,7 +16933,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
          CONFIG_BOOL(
@@ -17662,7 +17669,6 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,
@@ -17679,7 +17685,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
             menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_BOOL(
                   list, list_info,
