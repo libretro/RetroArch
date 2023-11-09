@@ -1609,6 +1609,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    /* Check the core info */
    if (system)
    {
+      const char* my_core_version = system->library_version;
       STRING_SAFE(info_buf.core_name, sizeof(info_buf.core_name));
       if (!string_is_equal_case_insensitive(
             info_buf.core_name, system->library_name))
@@ -1622,7 +1623,6 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
          return false;
       }
 
-      const char* my_core_version = system->library_version;
       /* When using the netpacket interface, the core can override the version
        * with a custom string so multiple core versions can stay compatible. */
       if (networking_driver_st.core_netpacket_interface &&
