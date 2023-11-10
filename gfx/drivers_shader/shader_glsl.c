@@ -97,7 +97,8 @@ struct shader_uniforms
 
    int frame_count;
    int frame_direction;
-   unsigned rotation;
+   // Use signed int for maximal compatibility
+   int rotation;
 
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
