@@ -698,6 +698,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_block_sram_overwrite,          MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fastforward_ratio,             MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_fastforward_frameskip,         MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_vrr_runloop_enable,            MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_throttle_framerate,       MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_slowmotion_ratio,              MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_unsupported,         MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_enabled,             MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED)
@@ -4067,6 +4068,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_vrr_runloop_enable);
+            break;
+         case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_throttle_framerate);
             break;
          case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_block_sram_overwrite);

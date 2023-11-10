@@ -3324,6 +3324,14 @@ MSG_HASH(
    "vrr_runloop_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
+   "menu_throttle_framerate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   "menu_throttle_framerate"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SETTINGS,
    "cheat_settings"
    )
