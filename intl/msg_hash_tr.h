@@ -6380,7 +6380,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Menü arka planı olarak ayarlamak için bir resim seçin."
+   "Menü arka planı ayarlamak için bir resim seçin. Sabit ve dinamik görüntüler 'Renk Temasını' geçersiz kılacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,

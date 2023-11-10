@@ -5807,10 +5807,6 @@ MSG_HASH(
    "Taustakuva"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Valitse kuva, joka asetetaan valikon taustaksi."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Taustan läpinäkyvyys"
    )

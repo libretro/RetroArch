@@ -3599,10 +3599,6 @@ MSG_HASH(
    "Фонавы відарыс"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Выбраць відарыс для ўжывання ў якасці фону меню."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Непразрыстасць фону"
    )

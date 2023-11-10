@@ -6367,10 +6367,6 @@ MSG_HASH(
    "Háttérkép"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Háttérkép beállítása a menühöz."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Háttér átlátszatlansága"
    )

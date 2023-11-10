@@ -5752,7 +5752,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Wybierz obraz, aby ustawić jako tło menu."
+   "Wybierz obraz, aby ustawić jako tło menu. Ręczne i dynamiczne obrazy zastąpią 'Temat koloru'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,

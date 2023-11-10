@@ -6303,10 +6303,6 @@ MSG_HASH(
    "Obrázek na Pozadí"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Vyberte obrázek, který chcete nastavit jako pozadí nabídky."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Neprůhlednost Pozadí"
    )

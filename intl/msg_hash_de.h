@@ -6264,7 +6264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Lege ein Bild als Menühintergrund fest."
+   "Ein Bild auswählen, das als Menühintergrund verwendet werden soll. Manuelle und dynamische Bilder übersteuern das „Farbthema“."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
