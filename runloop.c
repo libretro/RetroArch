@@ -6947,9 +6947,14 @@ int runloop_iterate(void)
 #endif
 #endif
 #ifdef HAVE_MENU
-         /* Always run menu in 1x speed. */
+         /* Always run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            runloop_set_frame_limit(&video_st->av_info, 1.0f);
+         {
+            float refresh_rate = video_driver_get_refresh_rate();
+
+            runloop_st->frame_limit_minimum_time = (retro_time_t)
+                  roundf(1000000.0f / ((refresh_rate) ? refresh_rate : settings->floats.video_refresh_rate));
+         }
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
