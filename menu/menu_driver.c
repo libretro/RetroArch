@@ -6323,6 +6323,9 @@ void menu_driver_toggle(
 
    if (menu_driver_alive)
    {
+      video_adaptive_vsync          = settings->bools.video_adaptive_vsync
+            && video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+
 #ifdef WIIU
       /* Enable burn-in protection menu is running */
       IMEnableDim();
@@ -6339,6 +6342,15 @@ void menu_driver_toggle(
 #endif
       input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
       driver_set_nonblock_state();
+
+      /* Menu should always run with swap interval 1 if vsync is on. */
+      if (     settings->bools.video_vsync
+            && current_video->set_nonblock_state)
+         current_video->set_nonblock_state(
+               video_driver_data,
+               false,
+               video_adaptive_vsync,
+               1);
 
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);

@@ -6950,10 +6950,10 @@ int runloop_iterate(void)
          /* Always run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
          {
-            float refresh_rate = video_driver_get_refresh_rate();
+            float refresh_rate = (video_st->video_refresh_rate_original)
+                  ? video_st->video_refresh_rate_original : settings->floats.video_refresh_rate;
 
-            runloop_st->frame_limit_minimum_time = (retro_time_t)
-                  roundf(1000000.0f / ((refresh_rate) ? refresh_rate : settings->floats.video_refresh_rate));
+            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / refresh_rate);
          }
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
