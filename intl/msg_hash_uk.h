@@ -3987,10 +3987,6 @@ MSG_HASH(
    "Зображення тла"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Виберіть зображення для тла меню."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Прозорість тла"
    )

@@ -6419,10 +6419,6 @@ MSG_HASH(
    "배경 이미지"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "메뉴 배경으로 사용할 이미지를 선택하십시오."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "배경 투명도"
    )

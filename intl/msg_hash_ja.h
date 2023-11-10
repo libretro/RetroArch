@@ -5047,10 +5047,6 @@ MSG_HASH(
    "背景画像"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "メニューの背景に画像を使用する"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "壁紙の不透明度"
    )
