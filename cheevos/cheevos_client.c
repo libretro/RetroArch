@@ -914,7 +914,7 @@ static void rcheevos_client_initialize_runtime_rich_presence(
        * making a copy in the process. */
       int result = rc_runtime_activate_richpresence(
             &rcheevos_locals->runtime,
-                                                    runtime_data->game_data.rich_presence_script, NULL, 0);
+            runtime_data->game_data.rich_presence_script, NULL, 0);
 
       if (result != RC_OK)
       {
