@@ -13073,6 +13073,10 @@ MSG_HASH(
    "İçerik CRC32'leri farklıdır. Farklı oyunlar kullanılamaz."
    )
 MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Sunucu farklı bir oyun çalıştırıyor."
+   )
+MSG_HASH(
    MSG_PING_TOO_HIGH,
    "Ping bu ana bilgisayar için çok yüksek."
    )

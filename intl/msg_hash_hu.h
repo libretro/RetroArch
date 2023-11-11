@@ -6367,6 +6367,10 @@ MSG_HASH(
    "Háttérkép"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "A menu hátterében látható kép. A kézzel vagy dinamikusan megadott képek felülírják a színtémát."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Háttér átlátszatlansága"
    )
@@ -12743,6 +12747,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "A tartalmak CRC32-je eltér. Nem lehet eltérő játékokat használni."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "A kiszolgáló eltérő játékot futtat."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,

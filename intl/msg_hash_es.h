@@ -12981,6 +12981,10 @@ MSG_HASH(
    "El CRC32 de los contenidos no es idéntico. No se pueden usar juegos distintos."
    )
 MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "El servidor está ejecutando un juego distinto."
+   )
+MSG_HASH(
    MSG_PING_TOO_HIGH,
    "Tu nivel de latencia (ping) es demasiado elevado para este servidor."
    )

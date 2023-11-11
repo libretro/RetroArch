@@ -3599,6 +3599,10 @@ MSG_HASH(
    "Фонавы відарыс"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "Вызначыць відарыс у якасці фону меню. Зададзеныя ўручную ды дынамічныя маюць перавагу над 'Колеравая тэма'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Непразрыстасць фону"
    )
@@ -3861,6 +3865,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Паўднёва-Усходняя Азія"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   "Уласная"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
@@ -5038,6 +5046,10 @@ MSG_HASH(
    "Звесткі пра ядро адсутнічаюць"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   "Няма даступных рэзервовых копій ядра"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    "Абранае адсутнічае"
    )
@@ -5051,7 +5063,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-   "Няма даступнай музыкі"
+   "Музыка адсутнічае"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
@@ -5572,6 +5584,10 @@ MSG_HASH(
    "Суадносіны бакоў"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   "Колеравая тэма"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Эфекты ценю"
    )
@@ -5655,6 +5671,10 @@ MSG_HASH(
    "Цэлалікавы маштаб"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   "Уласная"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
    "Чырвоная класічная"
    )
@@ -5691,6 +5711,10 @@ MSG_HASH(
    "Цёмна-фіялетавы"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+   "Паўночна-сіняя"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
    "Залацістая"
    )
@@ -5705,6 +5729,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON,
    "Лагуна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   "Цёмная Gruvbox"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
+   "Светлая Gruvbox"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
@@ -5773,6 +5805,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Эфекты ценю"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   "Колеравая тэма"
+   )
 
 /* XMB: Settings Options */
 
@@ -5787,6 +5823,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
    "Сняжынкі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   "Уласная"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
@@ -5837,6 +5877,10 @@ MSG_HASH(
    "Чырвоная старая"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+   "Паўночна-сіняя"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
    "Фонавы відарыс"
    )
@@ -5848,6 +5892,10 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Колеравая тэма"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Выбраць іншую колеравую тэму."
    )
@@ -5858,6 +5906,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    "Базавая чорная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
+   "Цёмная Gruvbox"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE,
@@ -5893,6 +5945,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    "Паказваць панэль навігацыі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   "Колеравая тэма"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -5940,6 +5996,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
    "Цёмная Ozone"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   "Цёмная Gruvbox"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
@@ -6795,6 +6855,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Раскрыта дасягненне"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Няма даступных мініяцюр"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

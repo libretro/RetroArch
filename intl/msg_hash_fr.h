@@ -12921,6 +12921,10 @@ MSG_HASH(
    "Le CRC32 du contenu est différent. Impossible d'utiliser des jeux non-identiques."
    )
 MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "L'hôte utilise un jeu différent."
+   )
+MSG_HASH(
    MSG_PING_TOO_HIGH,
    "Votre ping est trop élevé pour cet hôte."
    )

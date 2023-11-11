@@ -12657,6 +12657,10 @@ MSG_HASH(
    "CRC32-Prüfsummen des Inhalts weichen ab. Andere Spiele können nicht verwendet werden."
    )
 MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Der Host führt ein anderes Spiel aus."
+   )
+MSG_HASH(
    MSG_PING_TOO_HIGH,
    "Dein Ping ist zu hoch für diesen Host."
    )
