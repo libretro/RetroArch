@@ -94,10 +94,12 @@ struct shader_uniforms
    int input_size;
    int output_size;
    int texture_size;
+   int final_vp_size;
 
    int frame_count;
    int frame_direction;
-   unsigned rotation;
+   /* Use int for maximal compatibility despite other drivers using uint. */
+   int rotation;
 
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
@@ -734,6 +736,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->input_size      = gl_glsl_get_uniform(glsl, prog, "InputSize");
    uni->output_size     = gl_glsl_get_uniform(glsl, prog, "OutputSize");
    uni->texture_size    = gl_glsl_get_uniform(glsl, prog, "TextureSize");
+   uni->final_vp_size   = gl_glsl_get_uniform(glsl, prog, "FinalViewportSize");
 
    uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
@@ -1266,8 +1269,11 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    unsigned i;
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
-   float input_size[2], output_size[2], texture_size[2];
+   float input_size[2], output_size[2], texture_size[2], final_vp_size[2];
    video_shader_ctx_params_t          *params = (video_shader_ctx_params_t*)dat;
+   gl2_t                             *gl_data = (gl2_t*)params->data;
+   unsigned vp_width                          = gl_data->vp_out_width;
+   unsigned vp_height                         = gl_data->vp_out_height;
    unsigned width                             = params->width;
    unsigned height                            = params->height;
    unsigned tex_width                         = params->tex_width;
@@ -1299,12 +1305,14 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    if (glsl->prg[glsl->active_idx].id == 0)
       return;
 
-   input_size [0]  = (float)width;
-   input_size [1]  = (float)height;
-   output_size[0]  = (float)out_width;
-   output_size[1]  = (float)out_height;
-   texture_size[0] = (float)tex_width;
-   texture_size[1] = (float)tex_height;
+   input_size [0]   = (float)width;
+   input_size [1]   = (float)height;
+   output_size[0]   = (float)out_width;
+   output_size[1]   = (float)out_height;
+   texture_size[0]  = (float)tex_width;
+   texture_size[1]  = (float)tex_height;
+   final_vp_size[0] = (float)vp_width;
+   final_vp_size[1] = (float)vp_height;
 
    if (uni->input_size >= 0)
       glUniform2fv(uni->input_size, 1, input_size);
@@ -1314,6 +1322,9 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
 
    if (uni->texture_size >= 0)
       glUniform2fv(uni->texture_size, 1, texture_size);
+
+   if (uni->final_vp_size >= 0)
+      glUniform2fv(uni->final_vp_size, 1, final_vp_size);
 
    if (uni->frame_count >= 0 && glsl->active_idx)
    {
