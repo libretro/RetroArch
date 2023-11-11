@@ -312,7 +312,7 @@ void webhooks_initialize()
 //  ---------------------------------------------------------------------------
 //  Called when a new game is loaded in the emulator.
 //  ---------------------------------------------------------------------------
-void webhooks_game_loaded(const struct retro_game_info* info)
+void webhooks_load_game(const struct retro_game_info* info)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "New game loaded: %s\n", info->path);
 
@@ -333,7 +333,7 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 //  ---------------------------------------------------------------------------
 //  Called when a game is being unloaded.
 //  ---------------------------------------------------------------------------
-void webhooks_game_unloaded()
+void webhooks_unload_game()
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been unloaded\n");
 
@@ -345,7 +345,7 @@ void webhooks_game_unloaded()
 //  ---------------------------------------------------------------------------
 //  Called when the game is being reset.
 //  ---------------------------------------------------------------------------
-void webhooks_game_reset()
+void webhooks_reset_game()
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been reset\n");
 

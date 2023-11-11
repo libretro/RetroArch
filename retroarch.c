@@ -2587,7 +2587,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #endif
        
-         webhooks_game_reset();
+         webhooks_reset_game();
        
 #ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
@@ -2831,7 +2831,7 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
             }
 #endif
-            webhooks_game_unloaded();
+            webhooks_unload_game();
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
             runloop_system_info_free();
@@ -6681,7 +6681,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 
   webhooks_initialize();
-  
+
 #if defined(HAVE_AUDIOMIXER)
    audio_driver_load_system_sounds();
 #endif
@@ -6797,7 +6797,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
            
             // TODO Can't use it as is since the task_queue seems to have been cleared at this point.
-            webhooks_game_unloaded();
+            webhooks_unload_game();
            
 #ifdef HAVE_CHEATS
             cheat_manager_state_free();

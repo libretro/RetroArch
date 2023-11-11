@@ -1146,7 +1146,7 @@ static bool content_file_load(
       return false;
    }
 
-  webhooks_game_loaded(p_content->content_list->game_info);
+  webhooks_load_game(p_content->content_list->game_info);
 
 #ifdef HAVE_CHEEVOS
    if (!special)
