@@ -23,6 +23,8 @@ enum {
 
 const char* wpt_get_last_progress();
 
+wpt_clear_progress();
+
 int wpt_process_frame(rc_runtime_t* runtime);
 
 #endif /* __WEBHOOKS_PROGRESS_TRACKER_H */

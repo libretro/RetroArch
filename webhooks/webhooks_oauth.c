@@ -260,8 +260,8 @@ static void woauth_handle_accesstoken_response
 
   woauth_clear_usercode();
   token_refresh_scheduled = false;
-    
-  CHEEVOS_LOG(RCHEEVOS_TAG "Access token received\n");
+
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Access token received and saved\n");
   
   free(request);
   request = NULL;
@@ -311,7 +311,7 @@ static void woauth_trigger_accesstoken_retrieval()
     return;
   }
 
-  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting retrieving access token \n");
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting retrieving an access token \n");
 
   woauth_initialize_accesstoken_request(request);
 
@@ -400,15 +400,15 @@ void woauth_schedule_devicecode_retrieval()
 
   if (!request)
   {
-    CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate an OAuth device code request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate an OAuth device code request\n");
     return;
   }
   
   //retro_task_t* oauth_task = task_init();
   //task_set_title(oauth_task, "Starting association...");
   //task_queue_push(oauth_task);
-      
-  CHEEVOS_LOG(RCHEEVOS_TAG "Starting OAuth Device Flow \n");
+
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting OAuth Device Flow \n");
 
   woauth_initialize_devicecode_request(request);
 

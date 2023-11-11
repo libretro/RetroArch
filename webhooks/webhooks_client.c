@@ -335,6 +335,8 @@ void wc_update_progress
   retro_time_t time
 )
 {
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending progress '%s' for game's hash '%s' (frame=%ld)\n", progress, game_hash, frame_number);
+
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
   if (!request)
@@ -358,6 +360,8 @@ void wc_send_event
   retro_time_t time
 )
 {
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending webhook event '%d' for game's hash '%s'\n", game_event, game_hash);
+
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
   if (!request)

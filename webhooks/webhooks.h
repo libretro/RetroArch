@@ -43,6 +43,7 @@ const int GAME_PROGRESS_LENGTH = 4096;
 
 typedef struct wb_locals_t
 {
+  bool initialized;
   char hash[HASH_LENGTH];
   char game_progress[GAME_PROGRESS_LENGTH];
   struct rc_runtime_t runtime;

@@ -156,12 +156,19 @@ static void wh_compute_hash(const struct retro_game_info* info)
 
   memcpy(locals.hash, data->hash, HASH_LENGTH);
   locals.console_id = data->iterator.consoles[0];
+
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Current game's hash is '%s'\n", locals.hash);
 }
 
 //  ---------------------------------------------------------------------------
-//
+//  Called when the game's progress has been received from the backend server.
 //  ---------------------------------------------------------------------------
-static void wh_on_game_progress_downloaded(wb_locals_t* locals, const char* game_progress, size_t length)
+static void wh_on_game_progress_downloaded
+(
+  wb_locals_t* locals,
+  const char* game_progress,
+  size_t length
+)
 {
   wpp_parse_game_progress(game_progress, &locals->runtime);
 }
@@ -225,6 +232,9 @@ static int wh_init_memory(wb_locals_t* locals)
   return result;
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wb_check_progress
 (
   unsigned long frame_counter,
@@ -245,6 +255,9 @@ static void wb_check_progress
   }
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wb_check_game_events
 (
   unsigned long frame_counter,
@@ -263,6 +276,9 @@ static void wb_check_game_events
   }
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wb_reset_game_events()
 {
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
@@ -277,12 +293,20 @@ static void wb_reset_game_events()
 //  ---------------------------------------------------------------------------
 void webhooks_initialize()
 {
+  if (locals.initialized) {
+    return;
+  }
+
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Initializing\n");
+
   //  -----------------------------------------------------------------------------
   //  IT IS DONE HERE NOW BUT I SHOULD TRY AND DO THIS ONLY ONCE IN wb_initialize().
   //  I NEED TO FIND THE PROPER PLACE TO HOOK IT UP.
   rc_runtime_init(&locals.runtime);
 
   woauth_get_accesstoken();
+
+  locals.initialized = true;
 }
 
 //  ---------------------------------------------------------------------------
@@ -290,12 +314,16 @@ void webhooks_initialize()
 //  ---------------------------------------------------------------------------
 void webhooks_game_loaded(const struct retro_game_info* info)
 {
+  WEBHOOKS_LOG(WEBHOOKS_TAG "New game loaded: %s\n", info->path);
+
   frame_counter = 0;
   retro_time_t time = cpu_features_get_time_usec();
 
   wh_compute_hash(info);
 
   wh_init_memory(&locals);
+
+  wpt_clear_progress();
 
   wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
 
@@ -307,20 +335,28 @@ void webhooks_game_loaded(const struct retro_game_info* info)
 //  ---------------------------------------------------------------------------
 void webhooks_game_unloaded()
 {
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been unloaded\n");
+
   retro_time_t time = cpu_features_get_time_usec();
 
   wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 }
 
 //  ---------------------------------------------------------------------------
-//  Called for each frame.
+//  Called when the game is being reset.
 //  ---------------------------------------------------------------------------
 void webhooks_game_reset()
 {
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been reset\n");
+
   frame_counter = 0;
   retro_time_t time = cpu_features_get_time_usec();
 
   wb_reset_game_events();
+
+  wpt_clear_progress();
+
+  wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 
   wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
 }

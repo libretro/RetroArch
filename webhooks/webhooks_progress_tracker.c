@@ -20,6 +20,14 @@ struct progress_t {
 
 char frame_progress[2048];
 char last_progress[2048];
+bool first_run = false;
+
+//  ---------------------------------------------------------------------------
+//  Clears the last progress
+//  ---------------------------------------------------------------------------
+wpt_clear_progress() {
+  memset(last_progress, 0, sizeof(last_progress));
+}
 
 //  ---------------------------------------------------------------------------
 //  Returns the last progress computed
@@ -37,6 +45,7 @@ int wpt_process_frame(rc_runtime_t* runtime)
   
   if (runtime_richpresence == NULL) {
     //  Not initialized yet.
+    first_run = true;
     return 0;
   }
 
@@ -98,8 +107,9 @@ int wpt_process_frame(rc_runtime_t* runtime)
 
   //  ----------------------------------------------------------------------
 
-  bool state_changed = strcmp(frame_progress, last_progress) != 0;
-
+  bool state_changed = strcmp(frame_progress, last_progress) != 0 || first_run;
+  first_run = false;
+  
   if (state_changed) {
     strncpy(last_progress, frame_progress, 2047);
     last_progress[2047] = '\0';

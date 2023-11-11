@@ -238,6 +238,8 @@ static void wpd_on_request_completed
   on_game_progress_downloaded_t on_game_progress_downloaded = (on_game_progress_downloaded_t)(request->callback);
   struct wb_locals_t* locals = (struct wb_locals_t*)(request->callback_data);
 
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Received progress for game's hash '%s'\n", locals->hash);
+
   on_game_progress_downloaded(locals, data->data, data->len);
 }
 
@@ -246,6 +248,8 @@ static void wpd_on_request_completed
 //  ---------------------------------------------------------------------------
 void wpd_download_game_progress(wb_locals_t* locals, on_game_progress_downloaded_t on_game_progress_downloaded)
 {
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Requesting progress for game's hash '%s'\n", locals->hash);
+
   //  Clears any previous progress.
   locals->game_progress[0] = '\0';
 
