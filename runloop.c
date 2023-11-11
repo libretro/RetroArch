@@ -6201,7 +6201,7 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_MENU
    /* Stop checking the rest of the hotkeys if menu is alive */
    if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-      return RUNLOOP_STATE_END;
+      return RUNLOOP_STATE_MENU;
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -6777,7 +6777,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 
    if (menu_was_alive)
-      return RUNLOOP_STATE_END;
+      return RUNLOOP_STATE_MENU;
 
    return RUNLOOP_STATE_ITERATE;
 }
@@ -6936,7 +6936,7 @@ int runloop_iterate(void)
 #endif
          video_driver_cached_frame();
          return 1;
-      case RUNLOOP_STATE_END:
+      case RUNLOOP_STATE_MENU:
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_MENU
          /* FIXME: This is an ugly way to tell Netplay this... */
@@ -6947,13 +6947,19 @@ int runloop_iterate(void)
 #endif
 #endif
 #ifdef HAVE_MENU
-         /* Always run menu in video refresh rate speed. */
+         /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
+         if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
+            return 0;
+         else if (settings->bools.video_vsync)
+            goto end;
+
+         /* Otherwise run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
          {
-            float refresh_rate = video_driver_get_refresh_rate();
+            float refresh_rate = (video_st->video_refresh_rate_original)
+                  ? video_st->video_refresh_rate_original : settings->floats.video_refresh_rate;
 
-            runloop_st->frame_limit_minimum_time = (retro_time_t)
-                  roundf(1000000.0f / ((refresh_rate) ? refresh_rate : settings->floats.video_refresh_rate));
+            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / refresh_rate);
          }
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
