@@ -1817,8 +1817,6 @@ static void rcheevos_start_session_async(retro_task_t* task)
     * to proceed to the next loading state */
    rcheevos_client_start_session(rcheevos_locals.game.id);
 
-   //--> webhooks_send_game_event(rcheevos_locals.game.id, STARTED);
-  
    rcheevos_begin_load_state(RCHEEVOS_LOAD_STATE_STARTING_SESSION);
 
    if (needs_runtime)
