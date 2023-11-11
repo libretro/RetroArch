@@ -6772,7 +6772,7 @@ MSG_HASH(
    "Shows additional diagnostic and error messages."
    )
 
-/* Settings > Achievements > Webhook */
+/* Settings > Webhook */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS,
@@ -6780,7 +6780,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_SETTINGS,
-   "Enable pushing data to a 3rd party provider"
+   "Change webhook settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_URL,
