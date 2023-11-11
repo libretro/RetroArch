@@ -6682,7 +6682,6 @@ bool retroarch_main_init(int argc, char *argv[])
 
   webhooks_initialize();
   
-  
 #if defined(HAVE_AUDIOMIXER)
    audio_driver_load_system_sounds();
 #endif
