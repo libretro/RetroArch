@@ -1017,6 +1017,7 @@ static void xmb_render_messagebox_internal(
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
    int x, y, longest_width           = 0;
    float line_height                 = 0;
+   float text_offset_y               = 0;
    int usable_width                  = 0;
    struct string_list list           = {0};
    bool input_dialog_display_kb      = false;
@@ -1052,7 +1053,8 @@ static void xmb_render_messagebox_internal(
    if (input_dialog_display_kb)
       y_position           = video_height / 4;
    x                       = video_width  / 2;
-   y                       = y_position - (list.size-1) * line_height / 2;
+   y                       = y_position - (int) ((list.size-0.5f) * line_height / 2.0f);
+   text_offset_y           = 0.50f / list.size;
 
    /* find the longest line width */
    for (i = 0; i < list.size; i++)
@@ -1096,7 +1098,7 @@ static void xmb_render_messagebox_internal(
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - longest_width/2.0,
-               y + (i + 0.85) * line_height,
+               y + (i + text_offset_y) * line_height,
                video_width, video_height, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
