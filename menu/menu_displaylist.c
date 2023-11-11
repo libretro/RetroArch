@@ -8827,7 +8827,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,                               PARSE_ONLY_BOOL,   false  },
 #endif
                {MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE,                                  PARSE_ONLY_BOOL,   false  },
-               {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,                              PARSE_ACTION,      false  },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -10258,6 +10257,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEEVOS
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, PARSE_ACTION, true},
 #endif
+               {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,    PARSE_ACTION, true},
                {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,          PARSE_ACTION, true},
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_WIFI_SETTINGS,               PARSE_ACTION, true},

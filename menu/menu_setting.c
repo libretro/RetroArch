@@ -20723,7 +20723,6 @@ static bool setting_append_list(
          break;
 
       case SETTINGS_LIST_CHEEVOS_WEBHOOK:
-#ifdef HAVE_CHEEVOS
         START_GROUP(list, list_info, &group_info,
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS),
           parent_group);
@@ -20818,10 +20817,7 @@ static bool setting_append_list(
         */
         END_SUB_GROUP(list, list_info, parent_group);
         END_GROUP(list, list_info, parent_group);
-#endif
           break;
-
-
 
       case SETTINGS_LIST_CHEEVOS_VISIBILITY:
 #ifdef HAVE_CHEEVOS
