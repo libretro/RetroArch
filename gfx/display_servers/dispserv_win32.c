@@ -228,6 +228,9 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
    DEVMODE dm                = {0};
    LONG res                  = 0;
    unsigned i                = 0;
@@ -288,12 +291,13 @@ static bool win32_display_server_set_resolution(void *data,
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
 
-      res = win32_change_display_settings(NULL, &dm, CDS_TEST);
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+      res = win32_change_display_settings(&current_mon.szDevice, &dm, CDS_TEST);
 
       switch (res)
       {
          case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(NULL, &dm, 0);
+            res = win32_change_display_settings(&current_mon.szDevice, &dm, 0);
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
