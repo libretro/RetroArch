@@ -6419,6 +6419,10 @@ MSG_HASH(
    "배경 이미지"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "메뉴 배경으로 설정할 이미지를 선택하세요. 수동 및 동적 이미지는 '색상 테마'보다 우선 적용됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "배경 투명도"
    )
@@ -12068,6 +12072,10 @@ MSG_HASH(
    "치트 검색 시작 또는 재개"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "미디어 플레이어에서 재생"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "초"
    )
@@ -13075,6 +13083,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "콘텐츠의 CRC32가 다릅니다. 다른 게임은 사용할 수 없습니다."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "호스트가 다른 게임을 실행 중입니다."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,

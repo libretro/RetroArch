@@ -6303,6 +6303,10 @@ MSG_HASH(
    "Obrázek na Pozadí"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "Vyberte obrázek, který chcete nastavit jako pozadí menu. Ruční a dynamické obrázky budou mít přednost před \"Barevným motivem\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Neprůhlednost Pozadí"
    )
@@ -12787,6 +12791,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "Obsah CRC32 se liší. Nelze použít různé hry."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Hostitel provozuje jinou hru."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
