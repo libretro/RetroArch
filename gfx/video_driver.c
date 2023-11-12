@@ -4026,6 +4026,94 @@ void video_driver_reinit(int flags)
    video_st->window_title_prev[0]          = '\0';
 }
 
+void video_frame_delay(video_driver_state_t *video_st,
+      settings_t *settings,
+      bool core_paused)
+{
+   runloop_state_t *runloop_st          = runloop_state_get_ptr();
+   unsigned video_frame_delay           = settings->uints.video_frame_delay;
+   unsigned video_frame_delay_effective = video_st->frame_delay_effective;
+   bool skip_delay                      = core_paused
+         || (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
+
+   if (settings->bools.video_frame_delay_auto)
+   {
+      float refresh_rate          = settings->floats.video_refresh_rate;
+      uint8_t video_swap_interval = runloop_get_video_swap_interval(
+            settings->uints.video_swap_interval);
+      uint8_t video_bfi           = settings->uints.video_black_frame_insertion;
+      uint8_t frame_time_interval = 8;
+      static uint8_t skip_update  = 0;
+      static bool skip_delay_prev = false;
+      bool frame_time_update      =
+            /* Skip some initial frames for stabilization */
+               video_st->frame_count > frame_time_interval
+            /* Only update when there are enough frames for averaging */
+            && video_st->frame_count % frame_time_interval == 0;
+
+      /* A few frames must be ignored after slow+fastmotion/pause
+       * is disabled or geometry change is triggered */
+      if (     (!skip_delay && skip_delay_prev)
+            || video_st->frame_delay_pause)
+      {
+         skip_update = frame_time_interval * 4;
+         video_st->frame_delay_pause = false;
+      }
+
+      if (skip_update)
+         skip_update--;
+
+      skip_delay_prev = skip_delay;
+
+      /* Always skip when slow+fastmotion/pause is active */
+      if (skip_delay_prev)
+         skip_update = 1;
+
+      if (skip_update)
+         frame_time_update = false;
+
+      /* Black frame insertion + swap interval multiplier */
+      refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
+
+      /* Set target moderately as half frame time with 0 (Auto) delay */
+      if (video_frame_delay == 0)
+         video_frame_delay = 1 / refresh_rate * 1000 / 2;
+
+      /* Reset new desired delay target */
+      if (video_st->frame_delay_target != video_frame_delay)
+      {
+         frame_time_update             = false;
+         video_st->frame_delay_target  = video_frame_delay_effective = video_frame_delay;
+         RARCH_LOG("[Video]: Frame delay reset to %d ms.\n", video_frame_delay);
+      }
+
+      /* Decide what should happen to effective delay */
+      if (video_frame_delay_effective > 0 && frame_time_update)
+      {
+         video_frame_delay_auto_t vfda   = {0};
+         vfda.frame_time_interval        = frame_time_interval;
+         vfda.refresh_rate               = refresh_rate;
+
+         video_frame_delay_auto(video_st, &vfda);
+         if (vfda.delay_decrease > 0)
+         {
+            video_frame_delay_effective -= vfda.delay_decrease;
+            RARCH_LOG("[Video]: Frame delay decrease by %d ms to %d ms due to frame time average: %d > %d.\n",
+                  vfda.delay_decrease, video_frame_delay_effective, vfda.frame_time_avg, vfda.frame_time_target);
+         }
+      }
+   }
+   else
+      video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
+
+   video_st->frame_delay_effective = video_frame_delay_effective;
+
+   /* Never apply frame delay when slow+fastmotion/pause is active */
+   if (video_frame_delay_effective > 0 && !skip_delay)
+      retro_sleep(video_frame_delay_effective);
+}
+
 void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda)
 {
    int i;
