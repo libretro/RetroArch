@@ -2827,28 +2827,32 @@ static bool accessibility_speak_unix(int speed,
    }
 
    pid = fork();
-   if (pid < 0)
+   switch (pid)
    {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for espeak.\n");
-   }
-   else if (pid > 0)
-   {
-      /* parent process */
-      speak_pid = pid;
+      case 0:
+         {
+            /* child process: replace process with the espeak command */
+            char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
+            cmd[1] = voice_out;
+            cmd[2] = speed_out;
+            cmd[3] = (char*)speak_text;
+            execvp("espeak", cmd);
 
-      /* Tell the system that we'll ignore the exit status of the child
-       * process.  This prevents zombie processes. */
-      signal(SIGCHLD,SIG_IGN);
-   }
-   else
-   {
-      /* child process: replace process with the espeak command */
-      char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
-      cmd[1] = voice_out;
-      cmd[2] = speed_out;
-      cmd[3] = (char*)speak_text;
-      execvp("espeak", cmd);
+            RARCH_WARN("Could not execute espeak.\n");
+            /* Prevent interfere with the parent process */
+            _exit(EXIT_FAILURE);
+         }
+      case -1:
+         RARCH_ERR("Could not fork for espeak.\n");
+      default:
+         {
+            /* parent process */
+            speak_pid = pid;
+
+            /* Tell the system that we'll ignore the exit status of the child
+             * process.  This prevents zombie processes. */
+            signal(SIGCHLD, SIG_IGN);
+	 }
    }
 
 end:
