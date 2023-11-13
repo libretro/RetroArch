@@ -645,10 +645,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
    "cheevos_webhook_start_association"
    )
-//MSG_HASH(
-//   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_STOP_ASSOCIATION,
-//   "cheevos_webhook_stop_association"
-//   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION,
+   "cheevos_webhook_abort_association"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE,
    "cheevos_webhook_code"

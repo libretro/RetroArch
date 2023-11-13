@@ -8919,7 +8919,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
-      case DISPLAYLIST_CHEEVOS_WEBHOOK_SETTINGS_LIST:
+     case DISPLAYLIST_CHEEVOS_WEBHOOK_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
               {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_URL,       PARSE_ONLY_STRING,   true},
@@ -8929,11 +8929,22 @@ unsigned menu_displaylist_build_list(
               //{MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN,     PARSE_ONLY_STRING,   true},
             };
 
-           menu_entries_append(list,
-              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_START_ASSOCIATION),
-              msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION),
-              MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
-              MENU_SETTING_ACTION, 0, 0, NULL);
+           if (woauth_is_pairing())
+           {
+             menu_entries_append(list,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION),
+                                 MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION,
+                                 MENU_SETTING_ACTION, 0, 0, NULL);
+           }
+           else
+           {
+             menu_entries_append(list,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_START_ASSOCIATION),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION),
+                                 MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
+                                 MENU_SETTING_ACTION, 0, 0, NULL);
+           }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {

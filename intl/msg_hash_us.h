@@ -6814,14 +6814,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
    "Start a secure association between the emulator and the 3rd party website"
    )
-//MSG_HASH(
-//   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_STOP_ASSOCIATION,
-//   "Cancel association with website"
-//   )
-//MSG_HASH(
-//   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_STOP_ASSOCIATION,
-//   "Cancel the operation of securing the association between the emulator and the 3rd party website"
-//   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION,
+   "Cancel association with website"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION,
+   "Cancel the operation of securing the association between the emulator and the 3rd party website"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE,
    "Code"

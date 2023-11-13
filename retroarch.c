@@ -4465,10 +4465,13 @@ bool command_event(enum event_command cmd, void *data)
                                                         : MSG_VRR_RUNLOOP_DISABLED),
                1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
-     case CMD_EVENT_WEBHOOK_START_ASSOCIATION:
-       woauth_initiate();
+      case CMD_EVENT_WEBHOOK_START_ASSOCIATION:
+        woauth_initiate_pairing();
         break;
-      case CMD_EVENT_NONE:
+      case CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION:
+        woauth_abort_pairing();
+        break;
+     case CMD_EVENT_NONE:
          return false;
 
       /* Deprecated */

@@ -10,6 +10,7 @@
 #include <net/net_http.h>
 
 #include "webhooks_oauth.h"
+#include "../command.h"
 
 enum oauth_async_io_type
 {
@@ -44,8 +45,16 @@ bool token_refresh_scheduled;
 woauth_code_response_t oauth_code_response;
 woauth_token_response_t oauth_token_response;
 
+bool is_pairing;
+
 static void woauth_schedule_accesstoken_retrieval();
 static void woauth_trigger_accesstoken_retrieval();
+
+static void woauth_end_pairing()
+{
+  is_pairing = false;
+  command_event(CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION, NULL);
+}
 
 //  ------------------------------------------------------------------------------
 //  Drops the User Code from the configuration.
@@ -106,7 +115,7 @@ static void woauth_end_http_request
 )
 {
   async_http_request_t *request = (async_http_request_t*)user_data;
-  http_transfer_data_t      *data  = (http_transfer_data_t*)task_data;
+  http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
   char buffer[224];
 
   if (error)
@@ -115,42 +124,42 @@ static void woauth_end_http_request
   }
   else if (!data)
   {
-    /* Server did not return HTTP headers */
+    // Server did not return HTTP headers
     strlcpy(buffer, "Server communication error", sizeof(buffer));
   }
   else if (!data->data || !data->len)
   {
     if (data->status <= 0)
     {
-      /* something occurred which prevented the response from being processed.
-       * assume the server request hasn't happened and try again. */
+      // Something occurred which prevented the response from being processed.
+      // assume the server request hasn't happened and try again.
       snprintf(buffer, sizeof(buffer), "task status code %d", data->status);
       return;
     }
 
-    if (data->status != 200) /* Server returned error via status code. */
+    if (data->status != 200) // Server returned error via status code.
     {
-      snprintf(buffer, sizeof(buffer), "HTTP error code %d", data->status);
+      snprintf(buffer, sizeof(buffer), "Received HTTP status code %d", data->status);
     }
-    else /* Server sent empty response without error status code */
+    else // Server sent empty response without error status code
       strlcpy(buffer, "No response from server", sizeof(buffer));
   }
   else
   {
-    /* indicate success unless handler provides error */
+    // indicate success unless handler provides error
     buffer[0] = '\0';
 
-    /* Call appropriate handler to process the response */
-    /* NOTE: data->data is not null-terminated. Most handlers assume the
-     * response is properly formatted or will encounter a parse failure
-     * before reading past the end of the data */
+    // Call appropriate handler to process the response
+    // NOTE: data->data is not null-terminated. Most handlers assume the
+    // response is properly formatted or will encounter a parse failure
+    // before reading past the end of the data
     if (request->handler)
       request->handler(request, data, buffer, sizeof(buffer));
   }
 
   if (!buffer[0])
   {
-    /* success */
+    // success
     if (request->success_message)
     {
       if (request->id)
@@ -161,7 +170,7 @@ static void woauth_end_http_request
   }
   else
   {
-    /* encountered an error */
+    // encountered an error
     char errbuf[256];
     if (request->id)
       snprintf(errbuf, sizeof(errbuf), "%s %u: %s", request->failure_message, request->id, buffer);
@@ -172,8 +181,14 @@ static void woauth_end_http_request
   }
 
   // Check again a moment later.
-  if (data != NULL && data->status != 200 && request->type == ACCESS_TOKEN) {
-    woauth_schedule_accesstoken_retrieval();
+  if (data != NULL) {
+    if (data->status == 204 && request->type == ACCESS_TOKEN) {
+      WEBHOOKS_LOG(WEBHOOKS_TAG "User has not entered the code on the website. Retrying...\n");
+      woauth_schedule_accesstoken_retrieval();
+      //woauth_free_request(request);
+    }// else if (data->status != 200 && request->type == ACCESS_TOKEN) {
+      //woauth_schedule_accesstoken_retrieval();
+    //}
   }
 }
 
@@ -265,7 +280,15 @@ static void woauth_handle_accesstoken_response
   
   free(request);
   request = NULL;
+
+  free(api_buffer);
+  
+  is_pairing = false;
+  //if (is_pairing)
+  //  is_end_pairing_scheduled = true;
 }
+
+bool initialized = false;
 
 //  ------------------------------------------------------------------------------
 //  Initializes the HTTP request used to get an access token.
@@ -276,12 +299,12 @@ static void woauth_initialize_accesstoken_request
 )
 {
   rc_api_url_builder_t builder;
-      
+
   const settings_t *settings = config_get_ptr();
-      
+
   const char* client_id = DEFAULT_CLIENT_ID;
   const char* device_code = oauth_code_response.device_code;
-      
+
   rc_url_builder_init(&builder, &(request->request.buffer), 48);
   rc_url_builder_append_str_param(&builder, "client_id", client_id);
 
@@ -289,13 +312,11 @@ static void woauth_initialize_accesstoken_request
     rc_url_builder_append_str_param(&builder, "device_code", device_code);
   else
     rc_url_builder_append_str_param(&builder, "refresh_token", settings->arrays.cheevos_webhook_refreshtoken);
-    
+
   request->type = ACCESS_TOKEN;
   request->handler = (async_http_handler)woauth_handle_accesstoken_response;
   request->request.url = settings->arrays.cheevos_webhook_token_url;
   request->request.post_data = rc_url_builder_finalize(&builder);
-
-  rcheevos_log_post_url(request->request.url, request->request.post_data);
 }
 
 //  ------------------------------------------------------------------------------
@@ -305,13 +326,12 @@ static void woauth_trigger_accesstoken_retrieval()
 {
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
-  if (!request)
-  {
+  if (!request) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate an OAuth2 request\n");
     return;
   }
 
-  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting retrieving an access token \n");
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting retrieving an access token since the 'device_code' is available\n");
 
   woauth_initialize_accesstoken_request(request);
 
@@ -341,22 +361,31 @@ void woauth_handle_devicecode_response
   
   int result = rc_json_parse_response(api_response, data->data, fields, sizeof(fields) / sizeof(fields[0]));
 
-  if (result != 0)
+  if (result != 0) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the OAuth response\n");
+    is_pairing = true;
     return;
+  }
 
   rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
   rc_buf_init(api_buffer);
 
   if (!rc_json_get_required_string(&oauth_code_response.device_code, api_response, &fields[2], "device_code")) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the 'device_code' from the response\n");
     free(api_buffer);
+    is_pairing = true;
     return;
   }
 
   if (!rc_json_get_required_string(&oauth_code_response.user_code, api_response, &fields[3], "user_code")) {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the 'user_code' from the response\n");
     free(api_buffer);
+    is_pairing = true;
     return;
   }
-  
+
+  woauth_clear_usercode();
+
   //  Sets the device code in the configuration as well so that it is visible to the user.
   settings_t *settings = config_get_ptr();
   configuration_set_string(settings, settings->arrays.cheevos_webhook_usercode, oauth_code_response.user_code);
@@ -404,10 +433,6 @@ void woauth_schedule_devicecode_retrieval()
     return;
   }
   
-  //retro_task_t* oauth_task = task_init();
-  //task_set_title(oauth_task, "Starting association...");
-  //task_queue_push(oauth_task);
-
   WEBHOOKS_LOG(WEBHOOKS_TAG "Starting OAuth Device Flow \n");
 
   woauth_initialize_devicecode_request(request);
@@ -418,12 +443,32 @@ void woauth_schedule_devicecode_retrieval()
 //  ------------------------------------------------------------------------------
 //  Starts the process to associate the emulator with the Webhook server.
 //  ------------------------------------------------------------------------------
-void woauth_initiate()
+void woauth_initiate_pairing()
 {
-  woauth_clear_usercode();
+  is_pairing = true;
+
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Starting pairing device to the server\n");
 
   strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
   woauth_schedule_devicecode_retrieval();
+}
+
+//  ------------------------------------------------------------------------------
+//
+//  ------------------------------------------------------------------------------
+bool woauth_is_pairing()
+{
+  return is_pairing;
+}
+
+//  ------------------------------------------------------------------------------
+//
+//  ------------------------------------------------------------------------------
+void woauth_abort_pairing()
+{
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Cancelling pairing device to the server\n");
+
+  is_pairing = false;
 }
 
 //  ------------------------------------------------------------------------------

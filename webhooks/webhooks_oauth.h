@@ -19,7 +19,9 @@
 #include "rc_api_request.h"
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
 
-void woauth_initiate();
+void woauth_initiate_pairing();
+bool woauth_is_pairing();
+void woauth_abort_pairing();
 
 const char* woauth_get_accesstoken();
 

@@ -7684,6 +7684,15 @@ static int action_ok_cheevos_webhook_start_association(const char *path,
    return -1;
 }
 
+static int action_ok_cheevos_webhook_abort_association(const char *path,
+                                                       const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+  if (command_event(CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION, NULL))
+    return generic_action_ok_command(CMD_EVENT_RESUME);
+
+  return -1;
+}
+
 static int action_ok_core_create_backup(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8611,6 +8620,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,         action_ok_cheevos_visibility_list},
          {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,            action_ok_cheevos_webhook_list},
          {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,   action_ok_cheevos_webhook_start_association},
+         {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION,   action_ok_cheevos_webhook_abort_association},
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
 #ifdef HAVE_BLUETOOTH
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},

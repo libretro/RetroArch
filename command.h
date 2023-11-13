@@ -266,8 +266,9 @@ enum event_command
    /* Reinitializes microphone driver. */
    CMD_EVENT_MICROPHONE_REINIT,
 #endif,
-   /* Start the secure association between the emulator and the 3rd party host. */
+   /* Starts or aborts the secure association between the emulator and the 3rd party host. */
    CMD_EVENT_WEBHOOK_START_ASSOCIATION,
+   CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION,
    /* Deprecated */
    CMD_EVENT_SEND_DEBUG_INFO
 };
