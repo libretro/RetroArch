@@ -8919,30 +8919,29 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
-     case DISPLAYLIST_CHEEVOS_WEBHOOK_SETTINGS_LIST:
+     case DISPLAYLIST_WEBHOOK_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
-              {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_URL,       PARSE_ONLY_STRING,   true},
-              {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE_URL,  PARSE_ONLY_STRING,   true},
-              {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN_URL, PARSE_ONLY_STRING,   true},
-              {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE,      PARSE_ONLY_STRING,   true},
-              //{MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN,     PARSE_ONLY_STRING,   true},
+              {MENU_ENUM_LABEL_WEBHOOK_URL,       PARSE_ONLY_STRING,   true},
+              {MENU_ENUM_LABEL_WEBHOOK_CODE_URL,  PARSE_ONLY_STRING,   true},
+              {MENU_ENUM_LABEL_WEBHOOK_TOKEN_URL, PARSE_ONLY_STRING,   true},
+              {MENU_ENUM_LABEL_WEBHOOK_CODE,      PARSE_ONLY_STRING,   true}
             };
 
            if (woauth_is_pairing())
            {
              menu_entries_append(list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION),
-                                 msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION),
-                                 MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_ABORT_ASSOCIATION,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WEBHOOK_ABORT_ASSOCIATION),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_WEBHOOK_ABORT_ASSOCIATION),
+                                 MENU_ENUM_LABEL_WEBHOOK_ABORT_ASSOCIATION,
                                  MENU_SETTING_ACTION, 0, 0, NULL);
            }
            else
            {
              menu_entries_append(list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_START_ASSOCIATION),
-                                 msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION),
-                                 MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_START_ASSOCIATION,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WEBHOOK_START_ASSOCIATION),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_WEBHOOK_START_ASSOCIATION),
+                                 MENU_ENUM_LABEL_WEBHOOK_START_ASSOCIATION,
                                  MENU_SETTING_ACTION, 0, 0, NULL);
            }
 
@@ -10268,7 +10267,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEEVOS
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, PARSE_ACTION, true},
 #endif
-               {MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,    PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_WEBHOOK_SETTINGS,            PARSE_ACTION, true},
                {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,          PARSE_ACTION, true},
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_WIFI_SETTINGS,               PARSE_ACTION, true},
@@ -13722,7 +13721,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
          case DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST:
          case DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST:
-         case DISPLAYLIST_CHEEVOS_WEBHOOK_SETTINGS_LIST:
+         case DISPLAYLIST_WEBHOOK_SETTINGS_LIST:
          case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
          case DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST:
          case DISPLAYLIST_RECORDING_SETTINGS_LIST:

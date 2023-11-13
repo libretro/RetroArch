@@ -170,7 +170,7 @@ static void wc_set_progress_request_url
 )
 {
   const settings_t *settings = config_get_ptr();
-  request->request.url = settings->arrays.cheevos_webhook_url;
+  request->request.url = settings->arrays.webhook_url;
   
   rc_api_url_builder_t builder;
   rc_url_builder_init(&builder, &request->request.buffer, 48);
@@ -200,7 +200,7 @@ static void wc_set_event_request_url
 )
 {
   const settings_t *settings = config_get_ptr();
-  request->request.url = settings->arrays.cheevos_webhook_url;
+  request->request.url = settings->arrays.webhook_url;
 
   rc_api_url_builder_t builder;
   rc_url_builder_init(&builder, &request->request.buffer, 48);

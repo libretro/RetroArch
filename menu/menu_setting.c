@@ -308,7 +308,7 @@ enum settings_list_type
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CHEEVOS_APPEARANCE,
    SETTINGS_LIST_CHEEVOS_VISIBILITY,
-   SETTINGS_LIST_CHEEVOS_WEBHOOK,
+   SETTINGS_LIST_WEBHOOK,
    SETTINGS_LIST_CORE_UPDATER,
    SETTINGS_LIST_NETPLAY,
    SETTINGS_LIST_LAKKA_SERVICES,
@@ -10214,8 +10214,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS,
+               MENU_ENUM_LABEL_WEBHOOK_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_WEBHOOK_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -20722,19 +20722,19 @@ static bool setting_append_list(
 #endif
          break;
 
-      case SETTINGS_LIST_CHEEVOS_WEBHOOK:
+      case SETTINGS_LIST_WEBHOOK:
         START_GROUP(list, list_info, &group_info,
-          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_SETTINGS),
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WEBHOOK_SETTINGS),
           parent_group);
-        parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_SETTINGS);
+        parent_group = msg_hash_to_str(MENU_ENUM_LABEL_WEBHOOK_SETTINGS);
         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
         CONFIG_STRING(
           list, list_info,
-          settings->arrays.cheevos_webhook_url,
-          sizeof(settings->arrays.cheevos_webhook_url),
-          MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_URL,
-          MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_URL,
+          settings->arrays.webhook_url,
+          sizeof(settings->arrays.webhook_url),
+          MENU_ENUM_LABEL_WEBHOOK_URL,
+          MENU_ENUM_LABEL_VALUE_WEBHOOK_URL,
           "",
           &group_info,
           &subgroup_info,
@@ -20748,10 +20748,10 @@ static bool setting_append_list(
 
         CONFIG_STRING(
            list, list_info,
-           settings->arrays.cheevos_webhook_code_url,
-           sizeof(settings->arrays.cheevos_webhook_code_url),
-           MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE_URL,
-           MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE_URL,
+           settings->arrays.webhook_code_url,
+           sizeof(settings->arrays.webhook_code_url),
+           MENU_ENUM_LABEL_WEBHOOK_CODE_URL,
+           MENU_ENUM_LABEL_VALUE_WEBHOOK_CODE_URL,
            "",
            &group_info,
            &subgroup_info,
@@ -20765,10 +20765,10 @@ static bool setting_append_list(
 
        CONFIG_STRING(
            list, list_info,
-           settings->arrays.cheevos_webhook_token_url,
-           sizeof(settings->arrays.cheevos_webhook_token_url),
-           MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN_URL,
-           MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_TOKEN_URL,
+           settings->arrays.webhook_token_url,
+           sizeof(settings->arrays.webhook_token_url),
+           MENU_ENUM_LABEL_WEBHOOK_TOKEN_URL,
+           MENU_ENUM_LABEL_VALUE_WEBHOOK_TOKEN_URL,
            "",
            &group_info,
            &subgroup_info,
@@ -20782,10 +20782,10 @@ static bool setting_append_list(
 
        CONFIG_STRING(
           list, list_info,
-          settings->arrays.cheevos_webhook_usercode,
-          sizeof(settings->arrays.cheevos_webhook_usercode),
-          MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_CODE,
-          MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_CODE,
+          settings->arrays.webhook_usercode,
+          sizeof(settings->arrays.webhook_usercode),
+          MENU_ENUM_LABEL_WEBHOOK_CODE,
+          MENU_ENUM_LABEL_VALUE_WEBHOOK_CODE,
           "",
           &group_info,
           &subgroup_info,
@@ -20803,7 +20803,7 @@ static bool setting_append_list(
           settings->arrays.cheevos_webhook_token,
           sizeof(settings->arrays.cheevos_webhook_token),
           MENU_ENUM_LABEL_CHEEVOS_WEBHOOK_TOKEN,
-          MENU_ENUM_LABEL_VALUE_CHEEVOS_WEBHOOK_TOKEN,
+          MENU_ENUM_LABEL_VALUE_WEBHOOK_TOKEN,
           "",
           &group_info,
           &subgroup_info,
@@ -23050,7 +23050,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CHEEVOS_APPEARANCE,
       SETTINGS_LIST_CHEEVOS_VISIBILITY,
-      SETTINGS_LIST_CHEEVOS_WEBHOOK,
+      SETTINGS_LIST_WEBHOOK,
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
       SETTINGS_LIST_LAKKA_SERVICES,

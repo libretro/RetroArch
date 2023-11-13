@@ -63,7 +63,7 @@ static void woauth_end_pairing()
 static void woauth_clear_usercode()
 {
   settings_t *settings = config_get_ptr();
-  configuration_set_string(settings, settings->arrays.cheevos_webhook_usercode, "");
+  configuration_set_string(settings, settings->arrays.webhook_usercode, "");
 }
 
 //  ------------------------------------------------------------------------------
@@ -269,9 +269,9 @@ static void woauth_handle_accesstoken_response
   sprintf(expiration, "%lld", expiration_timestamp);
   
   settings_t *settings = config_get_ptr();
-  configuration_set_string(settings, settings->arrays.cheevos_webhook_expiresin, expiration);
-  configuration_set_string(settings, settings->arrays.cheevos_webhook_accesstoken, oauth_token_response.access_token);
-  configuration_set_string(settings, settings->arrays.cheevos_webhook_refreshtoken, oauth_token_response.refresh_token);
+  configuration_set_string(settings, settings->arrays.webhook_expiresin, expiration);
+  configuration_set_string(settings, settings->arrays.webhook_accesstoken, oauth_token_response.access_token);
+  configuration_set_string(settings, settings->arrays.webhook_refreshtoken, oauth_token_response.refresh_token);
 
   woauth_clear_usercode();
   token_refresh_scheduled = false;
@@ -311,11 +311,11 @@ static void woauth_initialize_accesstoken_request
   if (device_code != NULL && strlen(device_code) > 0)
     rc_url_builder_append_str_param(&builder, "device_code", device_code);
   else
-    rc_url_builder_append_str_param(&builder, "refresh_token", settings->arrays.cheevos_webhook_refreshtoken);
+    rc_url_builder_append_str_param(&builder, "refresh_token", settings->arrays.webhook_refreshtoken);
 
   request->type = ACCESS_TOKEN;
   request->handler = (async_http_handler)woauth_handle_accesstoken_response;
-  request->request.url = settings->arrays.cheevos_webhook_token_url;
+  request->request.url = settings->arrays.webhook_token_url;
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
@@ -388,7 +388,7 @@ void woauth_handle_devicecode_response
 
   //  Sets the device code in the configuration as well so that it is visible to the user.
   settings_t *settings = config_get_ptr();
-  configuration_set_string(settings, settings->arrays.cheevos_webhook_usercode, oauth_code_response.user_code);
+  configuration_set_string(settings, settings->arrays.webhook_usercode, oauth_code_response.user_code);
 
   free(request);
   request = NULL;
@@ -414,7 +414,7 @@ static void woauth_initialize_devicecode_request
   rc_url_builder_append_str_param(&builder, "scope", "scope-to-be-determined");
   
   request->handler = (async_http_handler)woauth_handle_devicecode_response;
-  request->request.url = settings->arrays.cheevos_webhook_code_url;
+  request->request.url = settings->arrays.webhook_code_url;
   request->request.post_data = rc_url_builder_finalize(&builder);
 
   rcheevos_log_post_url(request->request.url, request->request.post_data);
@@ -486,7 +486,7 @@ const char* woauth_get_accesstoken()
   char * e;
   errno = 0;
 
-  retro_time_t expecting_refresh = (retro_time_t)strtoll(settings->arrays.cheevos_webhook_expiresin, &e, 10);
+  retro_time_t expecting_refresh = (retro_time_t)strtoll(settings->arrays.webhook_expiresin, &e, 10);
     
   if (*e != 0 || errno != 0) {
     //  The emulator has not been associated.
@@ -503,7 +503,7 @@ const char* woauth_get_accesstoken()
   }
   else if (now >= expecting_refresh) {
     if(!token_refresh_scheduled) {
-      if (strlen(settings->arrays.cheevos_webhook_refreshtoken) > 0) {
+      if (strlen(settings->arrays.webhook_refreshtoken) > 0) {
         //  Let's get an access token asap using the refresh token.
         token_refresh_scheduled = true;
         woauth_trigger_accesstoken_retrieval();
@@ -525,7 +525,7 @@ const char* woauth_get_accesstoken()
 
       token_refresh_scheduled = true;
       woauth_trigger_accesstoken_retrieval();
-      return settings->arrays.cheevos_webhook_accesstoken;
+      return settings->arrays.webhook_accesstoken;
     }
     else {
       //  The refresh token as well as the device code is missing.
@@ -536,5 +536,5 @@ const char* woauth_get_accesstoken()
   }
     
   //  The access token is not close to expire.
-  return settings->arrays.cheevos_webhook_accesstoken;
+  return settings->arrays.webhook_accesstoken;
 }

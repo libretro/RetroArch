@@ -1501,13 +1501,13 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
    SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
    SETTING_ARRAY("cheevos_leaderboards_enable", settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
-   SETTING_ARRAY("cheevos_webhook_url",          settings->arrays.cheevos_webhook_url, false, NULL, true);
-   SETTING_ARRAY("cheevos_webhook_code_url",     settings->arrays.cheevos_webhook_code_url, false, NULL, true);
-   SETTING_ARRAY("cheevos_webhook_token_url",    settings->arrays.cheevos_webhook_token_url, false, NULL, true);
-   SETTING_ARRAY("cheevos_webhook_usercode",     settings->arrays.cheevos_webhook_usercode, false, NULL, true);
-   SETTING_ARRAY("cheevos_webhook_accesstoken",  settings->arrays.cheevos_webhook_accesstoken, false, NULL, true);
-   SETTING_ARRAY("cheevos_webhook_refreshtoken", settings->arrays.cheevos_webhook_refreshtoken, false, NULL, true);
-   SETTING_ARRAY("cheevos_webhook_expiresin",    settings->arrays.cheevos_webhook_expiresin, false, NULL, true);
+   SETTING_ARRAY("webhook_url",              settings->arrays.webhook_url, false, NULL, true);
+   SETTING_ARRAY("webhook_code_url",         settings->arrays.webhook_code_url, false, NULL, true);
+   SETTING_ARRAY("webhook_token_url",        settings->arrays.webhook_token_url, false, NULL, true);
+   SETTING_ARRAY("webhook_usercode",         settings->arrays.webhook_usercode, false, NULL, true);
+   SETTING_ARRAY("webhook_accesstoken",      settings->arrays.webhook_accesstoken, false, NULL, true);
+   SETTING_ARRAY("webhook_refreshtoken",     settings->arrays.webhook_refreshtoken, false, NULL, true);
+   SETTING_ARRAY("webhook_expiresin",        settings->arrays.webhook_expiresin, false, NULL, true);
 
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);

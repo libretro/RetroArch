@@ -179,7 +179,7 @@ static void wpd_set_request_header(async_http_request_t* request)
 static void wpd_set_request_url(const wb_locals_t* locals, async_http_request_t* request)
 {
   const settings_t *settings = config_get_ptr();
-  const char* base_url = settings->arrays.cheevos_webhook_url;
+  const char* base_url = settings->arrays.webhook_url;
 
   const size_t url_len = strlen(base_url);
   const size_t hash_length = sizeof(locals->hash);
