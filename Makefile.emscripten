@@ -81,7 +81,7 @@ LIBS    := -s USE_ZLIB=1
 LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 \
            -s "EXPORTED_RUNTIME_METHODS=['callMain', 'FS', 'PATH', 'ERRNO_CODES']" \
            -s ALLOW_MEMORY_GROWTH=1 -s "EXPORTED_FUNCTIONS=['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
-           -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="$(LIBRETRO)" \
+           -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(LIBRETRO)" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 \
            --js-library emscripten/library_errno_codes.js \
            --js-library emscripten/library_rwebcam.js
