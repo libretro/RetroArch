@@ -1090,6 +1090,10 @@ bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
 
+void video_frame_delay(video_driver_state_t *video_st,
+      settings_t *settings,
+      bool core_paused);
+
 void video_frame_delay_auto(video_driver_state_t *video_st,
       video_frame_delay_auto_t *vfda);
 

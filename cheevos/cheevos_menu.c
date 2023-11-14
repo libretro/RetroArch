@@ -551,7 +551,7 @@ static void rcheevos_menu_update_bucket(rcheevos_racheevo_t* cheevo)
       trigger = rc_runtime_get_achievement(&rcheevos_locals->runtime, cheevo->id);
       if (trigger)
       {
-         if (trigger->measured_value && trigger->measured_target)
+         if (trigger->measured_value && trigger->measured_value != 0xFFFFFFFF && trigger->measured_target)
          {
             const unsigned long clamped_value = (unsigned long)
                   MIN(trigger->measured_value, trigger->measured_target);

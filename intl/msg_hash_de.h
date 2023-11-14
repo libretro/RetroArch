@@ -6264,7 +6264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Lege ein Bild als Menühintergrund fest."
+   "Ein Bild auswählen, das als Menühintergrund verwendet werden soll. Manuelle und dynamische Bilder übersteuern das „Farbthema“."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -11664,6 +11664,10 @@ MSG_HASH(
    "Cheatsuche starten oder fortsetzen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Mit Mediaplayer abspielen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
    "Sekunden"
    )
@@ -12651,6 +12655,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "CRC32-Prüfsummen des Inhalts weichen ab. Andere Spiele können nicht verwendet werden."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Der Host führt ein anderes Spiel aus."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,

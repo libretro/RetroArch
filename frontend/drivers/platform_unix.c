@@ -82,6 +82,7 @@
 #include "../../msg_hash.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
+#include "../../translation_defines.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -2788,13 +2789,154 @@ static bool is_narrator_running_unix(void)
    return (kill(speak_pid, 0) == 0);
 }
 
+/**
+ * Returns the espeak-compatible string representation of the translation language enum value.
+ */
+static const char* espeak_get_str(enum translation_lang id)
+{
+   switch (id)
+   {
+      case TRANSLATION_LANG_EN:
+         return "en";
+      case TRANSLATION_LANG_ES:
+         return "es";
+      case TRANSLATION_LANG_FR:
+         return "fr";
+      case TRANSLATION_LANG_IT:
+         return "it";
+      case TRANSLATION_LANG_DE:
+         return "de";
+      case TRANSLATION_LANG_JP:
+         return "ja";
+      case TRANSLATION_LANG_NL:
+         return "nl";
+      case TRANSLATION_LANG_CS:
+         return "cs";
+      case TRANSLATION_LANG_DA:
+         return "da";
+      case TRANSLATION_LANG_SV:
+         return "sv";
+      case TRANSLATION_LANG_HR:
+         return "hr";
+      case TRANSLATION_LANG_KO:
+         return "ko";
+      case TRANSLATION_LANG_ZH_CN:
+      case TRANSLATION_LANG_ZH_TW:
+         return "cmn";
+      case TRANSLATION_LANG_CA:
+         return "ca";
+      case TRANSLATION_LANG_BG:
+         return "bg";
+      case TRANSLATION_LANG_BN:
+         return "bn";
+      case TRANSLATION_LANG_EU:
+         return "eu";
+      case TRANSLATION_LANG_AZ:
+         return "az";
+      case TRANSLATION_LANG_AR:
+         return "ar";
+      case TRANSLATION_LANG_SQ:
+         return "sq";
+      case TRANSLATION_LANG_AF:
+         return "af";
+      case TRANSLATION_LANG_EO:
+         return "eo";
+      case TRANSLATION_LANG_ET:
+         return "et";
+      case TRANSLATION_LANG_FI:
+         return "fi";
+      case TRANSLATION_LANG_KA:
+         return "ka";
+      case TRANSLATION_LANG_EL:
+         return "el";
+      case TRANSLATION_LANG_GU:
+         return "gu";
+      case TRANSLATION_LANG_HT:
+         return "ht";
+      case TRANSLATION_LANG_HE:
+         return "he";
+      case TRANSLATION_LANG_HI:
+         return "hi";
+      case TRANSLATION_LANG_HU:
+         return "hu";
+      case TRANSLATION_LANG_IS:
+         return "is";
+      case TRANSLATION_LANG_ID:
+         return "id";
+      case TRANSLATION_LANG_GA:
+         return "ga";
+      case TRANSLATION_LANG_KN:
+         return "kn";
+      case TRANSLATION_LANG_LA:
+         return "la";
+      case TRANSLATION_LANG_LV:
+         return "lv";
+      case TRANSLATION_LANG_LT:
+         return "lt";
+      case TRANSLATION_LANG_MK:
+         return "mk";
+      case TRANSLATION_LANG_MS:
+         return "ms";
+      case TRANSLATION_LANG_MT:
+         return "mt";
+      case TRANSLATION_LANG_NO:
+         return "nb";
+      case TRANSLATION_LANG_FA:
+         return "fa";
+      case TRANSLATION_LANG_PL:
+         return "pl";
+      case TRANSLATION_LANG_PT:
+         return "pt";
+      case TRANSLATION_LANG_RO:
+         return "ro";
+      case TRANSLATION_LANG_RU:
+         return "ru";
+      case TRANSLATION_LANG_SR:
+         return "sr";
+      case TRANSLATION_LANG_SK:
+         return "sk";
+      case TRANSLATION_LANG_SL:
+         return "sl";
+      case TRANSLATION_LANG_SW:
+         return "sw";
+      case TRANSLATION_LANG_TA:
+         return "ta";
+      case TRANSLATION_LANG_TE:
+         return "te";
+      case TRANSLATION_LANG_TH:
+         return "th";
+      case TRANSLATION_LANG_TR:
+         return "tr";
+      case TRANSLATION_LANG_UK:
+         return "uk";
+      case TRANSLATION_LANG_BE:
+         return "be";
+      case TRANSLATION_LANG_UR:
+         return "ur";
+      case TRANSLATION_LANG_VI:
+         return "vi";
+      case TRANSLATION_LANG_CY:
+         return "cy";
+      case TRANSLATION_LANG_AST:
+      case TRANSLATION_LANG_TL:
+      case TRANSLATION_LANG_GL:
+      case TRANSLATION_LANG_YI:
+      case TRANSLATION_LANG_DONT_CARE:
+      case TRANSLATION_LANG_LAST:
+         break;
+   }
+   return "en";
+}
+
 static bool accessibility_speak_unix(int speed,
       const char* speak_text, int priority)
 {
    int pid;
-   const char *language   = get_user_language_iso639_1(true);
-   char* voice_out        = (char*)malloc(3+strlen(language));
-   char* speed_out        = (char*)malloc(3+3);
+   settings_t *settings   = config_get_ptr();
+   unsigned target_lang   = settings->uints.ai_service_target_lang;
+   const char *language   = espeak_get_str((enum translation_lang)target_lang);
+   char* voice_out        = (char*)malloc(3 + strlen(language));
+   char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
 
    if (speed < 1)
@@ -2805,7 +2947,7 @@ static bool accessibility_speak_unix(int speed,
    voice_out[0] = '-';
    voice_out[1] = 'v';
    voice_out[2] = '\0';
-   strlcat(voice_out, language, 5);
+   strlcat(voice_out, language, 3 + strlen(language));
 
    speed_out[0] = '-';
    speed_out[1] = 's';
@@ -2827,28 +2969,32 @@ static bool accessibility_speak_unix(int speed,
    }
 
    pid = fork();
-   if (pid < 0)
+   switch (pid)
    {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for espeak.\n");
-   }
-   else if (pid > 0)
-   {
-      /* parent process */
-      speak_pid = pid;
+      case 0:
+         {
+            /* child process: replace process with the espeak command */
+            char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
+            cmd[1] = voice_out;
+            cmd[2] = speed_out;
+            cmd[3] = (char*)speak_text;
+            execvp("espeak", cmd);
 
-      /* Tell the system that we'll ignore the exit status of the child
-       * process.  This prevents zombie processes. */
-      signal(SIGCHLD,SIG_IGN);
-   }
-   else
-   {
-      /* child process: replace process with the espeak command */
-      char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
-      cmd[1] = voice_out;
-      cmd[2] = speed_out;
-      cmd[3] = (char*)speak_text;
-      execvp("espeak", cmd);
+            RARCH_WARN("Could not execute espeak.\n");
+            /* Prevent interfere with the parent process */
+            _exit(EXIT_FAILURE);
+         }
+      case -1:
+         RARCH_ERR("Could not fork for espeak.\n");
+      default:
+         {
+            /* parent process */
+            speak_pid = pid;
+
+            /* Tell the system that we'll ignore the exit status of the child
+             * process.  This prevents zombie processes. */
+            signal(SIGCHLD, SIG_IGN);
+	 }
    }
 
 end:
