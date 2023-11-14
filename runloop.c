@@ -896,19 +896,19 @@ static void libretro_log_cb(
    switch (level)
    {
       case RETRO_LOG_DEBUG:
-         RARCH_LOG_V("libretro " FILE_PATH_LOG_DBG, fmt, vp);
+         RARCH_LOG_V("[libretro DEBUG]", fmt, vp);
          break;
 
       case RETRO_LOG_INFO:
-         RARCH_LOG_OUTPUT_V("libretro " FILE_PATH_LOG_INFO, fmt, vp);
+         RARCH_LOG_OUTPUT_V("[libretro INFO]", fmt, vp);
          break;
 
       case RETRO_LOG_WARN:
-         RARCH_WARN_V("libretro " FILE_PATH_LOG_WARN, fmt, vp);
+         RARCH_WARN_V("[libretro WARN]", fmt, vp);
          break;
 
       case RETRO_LOG_ERROR:
-         RARCH_ERR_V("libretro " FILE_PATH_LOG_ERROR, fmt, vp);
+         RARCH_ERR_V("[libretro ERROR]", fmt, vp);
          break;
 
       default:
