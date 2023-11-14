@@ -276,8 +276,8 @@ void gfx_widgets_msg_queue_push(
             char *msg                           = NULL;
             size_t msg_len                      = 0;
             unsigned width                      = menu_is_alive
-               ? p_dispwidget->msg_queue_default_rect_width_menu_alive
-               : p_dispwidget->msg_queue_default_rect_width;
+                  ? p_dispwidget->msg_queue_default_rect_width_menu_alive
+                  : p_dispwidget->msg_queue_default_rect_width;
             unsigned text_width                 = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
@@ -293,6 +293,8 @@ void gfx_widgets_msg_queue_push(
             /* Text is too wide, split it into two lines */
             if (text_width > width)
             {
+               size_t wrap_length       = 0;
+
                /* If the second line is too short, the widget may
                 * look unappealing - ensure that second line is at
                 * least 25% of the total width */
@@ -302,6 +304,24 @@ void gfx_widgets_msg_queue_push(
                word_wrap(msg, msg_len, title, title_length,
                      (int)((title_length * width) / text_width),
                      100, 2);
+
+               /* Recalculate widget width with longest wrapped line */
+               wrap_length              = string_index_last_occurance(msg, '\n');
+               if (wrap_length)
+               {
+                  title_length         -= wrap_length;
+
+                  if (title_length < wrap_length)
+                     title_length       = wrap_length;
+
+                  text_width            = font_driver_get_message_width(
+                     p_dispwidget->gfx_widget_fonts.msg_queue.font,
+                     title,
+                     title_length,
+                     1.0f);
+
+                  width                 = text_width;
+               }
 
                msg_widget->text_height *= 2;
                msg_widget->msg_len      = strlen(msg);
@@ -313,8 +333,7 @@ void gfx_widgets_msg_queue_push(
             }
 
             msg_widget->msg             = msg;
-            msg_widget->width           = width
-               + p_dispwidget->simple_widget_padding / 2;
+            msg_widget->width           = width + (p_dispwidget->simple_widget_padding / 2);
          }
 
          fifo_write(&p_dispwidget->msg_queue,
