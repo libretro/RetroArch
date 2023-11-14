@@ -10559,8 +10559,8 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group,
-                     general_read_handler,
-                     general_write_handler);
+                     general_write_handler,
+                     general_read_handler);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
                (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
@@ -11289,8 +11289,8 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group,
-               general_read_handler,
-               general_write_handler);
+               general_write_handler,
+               general_read_handler);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
          (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
@@ -22087,8 +22087,8 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group,
-                  general_read_handler,
-                  general_write_handler);
+                  general_write_handler,
+                  general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
             (*list)[list_info->index - 1].action_ok      = setting_action_ok_uint;
             (*list)[list_info->index - 1].change_handler = timezone_change_handler;
