@@ -2371,7 +2371,10 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
-      RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
+      RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u%s.\n",
+            settings->uints.video_max_frame_latency,
+            cur_latency,
+            (d3d12->flags & D3D12_ST_FLAG_WAIT_FOR_VBLANK) ? " with WaitForVBlank" : "");
    }
 
 #ifdef HAVE_WINDOW
