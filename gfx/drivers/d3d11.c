@@ -2016,7 +2016,10 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 
       DXGISetMaximumFrameLatency(d3d11->swapChain, max_latency);
       DXGIGetMaximumFrameLatency(d3d11->swapChain, &cur_latency);
-      RARCH_LOG("[D3D11]: Requesting %u maximum frame latency, using %u.\n", max_latency, cur_latency);
+      RARCH_LOG("[D3D11]: Requesting %u maximum frame latency, using %u%s.\n",
+            settings->uints.video_max_frame_latency,
+            cur_latency,
+            (d3d11->flags & D3D11_ST_FLAG_WAIT_FOR_VBLANK) ? " with WaitForVBlank" : "");
    }
 
 #ifdef HAVE_DXGI_HDR
