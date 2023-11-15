@@ -5848,23 +5848,31 @@ struct retro_core_option_value
    const char *label;
 };
 
+/**
+ * @copybrief retro_core_option_v2_definition
+ *
+ * @deprecated Use \ref retro_core_option_v2_definition instead,
+ * as it supports categorizing options into groups.
+ * Only use this \c struct to support older frontends or cores.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+ */
 struct retro_core_option_definition
 {
-   /* Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE. */
+   /** @copydoc retro_core_option_v2_definition::key */
    const char *key;
 
-   /* Human-readable core option description (used as menu label) */
+   /** @copydoc retro_core_option_v2_definition::desc */
    const char *desc;
 
-   /* Human-readable core option information (used as menu sublabel) */
+   /** @copydoc retro_core_option_v2_definition::info */
    const char *info;
 
-   /* Array of retro_core_option_value structs, terminated by NULL */
+   /** @copydoc retro_core_option_v2_definition::values */
    struct retro_core_option_value values[RETRO_NUM_CORE_OPTION_VALUES_MAX];
 
-   /* Default core option value. Must match one of the values
-    * in the retro_core_option_value array, otherwise will be
-    * ignored */
+   /** @copydoc retro_core_option_v2_definition::default_value */
    const char *default_value;
 };
 
@@ -5872,16 +5880,24 @@ struct retro_core_option_definition
 #undef local
 #endif
 
+/**
+ * A variant of \ref retro_core_options that supports internationalization.
+ *
+ * @deprecated Use \ref retro_core_options_v2_intl instead,
+ * as it supports categorizing options into groups.
+ * Only use this \c struct to support older frontends or cores.
+ *
+ * @see retro_core_options
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+ * @see RETRO_ENVIRONMENT_GET_LANGUAGE
+ * @see retro_language
+ */
 struct retro_core_options_intl
 {
-   /* Pointer to an array of retro_core_option_definition structs
-    * - US English implementation
-    * - Must point to a valid array */
+   /** @copydoc retro_core_options_v2_intl::us */
    struct retro_core_option_definition *us;
 
-   /* Pointer to an array of retro_core_option_definition structs
-    * - Implementation for current frontend language
-    * - May be NULL */
+   /** @copydoc retro_core_options_v2_intl::local */
    struct retro_core_option_definition *local;
 };
 
