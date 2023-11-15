@@ -1612,7 +1612,7 @@ static int rc_hash_dreamcast(char hash[33], const char* path)
 }
 
 static int rc_hash_find_playstation_executable(void* track_handle, const char* boot_key, const char* cdrom_prefix, 
-                                               char exe_name[], uint32_t exe_name_size, unsigned* exe_size)
+                                               char exe_name[], uint32_t exe_name_size, uint32_t* exe_size)
 {
   uint8_t buffer[2048];
   uint32_t size;
@@ -1626,7 +1626,7 @@ static int rc_hash_find_playstation_executable(void* track_handle, const char* b
   if (!sector)
     return 0;
 
-  size = (unsigned)rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer) - 1);
+  size = (uint32_t)rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer) - 1);
   buffer[size] = '\0';
 
   sector = 0;
@@ -1653,7 +1653,7 @@ static int rc_hash_find_playstation_executable(void* track_handle, const char* b
         while (!isspace((unsigned char)*ptr) && *ptr != ';')
           ++ptr;
 
-        size = (unsigned)(ptr - start);
+        size = (uint32_t)(ptr - start);
         if (size >= exe_name_size)
           size = exe_name_size - 1;
 

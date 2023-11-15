@@ -78,7 +78,7 @@ void* rc_alloc(void* pointer, int32_t* offset, uint32_t size, uint32_t alignment
     void** scratch_object_pointer = (void**)((char*)&scratch->objs + scratch_object_pointer_offset);
     ptr = *scratch_object_pointer;
     if (!ptr) {
-      int used;
+      int32_t used;
       ptr = *scratch_object_pointer = rc_alloc_scratch(NULL, &used, size, alignment, scratch, -1);
     }
   }

@@ -128,7 +128,7 @@ int rc_runtime_activate_achievement(rc_runtime_t* self, uint32_t id, const char*
   rc_runtime_trigger_t* runtime_trigger;
   rc_parse_state_t parse;
   uint8_t md5[16];
-  int size;
+  int32_t size;
   uint32_t i;
 
   if (memaddr == NULL)

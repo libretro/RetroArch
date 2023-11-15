@@ -342,6 +342,21 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 #endif
 }
 
+void gfx_widgets_clear_leaderboard_displays(void)
+{
+   gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
+
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
+
+   state->tracker_count = 0;
+
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
+}
+
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 {
    unsigned i;
@@ -420,6 +435,21 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 #endif
 }
 
+void gfx_widgets_clear_challenge_displays(void)
+{
+   gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
+
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
+
+   state->challenge_count = 0;
+
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
+}
+
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 {
    unsigned i;
@@ -427,7 +457,7 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, 0) : 0;
+   uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, false, true) : 0;
    uintptr_t old_badge_id = 0;
 
 #ifdef HAVE_THREADS
@@ -500,7 +530,7 @@ void gfx_widget_set_achievement_progress(const char* badge, const char* progress
    {
       /* show indicator */
       state->progress_tracker.show_until = cpu_features_get_time_usec() + CHEEVO_PROGRESS_TRACKER_DURATION * 1000;
-      state->progress_tracker.image = rcheevos_get_badge_texture(badge, 1);
+      state->progress_tracker.image = rcheevos_get_badge_texture(badge, true, true);
 
       snprintf(state->progress_tracker.display, sizeof(state->progress_tracker.display), "%s", progress);
       state->progress_tracker.width = (uint16_t)font_driver_get_message_width(
