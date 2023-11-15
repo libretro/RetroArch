@@ -678,8 +678,10 @@ int rcheevos_get_richpresence(char* s, size_t len)
          return 0;
 
       /* TODO/FIXME - localize */
-      size_t _len = strlcpy(s, "Spectating ", len);
-      return (int)strlcpy(s + _len, rc_client_get_game_info(rcheevos_locals.client)->title, len - _len);
+      {
+         size_t _len = strlcpy(s, "Spectating ", len);
+         return (int)strlcpy(s + _len, rc_client_get_game_info(rcheevos_locals.client)->title, len - _len);
+      }
    }
 
    return rc_client_get_rich_presence_message(rcheevos_locals.client, s, (size_t)len);
