@@ -18,7 +18,7 @@ static char* g_imagehost = NULL;
 
 /* --- rc_json --- */
 
-static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* fields, size_t field_count, unsigned* fields_seen);
+static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* fields, size_t field_count, uint32_t* fields_seen);
 static int rc_json_parse_array(rc_json_iterator_t* iterator, rc_json_field_t* field);
 
 static int rc_json_match_char(rc_json_iterator_t* iterator, char c)
@@ -182,7 +182,7 @@ static int rc_json_get_next_field(rc_json_iterator_t* iterator, rc_json_field_t*
   return RC_OK;
 }
 
-static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* fields, size_t field_count, unsigned* fields_seen) {
+static int rc_json_parse_object(rc_json_iterator_t* iterator, rc_json_field_t* fields, size_t field_count, uint32_t* fields_seen) {
   size_t i;
   uint32_t num_fields = 0;
   rc_json_field_t field;
@@ -437,14 +437,14 @@ int rc_json_get_required_unum_array(uint32_t** entries, uint32_t* num_entries, r
   rc_json_iterator_t iterator;
   rc_json_field_t array;
   rc_json_field_t value;
-  unsigned* entry;
+  uint32_t* entry;
 
   memset(&array, 0, sizeof(array));
   if (!rc_json_get_required_array(num_entries, &array, response, field, field_name))
     return RC_MISSING_VALUE;
 
   if (*num_entries) {
-    *entries = (unsigned*)rc_buffer_alloc(&response->buffer, *num_entries * sizeof(unsigned));
+    *entries = (uint32_t*)rc_buffer_alloc(&response->buffer, *num_entries * sizeof(uint32_t));
     if (!*entries)
       return RC_OUT_OF_MEMORY;
 
