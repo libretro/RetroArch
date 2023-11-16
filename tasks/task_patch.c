@@ -622,11 +622,9 @@ static enum patch_error xdelta_apply_patch(
         uint8_t **targetdata, uint64_t *targetlength)
 {
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
-   int err;
    enum patch_error error_patch = PATCH_SUCCESS;
    xd3_stream stream;
    xd3_config config;
-   xd3_source source;
 
    /* Validate the magic number, as given by RFC 3284 section 4.1 */
    if (patchlen      < 8    ||
@@ -639,14 +637,6 @@ static enum patch_error xdelta_apply_patch(
    xd3_init_config(&config, XD3_SKIP_EMIT);
    /* The first pass is just to compute the buffer size,
     * no need to emit patched data yet */
-
-
-   err = xd3_decode_memory(patchdata, patchlen, sourcedata, sourcelength, *targetdata, targetlength, *targetlength, 0);
-
-   if (err == XD3_INTERNAL)
-   {
-      return PATCH_UNKNOWN;
-   }
 
    do
    { /* Make a first pass over the patch, to compute the target size. */
