@@ -96,6 +96,10 @@ database
 overlays
 playlists
 states
+cheats
+thumbnails
+docs/html
+system
 shaders/shaders_cg
 shaders/shaders_glsl
 shaders/shaders_slang
@@ -134,6 +138,7 @@ wiiu/wut/elf2rpl/elf2rpl
 
 # CLion
 /cmake-build-debug/
+.run
 
 # Android
 /pkg/android/phoenix/obj/
