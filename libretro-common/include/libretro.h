@@ -1456,17 +1456,30 @@ enum retro_mod
  * @see RETRO_DEVICE_SUBCLASS
  */
 #define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
+
+/**
+ * Notifies the frontend of the address spaces used by the core's emulated hardware,
+ * and of the memory maps within these spaces.
+ * This can be used by the frontend to provide cheats, achievements, or debugging capabilities.
+ * Should only be used by emulators, as it makes little sense for game engines.
+ *
+ * @note Cores should also expose these address spaces
+ * through retro_get_memory_data and \c retro_get_memory_size if applicable;
+ * this environment call is not intended to replace those two functions,
+ * as the emulated hardware may feature memory regions outside of its own address space
+ * that are nevertheless useful for the frontend.
+ *
+ * @param[in] data <tt>const struct retro_memory_map *</tt>.
+ * Pointer to a single memory-map listing.
+ * The frontend must maintain its own copy of this object and its contents,
+ * including strings and nested objects.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @see retro_memory_map
+ * @see retro_get_memory_data
+ * @see retro_memory_descriptor
+ */
 #define RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_memory_map * --
-                                            * This environment call lets a libretro core tell the frontend
-                                            * about the memory maps this core emulates.
-                                            * This can be used to implement, for example, cheats in a core-agnostic way.
-                                            *
-                                            * Should only be used by emulators; it doesn't make much sense for
-                                            * anything else.
-                                            * It is recommended to expose all relevant pointers through
-                                            * retro_get_memory_* as well.
-                                            */
 
 /**
  * Resizes the viewport without reinitializing the video driver.
@@ -3295,91 +3308,216 @@ struct retro_hw_render_context_negotiation_interface
 
 /** @} */
 
-#define RETRO_MEMDESC_CONST      (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
-#define RETRO_MEMDESC_BIGENDIAN  (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
-#define RETRO_MEMDESC_SYSTEM_RAM (1 << 2)   /* The memory area is system RAM.  This is main RAM of the gaming system. */
-#define RETRO_MEMDESC_SAVE_RAM   (1 << 3)   /* The memory area is save RAM. This RAM is usually found on a game cartridge, backed up by a battery. */
-#define RETRO_MEMDESC_VIDEO_RAM  (1 << 4)   /* The memory area is video RAM (VRAM) */
-#define RETRO_MEMDESC_ALIGN_2    (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
+/** @defgroup SET_MEMORY_MAPS Memory Descriptors
+ * @{
+ */
+
+/** @defgroup RETRO_MEMDESC Memory Descriptor Flags
+ * Information about how the emulated hardware uses this portion of its address space.
+ * @{
+ */
+
+/**
+ * Indicates that this memory area won't be modified
+ * once \c retro_load_game has returned.
+ */
+#define RETRO_MEMDESC_CONST      (1 << 0)
+
+/**
+ * Indicates a memory area with big-endian byte ordering,
+ * as opposed to the default of little-endian.
+ */
+#define RETRO_MEMDESC_BIGENDIAN  (1 << 1)
+
+/**
+ * Indicates a memory area that is used for the emulated system's main RAM.
+ */
+#define RETRO_MEMDESC_SYSTEM_RAM (1 << 2)
+
+/**
+ * Indicates a memory area that is used for the emulated system's save RAM,
+ * usually found on a game cartridge as battery-backed RAM or flash memory.
+ */
+#define RETRO_MEMDESC_SAVE_RAM   (1 << 3)
+
+/**
+ * Indicates a memory area that is used for the emulated system's video RAM,
+ * usually found on a console's GPU (or local equivalent).
+ */
+#define RETRO_MEMDESC_VIDEO_RAM  (1 << 4)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be aligned to 2 bytes or their own size
+ * (whichever is smaller).
+ */
+#define RETRO_MEMDESC_ALIGN_2    (1 << 16)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be aligned to 4 bytes or their own size
+ * (whichever is smaller).
+ */
 #define RETRO_MEMDESC_ALIGN_4    (2 << 16)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be aligned to 8 bytes or their own size
+ * (whichever is smaller).
+ */
 #define RETRO_MEMDESC_ALIGN_8    (3 << 16)
-#define RETRO_MEMDESC_MINSIZE_2  (1 << 24)  /* All memory in this region is accessed at least 2 bytes at the time. */
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be at least 2 bytes long.
+ */
+#define RETRO_MEMDESC_MINSIZE_2  (1 << 24)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be at least 4 bytes long.
+ */
 #define RETRO_MEMDESC_MINSIZE_4  (2 << 24)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be at least 8 bytes long.
+ */
 #define RETRO_MEMDESC_MINSIZE_8  (3 << 24)
+
+/** @} */
+
+/**
+ * A mapping from a region of the emulated console's address space
+ * to the host's address space.
+ *
+ * Can be used to map an address in the console's address space
+ * to the host's address space, like so:
+ *
+ * @code
+ * void* emu_to_host(void* addr, struct retro_memory_descriptor* descriptor)
+ * {
+ *     return descriptor->ptr + (addr & ~descriptor->disconnect) - descriptor->start;
+ * }
+ * @endcode
+ *
+ * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
+ */
 struct retro_memory_descriptor
 {
+   /**
+    * A bitwise \c OR of one or more \ref RETRO_MEMDESC "flags"
+    * that describe how the emulated system uses this descriptor's address range.
+    *
+    * @note If \c ptr is \c NULL,
+    * then no flags should be set.
+    * @see RETRO_MEMDESC
+    */
    uint64_t flags;
 
-   /* Pointer to the start of the relevant ROM or RAM chip.
-    * It's strongly recommended to use 'offset' if possible, rather than
-    * doing math on the pointer.
+   /**
+    * Pointer to the start of this memory region's buffer
+    * within the \em host's address space.
+    * The address listed here must be valid for the duration of the session;
+    * it must not be freed or modified by the frontend
+    * and it must not be moved by the core.
     *
-    * If the same byte is mapped my multiple descriptors, their descriptors
-    * must have the same pointer.
-    * If 'start' does not point to the first byte in the pointer, put the
-    * difference in 'offset' instead.
+    * May be \c NULL to indicate a lack of accessible memory
+    * at the emulated address given in \c start.
     *
-    * May be NULL if there's nothing usable here (e.g. hardware registers and
-    * open bus). No flags should be set if the pointer is NULL.
-    * It's recommended to minimize the number of descriptors if possible,
-    * but not mandatory. */
+    * @note Overlapping descriptors that include the same byte
+    * must have the same \c ptr value.
+    */
    void *ptr;
+
+   /**
+    * The offset of this memory region,
+    * relative to the address given by \c ptr.
+    *
+    * @note It is recommended to use this field for address calculations
+    * instead of performing arithmetic on \c ptr.
+    */
    size_t offset;
 
-   /* This is the location in the emulated address space
-    * where the mapping starts. */
+   /**
+    * The starting address of this memory region
+    * <em>within the emulated hardware's address space</em>.
+    *
+    * @note Not represented as a pointer
+    * because it's unlikely to be valid on the host device.
+    */
    size_t start;
 
-   /* Which bits must be same as in 'start' for this mapping to apply.
-    * The first memory descriptor to claim a certain byte is the one
-    * that applies.
-    * A bit which is set in 'start' must also be set in this.
-    * Can be zero, in which case each byte is assumed mapped exactly once.
-    * In this case, 'len' must be a power of two. */
+   /**
+    * A bitmask that specifies which bits of an address must match
+    * the bits of the \ref start address.
+    *
+    * Combines with \c disconnect to map an address to a memory block.
+    *
+    * If multiple memory descriptors can claim a particular byte,
+    * the first one defined in the \ref retro_memory_descriptor array applies.
+    * A bit which is set in \c start must also be set in this.
+    *
+    * Can be zero, in which case \c start and \c len represent
+    * the complete mapping for this region of memory
+    * (i.e. each byte is mapped exactly once).
+    * In this case, \c len must be a power of two.
+    */
    size_t select;
 
-   /* If this is nonzero, the set bits are assumed not connected to the
-    * memory chip's address pins. */
+   /**
+    * A bitmask of bits that are \em not used for addressing.
+    *
+    * Any set bits are assumed to be disconnected from
+    * the emulated memory chip's address pins,
+    * and are therefore ignored when memory-mapping.
+    */
    size_t disconnect;
 
-   /* This one tells the size of the current memory area.
-    * If, after start+disconnect are applied, the address is higher than
-    * this, the highest bit of the address is cleared.
+   /**
+    * The length of this memory region, in bytes.
+    *
+    * If applying \ref start and \ref disconnect to an address
+    * results in a value higher than this,
+    * the highest bit of the address is cleared.
     *
     * If the address is still too high, the next highest bit is cleared.
-    * Can be zero, in which case it's assumed to be infinite (as limited
-    * by 'select' and 'disconnect'). */
+    * Can be zero, in which case it's assumed to be
+    * bounded only by \ref select and \ref disconnect.
+    */
    size_t len;
 
-   /* To go from emulated address to physical address, the following
-    * order applies:
-    * Subtract 'start', pick off 'disconnect', apply 'len', add 'offset'. */
-
-   /* The address space name must consist of only a-zA-Z0-9_-,
-    * should be as short as feasible (maximum length is 8 plus the NUL),
-    * and may not be any other address space plus one or more 0-9A-F
-    * at the end.
-    * However, multiple memory descriptors for the same address space is
-    * allowed, and the address space name can be empty. NULL is treated
-    * as empty.
+   /**
+    * A short name for this address space.
     *
-    * Address space names are case sensitive, but avoid lowercase if possible.
-    * The same pointer may exist in multiple address spaces.
+    * Names must meet the following requirements:
     *
-    * Examples:
-    * blank+blank - valid (multiple things may be mapped in the same namespace)
-    * 'Sp'+'Sp' - valid (multiple things may be mapped in the same namespace)
-    * 'A'+'B' - valid (neither is a prefix of each other)
-    * 'S'+blank - valid ('S' is not in 0-9A-F)
-    * 'a'+blank - valid ('a' is not in 0-9A-F)
-    * 'a'+'A' - valid (neither is a prefix of each other)
-    * 'AR'+blank - valid ('R' is not in 0-9A-F)
-    * 'ARB'+blank - valid (the B can't be part of the address either, because
-    *                      there is no namespace 'AR')
-    * blank+'B' - not valid, because it's ambigous which address space B1234
-    *             would refer to.
-    * The length can't be used for that purpose; the frontend may want
-    * to append arbitrary data to an address, without a separator. */
+    * \li Characters must be in the set <tt>[a-zA-Z0-9_-]</tt>.
+    * \li No more than 8 characters, plus a \c NULL terminator.
+    * \li Names are case-sensitive, but lowercase characters are discouraged.
+    * \li A name must not be the same as another name plus a character in the set \c [A-F0-9]
+    *     (i.e. if an address space named "RAM" exists,
+    *     then the names "RAM0", "RAM1", ..., "RAMF" are forbidden).
+    *     This is to allow addresses to be named by each descriptor unambiguously,
+    *     even if the areas overlap.
+    * \li May be \c NULL or empty (both are considered equivalent).
+    *
+    * Here are some examples of pairs of address space names:
+    *
+    * \li \em blank + \em blank: valid (multiple things may be mapped in the same namespace)
+    * \li \c Sp + \c Sp: valid (multiple things may be mapped in the same namespace)
+    * \li \c SRAM + \c VRAM: valid (neither is a prefix of the other)
+    * \li \c V + \em blank: valid (\c V is not in \c [A-F0-9])
+    * \li \c a + \em blank: valid but discouraged (\c a is not in \c [A-F0-9])
+    * \li \c a + \c A: valid but discouraged (neither is a prefix of the other)
+    * \li \c AR + \em blank: valid (\c R is not in \c [A-F0-9])
+    * \li \c ARB + \em blank: valid (there's no \c AR namespace,
+    *     so the \c B doesn't cause ambiguity).
+    * \li \em blank + \c B: invalid, because it's ambiguous which address space \c B1234 would refer to.
+    *
+    * The length of the address space's name can't be used to disambugiate,
+    * as extra information may be appended to it without a separator.
+    */
    const char *addrspace;
 
    /* TODO: When finalizing this one, add a description field, which should be
@@ -3414,49 +3552,74 @@ struct retro_memory_descriptor
     * them up. */
 };
 
-/* The frontend may use the largest value of 'start'+'select' in a
- * certain namespace to infer the size of the address space.
+/**
+ * A list of regions within the emulated console's address space.
  *
- * If the address space is larger than that, a mapping with .ptr=NULL
- * should be at the end of the array, with .select set to all ones for
- * as long as the address space is big.
+ * The frontend may use the largest value of
+ * \ref retro_memory_descriptor::start + \ref retro_memory_descriptor::select
+ * in a certain namespace to infer the overall size of the address space.
+ * If the address space is larger than that,
+ * the last mapping in \ref descriptors should have \ref retro_memory_descriptor::ptr set to \c NULL
+ * and \ref retro_memory_descriptor::select should have all bits used in the address space set to 1.
  *
- * Sample descriptors (minus .ptr, and RETRO_MEMFLAG_ on the flags):
- * SNES WRAM:
- * .start=0x7E0000, .len=0x20000
- * (Note that this must be mapped before the ROM in most cases; some of the
- * ROM mappers
- * try to claim $7E0000, or at least $7E8000.)
- * SNES SPC700 RAM:
- * .addrspace="S", .len=0x10000
- * SNES WRAM mirrors:
- * .flags=MIRROR, .start=0x000000, .select=0xC0E000, .len=0x2000
- * .flags=MIRROR, .start=0x800000, .select=0xC0E000, .len=0x2000
- * SNES WRAM mirrors, alternate equivalent descriptor:
- * .flags=MIRROR, .select=0x40E000, .disconnect=~0x1FFF
- * (Various similar constructions can be created by combining parts of
- * the above two.)
- * SNES LoROM (512KB, mirrored a couple of times):
- * .flags=CONST, .start=0x008000, .select=0x408000, .disconnect=0x8000, .len=512*1024
- * .flags=CONST, .start=0x400000, .select=0x400000, .disconnect=0x8000, .len=512*1024
- * SNES HiROM (4MB):
- * .flags=CONST,                 .start=0x400000, .select=0x400000, .len=4*1024*1024
- * .flags=CONST, .offset=0x8000, .start=0x008000, .select=0x408000, .len=4*1024*1024
- * SNES ExHiROM (8MB):
- * .flags=CONST, .offset=0,                  .start=0xC00000, .select=0xC00000, .len=4*1024*1024
- * .flags=CONST, .offset=4*1024*1024,        .start=0x400000, .select=0xC00000, .len=4*1024*1024
- * .flags=CONST, .offset=0x8000,             .start=0x808000, .select=0xC08000, .len=4*1024*1024
- * .flags=CONST, .offset=4*1024*1024+0x8000, .start=0x008000, .select=0xC08000, .len=4*1024*1024
- * Clarify the size of the address space:
- * .ptr=NULL, .select=0xFFFFFF
- * .len can be implied by .select in many of them, but was included for clarity.
+ * Here's an example set of descriptors for the SNES.
+ *
+ * @code{.c}
+ * struct retro_memory_map snes_descriptors = retro_memory_map
+ * {
+ *    .descriptors = (struct retro_memory_descriptor[])
+ *    {
+ *       // WRAM; must usually be mapped before the ROM,
+ *       // as some SNES ROM mappers try to claim 0x7E0000
+ *       { .addrspace="WRAM", .start=0x7E0000, .len=0x20000 },
+ *
+ *       // SPC700 RAM
+ *       { .addrspace="SPC700", .len=0x10000 },
+ *
+ *       // WRAM mirrors
+ *       { .addrspace="WRAM", .start=0x000000, .select=0xC0E000, .len=0x2000 },
+ *       { .addrspace="WRAM", .start=0x800000, .select=0xC0E000, .len=0x2000 },
+ *
+ *       // WRAM mirror, alternate equivalent descriptor
+ *       // (Various similar constructions can be created by combining parts of the above two.)
+ *       { .addrspace="WRAM", .select=0x40E000, .disconnect=~0x1FFF },
+ *
+ *       // LoROM (512KB, mirrored a couple of times)
+ *       { .addrspace="LoROM", .start=0x008000, .select=0x408000, .disconnect=0x8000, .len=512*1024, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="LoROM", .start=0x400000, .select=0x400000, .disconnect=0x8000, .len=512*1024, .flags=RETRO_MEMDESC_CONST },
+ *
+ *       // HiROM (4MB)
+ *       { .addrspace="HiROM", .start=0x400000, .select=0x400000, .len=4*1024*1024, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="HiROM", .start=0x008000, .select=0x408000, .len=4*1024*1024, .offset=0x8000, .flags=RETRO_MEMDESC_CONST },
+ *
+ *       // ExHiROM (8MB)
+ *       { .addrspace="ExHiROM", .start=0xC00000, .select=0xC00000, .len=4*1024*1024, .offset=0, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="ExHiROM", .start=0x400000, .select=0xC00000, .len=4*1024*1024, .offset=4*1024*1024, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="ExHiROM", .start=0x808000, .select=0xC08000, .len=4*1024*1024, .offset=0x8000, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="ExHiROM", .start=0x008000, .select=0xC08000, .len=4*1024*1024, .offset=4*1024*1024+0x8000, .flags=RETRO_MEMDESC_CONST },
+ *
+ *       // Clarifying the full size of the address space
+ *       { .select=0xFFFFFF, .ptr=NULL },
+ *    },
+ *    .num_descriptors = 14,
+ * };
+ * @endcode
+ *
+ * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
  */
-
 struct retro_memory_map
 {
+   /**
+    * Pointer to an array of memory descriptors,
+    * each of which describes part of the emulated console's address space.
+    */
    const struct retro_memory_descriptor *descriptors;
+
+   /** The number of descriptors in \c descriptors. */
    unsigned num_descriptors;
 };
+
+/** @} */
 
 /** @defgroup SET_CONTROLLER_INFO Controller Info
  * @{
