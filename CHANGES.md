@@ -1,4 +1,5 @@
 # Future
+- PATCHES: Add support for XDelta-formatted patches.
 
 # 1.16.0
 - 3DS: Update __system_initArgv
