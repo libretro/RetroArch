@@ -639,7 +639,12 @@ static enum patch_error xdelta_apply_patch(
     * no need to emit patched data yet */
 
    do
-   { /* Make a first pass over the patch, to compute the target size. */
+   { /* Make a first pass over the patch, to compute the target size.
+      * XDelta3 doesn't store the target size in the patch file,
+      * so we have to either compute it ourselves
+      * or keep reallocating a buffer as we go.
+      * I went with the former because it's faster, simpler, and fails sooner.
+      */
       int ret = 0;
       switch (ret = xd3_decode_input(&stream))
       { /* xd3 works like a zlib-styled state machine (stream is the machine) */
