@@ -1945,26 +1945,22 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER 56
 
+/**
+ * Returns the minimum version of the disk control interface supported by the frontend.
+ *
+ * If this environment call returns \c false or \c data is 0 or greater,
+ * then cores may use disk control callbacks
+ * with \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE.
+ * If the reported version is 1 or greater,
+ * then cores should use \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE instead.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the unsigned integer that the frontend's supported disk control interface version will be stored in.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ */
 #define RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION 57
-                                           /* unsigned * --
-                                            * Unsigned value is the API version number of the disk control
-                                            * interface supported by the frontend. If callback return false,
-                                            * API version is assumed to be 0.
-                                            *
-                                            * In legacy code, the disk control interface is defined by passing
-                                            * a struct of type retro_disk_control_callback to
-                                            * RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE.
-                                            * This may be still be done regardless of the disk control
-                                            * interface version.
-                                            *
-                                            * If version is >= 1 however, the disk control interface may
-                                            * instead be defined by passing a struct of type
-                                            * retro_disk_control_ext_callback to
-                                            * RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE.
-                                            * This allows the core to provide additional information about
-                                            * disk images to the frontend and/or enables extra
-                                            * disk control functionality by the frontend.
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE 58
                                            /* const struct retro_disk_control_ext_callback * --
