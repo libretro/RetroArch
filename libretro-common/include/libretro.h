@@ -1579,16 +1579,18 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * Notifies the frontend that this core supports achievements.
+ * Explicitly notifies the frontend of whether this core supports achievements.
  * The core must expose its emulated address space via
  * \c retro_get_memory_data or \c RETRO_ENVIRONMENT_GET_MEMORY_MAPS.
- *
  * Must be called before the first call to <tt>retro_run</tt>.
  *
+ * If \ref retro_get_memory_data returns a valid address
+ * but this environment call is not used,
+ * the frontend (at its discretion) may or may not opt in the core to its achievements support.
+ * whether this core is opted in to the frontend's achievement support
+ * is left to the frontend's discretion.
  * @param[in] data <tt>const bool *</tt>.
  * Pointer to a single \c bool that indicates whether this core supports achievements.
- * Can be \c false but this isn't necessary,
- * as cores must opt in to achievement support.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
  * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
