@@ -209,7 +209,7 @@ function setupFileSystem(backend)
    console.log("WEBPLAYER: initializing filesystem: " + backend);
    mfs.mount('/home/web_user/retroarch/userdata', afs);
 
-   mfs.mount('/home/web_user/retroarch/', xfs1);
+   mfs.mount('/home/web_user/retroarch/assets/frontend/', xfs1);
    mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
