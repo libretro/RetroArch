@@ -4878,20 +4878,15 @@ void runloop_path_fill_names(void)
             sizeof(runloop_st->name.ips) - len);
    }
 
-    if (string_is_empty(runloop_st->name.xdelta))
-    {
-        size_t len = strlcpy(runloop_st->name.xdelta,
-                             runloop_st->runtime_content_path_basename,
-                             sizeof(runloop_st->name.xdelta));
-        runloop_st->name.xdelta[len  ] = '.';
-        runloop_st->name.xdelta[len+1] = 'x';
-        runloop_st->name.xdelta[len+2] = 'd';
-        runloop_st->name.xdelta[len+3] = 'e';
-        runloop_st->name.xdelta[len+4] = 'l';
-        runloop_st->name.xdelta[len+5] = 't';
-        runloop_st->name.xdelta[len+6] = 'a';
-        runloop_st->name.xdelta[len+7] = '\0';
-    }
+   if (string_is_empty(runloop_st->name.xdelta))
+   {
+      size_t len = strlcpy(runloop_st->name.xdelta,
+            runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.xdelta));
+      strlcpy(runloop_st->name.xdelta       + len,
+            ".xdelta",
+            sizeof(runloop_st->name.xdelta) - len);
+   }
 }
 
 
