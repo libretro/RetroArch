@@ -125,7 +125,6 @@ function idbfsInit()
             //fallback to imfs
             afs = new BrowserFS.FileSystem.InMemory();
             console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
-            setupFileSystem("browser");
             appInitialized();
          }
          else
@@ -137,7 +136,6 @@ function idbfsInit()
                {
                   afs = new BrowserFS.FileSystem.InMemory();
                   console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
-                  setupFileSystem("browser");
                   appInitialized();
                }
                else
@@ -163,11 +161,12 @@ function idbfsSyncComplete()
 
 function appInitialized()
 {
-     /* Need to wait for both the file system and the wasm runtime 
+     /* Need to wait for the file system, the wasm runtime, and the zip download
         to complete before enabling the Run button. */
      initializationCount++;
-     if (initializationCount == 2)
+     if (initializationCount == 3)
      {
+         setupFileSystem("browser");
          preLoadingComplete();
      }
  }
@@ -183,6 +182,18 @@ function preLoadingComplete()
   $('#btnRun').removeClass('disabled');
 }
 
+var zipTOC;
+
+function zipfsInit() {
+  fetch("assets/frontend/bundle.zip").then(function(resp) {
+    resp.arrayBuffer().then(function(buf) {
+      BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(buf), function(toc) {
+        zipTOC = toc;
+        appInitialized();
+      })
+    });
+  });
+}
 function setupFileSystem(backend)
 {
    /* create a mountable filesystem that will server as a root
@@ -190,8 +201,7 @@ function setupFileSystem(backend)
    var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
 
    /* create an XmlHttpRequest filesystem for the bundled data */
-   var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-      (".index-xhr", "assets/frontend/bundle/");
+   var xfs1 = new BrowserFS.FileSystem.ZipFS(zipTOC);
    /* create an XmlHttpRequest filesystem for core assets */
    var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
       (".index-xhr", "assets/cores/");
@@ -199,7 +209,7 @@ function setupFileSystem(backend)
    console.log("WEBPLAYER: initializing filesystem: " + backend);
    mfs.mount('/home/web_user/retroarch/userdata', afs);
 
-   mfs.mount('/home/web_user/retroarch/bundle', xfs1);
+   mfs.mount('/home/web_user/retroarch/', xfs1);
    mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
@@ -363,6 +373,7 @@ function loadCore(core) {
          $('#lblDrop').removeClass('active');
          $('#lblLocal').addClass('active');
          idbfsInit();
+         zipfsInit();
       }).catch(err => { console.error("Couldn't instantiate module",err); throw err; });
    }).catch(err => { console.error("Couldn't load script",err); throw err; });
 }
