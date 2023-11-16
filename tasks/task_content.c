@@ -124,7 +124,7 @@ enum content_information_flags
    CONTENT_INFO_FLAG_PATCH_IS_BLOCKED            = (1 << 6),
    CONTENT_INFO_FLAG_BIOS_IS_MISSING             = (1 << 7),
    CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING     = (1 << 8),
-   CONTENT_INFO_FLAG_IS_XDELTA_PREF              = (1 << 9),
+   CONTENT_INFO_FLAG_IS_XDELTA_PREF              = (1 << 9)
 };
 
 struct content_information_ctx
