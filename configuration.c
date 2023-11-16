@@ -415,6 +415,9 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 /* Lets default to D3D11 in UWP, even when its compiled with ANGLE, since ANGLE is just calling D3D anyway.*/
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
+#elif defined(HAVE_D3D11) && defined(_WIN32_WINNT) && _WIN32_WINNT >= _WIN32_WINNT_WIN7
+/* Prefer D3D11 with Windows 7 and above. */
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_OPENGL1) && defined(_MSC_VER) && (_MSC_VER <= 1600)
 /* On Windows XP and earlier, use gl1 by default
  * (regular opengl has compatibility issues with
@@ -522,12 +525,12 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
+#elif defined(HAVE_WASAPI)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WASAPI;
 #elif defined(HAVE_XAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XAUDIO;
 #elif defined(HAVE_DSOUND)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_DSOUND;
-#elif defined(HAVE_WASAPI)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WASAPI;
 #elif defined(HAVE_AL)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 #elif defined(HAVE_SL)
