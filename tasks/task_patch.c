@@ -622,6 +622,7 @@ static enum patch_error xdelta_apply_patch(
         uint8_t **targetdata, uint64_t *targetlength)
 {
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+   int err;
    enum patch_error error_patch = PATCH_SUCCESS;
    xd3_stream stream;
    xd3_config config;
@@ -640,18 +641,13 @@ static enum patch_error xdelta_apply_patch(
     * no need to emit patched data yet */
 
 
-    int err = xd3_decode_memory(patchdata, patchlen, sourcedata, sourcelength, *targetdata, targetlength, *targetlength, 0);
+   err = xd3_decode_memory(patchdata, patchlen, sourcedata, sourcelength, *targetdata, targetlength, *targetlength, 0);
 
-    if (err == XD3_INTERNAL)
-    {
-        return PATCH_UNKNOWN;
-    }
+   if (err == XD3_INTERNAL)
+   {
+      return PATCH_UNKNOWN;
+   }
 
-    if (err == ENOSPC)
-    {
-        // TODO: Free targetdata, then allocate a new targetdata
-        return PATCH_TARGET_ALLOC_FAILED;
-    }
    do
    { /* Make a first pass over the patch, to compute the target size. */
       int ret = 0;
