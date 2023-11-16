@@ -9364,7 +9364,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Load"
+   "Load Preset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -9376,23 +9376,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Prepend"
+   "Prepend Preset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Prepend Preset to currently loaded"
+   "Prepend preset to the currently loaded preset."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Append"
+   "Append Preset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Append Preset to currently loaded"
+   "Append preset to the currently loaded preset."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Save"
+   "Save Preset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
@@ -9400,7 +9400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Remove"
+   "Remove Preset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,

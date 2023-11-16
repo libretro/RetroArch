@@ -7883,6 +7883,14 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
                if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
                         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
@@ -7924,14 +7932,6 @@ unsigned menu_displaylist_build_list(
                         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
                         MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
                         MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
-                        PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
 
