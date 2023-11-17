@@ -185,7 +185,7 @@ var zipTOC;
 
 function zipfsInit() {
   // 256 MB max bundle size
-  let buffer = new ArrayBuffer(0, {maxByteLength: 256*1024*1024});
+  let buffer = new ArrayBuffer(256*1024*1024);
   let bufferView = new Uint8Array(buffer);
   let idx = 0;
   // bundle should be in four parts (this can be changed later)
@@ -199,11 +199,10 @@ function zipfsInit() {
         if (idx+buf.byteLength > buffer.maxByteLength) {
           console.log("WEBPLAYER: error: bundle.zip is too large");
         }
-        buffer.resize(idx + buf.byteLength);
         bufferView.set(new Uint8Array(buf), idx, buf.byteLength);
         idx += buf.byteLength;
       }
-      BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(buffer), function(toc) {
+      BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(new Uint8Array(buffer, 0, idx)), function(toc) {
         zipTOC = toc;
         appInitialized();
       });
