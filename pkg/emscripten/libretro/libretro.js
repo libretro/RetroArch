@@ -155,7 +155,6 @@ function idbfsSyncComplete()
    $('#icnLocal').addClass('fa-check');
    console.log("WEBPLAYER: idbfs setup successful");
 
-   setupFileSystem("browser");
    appInitialized();
 }
 
