@@ -622,9 +622,11 @@ static enum patch_error xdelta_apply_patch(
         uint8_t **targetdata, uint64_t *targetlength)
 {
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+   int ret;
    enum patch_error error_patch = PATCH_SUCCESS;
    xd3_stream stream;
    xd3_config config;
+   xd3_source source;
 
    /* Validate the magic number, as given by RFC 3284 section 4.1 */
    if (patchlen      < 8    ||
@@ -638,19 +640,28 @@ static enum patch_error xdelta_apply_patch(
    /* The first pass is just to compute the buffer size,
     * no need to emit patched data yet */
 
+   if (xd3_config_stream(&stream, &config) != 0)
+      return PATCH_UNKNOWN;
+
+   memset(&source, 0, sizeof(source));
+   source.blksize  = sourcelength;
+   source.onblk    = sourcelength;
+   source.curblk   = sourcedata;
+   source.curblkno = 0;
+   xd3_set_source_and_size(&stream, &source, sourcelength);
+
    do
    { /* Make a first pass over the patch, to compute the target size.
       * XDelta3 doesn't store the target size in the patch file,
       * so we have to either compute it ourselves
       * or keep reallocating a buffer as we go.
-      * I went with the former because it's faster, simpler, and fails sooner.
+      * I went with the former because it's simpler and fails sooner.
       */
-      int ret = 0;
       switch (ret = xd3_decode_input(&stream))
       { /* xd3 works like a zlib-styled state machine (stream is the machine) */
          case XD3_INPUT: /* When starting the first pass, provide the input */
             xd3_avail_input(&stream, patchdata, patchlen);
-            RARCH_DBG("[xdelta] Provided %lu bytes of input to xd3_stream: %s\n", patchlen, stream.msg);
+            RARCH_DBG("[xdelta] Provided %lu bytes of input to xd3_stream\n", patchlen);
             break;
          case XD3_GOTHEADER:
          case XD3_WINSTART:
@@ -660,23 +671,25 @@ static enum patch_error xdelta_apply_patch(
             break;
          case XD3_OUTPUT:
             xd3_consume_output(&stream); /* Need to call this after every output */
-            RARCH_DBG("[xdelta] Consumed output from xd3_stream: %s\n", stream.msg);
             break;
          case XD3_INVALID_INPUT:
             error_patch = PATCH_PATCH_INVALID;
-            RARCH_DBG("[xdelta] Invalid input in xd3_stream: %s\n", stream.msg);
+            RARCH_ERR("[xdelta] Invalid input in xd3_stream (%s)\n", xd3_errstring(&stream));
             goto cleanup_stream;
          case XD3_INTERNAL:
             error_patch = PATCH_UNKNOWN;
-            RARCH_DBG("[xdelta] Internal error in xd3_stream: %s\n", stream.msg);
+            RARCH_ERR("[xdelta] Internal error in xd3_stream (%s)\n", xd3_errstring(&stream));
             goto cleanup_stream;
+         case XD3_WINFINISH:
+            RARCH_DBG("[xdelta] Finished processing window #%d\n", stream.current_window);
+            break;
          default:
             RARCH_DBG("[xdelta] xd3_decode_input returned %ld (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
       }
-   } while (stream.avail_in > 0 || stream.avail_out > 0);
+   } while (stream.avail_in);
 
-
-   switch (xd3_decode_memory(
+   *targetdata = malloc(*targetlength);
+   switch (ret = xd3_decode_memory(
            patchdata, patchlen,
            sourcedata, sourcelength,
            *targetdata, targetlength, *targetlength, 0))
