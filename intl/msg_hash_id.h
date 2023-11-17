@@ -3390,10 +3390,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Hapus"
-   )
 
 /* Quick Menu > Shaders > Save */
 

@@ -2374,10 +2374,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "سایه‌زن‌های ویدیو"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "حذف"
-   )
 
 /* Quick Menu > Shaders > Save */
 
