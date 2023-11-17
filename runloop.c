@@ -4256,13 +4256,10 @@ static bool event_init_content(
 
    content_set_subsystem_info();
 
-   /* If core is contentless, just initialise SRAM
-    * interface, otherwise fill all content-related
-    * paths */
    if (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
       runloop_path_init_savefile_internal(runloop_st);
-   else
-      runloop_path_fill_names();
+
+   runloop_path_fill_names();
 
    if (!content_init())
       return false;
