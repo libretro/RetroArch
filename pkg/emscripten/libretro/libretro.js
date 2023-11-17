@@ -184,13 +184,30 @@ function preLoadingComplete()
 var zipTOC;
 
 function zipfsInit() {
-  fetch("assets/frontend/bundle.zip").then(function(resp) {
-    resp.arrayBuffer().then(function(buf) {
-      BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(buf), function(toc) {
+  // 256 MB max bundle size
+  let buffer = new ArrayBuffer(0, {maxByteLength: 256*1024*1024});
+  let bufferView = new Uint8Array(buffer);
+  let idx = 0;
+  // bundle should be in four parts (this can be changed later)
+  Promise.all([fetch("assets/frontend/bundle.zip.aa"),
+               fetch("assets/frontend/bundle.zip.ab"),
+               fetch("assets/frontend/bundle.zip.ac"),
+               fetch("assets/frontend/bundle.zip.ad")
+              ]).then(function(resps) {
+    Promise.all(resps.map((r) => r.arrayBuffer())).then(function(buffers) {
+      for (let buf of buffers) {
+        if (idx+buf.byteLength > buffer.maxByteLength) {
+          console.log("WEBPLAYER: error: bundle.zip is too large");
+        }
+        buffer.resize(idx + buf.byteLength);
+        bufferView.set(new Uint8Array(buf), idx, buf.byteLength);
+        idx += buf.byteLength;
+      }
+      BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(buffer), function(toc) {
         zipTOC = toc;
         appInitialized();
-      })
-    });
+      });
+    })
   });
 }
 function setupFileSystem(backend)
