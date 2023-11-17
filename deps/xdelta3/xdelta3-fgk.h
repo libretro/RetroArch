@@ -783,6 +783,7 @@ static void fgk_destroy (xd3_stream *stream,
 /* 			       Xdelta                                */
 /*********************************************************************/
 
+#if XD3_ENCODER
 static int
 xd3_encode_fgk (xd3_stream *stream, fgk_stream *sec_stream, xd3_output *input, xd3_output *output, xd3_sec_cfg *cfg)
 {
@@ -809,6 +810,7 @@ xd3_encode_fgk (xd3_stream *stream, fgk_stream *sec_stream, xd3_output *input, x
 
   return xd3_flush_bits (stream, & output, & bstate);
 }
+#endif
 
 static int
 xd3_decode_fgk (xd3_stream     *stream,
