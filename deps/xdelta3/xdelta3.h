@@ -96,24 +96,6 @@
 #define XD3_DEFAULT_SECONDARY_LEVEL 6
 #endif
 
-#ifndef XD3_USE_LARGEFILE64
-#if SIZE_MAX == UINT64_MAX
-#define XD3_USE_LARGEFILE64 1
-#else
-#define XD3_USE_LARGEFILE64 0
-#endif
-#endif
-
-/* The source window size is limited to 2GB unless
- * XD3_USE_LARGESIZET is defined to 1. */
-#ifndef XD3_USE_LARGESIZET
-#if SIZE_MAX == UINT64_MAX
-#define XD3_USE_LARGESIZET 1
-#else
-#define XD3_USE_LARGESIZET 0
-#endif
-#endif
-
 /* Sizes and addresses within VCDIFF windows are represented as usize_t
  *
  * For source-file offsets and total file sizes, total input and
@@ -129,18 +111,6 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
-#ifndef WINVER
-#if XD3_USE_LARGEFILE64
-/* 64 bit file offsets: uses GetFileSizeEx and SetFilePointerEx. */
-#define WINVER		0x0500
-#define _WIN32_WINNT	0x0500
-#else /* xoff_t is 32bit */
-/* 32 bit file offsets: uses GetFileSize and SetFilePointer. */
-#define WINVER		0x0400
-#define _WIN32_WINNT	0x0400
-#endif /* if XD3_USE_LARGEFILE64 */
-#endif /* ifndef WINVER */
 
 #include <windows.h>
 
@@ -164,6 +134,24 @@ typedef ULONGLONG      uint64_t;
 #endif /* _MSC_VER defined */
 
 #endif /* _WIN32 defined */
+
+#ifndef XD3_USE_LARGEFILE64
+#if SIZE_MAX == UINT64_MAX
+#define XD3_USE_LARGEFILE64 1
+#else
+#define XD3_USE_LARGEFILE64 0
+#endif
+#endif
+
+/* The source window size is limited to 2GB unless
+ * XD3_USE_LARGESIZET is defined to 1. */
+#ifndef XD3_USE_LARGESIZET
+#if SIZE_MAX == UINT64_MAX
+#define XD3_USE_LARGESIZET 1
+#else
+#define XD3_USE_LARGESIZET 0
+#endif
+#endif
 
 #if SIZE_MAX == UINT64_MAX
 #define SIZEOF_SIZE_T 8
@@ -308,7 +296,7 @@ typedef uint32_t usize_t;
 
 /* Whether to build the encoder, otherwise only build the decoder. */
 #ifndef XD3_ENCODER
-#define XD3_ENCODER 1
+#define XD3_ENCODER 0
 #endif
 
 /* The code returned when main() fails, also defined in system
