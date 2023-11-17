@@ -8879,10 +8879,6 @@ MSG_HASH(
    "記住本次執行「載入」著色器配置檔最後的位置, 重新啟動後還原為預設位置。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "載入"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "載入著色器配置檔並自動設置通道和參數。"
    )
@@ -8891,32 +8887,8 @@ MSG_HASH(
    "載入著色器配置檔並自動設置著色器通道參數。\n支援格式可從「設定/驅動程式/顯示」選項, 按[選擇鍵]查看著色器支援格式。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "應用最前"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "目前載入著色器的最前通道, 加入配置檔並自動應用變化。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "應用最後"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "已載入著色器加入配置檔並自動應用變化。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "儲存"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
    "儲存目前著色器設置為預設。\n載入優先順序: 遊戲>路徑>核心>應用程式。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "刪除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,

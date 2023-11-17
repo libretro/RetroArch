@@ -3030,22 +3030,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Avantposar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Avantposar preajust al carregat actualment"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Annexar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Annexar preajust al carregat actualment"
-   )
 
 /* Quick Menu > Shaders > Save */
 

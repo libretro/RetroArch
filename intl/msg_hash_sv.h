@@ -1925,6 +1925,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Uppdateringsfrekvensen som rapporterats från bilddrivrutinen."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Auto uppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Byt skärmens uppdateringsfrekvensen automatiskt baserat på aktuellt innehåll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   "Endast i exklusivt helskärmsläge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "Endast för fönster i helskärmsläge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   "Alla helskärmslägen"
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
@@ -2229,6 +2249,10 @@ MSG_HASH(
    "VSync är aktiverat tills prestandan blir för dålig för att nå optimal uppdateringsfrekvens. Kan minimera hackande bild när prestandan är dålig, och vara mer energieffektivt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Bildfördröjning (ms)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatisk Fördröjning av Bildruta"
    )
@@ -2272,6 +2296,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
    "Mikrofon"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Ändra ljudingångsinställningar."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
@@ -2298,6 +2326,10 @@ MSG_HASH(
    "Menyljud"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   "Ändra inställningar för menyljud."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
    "Ljudlöst läge"
    )
@@ -2320,6 +2352,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Aktivera ljudlöst läge automatiskt vid snabbspolning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Öka hastigheten vid snabbspolning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Snabba upp ljudet vid snabbspolning. Förebygger sprakande men skiftar tonhöjd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2373,6 +2413,10 @@ MSG_HASH(
    "Ljud"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "Aktivera ljudutgång."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    "Enhet"
    )
@@ -2418,6 +2462,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    "Synkronisering"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Synkronisera ljud. Rekommenderas."
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -2426,12 +2474,24 @@ MSG_HASH(
    "Inmatning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   "Välj ingående enhet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Bild"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   "Välj utgångsenhet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
    "Volym"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   "Ange utgående volym (%)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -2464,12 +2524,40 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    "Volym"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   "Justera volymen på ljudströmmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Status : N/A"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   "Status : Stoppat"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   "Spela samtidiga ljudströmmar även i menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    "Aktivera 'OK'-ljud"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   "Aktivera för 'Avbryt'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+   "Aktivera för 'Notis'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+   "Aktivera för 'BGM'"
    )
 
 /* Settings > Input */
@@ -2509,7 +2597,19 @@ MSG_HASH(
    )
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Välj fysiskt tangentbord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Använd denna enhet som ett fysiskt tangentbord och inte som en gamepad."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   "Automatiskt 'Game Focus'-läge"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "AV"
@@ -2539,8 +2639,20 @@ MSG_HASH(
    "Turboläge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "Klassisk"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "Menykontroller"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   "Kortkommandon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "Port %u kontroller"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -2550,19 +2662,59 @@ MSG_HASH(
    MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Lösning för kontroller som kopplar från och återansluter. Hindrar 2 spelare med identiska kontroller."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Bekräfta Avsluta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Kräver att Snabbknappen för att Avsluta trycks två gånger för att avsluta RetroArch."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "Vibrera vid knapptryck"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    "Aktivera enheters vibration (för kärnor som stödjer det)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   "Vibrationsstyrka"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "Ange storleken på haptiska återkopplingseffekter."
    )
 
 /* Settings > Input > Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Skifta OK/Avbryt-knappen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Byt plats på OK/Avbryt-knappen. Inaktiv är det Japansk knapporientering, aktiv är det Västerländsk."
+   )
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   "Kortkommando-aktivering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "En kombination av kortkommando-knappar för att växla till menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Avsluta(Kontroller Kombo)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Avsluta"
@@ -2584,6 +2736,10 @@ MSG_HASH(
    "Pausa"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   "Ljud tysta"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
    "Volym upp"
@@ -2918,12 +3074,52 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
    "PÅ (Normal)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   "Välj typsnitt för aviseringar på skärmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+   "Storlek på notiser"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Ange teckenstorlek i punkter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
+   "Notisposition (horisontellt)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   "Notisposition (vertikalt)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+   "Notisfärg (röd)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+   "Notisfärg (grön)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+   "Notisfärg (blå)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "Bakgrund för notiser"
+   )
 
 /* Settings > User Interface */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    "Synlighet för menyobjekt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Välj vilka menyobjekt som ska vara synliga i RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
@@ -2942,6 +3138,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    "Kioskläge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   "Sätt lösenord för Inaktivera Kiosk-läge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -3698,18 +3898,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Ladda"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Spara"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Ta bort"
-   )
 
 /* Quick Menu > Shaders > Save */
 

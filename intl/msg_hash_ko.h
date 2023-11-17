@@ -9243,10 +9243,6 @@ MSG_HASH(
    "세이더 프리셋 및 패스를 불러올때 파일 브라우저에서 최근 사용한 디렉토리를 엽니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "불러오기"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "셰이더 프리셋을 불러옵니다. 셰이더 파이프라인이 자동으로 설정됩니다."
    )
@@ -9255,32 +9251,8 @@ MSG_HASH(
    "셰이더 사전 설정을 직접 불러옵니다. 그에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 사전 설정이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "앞에 불러오기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "현재 로드된 프리셋의 앞에 붙여넣기"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "뒤에 불러오기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "현재 로드된 프리셋의 뒤에 붙여넣기"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "저장"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
    "현재 셰이더 프리셋을 저장합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "제거"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,

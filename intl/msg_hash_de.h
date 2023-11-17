@@ -8999,10 +8999,6 @@ MSG_HASH(
    "Dateibrowser beim Laden von Shader-Voreinstellungen im zuletzt verwendeten Verzeichnis öffnen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Laden"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "Lade eine Shader-Voreinstellung. Die Shader-Pipeline wird automatisch konfiguriert."
    )
@@ -9011,32 +9007,8 @@ MSG_HASH(
    "Lädt eine Shader-Voreinstellung direkt. Das Shadermenü wird entsprechend aktualisiert.\nDer im Menü angezeigte Skalierungsfaktor ist nur dann betriebssicher, wenn die Voreinstellung einfache Skalierungsmethoden verwendet (z. B. Quellskalierung, gleicher Skalierungsfaktor für X/Y)."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Voranstellen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Voreinstellung an aktuell geladene voranstellen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Anhängen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Voreinstellung an aktuell geladene anhängen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Speichern"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
    "Die aktuelle Shader-Voreinstellung speichern."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Entfernen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
