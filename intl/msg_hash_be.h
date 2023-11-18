@@ -1230,7 +1230,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   "Файл прадвызначанага набору шэйдараў."
+   "Файл набору налад шэйдара."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
@@ -1771,7 +1771,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   "Выдаліць відэафільтр"
+   "Адкінуць відэафільтр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
@@ -2203,7 +2203,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Выдаліць плагін DSP"
+   "Адкінуць плагін DSP"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
@@ -2306,7 +2306,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-   "Выдаліць"
+   "Пазбавіцца"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
@@ -2929,9 +2929,17 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
+   "Набор налад накладкі"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   "Набор налад накладкі клавіятуры"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -4062,7 +4070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-   "Дазвол выдалення запісаў"
+   "Дазвол пазбаўлення запісаў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
@@ -4685,7 +4693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   "Выдаліць"
+   "Пазбавіцца"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
@@ -4959,6 +4967,38 @@ MSG_HASH(
    "Шэйдары відэа"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   "Загрузіць набор налад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Дадаць набор налад спераду"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Дадаць набор налад перад бягучымі загружанымі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Дадаць набор налад ззаду"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Дадаць набор налад па-за бягучымі загружанымі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
+   "Захаваць набор налад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
+   "Захаваць бягучы набор налад шэйдара."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "Зняць набор налад"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
    "Шэйдар"
    )
@@ -4969,11 +5009,39 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Save */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   "Простыя наборы налад"
+   )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Захаваць набор налад шэйдара як"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "Захаваць глабальны набор налад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "Захаваць набор налад для ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Захаваць набор налад для каталога змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Захаваць набор налад для гульні"
+   )
 
 /* Quick Menu > Shaders > Remove */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Зняць глабальны набор налад"
+   )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
@@ -4990,7 +5058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Выдаліць перавызначэнні ядра"
+   "Адкінуць перавызначэнні ядра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -4998,7 +5066,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Выдаліць перавызначэнні каталога змесціва"
+   "Адкінуць перавызначэнні каталога змесціва"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -5006,7 +5074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Выдаліць перавызначэнні гульні"
+   "Адкінуць перавызначэнні гульні"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
@@ -6374,7 +6442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_REMOVE,
-   "Выдаліць"
+   "Зняць"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
