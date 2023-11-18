@@ -8379,12 +8379,24 @@ MSG_HASH(
    "Avaa tiedostoselain viimeksi käytetyssä kansiossa, kun ladataan varjostimen esiasetuksia ja vaiheita."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   "Lataa esiasetus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "Lataa varjostimen esiasetus. Varjostimen liukuhihna asetetaan automaattisesti."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
+   "Tallenna esiasetus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
    "Tallenna nykyinen varjostimen esiasetus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "Poista esiasetus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
