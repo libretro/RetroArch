@@ -51,6 +51,10 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
+#ifdef HAVE_WASAPI
+#include "../audio/common/wasapi.h"
+#endif
+
 #include "../config.def.h"
 #include "../config.def.keybinds.h"
 
@@ -4941,29 +4945,52 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
 }
 
 #ifdef HAVE_WASAPI
-static void setting_get_string_representation_int_audio_wasapi_sh_buffer_length(rarch_setting_t *setting,
+static void setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (!setting)
+   settings_t *settings = config_get_ptr();
+
+   if (!setting || !settings)
       return;
 
-   if (*setting->value.target.integer > 0)
-      snprintf(s, len, "%d", *setting->value.target.integer);
-   else if (*setting->value.target.integer == 0)
-      strlcpy(s, "0 (Off)", len);
-   else
-      strlcpy(s, "Auto", len);
+   switch (*setting->value.target.integer)
+   {
+      case WASAPI_SH_BUFFER_AUDIO_LATENCY:
+         snprintf(s, len, "%u (%s)",
+               *setting->value.target.integer,
+               "Audio Latency");
+         break;
+      case WASAPI_SH_BUFFER_DEVICE_PERIOD:
+         snprintf(s, len, "%u (%s)",
+               *setting->value.target.integer,
+               "Device Period");
+         break;
+      case WASAPI_SH_BUFFER_CLIENT_BUFFER:
+         snprintf(s, len, "%u (%s)",
+               *setting->value.target.integer,
+               "Client Buffer");
+         break;
+      default:
+         snprintf(s, len, "%u (%.1f ms)",
+               *setting->value.target.integer,
+               (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
+         break;
+   }
 }
 
 #ifdef HAVE_MICROPHONE
 static void setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (!setting)
+   settings_t *settings = config_get_ptr();
+
+   if (!setting || !settings)
       return;
 
-   if (*setting->value.target.unsigned_integer > 0)
-      snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   if (*setting->value.target.integer > 0)
+      snprintf(s, len, "%u (%.1f ms)",
+            *setting->value.target.integer,
+            (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
    else
       strlcpy(s, "Auto", len);
 }
@@ -8315,9 +8342,11 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
+#ifdef HAVE_WASAPI
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
+#endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
 #ifdef HAVE_MICROPHONE
@@ -14107,9 +14136,9 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-            CONFIG_INT(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->ints.audio_wasapi_sh_buffer_length,
+                  &settings->uints.audio_wasapi_sh_buffer_length,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                   DEFAULT_WASAPI_SH_BUFFER_LENGTH,
@@ -14118,11 +14147,12 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, -16.0f, 0.0f, 16.0f, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
             (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_int_audio_wasapi_sh_buffer_length;
-            }
+                  &setting_get_string_representation_uint_audio_wasapi_sh_buffer_length;
+            menu_settings_list_current_add_range(list, list_info, 0, 32.0f * 200, 32.0f, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         }
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -14302,11 +14332,12 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0.0f, 0.0f, 16.0f, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint_special;
             (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length;
-            }
+            menu_settings_list_current_add_range(list, list_info, 0, 32.0f * 200, 32.0f, true, true);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         }
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);

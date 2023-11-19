@@ -1783,7 +1783,6 @@ static struct config_bool_setting *populate_settings_bool(
 
 #ifdef HAVE_MICROPHONE
    SETTING_BOOL("microphone_enable",             &settings->bools.microphone_enable, true, DEFAULT_MICROPHONE_ENABLE, false);
-
 #ifdef HAVE_WASAPI
    SETTING_BOOL("microphone_wasapi_exclusive_mode", &settings->bools.microphone_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
    SETTING_BOOL("microphone_wasapi_float_format",   &settings->bools.microphone_wasapi_float_format, true, DEFAULT_WASAPI_FLOAT_FORMAT, false);
@@ -2335,6 +2334,11 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("audio_resampler_quality",       &settings->uints.audio_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
    SETTING_UINT("audio_block_frames",            &settings->uints.audio_block_frames, true, 0, false);
    SETTING_UINT("midi_volume",                   &settings->uints.midi_volume, true, DEFAULT_MIDI_VOLUME, false);
+
+#ifdef HAVE_WASAPI
+   SETTING_UINT("audio_wasapi_sh_buffer_length",  &settings->uints.audio_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_SH_BUFFER_LENGTH, false);
+#endif
+
 #ifdef HAVE_MICROPHONE
    SETTING_UINT("microphone_latency",            &settings->uints.microphone_latency, false, 0 /* TODO */, false);
    SETTING_UINT("microphone_resampler_quality",  &settings->uints.microphone_resampler_quality, true, DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL, false);
@@ -2549,9 +2553,6 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("menu_xmb_title_margin_horizontal_offset", &settings->ints.menu_xmb_title_margin_horizontal_offset, true, DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET, false);
 #endif
 
-#ifdef HAVE_WASAPI
-   SETTING_INT("audio_wasapi_sh_buffer_length",  &settings->ints.audio_wasapi_sh_buffer_length, true, DEFAULT_WASAPI_SH_BUFFER_LENGTH, false);
-#endif
    SETTING_INT("crt_switch_center_adjust",       &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",        &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);
 #ifdef HAVE_WINDOW_OFFSET
@@ -3768,6 +3769,16 @@ static bool config_load_file(global_t *global,
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
+#endif
+
+#ifdef HAVE_WASAPI
+   {
+      /* Migrate from old deprecated negative value */
+      int wasapi_sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
+
+      if (wasapi_sh_buffer_length < 0)
+         settings->uints.audio_wasapi_sh_buffer_length = 0;
+   }
 #endif
 
    /* MIDI fallback for old OFF-string */

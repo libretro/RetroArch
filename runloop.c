@@ -6005,8 +6005,7 @@ static enum runloop_state_enum runloop_check_state(
             menu->state               = 0;
          }
 
-         if (settings->bools.audio_enable_menu
-               && !libretro_running)
+         if (!libretro_running)
             audio_driver_menu_sample();
       }
 
