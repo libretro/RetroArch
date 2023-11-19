@@ -106,7 +106,6 @@ typedef struct settings
       int location_update_interval_distance;
       int state_slot;
       int replay_slot;
-      int audio_wasapi_sh_buffer_length;
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
 #ifdef HAVE_VULKAN
@@ -161,12 +160,18 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
 
+#ifdef HAVE_WASAPI
+      unsigned audio_wasapi_sh_buffer_length;
+#endif
+
 #ifdef HAVE_MICROPHONE
       unsigned microphone_sample_rate;
       unsigned microphone_block_frames;
       unsigned microphone_latency;
-      unsigned microphone_wasapi_sh_buffer_length;
       unsigned microphone_resampler_quality;
+#ifdef HAVE_WASAPI
+      unsigned microphone_wasapi_sh_buffer_length;
+#endif
 #endif
 
       unsigned fps_update_interval;
@@ -623,10 +628,13 @@ typedef struct settings
       bool audio_enable_menu_scroll;
       bool audio_sync;
       bool audio_rate_control;
-      bool audio_wasapi_exclusive_mode;
-      bool audio_wasapi_float_format;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+
+#ifdef HAVE_WASAPI
+      bool audio_wasapi_exclusive_mode;
+      bool audio_wasapi_float_format;
+#endif
 
 #ifdef HAVE_MICROPHONE
       /* Microphone */

@@ -7184,6 +7184,7 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
+#ifdef HAVE_WASAPI
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -7194,8 +7195,9 @@ unsigned menu_displaylist_build_list(
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                     PARSE_ONLY_INT, false) == 0)
+                     PARSE_ONLY_UINT, false) == 0)
                count++;
+#endif
          }
          break;
 #ifdef HAVE_MICROPHONE
@@ -7235,6 +7237,7 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_MICROPHONE_BLOCK_FRAMES,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+#ifdef HAVE_WASAPI
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
                   PARSE_ONLY_BOOL, false) == 0)
@@ -7247,6 +7250,7 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+#endif
          break;
 #endif
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:

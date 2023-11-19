@@ -151,7 +151,35 @@ static const char* wasapi_data_flow_name(EDataFlow data_flow)
 }
 
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
-      bool float_fmt, unsigned rate, unsigned channels);
+      bool float_fmt, unsigned rate, unsigned channels)
+{
+   WORD wBitsPerSample        = float_fmt ? 32 : 16;
+   WORD nBlockAlign           = (channels * wBitsPerSample) / 8;
+   DWORD nAvgBytesPerSec      = rate * nBlockAlign;
+
+   wf->Format.nChannels       = channels;
+   wf->Format.nSamplesPerSec  = rate;
+   wf->Format.nAvgBytesPerSec = nAvgBytesPerSec;
+   wf->Format.nBlockAlign     = nBlockAlign;
+   wf->Format.wBitsPerSample  = wBitsPerSample;
+
+   if (float_fmt)
+   {
+      wf->Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
+      wf->Format.cbSize               = sizeof(WORD) + sizeof(DWORD) + sizeof(GUID);
+      wf->Samples.wValidBitsPerSample = wBitsPerSample;
+      wf->dwChannelMask               = channels == 1 ? KSAUDIO_SPEAKER_MONO : KSAUDIO_SPEAKER_STEREO;
+      wf->SubFormat                   = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+   }
+   else
+   {
+      wf->Format.wFormatTag           = WAVE_FORMAT_PCM;
+      wf->Format.cbSize               = 0;
+      wf->Samples.wValidBitsPerSample = 0;
+      wf->dwChannelMask               = 0;
+      memset(&wf->SubFormat, 0, sizeof(wf->SubFormat));
+   }
+}
 
 /**
  * @param[in] format The format to check.
@@ -186,6 +214,7 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
 
    return true;
 }
+
 /**
  * Selects a sample format suitable for the given device.
  * @param[in,out] format The place where the chosen format will be written,
@@ -201,7 +230,7 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
 {
    static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
    const bool preferred_formats[]          = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
-   /* Try the requested sample format first, then try the other one */
+   /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
    bool result                             = false;
    HRESULT hr                              = _IAudioClient_IsFormatSupported(
@@ -213,15 +242,13 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
    switch (hr)
    {
       case S_OK:
-         /* The requested format is okay without any changes */
-         RARCH_DBG("[WASAPI]: Desired format (%s, %u-channel, %uHz) can be used as-is.\n",
-            wave_format_name(format), format->Format.nChannels, format->Format.nSamplesPerSec);
+         /* The requested format is okay without any changes. */
          result = true;
          break;
       case S_FALSE:
          /* The requested format is unsupported, but Windows has suggested a similar one. */
          RARCH_DBG("[WASAPI]: Windows suggests a format of (%s, %u-channel, %uHz).\n",
-            wave_format_name(suggested_format), suggested_format->Format.nChannels, suggested_format->Format.nSamplesPerSec);
+               wave_format_name(suggested_format), suggested_format->Format.nChannels, suggested_format->Format.nSamplesPerSec);
          if (wasapi_is_format_suitable(suggested_format))
          {
             *format = *suggested_format;
@@ -234,10 +261,11 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          }
          break;
       case AUDCLNT_E_UNSUPPORTED_FORMAT:
-      { /* The requested format is unsupported
-         * and Windows was unable to suggest another.
-         * Usually happens with exclusive mode.
-         * RetroArch will try selecting a format. */
+      {
+         /* The requested format is unsupported
+          * and Windows was unable to suggest another.
+          * Usually happens with exclusive mode.
+          * RetroArch will try selecting a format. */
          size_t i, j;
          WAVEFORMATEXTENSIBLE possible_format;
          HRESULT format_check_hr;
@@ -253,58 +281,27 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
                   *format = possible_format;
                   result = true;
                   RARCH_DBG("[WASAPI]: RetroArch suggests a format of (%s, %u-channel, %uHz).\n",
-                            wave_format_name(format), format->Format.nChannels, format->Format.nSamplesPerSec);
+                        wave_format_name(format), format->Format.nChannels, format->Format.nSamplesPerSec);
                   goto done;
                }
             }
          }
-         RARCH_ERR("[WASAPI]: Failed to select client format: No suitable format available\n");
+         RARCH_ERR("[WASAPI]: Failed to select client format: No suitable format available.\n");
          result = false;
          break;
       }
       default:
          /* Something else went wrong. */
-         RARCH_ERR("[WASAPI]: Failed to select client format: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: Failed to select client format: %s.\n", hresult_name(hr));
          result = false;
          break;
    }
 done:
-   /* IAudioClient::IsFormatSupported allocates a format object */
+   /* IAudioClient::IsFormatSupported allocates a format object. */
    if (suggested_format)
       CoTaskMemFree(suggested_format);
 
    return result;
-}
-
-static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
-      bool float_fmt, unsigned rate, unsigned channels)
-{
-   WORD wBitsPerSample        = float_fmt ? 32 : 16;
-   WORD nBlockAlign           = (channels * wBitsPerSample) / 8;
-   DWORD nAvgBytesPerSec      = rate * nBlockAlign;
-
-   wf->Format.nChannels       = channels;
-   wf->Format.nSamplesPerSec  = rate;
-   wf->Format.nAvgBytesPerSec = nAvgBytesPerSec;
-   wf->Format.nBlockAlign     = nBlockAlign;
-   wf->Format.wBitsPerSample  = wBitsPerSample;
-
-   if (float_fmt)
-   {
-      wf->Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
-      wf->Format.cbSize               = sizeof(WORD) + sizeof(DWORD) + sizeof(GUID);
-      wf->Samples.wValidBitsPerSample = wBitsPerSample;
-      wf->dwChannelMask               = channels == 1 ? KSAUDIO_SPEAKER_MONO : KSAUDIO_SPEAKER_STEREO;
-      wf->SubFormat                   = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
-   }
-   else
-   {
-      wf->Format.wFormatTag           = WAVE_FORMAT_PCM;
-      wf->Format.cbSize               = 0;
-      wf->Samples.wValidBitsPerSample = 0;
-      wf->dwChannelMask               = 0;
-      memset(&wf->SubFormat, 0, sizeof(wf->SubFormat));
-   }
 }
 
 static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
@@ -320,59 +317,54 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s.\n", hresult_name(hr));
       return NULL;
    }
 
    hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: Failed to get device period of exclusive-mode client: %s\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI]: Failed to get minimum device period of exclusive client: %s.\n", hresult_name(hr));
       goto error;
    }
 
-   /* buffer_duration is in 100ns units */
+   /* Buffer_duration is in 100ns units. */
    buffer_duration = latency * 10000.0;
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
    wasapi_set_format(&wf, *float_fmt, *rate, channels);
-   RARCH_DBG("[WASAPI]: Requesting format: %u-bit %u-channel client with %s samples at %uHz\n",
-      wf.Format.wBitsPerSample,
-      wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
-
-   if (wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels))
-   {
-      RARCH_DBG("[WASAPI]: Using format: %u-bit %u-channel client with %s samples at %uHz\n",
+   RARCH_DBG("[WASAPI]: Requesting exclusive %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
-         wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
-   }
-   else
+         wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec, latency);
+
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels))
    {
-      RARCH_ERR("[WASAPI]: Failed to select a suitable device format\n");
+      RARCH_ERR("[WASAPI]: Failed to select a suitable device format.\n");
       goto error;
    }
 
    hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
          AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
          buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
+
    if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
    {
-      RARCH_WARN("[WASAPI]: Unaligned buffer size: %s\n", hresult_name(hr));
+      RARCH_WARN("[WASAPI]: Unaligned buffer size: %s.\n", hresult_name(hr));
       hr = _IAudioClient_GetBufferSize(client, &buffer_length);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI]: Failed to get buffer size of client: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: Failed to get buffer size of client: %s.\n", hresult_name(hr));
          goto error;
       }
 
       IFACE_RELEASE(client);
-      hr                     = _IMMDevice_Activate(device,
+      hr = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s.\n", hresult_name(hr));
          return NULL;
       }
 
@@ -384,12 +376,12 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
       IFACE_RELEASE(client);
-      hr                     = _IMMDevice_Activate(device,
+      hr = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n", hresult_name(hr));
          return NULL;
       }
 
@@ -408,15 +400,12 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: Failed to create exclusive-mode client: %s\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI]: IAudioClient::Initialize failed: %s.\n", hresult_name(hr));
       goto error;
    }
 
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
-
-   RARCH_DBG("[WASAPI]: Initialized exclusive %s client at %uHz, latency %ums\n",
-      *float_fmt ? "float" : "pcm", *rate, latency);
 
    return client;
 
@@ -430,27 +419,43 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
 {
    WAVEFORMATEXTENSIBLE wf;
-   IAudioClient *client = NULL;
-   bool float_fmt_res   = *float_fmt;
-   unsigned rate_res    = *rate;
-   HRESULT hr           = _IMMDevice_Activate(device,
-         IID_IAudioClient,
-         CLSCTX_ALL, NULL, (void**)&client);
+   IAudioClient *client           = NULL;
+   settings_t *settings           = config_get_ptr();
+   unsigned sh_buffer_length      = settings->uints.audio_wasapi_sh_buffer_length;
+   REFERENCE_TIME default_period  = 0;
+   REFERENCE_TIME buffer_duration = 0;
+   HRESULT hr                     = _IMMDevice_Activate(device,
+         IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
 
    if (FAILED(hr))
-   { /* If we couldn't create the IAudioClient... */
-      RARCH_ERR("[WASAPI]: Failed to create %s IAudioClient: %s\n", hresult_name(hr));
+   {
+      RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s.\n", hresult_name(hr));
       return NULL;
    }
 
-   wasapi_set_format(&wf, float_fmt_res, rate_res, channels);
-
-   if (wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels))
+   hr = _IAudioClient_GetDevicePeriod(client, &default_period, NULL);
+   if (FAILED(hr))
    {
-      RARCH_DBG("[WASAPI]: Requesting %u-channel shared-mode client with %s samples at %uHz.\n",
-         wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec);
+      RARCH_ERR("[WASAPI]: Failed to get default device period of shared client: %s.\n", hresult_name(hr));
+      goto error;
    }
-   else
+
+   /* Use audio latency setting for buffer size if allowed */
+   if (     sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD
+         || sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER)
+   {
+      /* Buffer_duration is in 100ns units. */
+      buffer_duration = latency * 10000.0;
+      if (buffer_duration < default_period)
+         buffer_duration = default_period;
+   }
+
+   wasapi_set_format(&wf, *float_fmt, *rate, channels);
+   RARCH_DBG("[WASAPI]: Requesting shared %u-bit %u-channel client with %s samples at %uHz %ums.\n",
+         wf.Format.wBitsPerSample,
+         wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec, latency);
+
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels))
    {
       RARCH_ERR("[WASAPI]: Failed to select a suitable device format.\n");
       goto error;
@@ -458,36 +463,33 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
          AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-         0, 0, (WAVEFORMATEX*)&wf, NULL);
+         buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
 
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
       IFACE_RELEASE(client);
-      hr           = _IMMDevice_Activate(device,
+      hr = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: IMMDevice::Activate failed: %s.\n", hresult_name(hr));
          return NULL;
       }
 
       hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-            0, 0, (WAVEFORMATEX*)&wf, NULL);
+            buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
    }
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: IAudioClient::Initialize failed: %s\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI]: IAudioClient::Initialize failed: %s.\n", hresult_name(hr));
       goto error;
    }
 
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
-
-   RARCH_DBG("[WASAPI]: Initialized shared %s client at %uHz.\n",
-      wave_format_name(&wf), *rate);
 
    return client;
 
@@ -516,16 +518,17 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
          IID_IMMDeviceEnumerator, (void **)&enumerator);
 #else
    hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-                         &IID_IMMDeviceEnumerator, (void **)&enumerator);
+         &IID_IMMDeviceEnumerator, (void **)&enumerator);
 #endif
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI]: Failed to create device enumerator: %s\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI]: Failed to create device enumerator: %s.\n", hresult_name(hr));
       goto error;
    }
 
    if (id)
-   { /* If a specific device was requested... */
+   {
+      /* If a specific device was requested... */
       int32_t idx_found        = -1;
       struct string_list *list = (struct string_list*)mmdevice_list_new(NULL, data_flow);
 
@@ -536,20 +539,21 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
       }
 
       if (list->elems)
-      { /* If any devices were found... */
+      {
+         /* If any devices were found... */
          unsigned d;
          for (d = 0; d < list->size; d++)
          {
             if (string_is_equal(id, list->elems[d].data))
             {
-               RARCH_DBG("[WASAPI]: Found device #%d: \"%s\"\n", d, list->elems[d].data);
+               RARCH_DBG("[WASAPI]: Found device #%d: \"%s\".\n", d, list->elems[d].data);
                idx_found = d;
                break;
             }
          }
+
          /* Index was not found yet based on name string,
           * just assume id is a one-character number index. */
-
          if (idx_found == -1 && isdigit(id[0]))
          {
             idx_found = strtoul(id, NULL, 0);
@@ -565,14 +569,14 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
             data_flow, DEVICE_STATE_ACTIVE, &collection);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI]: Failed to enumerate audio endpoints: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: Failed to enumerate audio endpoints: %s.\n", hresult_name(hr));
          goto error;
       }
 
       hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI]: Failed to count IMMDevices: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: Failed to count IMMDevices: %s.\n", hresult_name(hr));
          goto error;
       }
 
@@ -581,7 +585,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
          hr = _IMMDeviceCollection_Item(collection, i, &device);
          if (FAILED(hr))
          {
-            RARCH_ERR("[WASAPI]: Failed to get IMMDevice #%d: %s\n", i, hresult_name(hr));
+            RARCH_ERR("[WASAPI]: Failed to get IMMDevice #%d: %s.\n", i, hresult_name(hr));
             goto error;
          }
 
@@ -597,7 +601,7 @@ IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
             enumerator, data_flow, eConsole, &device);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI]: Failed to get default audio endpoint: %s\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI]: Failed to get default audio endpoint: %s.\n", hresult_name(hr));
          goto error;
       }
    }
@@ -615,13 +619,9 @@ error:
    IFACE_RELEASE(enumerator);
 
    if (id)
-   {
       RARCH_WARN("[WASAPI]: Failed to initialize %s device \"%s\".\n", data_flow_name, id);
-   }
    else
-   {
       RARCH_ERR("[WASAPI]: Failed to initialize default %s device.\n", data_flow_name);
-   }
 
    return NULL;
 }
@@ -631,14 +631,11 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 {
    HRESULT hr;
    IAudioClient *client;
-   double latency_res;
-   REFERENCE_TIME device_period  = 0;
-   REFERENCE_TIME stream_latency = 0;
-   UINT32 buffer_length          = 0;
-
-   RARCH_DBG("[WASAPI]: Requesting %s %s client (rate=%uHz, latency=%ums).\n",
-      *exclusive ? "exclusive" : "shared",
-      *float_fmt ? "float" : "pcm", *rate, latency);
+   float latency_res;
+   REFERENCE_TIME device_period     = 0;
+   REFERENCE_TIME device_period_min = 0;
+   REFERENCE_TIME stream_latency    = 0;
+   UINT32 buffer_length             = 0;
 
    if (*exclusive)
    {
@@ -666,45 +663,24 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    if (!client)
       return NULL;
 
-   /* next calls are allowed to fail (we losing info only) */
+   /* Remaining calls are for logging purposes. */
 
-   if (*exclusive)
+   hr = _IAudioClient_GetDevicePeriod(client, &device_period, &device_period_min);
+   if (SUCCEEDED(hr))
    {
-      hr = _IAudioClient_GetDevicePeriod(client, NULL, &device_period);
-      if (SUCCEEDED(hr))
-      {
-         RARCH_DBG("[WASAPI]: Minimum exclusive-mode device period is %uns (%.1fms).\n",
-            device_period * 100, (double)device_period * 100 / 1e6);
-      }
-      /* device_period is in 100ns units */
+      RARCH_DBG("[WASAPI]: Default device period is %.1fms.\n", (float)device_period * 100 / 1e6);
+      RARCH_DBG("[WASAPI]: Minimum device period is %.1fms.\n", (float)device_period_min * 100 / 1e6);
    }
    else
-   {
-      hr = _IAudioClient_GetDevicePeriod(client, &device_period, NULL);
-      if (SUCCEEDED(hr))
-      {
-         RARCH_DBG("[WASAPI]: Default shared-mode device period is %uns (%.1fms).\n",
-            device_period * 100, (double)device_period * 100 / 1e6);
-      }
-   }
-
-   if (FAILED(hr))
-   {
-      RARCH_WARN("[WASAPI]: IAudioClient::GetDevicePeriod failed: %s\n", hresult_name(hr));
-   }
+      RARCH_WARN("[WASAPI]: IAudioClient::GetDevicePeriod failed: %s.\n", hresult_name(hr));
 
    if (!*exclusive)
    {
       hr = _IAudioClient_GetStreamLatency(client, &stream_latency);
       if (SUCCEEDED(hr))
-      {
-         RARCH_DBG("[WASAPI]: Shared stream latency is %uns (%.1fms).\n",
-            stream_latency * 100, (double)stream_latency * 100 / 1e6);
-      }
+         RARCH_DBG("[WASAPI]: Shared stream latency is %.1fms.\n", (float)stream_latency * 100 / 1e6);
       else
-      {
-         RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed: %s\n", hresult_name(hr));
-      }
+         RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed: %s.\n", hresult_name(hr));
    }
 
    hr = _IAudioClient_GetBufferSize(client, &buffer_length);
@@ -712,45 +688,38 @@ IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    {
       size_t num_samples = buffer_length * channels;
       size_t num_bytes = num_samples * (*float_fmt ? sizeof(float) : sizeof(int16_t));
-      RARCH_DBG("[WASAPI]: Endpoint buffer size is %u frames (%u samples, %u bytes).\n",
-         buffer_length, num_samples, num_bytes);
+      RARCH_DBG("[WASAPI]: Endpoint buffer size is %u frames (%u samples, %u bytes, %.1f ms).\n",
+            buffer_length, num_samples, num_bytes, (float)buffer_length * 1000.0 / *rate);
    }
    else
-   {
       RARCH_WARN("[WASAPI]: IAudioClient::GetBufferSize failed: %s.\n", hresult_name(hr));
-   }
 
    if (*exclusive)
-      latency_res = (double)buffer_length * 1000.0 / (*rate);
+      latency_res = (float)buffer_length * 1000.0 / (*rate);
    else
    {
-      settings_t *settings = config_get_ptr();
-      int sh_buffer_length = settings->ints.audio_wasapi_sh_buffer_length;
+      settings_t *settings      = config_get_ptr();
+      unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
 
-      if (sh_buffer_length < 0)
+      switch (sh_buffer_length)
       {
-#ifdef USE_CLIENT_BUFFER
-         latency_res = (double)buffer_length * 1000.0 / (*rate);
-#else
-         latency_res = (double)(stream_latency + device_period) / 10000.0;
-#endif
+         case WASAPI_SH_BUFFER_AUDIO_LATENCY:
+         case WASAPI_SH_BUFFER_CLIENT_BUFFER:
+            latency_res = (float)buffer_length * 1000.0 / (*rate);
+            break;
+         case WASAPI_SH_BUFFER_DEVICE_PERIOD:
+            latency_res = (float)(stream_latency + device_period) / 10000.0;
+            break;
+         default:
+            latency_res = (float)sh_buffer_length * 1000.0 / (*rate);
+            break;
       }
-      else if (sh_buffer_length > 0)
-         latency_res = sh_buffer_length * 1000.0 / (*rate);
-      else
-         latency_res = 0;
    }
 
    RARCH_LOG("[WASAPI]: Client initialized (%s, %s, %uHz, %.1fms).\n",
          *exclusive ? "exclusive" : "shared",
-         *float_fmt ? "float" : "pcm",
+         *float_fmt ? "FLOAT" : "PCM",
          *rate, latency_res);
-
-   RARCH_LOG("[WASAPI]: Client buffer length is %u frames (%.1fms).\n",
-         buffer_length, (double)buffer_length * 1000.0 / (*rate));
-
-   RARCH_LOG("[WASAPI]: Device period is %lld frames (%.1fms).\n",
-         device_period * (*rate) / 10000000, (double)device_period / 10000.0);
 
    return client;
 }
