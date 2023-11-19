@@ -1153,9 +1153,12 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
    path[++len] = '\0';
 
    /* Do not update wallpaper in "Load Content" playlists */
-   if (    (xmb->categories_selection_ptr == 0 && depth > 4)
-        || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
+   if ((xmb->categories_selection_ptr == 0 && depth > 4)
+        || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1)) {
+	if (string_is_empty(xmb->bg_file_path))
+		return NULL;
       return strdup(xmb->bg_file_path);
+   }
 
    if (!path_is_valid(path))
       fill_pathname_application_special(path, sizeof(path),
