@@ -586,6 +586,8 @@ static void rcheevos_progress_hide(rcheevos_locals_t* locals)
       gfx_widget_set_achievement_progress(NULL, NULL);
 }
 
+#endif
+
 static void rcheevos_client_log_message(const char* message, const rc_client_t* client)
 {
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", message);
@@ -667,8 +669,6 @@ static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_cli
       break;
    }
 }
-
-#endif
 
 int rcheevos_get_richpresence(char* s, size_t len)
 {
