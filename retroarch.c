@@ -2997,6 +2997,17 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
+      case CMD_EVENT_REWIND_REINIT:
+#ifdef HAVE_REWIND
+         /* to reinitialize the the rewind state manager, we have to recreate it.
+          * the easiest way to do that is a full deinit followed by an init. */
+         if (runloop_st->rewind_st.state != NULL)
+         {
+            command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+            command_event(CMD_EVENT_REWIND_INIT, NULL);
+         }
+#endif
+         break;
       case CMD_EVENT_REWIND_TOGGLE:
 #ifdef HAVE_REWIND
          {

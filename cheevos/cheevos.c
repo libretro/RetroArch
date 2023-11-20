@@ -2433,13 +2433,13 @@ static void rcheevos_client_load_game_callback(int result,
 #ifdef HAVE_THREADS
          if (!task_is_on_main_thread())
          {
-            /* Have to "schedule" this. CMD_EVENT_REWIND_INIT should
+            /* Have to "schedule" this. CMD_EVENT_REWIND_REINIT should
              * only be called on the main thread */
-            rcheevos_locals.queued_command = CMD_EVENT_REWIND_INIT;
+            rcheevos_locals.queued_command = CMD_EVENT_REWIND_REINIT;
          }
          else
 #endif
-            command_event(CMD_EVENT_REWIND_INIT, NULL);
+            command_event(CMD_EVENT_REWIND_REINIT, NULL);
       }
 #endif
    }
@@ -3144,6 +3144,7 @@ bool rcheevos_load(const void *data)
    {
       rcheevos_enforce_hardcore_settings();
    }
+#ifndef HAVE_RC_CLIENT
    else
    {
 #if HAVE_REWIND
@@ -3167,6 +3168,7 @@ bool rcheevos_load(const void *data)
       }
 #endif
    }
+#endif
 
    /* provide hooks for reading files */
    rc_hash_reset_cdreader_hooks();
