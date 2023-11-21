@@ -914,7 +914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "Абставіны"
+   "Сэтынг"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -2121,6 +2121,10 @@ MSG_HASH(
    "Адаптыўны VSync"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Затрымка кадра (мс)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Аўтаматычная затрымка кадраў"
    )
@@ -2150,8 +2154,20 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+   "Перадыскрэтызацыя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+   "Змяніць налады перадыскрэтызацыі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Сінхранізацыя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   "Змяніць налады сінхранізацыі гуку."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
@@ -2564,8 +2580,16 @@ MSG_HASH(
    "Наступны шэйдар"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   "Загружае і ўжывае наступны файл набору налад шэйдара ў каранёвым каталозе 'Графічныя шэйдары'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
    "Папярэдні шэйдар"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   "Загружае і ўжывае папярэдні файл набору налад шэйдара ў каранёвым каталозе 'Графічныя шэйдары'."
    )
 
 MSG_HASH(
@@ -2746,6 +2770,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "Захоўваць змены ў файл канфігурацыі падчас выхаду."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   "Загружаць наборы налад шэйдараў аўтаматычна"
    )
 
 /* Settings > Saving */
@@ -4321,7 +4349,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-   "Шэйдары відэа"
+   "Графічныя шэйдары"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
@@ -4964,7 +4992,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
-   "Шэйдары відэа"
+   "Графічныя шэйдары"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -5041,6 +5069,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
    "Зняць глабальны набор налад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Адкінуць глабальны набор налад, які выкарыстоўваецца ўсім змесцівам і ўсімі ядрамі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Зняць набор налад для ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Адкінуць набор налад для ядра, датычны ўсяго змесціва, якое запускаецца з бягучым загружаным ядром."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   "Зняць налад для каталога змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Зняць набор налад для гульні"
    )
 
 /* Quick Menu > Shaders > Shader Parameters */
@@ -6536,6 +6584,18 @@ MSG_HASH(
    "Карыстальнік"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "Набор налад шэйдара"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Набор налад шэйдара"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "Набор налад шэйдара"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Старт"
    )
@@ -6917,6 +6977,14 @@ MSG_HASH(
    "Памылка"
    )
 MSG_HASH(
+   MSG_ERROR_SAVING_SHADER_PRESET,
+   "Памылка пры захаванні набору налад шэйдара."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Не атрымалася ўжыць набор налад шэйдара:"
+   )
+MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
    "Не атрымалася пачаць запіс."
    )
@@ -6931,6 +6999,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SHADER,
    "Шэйдар"
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "Набор налад шэйдара паспяхова захаваны."
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -6963,6 +7035,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Загружана захаванне стану. Для бягучага сеанса дасягненняў рэжым хардкору адключаны."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "Набор налад шэйдара паспяхова зняты."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Памылка пры зняцці набору налад шэйдара."
    )
 
 /* Lakka */
