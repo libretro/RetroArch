@@ -932,7 +932,7 @@ static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
    if (!video_st || runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
       return;
 
-   if (video_st->av_info.geometry.aspect_ratio)
+   if (video_st->av_info.geometry.aspect_ratio > 0)
       *width                      = roundf(
               video_st->av_info.geometry.base_height
             * video_st->av_info.geometry.aspect_ratio);
