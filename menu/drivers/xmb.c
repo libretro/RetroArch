@@ -77,6 +77,10 @@
 #define XMB_EASING_ALPHA EASING_OUT_CIRC
 #define XMB_EASING_XY    EASING_OUT_QUAD
 
+/* forward declarations */
+static bool xmb_load_image(void *userdata, void *data,
+      enum menu_image_type type);
+
 /* Specifies minimum period (in usec) between
  * tab switch events when input repeat is
  * active (i.e. when navigating between top level
@@ -1113,56 +1117,60 @@ static void xmb_render_messagebox_internal(
 static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
    settings_t *settings               = config_get_ptr();
-   size_t len                         = 0;
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-   const char *tmp                    = string_replace_substring(xmb->title_name, "/", STRLEN_CONST("/"), " ", STRLEN_CONST(" "));
+   unsigned xmb_color_theme           = settings->uints.menu_xmb_color_theme;
+   const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
    char path[PATH_MAX_LENGTH];
 
    path[0]                            = '\0';
-
-   if (!settings->bools.menu_dynamic_wallpaper_enable)
-   {
-      if (xmb->bg_file_path)
-         free(xmb->bg_file_path);
-      xmb->bg_file_path = strdup(settings->paths.path_menu_wallpaper);
-      return strdup(xmb->bg_file_path);
-   }
-
-   if (tmp)
-      len = fill_pathname_join_special(
-            path,
-            dir_dynamic_wallpapers,
-            tmp,
-            sizeof(path));
-
-   path[  len] = '.';
-   path[++len] = 'p';
-   path[++len] = 'n';
-   path[++len] = 'g';
-   path[++len] = '\0';
 
    /* Do not update wallpaper in "Load Content" playlists and inside playlist items */
    if (    (xmb->categories_selection_ptr == 0 && depth > 4)
         || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
    {
       if (string_is_empty(xmb->bg_file_path))
-         return strdup(settings->paths.path_menu_wallpaper);
+         return NULL;
       return strdup(xmb->bg_file_path);
    }
 
-   if (!path_is_valid(path))
+   /* Dynamic wallpaper takes precedence as reset background,
+    * then comes 'menu_wallpaper', and then iconset 'bg.png' */
+   if (settings->bools.menu_dynamic_wallpaper_enable)
+   {
+      size_t len                         = 0;
+      const char *tmp                    = string_replace_substring(xmb->title_name, "/", STRLEN_CONST("/"), " ", STRLEN_CONST(" "));
+      const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
+
+      if (tmp)
+         len = fill_pathname_join_special(
+               path,
+               dir_dynamic_wallpapers,
+               tmp,
+               sizeof(path));
+
+      path[  len] = '.';
+      path[++len] = 'p';
+      path[++len] = 'n';
+      path[++len] = 'g';
+      path[++len] = '\0';
+   }
+
+   if (!string_is_empty(path) && path_is_valid(path))
+      ;/* no-op */
+   else if (!string_is_empty(path_menu_wallpaper))
+      strlcpy(path, path_menu_wallpaper, sizeof(path));
+   else if (xmb_color_theme == XMB_THEME_WALLPAPER)
       fill_pathname_application_special(path, sizeof(path),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
    return strdup(path);
 }
 
-static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb)
+static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
    const char *path = xmb_path_dynamic_wallpaper(xmb);
 
-   if (!string_is_equal(path, xmb->bg_file_path))
+   if (!string_is_equal(path, xmb->bg_file_path) || reset)
    {
       if (path_is_valid(path))
       {
@@ -1176,9 +1184,11 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb)
       }
       else
       {
+         xmb_load_image(xmb, NULL, MENU_IMAGE_NONE);
+
          if (xmb->bg_file_path)
             free(xmb->bg_file_path);
-         xmb->bg_file_path = strdup("");
+         xmb->bg_file_path = NULL;
       }
    }
 }
@@ -2809,7 +2819,7 @@ static void xmb_populate_entries(void *data,
    xmb_set_title(xmb);
 
    if (xmb->allow_dynamic_wallpaper)
-      xmb_update_dynamic_wallpaper(xmb);
+      xmb_update_dynamic_wallpaper(xmb, false);
 
    /* Determine whether to show entry index */
    xmb->entry_index_str[0] = '\0';
@@ -4080,8 +4090,8 @@ static int xmb_draw_item(
    if (     (!xmb->assets_missing)
          && (color[3] != 0)
          && (  (entry.flags & MENU_ENTRY_FLAG_CHECKED)
-            || !( (entry_type >= MENU_SETTING_DROPDOWN_ITEM)
-               && (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL)))
+            || !( entry_type >= MENU_SETTING_DROPDOWN_ITEM
+               && entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
       )
    {
       math_matrix_4x4 mymat_tmp;
@@ -4199,11 +4209,11 @@ static int xmb_draw_item(
 
          if (scale_factor != 1.0f)
          {
-            static math_matrix_4x4 matrix_scaled = {
-                { 0.0f,          0.0f,          0.0f,          0.0f ,
-                  0.0f,          0.0f,          0.0f,          0.0f ,
-                  0.0f,          0.0f,          0.0f,          0.0f ,
-                  0.0f,          0.0f,          0.0f,          1.0f }
+            math_matrix_4x4 matrix_scaled = {
+               { 0.0f, 0.0f, 0.0f, 0.0f ,
+                 0.0f, 0.0f, 0.0f, 0.0f ,
+                 0.0f, 0.0f, 0.0f, 0.0f ,
+                 0.0f, 0.0f, 0.0f, 1.0f }
             };
             MAT_ELEM_4X4(matrix_scaled, 0, 0)    = scale_factor;
             MAT_ELEM_4X4(matrix_scaled, 1, 1)    = scale_factor;
@@ -5061,11 +5071,11 @@ static void xmb_draw_bg(
       dispctx->blend_begin(userdata);
 
    /* Draw background wallpaper */
-   if (     xmb_color_theme == XMB_THEME_WALLPAPER
-         || (!string_is_empty(bg_file_path) && !strstr(bg_file_path, FILE_PATH_BACKGROUND_IMAGE)))
+   if (     draw.texture
+         && (  xmb_color_theme == XMB_THEME_WALLPAPER
+            || (!string_is_empty(bg_file_path) && !strstr(bg_file_path, FILE_PATH_BACKGROUND_IMAGE))))
    {
-      if (draw.texture)
-         draw.color = &coord_white[0];
+      draw.color = &coord_white[0];
 
       gfx_display_set_alpha(draw.color, coord_white[3]);
       gfx_display_draw_bg(p_disp, &draw, userdata, true, menu_wallpaper_opacity);
@@ -5729,9 +5739,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_height,
             menu_shader_pipeline,
             color_theme,
-            menu_wallpaper_opacity,
+            MIN(xmb->alpha, menu_wallpaper_opacity),
             libretro_running,
-            alpha_factor / 100,
+            MIN(xmb->alpha, alpha_factor / 100),
             xmb->textures.bg,
             xmb->bg_file_path,
             xmb_coord_black,
@@ -6228,11 +6238,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                if (scale_factor != 1.0f)
                {
-                  static math_matrix_4x4 matrix_scaled = {
-                      { 0.0f,          0.0f,          0.0f,          0.0f,
-                        0.0f,          0.0f,          0.0f,          0.0f,
-                        0.0f,          0.0f,          0.0f,          0.0f,
-                        0.0f,          0.0f,          0.0f,          1.0f }
+                  math_matrix_4x4 matrix_scaled = {
+                     { 0.0f, 0.0f, 0.0f, 0.0f,
+                       0.0f, 0.0f, 0.0f, 0.0f,
+                       0.0f, 0.0f, 0.0f, 0.0f,
+                       0.0f, 0.0f, 0.0f, 1.0f }
                   };
                   MAT_ELEM_4X4(matrix_scaled, 0, 0)    = scale_factor;
                   MAT_ELEM_4X4(matrix_scaled, 1, 1)    = scale_factor;
@@ -6796,7 +6806,7 @@ error:
 
 static void xmb_free(void *data)
 {
-   xmb_handle_t       *xmb = (xmb_handle_t*)data;
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (xmb)
    {
@@ -6842,8 +6852,6 @@ static bool xmb_load_image(void *userdata, void *data,
    {
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
-         video_driver_texture_unload(&xmb->textures.bg);
-         gfx_display_deinit_white_texture();
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
@@ -6851,6 +6859,8 @@ static bool xmb_load_image(void *userdata, void *data,
          break;
       case MENU_IMAGE_NONE:
       default:
+         xmb_context_bg_destroy(xmb);
+         gfx_display_init_white_texture();
          break;
    }
 
@@ -7223,13 +7233,13 @@ static bool xmb_context_reset_textures(
 #endif
 
    /* Recolor */
-   if (     (menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED)
-         || (menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC_INVERTED))
+   if (     menu_xmb_theme == XMB_ICON_THEME_MONOCHROME_INVERTED
+         || menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC_INVERTED)
       memcpy(xmb_item_color, xmb_coord_black, sizeof(xmb_item_color));
    else
    {
-      if (     (menu_xmb_theme == XMB_ICON_THEME_MONOCHROME)
-            || (menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC))
+      if (     menu_xmb_theme == XMB_ICON_THEME_MONOCHROME
+            || menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC)
       {
          for (i = 0; i < 16; i++)
          {
@@ -7248,49 +7258,24 @@ static bool xmb_context_reset_textures(
    return true;
 }
 
-static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath)
+static void xmb_context_reset_background(xmb_handle_t *xmb)
 {
-   settings_t *settings               = config_get_ptr();
-   const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
-   bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
-   char path[PATH_MAX_LENGTH];
+   if (!xmb)
+      return;
 
-   path[0]                            = '\0';
-
-   /* Dynamic wallpaper takes precedence as reset background,
-    * then comes 'menu_wallpaper', and then iconset 'bg.png' */
-   if (menu_dynamic_wallpaper_enable)
-      strlcpy(path, xmb_path_dynamic_wallpaper(xmb), sizeof(path));
-
-   if (!string_is_empty(path) && path_is_valid(path))
-      ;/* no-op */
-   else if (!string_is_empty(path_menu_wallpaper))
-      strlcpy(path, path_menu_wallpaper, sizeof(path));
-   else if (!string_is_empty(iconpath))
-      fill_pathname_join_special(path, iconpath, FILE_PATH_BACKGROUND_IMAGE, sizeof(path));
-
-   if (path_is_valid(path))
-   {
-      task_push_image_load(path,
-            video_driver_supports_rgba(), 0,
-            menu_display_handle_wallpaper_upload, NULL);
-
-      if (xmb->bg_file_path)
-         free(xmb->bg_file_path);
-      xmb->bg_file_path = strdup(path);
-   }
+   xmb_update_dynamic_wallpaper(xmb, true);
 }
 
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
       bool is_threaded, bool reinit_textures)
 {
-   char iconpath[PATH_MAX_LENGTH];
-   char fontpath[PATH_MAX_LENGTH];
    settings_t *settings                = config_get_ptr();
    gfx_display_t *p_disp               = disp_get_ptr();
    struct menu_state *menu_st          = menu_state_get_ptr();
    const char *wideglyph_str           = msg_hash_get_wideglyph_str();
    unsigned menu_xmb_theme             = settings->uints.menu_xmb_theme;
+   char iconpath[PATH_MAX_LENGTH];
+   char fontpath[PATH_MAX_LENGTH];
 
    iconpath[0]                         = '\0';
    fontpath[0]                         = '\0';
@@ -7334,7 +7319,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->assets_missing     = false;
       if (!xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme))
          xmb->assets_missing  = true;
-      xmb_context_reset_background(xmb, iconpath);
+      xmb_context_reset_background(xmb);
 
       /* Reset previous selection buffer */
       if (xmb->depth > 2)
@@ -7693,13 +7678,47 @@ static void xmb_context_destroy(void *data)
    menu_screensaver_context_destroy(xmb->screensaver);
 }
 
+static void xmb_fade_out(xmb_handle_t *xmb)
+{
+   if (!xmb)
+      return;
+
+   xmb->alpha = 0;
+}
+
+static void xmb_fade_in(xmb_handle_t *xmb)
+{
+   gfx_animation_ctx_entry_t anim_entry;
+   uintptr_t tag           = 0;
+
+   if (!xmb)
+      return;
+
+   tag                     = (uintptr_t)&xmb->textures.bg;
+
+   anim_entry.duration     = XMB_DELAY;
+   anim_entry.subject      = &xmb->alpha;
+   anim_entry.easing_enum  = EASING_IN_QUINT;
+   anim_entry.tag          = tag;
+   anim_entry.cb           = NULL;
+   anim_entry.target_value = xmb->items_active_alpha;
+
+   gfx_animation_push(&anim_entry);
+}
+
 static void xmb_toggle(void *userdata, bool menu_on)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)userdata;
    struct menu_state *menu_st = menu_state_get_ptr();
 
-   if (!xmb || !menu_on)
+   if (!xmb)
       return;
+
+   if (!menu_on)
+   {
+      xmb_fade_out(xmb);
+      return;
+   }
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
@@ -7718,6 +7737,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
       menu_st->flags         |=  MENU_ST_FLAG_PREVENT_POPULATE;
 
    xmb_toggle_horizontal_list(xmb);
+   xmb_fade_in(xmb);
 }
 
 static int xmb_deferred_push_content_actions(menu_displaylist_info_t *info)
