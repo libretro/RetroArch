@@ -1526,7 +1526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Ужыты драйвер аўдыя."
+   "Ужыты гукавы драйвер."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -2245,8 +2245,36 @@ MSG_HASH(
    "Прылада"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   "Змяніць прадвызначаную аўдыяпрыладу, якую ўжывае гукавы драйвер. Залежыць ад драйвера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   "Змяніць прадвызначаную аўдыяпрыладу, якую ўжывае гукавы драйвер. Залежыць ад драйвера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "Карыстальніцкае значэнне прылады PCM для драйвера ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Карыстальніцкае значэнне шляху для драйвера OSS (напр. /dev/dsp)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Карыстальніцкае значэнне назвы порта для драйвера JACK (напр. system:playback1,system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "Уласны адрас IP сервера RSound для драйвера RSound."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Латэнтнасць гука (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Пажаданая латэнтнасць гука ў мілісекундах. Можа не ўлічвацца, калі гукавы драйвер не зможа забяспечыць зададзенае значэнне."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2260,6 +2288,22 @@ MSG_HASH(
    "Прылада"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Змяніць прадвызначаную прыладу ўводу, якую ўжывае драйвер мікрафона. Залежыць ад драйвера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Змяніць прадвызначаную прыладу ўводу, якую ўжывае драйвер мікрафона. Залежыць ад драйвера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   "Якасць перадыскрэтызацыі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Пажаданая латэнтнасць уводу гука ў мілісекундах. Можа не ўлічвацца, калі драйвер мікрафона не зможа забяспечыць зададзенае значэнне."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "Эксклюзіўны рэжым WASAPI"
    )
@@ -2267,6 +2311,10 @@ MSG_HASH(
 
 /* Settings > Audio > Resampler */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   "Якасць перадыскрэтызацыі"
+   )
 
 /* Settings > Audio > Synchronization */
 
