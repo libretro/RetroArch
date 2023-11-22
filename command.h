@@ -88,6 +88,8 @@ enum event_command
    CMD_EVENT_REWIND_DEINIT,
    /* Initializes rewind. */
    CMD_EVENT_REWIND_INIT,
+   /* Reinitializes rewind (primarily if the state size changes). */
+   CMD_EVENT_REWIND_REINIT,
    /* Toggles rewind. */
    CMD_EVENT_REWIND_TOGGLE,
    /* Initializes autosave. */
