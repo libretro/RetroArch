@@ -9099,6 +9099,10 @@ MSG_HASH(
    "Při načítání předvoleb a průchodů shaderů otevřete prohlížeč souborů v posledním použitém adresáři."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   "Načtení předvolby"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "Načtení předvolby shaderu. Pipeline shaderů se automaticky nastaví."
    )
@@ -9107,8 +9111,32 @@ MSG_HASH(
    "Přímé načtení předvolby shaderu. Nabídka shaderu se odpovídajícím způsobem aktualizuje.\nKoeficient škálování zobrazený v nabídce je spolehlivý pouze v případě, že předvolba používá jednoduché metody škálování (tj. zdrojové škálování, stejný faktor škálování pro X/Y)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Připojení předvolby"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Připojí předvolbu k aktuálně načtené předvolbě."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Přidání předvolby"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Přidání předvolby k aktuálně načtené předvolbě."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
+   "Uložení předvolby"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
    "Uložení aktuální předvolby shaderu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "Odstranění předvolby"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
