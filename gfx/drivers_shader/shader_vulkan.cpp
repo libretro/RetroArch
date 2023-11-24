@@ -2161,6 +2161,7 @@ bool Pass::init_pipeline()
    /* Shaders */
    module_info.sType         = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
    module_info.pNext         = NULL;
+   module_info.flags         = 0;
    module_info.codeSize      = vertex_shader.size() * sizeof(uint32_t);
    module_info.pCode         = vertex_shader.data();
    shader_stages[0].stage    = VK_SHADER_STAGE_VERTEX_BIT;
