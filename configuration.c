@@ -2917,6 +2917,7 @@ void config_set_defaults(void *data)
    retroarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    retroarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   retroarch_ctl(RARCH_CTL_UNSET_XDELTA_PREF, NULL);
 
    *recording_st->output_dir                     = '\0';
    *recording_st->config_dir                     = '\0';

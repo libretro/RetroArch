@@ -294,6 +294,7 @@ struct runloop
       char ups[8192];
       char bps[8192];
       char ips[8192];
+      char xdelta[8192];
       char label[8192];
    } name;
 
