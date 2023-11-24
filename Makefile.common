@@ -250,7 +250,24 @@ OBJ += frontend/frontend_driver.o \
 
 ifeq ($(HAVE_PATCH), 1)
    DEFINES += -DHAVE_PATCH
-	OBJ += tasks/task_patch.o
+   OBJ     += tasks/task_patch.o
+   ifeq ($(HAVE_XDELTA), 1)
+      DEFINES      += -DHAVE_XDELTA -DSECONDARY_DJW -DSECONDARY_LZMA -DSECONDARY_FGK
+      INCLUDE_DIRS += -I$(DEPS_DIR)/xdelta3 -I$(LIBRETRO_COMM_DIR)
+      LIBS         += -llzma
+      OBJ          += $(DEPS_DIR)/xdelta3/xdelta3.o
+      HEADERS      += xdelta3.h \
+                      xdelta3-cfgs.h \
+                      xdelta3-fgk.h \
+                      xdelta3-hash.h \
+                      xdelta3-internal.h \
+                      xdelta3-list.h \
+                      xdelta3-lzma.h \
+                      xdelta3-second.h
+      # These headers are added to the makefile because xdelta3 does weird things
+      # with its #includes, which affects dependency tracking and project analysis
+      # (e.g. for IDEs).
+   endif
 endif
 
 OBJ += \

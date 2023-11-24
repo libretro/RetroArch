@@ -4874,6 +4874,16 @@ void runloop_path_fill_names(void)
             ".ips",
             sizeof(runloop_st->name.ips) - len);
    }
+
+   if (string_is_empty(runloop_st->name.xdelta))
+   {
+      size_t len = strlcpy(runloop_st->name.xdelta,
+            runloop_st->runtime_content_path_basename,
+            sizeof(runloop_st->name.xdelta));
+      strlcpy(runloop_st->name.xdelta       + len,
+            ".xdelta",
+            sizeof(runloop_st->name.xdelta) - len);
+   }
 }
 
 

@@ -1040,7 +1040,7 @@
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
 
 /* Display a notification when applying an
- * IPS/BPS/UPS patch file */
+ * IPS/BPS/UPS/Xdelta patch file */
 #define DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED true
 
 /* Display a notification when loading an
