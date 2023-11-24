@@ -1,6 +1,7 @@
 ROOT_DIR                  := .
 DEPS_DIR                  := $(ROOT_DIR)/deps
 DEBUG                     ?= 0
+LOAD_WITHOUT_CORE_INFO    ?= 0
 HAVE_LOGGER                = 0
 HAVE_FILE_LOGGER           = 0
 HAVE_CC_RESAMPLER          = 1
@@ -256,6 +257,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
 else
    CFLAGS += -O3
+endif
+
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+   CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
 OBJOUT   = -o
