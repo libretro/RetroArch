@@ -6247,22 +6247,23 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_CHEEVOS
       if (cheevos_hardcore_active)
       {
-         static int unpaused_frames = 0;
-
-         if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-            unpaused_frames         = 0;
-         else
-         /* Frame advance is not allowed when achievement hardcore is active */
+         if (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
          {
-            /* Limit pause to approximately three times per second (depending on core framerate) */
-            if (unpaused_frames < 20)
+            /* In hardcore mode, the user is only allowed to pause infrequently. */
+            if ((pause_pressed && !old_pause_pressed) ||
+               (!focused && old_focus && pause_nonactive))
             {
-               ++unpaused_frames;
-               pause_pressed        = false;
+               /* If the user is trying to pause, check to see if it's allowed. */
+               if (!rcheevos_is_pause_allowed())
+               {
+                  pause_pressed = false;
+                  if (pause_nonactive)
+                     focused = true;
+               }
             }
          }
       }
-      else
+      else /* frame advance not allowed in hardcore */
 #endif
       {
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
