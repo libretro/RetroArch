@@ -630,6 +630,9 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+#ifdef TARGET_OS_IOS
+      bool audio_respect_silent_mode;
+#endif
 
 #ifdef HAVE_WASAPI
       bool audio_wasapi_exclusive_mode;
