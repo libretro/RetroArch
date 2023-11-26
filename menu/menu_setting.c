@@ -12070,7 +12070,7 @@ static bool setting_append_list(
             /* prevent unused function warning on unsupported builds */
             (void)setting_get_string_representation_int_gpu_index;
 
-#ifdef ANDROID
+#if defined(ANDROID) || TARGET_OS_IOS
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_notch_write_over_enable,
