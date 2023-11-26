@@ -379,10 +379,21 @@ void *glkitview_init(void);
     * the notch in iPhone X phones */
    if (@available(iOS 11, *))
    {
+      settings_t *settings               = config_get_ptr();
       RAScreen *screen                   = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
       CGRect screenSize                  = [screen bounds];
       UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
       UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+
+      if (settings->bools.video_notch_write_over_enable)
+      {
+         self.view.frame = CGRectMake(screenSize.origin.x,
+                     screenSize.origin.y,
+                     screenSize.size.width,
+                     screenSize.size.height);
+         return;
+      }
+
       switch (orientation)
       {
          case UIInterfaceOrientationPortrait:
