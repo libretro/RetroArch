@@ -276,6 +276,10 @@ MSG_HASH(
    "audio_mute_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,
+   "audio_respect_silent_mode"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
    "audio_fastforward_mute"
    )

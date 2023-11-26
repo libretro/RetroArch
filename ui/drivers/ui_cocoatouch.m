@@ -459,7 +459,6 @@ enum
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   NSError *error;
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -471,7 +470,6 @@ enum
    self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
-   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
    [self refreshSystemConfig];
@@ -507,8 +505,14 @@ enum
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
    rarch_start_draw_observer();
+   NSError *error;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
+
+   if (settings->bools.audio_respect_silent_mode)
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   else
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
 
    if (!ui_companion_start_on_boot)
       [self showGameView];
