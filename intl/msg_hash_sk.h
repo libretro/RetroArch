@@ -1669,10 +1669,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Zrušiť všetky aktívne videofiltre poháňané CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Povoliť plnú obrazovku naprieč výrezu pre kameru na zariadeniach Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

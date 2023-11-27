@@ -57,15 +57,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Kom åt alla relevanta spelinställningar snabbt."
+   "Snabbåtkomst till alla relevanta spelinställningar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Ladda in kärna"
+   "Ladda kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Välj vilken kärna du vill använda."
+   "Välj vilken kärna som ska användas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Ladda in innehåll"
+   "Ladda innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
@@ -89,7 +89,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Ladda en fysisk medieskiva. Välj först kärnan (Ladda in kärna) för att använda skivan."
+   "Laddar en fysisk medieskiva. Välj först kärnan (Ladda kärna) som ska använda skivan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -97,7 +97,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Dumpa den fysiska medieskivan till intern lagring. Den kommer att sparas som en avbildningsfil."
+   "Dumpar den fysiska medieskivan till intern lagring. Den kommer att sparas som en skivavbildningsfil."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -106,7 +106,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Mata ut skivan från fysisk CD/DVD-enhet."
+   "Matar ut skivan från fysisk CD/DVD-enhet."
    )
 #endif
 MSG_HASH(
@@ -115,7 +115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Skannat innehåll som matchar databasen kommer att visas här."
+   "Visar spellistor med skannat innehåll som matchar databasen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -123,11 +123,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Skapa och uppdatera spellistor genom att skanna innehåll."
+   "Skapa eller uppdatera spellistor genom att skanna innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Visa skrivbordsmeny"
+   "Visa Skrivbordsmeny"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
@@ -139,7 +139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Visa alla konfigurationsrelaterade inställningar."
+   "Visar även dolda konfigurationsrelaterade inställningar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -147,11 +147,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Ladda ner tillägg, komponenter och innehåll för RetroArch."
+   "Laddar ner tillägg, komponenter och innehåll för RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Gå med i eller bli värd för en Netplay-session."
+   "Gå med i eller bli värd för Netplay-session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -163,7 +163,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Visa systeminformation."
+   "Visar lista med systeminformation."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
@@ -187,7 +187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Starta om programmet."
+   "Startar om programmet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
@@ -195,30 +195,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Avsluta programmet."
+   "Avslutar programmet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Avsluta RetroArch. Om du avslutar programmet på något drastiskt sätt (SIGKILL, etc.) Kommer RetroArch att avslutas utan att spara konfigurationen, etc. På Unix-liknande system tillåter SIGINT/SIGTERM en ordentlig avstängning."
+   "Avsluta RetroArch. Dödas programmet på något drastiskt sätt (SIGKILL, etc.) kommer RetroArch att avslutas utan att spara konfigurationen, etc. På Unix-liknande system tillåter SIGINT/SIGTERM en ordentlig avstängning."
    )
 
 /* Main Menu > Load Core */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Ladda ner en kärna"
+   "Ladda ner kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Ladda ner och installera en kärna från online-uppdateraren."
+   "Laddar ner och installerar kärna från Online-uppdateraren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Installera/Återställ en kärna"
+   "Installera/Återställ kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Installera eller återställ en kärna från mappen 'Downloads' (nedladdningar)."
+   "Installerar eller återställer kärna från 'Downloads'-mappen."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -233,7 +233,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Startmapp"
+   "Startkatalog"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
@@ -256,7 +256,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "Innehåll som lagts till i 'Favoriter' visas här."
+   "Visar innehåll som lagts till i 'Favoriter'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -264,7 +264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "Här visas en historik över den musik som spelats."
+   "Visar musik som tidigare har spelats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
@@ -272,7 +272,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Här visas en historik över de bilder som visats."
+   "Visar bilder som tidigare har blivit sedd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -280,7 +280,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Här finns en historik över de videor som visats."
+   "Visar videor som tidigare har spelats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -288,7 +288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Bläddra bland allt innehåll som matchar databasen via ett kategoriserat sökgränssnitt."
+   "Bläddra bland alla innehålls-filer som matchar databasen via ett kategoriserat sökgränssnitt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
@@ -296,7 +296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Installerade kärnor som kan fungera utan att ladda något innehåll kommer att visas här."
+   "Visar kärnor som kan drivas utan att laddat in en innehålls-fil."
    )
 
 /* Main Menu > Online Updater */
@@ -311,31 +311,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "Uppdatera alla installerade kärnor till den senaste tillgängliga versionen."
+   "Uppdaterar alla installerade kärnor till den senaste tillgängliga versionen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Ändra Kärnor till Play Butikens versioner"
+   "Byt kärnor till Play Butik-versioner"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Byt ut alla gamla och manuellt installerade kärnor med de senaste versionerna från Play Butiken, om möjligt."
+   "Ersätter alla gamla och manuellt installerade kärnor med de senaste versionerna från Play Butiken, om möjligt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Uppdatera miniatyrbilder"
+   "Uppdatera miniatyrer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Ladda ner en komplett uppsättning miniatyrbilder för valt system."
+   "Laddar ner en komplett miniatyrsamling för valt system."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Uppdatera Spellistsminiatyrer"
+   "Uppdatera spellisteminiatyrer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Ladda ner miniatyrbilder för poster i den valda spellistan."
+   "Laddar ner miniatyrer för poster i den valda spellistan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -343,15 +343,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Ladda ner gratisinnehåll för den valda kärnan."
+   "Laddar ner gratisinnehåll för den valda kärnan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Nedladdare för Kärnsystemfiler"
+   "Ladda ner kärnas systemfiler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Ladda ned hjälpsystemfiler som krävs för korrekt/optimal kärndrift."
+   "Laddar ner hjälpfiler till system som krävs för korrekt/optimal kärndrift."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -363,7 +363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Uppdatera Handkontrolls-profiler"
+   "Uppdatera Handkontroll-profiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -375,7 +375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Uppdatera overlays"
+   "Uppdatera Overlays"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -1785,10 +1785,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Stäng av alla aktiva CPU-drivna videofilter."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Aktivera fullskärm över notch på Android-enheter"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

@@ -1949,10 +1949,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Выгрузить любой активный CPU-видеофильтр."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Полноэкранный режим для Андроид-устройств с вырезом"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

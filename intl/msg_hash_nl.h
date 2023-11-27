@@ -1753,10 +1753,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Laad elk actief CPU-aangedreven videofilter af."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Schakel volledig scherm over notch in op Android-apparaten"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

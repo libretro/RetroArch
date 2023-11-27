@@ -1869,10 +1869,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Alle aktiven CPU-gestützten Videofilter deaktivieren."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Bild auf Android-Geräten über die Bildschirmaussparung strecken"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

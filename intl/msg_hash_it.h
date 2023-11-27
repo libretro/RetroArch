@@ -1897,10 +1897,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Scarica qualsiasi filtro video attivo alimentato dalla CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Abilita schermo intero sopra la tacca nei dispositivi Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

@@ -1961,10 +1961,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "활성중인 CPU로 동작하는 비디오 필터를 해제합니다."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Android 기기에서 전체화면을 노치까지 확장하기"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

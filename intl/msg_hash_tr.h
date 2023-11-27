@@ -1935,7 +1935,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Android cihazlarda çentik üzerinde tam ekranı etkinleştir"
+   "Android ve iOS cihazlarda çentik üzerinde tam ekranı etkinleştir"
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -2568,6 +2568,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    "Karıştırıcı sesini kapat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Sessiz Saygı Modu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Sessiz modda tüm sesleri kapatın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,

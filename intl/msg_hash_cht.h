@@ -1893,10 +1893,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "關閉目前使用的影像濾鏡。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "瀏海螢幕開啟全螢幕 (Android裝置)"
-)
 
 /* Settings > Video > CRT SwitchRes */
 
