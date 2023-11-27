@@ -1421,10 +1421,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Desative qualquer filtro de vídeo movido a CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Ativar ecrã inteiro em dispositivos Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

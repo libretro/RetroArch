@@ -1901,10 +1901,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "卸载所有启用的 CPU 驱动的视频滤镜。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "在刘海屏 Android 设备中占满全屏"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

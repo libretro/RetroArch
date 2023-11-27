@@ -1721,10 +1721,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Descarregue qualquer filtro de vídeo ativo que utilize processamento da CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Habilitar tela cheia sobre o entalhe em dispositivos Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

@@ -1769,10 +1769,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Вивантажити усі активні ЦП-відеофільтри."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Увімкнути повноекранний режим для пристроїв з чубчиком на базі Android"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

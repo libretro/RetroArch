@@ -1889,10 +1889,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Zwolnij każdy aktywny filtry wideo zasilane przez procesor (CPU)."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Włącz pełny ekran z wycięciem na urządzeniach z Androidem"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

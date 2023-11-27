@@ -1465,10 +1465,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Matikan semua video filter berbasis pemrosesan CPU."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Aktifkan layar penuh secara menyeluruh pada perangkat Android yang memiliki lekukan notch"
-)
 
 /* Settings > Video > CRT SwitchRes */
 

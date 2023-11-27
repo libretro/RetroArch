@@ -213,10 +213,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
    "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour. Built-in video filter libraries can be selected."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Enable full-screen over notch in Android devices"
-)
 
 /* Settings > Video > CRT SwitchRes */
 
