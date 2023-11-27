@@ -1509,6 +1509,12 @@
 #define DEFAULT_TURBO_MODE 0
 #define DEFAULT_TURBO_DEFAULT_BTN RETRO_DEVICE_ID_JOYPAD_B
 
+#if TARGET_OS_IPHONE
+#define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE false
+#else
+#define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE true
+#endif
+
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
 #define DEFAULT_INPUT_AUTODETECT_ENABLE true
