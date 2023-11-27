@@ -474,16 +474,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
          temp_dir,
          sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
-   path_mkdir(bundle_path_buf);
-
-   if (access(bundle_path_buf, 0755) != 0) { }
-   else
-   {
-      path_mkdir(g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
-
-      if (access(g_defaults.dirs[DEFAULT_DIR_SYSTEM], 0755) != 0) { }
-   }
-
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
 #endif
