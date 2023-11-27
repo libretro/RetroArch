@@ -283,7 +283,7 @@ static bool apple_input_handle_icade_event(unsigned kb_type_idx, unsigned *code,
       initialized = true;
    }
 
-   if ((*code < 0x20) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
+   if ((*code < MAX_ICADE_KEYS) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
    {
       *keydown     = icade_maps[kb_type_idx][*code].up ? false : true;
       ret          = true;
