@@ -402,7 +402,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Diskinformation"
+   "Skivinformation"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
@@ -541,7 +541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "Radera Kärna"
+   "Radera kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
@@ -549,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "Säkerhetskopiera Kärna"
+   "Säkerhetskopiera kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
