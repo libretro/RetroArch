@@ -1185,6 +1185,13 @@ enum retro_mod
  * or they have their own preferred logging methods.
  * The frontend itself may also display log output.
  *
+ * @attention This should not be used for information that the player must immediately see,
+ * such as major errors or warnings.
+ * In most cases, this is best for information that will help you (the developer)
+ * identify problems when debugging or providing support.
+ * Unless a core or frontend is intended for advanced users,
+ * the player might not check (or even know about) their logs.
+ *
  * @param[out] data <tt>struct retro_log_callback *</tt>.
  * Pointer to the callback where the function pointer will be saved.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
