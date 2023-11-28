@@ -867,12 +867,24 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
 
 /**
- * Sets an interface that the frontend can use to insert and remove emulated disk images.
+ * Sets an interface that the frontend can use to insert and remove disks
+ * from the emulated console's disk drive.
+ * Can be used for optical disks, floppy disks, or any other game storage medium
+ * that can be swapped at runtime.
  *
- * @note This is intended for games that span multiple disks that are
- * manually swapped out by the user (e.g. PSX).
+ * This is intended for multi-disk games that expect the player
+ * to manually swap disks at certain points in the game.
+ *
+ * @deprecated Prefer using \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ * over this environment call, as it supports additional features.
+ * Only use this callback to maintain compatibility
+ * with older cores or frontends.
+ *
  * @param[in] data <tt>const struct retro_disk_control_callback *</tt>.
  * Pointer to the callback functions to use.
+ * May be \c NULL, in which case the existing disk callback is deregistered.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
  * @see retro_disk_control_callback
  * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
  */
@@ -1969,15 +1981,23 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION 57
 
+/**
+ * @copybrief RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE
+ *
+ * This is intended for multi-disk games that expect the player
+ * to manually swap disks at certain points in the game.
+ * This version of the disk control interface provides
+ * more information about disk images.
+ * Should be called in \c retro_init.
+ *
+ * @param[in] data <tt>const struct retro_disk_control_ext_callback *</tt>.
+ * Pointer to the callback functions to use.
+ * May be \c NULL, in which case the existing disk callback is deregistered.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_disk_control_ext_callback
+ */
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE 58
-                                           /* const struct retro_disk_control_ext_callback * --
-                                            * Sets an interface which frontend can use to eject and insert
-                                            * disk images, and also obtain information about individual
-                                            * disk image files registered by the core.
-                                            * This is used for games which consist of multiple images and
-                                            * must be manually swapped out by the user (e.g. PSX, floppy disk
-                                            * based systems).
-                                            */
 
 #define RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
                                            /* unsigned * --
@@ -5038,145 +5058,296 @@ struct retro_keyboard_callback
    retro_keyboard_event_t callback;
 };
 
-/* Callbacks for RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE &
- * RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE.
- * Should be set for implementations which can swap out multiple disk
- * images in runtime.
+/** @defgroup SET_DISK_CONTROL_INTERFACE Disk Control
  *
- * If the implementation can do this automatically, it should strive to do so.
- * However, there are cases where the user must manually do so.
+ * Callbacks for inserting and removing disks from the emulated console at runtime.
+ * Should be provided by cores that support doing so.
+ * Cores should automate this process if possible,
+ * but some cases require the player's manual input.
  *
- * Overview: To swap a disk image, eject the disk image with
- * set_eject_state(true).
- * Set the disk index with set_image_index(index). Insert the disk again
- * with set_eject_state(false).
+ * The steps for swapping disk images are generally as follows:
+ *
+ * \li Eject the emulated console's disk drive with \c set_eject_state(true).
+ * \li Insert the new disk image with \c set_image_index(index).
+ * \li Close the virtual disk tray with \c set_eject_state(false).
+ *
+ * @{
  */
 
-/* If ejected is true, "ejects" the virtual disk tray.
- * When ejected, the disk image index can be set.
+/**
+ * Called by the frontend to open or close the emulated console's virtual disk tray.
+ *
+ * The frontend may only set the disk image index
+ * while the emulated tray is opened.
+ *
+ * If the emulated console's disk tray is already in the state given by \c ejected,
+ * then this function should return \c true without doing anything.
+ * The core should return \c false if it couldn't change the disk tray's state;
+ * this may happen if the console itself limits when the disk tray can be open or closed
+ * (e.g. to wait for the disc to stop spinning).
+ *
+ * @param ejected \c true if the virtual disk tray should be "ejected",
+ * \c false if it should be "closed".
+ * @return \c true if the virtual disk tray's state has been set to the given state,
+ * false if there was an error.
+ * @see retro_get_eject_state_t
  */
 typedef bool (RETRO_CALLCONV *retro_set_eject_state_t)(bool ejected);
 
-/* Gets current eject state. The initial state is 'not ejected'. */
+/**
+ * Gets the current ejected state of the disk drive.
+ * The initial state is closed, i.e. \c false.
+ *
+ * @return \c true if the virtual disk tray is "ejected",
+ * i.e. it's open and a disk can be inserted.
+ * @see retro_set_eject_state_t
+ */
 typedef bool (RETRO_CALLCONV *retro_get_eject_state_t)(void);
 
-/* Gets current disk index. First disk is index 0.
- * If return value is >= get_num_images(), no disk is currently inserted.
+/**
+ * Gets the index of the current disk image,
+ * as determined by however the frontend orders disk images
+ * (such as m3u-formatted playlists or special directories).
+ *
+ * @return The index of the current disk image
+ * (starting with 0 for the first disk),
+ * or a value greater than or equal to \c get_num_images() if no disk is inserted.
+ * @see retro_get_num_images_t
  */
 typedef unsigned (RETRO_CALLCONV *retro_get_image_index_t)(void);
 
-/* Sets image index. Can only be called when disk is ejected.
- * The implementation supports setting "no disk" by using an
- * index >= get_num_images().
+/**
+ * Inserts the disk image at the given index into the emulated console's drive.
+ * Can only be called while the disk tray is ejected
+ * (i.e. \c retro_get_eject_state_t returns \c true).
+ *
+ * If the emulated disk tray is ejected
+ * and already contains the disk image named by \c index,
+ * then this function should do nothing and return \c true.
+ *
+ * @param index The index of the disk image to insert,
+ * starting from 0 for the first disk.
+ * A value greater than or equal to \c get_num_images()
+ * represents the frontend removing the disk without inserting a new one.
+ * @return \c true if the disk image was successfully set.
+ * \c false if the disk tray isn't ejected or there was another error
+ * inserting a new disk image.
  */
 typedef bool (RETRO_CALLCONV *retro_set_image_index_t)(unsigned index);
 
-/* Gets total number of images which are available to use. */
+/**
+ * @return The number of disk images which are available to use.
+ * These are most likely defined in a playlist file.
+ */
 typedef unsigned (RETRO_CALLCONV *retro_get_num_images_t)(void);
 
 struct retro_game_info;
 
-/* Replaces the disk image associated with index.
+/**
+ * Replaces the disk image at the given index with a new disk.
+ *
+ * Replaces the disk image associated with index.
  * Arguments to pass in info have same requirements as retro_load_game().
  * Virtual disk tray must be ejected when calling this.
  *
- * Replacing a disk image with info = NULL will remove the disk image
- * from the internal list.
- * As a result, calls to get_image_index() can change.
+ * Passing \c NULL to this function indicates
+ * that the frontend has removed this disk image from its internal list.
+ * As a result, calls to this function can change the number of available disk indexes.
  *
- * E.g. replace_image_index(1, NULL), and previous get_image_index()
- * returned 4 before.
- * Index 1 will be removed, and the new index is 3.
+ * For example, calling <tt>replace_image_index(1, NULL)</tt>
+ * will remove the disk image at index 1,
+ * and the disk image at index 2 (if any)
+ * will be moved to the newly-available index 1.
+ *
+ * @param index The index of the disk image to replace.
+ * @param info Details about the new disk image,
+ * or \c NULL if the disk image at the given index should be discarded.
+ * The semantics of each field are the same as in \c retro_load_game.
+ * @return \c true if the disk image was successfully replaced
+ * or removed from the playlist,
+ * \c false if the tray is not ejected
+ * or if there was an error.
  */
 typedef bool (RETRO_CALLCONV *retro_replace_image_index_t)(unsigned index,
       const struct retro_game_info *info);
 
-/* Adds a new valid index (get_num_images()) to the internal disk list.
- * This will increment subsequent return values from get_num_images() by 1.
+/**
+ * Adds a new index to the core's internal disk list.
+ * This will increment the return value from \c get_num_images() by 1.
  * This image index cannot be used until a disk image has been set
- * with replace_image_index. */
+ * with \c replace_image_index.
+ *
+ * @return \c true if the core has added space for a new disk image
+ * and is ready to receive one.
+ */
 typedef bool (RETRO_CALLCONV *retro_add_image_index_t)(void);
 
-/* Sets initial image to insert in drive when calling
- * core_load_game().
- * Since we cannot pass the initial index when loading
- * content (this would require a major API change), this
- * is set by the frontend *before* calling the core's
- * retro_load_game()/retro_load_game_special() implementation.
- * A core should therefore cache the index/path values and handle
- * them inside retro_load_game()/retro_load_game_special().
- * - If 'index' is invalid (index >= get_num_images()), the
- *   core should ignore the set value and instead use 0
- * - 'path' is used purely for error checking - i.e. when
- *   content is loaded, the core should verify that the
- *   disk specified by 'index' has the specified file path.
- *   This is to guard against auto selecting the wrong image
- *   if (for example) the user should modify an existing M3U
- *   playlist. We have to let the core handle this because
- *   set_initial_image() must be called before loading content,
- *   i.e. the frontend cannot access image paths in advance
- *   and thus cannot perform the error check itself.
- *   If set path and content path do not match, the core should
- *   ignore the set 'index' value and instead use 0
- * Returns 'false' if index or 'path' are invalid, or core
- * does not support this functionality
+/**
+ * Sets the disk image that will be inserted into the emulated disk drive
+ * before \c retro_load_game is called.
+ *
+ * \c retro_load_game does not provide a way to ensure
+ * that a particular disk image in a playlist is inserted into the console;
+ * this function makes up for that.
+ * Frontends should call it immediately before \c retro_load_game,
+ * and the core should use the arguments
+ * to validate the disk image in \c retro_load_game.
+ *
+ * When content is loaded, the core should verify that the
+ * disk specified by \c index can be found at \c path.
+ * This is to guard against auto-selecting the wrong image
+ * if (for example) the user should modify an existing M3U playlist.
+ * We have to let the core handle this because
+ * \c set_initial_image() must be called before loading content,
+ * i.e. the frontend cannot access image paths in advance
+ * and thus cannot perform the error check itself.
+ * If \c index is invalid (i.e. <tt>index >= get_num_images()</tt>)
+ * or the disk image doesn't match the value given in \c path,
+ * the core should ignore the arguments
+ * and insert the disk at index 0 into the virtual disk tray.
+ *
+ * @warning If \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE is called within \c retro_load_game,
+ * then this function may not be executed.
+ * Set the disk control interface in \c retro_init if possible.
+ *
+ * @param index The index of the disk image within the playlist to set.
+ * @param path The path of the disk image to set as the first.
+ * The core should not load this path immediately;
+ * instead, it should use it within \c retro_load_game
+ * to verify that the correct disk image was loaded.
+ * @return \c true if the initial disk index was set,
+ * \c false if the arguments are invalid
+ * or the core doesn't support this function.
  */
 typedef bool (RETRO_CALLCONV *retro_set_initial_image_t)(unsigned index, const char *path);
 
-/* Fetches the path of the specified disk image file.
- * Returns 'false' if index is invalid (index >= get_num_images())
- * or path is otherwise unavailable.
+/**
+ * Returns the path of the disk image at the given index
+ * on the host's file system.
+ *
+ * @param index The index of the disk image to get the path of.
+ * @param path A buffer to store the path in.
+ * @param len The size of \c path, in bytes.
+ * @return \c true if the disk image's location was successfully
+ * queried and copied into \c path,
+ * \c false if the index is invalid
+ * or the core couldn't locate the disk image.
  */
 typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path, size_t len);
 
-/* Fetches a core-provided 'label' for the specified disk
- * image file. In the simplest case this may be a file name
- * (without extension), but for cores with more complex
- * content requirements information may be provided to
- * facilitate user disk swapping - for example, a core
- * running floppy-disk-based content may uniquely label
- * save disks, data disks, level disks, etc. with names
- * corresponding to in-game disk change prompts (so the
- * frontend can provide better user guidance than a 'dumb'
- * disk index value).
- * Returns 'false' if index is invalid (index >= get_num_images())
- * or label is otherwise unavailable.
+/**
+ * Returns a friendly label for the given disk image.
+ *
+ * In the simplest case, this may be the disk image's file name
+ * with the extension omitted.
+ * For cores or games with more complex content requirements,
+ * the label can be used to provide information to help the player
+ * select a disk image to insert;
+ * for example, a core may label different kinds of disks
+ * (save data, level disk, installation disk, bonus content, etc.).
+ * with names that correspond to in-game prompts,
+ * so that the frontend can provide better guidance to the player.
+ *
+ * @param index The index of the disk image to return a label for.
+ * @param label A buffer to store the resulting label in.
+ * @param len The length of \c label, in bytes.
+ * @return \c true if the disk image at \c index is valid
+ * and a label was copied into \c label.
  */
 typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *label, size_t len);
 
+/**
+ * An interface that the frontend can use to exchange disks
+ * within the emulated console's disk drive.
+ *
+ * All function pointers are required.
+ *
+ * @deprecated This struct is superseded by \ref retro_disk_control_ext_callback.
+ * Only use this one to maintain compatibility
+ * with older cores and frontends.
+ *
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ * @see retro_disk_control_ext_callback
+ */
 struct retro_disk_control_callback
 {
+   /** @copydoc retro_set_eject_state_t */
    retro_set_eject_state_t set_eject_state;
+
+   /** @copydoc retro_get_eject_state_t */
    retro_get_eject_state_t get_eject_state;
 
+   /** @copydoc retro_get_image_index_t */
    retro_get_image_index_t get_image_index;
+
+   /** @copydoc retro_set_image_index_t */
    retro_set_image_index_t set_image_index;
+
+   /** @copydoc retro_get_num_images_t */
    retro_get_num_images_t  get_num_images;
 
+   /** @copydoc retro_replace_image_index_t */
    retro_replace_image_index_t replace_image_index;
+
+   /** @copydoc retro_add_image_index_t */
    retro_add_image_index_t add_image_index;
 };
 
+/**
+ * @copybrief retro_disk_control_callback
+ *
+ * All function pointers are required unless otherwise noted.
+ *
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ */
 struct retro_disk_control_ext_callback
 {
+   /** @copydoc retro_set_eject_state_t */
    retro_set_eject_state_t set_eject_state;
+
+   /** @copydoc retro_get_eject_state_t */
    retro_get_eject_state_t get_eject_state;
 
+   /** @copydoc retro_get_image_index_t */
    retro_get_image_index_t get_image_index;
+
+   /** @copydoc retro_set_image_index_t */
    retro_set_image_index_t set_image_index;
+
+   /** @copydoc retro_get_num_images_t */
    retro_get_num_images_t  get_num_images;
 
+   /** @copydoc retro_replace_image_index_t */
    retro_replace_image_index_t replace_image_index;
+
+   /** @copydoc retro_add_image_index_t */
    retro_add_image_index_t add_image_index;
 
-   /* NOTE: Frontend will only attempt to record/restore
-    * last used disk index if both set_initial_image()
-    * and get_image_path() are implemented */
-   retro_set_initial_image_t set_initial_image; /* Optional - may be NULL */
+   /** @copydoc retro_set_initial_image_t
+    *
+    * Optional; not called if \c NULL.
+    *
+    * @note The frontend will only try to record/restore the last-used disk index
+    * if both \c set_initial_image and \c get_image_path are implemented.
+    */
+   retro_set_initial_image_t set_initial_image;
 
-   retro_get_image_path_t get_image_path;       /* Optional - may be NULL */
-   retro_get_image_label_t get_image_label;     /* Optional - may be NULL */
+   /**
+    * @copydoc retro_get_image_path_t
+    *
+    * Optional; not called if \c NULL.
+    */
+   retro_get_image_path_t get_image_path;
+
+   /**
+    * @copydoc retro_get_image_label_t
+    *
+    * Optional; not called if \c NULL.
+    */
+   retro_get_image_label_t get_image_label;
 };
+
+/** @} */
 
 /* Definitions for RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
  * A core can set it if sending and receiving custom network packets
