@@ -1927,6 +1927,10 @@ MSG_HASH(
    "Аконны поўнаэкранны рэжым"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "Аддаваць перавагу акну на ўвесь экран над поўным экранам, каб прадухіліць змену рэжыму дысплэя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    "Поўнаэкранная шырыня"
    )
@@ -2195,15 +2199,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Сцішыць аўдыя."
+   "Адключыць гук."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   "Сцішыць мікшар"
+   "Адключыць мікшар"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "Сцішыць аўдыямікшар."
+   "Адключыць аўдыямікшар."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Выконваць бясшумны рэжым"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Адключыць увесь гук у бясшумным рэжыме."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Сцішванне пры перамотцы наперад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Аўтаматычна сцішаць гук пры выкарыстанні перамотцы наперад."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Паскарэнне пры перамотцы наперад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   "Паскараць гук пры перамотцы наперад. Прадухіляе патрэскванне, але змяняе вышыню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -4536,7 +4564,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
-   "Вузел"
+   "Вядоўца"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
@@ -7039,6 +7067,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_TAKE_SCREENSHOT,
    "Не атрымалася стварыць здымак экрана."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_UNMUTE_AUDIO,
+   "Не атрымалася ўключыць гук."
    )
 MSG_HASH(
    MSG_RESET,
