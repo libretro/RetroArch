@@ -473,15 +473,16 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
    if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
-      g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   g_ctx            = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   glk_view.context = g_ctx;
+      g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
+   g_ctx            = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
 
 #ifdef OSX
    [g_ctx makeCurrentContext];
 #else
    [EAGLContext setCurrentContext:g_ctx];
 #endif
+
+   glk_view.context = g_ctx;
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */
