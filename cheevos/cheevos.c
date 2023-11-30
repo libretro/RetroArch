@@ -606,6 +606,39 @@ static void rcheevos_server_error(const char* api_name, const char* message)
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 }
 
+static void rcheevos_server_disconnected()
+{
+   CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server\n");
+
+   /* always show message - even with widget. it helps the user understand what the widget is for */
+   {
+      const char* message = "RetroAchievements server unreachable. Will retry until successful or app is closed.";
+      runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
+
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+      gfx_widget_set_cheevos_disconnect(true);
+#endif
+}
+
+static void rcheevos_server_reconnected()
+{
+   CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server\n");
+
+   {
+      const char* message = "All pending requests have succesfully been synced to the RetroAchievements server.";
+      runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+   }
+
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+      gfx_widget_set_cheevos_disconnect(false);
+#endif
+}
+
 static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_client_t* client)
 {
    switch (event->type)
@@ -661,10 +694,10 @@ static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_cli
       rcheevos_server_error(event->server_error->api, event->server_error->error_message);
       break;
    case RC_CLIENT_EVENT_DISCONNECTED:
-      CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server");
+      rcheevos_server_disconnected();
       break;
    case RC_CLIENT_EVENT_RECONNECTED:
-      CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server");
+      rcheevos_server_reconnected();
       break;
    default:
 #ifndef NDEBUG
