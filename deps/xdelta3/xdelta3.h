@@ -144,13 +144,7 @@ typedef ULONGLONG      uint64_t;
 
 /* The source window size is limited to 2GB unless
  * XD3_USE_LARGESIZET is defined to 1. */
-#ifndef XD3_USE_LARGESIZET
-#if SIZE_MAX == UINT64_MAX
 #define XD3_USE_LARGESIZET 1
-#else
-#define XD3_USE_LARGESIZET 0
-#endif
-#endif
 
 #if SIZE_MAX == UINT64_MAX
 #define SIZEOF_SIZE_T 8
