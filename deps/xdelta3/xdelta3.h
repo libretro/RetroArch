@@ -1497,6 +1497,8 @@ void xd3_blksize_add (xoff_t *blkno,
 #define IF_DEBUG2(x)
 #endif
 
+#ifndef SIZEOF_ARRAY
 #define SIZEOF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
+#endif
 
 #endif /* _XDELTA3_H_ */
