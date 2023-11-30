@@ -1261,6 +1261,20 @@ DATA RUNLOOP
 #endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
+#ifdef HAVE_XDELTA
+#define adler32(...) xdelta_adler32(__VA_ARGS__)
+#include "../deps/xdelta3/xdelta3.c"
+#undef adler32
+#ifdef Q
+#undef Q
+#endif
+#ifdef W
+#undef W
+#endif
+#ifdef Z
+#undef Z
+#endif
+#endif
 #endif
 #include "../tasks/task_save.c"
 #include "../tasks/task_movie.c"
