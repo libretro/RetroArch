@@ -1240,6 +1240,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
+        gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \

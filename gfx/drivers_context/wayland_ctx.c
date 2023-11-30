@@ -110,10 +110,11 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
 static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   wl->last_buffer_scale      = wl->buffer_scale;
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
+   wl->last_buffer_scale         = wl->buffer_scale;
+   wl->last_fractional_scale_num = wl->fractional_scale_num;
+   if (!wl->fractional_scale)
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);

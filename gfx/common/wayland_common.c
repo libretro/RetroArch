@@ -132,11 +132,13 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
    if (     (width  > 0)
          && (height > 0))
    {
-      wl->width           = width;
-      wl->height          = height;
-      wl->buffer_width    = wl->width * wl->buffer_scale;
-      wl->buffer_height   = wl->height * wl->buffer_scale;
-      wl->resize          = true;
+      wl->width         = width;
+      wl->height        = height;
+      wl->buffer_width  = wl->fractional_scale ?
+         FRACTIONAL_SCALE_MULT(wl->width,  wl->fractional_scale_num) : wl->width  * wl->buffer_scale;
+      wl->buffer_height = wl->fractional_scale ?
+         FRACTIONAL_SCALE_MULT(wl->height, wl->fractional_scale_num) : wl->height * wl->buffer_scale;
+      wl->resize        = true;
       if (wl->viewport) /* Update viewport */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
    }
@@ -197,8 +199,10 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    {
       wl->width         = width;
       wl->height        = height;
-      wl->buffer_width  = width * wl->buffer_scale;
-      wl->buffer_height = height * wl->buffer_scale;
+      wl->buffer_width  = wl->fractional_scale ?
+         FRACTIONAL_SCALE_MULT(width,  wl->fractional_scale_num) : width  * wl->buffer_scale;
+      wl->buffer_height = wl->fractional_scale ?
+         FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num) : height * wl->buffer_scale;
       wl->resize        = true;
       if (wl->viewport) /* Update viewport */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
@@ -247,8 +251,10 @@ void gfx_ctx_wl_get_video_size_common(void *data,
    }
    else
    {
-      *width  = wl->width  * wl->pending_buffer_scale;
-      *height = wl->height * wl->pending_buffer_scale;
+     *width  = wl->fractional_scale ?
+        FRACTIONAL_SCALE_MULT(wl->width,  wl->pending_fractional_scale_num) : wl->width  * wl->pending_buffer_scale;
+     *height = wl->fractional_scale ?
+        FRACTIONAL_SCALE_MULT(wl->height, wl->pending_fractional_scale_num) : wl->height * wl->pending_buffer_scale;
    }
 }
 
@@ -275,6 +281,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 
    if (wl->viewport)
       wp_viewport_destroy(wl->viewport);
+   if (wl->fractional_scale)
+      wp_fractional_scale_v1_destroy(wl->fractional_scale);
    if (wl->idle_inhibitor)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
    if (wl->deco)
@@ -326,6 +334,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wl_shm_destroy (wl->shm);
    if (wl->viewporter)
       wp_viewporter_destroy(wl->viewporter);
+   if (wl->fractional_scale_manager)
+      wp_fractional_scale_manager_v1_destroy(wl->fractional_scale_manager);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
@@ -582,8 +592,8 @@ static void shm_buffer_paint_checkerboard(
 static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
    shm_buffer_t *buffer = create_shm_buffer(wl,
-      wl->width * wl->buffer_scale,
-      wl->height * wl->buffer_scale,
+      wl->buffer_width,
+      wl->buffer_height,
       WL_SHM_FORMAT_XRGB8888);
 
    if (!buffer)
@@ -634,12 +644,15 @@ bool gfx_ctx_wl_init_common(
 
    frontend_driver_destroy_signal_handler_state();
 
-   wl->input.dpy            = wl_display_connect(NULL);
-   wl->last_buffer_scale    = 1;
-   wl->buffer_scale         = 1;
-   wl->pending_buffer_scale = 1;
-   wl->floating_width       = SPLASH_WINDOW_WIDTH;
-   wl->floating_height      = SPLASH_WINDOW_HEIGHT;
+   wl->input.dpy                    = wl_display_connect(NULL);
+   wl->last_buffer_scale            = 1;
+   wl->buffer_scale                 = 1;
+   wl->pending_buffer_scale         = 1;
+   wl->last_fractional_scale_num    = FRACTIONAL_SCALE_V1_DEN;
+   wl->fractional_scale_num         = FRACTIONAL_SCALE_V1_DEN;
+   wl->pending_fractional_scale_num = FRACTIONAL_SCALE_V1_DEN;
+   wl->floating_width               = SPLASH_WINDOW_WIDTH;
+   wl->floating_height              = SPLASH_WINDOW_HEIGHT;
 
    if (!wl->input.dpy)
    {
@@ -687,6 +700,13 @@ bool gfx_ctx_wl_init_common(
    wl->surface = wl_compositor_create_surface(wl->compositor);
    if (wl->viewporter)
       wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
+   if (wl->fractional_scale_manager)
+   {
+      wl->fractional_scale = wp_fractional_scale_manager_v1_get_fractional_scale(
+           wl->fractional_scale_manager, wl->surface);
+      wp_fractional_scale_v1_add_listener(wl->fractional_scale, &wp_fractional_scale_v1_listener, wl);
+      RARCH_LOG("[Wayland]: fractional_scale_v1 enabled\n");
+   }
 
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
@@ -813,9 +833,12 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
 
    if (!fullscreen)
    {
-      wl->buffer_scale   = wl->pending_buffer_scale;
-      wl->buffer_width  *= wl->buffer_scale;
-      wl->buffer_height *= wl->buffer_scale;
+      wl->buffer_scale         = wl->pending_buffer_scale;
+      wl->fractional_scale_num = wl->pending_fractional_scale_num;
+      wl->buffer_width         = wl->fractional_scale ?
+         FRACTIONAL_SCALE_MULT(wl->buffer_width,  wl->fractional_scale_num) : wl->buffer_width  * wl->buffer_scale;
+      wl->buffer_height        = wl->fractional_scale ?
+         FRACTIONAL_SCALE_MULT(wl->buffer_height, wl->fractional_scale_num) : wl->buffer_height * wl->buffer_scale;
    }
    if (wl->viewport) /* Update viewport */
       wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
@@ -948,13 +971,15 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
    get_video_size(wl, &new_width, &new_height);
 
    if (     wl->pending_buffer_scale != wl->buffer_scale
+         || wl->pending_fractional_scale_num != wl->fractional_scale_num
          || new_width  != *width
          || new_height != *height)
    {
-      wl->buffer_scale = wl->pending_buffer_scale;
-      *width           = new_width;
-      *height          = new_height;
-      *resize          = true;
+      wl->buffer_scale         = wl->pending_buffer_scale;
+      wl->fractional_scale_num = wl->pending_fractional_scale_num;
+      *width                   = new_width;
+      *height                  = new_height;
+      *resize                  = true;
    }
 
    *quit = (bool)frontend_driver_get_signal_handler_state();
