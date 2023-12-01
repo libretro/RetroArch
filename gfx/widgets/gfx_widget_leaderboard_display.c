@@ -344,7 +344,6 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
       if (state->disconnected)
       {
-         //const char* disconnected_text = "=[ X ]= RA";// "\xE2\x89\xA0 RA";
          const char* disconnected_text = "! RA !";
          const unsigned disconnect_widget_width = font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.msg_queue.font,
