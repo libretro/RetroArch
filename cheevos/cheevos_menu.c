@@ -28,6 +28,7 @@
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_api_runtime.h"
+#include "../deps/rcheevos/src/rc_client_internal.h"
 
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
@@ -294,6 +295,15 @@ void rcheevos_menu_populate(void* data)
 
    rcheevos_menu_reset_badges();
    rcheevos_locals->menuitem_count = 0;
+
+   if (rcheevos_locals->client->state.disconnect)
+   {
+      menu_entries_append(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE),
+         msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE),
+         MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+         MENU_INFO_ACHIEVEMENTS_SERVER_UNREACHABLE, 0, 0, NULL);
+   }
 
    if (game && game->id != 0)
    {

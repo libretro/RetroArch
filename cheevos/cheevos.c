@@ -612,7 +612,7 @@ static void rcheevos_server_disconnected()
 
    /* always show message - even with widget. it helps the user understand what the widget is for */
    {
-      const char* message = "RetroAchievements server unreachable. Will retry until successful or app is closed.";
+      const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED);
       runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
    }
@@ -628,7 +628,7 @@ static void rcheevos_server_reconnected()
    CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server\n");
 
    {
-      const char* message = "All pending requests have succesfully been synced to the RetroAchievements server.";
+      const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED);
       runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
    }

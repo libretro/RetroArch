@@ -301,6 +301,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information_list_list,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_list,              MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_pause_cancel,      MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_resume_cancel,     MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_achievement_server_unreachable,MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_enable,                MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_test_unofficial,       MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
@@ -4563,6 +4564,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_resume_cancel);
+            break;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_server_unreachable);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:
