@@ -28,6 +28,7 @@
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_api_runtime.h"
+#include "../deps/rcheevos/src/rc_client_internal.h"
 
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
@@ -295,6 +296,15 @@ void rcheevos_menu_populate(void* data)
    rcheevos_menu_reset_badges();
    rcheevos_locals->menuitem_count = 0;
 
+   if (rcheevos_locals->client->state.disconnect)
+   {
+      menu_entries_append(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE),
+         msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE),
+         MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+         MENU_INFO_ACHIEVEMENTS_SERVER_UNREACHABLE, 0, 0, NULL);
+   }
+
    if (game && game->id != 0)
    {
       /* first menu item is the Pause/Resume Hardcore option (unless hardcore is completely disabled) */
@@ -466,7 +476,11 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
       return 0;
 
    /* OpenGL driver crashes if gfx_display_reset_textures_list is called on a background thread */
-   retro_assert(task_is_on_main_thread());
+   if (!task_is_on_main_thread())
+   {
+      CHEEVOS_ERR(RCHEEVOS_TAG "attempt to load badge %s from background thread", badge);
+      retro_assert(task_is_on_main_thread());
+   }
 
    snprintf(badge_file, sizeof(badge_file), "%s%s%s", badge,
       locked ? "_lock" : "", FILE_PATH_PNG_EXTENSION);

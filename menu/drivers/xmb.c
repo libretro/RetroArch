@@ -3465,6 +3465,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS:
          return xmb->textures.list[XMB_TEXTURE_PAUSE];
+      case MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE:
+         return xmb->textures.list[XMB_TEXTURE_NETWORK];
       case MENU_SET_SCREEN_BRIGHTNESS:
          return xmb->textures.list[XMB_TEXTURE_BRIGHTNESS];
       case MENU_SETTING_GROUP:
