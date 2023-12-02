@@ -201,6 +201,7 @@ typedef struct rcheevos_locals_t
 
 #ifdef HAVE_THREADS
    enum event_command queued_command; /* action queued by background thread to be run on main thread */
+   bool game_placard_requested;       /* request to display game placard */
 #endif
 
 #ifndef HAVE_RC_CLIENT

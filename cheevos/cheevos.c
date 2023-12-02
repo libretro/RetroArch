@@ -92,6 +92,7 @@ static rcheevos_locals_t rcheevos_locals =
    {{0}},/* memory */
 #ifdef HAVE_THREADS
    CMD_EVENT_NONE, /* queued_command */
+   false, /* game_placard_requested */
 #endif
 #ifndef HAVE_RC_CLIENT
    "",   /* displayname */
@@ -133,6 +134,9 @@ rcheevos_locals_t* get_rcheevos_locals(void)
 /*****************************************************************************
 Supporting functions.
 *****************************************************************************/
+
+#define CMD_CHEEVOS_NON_COMMAND -1
+static void rcheevos_show_game_placard(void);
 
 #ifndef CHEEVOS_VERBOSE
 void rcheevos_log(const char* fmt, ...)
@@ -602,6 +606,39 @@ static void rcheevos_server_error(const char* api_name, const char* message)
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 }
 
+static void rcheevos_server_disconnected()
+{
+   CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server\n");
+
+   /* always show message - even with widget. it helps the user understand what the widget is for */
+   {
+      const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED);
+      runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
+
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+      gfx_widget_set_cheevos_disconnect(true);
+#endif
+}
+
+static void rcheevos_server_reconnected()
+{
+   CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server\n");
+
+   {
+      const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED);
+      runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+   }
+
+#if defined(HAVE_GFX_WIDGETS)
+   if (gfx_widgets_ready())
+      gfx_widget_set_cheevos_disconnect(false);
+#endif
+}
+
 static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_client_t* client)
 {
    switch (event->type)
@@ -657,10 +694,10 @@ static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_cli
       rcheevos_server_error(event->server_error->api, event->server_error->error_message);
       break;
    case RC_CLIENT_EVENT_DISCONNECTED:
-      CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server");
+      rcheevos_server_disconnected();
       break;
    case RC_CLIENT_EVENT_RECONNECTED:
-      CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server");
+      rcheevos_server_reconnected();
       break;
    default:
 #ifndef NDEBUG
@@ -1202,9 +1239,12 @@ bool rcheevos_unload(void)
       /* Clean up after completed tasks */
       task_queue_check();
    }
-
-   rcheevos_locals.queued_command = CMD_EVENT_NONE;
  #endif
+#endif
+
+#ifdef HAVE_THREADS
+   rcheevos_locals.queued_command = CMD_EVENT_NONE;
+   rcheevos_locals.game_placard_requested = false;
 #endif
 
    if (rcheevos_locals.memory.count > 0)
@@ -1866,8 +1906,16 @@ void rcheevos_test(void)
 #ifdef HAVE_THREADS
    if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      command_event(rcheevos_locals.queued_command, NULL);
+      if (rcheevos_locals.queued_command != CMD_CHEEVOS_NON_COMMAND)
+         command_event(rcheevos_locals.queued_command, NULL);
+
       rcheevos_locals.queued_command = CMD_EVENT_NONE;
+
+      if (rcheevos_locals.game_placard_requested)
+      {
+         rcheevos_locals.game_placard_requested = false;
+         rcheevos_show_game_placard();
+      }
    }
 #endif
 
@@ -2414,7 +2462,16 @@ static void rcheevos_client_load_game_callback(int result,
       rc_client_set_read_memory_function(client, rcheevos_client_read_memory);
    }
 
-   rcheevos_show_game_placard();
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+   {
+      /* have to "schedule" this. game image should not be loaded on background thread */
+      rcheevos_locals.queued_command = CMD_CHEEVOS_NON_COMMAND;
+      rcheevos_locals.game_placard_requested = true;
+   }
+   else
+      rcheevos_show_game_placard();
+#endif
 
    rcheevos_finalize_game_load(client);
 
