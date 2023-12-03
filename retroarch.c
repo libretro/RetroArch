@@ -6685,6 +6685,12 @@ bool retroarch_main_init(int argc, char *argv[])
 
   webhooks_initialize();
 
+  rcheevos_initialize_hooks
+  (
+      &webhooks_on_achievements_loaded,
+      &webhooks_on_achievement_awarded
+  );
+
 #if defined(HAVE_AUDIOMIXER)
    audio_driver_load_system_sounds();
 #endif

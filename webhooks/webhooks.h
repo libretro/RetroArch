@@ -23,6 +23,8 @@
 
 #include "rc_api_request.h"
 
+#include "cheevos/cheevos_locals.h"
+
 /* Define this macro to get extra-verbose log for cheevos. */
 #define WEBHOOKS_VERBOSE
 
@@ -49,6 +51,8 @@ typedef struct wb_locals_t
   struct rc_runtime_t runtime;
   rc_libretro_memory_regions_t memory;
   uint console_id;
+  const rcheevos_racheevo_t const* current_achievement;
+  const rcheevos_racheevo_t const* last_achievement;
 } wb_locals_t;
 
 unsigned wb_peek
@@ -66,5 +70,12 @@ void webhooks_reset_game();
 
 void webhooks_process_frame();
 void webhooks_send_presence();
+
+void webhooks_on_achievements_loaded
+(
+  const rcheevos_racheevo_t const* achievements,
+  const unsigned int achievements_count
+);
+void webhooks_on_achievement_awarded(rcheevos_racheevo_t* cheevo);
 
 #endif /* __WEBHOOKS_H */

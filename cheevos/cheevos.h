@@ -23,7 +23,15 @@
 
 #include <retro_common_api.h>
 
+#include "cheevos_locals.h"
+
 RETRO_BEGIN_DECLS
+
+void rcheevos_initialize_hooks
+(
+  void (*on_achievements_loaded)(const rcheevos_racheevo_t const*, const unsigned int),
+  void (*on_achievements_awarded)(const rcheevos_racheevo_t const*)
+);
 
 bool rcheevos_load(const void *data);
 void rcheevos_change_disc(const char* new_disc_path, bool initial_disc);

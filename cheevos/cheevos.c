@@ -130,6 +130,18 @@ void rcheevos_log(const char *fmt, ...)
 }
 #endif
 
+void (*_on_achievements_loaded)(const rcheevos_racheevo_t const*, const unsigned int) = NULL;
+void (*_on_achievements_awarded)(const rcheevos_racheevo_t const*) = NULL;
+
+void rcheevos_initialize_hooks
+(
+  void (*on_achievements_loaded)(const rcheevos_racheevo_t*, const unsigned int),
+  void (*on_achievements_awarded)(const rcheevos_racheevo_t*)
+)
+{
+  _on_achievements_loaded = on_achievements_loaded;
+  _on_achievements_awarded = on_achievements_awarded;
+}
 
 static void rcheevos_achievement_disabled(
       rcheevos_racheevo_t* cheevo, unsigned address)
@@ -317,7 +329,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
    if (!cheevo)
       return;
 
-   /* Deactivates the acheivement. */
+   /* Deactivates the achievement. */
    rc_runtime_deactivate_achievement(&locals->runtime, cheevo->id);
 
    cheevo->active &= ~RCHEEVOS_ACTIVE_SOFTCORE;
@@ -357,8 +369,10 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
 
    /* Start the award task (unofficial achievement 
     * unlocks are not submitted). */
-   if (!(cheevo->active & RCHEEVOS_ACTIVE_UNOFFICIAL))
-      rcheevos_client_award_achievement(cheevo->id);
+   if (!(cheevo->active & RCHEEVOS_ACTIVE_UNOFFICIAL)) {
+     rcheevos_client_award_achievement(cheevo->id);
+     _on_achievements_awarded(cheevo);
+   }
 
 #ifdef HAVE_AUDIOMIXER
    /* Play the unlock sound */
@@ -1803,7 +1817,7 @@ static void rcheevos_fetch_badges(void)
    rcheevos_client_fetch_badges(rcheevos_fetch_badges_callback, NULL);
 }
 
-static void rcheevos_start_session_async(retro_task_t* task)
+void rcheevos_start_session_async(retro_task_t* task)
 {
    const bool needs_runtime =
       (  rcheevos_locals.game.achievement_count > 0
@@ -1833,6 +1847,9 @@ static void rcheevos_start_session_async(retro_task_t* task)
 
       /* Let the runtime start processing the achievements */
       rcheevos_locals.loaded = true;
+     
+      if (_on_achievements_loaded != NULL)
+        _on_achievements_loaded(rcheevos_locals.game.achievements, rcheevos_locals.game.achievement_count);
    }
 
 #if HAVE_REWIND

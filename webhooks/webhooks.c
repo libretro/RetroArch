@@ -40,6 +40,8 @@
 //  Keeps dependency on rcheevos to reuse the triggers.
 #include "../deps/rcheevos/include/rc_runtime.h"
 
+#include "cheevos/cheevos_locals.h"
+
 struct wb_identify_game_data_t
 {
   struct rc_hash_iterator iterator;
@@ -82,6 +84,8 @@ wb_locals_t locals;
 unsigned long frame_counter = 0;
 
 const unsigned short LOADED = 1;
+const unsigned short STARTED = 2;
+const unsigned short ACHIEVEMENT = 3;
 const unsigned short UNLOADED = USHRT_MAX;
 const unsigned long PROGRESS_UPDATE_FRAME_FREQUENCY = 30;
 
@@ -271,7 +275,7 @@ static void wb_check_game_events
 
     if (result == RC_TRIGGER_STATE_TRIGGERED) {
       int event_id = locals.runtime.triggers[trigger_num].id;
-      wc_send_event(locals.console_id, locals.hash, event_id, frame_counter, time);
+      wc_send_game_event(locals.console_id, locals.hash, event_id, frame_counter, time);
     }
   }
 }
@@ -325,7 +329,7 @@ void webhooks_load_game(const struct retro_game_info* info)
 
   wpt_clear_progress();
 
-  wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
+  wc_send_game_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
 
   wpd_download_game_progress(&locals, &wh_on_game_progress_downloaded);
 }
@@ -339,7 +343,7 @@ void webhooks_unload_game()
 
   retro_time_t time = cpu_features_get_time_usec();
 
-  wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
+  wc_send_game_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 }
 
 //  ---------------------------------------------------------------------------
@@ -356,9 +360,9 @@ void webhooks_reset_game()
 
   wpt_clear_progress();
 
-  wc_send_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
+  wc_send_game_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 
-  wc_send_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
+  wc_send_game_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
 }
 
 //  ---------------------------------------------------------------------------
@@ -372,4 +376,56 @@ void webhooks_process_frame()
   wb_check_game_events(frame_counter, time);
 
   wb_check_progress(frame_counter, time);
+}
+
+void webhooks_update_achievements()
+{
+  int number_of_active  = 0;
+  int total_number      = 0;
+
+  //  Only deals with supported & official achievements.
+  const rcheevos_racheevo_t const* current_achievement = locals.current_achievement;
+  for (; current_achievement < locals.last_achievement; current_achievement++)
+  {
+    if (current_achievement->active & RCHEEVOS_ACTIVE_UNOFFICIAL)
+      continue;
+
+    if (current_achievement->active & RCHEEVOS_ACTIVE_UNSUPPORTED)
+      continue;
+
+    total_number++;
+
+    if (current_achievement->active)
+      number_of_active++;
+  }
+
+  wc_send_achievement_event
+  (
+    locals.console_id,
+    locals.hash,
+    ACHIEVEMENT,
+    number_of_active,
+    total_number,
+    frame_counter,
+    time
+  );
+}
+void webhooks_on_achievements_loaded
+(
+  const rcheevos_racheevo_t const* achievements,
+  const unsigned int achievements_count
+)
+{
+  locals.current_achievement = achievements;
+  locals.last_achievement    = achievements + achievements_count;
+
+  webhooks_update_achievements();
+}
+
+void webhooks_on_achievement_awarded
+(
+  rcheevos_racheevo_t* cheevo
+)
+{
+  webhooks_update_achievements();
 }
