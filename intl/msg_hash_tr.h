@@ -9532,6 +9532,22 @@ MSG_HASH(
    "Mevcut oturum için başarıları zorlu kipte devam ettirin. Bu eylem, hileleri, geri sarmayı, ağır çekimi ve durum kaydı yüklemesini devre dışı bırakır ve mevcut oyunu sıfırlar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "RetroAchievements sunucusuna erişilemiyor"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "Bir veya daha fazla başarının kilidi sunucuya ulaşmadı. Uygulamayı açık bıraktığınız sürece kilit açma işlemleri yeniden denenecektir."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "RetroAchievements sunucusuna erişilemiyor. Başarılı oluncaya veya uygulama kapatılıncaya kadar yeniden denenecek."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Bekleyen tüm istekler RetroAchievements sunucusuyla başarıyla eşitlendi."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Giriş yapmadınız"
 )
