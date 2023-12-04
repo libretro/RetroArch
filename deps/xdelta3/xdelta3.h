@@ -104,7 +104,6 @@
  * the 32bit boundary [xdelta3-test.h]).
  */
 #ifndef _WIN32
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <stdint.h>
 #else /* WIN32 case */
