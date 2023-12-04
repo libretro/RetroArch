@@ -4761,6 +4761,7 @@ enum retro_rumble_effect
 
 /**
  * Requests a rumble state change for a controller.
+ * Set by the frontend.
  *
  * @param port The controller port to set the rumble state for.
  * @param effect The rumble motor to set the strength of.
@@ -4779,7 +4780,7 @@ typedef bool (RETRO_CALLCONV *retro_set_rumble_state_t)(unsigned port,
  */
 struct retro_rumble_interface
 {
-   /** Set by the frontend. */
+   /** @copydoc retro_set_rumble_state_t */
    retro_set_rumble_state_t set_rumble_state;
 };
 
