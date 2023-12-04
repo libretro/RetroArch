@@ -5563,10 +5563,41 @@ struct retro_message
    unsigned    frames;
 };
 
+/**
+ * The method that the frontend will use to display a message to the player.
+ * @see retro_message_ext
+ */
 enum retro_message_target
 {
+   /**
+    * Indicates that the frontent should display the given message
+    * using all other targets defined by \c retro_message_target at once.
+    */
    RETRO_MESSAGE_TARGET_ALL = 0,
+
+   /**
+    * Indicates that the frontend should display the given message
+    * using the frontend's on-screen display, if available.
+    *
+    * @attention If the frontend allows players to customize or disable notifications,
+    * then they may not see messages sent to this target.
+    */
    RETRO_MESSAGE_TARGET_OSD,
+
+   /**
+    * Indicates that the frontend should log the message
+    * via its usual logging mechanism, if available.
+    *
+    * This is not intended to be a substitute for \c RETRO_ENVIRONMENT_SET_LOG_INTERFACE.
+    * It is intended for the common use case of
+    * logging a player-facing message.
+    *
+    * This target should not be used for messages
+    * of type \c RETRO_MESSAGE_TYPE_STATUS or \c RETRO_MESSAGE_TYPE_PROGRESS,
+    * as it may add unnecessary noise to a log file.
+    *
+    * @see RETRO_ENVIRONMENT_SET_LOG_INTERFACE
+    */
    RETRO_MESSAGE_TARGET_LOG
 };
 
