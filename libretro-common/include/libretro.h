@@ -1957,7 +1957,8 @@ enum retro_mod
  * @note The returned value does not indicate which API is currently in use.
  * For example, the frontend may return \c RETRO_HW_CONTEXT_OPENGL
  * while a Direct3D context from a previous session is active;
- * this would signal that the frontend's current preference is for OpenGL.
+ * this would signal that the frontend's current preference is for OpenGL,
+ * possibly because the user changed their frontend's video driver while a game is running.
  * @see retro_hw_context_type
  * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
