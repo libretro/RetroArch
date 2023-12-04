@@ -2063,14 +2063,19 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS 61
 
+/**
+ * Registers a callback that the frontend can use to notify the core
+ * of the audio output buffer's occupancy.
+ * Can be used by a core to attempt frame-skipping to avoid buffer under-runs
+ * (i.e. "crackling" sounds).
+ *
+ * @param[in] data <tt>const struct retro_audio_buffer_status_callback *</tt>.
+ * Pointer to the the buffer status callback,
+ * or \c NULL to unregister any existing callback.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ */
 #define RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK 62
-                                           /* const struct retro_audio_buffer_status_callback * --
-                                            * Lets the core know the occupancy level of the frontend
-                                            * audio buffer. Can be used by a core to attempt frame
-                                            * skipping in order to avoid buffer under-runs.
-                                            * A core may pass NULL to disable buffer status reporting
-                                            * in the frontend.
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY 63
                                            /* const unsigned * --
@@ -4877,29 +4882,35 @@ struct retro_frame_time_callback
    retro_usec_t reference;
 };
 
-/* Notifies a libretro core of the current occupancy
- * level of the frontend audio buffer.
+/** @defgroup SET_AUDIO_BUFFER_STATUS_CALLBACK Audio Buffer Occupancy
+ * @{
+ */
+
+/**
+ * Notifies a libretro core of how full the frontend's audio buffer is.
+ * Set by the core, called by the frontend.
+ * It will be called right before \c retro_run() every frame.
  *
- * - active: 'true' if audio buffer is currently
- *           in use. Will be 'false' if audio is
- *           disabled in the frontend
- *
- * - occupancy: Given as a value in the range [0,100],
- *              corresponding to the occupancy percentage
- *              of the audio buffer
- *
- * - underrun_likely: 'true' if the frontend expects an
- *                    audio buffer underrun during the
- *                    next frame (indicates that a core
- *                    should attempt frame skipping)
- *
- * It will be called right before retro_run() every frame. */
+ * @param active \c true if the frontend's audio buffer is currently in use,
+ * \c false if audio is disabled in the frontend.
+ * @param occupancy A value between 0 and 100 (inclusive),
+ * corresponding to the frontend's audio buffer occupancy percentage.
+ * @param underrun_likely \c true if the frontend expects an audio buffer underrun
+ * during the next frame, which indicates that a core should attempt frame-skipping.
+ */
 typedef void (RETRO_CALLCONV *retro_audio_buffer_status_callback_t)(
       bool active, unsigned occupancy, bool underrun_likely);
+
+/**
+ * A callback to register with the frontend to receive audio buffer occupancy information.
+ */
 struct retro_audio_buffer_status_callback
 {
+   /** @copydoc retro_audio_buffer_status_callback_t */
    retro_audio_buffer_status_callback_t callback;
 };
+
+/** @} */
 
 /* Pass this to retro_video_refresh_t if rendering to hardware.
  * Passing NULL to retro_video_refresh_t is still a frame dupe as normal.
