@@ -5601,11 +5601,66 @@ enum retro_message_target
    RETRO_MESSAGE_TARGET_LOG
 };
 
+/**
+ * A broad category for the type of message that the frontend will display.
+ *
+ * Each message type has its own use case,
+ * therefore the frontend should present each one differently.
+ */
 enum retro_message_type
 {
+   /**
+    * A standard on-screen message.
+    *
+    * Suitable for a variety of use cases,
+    * such as messages about errors
+    * or other important events.
+    *
+    * Frontends that display their own messages
+    * should display this type of core-generated message the same way.
+    */
    RETRO_MESSAGE_TYPE_NOTIFICATION = 0,
+
+   /**
+    * An on-screen message that should be visually distinct
+    * from \c RETRO_MESSAGE_TYPE_NOTIFICATION messages.
+    *
+    * The exact meaning of "visually distinct" is left to the frontend,
+    * but this usually implies that the frontend shows the message
+    * in a way that it doesn't typically use for its own notices.
+    */
    RETRO_MESSAGE_TYPE_NOTIFICATION_ALT,
+
+   /**
+    * Indicates a frequently-updated status display,
+    * rather than a standard notification.
+    * Status messages are intended to be displayed permanently while a core is running
+    * in a way that doesn't suggest user action is required.
+    *
+    * Here are some possible use cases for status messages:
+    *
+    * @li An internal framerate counter.
+    * @li Debugging information.
+    *     Remember to let the player disable it in the core options.
+    * @li Core-specific state, such as when a microphone is active.
+    *
+    * The status message is displayed for the given duration,
+    * unless another status message of equal or greater priority is shown.
+    */
    RETRO_MESSAGE_TYPE_STATUS,
+
+   /**
+    * Denotes a message that reports the progress
+    * of a long-running asynchronous task,
+    * such as when a core loads large files from disk or the network.
+    *
+    * The frontend should display messages of this type as a progress bar
+    * (or a progress spinner for indefinite tasks),
+    * where \c retro_message_ext::msg is the progress bar's title
+    * and \c retro_message_ext::progress sets the progress bar's length.
+    *
+    * This message type shouldn't be used for tasks that are expected to complete quickly.
+    */
    RETRO_MESSAGE_TYPE_PROGRESS
 };
 
