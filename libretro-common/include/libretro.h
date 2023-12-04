@@ -769,6 +769,7 @@ enum retro_mod
  * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
  * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
  * @see RETRO_ENVIRONMENT_SET_MESSAGE
+ * @see RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION
  * @note The frontend must make its own copy of the message and the underlying string.
  */
 #define RETRO_ENVIRONMENT_SET_MESSAGE   6
@@ -2000,35 +2001,46 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE 58
 
+/**
+ * Returns the version of the message interface supported by the frontend.
+ *
+ * A version of 0 indicates that the frontend
+ * only supports the legacy \c RETRO_ENVIRONMENT_SET_MESSAGE interface.
+ * A version of 1 indicates that the frontend
+ * supports \c RETRO_ENVIRONMENT_SET_MESSAGE_EXT as well.
+ * If this environment call returns \c false,
+ * the core should behave as if it had returned 0.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the result returned by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE
+ */
 #define RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
-                                           /* unsigned * --
-                                            * Unsigned value is the API version number of the message
-                                            * interface supported by the frontend. If callback returns
-                                            * false, API version is assumed to be 0.
-                                            *
-                                            * In legacy code, messages may be displayed in an
-                                            * implementation-specific manner by passing a struct
-                                            * of type retro_message to RETRO_ENVIRONMENT_SET_MESSAGE.
-                                            * This may be still be done regardless of the message
-                                            * interface version.
-                                            *
-                                            * If version is >= 1 however, messages may instead be
-                                            * displayed by passing a struct of type retro_message_ext
-                                            * to RETRO_ENVIRONMENT_SET_MESSAGE_EXT. This allows the
-                                            * core to specify message logging level, priority and
-                                            * destination (OSD, logging interface or both).
-                                            */
 
+/**
+ * Displays a user-facing message for a short time.
+ *
+ * Use this callback to convey important status messages,
+ * such as errors or the result of long-running operations.
+ * For trivial messages or logging, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr.
+ *
+ * This environment call supersedes \c RETRO_ENVIRONMENT_SET_MESSAGE,
+ * as it provides many more ways to customize
+ * how a message is presented to the player.
+ * However, a frontend that supports this environment call
+ * must still support \c RETRO_ENVIRONMENT_SET_MESSAGE.
+ *
+ * @param[in] data <tt>const struct retro_message_ext *</tt>.
+ * Pointer to the message to display to the player.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @see retro_message_ext
+ * @see RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION
+ */
 #define RETRO_ENVIRONMENT_SET_MESSAGE_EXT 60
-                                           /* const struct retro_message_ext * --
-                                            * Sets a message to be displayed in an implementation-specific
-                                            * manner for a certain amount of 'frames'. Additionally allows
-                                            * the core to specify message logging level, priority and
-                                            * destination (OSD, logging interface or both).
-                                            * Should not be used for trivial messages, which should simply be
-                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a
-                                            * fallback, stderr).
-                                            */
 
 /**
  * Returns the number of active input devices currently provided by the frontend.
@@ -5545,9 +5557,19 @@ enum retro_savestate_context
 
 /** @} */
 
+/** @defgroup SET_MESSAGE User-Visible Messages
+ *
+ * @{
+ */
+
 /**
  * Defines a message that the frontend will display to the user,
  * as determined by <tt>RETRO_ENVIRONMENT_SET_MESSAGE</tt>.
+ *
+ * @deprecated This struct is superseded by \ref retro_message_ext,
+ * which provides more control over how a message is presented.
+ * Only use it for compatibility with older cores and frontends.
+ *
  * @see RETRO_ENVIRONMENT_SET_MESSAGE
  * @see retro_message_ext
  */
@@ -5606,6 +5628,10 @@ enum retro_message_target
  *
  * Each message type has its own use case,
  * therefore the frontend should present each one differently.
+ *
+ * @note This is a hint that the frontend may ignore.
+ * The frontend should fall back to \c RETRO_MESSAGE_TYPE_NOTIFICATION
+ * for message types that it doesn't support.
  */
 enum retro_message_type
 {
@@ -5664,88 +5690,114 @@ enum retro_message_type
    RETRO_MESSAGE_TYPE_PROGRESS
 };
 
+/**
+ * A core-provided message that the frontend will display to the player.
+ *
+ * @note The frontend is encouraged store these messages in a queue.
+ * However, it should not empty the queue of core-submitted messages upon exit;
+ * if a core exits with an error, it may want to use this API
+ * to show an error message to the player.
+ *
+ * The frontend should maintain its own copy of the submitted message
+ * and all subobjects, including strings.
+ *
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ */
 struct retro_message_ext
 {
-   /* Message string to be displayed/logged */
+   /**
+    * The \c NULL-terminated text of a message to show to the player.
+    * Must not be \c NULL.
+    *
+    * @note The frontend must honor newlines in this string
+    * when rendering text to \c RETRO_MESSAGE_TARGET_OSD.
+    */
    const char *msg;
-   /* Duration (in ms) of message when targeting the OSD */
+
+   /**
+    * The duration that \c msg will be displayed on-screen, in milliseconds.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG.
+    */
    unsigned duration;
-   /* Message priority when targeting the OSD
-    * > When multiple concurrent messages are sent to
-    *   the frontend and the frontend does not have the
-    *   capacity to display them all, messages with the
-    *   *highest* priority value should be shown
-    * > There is no upper limit to a message priority
-    *   value (within the bounds of the unsigned data type)
-    * > In the reference frontend (RetroArch), the same
-    *   priority values are used for frontend-generated
-    *   notifications, which are typically assigned values
-    *   between 0 and 3 depending upon importance */
+
+   /**
+    * The relative importance of this message
+    * when targeting \c RETRO_MESSAGE_TARGET_OSD.
+    * Higher values indicate higher priority.
+    *
+    * The frontend should use this to prioritize messages
+    * when it can't show all active messages at once,
+    * or to remove messages from its queue if it's full.
+    *
+    * The relative display order of messages with the same priority
+    * is left to the frontend's discretion,
+    * although we suggest breaking ties
+    * in favor of the most recently-submitted message.
+    *
+    * Frontends may handle deprioritized messages at their discretion;
+    * such messages may have their \c duration altered,
+    * be hidden without being delayed,
+    * or even be discarded entirely.
+    *
+    * @note In the reference frontend (RetroArch),
+    * the same priority values are used for frontend-generated notifications,
+    * which are typically between 0 and 3 depending upon importance.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG.
+    */
    unsigned priority;
-   /* Message logging level (info, warn, error, etc.) */
+
+   /**
+    * The severity level of this message.
+    *
+    * The frontend may use this to filter or customize messages
+    * depending on the player's preferences.
+    * Here are some ideas:
+    *
+    * @li Use this to prioritize errors and warnings
+    *     over higher-ranking info and debug messages.
+    * @li Render warnings or errors with extra visual feedback,
+    *     e.g. with brighter colors or accompanying sound effects.
+    *
+    * @see RETRO_ENVIRONMENT_SET_LOG_INTERFACE
+    */
    enum retro_log_level level;
-   /* Message destination: OSD, logging interface or both */
+
+   /**
+    * The intended destination of this message.
+    *
+    * @see retro_message_target
+    */
    enum retro_message_target target;
-   /* Message 'type' when targeting the OSD
-    * > RETRO_MESSAGE_TYPE_NOTIFICATION: Specifies that a
-    *   message should be handled in identical fashion to
-    *   a standard frontend-generated notification
-    * > RETRO_MESSAGE_TYPE_NOTIFICATION_ALT: Specifies that
-    *   message is a notification that requires user attention
-    *   or action, but that it should be displayed in a manner
-    *   that differs from standard frontend-generated notifications.
-    *   This would typically correspond to messages that should be
-    *   displayed immediately (independently from any internal
-    *   frontend message queue), and/or which should be visually
-    *   distinguishable from frontend-generated notifications.
-    *   For example, a core may wish to inform the user of
-    *   information related to a disk-change event. It is
-    *   expected that the frontend itself may provide a
-    *   notification in this case; if the core sends a
-    *   message of type RETRO_MESSAGE_TYPE_NOTIFICATION, an
-    *   uncomfortable 'double-notification' may occur. A message
-    *   of RETRO_MESSAGE_TYPE_NOTIFICATION_ALT should therefore
-    *   be presented such that visual conflict with regular
-    *   notifications does not occur
-    * > RETRO_MESSAGE_TYPE_STATUS: Indicates that message
-    *   is not a standard notification. This typically
-    *   corresponds to 'status' indicators, such as a core's
-    *   internal FPS, which are intended to be displayed
-    *   either permanently while a core is running, or in
-    *   a manner that does not suggest user attention or action
-    *   is required. 'Status' type messages should therefore be
-    *   displayed in a different on-screen location and in a manner
-    *   easily distinguishable from both standard frontend-generated
-    *   notifications and messages of type RETRO_MESSAGE_TYPE_NOTIFICATION_ALT
-    * > RETRO_MESSAGE_TYPE_PROGRESS: Indicates that message reports
-    *   the progress of an internal core task. For example, in cases
-    *   where a core itself handles the loading of content from a file,
-    *   this may correspond to the percentage of the file that has been
-    *   read. Alternatively, an audio/video playback core may use a
-    *   message of type RETRO_MESSAGE_TYPE_PROGRESS to display the current
-    *   playback position as a percentage of the runtime. 'Progress' type
-    *   messages should therefore be displayed as a literal progress bar,
-    *   where:
-    *   - 'retro_message_ext.msg' is the progress bar title/label
-    *   - 'retro_message_ext.progress' determines the length of
-    *     the progress bar
-    * NOTE: Message type is a *hint*, and may be ignored
-    * by the frontend. If a frontend lacks support for
-    * displaying messages via alternate means than standard
-    * frontend-generated notifications, it will treat *all*
-    * messages as having the type RETRO_MESSAGE_TYPE_NOTIFICATION */
+
+   /**
+    * The intended semantics of this message.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG.
+    *
+    * @see retro_message_type
+    */
    enum retro_message_type type;
-   /* Task progress when targeting the OSD and message is
-    * of type RETRO_MESSAGE_TYPE_PROGRESS
-    * > -1:    Unmetered/indeterminate
-    * > 0-100: Current progress percentage
-    * NOTE: Since message type is a hint, a frontend may ignore
-    * progress values. Where relevant, a core should therefore
-    * include progress percentage within the message string,
+
+   /**
+    * The progress of an asynchronous task.
+    *
+    * A value betwen 0 and 100 (inclusive) indicates the task's percentage,
+    * and a value of -1 indicates a task of unknown completion.
+    *
+    * @note Since message type is a hint, a frontend may ignore progress values.
+    * Where relevant, a core should include progress percentage within the message string,
     * such that the message intent remains clear when displayed
-    * as a standard frontend-generated notification */
+    * as a standard frontend-generated notification.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG and for
+    * message types other than \c RETRO_MESSAGE_TYPE_PROGRESS.
+    */
    int8_t progress;
 };
+
+/** @} */
 
 /* Describes how the libretro implementation maps a libretro input bind
  * to its internal input system through a human readable string.
