@@ -160,6 +160,26 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS), len);
              }
              break;
+          case MENU_ENUM_LABEL_JOYPAD_DRIVER:
+             {
+                const char *lbl = settings ? settings->arrays.input_joypad_driver : NULL;
+
+                if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_UDEV)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_LINUXRAW)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_DINPUT)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_XINPUT)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_SDL)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_PARPORT)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_JOYPAD_DRIVER_HID)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID), len);
+             }
+             break;
           case MENU_ENUM_LABEL_MENU_DRIVER:
              {
                 const char *lbl = settings ? settings->arrays.menu_driver : NULL;
