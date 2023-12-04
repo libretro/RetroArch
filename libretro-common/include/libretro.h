@@ -4287,8 +4287,6 @@ struct retro_perf_callback
 
 /**
  * @defgroup RETRO_SENSOR Sensor Interface
- * @todo Document the sensor API and work out behavior.
- * @todo It will be marked as experimental until then.
  * @{
  */
 
