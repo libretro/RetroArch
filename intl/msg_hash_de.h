@@ -1409,10 +1409,6 @@ MSG_HASH(
    "Zu verwendender Eingabetreiber. Einige Videotreiber können einen anderen Eingabetreiber erzwingen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Der udev Eingabetreiber verwendet die aktuelle evdev-Joypad-API zur Joystickunterstützung. Sie unterstützt Hotplugging und Force Feedback.\nDer Treiber liest evdev-Ereignisse für Tastaturunterstützung. Er unterstützt auch Tastaturrückruffunktion, Mäuse und Touchpads.\nStandardmäßig in den meisten Distributionen sind die Knoten /dev/input ausschließlich Root (Mode 600). Es kann eine udev-Regel eingerichtet werden, die diese für Nicht-Root zugänglich machen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Der Eingabetreiber linuxraw benötigt einen aktiven TTY. Tastaturereignisse werden direkt vom TTY gelesen, was es einfacher macht, aber nicht so flexibel wie udev. Mäuse usw. werden überhaupt nicht unterstützt. Dieser Treiber verwendet die ältere Joystick-API (/dev/input/js*)."
    )
@@ -1428,6 +1424,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Zu verwendender Controllertreiber."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Videotreiber"

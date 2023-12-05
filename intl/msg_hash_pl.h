@@ -1465,10 +1465,6 @@ MSG_HASH(
    "Sterownik wejścia do użycia. Niektóre sterowniki wideo wymuszają inny sterownik wejścia."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Sterownik wejścia udev wykorzystuje najnowsze API evdev joypad do obsługi joysticka. Obsługuje hotplugging i siłowe sprzężenie zwrotne.\nSterownik odczytuje zdarzenia evdev do obsługi klawiatury. Obsługuje również wywołania zwrotne klawiatury, myszy i touchpadów.\nDomyślnie w większości dystrybucji, węzły /dev/input są tylko dla roota (tryb 600). Można skonfigurować regułę udev, która czyni je dostępnymi dla użytkowników innych niż root."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Sterownik wejścia linuxraw wymaga aktywnego TTY. Zdarzenia klawiatury są odczytywane bezpośrednio z TTY, co czyni go prostszym, ale nie tak elastycznym jak udev. Myszy, itp. nie są w ogóle obsługiwane. Ten sterownik używa starszego API joysticka (/dev/input/js*)."
    )
@@ -1484,6 +1480,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Sterownik kontrolera do użycia."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Wideo"

@@ -836,7 +836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Peer-to-peer-nätverksstöd"
+   "Netplay (Peer-to-Peer)-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
@@ -1222,7 +1222,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   "Förinställd Shader-fil."
+   "Förinställd Shaderfil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
@@ -1326,7 +1326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Energialternativ"
+   "Energihantering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
@@ -1391,10 +1391,6 @@ MSG_HASH(
    "Ljud"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   "Specifikationer"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
    "Lagring"
    )
@@ -1417,10 +1413,6 @@ MSG_HASH(
    "Vilken drivrutin som ska användas för inmatning. Vissa videodrivrutiner tvingar systemet att använda en viss inmatningsdrivrutin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Udev-inputdrivrutinen använder det senaste evdev joypad-API:et för joystick-stöd. Den har stöd för hotplugging och force feedback.\nDrivrutinen läser evdev-händelser för tangentbordsstöd. Den har även stöd för tangentbordsåterkoppling, mus och pekplattor.\nSom standard i de flesta distributioner är /dev/input-noderna endast åtkomliga av root-användare (mode 600). Du kan konfigurera en udev-regel som gör dessa tillgängliga för icke-root-användare."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Linuxraw-inputdrivrutinen kräver en aktiv TTY. Tangentbordshändelser läses direkt från TTY:n vilket gör det enklare, men inte lika flexibelt som udev. Datormusar och liknande stöds inte alls. Denna drivrutin använder det äldre joypad-API (/dev/input/js*)."
    )
@@ -1436,6 +1428,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Ange drivrutin för spelkontroll."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Video-drivrutin att använda."
@@ -1470,27 +1463,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
-   "Direct3D 8-drivrutin utan stöd för shaders."
+   "Direct3D 8-drivrutin utan stöd för Shader."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   "Direct3D 9-drivrutin med stöd för det äldre Cg shader-formatet."
+   "Direct3D 9-drivrutin med stöd för det äldre Cg Shader-formatet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
-   "Direct3D 9-drivrutin med stöd för HLSL shader-formatet."
+   "Direct3D 9-drivrutin med stöd för HLSL Shader-formatet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
-   "Direct3D 10-drivrutin med stöd för Slang shader-formatet."
+   "Direct3D 10-drivrutin med stöd för Slang Shader-formatet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
-   "Direct3D 11-drivrutin med stöd för HDR och Slang shader-formatet."
+   "Direct3D 11-drivrutin med stöd för HDR och Slang Shader-formatet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
-   "Direct3D 12-drivrutin med stöd för HDR och Slang shader-formatet."
+   "Direct3D 12-drivrutin med stöd för HDR och Slang Shader-formatet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
@@ -1526,7 +1519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
-   "GDI-drivrutin. Använder en äldre Windows-gränssnitt. Rekommenderas inte."
+   "GDI-drivrutin. Använder ett äldre Windows-gränssnitt. Rekommenderas inte."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
@@ -1543,6 +1536,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound-drivrutin för nätverksbaserade ljudsystem."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "OpenAL-drivrutin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "OpenSL-drivrutin."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -1592,15 +1593,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "WiFi-drivrutin som ska användas."
+   "WiFi-drivrutin att använda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "Positionering"
+   "Plats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Positioneringsdrivrutin att använda."
+   "Plats-drivrutin att använda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1608,7 +1609,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Menydrivrutin att använda."
+   "Meny-drivrutin att använda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1628,7 +1629,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Inspelningsdrivrutin att använda."
+   "Inspelnings-drivrutin att använda."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
@@ -1675,7 +1676,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   "Ändra HDR inställningar."
+   "Ändra HDR-inställningar för video."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -1694,6 +1695,10 @@ MSG_HASH(
    "Förhindra systemets skärmsläckare från att bli aktiv."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Stänger av skärmsläckaren. Det är ett förslag som inte nödvändigtvis måste respekteras av videodrivrutinen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Trådad Video"
    )
@@ -1703,11 +1708,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   "Infoga svart bildruta"
+   "Insättning av svart bildruta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Infogar en svart bildruta mellan de vanliga bildrutorna. Användbart för vissa skärmar med hög uppdateringsfrekvens för att undvika ghosting."
+   "Sätt in en svart bildruta mellan bildrutor. Användbar på vissa skärmar med hög uppdateringsfrekvens för att eliminera spökbilder."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1715,7 +1720,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Skärmdump från GPU: n, om det är tillgängligt."
+   "Skärmdumpar fångar GPU-skuggat material om det finns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -1749,7 +1754,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Ange bildinterpoleringsmetod om heltalsskalning är inaktivt. Närmaste granne har lägst prestandakrav."
+   "Ange bildinterpolationsmetod när 'Heltalsskala' är inaktiverad. 'Närmsta granne' har minst prestandapåverkan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1826,11 +1831,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Anpassad Uppdateringsfrekvens"
+   "Anpassad Uppdateringshastighet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Använd en anpassad uppdateringsfrekvens som anges i konfigurationsfilen om det behövs."
+   "Använd en anpassad uppdateringshastighet som anges i konfigurationsfilen om det behövs."
    )
 
 /* Settings > Video > Output */
@@ -1846,7 +1851,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimera för Wii U GamePad (Kräver Omstart)"
+   "Optimera för Wii U GamePad (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -1875,7 +1880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Välj vilket grafikkort du ska använda."
+   "Välj vilket grafikkort att använda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
@@ -1911,7 +1916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Ange Uppdateringsfrekvens som rapporteras från skärmen"
+   "Ange uppdateringsfrekvens som rapporteras från skärmen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -1923,7 +1928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Byt skärmens uppdateringsfrekvensen automatiskt baserat på aktuellt innehåll."
+   "Byt skärmens uppdateringshastighet automatiskt baserat på aktuellt innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -1931,7 +1936,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   "Endast för fönster i Helskärmsläge"
+   "Endast i fönster med Helskärmsläge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
@@ -2172,7 +2177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Beskär Överskanning (Omstart krävs)"
+   "Beskär överskanning (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2253,8 +2258,12 @@ MSG_HASH(
    "Automatisk fördröjning av bildruta"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "effektiv"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "Hård GPU-synkronisering"
+   "Hård GPU-synk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
@@ -2290,7 +2299,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
-   "Ändra ljudingångsinställningar."
+   "Ändra ljudinmatningsinställningar."
    )
 #endif
 MSG_HASH(
@@ -2331,7 +2340,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Stäng av ljudet."
+   "Tysta ljudet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -2535,7 +2544,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   "Ange utgående volym (%)."
+   "Ange utmatningsvolym (%)."
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
@@ -2579,6 +2588,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    "Status : Stoppat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   "Status : Spelar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "Status : Spelar (Repeterar)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -2699,6 +2716,14 @@ MSG_HASH(
    "Klassisk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Haptisk feedback/vibration"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Ändra inställningar för haptisk feedback och vibration."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "Menykontroller"
    )
@@ -2724,7 +2749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Kräver att Snabbknappen för att Avsluta trycks två gånger för att avsluta RetroArch."
+   "Kräver att kortkommandot för att Avsluta trycks två gånger för att avsluta RetroArch."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -2757,12 +2782,28 @@ MSG_HASH(
    "Inaktivera info-knapp"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   "Inaktivera Sökknapp"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Skifta OK/Avbryt-knappen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Byt plats på OK/Avbryt-knappen. Inaktiv är det Japansk knapporientering, aktiv är det Västerländsk."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Skifta menyns scroll-knappar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Alla kontrollerar menyn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Tillåt alla spelare att styra menyn. Inaktiverad kan endast spelare 1 styra menyn."
    )
 
 /* Settings > Input > Hotkeys */
@@ -2878,11 +2919,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
-   "Slår på/av det valda fusket."
+   "Skiftar på/av det valda fusket."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-   "Nästa fusk"
+   "Nästa Fusk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
@@ -2890,7 +2931,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-   "Föregående fusk"
+   "Föregående Fusk"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,

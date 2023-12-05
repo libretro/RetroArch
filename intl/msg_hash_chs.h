@@ -1497,10 +1497,6 @@ MSG_HASH(
    "使用的输入驱动。某些视频驱动强制使用不同的输入驱动。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Udev 输入设备使用最近的 evdev 手柄 API 来驱动游戏手柄，也支持即插即用和力反馈。\n设备读取 evdev 记录支持当前键盘及按键回滚、鼠标和触摸板。\n大多数发行版默认情况下，/dev/input的节点是root专用的 (模式600) 。您可以设置一个 udev 规则，使非 root 用户可以访问它们。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Linuxraw 输入驱动程序需要一个活动的 TTY。 键盘事件直接从 TTY 读取，从而使其更简单，但不像udev那样灵活。 Mice 等根本不支持。此驱动程序使用旧的游戏杆API(/dev/input/js*)。"
    )
@@ -1516,6 +1512,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "要使用的手柄驱动。"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "视频"

@@ -1341,10 +1341,6 @@ MSG_HASH(
    "Invoersstuurprogramma om te gebruiken. Sommige videostuurprogramma's dwingen een ander ingangsstuurprogramma af."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "De udev input driver gebruikt de recente evdev joypad API voor joystick ondersteuning. Het ondersteunt hotplugging en force feedback.\nThe driver leest evdev events voor toetsenbord ondersteuning. Het ondersteunt ook toetsenbord callback, muizen en touchpads.\nStandaard in de meeste distro's, zijn /dev/input nodes root-only (mode 600). Je kunt een udev regel instellen die deze toegankelijk maakt voor niet-root."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "De linuxraw input driver vereist een actieve TTY. Toetsenbord gebeurtenissen worden direct van de TTY gelezen wat het eenvoudiger maakt, maar niet zo flexibel als udev. Muizen, enz. worden helemaal niet ondersteund. Deze driver gebruikt de oudere joystick API (/dev/input/js*)."
    )
@@ -1356,6 +1352,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Controllerstuurprogramma om te gebruiken."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Videostuurprogramma om te gebruiken."

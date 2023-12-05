@@ -1465,10 +1465,6 @@ MSG_HASH(
    "Vstupní ovladač k použití. Některé video ovladače vynutí jiný vstupní ovladač."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Vstupní ovladač udev používá pro podporu joysticků nedávné rozhraní API evdev joypad. Podporuje hotplugging a vynucenou zpětnou vazbu.\nOvladač čte události evdev pro podporu klávesnice. Podporuje také zpětné volání klávesnice, myši a touchpady.\nVe většině distribucí jsou ve výchozím nastavení uzly /dev/input pouze pro uživatele root (režim 600). Můžete nastavit pravidlo udev, které je zpřístupní i uživatelům bez rootu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Vstupní ovladač linuxraw vyžaduje aktivní TTY. Události klávesnice jsou čteny přímo z TTY, což jej činí jednodušším, ale ne tak flexibilním jako udev. Myši atd. nejsou podporovány vůbec. Tento ovladač používá starší API pro joysticky (/dev/input/js*)."
    )
@@ -1484,6 +1480,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Ovladač řadiče k použití."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Video ovladač k použití."
