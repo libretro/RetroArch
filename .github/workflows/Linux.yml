@@ -22,7 +22,7 @@ jobs:
 
       - name: Configure Build
         run: |
-          ./configure --disable-qt
+          ./configure --disable-qt --enable-xdelta
 
       - name: Compile RA
         run: |
