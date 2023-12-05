@@ -104,7 +104,6 @@
  * the 32bit boundary [xdelta3-test.h]).
  */
 #ifndef _WIN32
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <stdint.h>
 #else /* WIN32 case */
@@ -116,7 +115,6 @@
 
 /* _MSV_VER is defined by Microsoft tools, not by Mingw32 */
 #ifdef _MSC_VER
-typedef signed int     ssize_t;
 typedef int pid_t;
 #if _MSC_VER < 1600
 typedef unsigned char  uint8_t;
@@ -145,13 +143,7 @@ typedef ULONGLONG      uint64_t;
 
 /* The source window size is limited to 2GB unless
  * XD3_USE_LARGESIZET is defined to 1. */
-#ifndef XD3_USE_LARGESIZET
-#if SIZE_MAX == UINT64_MAX
 #define XD3_USE_LARGESIZET 1
-#else
-#define XD3_USE_LARGESIZET 0
-#endif
-#endif
 
 #if SIZE_MAX == UINT64_MAX
 #define SIZEOF_SIZE_T 8
@@ -1497,6 +1489,8 @@ void xd3_blksize_add (xoff_t *blkno,
 #define IF_DEBUG2(x)
 #endif
 
+#ifndef SIZEOF_ARRAY
 #define SIZEOF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
+#endif
 
 #endif /* _XDELTA3_H_ */

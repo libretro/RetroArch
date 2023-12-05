@@ -386,7 +386,7 @@ XD3_MAKELIST(xd3_rlist, xd3_rinst, link);
 			       * has to be better by more than the step
 			       * between them.  0. */
 
-#define MIN_MATCH         4U  /* VCDIFF code table: MIN_MATCH=4 */
+#define XD3_MIN_MATCH     4U  /* VCDIFF code table: XD3_MIN_MATCH=4 */
 #define MIN_RUN           8U  /* The shortest run, if it is shorter than this
 			       * an immediate add/copy will be just as good.
 			       * ADD1/COPY6 = 1I+1D+1A bytes, RUN18 =
@@ -770,7 +770,7 @@ struct _xd3_code_table_sizes {
 struct _xd3_code_table_desc
 {
   /* Assumes a single RUN instruction */
-  /* Assumes that MIN_MATCH is 4 */
+  /* Assumes that XD3_MIN_MATCH is 4 */
 
   uint8_t add_sizes;            /* Number of immediate-size single
 				   adds (default 17) */
@@ -848,7 +848,7 @@ xd3_build_code_table (const xd3_code_table_desc *desc, xd3_dinst *tbl)
     {
       (d++)->type1 = XD3_CPY + mode;
 
-      for (size1 = MIN_MATCH; size1 < MIN_MATCH + desc->cpy_sizes;
+      for (size1 = XD3_MIN_MATCH; size1 < XD3_MIN_MATCH + desc->cpy_sizes;
 	   size1 += 1, d += 1)
 	{
 	  d->type1 = XD3_CPY + mode;
@@ -864,7 +864,7 @@ xd3_build_code_table (const xd3_code_table_desc *desc, xd3_dinst *tbl)
 	    desc->addcopy_near_cpy_max :
 	    desc->addcopy_same_cpy_max;
 
-	  for (size2 = MIN_MATCH; size2 <= max; size2 += 1, d += 1)
+	  for (size2 = XD3_MIN_MATCH; size2 <= max; size2 += 1, d += 1)
 	    {
 	      d->type1 = XD3_ADD;
 	      d->size1 = size1;
@@ -880,7 +880,7 @@ xd3_build_code_table (const xd3_code_table_desc *desc, xd3_dinst *tbl)
 	desc->copyadd_near_cpy_max :
 	desc->copyadd_same_cpy_max;
 
-      for (size1 = MIN_MATCH; size1 <= max; size1 += 1)
+      for (size1 = XD3_MIN_MATCH; size1 <= max; size1 += 1)
 	{
 	  for (size2 = 1; size2 <= desc->copyadd_add_max; size2 += 1, d += 1)
 	    {
@@ -1765,9 +1765,9 @@ xd3_config_stream(xd3_stream *stream,
 	*smatcher = config->smatcher_soft;
 	smatcher->string_match = __smatcher_soft.string_match;
 	smatcher->name = __smatcher_soft.name;
-	if (smatcher->large_look  < MIN_MATCH ||
+	if (smatcher->large_look  < XD3_MIN_MATCH ||
 	    smatcher->large_step  < 1         ||
-	    smatcher->small_look  < MIN_MATCH)
+	    smatcher->small_look  < XD3_MIN_MATCH)
 	  {
 	    stream->msg = "invalid soft string-match config";
 	    return XD3_INVALID;
@@ -2160,7 +2160,7 @@ xd3_iopt_finish_encoding (xd3_stream *stream, xd3_rinst *inst)
 	    stream->l_tcpy += inst->size;
 	  }
 
-	/* Note: used to assert inst->size >= MIN_MATCH, but not true
+	/* Note: used to assert inst->size >= XD3_MIN_MATCH, but not true
 	 * for merge operations & identical match heuristics. */
 	/* the "here" position is always offset by taroff */
 	if ((ret = xd3_encode_address (stream, addr, inst->pos + stream->taroff,
@@ -2221,7 +2221,7 @@ xd3_iopt_finish_encoding (xd3_stream *stream, xd3_rinst *inst)
     {
       if (stream->iout->code2 != 0)
 	{
-	  if ((ret = xd3_emit_double (stream, stream->iout, inst, 
+	  if ((ret = xd3_emit_double (stream, stream->iout, inst,
 				      stream->iout->code2))) { return ret; }
 
 	  xd3_iopt_free_nonadd (stream, stream->iout);
@@ -2365,7 +2365,7 @@ xd3_iopt_flush_instructions (xd3_stream *stream, int force)
        * xd3_smatch() wouldn't allow by its crude efficiency check.  However,
        * in this case there are adjacent copies which mean the add would cost
        * one extra byte.  Allow the inefficiency here. */
-      if (gap < 2*MIN_MATCH || r2moff <= 2 || r2off <= 2)
+      if (gap < 2*XD3_MIN_MATCH || r2moff <= 2 || r2off <= 2)
 	{
 	  /* Only one match should be used, choose the longer one. */
 	  if (r1->size < r2->size)
@@ -2440,8 +2440,8 @@ xd3_iopt_flush_instructions (xd3_stream *stream, int force)
 	  r2->pos  += adjust1;
 	  r2->addr += adjust1;
 
-	  XD3_ASSERT (r1->size >= MIN_MATCH);
-	  XD3_ASSERT (r2->size >= MIN_MATCH);
+	  XD3_ASSERT (r1->size >= XD3_MIN_MATCH);
+	  XD3_ASSERT (r2->size >= XD3_MIN_MATCH);
 
 	  r1 = r2;
 	}
@@ -3111,7 +3111,7 @@ xd3_encode_input (xd3_stream *stream)
       xd3_init_cache (& stream->acache);
 
       stream->input_position    = 0;
-      stream->min_match = MIN_MATCH;
+      stream->min_match = XD3_MIN_MATCH;
       stream->unencoded_offset = 0;
 
       stream->enc_state = ENC_SEARCH;
@@ -3319,7 +3319,7 @@ xd3_process_stream (int            is_encode,
 	case XD3_OUTPUT: { /* memcpy below */ break; }
 	case XD3_INPUT: {
 	  n = xd3_min(stream->winsize, input_size - ipos);
-	  if (n == 0) 
+	  if (n == 0)
 	    {
 	      goto done;
 	    }
@@ -3647,7 +3647,7 @@ xd3_srcwin_setup (xd3_stream *stream)
 
   /* Otherwise, we have to make a guess.  More copies may still be
    * issued, but we have to decide the source window base and length
-   * now.  
+   * now.
    * TODO: This may not working well in practice, more testing needed. */
   src->srcbase = stream->match_minaddr;
   src->srclen  = xd3_max ((usize_t) length,
@@ -4158,7 +4158,7 @@ xd3_check_smatch (const uint8_t *ref0, const uint8_t *inp0,
  * to get the actual position.  After checking that match, if previous
  * linked lists are in use (because stream->smatcher.small_chain > 1),
  * previous matches are tested searching for the longest match.  If
- * (stream->min_match > MIN_MATCH) then a lazy match is in effect.
+ * (stream->min_match > XD3_MIN_MATCH) then a lazy match is in effect.
  */
 static usize_t
 xd3_smatch (xd3_stream *stream,
@@ -4168,7 +4168,7 @@ xd3_smatch (xd3_stream *stream,
 {
   usize_t cmp_len;
   usize_t match_length = 0;
-  usize_t chain = (stream->min_match == MIN_MATCH ?
+  usize_t chain = (stream->min_match == XD3_MIN_MATCH ?
                    stream->smatcher.small_chain :
                    stream->smatcher.small_lchain);
   const uint8_t *inp_max = stream->next_in + stream->avail_in;
@@ -4343,13 +4343,13 @@ xd3_srcwin_move_point (xd3_stream *stream, usize_t *next_move_point)
 
   absolute_input_pos = stream->total_in + stream->input_position;
 
-  /* Immediately read the entire window. 
+  /* Immediately read the entire window.
    *
    * Note: this reverses a long held policy, at this point in the
    * code, of advancing relatively slowly as the input is read, which
    * results in better compression for very-similar inputs, but worse
    * compression where data is deleted near the beginning of the file.
-   * 
+   *
    * The new policy is simpler, somewhat slower and can benefit, or
    * slightly worsen, compression performance. */
   if (absolute_input_pos < stream->src->max_winsize / 2)
@@ -4444,7 +4444,7 @@ xd3_srcwin_move_point (xd3_stream *stream, usize_t *next_move_point)
 	  /* TODO: This would be significantly faster if the compiler
 	   * knew stream->smatcher.large_look (which the template for
 	   * xd3_string_match_* allows). */
-	  usize_t cksum = xd3_large_cksum (&stream->large_hash, 
+	  usize_t cksum = xd3_large_cksum (&stream->large_hash,
 					   stream->src->curblk + blkpos,
 					   stream->smatcher.large_look);
 	  usize_t hval = xd3_checksum_hash (& stream->large_hash, cksum);
@@ -4490,7 +4490,7 @@ xd3_srcwin_move_point (xd3_stream *stream, usize_t *next_move_point)
   *next_move_point = stream->input_position +
     stream->src->blksize -
     ((stream->srcwin_cksum_pos - target_cksum_pos) & stream->src->maskby);
-  
+
   IF_DEBUG2 (DP(RINT
 		"[srcwin_move_point] finished T=%"Q"u "
 		"S=%"Q"u L=%"Q"u EOF=%"Q"u %s again in %"W"u\n",
@@ -4586,13 +4586,13 @@ XD3_TEMPLATE(xd3_string_match_) (xd3_stream *stream)
    * of length 8 at the next position. */
   if (xd3_iopt_last_matched (stream) > stream->input_position)
     {
-      stream->min_match = xd3_max (MIN_MATCH,
+      stream->min_match = xd3_max (XD3_MIN_MATCH,
 				   1 + xd3_iopt_last_matched(stream) -
 				   stream->input_position);
     }
   else
     {
-      stream->min_match = MIN_MATCH;
+      stream->min_match = XD3_MIN_MATCH;
     }
 
   /* The current input byte. */
@@ -4775,7 +4775,7 @@ XD3_TEMPLATE(xd3_string_match_) (xd3_stream *stream)
        * increasing min_match to avoid smaller matches.  Each time we
        * advance stream->input_position by one, the minimum match
        * shortens as well.  */
-      if (stream->min_match > MIN_MATCH)
+      if (stream->min_match > XD3_MIN_MATCH)
 	{
 	  stream->min_match -= 1;
 	}
