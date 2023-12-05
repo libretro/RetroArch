@@ -36,7 +36,7 @@
 #include "../verbosity.h"
 #include "../configuration.h"
 
-#if HAVE_XDELTA
+#ifdef HAVE_XDELTA
 #include "../deps/xdelta3/xdelta3.h"
 #endif
 
