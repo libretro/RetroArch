@@ -1497,10 +1497,6 @@ MSG_HASH(
    "사용할 입력 드라이버입니다. 비디오 드라이버에 따라 다른 입력 드라이버를 사용해야 할 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "udev 입력 드라이버는 조이스틱 지원에 최신 evdev 조이패드 API를 활용합니다. 핫플러깅과 포스 피드백을 지원합니다.\n키보드 지원에는 evdev 이벤트가 사용됩니다. 키보드 콜백, 마우스, 터치패드를 지원합니다.\n대부분의 디스트로에서 기본적으로, /dev/input 노드는 루트 전용(모드 600)으로 구성되어 있습니다. udev 규칙을 설정하면 이 값들에 비 root 앱들이 접근할 수 있게 할 수 있[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "linuxraw 입력 드라이버는 활성 TTY를 필요로 합니다. 키보드 이벤트를 TTY에서 직접 읽어들이므로 과정이 단순해지지만, udev만큼 유연하지 않습니다. 마우스 등은 지원되지 않습니다. 이 드라이버는 오래 된 조이스틱 API(/dev/input/js*)를 사용합니다."
    )
@@ -1516,6 +1512,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "사용할 컨트롤러 드라이버입니다."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "비디오 드라이버"

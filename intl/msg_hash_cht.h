@@ -1441,10 +1441,6 @@ MSG_HASH(
    "設定鍵盤、滑鼠和光線槍等輸入裝置使用的驅動程式, 此選項會依據顯示驅動程式強制變更。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "udev輸入驅動程式。\n此驅動程式使用evdev API, 支援熱插拔和力反饋。\n讀取事件驅動程式(evdev)支援鍵盤, 還支援鍵盤回呼、滑鼠和觸控板。\n大多數發行版預設情況下, /dev/input裝置節點僅限root權限使用, 可以設定一個裝置管理員(udev)規則, 用於非root權限時使用。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "linuxraw輸入驅動程式。\n需要開啟終端機(TTY)直接從終端機讀取鍵盤事件, 不支援滑鼠輸入不如裝置管理員(udev)操作方便。\n此驅動程式使用joystick API (/dev/input/js*)。"
    )
@@ -1460,6 +1456,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "設定遊戲控制器使用的驅動程式。"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "顯示"

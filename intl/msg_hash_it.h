@@ -1437,10 +1437,6 @@ MSG_HASH(
    "Driver di input da usare. Alcuni driver video forzano un driver di input diverso."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Il driver di input udev utilizza la recente API di joypad evdev per il supporto del joystick. Supporta hotplugging e forza feedback.\nIl driver legge gli eventi evdev per il supporto della tastiera. Supporta anche callback della tastiera, topi e touchpads.\nCome impostazione predefinita nella maggior parte delle distanze, i nodi /dev/input sono solo root (modalità 600). È possibile impostare una regola udev che rende questi accessibili a non-root."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Il driver di input linuxraw richiede un TTY attivo. Gli eventi della tastiera sono letti direttamente dal TTY che lo rende più semplice, ma non così flessibile come udev. I topi, ecc, non sono supportati affatto. Questo driver utilizza la vecchia API joystick (/dev/input/js*)."
    )
@@ -1452,6 +1448,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Driver del controller da utilizzare."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Driver Video"

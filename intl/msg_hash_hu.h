@@ -1469,10 +1469,6 @@ MSG_HASH(
    "A használni kívánt bemeneti illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Az udev bemeneti illesztő a mostani evdev joypad API-t használja a joystick támogatáshoz. A menet közbeni csatlakoztatás és a force feedback is támogatott.\nAz illesztő a billentyűzet eseményeket evdev eseményként olvassa. Támogatja a billentyűzet callback-et, egeret és touchpadet.\nA legtöbb disztribúción a /dev/input bejegyzések csak root által használhatók (mode 600). Egy udev szabállyal ezeket nem-root felhasználók számára is elérhetővé lehet tenni."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "A linuxraw bemeneti illesztőnek aktív TTY-ra van szüksége. A billentyűzet eseményeket közvetlenül a TTY-ról olvassa, ettől egyszerűbbb, de nem olyan rugalmas, mint az udev. Az egér, stb. egyáltalán nem támogatott. Ez az illesztő a régebbi joystick API-t használja (/dev/input/js*)."
    )
@@ -1488,6 +1484,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "A használt kontroller illesztő."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Videó"

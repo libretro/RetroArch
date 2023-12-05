@@ -996,6 +996,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Mewnbwn"
    )
+
 #ifdef HAVE_MICROPHONE
 #endif
 MSG_HASH(
