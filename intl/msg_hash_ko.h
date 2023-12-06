@@ -1497,6 +1497,10 @@ MSG_HASH(
    "사용할 입력 드라이버입니다. 비디오 드라이버에 따라 다른 입력 드라이버를 사용해야 할 수 있습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "udev 드라이버는 키보드 지원을 위해 evdev 이벤트를 읽습니다. 또한 키보드 콜백, 마우스, 터치패드도 지원합니다.\n기본적으로 대부분의 배포판에서, /dev/input 노드는 루트 전용입니다(모드 600). 루트가 아닌 사용자도 접속할 수 있도록 udev 규칙을 설정할 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "linuxraw 입력 드라이버는 활성 TTY를 필요로 합니다. 키보드 이벤트를 TTY에서 직접 읽어들이므로 과정이 단순해지지만, udev만큼 유연하지 않습니다. 마우스 등은 지원되지 않습니다. 이 드라이버는 오래 된 조이스틱 API(/dev/input/js*)를 사용합니다."
    )
@@ -1511,6 +1515,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "사용할 컨트롤러 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "DirectInput 컨트롤러 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "낮은 수준 휴먼 인터페이스 장치 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "원시 Linux 드라이버는 레거시 조이스틱 API를 사용합니다. 가능하면 udev를 대신 사용하세요."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "특수 어댑터를 통해 병렬 포트에 연결된 컨트롤러용 Linux 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "SDL 라이브러리 기반 컨트롤러 드라이버입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "udev 인터페이스가 있는 컨트롤러 드라이버가 일반적으로 권장됩니다. 조이스틱 지원을 위해 최신 evdev 조이패드 API를 사용합니다. 핫플러그 및 강제 피드백을 지원합니다.\n기본적으로 대부분의 배포판에서, /dev/input 노드는 루트 전용입니다(모드 600). 루트가 아닌 사용자도 액세스할 수 있도록 udev 규칙을 설정할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput 컨트롤러 드라이버. 주로 XBox 컨트롤러용입니다."
    )
 
 MSG_HASH(
@@ -1958,6 +1990,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "활성중인 CPU로 동작하는 비디오 필터를 해제합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Android 및 iOS 기기에서 노치보다 전체 화면을 활성화"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2593,6 +2629,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    "믹서 오디오를 음소거합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "무음 모드 존중"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "무음 모드에서는 모든 오디오를 음소거합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -9236,6 +9280,10 @@ MSG_HASH(
    "세이더 프리셋 및 패스를 불러올때 파일 브라우저에서 최근 사용한 디렉토리를 엽니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   "사전 설정 불러오기"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "셰이더 프리셋을 불러옵니다. 셰이더 파이프라인이 자동으로 설정됩니다."
    )
@@ -9244,8 +9292,32 @@ MSG_HASH(
    "셰이더 사전 설정을 직접 불러옵니다. 그에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 사전 설정이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "사전 설정 추가"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "현재 불러온 사전 설정 앞에 사전 설정을 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "사전 설정 추가"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "현재 불러온 사전 설정에 사전 설정을 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
+   "사전 설정 저장"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
    "현재 셰이더 프리셋을 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
+   "사전 설정 제거"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
@@ -9528,6 +9600,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
    "현재 세션에 대한 도전과제 하드코어 모드를 재개합니다. 치트, 뒤로 감기, 슬로우 모션, 상태저장 불러오기를 비활성화하고 게임을 초기화합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "RetroAchievements 서버에 연결할 수 없음"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "하나 이상의 Achievement 잠금 해제가 서버에 반영되지 않았습니다. 앱을 열어두는 동안 잠금 해제가 다시 시도됩니다."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "RetroAchievements 서버에 연결할 수 없습니다. 성공하거나 앱이 닫힐 때까지 다시 시도합니다."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "보류 중인 모든 요청이 RetroAchievements 서버에 성공적으로 동기화되었습니다."
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "로그인 되지 않음"
