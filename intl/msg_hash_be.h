@@ -187,7 +187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Даведацца больш аб тым, як працуе праграма."
+   "Даведацца больш пра тое, як працуе праграма."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
@@ -394,7 +394,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "Звесткі аб ядры"
+   "Звесткі пра ядро"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
@@ -402,15 +402,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Звесткі аб дыску"
+   "Звесткі пра дыск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Праглядзець звесткі аб устаўленых медыядысках."
+   "Праглядзець звесткі пра ўстаўленыя медыядыскі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Звесткі аб сеціве"
+   "Звесткі пра сеціва"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
@@ -418,11 +418,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "Звесткі аб сістэме"
+   "Звесткі пра сістэму"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Праглядзець пэўныя звесткі аб прыладзе."
+   "Праглядзець пэўныя звесткі пра прыладу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -1795,7 +1795,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Ужываць меню высокай раздзяляльнасці"
+   "Выкарыстоўваць меню высокай раздзяляльнасці"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -2146,7 +2146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Змяніць налады вываду гука."
+   "Змяніць налады вываду гуку."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -2155,7 +2155,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
-   "Змяніць налады ўводу гука."
+   "Змяніць налады ўводу гуку."
    )
 #endif
 MSG_HASH(
@@ -2244,15 +2244,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "Плагін DSP"
+   "Убудова DSP"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Адкінуць плагін DSP"
+   "Прыбраць убудову DSP"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   "Выгрузіць усялякія актыўныя аўдыяплагіны DSP."
+   "Выгрузіць усялякія актыўныя гукавыя ўбудовы DSP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -2267,7 +2267,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "Уключыць вывад гука."
+   "Уключыць вывад гуку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -2299,11 +2299,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Латэнтнасць гука (мс)"
+   "Латэнтнасць гуку (мс)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Пажаданая латэнтнасць гука ў мілісекундах. Можа не ўлічвацца, калі гукавы драйвер не зможа забяспечыць зададзенае значэнне."
+   "Пажаданая латэнтнасць гуку ў мілісекундах. Можа не ўлічвацца, калі гукавы драйвер не зможа забяспечыць зададзенае значэнне."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2330,7 +2330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-   "Пажаданая латэнтнасць уводу гука ў мілісекундах. Можа не ўлічвацца, калі драйвер мікрафона не зможа забяспечыць зададзенае значэнне."
+   "Пажаданая латэнтнасць уводу гуку ў мілісекундах. Можа не ўлічвацца, калі драйвер мікрафона не зможа забяспечыць зададзенае значэнне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -2728,7 +2728,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "Адпраўляе дыягнастычныя звесткі аб вашай прыладзе ды канфігурацыі RetroArch на нашы серверы для аналізу."
+   "Адпраўляе дыягнастычныя звесткі пра вашую прыладу ды канфігурацыю RetroArch на нашы серверы для аналізу."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3069,15 +3069,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
-   "Адлюстроўваць ужыты ды агульны аб'ём памяці ў сістэме."
+   "Адлюстроўваць скарыстаны ды агульны аб'ём памяці ў сістэме."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Апавяшчэнні аб чыт-кодах"
+   "Апавяшчэнні пра чыт-коды"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
-   "Апавяшчэнні аб здымках экрана"
+   "Апавяшчэнні пра здымкі экрана"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -3938,7 +3938,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "Апавяшчэнні аб раскрыцці"
+   "Апавяшчэнні пра раскрыццё"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
@@ -3946,7 +3946,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
-   "Апавяшчэнні аб майстэрстве"
+   "Апавяшчэнні пра майстэрства"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
@@ -3958,7 +3958,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
-   "Паведамленні аб адкрыцці дошкі лідараў"
+   "Паведамленні пра адкрыццё дошкі лідараў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
@@ -3966,7 +3966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-   "Паведамленні аб унясенні на дошку лідараў"
+   "Паведамленні пра ўнясенне на дошку лідараў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
@@ -3974,7 +3974,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-   "Паведамленні аб няўдачы з дошкай лідараў"
+   "Паведамленні пра няўдачу з дошкай лідараў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
@@ -3982,7 +3982,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Паведамленне аб уваходзе"
+   "Паведамленне пра ўваход"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
