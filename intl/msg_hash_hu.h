@@ -1469,6 +1469,10 @@ MSG_HASH(
    "A használni kívánt bemeneti illesztőprogram. Egyes video-illesztőprogramok másik bemeneti illesztőprogramot kényszerítenek ki."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "Az udev bemeneti illesztő a billentyűzet eseményeket evdev eseményként olvassa. Támogatja a billentyűzet callback-et, egeret és touchpadet.\nA legtöbb disztribúción a /dev/input bejegyzések csak root által használhatók (mode 600). Egy udev szabállyal ezeket nem-root felhasználók számára is elérhetővé lehet tenni."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "A linuxraw bemeneti illesztőnek aktív TTY-ra van szüksége. A billentyűzet eseményeket közvetlenül a TTY-ról olvassa, ettől egyszerűbbb, de nem olyan rugalmas, mint az udev. Az egér, stb. egyáltalán nem támogatott. Ez az illesztő a régebbi joystick API-t használja (/dev/input/js*)."
    )
@@ -1483,6 +1487,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "A használt kontroller illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "DirectInput bemeneti illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Alacsonyszintű Human Interface Device illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Közvetlen Linux illesztő, a korábbi joystick API használatával. Az udev használata javasolt helyette."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux illesztő a párhuzamos portra, különleges adapterekkel csatlakoztatott kontrollerekhez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Az SDL könyvtárakra épülő kontroller illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Az udev kontroller illesztő a mostani evdev joypad API-t használja a joystick támogatáshoz. A menet közbeni csatlakoztatás és a force feedback is támogatott.\nA legtöbb disztribúción a /dev/input bejegyzések csak root által használhatók (mode 600). Egy udev szabállyal ezeket nem-root felhasználók számára is elérhetővé lehet tenni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput kontroller illesztő. Leginkább az XBox kontrollerekhez."
    )
 
 MSG_HASH(
@@ -1922,6 +1954,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Aktív CPU alapú videoszűrők eltávolítása."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "A teljes képernyő kiterjesztése a bevágásra Android és iOS eszközökön"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2553,6 +2589,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    "A hangkeverőből jövő hang némítása."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Csendes mód figyelembevétele"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Minden hang letiltása Csendes módban."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -9496,6 +9540,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
    "A trófeák Hardcore módjának visszaállítása. Ezáltal nem lesz elérhető a játékállás mentés, a csalások, a visszatekerés, a lassítás és az újraindítás."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "A RetroAchievements kiszolgáló nem elérhető"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "Egy vagy több trófea feloldását nem sikerült beküldeni a kiszolgálónak. A beküldés mindaddig újra lesz próbálva, amíg az alkalmazás nyitva marad."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "A RetroAchievements kiszolgáló nem elérhető. A beküldés mindaddig újra lesz próbálva, amíg nem sikerül, vagy az alkalmazás nyitva marad."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "A függőben maradt RetroAchievements kiszolgáló kérések szinkronizálása sikeres."
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Nincs bejelentkezve"
