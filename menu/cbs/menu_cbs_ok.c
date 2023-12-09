@@ -7701,7 +7701,14 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
 {
    if (!string_is_empty(line))
    {
-      if (!task_push_netplay_content_reload(line))
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+      {
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)line);
+         menu_input_dialog_end();
+         retroarch_menu_running_finished(false);
+      }
+      else if (!task_push_netplay_content_reload(line))
       {
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
