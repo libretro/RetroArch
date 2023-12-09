@@ -914,7 +914,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "Сэтынг"
+   "Сетынг"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -1169,6 +1169,10 @@ MSG_HASH(
    "Калі адключана, файлы будуць перасунутыя ў тэчку рэзервовай копіі перад іх перазапісам ці выдаленнем."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Бэкенд воблачнай сінхранізацыі"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    "Які сеткавы пратакол воблачнага сховішча выкарыстоўваць."
    )
@@ -1289,12 +1293,20 @@ MSG_HASH(
    "Каталог. Выберыце, каб адкрыць гэты каталог."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   "Рэгулятар кадраў"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
    "Запіс"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
    "Змяніцы налады запісу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   "Адлюстраванне на экране"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
