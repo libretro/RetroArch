@@ -1588,7 +1588,6 @@
 					"-DHAVE_IOS_SWIFT",
 					"-DHAVE_IOS_TOUCHMOUSE",
 					"-DHAVE_MATERIALUI",
-					"-DHAVE_OVERLAY",
 					"$(inherited)",
 				);
 				"OTHER_CFLAGS[sdk=iphoneos*]" = (
@@ -1664,7 +1663,6 @@
 					"-DHAVE_IOS_SWIFT",
 					"-DHAVE_IOS_TOUCHMOUSE",
 					"-DHAVE_MATERIALUI",
-					"-DHAVE_OVERLAY",
 				);
 				"OTHER_CFLAGS[sdk=iphoneos*]" = (
 					"-DHAVE_VULKAN",
@@ -2083,6 +2081,7 @@
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES3",
+					"-DHAVE_OVERLAY",
 					"-DHAVE_OZONE",
 					"-DHAVE_PATCH",
 					"-DHAVE_RBMP",
@@ -2205,6 +2204,7 @@
 					"-DHAVE_OPENGL",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES3",
+					"-DHAVE_OVERLAY",
 					"-DHAVE_OZONE",
 					"-DHAVE_PATCH",
 					"-DHAVE_RBMP",
