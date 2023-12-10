@@ -2443,6 +2443,14 @@ MSG_HASH(
    "Stäng av mixer ljudet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Respektera Tyst läge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Stäng av allt ljud i tyst läge."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "Tyst vid Snabbspola framåt"
    )
@@ -2589,6 +2597,22 @@ MSG_HASH(
    "Sänk detta värde för att gynna prestanda/lägre latens över ljudkvalitet, öka för bättre ljudkvalitet på bekostnad av prestanda/lägre latens."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Standard inmatningsfrekvens (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Ljudinmatningens samplingsfrekvens, används om en kärna inte begär ett specifikt värde."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Latens ljudinmatning (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Önskad fördröjning för ljudinmatning i millisekunder. Kanske inte blir hedrad om mikrofondrivrutinen inte kan ge angiven fördröjning."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "WASAPI Exklusivt läge"
    )
@@ -2634,6 +2658,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    "Synkronisera ljud. Rekommenderas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   "Dynamisk ljudfrekvenskontroll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Hjälper till att jämna ut brister i timing när ljud och video synkroniseras. Tänk på att korrekt synkronisering är nästan omöjlig att få till om den är inaktiverad."
    )
 
 /* Settings > Audio > MIDI */
@@ -2940,6 +2972,10 @@ MSG_HASH(
    "Port %u kontroller"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Ändra kärnspecifika inmatningsmappningar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Lösning för Android-frånkoppling"
    )
@@ -2982,12 +3018,24 @@ MSG_HASH(
    "Enhetliga menykontroller"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   "Använd samma spelkontroller för både menyn och spelet. Gäller tangentbordet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "Inaktivera info-knapp"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Aktiverad kommer Info-knapp tryckningar att ignoreras."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Inaktivera Sökknapp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "Aktiverad kommer Sök-knapp tryckningar att ignoreras."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3029,6 +3077,10 @@ MSG_HASH(
    "Spelkontrolls knappkombination för att växla till och från meny."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   "Visa/dölj meny"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Avsluta(Spelkontrolls Kombo)"
    )
@@ -3051,6 +3103,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
    "Startar om aktuellt innehåll från början."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Snabbspola framåt (Växla)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   "Växlar mellan snabb och normal hastighet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Snabbspola framåt (Intryckt)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Aktiverar snabbspolning när den hålls intryckt. Innehållet körs med normal hastighet när knappen släpps."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -3096,11 +3164,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Sparar spelets status på den för närvarande valda platsen och lagrar den i minnesplatsen."
+   "Sparar status till den för närvarande valda platsen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   "Nästa Spara status plats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
    "Ökar index för att välja slot till att spara status."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "Föregående Spara status plats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
@@ -3120,6 +3196,14 @@ MSG_HASH(
    "Föregående skiva"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Shaders (Växla)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   "Slår på/av för närvarande är valda shader."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "Nästa Shader"
@@ -3184,7 +3268,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
-   "Spela upp reprisfil från den valda platsen för tillfället."
+   "Spela reprisfilen från den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
@@ -3192,7 +3276,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
-   "Spela in repris-fil till den nuvarande valda platsen."
+   "Spela in reprisfil till den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
@@ -5054,8 +5138,32 @@ MSG_HASH(
 /* Import Content */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   "Skannar i en katalog efter innehåll som matchar databasen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   "Välj detta för att skanna den aktuella katalogen efter innehåll."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
    "Skanna fil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_FILE,
+   "Skannar en fil efter innehåll som matchar databasen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Manuell skanning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "Konfigurerbar skanning baserad på filnamnet på innehåll. Kräver inte att innehåll matchar databasen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   "Skanna"
    )
 
 /* Import Content > Scan File */
@@ -5072,16 +5180,44 @@ MSG_HASH(
 /* Import Content > Manual Scan */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "Innehållets katalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "Välj en katalog för att söka efter innehåll."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    "Systemets namn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Ange ett 'systemnamn' med vilket du kan associera skannat innehåll. Används för att namnge den genererade spellistfilen och för att identifiera spellistminiatyrer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Anpassat systemnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Ange manuellt ett 'systemnamn' för skannat innehåll. Används endast när 'Systemnamn' är satt till '<Custom>'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    "Standard Kärna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Välj en standard kärna att använda vid start av skannat innehåll."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "Filtillägg"
+   "Filnamnstillägg"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "Lista över filtyper som ska inkluderas i sökningen, separerade med mellanslag. Om tom, innehåller alla filtyper, eller om en kärna anges, alla filer som stöds av kärnan."
    )
 
 /* Explore tab */
@@ -5239,7 +5375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Ändra nuvarande valda slot."
+   "Ändra den för närvarande valda status platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
@@ -5247,7 +5383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Sparar spelets status på den för närvarande valda platsen och lagrar den i minnesplatsen."
+   "Spara en status av spelet till den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
@@ -5267,7 +5403,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   "Ändra nuvarande valda slot."
+   "Ändra den för närvarande valda status platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -5275,7 +5411,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAY_REPLAY,
-   "Spela upp reprisfil från den valda platsen för tillfället."
+   "Spela reprisfilen från den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
@@ -5283,7 +5419,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_REPLAY,
-   "Spela in repris-fil till den nuvarande valda platsen."
+   "Spela in reprisfil till den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
@@ -6994,6 +7130,10 @@ MSG_HASH(
    "Ansluter till port"
    )
 MSG_HASH(
+   MSG_CONNECTION_SLOT,
+   "Anslutningsplats"
+   )
+MSG_HASH(
    MSG_SCANNING_CORES,
    "Skannar Kärnor..."
    )
@@ -7127,11 +7267,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Sparade status till slot #%d."
+   "Sparade status till plats #%d."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Sparade status till slot #-1 (Auto)."
+   "Sparade status till plats #-1 (Auto)."
    )
 MSG_HASH(
    MSG_SCANNING,
