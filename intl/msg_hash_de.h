@@ -1409,6 +1409,10 @@ MSG_HASH(
    "Zu verwendender Eingabetreiber. Einige Videotreiber können einen anderen Eingabetreiber erzwingen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "Der udev-Treiber liest evdev-Ereignisse für Tastaturunterstützung. Er unterstützt auch Tastaturrückrufe, Mäuse und Touchpads.\nIn den meisten Distributionen sind /dev/input-nodes standardmäßig root-only (Modus 600). Es kann eine udev-Regel eingerichtet werden, die diese für non-root zugänglich macht."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Der Eingabetreiber linuxraw benötigt einen aktiven TTY. Tastaturereignisse werden direkt vom TTY gelesen, was es einfacher macht, aber nicht so flexibel wie udev. Mäuse usw. werden überhaupt nicht unterstützt. Dieser Treiber verwendet die ältere Joystick-API (/dev/input/js*)."
    )
@@ -1423,6 +1427,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Zu verwendender Controllertreiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "DirectInput-Controller-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Low-Level Human Interface Device-Treiber."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Raw-Linux-Treiber, verwendet veraltete Joystick-API. Stattdessen udev verwenden, wenn möglich."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux-Treiber für Controller, angeschlossen am Parallelport über spezielle Adapter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Controller-Treiber basierend auf SDL-Bibliotheken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Controller-Treiber mit udev-Schnittstelle, allgemein empfohlen. Verwendet die neueste evdev-Joypad-API zur Unterstützung von Joysticks. Er unterstützt Hotplugging und Force Feedback.\nIn den meisten Distributionen sind /dev/input-nodes standardmäßig root-only (Modus 600). Es kann eine udev-Regel eingerichtet werden, die diese für non-root zugänglich macht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput-Controller-Treiber. Meistens für XBox-Controller."
    )
 
 MSG_HASH(
@@ -1866,6 +1898,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Alle aktiven CPU-gestützten Videofilter deaktivieren."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Vollbild über Notch auf Android und iOS-Geräten aktivieren"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2477,6 +2513,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    "Audiomixer stummschalten."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Lautlos-Modus respektieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Gesamten Ton im Lautlos-Modus stummschalten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
