@@ -1153,20 +1153,28 @@ MSG_HASH(
    "Försök att synkronisera konfigurationer, SRAM och statusar till en molnlagringsleverantör."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Destruktiv molnsynkning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Inaktiverat flyttas filer till en säkerhetskopia innan de skrivs över eller raderas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend för molnsynkronisering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
-   "Vilket molnlagringsprotokoll som ska användas."
+   "Vilket nätverksprotokoll för molnlagring som ska användas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
-   "URL för molnlagring"
+   "URL till molnlagring"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
-   "URL för API-ingångspunkten till molnlagringstjänsten."
+   "URL-adressen för API-ingången till molnlagringstjänsten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
@@ -3604,6 +3612,26 @@ MSG_HASH(
 /* Settings > Core */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+   "Tillåt kärnor att byta videodrivrutin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+   "Tillåt kärnor att byta till en annan videodrivrutin än den som för närvarande är laddad."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Vissa kärnor har en avstängningsfunktion, att ladda en dummykärna förhindrar att RetroArch stängs av."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "Vissa kärnor kan ha en avstängningsfunktion. Om det här alternativet lämnas inaktiverat, skulle valet av avstängningsproceduren utlösa att RetroArch stängs av.\nAtt aktivera det här alternativet kommer att ladda en dummykärna istället så att vi stannar kvar i menyn och RetroArch stängs inte av."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   "Starta en kärna automatiskt"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Kontrollera om all nödvändig firmware finns innan försök att ladda innehållet."
    )
@@ -3660,6 +3688,10 @@ MSG_HASH(
    "Installerar Kärna: "
 )
 
+MSG_HASH(
+   MSG_CORE_STEAM_UNINSTALLED,
+   "Kärnan kommer att avinstallera när RetroArch avslutas."
+)
 
 #endif
 /* Settings > Configuration */
@@ -4276,6 +4308,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
    "Scrollfördröjning i meny"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   "Skrivbordsmeny (omstart krävs)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+   "Öppna skrivbordsmenyn vid start"
+   )
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -4342,12 +4382,20 @@ MSG_HASH(
    "Visa 'Online Uppdaterare'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   "Visa alternativet 'Online Uppdaterare' i huvudmenyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
    "Visa 'Ladda ner Kärna'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    "Visa 'Information'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+   "Visa alternativet 'Information' i huvudmenyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
@@ -4386,6 +4434,10 @@ MSG_HASH(
    "Visa 'Inställningar'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   "Visa menyn 'Inställningar'. (Omstart krävs på Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Ange lösenord för 'Inställningar'"
    )
@@ -4394,20 +4446,40 @@ MSG_HASH(
    "Visa 'Favoriter'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "Visa menyn 'Favoriter'. (Omstart krävs på Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Visa 'Bilder'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
+   "Visa menyn 'Bilder'. (Omstart krävs på Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "Visa 'Musik'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
+   "Visa menyn 'Musik'. (Omstart krävs på Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "Visa 'Videor'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
+   "Visa menyn 'Video'. (Omstart krävs på Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Visa 'Netplay'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Visa menyn 'Netplay'. (Omstart krävs på Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -4417,13 +4489,25 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "Visa 'Importera Innehåll'"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
+   "Visa menyn 'Importera innehåll'. (Omstart krävs på Ozone/XMB)"
+   )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Visa 'Importera Innehåll'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   "Visa en 'Importera innehåll' -post i huvudmenyn eller undermenyn för spellistor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Huvudmeny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   "Spellistsmeny"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
@@ -5772,8 +5856,16 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Kom ihåg senast använda Shader-katalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Öppna filhanteraren i den senast använda katalogen när förinställda shaders ska laddas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Ladda förinställning"
+   "Ladda förinställd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -5871,12 +5963,20 @@ MSG_HASH(
    "Ingen information tillgänglig"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   "Inga inställningar hittades"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
-   "Inga Bluetoothenheter hittad"
+   "Inga Bluetoothenheter hittades"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-   "Inga nätverk hittad"
+   "Inga nätverk hittades"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE,
+   "Ingen kärna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SEARCH,
@@ -5885,6 +5985,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Tillbaka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   "Föräldrakatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   "Gå bakåt till föräldrakatalogen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   "Katalog hittades inte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+   "Inga föremål"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
@@ -5917,6 +6033,10 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "Okänd kompilator"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
    "Dela"
@@ -5924,6 +6044,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
    "Rösta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+   "Analog ingångsdelning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
@@ -5994,6 +6118,14 @@ MSG_HASH(
    "Ingen källa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "Välj det här för att ställa in detta som katalog."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+   "RetroPad med Analog"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
    "Ingen"
    )
@@ -6002,8 +6134,28 @@ MSG_HASH(
    "Okänd"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   "Ner + Y + L1 + R1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_START,
+   "Håll Start (2 sekunder)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HOLD_SELECT,
+   "Håll Select (2 sekunder)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+   "Ner + Select"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
    "Ändringar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
+   "Ändras inte"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
@@ -6018,20 +6170,68 @@ MSG_HASH(
    "Alla"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   "Sätt till värde"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+   "1-Bit, Maximalt värde = 0x01"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
+   "2-Bit, Maximalt värde = 0x03"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
+   "4-Bit, Maximalt värde = 0x0F"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
+   "8-Bit, Maximalt värde= 0xFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+   "16-Bit, Maximalt värde = 0xFFFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+   "32-Bit, Maximalt värde = 0xFFFFFFFF"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
    "System förinställt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+   "Alfabetisk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
    "Ingen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+   "Ta bort () innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   "Ta bort [] innehåll"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
    "Ta bort () och []"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+   "Behåll region"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
    "Behåll skivindex"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+   "Behåll region och skivindex"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
@@ -6122,6 +6322,22 @@ MSG_HASH(
    "Innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Vänster Analog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Höger Analog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Vänster Analog (Tvingad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Höger Analog (Tvingad)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Mus 1"
    )
@@ -6142,6 +6358,22 @@ MSG_HASH(
    "Mus 5"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
+   "Mushjul Upp"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
+   "Mushjul Ner"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
+   "Mushjul Vänster"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
+   "Mushjul Höger"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    "Tidig"
    )
@@ -6150,15 +6382,35 @@ MSG_HASH(
    "Sen"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY,
-   "DD-MM-ÅÅÅÅ"
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+   "sedan"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Öka grovheten på menyramens schackbräda."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Visa menyram."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "Använd fullbreddslayout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "Ändra storlek och placera menyposter för att utnyttja tillgängligt skärmutrymme på bästa sätt. Inaktivera detta för att använda klassisk tvåkolumnslayout med fast bredd."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
    "Linjärt filter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+   "Lägger till en liten oskärpa till menyn för att mjuka upp hårda pixelkanter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
@@ -6183,6 +6435,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Skuggeffekter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+   "Aktivera skuggor för menytext, ramar och miniatyrer. Har en blygsam prestandapåverkan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   "Utökat ASCII-stöd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   "Aktivera visning av icke-standardiserade ASCII-tecken. Krävs för kompatibilitet med vissa icke-engelska västerländska språk. Har en måttlig prestationspåverkan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
@@ -6212,8 +6476,24 @@ MSG_HASH(
    "Ingen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (Centrerad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (Centrerad)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
    "21:9 (Centrerad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   "3:2 (Centrerad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   "5:3 (Centrerad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
@@ -6320,6 +6600,14 @@ MSG_HASH(
    "AV"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+   "Snö (Lätt)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+   "Snö (Tungt)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
    "Regn"
    )
@@ -6389,6 +6677,10 @@ MSG_HASH(
 
 /* XMB: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
+   "Enkel snö"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
    "Snö"
@@ -6484,6 +6776,22 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+   "Dölj sidofältet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+   "Har alltid det vänstra sidofältet hopfällt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "Avkorta spellistnamn (omstart krävs)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "Ta bort tillverkarens namn från spellistorna. Till exempel, 'Sony - PlayStation' blir 'PlayStation'."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Färgtema"
@@ -6830,6 +7138,10 @@ MSG_HASH(
    "Ladda Kärna"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+   "Laddar kärna..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
    "Namn"
    )
@@ -6996,6 +7308,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
    "Välj mapp"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
+   "Uppdateringen misslyckades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
@@ -7245,6 +7561,22 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Misslyckades med att spara felsökningsinformation."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Misslyckades med att skicka felsökningsinformation till servern."
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   "Misslyckades med att sparka klienten: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   "Misslyckades med att blockera klienten: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Spelar"
    )
@@ -7272,6 +7604,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONNECTION_SLOT,
    "Anslutningsplats"
+   )
+MSG_HASH(
+   MSG_CORE_LIST_FAILED,
+   "Misslyckades med att hämta kärnlistan!"
+   )
+MSG_HASH(
+   MSG_CORE_INSTALL_FAILED,
+   "Misslyckades med att installera kärnan: "
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
@@ -7306,6 +7646,14 @@ MSG_HASH(
    "Rensar spellista: "
    )
 MSG_HASH(
+   MSG_ADD_TO_FAVORITES_FAILED,
+   "Misslyckades med att lägga till favorit: spellistan full"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPEND_DISK,
+   "Misslyckades med att lägga till skivan"
+   )
+MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
    "Spara status automatiskt till"
    )
@@ -7318,12 +7666,20 @@ MSG_HASH(
    "Kärnan har inget stöd för Spara Statusar."
    )
 MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Misslyckades med att spara kärnalternativen till:"
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_FAILED,
+   "Dekomprimeringen misslyckades."
+   )
+MSG_HASH(
    MSG_DOWNLOADING,
    "Laddar ner"
    )
 MSG_HASH(
    MSG_DOWNLOAD_FAILED,
-   "Nedladdning misslyckades"
+   "Nedladdningen misslyckades"
    )
 MSG_HASH(
    MSG_ERROR,
@@ -7336,6 +7692,34 @@ MSG_HASH(
 MSG_HASH(
    MSG_EXTRACTING_FILE,
    "Extraherar fil"
+   )
+MSG_HASH(
+   MSG_FAILED_SAVING_CONFIG_TO,
+   "Misslyckades med att spara konfig till"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+   "Misslyckades med att acceptera inkommande åskådare."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+   "Misslyckades med att tilldela minne för korrigerat innehåll..."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER,
+   "Misslyckades med att tillämpa shader."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   "Misslyckades med att tillämpa shader förinställning:"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   "Misslyckades med att skapa katalogen."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   "Misslyckades med att extrahera innehåll från komprimerad fil"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
@@ -7362,6 +7746,10 @@ MSG_HASH(
    "Hittade automatiskt sparad status i"
    )
 MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "Game Focus inaktiv"
+   )
+MSG_HASH(
    MSG_INTERFACE,
    "Gränssnitt"
    )
@@ -7370,12 +7758,28 @@ MSG_HASH(
    "Intern lagring"
    )
 MSG_HASH(
+   MSG_INVALID_NICKNAME_SIZE,
+   "Ogiltig nicknamnsstorlek."
+   )
+MSG_HASH(
    MSG_IN_GIGABYTES,
    "i gigabyte"
    )
 MSG_HASH(
    MSG_LOADING,
    "Laddar"
+   )
+MSG_HASH(
+   MSG_LOADING_CONTENT_FILE,
+   "Laddar innehållsfil"
+   )
+MSG_HASH(
+   MSG_LOADING_HISTORY_FILE,
+   "Laddar historikfil"
+   )
+MSG_HASH(
+   MSG_LOADING_FAVORITES_FILE,
+   "Laddar favoriterfil"
    )
 MSG_HASH(
    MSG_MEMORY,
@@ -7404,6 +7808,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
    "Återställer katalogen för sparad status-filer till"
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Sparade ny konfig till"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
@@ -7470,12 +7878,28 @@ MSG_HASH(
    "Parkoppling borttagen. Starta om RetroArch för att ansluta/para igen."
    )
 MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "Wi-Fi-skanning slutförd."
+   )
+MSG_HASH(
    MSG_SCANNING_BLUETOOTH_DEVICES,
    "Skannar efter bluetooth-enheter..."
    )
 MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Skannar trådlösa nätverk..."
+   )
+MSG_HASH(
+   MSG_ENABLING_WIRELESS,
+   "Aktiverar Wi-Fi..."
+   )
+MSG_HASH(
    MSG_DISABLING_WIRELESS,
    "Inaktiverar Wi-Fi..."
+   )
+MSG_HASH(
+   MSG_DISCONNECTING_WIRELESS,
+   "Kopplar från Wi-Fi..."
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
@@ -7532,6 +7956,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INSTALLING_CORE,
    "Installerar Kärna: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Misslyckades med att låsa kärnan: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Misslyckades med att låsa upp kärnan: "
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
