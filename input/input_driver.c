@@ -1264,7 +1264,8 @@ static int16_t input_state_device(
 
             /* Don't allow turbo for D-pad. */
             if (          (id  < RETRO_DEVICE_ID_JOYPAD_UP)
-                  || (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                  || (    ((settings->bools.input_allow_turbo_dpad)
+                       || (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT))
                        && (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
             {
                /*
