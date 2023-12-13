@@ -1432,6 +1432,11 @@ unsigned video_thread_texture_load(void *data, custom_command_method_t func)
    if (!thr)
       return 0;
 
+   /* if we're already on the video thread, just call the function, otherwise
+    * we may deadlock with ourself waiting for the packet to be processed. */
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return func(data);
+
    pkt.type                       = CMD_CUSTOM_COMMAND;
    pkt.data.custom_command.method = func;
    pkt.data.custom_command.data   = data;
