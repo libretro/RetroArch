@@ -552,7 +552,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_mode,              MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_default_button,    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_allow_turbo_dpad,    MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_allow_turbo_dpad,        MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_rumble_gain,             MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_ENUM_SUBLABEL_VIDEO_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
