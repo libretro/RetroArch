@@ -475,12 +475,15 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
    if (!badge || !badge[0])
       return 0;
 
-   /* OpenGL driver crashes if gfx_display_reset_textures_list is called on a background thread */
-   if (!task_is_on_main_thread())
-   {
-      CHEEVOS_ERR(RCHEEVOS_TAG "attempt to load badge %s from background thread", badge);
-      retro_assert(task_is_on_main_thread());
-   }
+#ifdef HAVE_THREADS
+   /* The OpenGL driver crashes if gfx_display_reset_textures_list is not called on the video thread.
+    * If threaded video is enabled, it'll automatically dispatch the request to the video thread.
+    * If threaded video is not enabled, just return null. The video thread should assume the image
+    * wasn't downloaded and check again in a few frames.
+    */
+   if (!video_driver_is_threaded() && !task_is_on_main_thread())
+      return 0;
+#endif
 
    snprintf(badge_file, sizeof(badge_file), "%s%s%s", badge,
       locked ? "_lock" : "", FILE_PATH_PNG_EXTENSION);
