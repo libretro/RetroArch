@@ -671,6 +671,7 @@ typedef struct settings
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
       bool input_auto_mouse_grab;
+      bool input_allow_turbo_dpad;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
