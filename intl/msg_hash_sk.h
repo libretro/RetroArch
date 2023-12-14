@@ -3840,6 +3840,10 @@ MSG_HASH(
    "Nepriehľadnosť"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "Primárna miniatúra"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
    "Vždy"
    )
