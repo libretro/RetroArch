@@ -484,6 +484,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
              }
              break;
+          case MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD), len);
+             break;
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

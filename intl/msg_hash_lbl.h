@@ -6379,6 +6379,10 @@ MSG_HASH(
    "input_turbo_default_button"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,
+   "input_allow_turbo_dpad"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,
    "menu_views_settings"
    )
