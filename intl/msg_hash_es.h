@@ -3216,6 +3216,14 @@ MSG_HASH(
    "Asigna el botón individual predeterminado para el modo turbo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Permitir direcciones de la cruceta con turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Permite que los botones digitales de dirección (también conocidos como la cruceta o «seta») puedan usar el modo turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbo"
    )

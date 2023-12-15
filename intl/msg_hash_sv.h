@@ -1449,6 +1449,14 @@ MSG_HASH(
    "DirectInput spelkontrolldrivrutin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Human Interface Device-drivrutin på låg nivå."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Raw Linux-drivrutin, använder äldre joystick API. Använd udev i stället om det är möjligt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
    "Spelkontrolldrivrutin med udev-gränssnitt, rekommenderas generellt. Använder det senaste evdev joypad-APIet för joystick-stöd. Den stöder hotplugging och force-feedback.\nSom standard i de flesta distros är /dev/input-noder endast root (läge 600). Du kan konfigurera en udev-regel som gör dessa tillgängliga för icke-root."
    )
@@ -1564,6 +1572,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
    "RSound-drivrutin för nätverksbaserade ljudsystem."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Äldre Open Sound System-drivrutin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
@@ -1878,6 +1890,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Stäng av alla aktiva CPU-drivna videofilter."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Aktivera helskärm utan hänsyn till notch på Android och iOS-enheter"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2005,6 +2021,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    "Den noggrant uppskattade uppdateringsfrekvensen för skärmen i Hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "Den exakta uppdateringsfrekvensen för din bildskärm (Hz). Detta används för att beräkna ljudingångshastigheten med formeln:\naudio_input_rate = spelets ingångshastighet * skärmens uppdateringsfrekvens / spelets uppdateringsfrekvens\nOm kärnan inte rapporterar några värden kommer NTSC-standardvärden att antas för kompatibilitet.\nDetta värde bör förbli i närheten av 60Hz för att undvika stora tonhöjdsförändringar. Om din skärm inte körs vid eller nära 60Hz, inaktivera VSyn[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -2316,7 +2336,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Gamma/kontrastkontroll för HDR. Tar färgerna och ökar det totala intervallet mellan de ljusaste partierna och de mörkaste partierna av bilden. Desto högre HDR-kontrast desto större blir denna skillnad, medans lägre kontrast bidrar till en mera \"urtvättad\" bild. Hjälper användare att justera bilden till deras smak och vad de anser ser bäst ut på sin bildskärm."
+   "Gamma/kontrastkontroll för HDR. Tar färgerna och ökar det totala intervallet mellan de ljusaste och mörkaste delarna av bilden. Ju högre HDR-kontrasten är, desto större blir denna skillnad, medan ju lägre kontrasten är, desto mer urtvättad blir bilden. Hjälper användarna att ställa in bilden efter deras smak och vad de tycker ser bäst ut på deras display."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2340,6 +2360,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    "VSynk bytesintervall"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Använd ett anpassat bytesintervall för VSynk. Minskar effektivt bildskärmens uppdateringsfrekvens med den angivna faktorn. 'Auto' ställer in faktorn baserat på kärnrapporterad bildhastighet, vilket ger förbättrad bildtakt när du kör t.ex. 30 fps innehåll på en 60 Hz skärm eller 60 fps innehåll på en 120 Hz skärm."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
@@ -2403,7 +2427,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
-   "Ändra ljudinmatningsinställningar."
+   "Ändra inställningar för ljudingången."
    )
 #endif
 MSG_HASH(
@@ -2496,7 +2520,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Global ljudmixer volym (i dB). 0 dB är normal volym, och ingen förstärkning tillämpas."
+   "Global ljudmixervolym (i dB). 0 dB är normal volym, och ingen förstärkning tillämpas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -3219,7 +3243,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
-   "Minskar utgående ljudvolym."
+   "Minskar utgående ljudvolymnivå."
    )
 
 MSG_HASH(
@@ -8407,6 +8431,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SENT_DEBUG_INFO,
    "Felsökningsinformationen har skickats till servern. Ditt ID-nummer är %u."
+   )
+MSG_HASH(
+   MSG_AUDIO_MIXER_VOLUME,
+   "Global ljudmixervolym"
    )
 MSG_HASH(
    MSG_NETPLAY_INCORRECT_PASSWORD,

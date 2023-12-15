@@ -3216,6 +3216,14 @@ MSG_HASH(
    "Turbo Kipi için varsayılan etkin düğme 'Tek Düğme'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Turbo D-Pad Yönlerine İzin Ver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Etkinleştirilirse, dijital yönlü girişler (aynı zamanda d-pad veya 'hatswitch' olarak da bilinir) turbo olabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbo Ateş"
    )

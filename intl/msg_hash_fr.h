@@ -3176,6 +3176,14 @@ MSG_HASH(
    "Touche active par défaut pour le mode turbo 'Touche unique'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Autoriser le turbo pour la croix directionnelle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Si activé, les entrées numériques directionnelles (aussi connues sous le nom de croix ou 'pavé directionnel') peuvent être en mode turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Tir turbo"
    )
