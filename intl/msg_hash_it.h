@@ -3148,6 +3148,14 @@ MSG_HASH(
    "Pulsante attivo predefinito per la Modalità Turbo 'pulsante singolo'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Consenti direzioni con Turbo D-Pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Se abilitato, gli ingressi direzionali digitali (noti anche come D-pad o \"hatswitch\") possono essere turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Modalità Turbo"
    )

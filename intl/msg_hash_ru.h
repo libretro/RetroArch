@@ -3236,6 +3236,14 @@ MSG_HASH(
    "Кнопка действия, используемая в турборежимах 'Одна кнопка'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Разрешать турбо для диагоналей d-pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "При включении разрешает турбо для нажатий цифровых диагоналей."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турбо-кнопки"
    )

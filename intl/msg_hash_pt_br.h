@@ -2788,6 +2788,14 @@ MSG_HASH(
    "O botão individual para o modo turbo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Permitir direções turbo dos botões direcionais"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Se ativada, as entradas dos direcionais digitais (botões direcionais) podem ser turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Modo turbo"
    )
