@@ -1506,6 +1506,10 @@ MSG_HASH(
    "Jack Audio Verbindingskit stuurprogramma."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Microfoon"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
@@ -2281,6 +2285,10 @@ MSG_HASH(
    "Instellingen voor audio-uitvoer wijzigen."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Microfoon"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
@@ -2456,6 +2464,10 @@ MSG_HASH(
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Microfoon"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Audio Apparaat"
@@ -5100,8 +5112,36 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   "Toon 'Drivers'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+   "Toon 'Drivers' instellingen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   "Toon 'Video's'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+   "Toon 'Drivers' instellingen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   "Toon 'Configuratie'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   "Toon 'Configuratie' instellingen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
    "Toon 'Afspeellijsten'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+   "Toon 'Gebruiker'"
    )
 
 
@@ -5110,6 +5150,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Achtergrond doorzichtigheid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   "Transparantie"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "Altijd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   "Alleen voor Afspeellijsten"
    )
 
 /* Settings > AI Service */
@@ -5392,6 +5444,10 @@ MSG_HASH(
 
 /* Playlist > Playlist Item */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN,
+   "Starten"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
    "Rename the title of the entry."

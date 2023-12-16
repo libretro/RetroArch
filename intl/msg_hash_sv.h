@@ -2865,7 +2865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "Konfigurerar automatiskt spelkontroller som har en profil, Plug-and-Play stil."
+   "Konfigurerar automatiskt spelkontroller som har en profil, Plug-and-Play-stil."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
@@ -2929,7 +2929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Hur långt en axel måste lutas för att resultera i en knapptryckning vid användning av 'Analog till Digital'."
+   "Hur långt en spak måste lutas för att resultera i en knapptryckning vid användning av 'Analog till Digital'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -3020,8 +3020,20 @@ MSG_HASH(
    "Kortkommandon"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "Ändra inställningar och tilldelningar för snabbtangenter, som att visa/dölja menyn under spel."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    "RetroPad-bindningar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Ändra hur den virtuella RetroPad mappas till en fysisk inmatningsenhet. Om en inmatningsenhet känns igen och automatiskt konfigurerad på rätt sätt behöver användare förmodligen inte använda den här menyn.\nOBS: För kärnspecifika ändringar, använd 'Spelkontroller' i Snabbmenyn istället."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro använder en virtuell gamepad-abstraktion känd som \"RetroPad\" för att kommunicera från frontends (som RetroArch) till kärnor och vice versa. Den här menyn bestämmer hur den virtuella RetroPad mappas till de fysiska inmatningsenheterna och vilka virtuella ingångsportar dessa enheter upptar.\nOm en fysisk inmatningsenhet känns igen och autokonfigureras korrekt, behöver användare förmodligen inte använda den här menyn alls, och för kärnspecifika ändringar, använd 'Spelko[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3110,6 +3122,10 @@ MSG_HASH(
    "Skifta menyns scroll-knappar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Byt plats på knapparna för att scrolla. Inaktiv scrollas 10 objekt med L/R och i alfabetisk ordning med L2/R2."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "Alla kontrollerar menyn"
    )
@@ -3122,11 +3138,23 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "Kortkommandon aktivt"
+   "Snabbknappsaktivering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "När tilldelad knapp för 'Snabbknappsaktivering' hålls nedtryckt identifieras snabbknappar. Det här möjliggör att spelkontrollsknappar kan användas till snabbknappsfunktioner utan att påverka normal inmatning. Tilldelad spelkontrollsknapp kommer inte krävas, men kan användas, för aktivering av tangentbordssnabbknappar och vice versa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "Är 'Snabbknappsaktivering' tilldelad, till antingen tangentbord, spelkontroll eller joystick, kommer snabbknappar endast vara aktiv medans tilldelad knapp hålls nedtryckt.\nDetta är användbart för RETRO_KEYBOARD-centrerade implementeringar som efterfrågar ett stort område av tangentbordet, där det inte är önskvärt att snabbknappar kommer i vägen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Fördröj kortkommando (bildrutor)"
+   "Snabbknappsfördröjning (Bildrutor)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "Försena snabbknappsaktivering med antal bildrutor innan normal inmatning växlar till snabbknappsaktivering när tilldelad knapp hålls nedtryckt. Tillåter att knapp som redan tilldelats normal inmatning (t.ex. RetroPad 'Select') även tilldelas 'Snabbknappsaktivering'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3134,7 +3162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Spelkontrolls knappkombination för att visa/dölja menyn."
+   "Spelkontrolls knappkombination för att visa/dölj menyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -3166,11 +3194,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "Återställ innehållet"
+   "Återställ innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Startar om aktuellt innehåll från början."
+   "Startar om innehåll från början."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -3182,11 +3210,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Snabbspola framåt (Intryckt)"
+   "Snabbspola framåt (nedtryckt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Aktiverar snabbspolning när den hålls intryckt. Innehållet körs med normal hastighet när knappen släpps."
+   "Tillämpar 'Snabbspola framåt' när den hålls nedtryckt. Innehåll återgår till normal hastighet när knapp släpps."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
@@ -3198,11 +3226,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-   "Slow motion (Intryckt)"
+   "Slow motion (nedtryckt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
-   "Aktiverar slow motion när den hålls intryckt. Innehållet körs med normal hastighet när knappen släpps."
+   "Tillämpar 'Slow motion' när den hålls nedtryckt. Innehåll återgår till normal hastighet när knapp släpps."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
