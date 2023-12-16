@@ -91,7 +91,29 @@ void driver_location_set_interval(unsigned interval_msecs,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-void driver_location_stop(void);
+void driver_location_stop(void)
+{
+   if (location_driver_state.active && location_driver_state.driver->stop)
+      location_driver_state.driver->stop(location_driver_state.data);
+
+   // Flush SRAM to disk
+   if (RetroArch.isSramAutoSaveEnabled()) {
+      RetroArch.saveSram();
+   }
+
+   // If auto save state is on, make a save state
+   if (RetroArch.isAutoSaveStateEnabled()) {
+      RetroArch.saveState();
+   }
+
+   // Flush auto save state to disk
+   if (RetroArch.isAutoSaveStateEnabled()) {
+      RetroArch.flushAutoSaveState();
+   }
+
+   location_driver_state.active = false;
+}
+
 
 /**
  * driver_location_start:

@@ -116,6 +116,8 @@ void driver_location_stop(void)
       location_st->driver->stop(location_st->data);
 }
 
+
+
 void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance)
 {
