@@ -53,24 +53,24 @@
 
 #include "tasks_internal.h"
 
-static const char* ACCESS_INPUT_LABELS[] = 
-{ 
-   "b", "y", "select", "start", "up", "down", "left", "right", 
-   "a", "x", "l", "r", "l2", "r2", "l3", "r3" 
+static const char* ACCESS_INPUT_LABELS[] =
+{
+   "b", "y", "select", "start", "up", "down", "left", "right",
+   "a", "x", "l", "r", "l2", "r2", "l3", "r3"
 };
 
-static const char* ACCESS_RESPONSE_KEYS[] = 
-{ 
+static const char* ACCESS_RESPONSE_KEYS[] =
+{
    "image", "sound", "text", "error", "auto", "press", "text_position"
 };
 
-typedef struct 
+typedef struct
 {
    uint8_t *data;
    unsigned size;
    unsigned width;
    unsigned height;
-   
+
    unsigned content_x;
    unsigned content_y;
    unsigned content_width;
@@ -79,20 +79,20 @@ typedef struct
    unsigned viewport_height;
 } access_frame_t;
 
-typedef struct 
+typedef struct
 {
    char *data;
    int length;
    char format[4];
 } access_base64_t;
 
-typedef struct 
+typedef struct
 {
    char *inputs;
    bool paused;
 } access_request_t;
 
-typedef struct 
+typedef struct
 {
    char *image;
    int image_size;
@@ -121,7 +121,7 @@ bool is_narrator_running(bool accessibility_enable)
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend = 
+      frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)
          return frontend->is_narrator_running();
@@ -156,13 +156,13 @@ static void accessibility_speak(const char *text)
    settings_t *settings = config_get_ptr();
    unsigned speed       = settings->uints.accessibility_narrator_speech_speed;
    bool narrator_on     = settings->bools.accessibility_enable;
-   
+
    accessibility_speak_priority(narrator_on, speed, text, 10);
 #endif
 }
 
 /**
- * Speaks the provided text using TTS. This only happens if the narrator has 
+ * Speaks the provided text using TTS. This only happens if the narrator has
  * been enabled or the service is running in Narrator mode, in which case it
  * must been used even if the user has disabled it.
  */
@@ -171,7 +171,7 @@ static void translation_speak(const char *text)
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings       = config_get_ptr();
    access_state_t *access_st  = access_state_get_ptr();
-   
+
    unsigned mode     = settings->uints.ai_service_mode;
    unsigned speed    = settings->uints.accessibility_narrator_speech_speed;
    bool narrator_on  = settings->bools.accessibility_enable;
@@ -195,7 +195,7 @@ static bool translation_user_message(const char *message, bool error)
    {
       accessibility_speak(message);
       runloop_msg_queue_push(
-            message, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, 
+            message, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             error ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
       if (error)
          RARCH_ERR("[Translate] %s\n", message);
@@ -221,10 +221,10 @@ static bool translation_hash_message(enum msg_hash_enums hash, bool error)
    {
       const char *message  = msg_hash_to_str(hash);
       const char *intl     = msg_hash_to_str_us(hash);
-      
+
       accessibility_speak(message);
       runloop_msg_queue_push(
-            message, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, 
+            message, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             error ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
       if (error)
          RARCH_ERR("[Translate] %s\n", intl);
@@ -240,7 +240,7 @@ static bool translation_hash_message(enum msg_hash_enums hash, bool error)
 /**
  * Displays the given message on screen and returns true. Returns false if no
  * {message} is provided (i.e. it is NULL). The message will be displayed as
- * an error and it will be logged. The message will also be played by the 
+ * an error and it will be logged. The message will also be played by the
  * accessibility narrator if the user enabled it.
  */
 static INLINE bool translation_user_error(const char *message)
@@ -251,7 +251,7 @@ static INLINE bool translation_user_error(const char *message)
 /**
  * Displays the given message on screen and returns true. Returns false if no
  * {message} is provided (i.e. it is NULL). The message will be displayed as
- * information and will only be logged if this is a debug build. The message 
+ * information and will only be logged if this is a debug build. The message
  * will also be played by the accessibility narrator if the user enabled it.
  */
 static INLINE bool translation_user_info(const char *message)
@@ -262,7 +262,7 @@ static INLINE bool translation_user_info(const char *message)
 /**
  * Displays the given hash on screen and returns true. Returns false if no
  * {hash} is provided (i.e. it is NULL). The message will be displayed as
- * an error and it will be logged. The message will also be played by the 
+ * an error and it will be logged. The message will also be played by the
  * accessibility narrator if the user enabled it.
  */
 static INLINE bool translation_hash_error(enum msg_hash_enums hash)
@@ -273,7 +273,7 @@ static INLINE bool translation_hash_error(enum msg_hash_enums hash)
 /**
  * Displays the given hash on screen and returns true. Returns false if no
  * {hash} is provided (i.e. it is NULL). The message will be displayed as
- * information and will only be logged if this is a debug build. The message 
+ * information and will only be logged if this is a debug build. The message
  * will also be played by the accessibility narrator if the user enabled it.
  */
 static INLINE bool translation_hash_info(enum msg_hash_enums hash)
@@ -294,7 +294,7 @@ void translation_release(bool inform)
    access_state_t *access_st      = access_state_get_ptr();
    unsigned service_auto_prev     = access_st->ai_service_auto;
    access_st->ai_service_auto     = 0;
-   
+
 #ifdef DEBUG
    RARCH_LOG("[Translate]: AI Service is now stopping.\n");
 #endif
@@ -303,7 +303,7 @@ void translation_release(bool inform)
       task_set_cancelled(access_st->request_task, true);
    if (access_st->response_task)
       task_set_cancelled(access_st->response_task, true);
-   
+
 #ifdef HAVE_THREADS
    if (access_st->image_lock)
    {
@@ -311,10 +311,10 @@ void translation_release(bool inform)
 #endif
       if (access_st->last_image)
          free(access_st->last_image);
-   
+
       access_st->last_image      = NULL;
       access_st->last_image_size = 0;
-      
+
 #ifdef HAVE_THREADS
       slock_unlock(access_st->image_lock);
    }
@@ -546,7 +546,7 @@ static void call_auto_translate_task(settings_t *settings)
 
    mode  = (int*)malloc(sizeof(int));
    *mode = ai_service_mode;
-   
+
    task->handler     = call_auto_translate_hndl;
    task->user_data   = mode;
    task->mute        = true;
@@ -577,7 +577,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
    access_response_t *response   = NULL;
    bool empty                    = true;
    enum rjson_type type;
-   
+
    if (!data || !data->data)
       goto finish;
    if (!(json = rjson_open_buffer(data->data, data->len)))
@@ -595,7 +595,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
          break;
       if (rjson_get_context_type(json) != RJSON_OBJECT)
          continue;
-      
+
       if (type == RJSON_STRING && (rjson_get_context_count(json) & 1) == 1)
       {
          unsigned i;
@@ -612,7 +612,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
             continue;
          else
             string = rjson_get_string(json, &length);
-         
+
          switch (key)
          {
             case 0: /* image */
@@ -645,7 +645,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
          key = -1;
       }
    }
-   
+
    if (type == RJSON_ERROR)
    {
       RARCH_LOG("[Translate] JSON error: %s\n", rjson_get_error(json));
@@ -653,13 +653,13 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
       free(response);
       response = NULL;
    }
-   
+
 finish:
    if (json)
       rjson_free(json);
    else
       translation_user_error("Internal error parsing returned JSON.");
-   
+
    return response;
 }
 
@@ -676,13 +676,13 @@ static void translation_response_image_widget(
    video_driver_state_t *video_st = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    access_state_t *access_st      = access_state_get_ptr();
- 
+
    bool ai_res;
    bool gfx_widgets_paused        = video_st->flags & VIDEO_FLAG_WIDGETS_PAUSED;
-   
+
    if (p_dispwidget->ai_service_overlay_state != 0)
       gfx_widgets_ai_service_overlay_unload();
-   
+
    ai_res = gfx_widgets_ai_service_overlay_load(
          image, (unsigned)image_length, (*image_type));
 
@@ -702,8 +702,8 @@ static void translation_response_image_widget(
 
 /**
  * Parses the image buffer, converting the data to the raw image format we need
- * to display the image within RetroArch. Writes the raw image data in {body} 
- * as well as its {width} and {height} as determined by the image header. 
+ * to display the image within RetroArch. Writes the raw image data in {body}
+ * as well as its {width} and {height} as determined by the image header.
  * Returns true if the process was successful.
  */
 static bool translation_get_image_body(
@@ -715,30 +715,30 @@ static bool translation_get_image_body(
    void *rpng_alpha  = NULL;
    int rpng_ret      = 0;
 #endif
-   
+
    if ((*image_type) == IMAGE_TYPE_BMP)
    {
       if (image_size < 55)
          return false;
-      
-      *width   = ((uint32_t) ((uint8_t)image[21]) << 24) 
-               + ((uint32_t) ((uint8_t)image[20]) << 16) 
-               + ((uint32_t) ((uint8_t)image[19]) <<  8) 
+
+      *width   = ((uint32_t) ((uint8_t)image[21]) << 24)
+               + ((uint32_t) ((uint8_t)image[20]) << 16)
+               + ((uint32_t) ((uint8_t)image[19]) <<  8)
                + ((uint32_t) ((uint8_t)image[18]) <<  0);
-      *height  = ((uint32_t) ((uint8_t)image[25]) << 24) 
-               + ((uint32_t) ((uint8_t)image[24]) << 16) 
-               + ((uint32_t) ((uint8_t)image[23]) <<  8) 
+      *height  = ((uint32_t) ((uint8_t)image[25]) << 24)
+               + ((uint32_t) ((uint8_t)image[24]) << 16)
+               + ((uint32_t) ((uint8_t)image[23]) <<  8)
                + ((uint32_t) ((uint8_t)image[22]) <<  0);
-               
+
       image_size = (*width) * (*height) * 3 * sizeof(uint8_t);
       body       = (void*)malloc(image_size);
       if (!body)
          return false;
-      
+
       memcpy(body, image + 54 * sizeof(uint8_t), image_size);
       return true;
    }
-   
+
 #ifdef HAVE_RPNG
    else if ((*image_type) == IMAGE_TYPE_PNG)
    {
@@ -746,7 +746,7 @@ static bool translation_get_image_body(
          return false;
       if (!(rpng = rpng_alloc()))
          return false;
-      
+
       *width   = ((uint32_t) ((uint8_t)image[16]) << 24)
                + ((uint32_t) ((uint8_t)image[17]) << 16)
                + ((uint32_t) ((uint8_t)image[18]) <<  8)
@@ -766,10 +766,10 @@ static bool translation_get_image_body(
                rpng, &rpng_alpha, (size_t)image_size, width, height);
       } while (rpng_ret == IMAGE_PROCESS_NEXT);
 
-      /* 
+      /*
        * Returned output from the png processor is an upside down RGBA
        * image, so we have to change that to RGB first. This should
-       * probably be replaced with a scaler call. 
+       * probably be replaced with a scaler call.
        */
       {
          int d      = 0;
@@ -783,7 +783,7 @@ static bool translation_get_image_body(
             rpng_free(rpng);
             return false;
          }
-         
+
          for (ui = 0; ui < (*width) * (*height) * 4; ui++)
          {
             if (ui % 4 != 3)
@@ -791,7 +791,7 @@ static bool translation_get_image_body(
                tc    = d % 3;
                th    = (*height) - d / (3 * (*width)) - 1;
                tw    = (d % ((*width) * 3)) / 3;
-               ((uint8_t*) body)[tw * 3 + th * 3 * (*width) + tc] 
+               ((uint8_t*) body)[tw * 3 + th * 3 * (*width) + tc]
                      = ((uint8_t*)rpng_alpha)[ui];
                d++;
             }
@@ -819,7 +819,7 @@ static void translation_response_image_direct(
    unsigned height;
    unsigned vp_width;
    unsigned vp_height;
-   
+
    void *image_body                                    = NULL;
    uint8_t *raw_output_data                            = NULL;
    size_t raw_output_size                              = 0;
@@ -827,14 +827,14 @@ static void translation_response_image_direct(
    struct scaler_ctx *scaler                           = NULL;
    video_driver_state_t *video_st                      = video_state_get_ptr();
    const enum retro_pixel_format video_driver_pix_fmt  = video_st->pix_fmt;
-   
+
    if (!(translation_get_image_body(
          image, image_size, image_type, image_body, &width, &height)))
       goto finish;
 
    if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
       goto finish;
-   
+
    dummy_data  = video_st->frame_cache_data;
    vp_width    = video_st->frame_cache_width;
    vp_height   = video_st->frame_cache_height;
@@ -842,20 +842,20 @@ static void translation_response_image_direct(
 
    if (!vp_width || !vp_height)
       goto finish;
-   
+
    if (dummy_data == RETRO_HW_FRAME_BUFFER_VALID)
    {
-      /* In this case, we used the viewport to grab the image and translate it, 
+      /* In this case, we used the viewport to grab the image and translate it,
        * and we have the translated image in the image_body buffer. */
       translation_user_error("Video driver unsupported for hardware frame.");
       translation_release(true);
       goto finish;
    }
 
-   /* 
-    * The assigned pitch may not be reliable. The width of the video frame can 
-    * change during run-time, but the pitch may not, so we just assign it as 
-    * the width times the byte depth. 
+   /*
+    * The assigned pitch may not be reliable. The width of the video frame can
+    * change during run-time, but the pitch may not, so we just assign it as
+    * the width times the byte depth.
     */
    if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
    {
@@ -884,14 +884,14 @@ static void translation_response_image_direct(
    scaler->out_height    = vp_height;
    scaler->scaler_type   = SCALER_TYPE_POINT;
    scaler_ctx_gen_filter(scaler);
-   
+
    scaler->in_stride     = -1 * vp_width * 3;
 
    scaler_ctx_scale_direct(
          scaler, raw_output_data,
          (uint8_t*)image_body + (height - 1) * width * 3);
    video_driver_frame(raw_output_data, width, height, pitch);
-   
+
 finish:
    if (image_body)
       free(image_body);
@@ -910,7 +910,7 @@ finish:
  */
 static void translation_response_image_hndl(retro_task_t *task)
 {
-   /* 
+   /*
     * TODO/FIXME: Moved processing to the callback to fix an issue with
     * texture loading off the main thread in OpenGL. I'm leaving the original
     * structure here so we can move back to the handler if it becomes possible
@@ -929,20 +929,20 @@ static void translation_response_image_cb(
 {
    settings_t* settings          = config_get_ptr();
    access_state_t *access_st     = access_state_get_ptr();
-   
+
    enum image_type_enum image_type;
    access_response_t *response      = (access_response_t*)task->user_data;
    video_driver_state_t *video_st   = video_state_get_ptr();
-   
+
    if (task_get_cancelled(task) || response->image_size < 4)
       goto finish;
-   
-   if (     response->image[0] == 'B' 
+
+   if (     response->image[0] == 'B'
          && response->image[1] == 'M')
       image_type = IMAGE_TYPE_BMP;
 #ifdef HAVE_RPNG
-   else if (response->image[1] == 'P' 
-         && response->image[2] == 'N' 
+   else if (response->image[1] == 'P'
+         && response->image[2] == 'N'
          && response->image[3] == 'G')
       image_type = IMAGE_TYPE_PNG;
 #endif
@@ -952,7 +952,7 @@ static void translation_response_image_cb(
       translation_release(true);
       goto finish;
    }
-   
+
 #ifdef HAVE_GFX_WIDGETS
    if (     video_st->poke
          && video_st->poke->load_texture
@@ -963,7 +963,7 @@ static void translation_response_image_cb(
 #endif
       translation_response_image_direct(
             response->image, response->image_size, &image_type);
-   
+
 finish:
    free(response->image);
    free(response);
@@ -975,8 +975,8 @@ finish:
 /**
  * Processes text data received by the server following a translation request.
  * Does nothing if the response does not contain any text data (NULL). Text
- * is either forcibly read by the narrator, even if it is disabled in the 
- * front-end (Narrator Mode) or displayed on screen (in Text Mode). In the 
+ * is either forcibly read by the narrator, even if it is disabled in the
+ * front-end (Narrator Mode) or displayed on screen (in Text Mode). In the
  * later, it will only be read if the front-end narrator is enabled.
  */
 static void translation_response_text(access_response_t *response)
@@ -984,7 +984,7 @@ static void translation_response_text(access_response_t *response)
    settings_t *settings       = config_get_ptr();
    unsigned service_mode      = settings->uints.ai_service_mode;
    access_state_t *access_st  = access_state_get_ptr();
-   
+
    if (     (!response->text || string_is_empty(response->text))
          && (service_mode == 2 || service_mode == 3 || service_mode == 4)
          && access_st->ai_service_auto == 0)
@@ -992,7 +992,7 @@ static void translation_response_text(access_response_t *response)
       translation_hash_info(MSG_AI_NOTHING_TO_TRANSLATE);
       return;
    }
-   
+
    if (response->text)
    {
       /* The text should be displayed on screen in Text or Text+Narrator mode */
@@ -1002,33 +1002,33 @@ static void translation_response_text(access_response_t *response)
          if (settings->bools.menu_enable_widgets)
          {
             dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
-            
+
             if (p_dispwidget->ai_service_overlay_state == 1)
                gfx_widgets_ai_service_overlay_unload();
-            
+
             strlcpy(p_dispwidget->ai_service_text, response->text, 255);
-            
+
             if (response->text_position > 0)
-               p_dispwidget->ai_service_text_position 
+               p_dispwidget->ai_service_text_position
                      = (unsigned)response->text_position;
             else
                p_dispwidget->ai_service_text_position = 0;
-            
+
             p_dispwidget->ai_service_overlay_state = 1;
          }
          else
          {
 #endif
-            /* 
-             * TODO/FIXME: Obviously this will not be as good as using widgets, 
+            /*
+             * TODO/FIXME: Obviously this will not be as good as using widgets,
              * since messages run on a timer but it's an alternative at least.
              * Maybe split the message here so it fits the viewport.
              */
             runloop_msg_queue_push(
-                  response->text, 2, 180, 
-                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, 
+                  response->text, 2, 180,
+                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_INFO);
-                  
+
 #ifdef HAVE_GFX_WIDGETS
          }
 #endif
@@ -1052,10 +1052,10 @@ static void translation_response_sound(access_response_t *response)
 
       params.volume               = 1.0f;
       /* user->slot_selection_type; */
-      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_MANUAL; 
+      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_MANUAL;
       params.slot_selection_idx   = 10;
       /* user->stream_type; */
-      params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM; 
+      params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM;
       params.type                 = AUDIO_MIXER_TYPE_WAV;
       params.state                = AUDIO_STREAM_STATE_PLAYING;
       params.buf                  = response->sound;
@@ -1096,10 +1096,10 @@ static void translation_response_input(access_response_t *response)
          {
             unsigned i      = 0;
             bool found = false;
-            
+
             for (; i < ARRAY_SIZE(ACCESS_INPUT_LABELS) && !found; i++)
                found = string_is_equal(ACCESS_INPUT_LABELS[i], response->input);
-            
+
             if (found)
                input_st->ai_gamepad_state[i] = 2;
          }
@@ -1125,7 +1125,7 @@ static void translation_response_cb(
    access_response_t *response      = NULL;
    bool auto_mode_prev              = access_st->ai_service_auto;
    unsigned service_mode            = settings->uints.ai_service_mode;
-   
+
    /* We asked the service to stop by calling translation_release, so bail */
    if (!access_st->last_image)
       goto finish;
@@ -1138,14 +1138,14 @@ static void translation_response_cb(
 
    access_st->ai_service_auto = (response->recall == NULL) ? 0 : 1;
    if (auto_mode_prev != access_st->ai_service_auto)
-      translation_hash_info(auto_mode_prev 
+      translation_hash_info(auto_mode_prev
             ? MSG_AI_AUTO_MODE_DISABLED : MSG_AI_AUTO_MODE_ENABLED);
 
-   /* 
+   /*
     * We want to skip the data on auto=continue, unless automatic translation
     * has just been enabled, meaning data must be displayed again to the user.
     */
-   if (     !string_is_equal(response->recall, "continue") 
+   if (     !string_is_equal(response->recall, "continue")
          || (auto_mode_prev == 0 && access_st->ai_service_auto == 1))
    {
 #ifdef HAVE_GFX_WIDGETS
@@ -1156,13 +1156,13 @@ static void translation_response_cb(
       translation_response_text(response);
       translation_response_sound(response);
       translation_response_input(response);
-   
+
       if (response->image)
       {
          retro_task_t *task = task_init();
          if (!task)
             goto finish;
-         
+
          task->handler              = translation_response_image_hndl;
          task->callback             = translation_response_image_cb;
          task->user_data            = response;
@@ -1178,7 +1178,7 @@ static void translation_response_cb(
          translation_hash_info(MSG_AI_NOTHING_TO_TRANSLATE);
    }
    goto finish;
-   
+
 abort:
    translation_release(true);
    if (response && response->error)
@@ -1192,7 +1192,7 @@ finish:
       if (response->recall)
          free(response->recall);
       free(response);
-      
+
       if (access_st->ai_service_auto != 0)
          call_auto_translate_task(settings);
    }
@@ -1207,7 +1207,7 @@ finish:
  * fallback, although this frame may be altered by any filter or shader enabled
  * by the user. Returns null if both methods fail.
  */
-static access_frame_t* translation_grab_frame()
+static access_frame_t* translation_grab_frame(void)
 {
    size_t pitch;
    struct video_viewport vp               = {0};
@@ -1217,12 +1217,12 @@ static access_frame_t* translation_grab_frame()
    access_frame_t *frame                  = NULL;
    video_driver_state_t *video_st         = video_state_get_ptr();
    const enum retro_pixel_format pix_fmt  = video_st->pix_fmt;
-      
+
    if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
-      goto finish;   
+      goto finish;
    if (!(frame = (access_frame_t*)malloc(sizeof(access_frame_t))))
       goto finish;
-   
+
    data           = video_st->frame_cache_data;
    frame->width   = video_st->frame_cache_width;
    frame->height  = video_st->frame_cache_height;
@@ -1234,7 +1234,7 @@ static access_frame_t* translation_grab_frame()
    video_driver_get_viewport_info(&vp);
    if (!vp.width || !vp.height)
       goto finish;
-   
+
    frame->content_x        = vp.x;
    frame->content_y        = vp.y;
    frame->content_width    = vp.width;
@@ -1242,7 +1242,7 @@ static access_frame_t* translation_grab_frame()
    frame->viewport_width   = vp.full_width;
    frame->viewport_height  = vp.full_height;
    frame->size             = frame->width * frame->height * 3;
-   
+
    if (!(frame->data = (uint8_t*)malloc(frame->size)))
       goto finish;
 
@@ -1282,13 +1282,13 @@ static access_frame_t* translation_grab_frame()
          scaler->in_fmt = SCALER_FMT_ARGB8888;
       else
          scaler->in_fmt = SCALER_FMT_RGB565;
-      
+
       video_frame_convert_to_bgr24(
-         scaler, frame->data, (const uint8_t*)data, 
+         scaler, frame->data, (const uint8_t*)data,
          frame->width, frame->height, (int)pitch);
    }
    scaler_ctx_gen_reset(scaler);
-   
+
 finish:
    if (bit24_image_prev)
       free(bit24_image_prev);
@@ -1299,16 +1299,15 @@ finish:
    {
       if (frame->data)
          return frame;
-      else
-         free(frame);
+      free(frame);
    }
    return NULL;
 }
 
 /**
  * Returns true if the {frame} passed in parameter is a duplicate of the last
- * frame the service was invoked on. This method effectively helps to prevent 
- * the service from spamming the server with the same request over and over 
+ * frame the service was invoked on. This method effectively helps to prevent
+ * the service from spamming the server with the same request over and over
  * again when running in automatic mode. This method will also save the image
  * in the {frame} structure as the new last image for the service.
  */
@@ -1317,7 +1316,7 @@ static bool translation_dupe_fail(access_frame_t *frame)
    access_state_t *access_st  = access_state_get_ptr();
    bool size_equal            = (frame->size == access_st->last_image_size);
    bool has_failed            = false;
-   
+
 #ifdef HAVE_THREADS
    slock_lock(access_st->image_lock);
 #endif
@@ -1327,7 +1326,7 @@ static bool translation_dupe_fail(access_frame_t *frame)
             && u8_array_equal(frame->data, access_st->last_image, frame->size))
          has_failed = true;
    }
-   
+
    /* Init last image or reset buffer size if image size changed */
    if (!has_failed && (!access_st->last_image || !size_equal))
    {
@@ -1338,7 +1337,7 @@ static bool translation_dupe_fail(access_frame_t *frame)
       if (!(access_st->last_image = (uint8_t*)malloc(frame->size)))
          has_failed = true;
    }
-   
+
    if (!has_failed)
       memcpy(access_st->last_image, frame->data, frame->size);
 
@@ -1349,8 +1348,8 @@ static bool translation_dupe_fail(access_frame_t *frame)
 }
 
 /**
- * Converts and returns the {frame} as a base64 encoded PNG or BMP. The 
- * selected image type will be available in the returned object, and will 
+ * Converts and returns the {frame} as a base64 encoded PNG or BMP. The
+ * selected image type will be available in the returned object, and will
  * favor PNG if possible. Returns NULL on failure.
  */
 static access_base64_t* translation_frame_encode(access_frame_t *frame)
@@ -1359,14 +1358,14 @@ static access_base64_t* translation_frame_encode(access_frame_t *frame)
    uint8_t *buffer         = NULL;
    uint64_t bytes          = 0;
    access_base64_t *encode = NULL;
-   
+
    if (!(encode = (access_base64_t*)malloc(sizeof(access_base64_t))))
       goto finish;
-   
+
 #ifdef HAVE_RPNG
    strcpy(encode->format, "png");
    buffer = rpng_save_image_bgr24_string(
-         frame->data, frame->width, frame->height, 
+         frame->data, frame->width, frame->height,
          frame->width * 3, &bytes);
 #else
    strcpy(encode->format, "bmp");
@@ -1385,7 +1384,7 @@ static access_base64_t* translation_frame_encode(access_frame_t *frame)
 finish:
    if (buffer)
       free(buffer);
-   
+
    if (encode->data)
       return encode;
    else
@@ -1397,15 +1396,15 @@ finish:
 /**
  * Returns a newly allocated string describing the content and core currently
  * running. The string will contains the name of the core (or 'core') followed
- * by a double underscore (_) and the name of the content. Returns NULL on 
+ * by a double underscore (_) and the name of the content. Returns NULL on
  * failure.
  */
-static char* translation_get_content_label()
+static char* translation_get_content_label(void)
 {
    const char *label                 = NULL;
    char* system_label                = NULL;
    core_info_t *core_info            = NULL;
-   
+
    core_info_get_current_core(&core_info);
    if (core_info)
    {
@@ -1414,7 +1413,7 @@ static char* translation_get_content_label()
       const char *system_id;
       size_t system_id_len;
       size_t label_len;
-      
+
       system_id      = (core_info->system_id) ? core_info->system_id : "core";
       system_id_len  = strlen(system_id);
 
@@ -1429,17 +1428,17 @@ static char* translation_get_content_label()
 
       if (!label)
          label = path_basename(path_get(RARCH_PATH_BASENAME));
-      
+
       label_len          = strlen(label);
       if (!(system_label = (char*)malloc(label_len + system_id_len + 3)))
          return NULL;
-      
+
       memcpy(system_label, system_id, system_id_len);
       memcpy(system_label + system_id_len, "__", 2);
       memcpy(system_label + 2 + system_id_len, label, label_len);
       system_label[system_id_len + 2 + label_len] = '\0';
    }
-   
+
    return system_label;
 }
 
@@ -1449,12 +1448,12 @@ static char* translation_get_content_label()
  * be supplied in the JSON. Returns NULL if the writer cannot be initialized.
  */
 static rjsonwriter_t* build_request_json(
-      access_base64_t *image, access_request_t *request, 
+      access_base64_t *image, access_request_t *request,
       access_frame_t *frame, char *label)
 {
    unsigned i;
    rjsonwriter_t* writer = NULL;
-   
+
    if (!(writer = rjsonwriter_open_memory()))
       return NULL;
 
@@ -1463,12 +1462,12 @@ static rjsonwriter_t* build_request_json(
       rjsonwriter_add_string(writer, "image");
       rjsonwriter_add_colon(writer);
       rjsonwriter_add_string_len(writer, image->data, image->length);
-      
+
       rjsonwriter_add_comma(writer);
       rjsonwriter_add_string(writer, "format");
       rjsonwriter_add_colon(writer);
       rjsonwriter_add_string(writer, image->format);
-      
+
       rjsonwriter_add_comma(writer);
       rjsonwriter_add_string(writer, "coords");
       rjsonwriter_add_colon(writer);
@@ -1483,7 +1482,7 @@ static rjsonwriter_t* build_request_json(
          rjsonwriter_add_unsigned(writer, frame->content_height);
       }
       rjsonwriter_add_end_array(writer);
-      
+
       rjsonwriter_add_comma(writer);
       rjsonwriter_add_string(writer, "viewport");
       rjsonwriter_add_colon(writer);
@@ -1511,24 +1510,24 @@ static rjsonwriter_t* build_request_json(
          rjsonwriter_add_string(writer, "paused");
          rjsonwriter_add_colon(writer);
          rjsonwriter_add_unsigned(writer, (request->paused ? 1 : 0));
-         
+
          for (i = 0; i < ARRAY_SIZE(ACCESS_INPUT_LABELS); i++)
          {
             rjsonwriter_add_comma(writer);
             rjsonwriter_add_string(writer, ACCESS_INPUT_LABELS[i]);
             rjsonwriter_add_colon(writer);
             rjsonwriter_add_unsigned(writer, request->inputs[i]);
-         }      
+         }
          rjsonwriter_add_end_object(writer);
       }
       rjsonwriter_add_end_object(writer);
    }
- 
+
    return writer;
 }
 
 /**
- * Writes in the provided {buffer} the URL for the translation request. The 
+ * Writes in the provided {buffer} the URL for the translation request. The
  * buffer is guaranteed to contain the server URL as well as an 'output' param
  * specifying the accepted data types for this service.
  */
@@ -1560,7 +1559,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 
    if (service_source_lang != TRANSLATION_LANG_DONT_CARE)
    {
-      const char *lang_source 
+      const char *lang_source
             = ai_service_get_str((enum translation_lang)service_source_lang);
 
       if (!string_is_empty(lang_source))
@@ -1579,10 +1578,10 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
          token[0] = '&';
       }
    }
-   
+
    if (service_target_lang != TRANSLATION_LANG_DONT_CARE)
    {
-      const char *lang_target 
+      const char *lang_target
             = ai_service_get_str((enum translation_lang)service_target_lang);
 
       if (!string_is_empty(lang_target))
@@ -1601,7 +1600,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
          token[0] = '&';
       }
    }
-   
+
    _len = strlcpy(buffer, token, length);
    buffer += _len;
    length -= _len;
@@ -1619,7 +1618,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 #ifdef HAVE_RPNG
          _len = strlcpy(buffer, ",png", length);
          buffer += _len;
-         length -= _len;  
+         length -= _len;
          if (poke_supported)
          {
             strlcpy(buffer, ",png-a", length);
@@ -1628,26 +1627,26 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
          }
 #endif
          break;
-         
+
       case 1: /* Speech Mode */
          _len = strlcpy(buffer, "sound,wav", length);
          buffer += _len;
          length -= _len;
          break;
-      
+
       case 2: /* Narrator Mode */
          _len = strlcpy(buffer, "text", length);
          buffer += _len;
          length -= _len;
          break;
-         
+
       case 3: /* Text Mode */
       case 4: /* Text + Narrator */
          _len = strlcpy(buffer, "text,subs", length);
          buffer += _len;
          length -= _len;
          break;
-         
+
       case 5: /* Image + Narrator */
          _len = strlcpy(buffer, "text,image,bmp", length);
          buffer += _len;
@@ -1655,7 +1654,7 @@ static void build_request_url(char *buffer, size_t length, settings_t *settings)
 #ifdef HAVE_RPNG
          _len = strlcpy(buffer, ",png", length);
          buffer += _len;
-         length -= _len;  
+         length -= _len;
          if (poke_supported)
          {
             _len = strlcpy(buffer, ",png-a", length);
@@ -1684,33 +1683,33 @@ static void translation_request_hndl(retro_task_t *task)
    const char *json              = NULL;
    bool sent                     = false;
    char url[PATH_MAX_LENGTH];
-   
+
    if (task_get_cancelled(task))
       goto finish;
-   
+
    access_st->last_call = cpu_features_get_time_usec();
-   
+
    frame = translation_grab_frame();
    if (task_get_cancelled(task) || !frame)
       goto finish;
-   
+
    if (translation_dupe_fail(frame))
       goto finish;
-      
+
    encode = translation_frame_encode(frame);
    if (task_get_cancelled(task) || !encode)
       goto finish;
-   
+
    label  = translation_get_content_label();
    writer = build_request_json(encode, request, frame, label);
    if (task_get_cancelled(task) || !writer)
       goto finish;
-   
+
    json = rjsonwriter_get_memory_buffer(writer, NULL);
    build_request_url(url, PATH_MAX_LENGTH, settings);
    if (task_get_cancelled(task) || !json)
       goto finish;
-   
+
 #ifdef DEBUG
    if (access_st->ai_service_auto == 0)
       RARCH_LOG("[Translate]: Sending request to: %s\n", url);
@@ -1718,27 +1717,33 @@ static void translation_request_hndl(retro_task_t *task)
    sent = true;
    task_push_http_post_transfer(
          url, json, true, NULL, translation_response_cb, NULL);
-   
+
 finish:
    task_set_finished(task, true);
 
-   if (frame && frame->data)
-      free(frame->data);
    if (frame)
+   {
+      if (frame->data)
+         free(frame->data);
       free(frame);
-   if (encode && encode->data)
-      free(encode->data);
+   }
    if (encode)
+   {
+      if (encode->data)
+         free(encode->data);
       free(encode);
+   }
    if (label)
       free(label);
    if (writer)
       rjsonwriter_free(writer);
-   if (request && request->inputs)
-      free(request->inputs);
    if (request)
+   {
+      if (request->inputs)
+         free(request->inputs);
       free(request);
-   
+   }
+
    /* Plan next auto-request if this one was skipped */
    if (!sent && access_st->ai_service_auto != 0)
       call_auto_translate_task(settings);
@@ -1746,7 +1751,7 @@ finish:
 
 /**
  * Invokes the translation service. Captures a frame from the current content
- * core and sends it over HTTP to the translation server. Once the server 
+ * core and sends it over HTTP to the translation server. Once the server
  * responds, the translation data is displayed accordingly to the preferences
  * of the user. Returns true if the request could be built and sent.
  */
@@ -1762,7 +1767,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    if (!(request = (access_request_t*)malloc(sizeof(access_request_t))))
       goto failure;
-   
+
 #ifdef HAVE_THREADS
    if (!access_st->image_lock)
    {
@@ -1770,29 +1775,29 @@ bool run_translation_service(settings_t *settings, bool paused)
          goto failure;
    }
 #endif
-   
+
    task = task_init();
    if (!task)
       goto failure;
 
    /* Freeze frontend state while we're still running on the main thread */
-   request->paused = paused;  
+   request->paused = paused;
    request->inputs = (char*)malloc(
          sizeof(char) * ARRAY_SIZE(ACCESS_INPUT_LABELS));
-         
-#ifdef HAVE_ACCESSIBILITY   
+
+#ifdef HAVE_ACCESSIBILITY
    for (i = 0; i < ARRAY_SIZE(ACCESS_INPUT_LABELS); i++)
       request->inputs[i] = input_st->ai_gamepad_state[i] ? 1 : 0;
 #endif
-   
+
    task->handler           = translation_request_hndl;
    task->user_data         = request;
    task->mute              = true;
    access_st->request_task = task;
    task_queue_push(task);
-   
+
    return true;
-   
+
 failure:
    if (request)
       free(request);
