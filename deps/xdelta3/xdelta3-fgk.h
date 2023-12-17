@@ -107,17 +107,21 @@ struct _fgk_stream
 
 static fgk_stream*     fgk_alloc           (xd3_stream *stream /*, usize_t alphabet_size */);
 static int             fgk_init            (xd3_stream *stream,
-					    fgk_stream *h, 
+					    fgk_stream *h,
 					    int is_encode);
+#if XD3_ENCODER
 static usize_t         fgk_encode_data     (fgk_stream *h,
 					    usize_t    n);
+#endif
 static INLINE fgk_bit  fgk_get_encoded_bit (fgk_stream *h);
 
+#if 0
 static int             xd3_encode_fgk      (xd3_stream  *stream,
 					    fgk_stream  *sec_stream,
 					    xd3_output  *input,
 					    xd3_output  *output,
 					    xd3_sec_cfg *cfg);
+#endif
 
 /*********************************************************************/
 /* 			       Decoder                               */
@@ -140,7 +144,9 @@ static int             xd3_decode_fgk      (xd3_stream     *stream,
 /* 			       Private                               */
 /*********************************************************************/
 
+#if XD3_ENCODER
 static unsigned int fgk_find_nth_zero        (fgk_stream *h, usize_t n);
+#endif
 static usize_t      fgk_nth_zero             (fgk_stream *h, usize_t n);
 static void         fgk_update_tree          (fgk_stream *h, usize_t n);
 static fgk_node*    fgk_increase_zero_weight (fgk_stream *h, usize_t n);
@@ -232,6 +238,7 @@ static void fgk_swap_ptrs(fgk_node **one, fgk_node **two)
   *two = tmp;
 }
 
+#if XD3_ENCODER
 /* Takes huffman transmitter h and n, the nth elt in the alphabet, and
  * returns the number of required to encode n. */
 static usize_t fgk_encode_data (fgk_stream* h, usize_t n)
@@ -291,6 +298,7 @@ static usize_t fgk_encode_data (fgk_stream* h, usize_t n)
 
   return h->coded_depth;
 }
+#endif
 
 /* Should be called as many times as fgk_encode_data returns.
  */
@@ -422,7 +430,7 @@ static void fgk_promote (fgk_stream *h, fgk_node *node)
     {
       XD3_ASSERT (node->left_child == h->remaining_zeros);
       XD3_ASSERT (node->right_child->weight == (node->weight+1)); /* child weight was already incremented */
-      
+
       if (node->weight == (my_right->weight - 1) && my_right != h->root_node)
 	{
 	  fgk_free_block (h, cur_block);
@@ -544,6 +552,7 @@ static fgk_node* fgk_increase_zero_weight (fgk_stream *h, usize_t n)
   return this_zero;
 }
 
+#if XD3_ENCODER
 /* When a zero frequency element is encoded, it is followed by the
  * binary representation of the index into the remaining elements.
  * Sets a cache to the element before it so that it can be removed
@@ -562,6 +571,7 @@ static unsigned int fgk_find_nth_zero (fgk_stream* h, usize_t n)
 
   return idx;
 }
+#endif
 
 /* Splices node out of the list of zeros. */
 static void fgk_eliminate_zero (fgk_stream* h, fgk_node *node)
@@ -742,7 +752,7 @@ static usize_t fgk_decode_data (fgk_stream* h)
     usize_t i = 0;
     usize_t n = 0;
 
-    if (h->coded_depth > 0) 
+    if (h->coded_depth > 0)
       {
 	for (; i < h->coded_depth - 1; i += 1)
 	  {
