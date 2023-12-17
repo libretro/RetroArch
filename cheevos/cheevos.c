@@ -1906,7 +1906,7 @@ void rcheevos_test(void)
 #ifdef HAVE_THREADS
    if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      if (rcheevos_locals.queued_command != CMD_CHEEVOS_NON_COMMAND)
+      if ((int)rcheevos_locals.queued_command != CMD_CHEEVOS_NON_COMMAND)
          command_event(rcheevos_locals.queued_command, NULL);
 
       rcheevos_locals.queued_command = CMD_EVENT_NONE;
