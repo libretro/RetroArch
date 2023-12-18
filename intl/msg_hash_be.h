@@ -3844,6 +3844,10 @@ MSG_HASH(
    "Тып мініяцюр для адлюстравання."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   "Парог апскейлінга мініяцюр"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
    "Запамінаць выбар пры змене ўкладак"
    )
