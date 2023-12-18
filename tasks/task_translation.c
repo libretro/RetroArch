@@ -1224,6 +1224,7 @@ static access_frame_t* translation_grab_frame(void)
       goto finish;
 
    data           = video_st->frame_cache_data;
+   frame->data    = NULL;
    frame->width   = video_st->frame_cache_width;
    frame->height  = video_st->frame_cache_height;
    pitch          = video_st->frame_cache_pitch;
