@@ -7537,6 +7537,22 @@ MSG_HASH(
    "Aktivera skuggor för menytext, ramar och miniatyrer. Har en blygsam prestandapåverkan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+   "Animerad bakgrund"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "Animerad bakgrunds hastighet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   "Övre miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   "Nedre miniatyrbild"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
    "Utökat ASCII-stöd"
    )
@@ -7596,8 +7612,16 @@ MSG_HASH(
    "AV"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   "Anpassa till skärm"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Heltalsskala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "Fyll skärm (Sträckt)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -7783,7 +7807,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
-   "Snöflinga"
+   "Snöflingor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
@@ -7794,8 +7818,16 @@ MSG_HASH(
    "Monokrom"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
+   "Monokrom inverterad"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
    "Automatisk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+   "Automatisk inverterad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -8411,7 +8443,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
-   "Vänligen ange den nya spellistans namn:"
+   "Vänligen ange namn för ny spellista:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
@@ -8593,8 +8625,16 @@ MSG_HASH(
    "Ansluten"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Port %d Enhetsnamn: %s (#%d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Fuskinställningar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Spela i Media Player"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
@@ -8613,8 +8653,16 @@ MSG_HASH(
    "Föreslagna kärnor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
+   "Kan inte läsa komprimerad fil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Användare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_KEYBOARD,
+   "Tgb"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -8716,6 +8764,10 @@ MSG_HASH(
    "Laddar innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "Vad är en kärna?"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
    "Skicka Felsökningsinfo"
    )
@@ -8742,6 +8794,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
    "Fortsätt sök"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
+   "Fortsätt söka efter nytt fusk."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
@@ -8828,6 +8884,26 @@ MSG_HASH(
 
 /* Notifications */
 
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+   "Kärninstallation lyckad"
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+   "Kärninstallation misslyckad"
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_ENABLED,
+   "Automatisk översättning aktiverad."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_DISABLED,
+   "Automatisk översättning inaktiverad."
+   )
+MSG_HASH(
+   MSG_AI_NOTHING_TO_TRANSLATE,
+   "Inget att översätta"
+   )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_DEBUG_INFO,
    "Misslyckades med att spara felsökningsinformation."
@@ -8851,6 +8927,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_INCORRECT_PASSWORD,
    "Felaktigt lösenord"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   "\"%s\" har kopplat från"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
@@ -8898,12 +8978,28 @@ MSG_HASH(
    "Misslyckades med att hämta kärnlistan!"
    )
 MSG_HASH(
+   MSG_UPDATING_CORE,
+   "Uppdaterar kärna: "
+   )
+MSG_HASH(
+   MSG_DOWNLOADING_CORE,
+   "Laddar ner kärna: "
+   )
+MSG_HASH(
+   MSG_EXTRACTING_CORE,
+   "Extraherar kärna: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALL_FAILED,
    "Misslyckades med att installera kärnan: "
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
    "Skannar Kärnor..."
+   )
+MSG_HASH(
+   MSG_CHECKING_CORE,
+   "Kontrollerar kärna: "
    )
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
