@@ -8874,6 +8874,18 @@ MSG_HASH(
 /* Discord Status */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+   "I meny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+   "I spel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+   "I spel (Pausad)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    "Spelar"
    )
@@ -8905,12 +8917,16 @@ MSG_HASH(
    "Inget att översätta"
    )
 MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
+   "Tryck höger 5 gånger för att radera alla fusk."
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Misslyckades med att spara felsökningsinformation."
+   "Spara felsökningsinformation misslyckad."
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Misslyckades med att skicka felsökningsinformation till servern."
+   "Skicka felsökningsinformation misslyckad."
    )
 MSG_HASH(
    MSG_SENDING_DEBUG_INFO,
@@ -8918,11 +8934,51 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SENT_DEBUG_INFO,
-   "Felsökningsinformationen har skickats till servern. Ditt ID-nummer är %u."
+   "Skicka felsökningsinformation lyckad. Ditt ID-nummer är %u."
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "Global ljudmixervolym"
+   )
+MSG_HASH(
+   MSG_WAITING_FOR_CLIENT,
+   "Väntar på klient..."
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+   "Du har lämnat spelet"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+   "Du är ansluten, som spelare %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+   "Du är ansluten, med inmatningsenheter %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYER_S_LEFT,
+   "Spelare %.*s har lämnat spelet"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+   "%.*s är ansluten, som spelare %u"
+   )
+MSG_HASH(
+   MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+   "%.*s är ansluten, med inmatningsenheter %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_PASSWORD,
+   "Ange Netplay-serverlösenord:"
+   )
+MSG_HASH(
+   MSG_NETPLAY_ENTER_CHAT,
+   "Ange Netplay-chattmeddelande:"
+   )
+MSG_HASH(
+   MSG_DISCORD_CONNECTION_REQUEST,
+   "Tillåta anslutning för användare:"
    )
 MSG_HASH(
    MSG_NETPLAY_INCORRECT_PASSWORD,
@@ -8937,16 +8993,28 @@ MSG_HASH(
    "Ditt nicknamn ändrades till \"%s\""
    )
 MSG_HASH(
+   MSG_NETPLAY_KICKED_CLIENT_S,
+   "Sparkade klient: \"%s\""
+   )
+MSG_HASH(
    MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   "Misslyckades med att sparka klienten: \"%s\""
+   "Misslyckades sparka klient: \"%s\""
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED_CLIENT_S,
+   "Blockerade klient: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   "Misslyckades med att blockera klienten: \"%s\""
+   "Misslyckades blockera klient: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Spelar"
+   )
+MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "Åskådar"
    )
 MSG_HASH(
    MSG_NETPLAY_CLIENT_DEVICES,
@@ -8966,6 +9034,10 @@ MSG_HASH(
    "Auto ladda sparad status från"
    )
 MSG_HASH(
+   MSG_CONNECTING_TO_NETPLAY_HOST,
+   "Ansluter till Netplay-värd"
+   )
+MSG_HASH(
    MSG_CONNECTING_TO_PORT,
    "Ansluter till port"
    )
@@ -8974,8 +9046,12 @@ MSG_HASH(
    "Anslutningsplats"
    )
 MSG_HASH(
+   MSG_FETCHING_CORE_LIST,
+   "Hämtar kärnlista..."
+   )
+MSG_HASH(
    MSG_CORE_LIST_FAILED,
-   "Misslyckades med att hämta kärnlistan!"
+   "Hämta kärnlista misslyckad!"
    )
 MSG_HASH(
    MSG_UPDATING_CORE,
@@ -8990,8 +9066,12 @@ MSG_HASH(
    "Extraherar kärna: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALLED,
+   "Kärna installerad: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALL_FAILED,
-   "Misslyckades med att installera kärnan: "
+   "Misslyckades installera kärna: "
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
@@ -9019,11 +9099,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_RESETTING_CORES,
-   "Återställa Kärnor: "
+   "Återställer kärnor: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_CORES_RESET,
-   "Kärnor återställs: "
+   "Kärnor återställd: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
