@@ -28,12 +28,15 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-static bool msg_queue_initialize_internal(msg_queue_t *queue, size_t size)
+bool msg_queue_initialize(msg_queue_t *queue, size_t size)
 {
-   struct queue_elem **elems = (struct queue_elem**)calloc(size + 1,
-         sizeof(struct queue_elem*));
+   struct queue_elem **elems = NULL;
 
-   if (!elems)
+   if (!queue)
+      return false;
+
+   if (!(elems = (struct queue_elem**)
+            calloc(size + 1, sizeof(struct queue_elem*))))
       return false;
 
    queue->tmp_msg            = NULL;
@@ -55,25 +58,16 @@ static bool msg_queue_initialize_internal(msg_queue_t *queue, size_t size)
  **/
 msg_queue_t *msg_queue_new(size_t size)
 {
-   msg_queue_t *queue        = (msg_queue_t*)malloc(sizeof(*queue));
+   msg_queue_t *queue = (msg_queue_t*)malloc(sizeof(*queue));
 
-   if (!queue)
-      return NULL;
-
-   if (!msg_queue_initialize_internal(queue, size))
+   if (!msg_queue_initialize(queue, size))
    {
-      free(queue);
+      if (queue)
+         free(queue);
       return NULL;
    }
 
    return queue;
-}
-
-bool msg_queue_initialize(msg_queue_t *queue, size_t size)
-{
-   if (!queue)
-      return false;
-   return msg_queue_initialize_internal(queue, size);
 }
 
 /**
@@ -126,9 +120,7 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
    if (!queue || queue->ptr >= queue->size)
       return;
 
-   new_elem                      = (struct queue_elem*)malloc(
-      sizeof(struct queue_elem));
-   if (!new_elem)
+   if (!(new_elem = (struct queue_elem*)malloc(sizeof(struct queue_elem))))
       return;
 
    new_elem->duration            = duration;
@@ -180,7 +172,7 @@ void msg_queue_clear(msg_queue_t *queue)
          queue->elems[i] = NULL;
       }
    }
-   queue->ptr = 1;
+   queue->ptr     = 1;
    free(queue->tmp_msg);
    queue->tmp_msg = NULL;
 }
@@ -198,8 +190,6 @@ const char *msg_queue_pull(msg_queue_t *queue)
 {
    struct queue_elem *front  = NULL, *last = NULL;
    size_t tmp_ptr = 1;
-
-   (void)tmp_ptr;
 
    /* Nothing in queue. */
    if (!queue || queue->ptr == 1)

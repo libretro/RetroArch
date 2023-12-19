@@ -44,7 +44,6 @@
 #include "video_crt_switch.h"
 #endif
 
-#include "video_coord_array.h"
 #include "video_shader_parse.h"
 #include "video_filter.h"
 
@@ -451,14 +450,14 @@ typedef struct video_frame_info
       bool full_screen;
    } osd_stat_params;
 
+   uint32_t video_st_flags;
+   uint16_t menu_st_flags;
+
    char stat_text[1024];
 
    bool widgets_active;
    bool notifications_hidden;
    bool menu_mouse_enable;
-   bool widgets_is_paused;
-   bool widgets_is_fast_forwarding;
-   bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
@@ -475,7 +474,6 @@ typedef struct video_frame_info
    bool windowed_fullscreen;
    bool fullscreen;
    bool font_enable;
-   bool use_rgba;
    bool hdr_support;
    bool libretro_running;
    bool xmb_shadows_enable;
@@ -484,8 +482,7 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool menu_is_alive;
-   bool menu_screensaver_active;
+   bool frame_rest;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
@@ -659,7 +656,7 @@ typedef struct video_poke_interface
          unsigned width, unsigned height, float alpha);
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
-   void (*set_osd_msg)(void *data, 
+   void (*set_osd_msg)(void *data,
          const char *msg,
          const struct font_params *params, void *font);
 
@@ -672,11 +669,11 @@ typedef struct video_poke_interface
    bool (*get_hw_render_interface)(void *data,
          const struct retro_hw_render_interface **iface);
 
-   /* hdr settings */ 
+   /* hdr settings */
    void (*set_hdr_max_nits)(void *data, float max_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
    void (*set_hdr_contrast)(void *data, float contrast);
-   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);         
+   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -776,9 +773,9 @@ typedef struct
 #endif
    struct retro_system_av_info av_info; /* double alignment */
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-   retro_time_t core_frame_time;
    uint64_t frame_time_count;
    uint64_t frame_count;
+   uint64_t frame_rest_time_count;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;
@@ -860,11 +857,11 @@ typedef struct
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
    char window_title_prev[512];
-   char gpu_device_string[128];
    char gpu_api_version_string[128];
    char title_buf[64];
    char cached_driver_id[32];
 
+   uint8_t frame_rest;
    uint8_t frame_delay_target;
    uint8_t frame_delay_effective;
    bool frame_delay_pause;
@@ -1093,7 +1090,16 @@ bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
 
-void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_auto_t *vfda);
+void video_frame_delay(video_driver_state_t *video_st,
+      settings_t *settings,
+      bool core_paused);
+
+void video_frame_delay_auto(video_driver_state_t *video_st,
+      video_frame_delay_auto_t *vfda);
+
+void video_frame_rest(video_driver_state_t *video_st,
+      settings_t *settings,
+      retro_time_t current_time);
 
 /**
  * video_context_driver_init:
@@ -1167,10 +1173,6 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 bool video_driver_test_all_flags(enum display_flags testflag);
 
 gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
-
-void video_driver_set_gpu_device_string(const char *str);
-
-const char* video_driver_get_gpu_device_string(void);
 
 void video_driver_set_gpu_api_version_string(const char *str);
 
@@ -1273,6 +1275,11 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
 void video_driver_update_title(void *data);
+
+bool video_coord_array_append(video_coord_array_t *ca,
+      const video_coords_t *coords, unsigned count);
+
+void video_coord_array_free(video_coord_array_t *ca);
 
 extern const video_driver_t *video_drivers[];
 

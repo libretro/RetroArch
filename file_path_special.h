@@ -63,6 +63,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_UPS_EXTENSION ".ups"
 #define FILE_PATH_IPS_EXTENSION ".ips"
 #define FILE_PATH_BPS_EXTENSION ".bps"
+#define FILE_PATH_XDELTA_EXTENSION ".xdelta"
 #define FILE_PATH_RDB_EXTENSION ".rdb"
 #define FILE_PATH_RDB_EXTENSION_NO_DOT "rdb"
 #define FILE_PATH_ZIP_EXTENSION ".zip"
@@ -75,7 +76,9 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_LOBBY_LIBRETRO_URL "http://lobby.libretro.com/"
 #define FILE_PATH_CORE_THUMBNAILS_URL "http://thumbnails.libretro.com"
 #define FILE_PATH_CORE_THUMBNAILPACKS_URL "http://thumbnailpacks.libretro.com"
-#ifdef HAVE_LAKKA_NIGHTLY
+#ifdef HAVE_LAKKA_CANARY
+#define FILE_PATH_LAKKA_URL HAVE_LAKKA_CANARY
+#elif HAVE_LAKKA_NIGHTLY
 #define FILE_PATH_LAKKA_URL "http://nightly.builds.lakka.tv/.updater"
 #else
 #define FILE_PATH_LAKKA_URL "http://le.builds.lakka.tv"

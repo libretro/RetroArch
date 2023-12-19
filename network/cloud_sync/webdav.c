@@ -217,10 +217,18 @@ static bool webdav_create_digest_auth(char *digest)
       else if (string_starts_with(ptr, "algorithm="))
       {
          ptr += STRLEN_CONST("algorithm=");
-         sz = strchr(ptr, ',') + 1 - ptr;
-         webdav_st->algo = malloc(sz);
-         strlcpy(webdav_st->algo, ptr, sz);
-         ptr += sz;
+         if (strchr(ptr, ','))
+         {
+            sz = strchr(ptr, ',') + 1 - ptr;
+            webdav_st->algo = malloc(sz);
+            strlcpy(webdav_st->algo, ptr, sz);
+            ptr += sz;
+         }
+         else
+         {
+            webdav_st->algo = strdup(ptr);
+            ptr += strlen(ptr);
+         }
       }
       else if (string_starts_with(ptr, "opaque=\""))
       {
@@ -410,7 +418,7 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    }
    len += strlcpy(header + len, "\", response=\"", total - len);
    len += strlcpy(header + len, response, total - len);
-   len += strlcpy(header + len, "\"\r\n", total - len);
+          strlcpy(header + len, "\"\r\n", total - len);
 
    free(response);
 

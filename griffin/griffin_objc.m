@@ -30,7 +30,7 @@
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_ES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #endif
 #if defined(HAVE_VULKAN)

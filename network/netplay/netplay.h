@@ -195,6 +195,8 @@ void deinit_netplay(void);
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
+bool netplay_is_spectating(void);
+
 #ifdef HAVE_NETPLAYDISCOVERY
 /** Initialize Netplay discovery */
 bool init_netplay_discovery(void);

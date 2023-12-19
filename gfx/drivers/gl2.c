@@ -419,8 +419,9 @@ static void gfx_display_gl2_blend_end(void *data)
 }
 
 #ifdef MALI_BUG
-static bool 
-gfx_display_gl2_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
+static bool
+gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
+      gfx_display_ctx_draw_t *draw,
       unsigned width, unsigned height)
 {
    static bool mali_4xx_detected     = false;
@@ -431,19 +432,14 @@ gfx_display_gl2_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
    if (!scissor_inited)
    {
       unsigned i;
-      const char *gpu_device_string = NULL;
       scissor_inited                = true;
+      const char *gpu_device_string = gl->device_str;
 
       scissor_set_rectangle(0,
             width - 1,
             0,
             height - 1,
             0);
-
-      /* TODO/FIXME - This might be thread unsafe in the long run -
-       * preferably call this once outside of the menu display driver
-       * and then just pass this string as a parameter */
-      gpu_device_string = video_driver_get_gpu_device_string();
 
       if (gpu_device_string)
       {
@@ -503,7 +499,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       return;
 
 #ifdef MALI_BUG
-   if (gfx_display_gl2_discard_draw_rectangle(draw, video_width,
+   if (gfx_display_gl2_discard_draw_rectangle(gl, draw, video_width,
             video_height))
    {
       /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
@@ -952,7 +948,7 @@ static void gl2_raster_font_setup_viewport(
       bool full_screen)
 {
    gl2_set_viewport(gl, width, height, full_screen, true);
-            
+
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
@@ -1035,7 +1031,7 @@ static void gl2_raster_font_render_msg(
       gl2_raster_font_setup_viewport(gl, font, width, height, full_screen);
 
    if (    !string_is_empty(msg)
-         && font->font_data  
+         && font->font_data
          && font->font_driver)
    {
       if (drop_x || drop_y)
@@ -1183,7 +1179,7 @@ static void gl2_load_texture_image(GLenum target,
       GLenum type,
       const GLvoid * data)
 {
-#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA)
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !defined(IOS)
 #ifdef HAVE_OPENGLES2
    enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
@@ -1291,7 +1287,7 @@ static void gl2_set_viewport(gl2_t *gl,
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            (gl->flags & GL2_FLAG_KEEP_ASPECT));
+            (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
@@ -1692,7 +1688,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 
    GL2_BIND_TEXTURE(texture, wrap_enum, mag_filter, min_filter);
 
-   fp_fbo   = chain->fbo_scale[i].flags & FBO_SCALE_FLAG_FP_FBO;
+   fp_fbo     = (chain->fbo_scale[i].flags & FBO_SCALE_FLAG_FP_FBO) ? true : false;
 
    if (fp_fbo)
    {
@@ -1701,7 +1697,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
    }
 
 #if !defined(HAVE_OPENGLES2)
-   if (     fp_fbo 
+   if (     fp_fbo
          && (chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
@@ -1713,7 +1709,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 #endif
    {
 #ifndef HAVE_OPENGLES
-      bool srgb_fbo = chain->fbo_scale[i].flags & FBO_SCALE_FLAG_SRGB_FBO;
+      bool srgb_fbo = (chain->fbo_scale[i].flags & FBO_SCALE_FLAG_SRGB_FBO) ? true : false;
 
       if (!fp_fbo && srgb_fbo)
       {
@@ -1724,7 +1720,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
       if (force_srgb_disable)
          srgb_fbo = false;
 
-      if (      srgb_fbo 
+      if (      srgb_fbo
             && (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
@@ -1734,8 +1730,8 @@ static void gl2_create_fbo_texture(gl2_t *gl,
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_SRGB_ALPHA_EXT,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3) 
-               ? GL_RGBA 
+               (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3)
+               ? GL_RGBA
                : GL_SRGB_ALPHA_EXT,
                GL_UNSIGNED_BYTE, NULL);
 #else
@@ -1962,7 +1958,7 @@ static void gl2_renderchain_init(
    gl2_shader_scale(gl, &scaler, shader_info_num);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (      shader_info_num == 1 
+   if (      shader_info_num == 1
          && (!(scale.flags & FBO_SCALE_FLAG_VALID)))
       return;
 
@@ -2613,15 +2609,15 @@ static void gl_load_texture_data(
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         (use_rgba || !rgb32) 
-         ? GL_RGBA 
+         (use_rgba || !rgb32)
+         ? GL_RGBA
          : RARCH_GL_INTERNAL_FORMAT32,
          width, height, 0,
-         (use_rgba || !rgb32) 
-         ? GL_RGBA 
+         (use_rgba || !rgb32)
+         ? GL_RGBA
          : RARCH_GL_TEXTURE_TYPE32,
-         (rgb32) 
-         ? RARCH_GL_FORMAT32 
+         (rgb32)
+         ? RARCH_GL_FORMAT32
          : GL_UNSIGNED_SHORT_4_4_4_4,
          frame);
 
@@ -2835,7 +2831,7 @@ static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
  *
  * gl2_get_fallback_shader_type(RARCH_SHADER_NONE) returns a default shader type.
  * if gl2_get_fallback_shader_type(type) != type, type was not supported.
- * 
+ *
  * Returns: A supported shader type.
  *  If RARCH_SHADER_NONE is returned, no shader backend is supported.
  **/
@@ -2968,7 +2964,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
             hwr->version_major, hwr->version_minor);
 #endif
 
-   init_data.gl.core_context_enabled = gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE;
+   init_data.gl.core_context_enabled = (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) ? true : false;
    init_data.shader_type             = type;
    init_data.shader                  = NULL;
    init_data.shader_data             = NULL;
@@ -3108,7 +3104,7 @@ static void gl2_init_textures(gl2_t *gl)
    /* GLES is picky about which format we use here.
     * Without extensions, we can *only* render to 16-bit FBOs. */
 
-   if (     (gl->flags & GL2_FLAG_HW_RENDER_USE) 
+   if (     (gl->flags & GL2_FLAG_HW_RENDER_USE)
          && (gl->base_size == sizeof(uint32_t)))
    {
       if (gl_check_capability(GL_CAPS_ARGB8))
@@ -3161,9 +3157,9 @@ static void gl2_set_texture_frame(void *data,
       float alpha)
 {
    settings_t *settings            = config_get_ptr();
-   enum texture_filter_type 
-      menu_filter                  = settings->bools.menu_linear_filter 
-      ? TEXTURE_FILTER_LINEAR 
+   enum texture_filter_type
+      menu_filter                  = settings->bools.menu_linear_filter
+      ? TEXTURE_FILTER_LINEAR
       : TEXTURE_FILTER_NEAREST;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl2_t *gl                       = (gl2_t*)data;
@@ -3427,20 +3423,20 @@ static bool gl2_frame(void *data, const void *frame,
    gl2_renderchain_data_t       *chain = (gl2_renderchain_data_t*)gl->renderchain_data;
    unsigned width                      = gl->video_width;
    unsigned height                     = gl->video_height;
-   bool use_rgba                       = video_info->use_rgba;
+   bool use_rgba                       = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
 #ifndef EMSCRIPTEN
    unsigned black_frame_insertion      = video_info->black_frame_insertion;
 #endif
-   bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
+   bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
 #ifdef HAVE_MENU
-   bool menu_is_alive                  = video_info->menu_is_alive;
+   bool menu_is_alive                  = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
@@ -3562,7 +3558,7 @@ static bool gl2_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps
        * if there are no new frames. */
-      if (     (gl->flags & GL2_FLAG_TEXTURE_MIPMAP) 
+      if (     (gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
             && (gl->flags & GL2_FLAG_HAVE_MIPMAP))
          glGenerateMipmap(GL_TEXTURE_2D);
    }
@@ -3708,9 +3704,9 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
             gl2_pbo_async_readback(gl);
 
-    if (gl->ctx_driver->swap_buffers) 
+    if (gl->ctx_driver->swap_buffers)
         gl->ctx_driver->swap_buffers(gl->ctx_data);
-	
+
  /* Emscripten has to do black frame insertion in its main loop */
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
@@ -3719,7 +3715,7 @@ static bool gl2_frame(void *data, const void *frame,
          black_frame_insertion
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
-         && !runloop_is_paused 
+         && !runloop_is_paused
          && (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)))
     {
         size_t n;
@@ -3729,12 +3725,12 @@ static bool gl2_frame(void *data, const void *frame,
           glClear(GL_COLOR_BUFFER_BIT);
 
           if (gl->ctx_driver->swap_buffers)
-            gl->ctx_driver->swap_buffers(gl->ctx_data); 
-        }  
-    }   
-#endif   	
+            gl->ctx_driver->swap_buffers(gl->ctx_data);
+        }
+    }
+#endif
 
-   /* check if we are fast forwarding or in menu, 
+   /* check if we are fast forwarding or in menu,
     * if we are ignore hard sync */
    if (     (gl->flags & GL2_FLAG_HAVE_SYNC)
          &&  hard_sync
@@ -4073,7 +4069,7 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
          api, major, minor,
-         gl->flags & GL2_FLAG_SHARED_CONTEXT_USE,
+         (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE) ? true : false,
          &ctx_data);
 
    if (ctx_data)
@@ -4323,21 +4319,17 @@ static void *gl2_init(const video_info_t *video,
       sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
 
    {
-      char device_str[128];
       size_t len    = 0;
-      device_str[0] = '\0';
 
       if (!string_is_empty(vendor))
       {
-        len               = strlcpy(device_str, vendor, sizeof(device_str));
-        device_str[  len] = ' ';
-        device_str[++len] = '\0';
+        len                    = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
+        gl->device_str[  len]  = ' ';
+        gl->device_str[++len]  = '\0';
       }
 
       if (!string_is_empty(renderer))
-        strlcpy(device_str + len, renderer, sizeof(device_str) - len);
-
-      video_driver_set_gpu_device_string(device_str);
+        strlcpy(gl->device_str + len, renderer, sizeof(gl->device_str) - len);
 
       if (!string_is_empty(version))
         video_driver_set_gpu_api_version_string(version);
@@ -4527,7 +4519,7 @@ static void *gl2_init(const video_info_t *video,
 
    if (gl->shader->filter_type(gl->shader_data,
             1, &force_smooth))
-      gl->tex_min_filter = (gl->flags & GL2_FLAG_TEXTURE_MIPMAP) 
+      gl->tex_min_filter = (gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
          ? (force_smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
    else
@@ -5181,7 +5173,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void gl2_unload_texture(void *data, 
+static void gl2_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;

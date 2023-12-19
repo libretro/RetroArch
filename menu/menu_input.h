@@ -150,6 +150,7 @@ struct menu_bind_state_port
    uint16_t hats[MENU_MAX_HATS];
    bool mouse_buttons[MENU_MAX_MBUTTONS];
    bool buttons[MENU_MAX_BUTTONS];
+   bool keys[RETROK_LAST];
 };
 
 struct menu_bind_axis_state
@@ -174,6 +175,7 @@ struct menu_bind_state
 
    unsigned begin;
    unsigned last;
+   unsigned order;
    unsigned user;
    unsigned port;
 

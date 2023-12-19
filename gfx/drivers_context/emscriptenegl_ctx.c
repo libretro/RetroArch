@@ -70,7 +70,7 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 
    if (!is_fullscreen)
    {
-      r = emscripten_get_canvas_element_size("#canvas", width, height);
+      r = emscripten_get_canvas_element_size("!canvas", width, height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
@@ -105,14 +105,14 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    if (  (input_width  != emscripten->fb_width)
       || (input_height != emscripten->fb_height))
    {
-      r = emscripten_set_canvas_element_size("#canvas",
+      r = emscripten_set_canvas_element_size("!canvas",
          input_width, input_height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
          RARCH_ERR("[EMSCRIPTEN/EGL]: error resizing canvas: %d\n", r);
 
       /* fix Module.requestFullscreen messing with the canvas size */
-      r = emscripten_set_element_css_size("#canvas",
+      r = emscripten_set_element_css_size("!canvas",
          (double)input_width, (double)input_height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
@@ -194,7 +194,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
     * be grabbed? */
    if (     (emscripten->initial_width  == 0)
          || (emscripten->initial_height == 0))
-      emscripten_get_canvas_element_size("#canvas",
+      emscripten_get_canvas_element_size("!canvas",
          &emscripten->initial_width,
          &emscripten->initial_height);
 

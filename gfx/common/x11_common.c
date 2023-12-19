@@ -193,10 +193,8 @@ static void x11_set_window_pid(Display *dpy, Window win)
     if (gethostname(hostname, scret + 1) == -1)
         RARCH_WARN("Failed to get hostname.\n");
     else
-    {
         XChangeProperty(dpy, win, XA_WM_CLIENT_MACHINE, XA_STRING, 8,
             PropModeReplace, (unsigned char *)hostname, strlen(hostname));
-    }
     free(hostname);
 }
 
@@ -209,10 +207,10 @@ void x11_set_window_attr(Display *dpy, Window win)
 static void xdg_screensaver_inhibit(Window wnd)
 {
    int  ret;
+   size_t _len;
    char cmd[64];
    char title[128];
 
-   cmd[0]   = '\0';
    title[0] = '\0';
 
    RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
@@ -230,7 +228,8 @@ static void xdg_screensaver_inhibit(Window wnd)
             8, PropModeReplace, (const unsigned char*) title, title_len);
    }
 
-   snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
+   _len = strlcpy(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
+   snprintf(cmd + _len, sizeof(cmd) - _len, "%x", (int)wnd);
 
    if ((ret = system(cmd)) == -1)
    {
@@ -291,14 +290,14 @@ static bool get_video_mode(
       Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *x11_desktop_mode)
 {
-   int i, num_modes            = 0;
-   bool ret                    = false;
-   float refresh_mod           = 0.0f;
-   float minimum_fps_diff      = 0.0f;
-   XF86VidModeModeInfo **modes = NULL;
-   settings_t *settings        = config_get_ptr();
+   int i, num_modes                = 0;
+   bool ret                        = false;
+   float refresh_mod               = 0.0f;
+   float minimum_fps_diff          = 0.0f;
+   XF86VidModeModeInfo **modes     = NULL;
+   settings_t *settings            = config_get_ptr();
    unsigned black_frame_insertion  = settings->uints.video_black_frame_insertion;
-   float video_refresh_rate    = settings->floats.video_refresh_rate;
+   float video_refresh_rate        = settings->floats.video_refresh_rate;
 
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
 
@@ -425,7 +424,7 @@ static bool x11_create_input_context(Display *dpy,
    x11_init_keyboard_lut();
 
    g_x11_has_focus = true;
-   
+
    if (!(*xim = XOpenIM(dpy, NULL, NULL, NULL)))
    {
       RARCH_ERR("[X11]: Failed to open input method.\n");
@@ -473,7 +472,7 @@ bool x11_get_metrics(void *data,
          break;
       case DISPLAY_METRIC_DPI:
          dpy    = (Display*)XOpenDisplay(NULL);
-         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4) 
+         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
                /  (  (float)DisplayWidthMM(dpy, screen_no)));
          XCloseDisplay(dpy);
          break;
@@ -551,8 +550,8 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
                (state & ShiftMask) || (state & LockMask));
    }
 
-   /* We can't feed uppercase letters to the keycode translator. 
-    * Seems like a bad idea to feed it keysyms anyway, so here 
+   /* We can't feed uppercase letters to the keycode translator.
+    * Seems like a bad idea to feed it keysyms anyway, so here
     * is a little hack...
     **/
    if (keysym >= XK_A && keysym <= XK_Z)
@@ -663,9 +662,9 @@ bool x11_alive(void *data)
             break;
 
          case KeyRelease:
-            /*  When you receive a key release and the next event 
+            /*  When you receive a key release and the next event
              * is a key press of the same key combination,
-             * then it's auto-repeat and the key wasn't 
+             * then it's auto-repeat and the key wasn't
              * actually released. */
             if (XEventsQueued(g_x11_dpy, QueuedAfterReading))
             {

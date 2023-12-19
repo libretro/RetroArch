@@ -375,7 +375,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
       v                  = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
       v->pos.x           = draw->x;
-      v->pos.y           = wiiu->color_buffer.surface.height - 
+      v->pos.y           = wiiu->color_buffer.surface.height -
                            draw->y - draw->height;
       v->pos.width       = draw->width;
       v->pos.height      = draw->height;
@@ -410,7 +410,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
          sprite_shader.vs.uniformBlocks[1].size,
          wiiu->ubo_tex);
-   GX2SetAttribBuffer(0, wiiu->vertex_cache.size 
+   GX2SetAttribBuffer(0, wiiu->vertex_cache.size
          * sizeof(*wiiu->vertex_cache.v),
          sizeof(*wiiu->vertex_cache.v),
          wiiu->vertex_cache.v);
@@ -555,7 +555,7 @@ static void* gx2_font_init(void* data, const char* font_path,
          font->texture.surface.alignment);
 
    for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-      memcpy((uint8_t*)font->texture.surface.image 
+      memcpy((uint8_t*)font->texture.surface.image
             + (i * font->texture.surface.pitch),
             font->atlas->buffer + (i * font->atlas->width),
             font->atlas->width);
@@ -702,7 +702,7 @@ static void gx2_font_render_line(
    if (font->atlas->dirty)
    {
       for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-         memcpy(font->texture.surface.image 
+         memcpy(font->texture.surface.image
                + (i * font->texture.surface.pitch),
                 font->atlas->buffer + (i * font->atlas->width),
                 font->atlas->width);
@@ -748,7 +748,7 @@ static void gx2_font_render_message(
       size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if ((wiiu->vertex_cache.current + (msg_len * 4) 
+      if ((wiiu->vertex_cache.current + (msg_len * 4)
 		      <= wiiu->vertex_cache.size))
          gx2_font_render_line(wiiu,
                font,
@@ -1310,7 +1310,7 @@ static void *gx2_init(const video_info_t *video,
 
       gx2_fake_context.get_flags = gx2_get_flags;
 
-      video_context_driver_set(&gx2_fake_context); 
+      video_context_driver_set(&gx2_fake_context);
 
       shader_preset               = video_shader_get_current_shader_preset();
       type                        = video_shader_parse_type(shader_preset);
@@ -1655,7 +1655,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 #if 0
          wiiu->pass[i].texture.surface.mipLevels   = 1;
 #endif
-         wiiu->pass[i].texture.surface.format      = 
+         wiiu->pass[i].texture.surface.format      =
               (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             ? GX2_SURFACE_FORMAT_FLOAT_R32_G32_B32_A32
             : (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
@@ -1880,7 +1880,7 @@ static bool gx2_frame(void *data, const void *frame,
    uint32_t i;
    wiiu_video_t *wiiu             = (wiiu_video_t *) data;
 #ifdef HAVE_MENU
-   bool menu_is_alive             = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
@@ -2204,11 +2204,11 @@ static bool gx2_frame(void *data, const void *frame,
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
                  wiiu->vertex_cache.v,
-                 wiiu->vertex_cache.current 
+                 wiiu->vertex_cache.current
                  * sizeof(*wiiu->vertex_cache.v));
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
                  wiiu->vertex_cache_tex.v,
-                 wiiu->vertex_cache_tex.current 
+                 wiiu->vertex_cache_tex.current
                  * sizeof(*wiiu->vertex_cache_tex.v));
 
    if (wiiu->menu.enable)
@@ -2300,7 +2300,7 @@ static uintptr_t gx2_load_texture(void *video_data, void *data,
          texture->surface.imageSize, texture->surface.alignment);
 
    for (i = 0; (i < image->height) && (i < texture->surface.height); i++)
-      memcpy((uint32_t *)texture->surface.image 
+      memcpy((uint32_t *)texture->surface.image
             + (i * texture->surface.pitch),
             image->pixels + (i * image->width),
             image->width * sizeof(image->pixels));
@@ -2312,7 +2312,7 @@ static uintptr_t gx2_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gx2_unload_texture(void *data, 
+static void gx2_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    GX2Texture *texture = (GX2Texture *)handle;

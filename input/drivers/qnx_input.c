@@ -372,29 +372,31 @@ static void qnx_process_keyboard_event(
       qnx_input_t *qnx,
       screen_event_t event, int type)
 {
-    /* Get key properties from screen event */
-    int flags = 0, cap = 0, mod = 0;
-    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_FLAGS, &flags);
-    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_CAP, &cap);
-    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_MODIFIERS, &mod);
+   unsigned keycode;
+   bool keydown, keyrepeat;
+   /* Get key properties from screen event */
+   int flags = 0, cap = 0, mod = 0;
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_FLAGS, &flags);
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_CAP, &cap);
+   screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_MODIFIERS, &mod);
 
-    /* Calculate state */
-    unsigned keycode = input_keymaps_translate_keysym_to_rk(cap);
-    bool keydown     = flags & KEY_DOWN;
-    bool keyrepeat   = flags & KEY_REPEAT;
-    /* Fire keyboard event */
-    if (!keyrepeat)
-        input_keyboard_event(keydown, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+   /* Calculate state */
+   keycode     = input_keymaps_translate_keysym_to_rk(cap);
+   keydown     = (flags & KEY_DOWN)   ? true : false;
+   keyrepeat   = (flags & KEY_REPEAT) ? true : false;
+   /* Fire keyboard event */
+   if (!keyrepeat)
+      input_keyboard_event(keydown, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
 
-    /* Apply keyboard state */
-    if (keydown && !keyrepeat)
-    {
-       BIT_SET(qnx->keyboard_state, cap);
-    }
-    else if (!keydown && !keyrepeat)
-    {
-       BIT_CLEAR(qnx->keyboard_state, cap);
-    }
+   /* Apply keyboard state */
+   if (keydown && !keyrepeat)
+   {
+      BIT_SET(qnx->keyboard_state, cap);
+   }
+   else if (!keydown && !keyrepeat)
+   {
+      BIT_CLEAR(qnx->keyboard_state, cap);
+   }
 }
 
 static void qnx_process_touch_event(
@@ -803,8 +805,8 @@ static int16_t qnx_input_state(
             if (binds[port][id].valid)
             {
                if (
-                     ((id == RARCH_GAME_FOCUS_TOGGLE) || 
-                      !keyboard_mapping_blocked) && 
+                     ((id == RARCH_GAME_FOCUS_TOGGLE) ||
+                      !keyboard_mapping_blocked) &&
                      qnx_keyboard_pressed(qnx, key)
                   )
                   return 1;

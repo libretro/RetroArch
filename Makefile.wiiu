@@ -143,6 +143,7 @@ endif
       HAVE_RBMP = 1
       HAVE_CONFIGFILE = 1
       HAVE_PATCH      = 1
+      HAVE_XDELTA     = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
       HAVE_REWIND     = 1
       HAVE_CHEATS     = 1
       HAVE_MENU = 1

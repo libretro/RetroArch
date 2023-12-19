@@ -40,7 +40,14 @@ static unsigned uint_user_language;
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   return msg_hash_get_help_us_enum(msg, s, len);
+   int ret = msg_hash_get_help_us_enum(msg, s, len);
+   /* Replace line-breaks with "empty line-breaks" for readability */
+   const char *temp = string_replace_substring(s,
+         "\n",    STRLEN_CONST("\n"),
+         "\n \n", STRLEN_CONST("\n \n"));
+
+   strlcpy(s, temp, len);
+   return ret;
 }
 
 const char *get_user_language_iso639_1(bool limit)
@@ -121,6 +128,8 @@ const char *get_user_language_iso639_1(bool limit)
          return "en_gb";
       case RETRO_LANGUAGE_HUNGARIAN:
          return "hu";
+      case RETRO_LANGUAGE_BELARUSIAN:
+         return "be";
    }
    return "en";
 }
@@ -203,6 +212,18 @@ static const char *msg_hash_to_str_hu(enum msg_hash_enums msg)
    switch (msg)
    {
 #include "intl/msg_hash_hu.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_be(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_be.h"
       default:
          break;
    }
@@ -600,6 +621,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       case RETRO_LANGUAGE_HUNGARIAN:
          ret = msg_hash_to_str_hu(msg);
          break;
+      case RETRO_LANGUAGE_BELARUSIAN:
+         ret = msg_hash_to_str_be(msg);
+         break;
       default:
          break;
    }
@@ -776,16 +800,8 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_MOV;
       case MENU_VALUE_FILE_WMV:
          return FILE_TYPE_WMV;
-      case MENU_VALUE_FILE_MP3:
-         return FILE_TYPE_MP3;
       case MENU_VALUE_FILE_M4A:
          return FILE_TYPE_M4A;
-      case MENU_VALUE_FILE_OGG:
-         return FILE_TYPE_OGG;
-      case MENU_VALUE_FILE_FLAC:
-         return FILE_TYPE_FLAC;
-      case MENU_VALUE_FILE_WAV:
-         return FILE_TYPE_WAV;
       case MENU_VALUE_FILE_3G2:
          return FILE_TYPE_3G2;
       case MENU_VALUE_FILE_MPG:
@@ -811,13 +827,31 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_FILE_WMA:
          return FILE_TYPE_WMA;
 #endif
-#ifdef HAVE_IBXM
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
+      case MENU_VALUE_FILE_MP3:
+         return FILE_TYPE_MP3;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
+      case MENU_VALUE_FILE_OGG:
+         return FILE_TYPE_OGG;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
+      case MENU_VALUE_FILE_FLAC:
+         return FILE_TYPE_FLAC;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
+      case MENU_VALUE_FILE_WAV:
+         return FILE_TYPE_WAV;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
        case MENU_VALUE_FILE_MOD:
            return FILE_TYPE_MOD;
        case MENU_VALUE_FILE_S3M:
            return FILE_TYPE_S3M;
        case MENU_VALUE_FILE_XM:
            return FILE_TYPE_XM;
+#endif
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:

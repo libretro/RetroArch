@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-static int rc_test_condition_compare(unsigned value1, unsigned value2, char oper) {
+static int rc_test_condition_compare(uint32_t value1, uint32_t value2, uint8_t oper) {
   switch (oper) {
     case RC_OPERATOR_EQ: return value1 == value2;
     case RC_OPERATOR_NE: return value1 != value2;
@@ -149,7 +149,7 @@ static int rc_parse_operator(const char** memaddr) {
   }
 }
 
-rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, int is_indirect) {
+rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, uint8_t is_indirect) {
   rc_condition_t* self;
   const char* aux;
   int result;
@@ -323,23 +323,23 @@ int rc_condition_is_combining(const rc_condition_t* self) {
 }
 
 static int rc_test_condition_compare_memref_to_const(rc_condition_t* self) {
-  const unsigned value1 = self->operand1.value.memref->value.value;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value1 = self->operand1.value.memref->value.value;
+  const uint32_t value2 = self->operand2.value.num;
   assert(self->operand1.size == self->operand1.value.memref->value.size);
   return rc_test_condition_compare(value1, value2, self->oper);
 }
 
 static int rc_test_condition_compare_delta_to_const(rc_condition_t* self) {
   const rc_memref_value_t* memref1 = &self->operand1.value.memref->value;
-  const unsigned value1 = (memref1->changed) ? memref1->prior : memref1->value;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value1 = (memref1->changed) ? memref1->prior : memref1->value;
+  const uint32_t value2 = self->operand2.value.num;
   assert(self->operand1.size == self->operand1.value.memref->value.size);
   return rc_test_condition_compare(value1, value2, self->oper);
 }
 
 static int rc_test_condition_compare_memref_to_memref(rc_condition_t* self) {
-  const unsigned value1 = self->operand1.value.memref->value.value;
-  const unsigned value2 = self->operand2.value.memref->value.value;
+  const uint32_t value1 = self->operand1.value.memref->value.value;
+  const uint32_t value2 = self->operand2.value.memref->value.value;
   assert(self->operand1.size == self->operand1.value.memref->value.size);
   assert(self->operand2.size == self->operand2.value.memref->value.size);
   return rc_test_condition_compare(value1, value2, self->oper);
@@ -387,7 +387,7 @@ static int rc_test_condition_compare_delta_to_memref(rc_condition_t* self) {
 
 static int rc_test_condition_compare_memref_to_const_transformed(rc_condition_t* self) {
   rc_typed_value_t value1;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value2 = self->operand2.value.num;
 
   value1.type = RC_VALUE_TYPE_UNSIGNED;
   value1.value.u32 = self->operand1.value.memref->value.value;
@@ -399,7 +399,7 @@ static int rc_test_condition_compare_memref_to_const_transformed(rc_condition_t*
 static int rc_test_condition_compare_delta_to_const_transformed(rc_condition_t* self) {
   rc_typed_value_t value1;
   const rc_memref_value_t* memref1 = &self->operand1.value.memref->value;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value2 = self->operand2.value.num;
 
   value1.type = RC_VALUE_TYPE_UNSIGNED;
   value1.value.u32 = (memref1->changed) ? memref1->prior : memref1->value;

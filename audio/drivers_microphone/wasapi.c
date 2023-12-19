@@ -279,8 +279,6 @@ static void wasapi_microphone_set_nonblock_state(void *driver_context, bool nonb
 {
    wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
 
-   RARCH_DBG("[WASAPI mic]: Sync %s.\n", nonblock ? "off" : "on");
-
    wasapi->nonblock = nonblock;
 }
 

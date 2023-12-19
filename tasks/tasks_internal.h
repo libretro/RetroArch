@@ -240,9 +240,11 @@ bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,
+      bool is_xdelta_pref,
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
+      const char *name_xdelta,
       uint8_t **buf,
       void *data);
 

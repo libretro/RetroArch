@@ -14,18 +14,21 @@
  */
 
 #include <math.h>
+#include <memalign.h>
+#include <audio/conversion/s16_to_float.h>
+#include <audio/conversion/float_to_s16.h>
+#include <retro_assert.h>
+#include <string/stdstring.h>
+#include <audio/conversion/dual_mono.h>
+
 #include "microphone_driver.h"
+#include "audio_defines.h"
+
 #include "../configuration.h"
 #include "../driver.h"
-#include "../verbosity.h"
-#include "../runloop.h"
-#include "memalign.h"
-#include "audio/conversion/s16_to_float.h"
-#include "audio/conversion/float_to_s16.h"
 #include "../list_special.h"
-#include "retro_assert.h"
-#include "string/stdstring.h"
-#include "audio/conversion/dual_mono.h"
+#include "../runloop.h"
+#include "../verbosity.h"
 
 static microphone_driver_state_t mic_driver_st;
 
@@ -235,18 +238,14 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    microphone->resampler      = NULL;
    microphone->resampler_data = NULL;
 
+   /* If the mic driver is being reset and the microphone was already valid... */
    if ((microphone->flags & MICROPHONE_FLAG_ACTIVE) && is_reset)
-   { /* If the mic driver is being reset and the microphone was already valid... */
-
       microphone->flags |= MICROPHONE_FLAG_PENDING;
       /* ...then we need to keep the handle itself valid
        * so it can be reinitialized.
        * Otherwise the core will lose mic input. */
-   }
    else
-   {
       memset(microphone, 0, sizeof(*microphone));
-   }
    /* Do NOT free the microphone handle itself! It's allocated statically! */
 }
 
@@ -265,8 +264,9 @@ bool microphone_driver_init_internal(void *settings_data)
    bool verbosity_enabled = verbosity_is_enabled();
    size_t max_frames   = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
 
+   /* If the user has mic support turned off... */
    if (!settings->bools.microphone_enable)
-   { /* If the user has mic support turned off... */
+   {
       mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
       return false;
    }
@@ -275,7 +275,7 @@ bool microphone_driver_init_internal(void *settings_data)
    convert_float_to_s16_init_simd();
 
    if (!(microphone_driver_find_driver(settings,
-                                       "microphone driver", verbosity_enabled)))
+               "microphone driver", verbosity_enabled)))
    {
       RARCH_ERR("[Microphone]: Failed to initialize microphone driver. Will continue without mic input.\n");
       goto error;
@@ -315,8 +315,7 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!mic_st->driver || !mic_st->driver->init)
       goto error;
 
-   mic_st->driver_context = mic_st->driver->init();
-   if (!mic_st->driver_context)
+   if (!(mic_st->driver_context = mic_st->driver->init()))
       goto error;
 
    if (!string_is_empty(settings->arrays.microphone_resampler))
@@ -389,10 +388,9 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
              microphone->actual_params.rate
    );
 
-   if (mic_driver->mic_use_float && mic_driver->mic_use_float(mic_st->driver_context, microphone->microphone_context))
-   {
-      microphone->flags |= MICROPHONE_FLAG_USE_FLOAT;
-   }
+   if (     mic_driver->mic_use_float
+         && mic_driver->mic_use_float(mic_st->driver_context, microphone->microphone_context))
+      microphone->flags      |= MICROPHONE_FLAG_USE_FLOAT;
 
    microphone->original_ratio = (double)microphone->effective_params.rate / microphone->actual_params.rate;
 
@@ -422,13 +420,11 @@ static void microphone_driver_close_mic_internal(retro_microphone_t *microphone,
    const microphone_driver_t *mic_driver = mic_st->driver;
    void *driver_context                  = mic_st->driver_context;
 
-   if (  microphone &&
-         driver_context &&
-         mic_driver &&
-         mic_driver->close_mic)
-   {
+   if (     microphone
+         && driver_context
+         && mic_driver
+         && mic_driver->close_mic)
       mic_driver_microphone_handle_free(microphone, is_reset);
-   }
 }
 
 void microphone_driver_close_mic(retro_microphone_t *microphone)
@@ -450,11 +446,14 @@ bool microphone_driver_set_mic_state(retro_microphone_t *microphone, bool state)
       return false;
    /* If the provided microphone was null or invalid, or the driver is incomplete, stop. */
 
+   /* If the driver is initialized... */
    if (driver_context && microphone->microphone_context)
-   { /* If the driver is initialized... */
+   {
       bool success;
+
+      /* If we want to enable this mic... */
       if (state)
-      { /* If we want to enable this mic... */
+      {
          success = mic_driver->start_mic(driver_context, microphone->microphone_context);
          /* Enable the mic. (Enabling an active mic is a successful noop.) */
 
@@ -471,8 +470,8 @@ bool microphone_driver_set_mic_state(retro_microphone_t *microphone, bool state)
       else
       { /* If we want to pause this mic... */
          success = mic_driver->stop_mic(driver_context, microphone->microphone_context);
-         /* Disable the mic. (If the mic is already stopped, disabling it should still be successful.) */
 
+         /* Disable the mic. (If the mic is already stopped, disabling it should still be successful.) */
          if (success)
          {
             microphone->flags &= ~MICROPHONE_FLAG_ENABLED;
@@ -490,13 +489,9 @@ bool microphone_driver_set_mic_state(retro_microphone_t *microphone, bool state)
    { /* The driver's not ready yet, so we'll make a note
       * of what the mic's state should be */
       if (state)
-      {
          microphone->flags |= MICROPHONE_FLAG_ENABLED;
-      }
       else
-      {
          microphone->flags &= ~MICROPHONE_FLAG_ENABLED;
-      }
 
       RARCH_DBG("[Microphone]: Set pending state to %s.\n",
                 state ? "enabled" : "disabled");
@@ -509,7 +504,6 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone)
 {
    if (!microphone || !(microphone->flags & MICROPHONE_FLAG_ACTIVE))
       return false;
-
    return microphone->flags & MICROPHONE_FLAG_ENABLED;
 }
 
@@ -562,27 +556,25 @@ static size_t microphone_driver_flush(
 
       /* ...then skip the resampler, since it'll produce (more or less) identical results. */
       frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples), resampler_data.input_frames);
+
+      /* If this mic provides floating-point samples... */
       if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
-      { /* If this mic provides floating-point samples... */
+      {
          convert_float_to_s16(mic_st->final_frames, mic_st->input_frames, resampler_data.input_frames);
          fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
       }
       else
-      {
          fifo_write(microphone->outgoing_samples, mic_st->input_frames, frames_to_enqueue * sizeof(int16_t));
-      }
 
       return resampler_data.input_frames;
    }
    /* Couldn't take the fast path, so let's resample the mic input */
 
    /* First we need to format the input for the resampler. */
+   /* If this mic provides floating-point samples... */
    if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
-   {/* If this mic provides floating-point samples... */
-
       /* Samples are already in floating-point, so we just need to up-channel them. */
       convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->input_frames, resampler_data.input_frames);
-   }
    else
    {
       /* Samples are 16-bit, so we need to convert them first. */
@@ -612,30 +604,30 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    size_t frames_remaining           = num_frames;
    microphone_driver_state_t *mic_st = &mic_driver_st;
    const microphone_driver_t *driver = mic_st->driver;
-   bool core_paused                  = runloop_flags & RUNLOOP_FLAG_PAUSED;
-   bool is_fastforward               = runloop_flags & RUNLOOP_FLAG_FASTMOTION;
-   bool is_slowmo                    = runloop_flags & RUNLOOP_FLAG_SLOWMOTION;
+   bool core_paused                  = (runloop_flags & RUNLOOP_FLAG_PAUSED)           ? true : false;
+   bool is_fastforward               = (runloop_flags & RUNLOOP_FLAG_FASTMOTION)       ? true : false;
+   bool is_slowmo                    = (runloop_flags & RUNLOOP_FLAG_SLOWMOTION)       ? true : false;
    bool is_rewind                    = state_manager_frame_is_reversed();
-   bool driver_active                = mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE;
+   bool driver_active                = (mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE) ? true : false;
 
+   /* If the provided arguments aren't valid... */
    if (!frames || !microphone)
-      /* If the provided arguments aren't valid... */
       return -1;
 
+   /* If the microphone or driver aren't active... */
    if (!driver_active || !(microphone->flags & MICROPHONE_FLAG_ACTIVE))
-      /* If the microphone or driver aren't active... */
       return -1;
 
+   /* If the driver is invalid or doesn't have the functions it needs... */
    if (!driver || !driver->read || !driver->mic_alive)
-      /* If the driver is invalid or doesn't have the functions it needs... */
       return -1;
 
+   /* If the core didn't actually ask for any frames... */
    if (num_frames == 0)
-      /* If the core didn't actually ask for any frames... */
       return 0;
 
-   if ((microphone->flags & MICROPHONE_FLAG_PENDING)
-      || (microphone->flags & MICROPHONE_FLAG_SUSPENDED)
+   if (   (microphone->flags & MICROPHONE_FLAG_PENDING)
+      ||  (microphone->flags & MICROPHONE_FLAG_SUSPENDED)
       || !(microphone->flags & MICROPHONE_FLAG_ENABLED)
       || is_fastforward
       || is_slowmo
@@ -654,18 +646,19 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
     * Because I couldn't think of anything useful for the mic to do.
     * If you can, send a PR! */
 
+   /* If the driver or microphone's state haven't been allocated... */
    if (!mic_st->driver_context || !microphone->microphone_context)
-      /* If the driver or microphone's state haven't been allocated... */
       return -1;
 
+   /* If the mic isn't active like it should be at this point... */
    if (!driver->mic_alive(mic_st->driver_context, microphone->microphone_context))
-   { /* If the mic isn't active like it should be at this point... */
+   {
       RARCH_ERR("[Microphone]: Mic frontend has the mic enabled, but the backend has it disabled.\n");
       return -1;
    }
 
+   /* If the core asked for more frames than we can fit... */
    if (num_frames > microphone->outgoing_samples->size)
-      /* If the core asked for more frames than we can fit... */
       return -1;
 
    retro_assert(mic_st->input_frames != NULL);
@@ -673,9 +666,10 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
    while (FIFO_READ_AVAIL(microphone->outgoing_samples) < num_frames * sizeof(int16_t))
    { /* Until we can give the core the frames it asked for... */
       size_t frames_to_read = MIN(AUDIO_CHUNK_SIZE_NONBLOCKING, frames_remaining);
-      size_t frames_read = 0;
+      size_t frames_read    = 0;
+
+      /* If the game is running and the mic driver is active... */
       if (!core_paused)
-         /* If the game is running and the mic driver is active... */
          frames_read = microphone_driver_flush(mic_st, microphone, frames_to_read);
 
       /* Otherwise, advance the counters. We're not gonna get new data,
@@ -689,16 +683,13 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
 bool microphone_driver_get_effective_params(const retro_microphone_t *microphone, retro_microphone_params_t *params)
 {
+   /* If the arguments are null... */
    if (!microphone || !params)
-      /* If the arguments are null... */
       return false;
-
+   /* If this isn't an opened microphone... */
    if (!(microphone->flags & MICROPHONE_FLAG_ACTIVE))
-      /* If this isn't an opened microphone... */
       return false;
-
    *params = microphone->effective_params;
-
    return true;
 }
 
@@ -741,8 +732,9 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
       return NULL;
    }
 
+   /* If the core has requested a second microphone... */
    if (mic_st->microphone.flags & MICROPHONE_FLAG_ACTIVE)
-   { /* If the core has requested a second microphone... */
+   {
       RARCH_ERR("[Microphone]: Failed to open a second microphone, frontend only supports one at a time right now.\n");
       if (mic_st->microphone.flags & MICROPHONE_FLAG_PENDING)
          /* If that mic is pending... */
@@ -762,7 +754,8 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
    /* If driver_context is NULL, the handle won't have a valid microphone context (but we'll create one later) */
 
    if (driver_context)
-   { /* If the microphone driver is ready to open a microphone... */
+   {
+      /* If the microphone driver is ready to open a microphone... */
       if (mic_driver_open_mic_internal(&mic_st->microphone)) /* If the microphone was successfully initialized... */
          RARCH_LOG("[Microphone]: Opened the requested microphone successfully.\n");
       else
@@ -786,7 +779,7 @@ static bool microphone_driver_free_devices_list(void)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
    if (
-         !mic_st->driver
+            !mic_st->driver
          || !mic_st->driver->device_list_free
          || !mic_st->driver_context
          || !mic_st->devices_list)
@@ -815,32 +808,32 @@ bool microphone_driver_deinit(bool is_reset)
 
    if (mic_st->input_frames)
       memalign_free(mic_st->input_frames);
-   mic_st->input_frames = NULL;
+   mic_st->input_frames        = NULL;
    mic_st->input_frames_length = 0;
 
    if (mic_st->converted_input_frames)
       memalign_free(mic_st->converted_input_frames);
-   mic_st->converted_input_frames = NULL;
+   mic_st->converted_input_frames        = NULL;
    mic_st->converted_input_frames_length = 0;
 
    if (mic_st->dual_mono_frames)
       memalign_free(mic_st->dual_mono_frames);
-   mic_st->dual_mono_frames = NULL;
+   mic_st->dual_mono_frames        = NULL;
    mic_st->dual_mono_frames_length = 0;
 
    if (mic_st->resampled_frames)
       memalign_free(mic_st->resampled_frames);
-   mic_st->resampled_frames = NULL;
+   mic_st->resampled_frames        = NULL;
    mic_st->resampled_frames_length = 0;
 
    if (mic_st->resampled_mono_frames)
       memalign_free(mic_st->resampled_mono_frames);
-   mic_st->resampled_mono_frames = NULL;
+   mic_st->resampled_mono_frames        = NULL;
    mic_st->resampled_mono_frames_length = 0;
 
    if (mic_st->final_frames)
       memalign_free(mic_st->final_frames);
-   mic_st->final_frames = NULL;
+   mic_st->final_frames        = NULL;
    mic_st->final_frames_length = 0;
 
    mic_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;

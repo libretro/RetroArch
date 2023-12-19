@@ -169,7 +169,7 @@ static bool fpga_frame(void *data, const void *frame,
    fpga_t *fpga              = (fpga_t*)data;
    unsigned bits             = fpga->video_bits;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)
@@ -179,9 +179,9 @@ static bool fpga_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  fpga->video_width  != frame_width  || 
-         fpga->video_height != frame_height || 
-         fpga->video_pitch  != pitch)
+   if (     (fpga->video_width  != frame_width)
+         || (fpga->video_height != frame_height)
+         || (fpga->video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -323,9 +323,9 @@ static void fpga_set_texture_frame(void *data,
       free(fpga->menu_frame);
    fpga->menu_frame = NULL;
 
-   if (  !fpga->menu_frame           || 
-         fpga->menu_width  != width  || 
-         fpga->menu_height != height || 
+   if (  !fpga->menu_frame           ||
+         fpga->menu_width  != width  ||
+         fpga->menu_height != height ||
          fpga->menu_pitch != pitch)
       if (pitch && height)
          fpga->menu_frame = (unsigned char*)malloc(pitch * height);
