@@ -259,8 +259,10 @@ int HBL_loadToMemory(const char *filepath, u32 args_size)
    size_t buffer_size = (fileSize + 0x3f) & ~0x3f;
    unsigned char *buffer = (unsigned char *) memalign(0x40, buffer_size);
 
-   if (!buffer)
-      return -1;
+   if (!buffer) {
+    fclose(fp);
+    return -1;
+   }
 
    memset(buffer, 0, buffer_size);
 
