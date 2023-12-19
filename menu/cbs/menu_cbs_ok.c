@@ -6237,8 +6237,18 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
    else
       snprintf(hostname, sizeof(hostname), "%s|%d", room->address, room->port);
 
-   task_push_netplay_crc_scan(room->gamecrc, room->gamename,
-      room->subsystem_name, room->corename, hostname);
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+   {
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)hostname);
+      menu_input_dialog_end();
+      retroarch_menu_running_finished(false);
+   }
+   else
+   {
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+         room->subsystem_name, room->corename, hostname);
+   }
 
    return 0;
 }
