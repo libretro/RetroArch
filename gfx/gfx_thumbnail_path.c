@@ -444,7 +444,8 @@ bool gfx_thumbnail_set_content_playlist(
             "", sizeof(path_data->content_label));
 
    /* Determine content image name */
-   if (settings->bools.playlist_use_filename)
+   if (settings->bools.playlist_use_filename ||
+       playlist_thumbnail_match_with_filename(playlist))
    {
       char* content_name_no_ext = NULL;
       char tmp_buf[PATH_MAX_LENGTH];
