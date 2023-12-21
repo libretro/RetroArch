@@ -475,6 +475,8 @@ bool gfx_thumbnail_set_content_playlist(
 
    /* Thumbnail image name is done -> now check if
     * per-content database name is defined */
+   if (string_is_empty(db_name))
+      playlist_get_db_name(playlist, idx, &db_name);
    if (!string_is_empty(db_name))
    {
       /* Hack: There is only one MAME thumbnail repo,
