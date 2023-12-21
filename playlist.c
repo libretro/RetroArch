@@ -3191,28 +3191,31 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name)
 {
-   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+   if (!playlist || !db_name || idx >= RBUF_LEN(playlist->entries))
       return;
 
-   if (db_name)
+   if (!string_is_empty(playlist->entries[idx].db_name))
+       *db_name = playlist->entries[idx].db_name;
+   else
    {
-      if (!string_is_empty(playlist->entries[idx].db_name))
-         *db_name = playlist->entries[idx].db_name;
-      else
-      {
-         const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
+       const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
 
-         /* Only use file basename if this is a 'collection' playlist
-          * (i.e. ignore history/favourites) */
-         if (
-                  !string_is_empty(conf_path_basename)
-               && !string_is_equal(conf_path_basename,
-                        FILE_PATH_CONTENT_HISTORY)
-               && !string_is_equal(conf_path_basename,
-                        FILE_PATH_CONTENT_FAVORITES)
-            )
-            *db_name = conf_path_basename;
-      }
+       /* Only use file basename if this is a 'collection' playlist
+        * (i.e. ignore history/favourites) */
+       if (
+           !string_is_empty(conf_path_basename)
+           && !string_is_equal(conf_path_basename,
+                               FILE_PATH_CONTENT_HISTORY)
+           && !string_is_equal(conf_path_basename,
+                               FILE_PATH_CONTENT_FAVORITES)
+           )
+           *db_name = conf_path_basename;
+       else
+       {
+          core_info_t *core_info = playlist_entry_get_core_info(&playlist->entries[idx]);
+          if (core_info && core_info->databases)
+             *db_name = core_info->databases;
+       }
    }
 }
 
