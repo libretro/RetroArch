@@ -2680,16 +2680,20 @@ void win32_get_video_output_next(
 }
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-#define WIN32_GET_VIDEO_OUTPUT(iModeNum, dm) EnumDisplaySettingsEx(NULL, iModeNum, dm, EDS_ROTATEDMODE)
+#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettingsEx(devName, iModeNum, dm, EDS_ROTATEDMODE)
 #else
-#define WIN32_GET_VIDEO_OUTPUT(iModeNum, dm) EnumDisplaySettings(NULL, iModeNum, dm)
+#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettings(devName, iModeNum, dm)
 #endif
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
    memset(dm, 0, len);
    dm->dmSize  = len;
-   if (WIN32_GET_VIDEO_OUTPUT((mode == -1)
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+   if (WIN32_GET_VIDEO_OUTPUT(&current_mon.szDevice, (mode == -1)
             ? ENUM_CURRENT_SETTINGS
             : (DWORD)mode,
             dm) == 0)
