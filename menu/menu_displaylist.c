@@ -8989,8 +8989,10 @@ unsigned menu_displaylist_build_list(
                   (enum menu_screensaver_effect)
                   settings->uints.menu_screensaver_animation;
 #endif
+            uico_driver_state_t *uico_st    = uico_state_get_ptr();
 
             menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_APPICON_SETTINGS,                                      PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,                             PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,                            PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
@@ -9032,6 +9034,9 @@ unsigned menu_displaylist_build_list(
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_APPICON_SETTINGS:
+                     build_list[i].checked = (uico_st->drv && uico_st->drv->set_app_icon);
+                     break;
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_onscreen_display;
                      break;

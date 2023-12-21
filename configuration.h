@@ -563,6 +563,7 @@ typedef struct settings
       char directory_bottom_assets[PATH_MAX_LENGTH];
 #endif
       char log_dir[PATH_MAX_LENGTH];
+      char app_icon[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;
