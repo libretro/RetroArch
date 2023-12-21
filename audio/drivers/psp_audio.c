@@ -136,7 +136,10 @@ static void *psp_audio_init(const char *device,
       return NULL;
 
    if ((port = configureAudio(rate)) < 0)
+   {
+      free(psp);
       return NULL;
+   }
 
 #if defined(ORBIS)
    sceAudioOutInit();
