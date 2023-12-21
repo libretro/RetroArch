@@ -64,6 +64,13 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_BOXARTS
 };
 
+enum playlist_thumbnail_match_mode
+{
+   PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT = 0,
+   PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_LABEL = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT,
+   PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_FILENAME
+};
+
 enum playlist_sort_mode
 {
    PLAYLIST_SORT_MODE_DEFAULT = 0,
@@ -354,6 +361,7 @@ const char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
+bool playlist_thumbnail_match_with_filename(playlist_t *playlist);
 enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist);
 const char *playlist_get_scan_content_dir(playlist_t *playlist);
 const char *playlist_get_scan_file_exts(playlist_t *playlist);
