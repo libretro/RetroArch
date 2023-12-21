@@ -38,6 +38,8 @@ static ui_companion_driver_t ui_companion_null = {
    NULL, /* get_main_window */
    NULL, /* log_msg */
    NULL, /* is_active */
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
    NULL, /* browser_window */
    NULL, /* msg_window */
    NULL, /* window */
@@ -51,6 +53,9 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #endif
 #if defined(OSX)
    &ui_companion_cocoa,
+#endif
+#if defined(IOS)
+   &ui_companion_cocoatouch,
 #endif
    &ui_companion_null,
    NULL
