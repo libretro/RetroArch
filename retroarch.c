@@ -3645,15 +3645,6 @@ bool command_event(enum event_command cmd, void *data)
             if (    (flags & CONTENT_ST_FLAG_IS_INITED)
                   && load_dummy_core)
             {
-#ifdef HAVE_MENU
-               if (       ((settings->uints.quit_on_close_content ==
-                           QUIT_ON_CLOSE_CONTENT_CLI)
-                        && global->launched_from_cli)
-                        || (settings->uints.quit_on_close_content ==
-                           QUIT_ON_CLOSE_CONTENT_ENABLED)
-                  )
-                  command_event(CMD_EVENT_QUIT, NULL);
-#endif
                if (!task_push_start_dummy_core(&content_info))
                   return false;
             }
@@ -3693,6 +3684,8 @@ bool command_event(enum event_command cmd, void *data)
             menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
+         /* Check if we need to quit Retroarch */
+         check_quit_on_close();
 #else
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -8018,6 +8011,22 @@ void retroarch_fail(int error_code, const char *error)
    strlcpy(global->error_string,
          error, sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);
+}
+
+/* Called on close content, checks if we need to also exit retroarch */
+void check_quit_on_close(void)
+{
+#ifdef HAVE_MENU
+   settings_t *settings   = config_get_ptr();
+   global_t   *global     = global_get_ptr();
+   if (       ((settings->uints.quit_on_close_content ==
+               QUIT_ON_CLOSE_CONTENT_CLI)
+            && global->launched_from_cli)
+            || (settings->uints.quit_on_close_content ==
+               QUIT_ON_CLOSE_CONTENT_ENABLED)
+      )
+      command_event(CMD_EVENT_QUIT, NULL);
+#endif
 }
 
 /*

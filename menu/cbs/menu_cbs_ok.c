@@ -5572,6 +5572,8 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
+   check_quit_on_close();
+
    return ret;
 }
 
