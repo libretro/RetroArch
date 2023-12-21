@@ -9376,7 +9376,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             /* reset savefile dir as core_netpacket_interface affects it */
             runloop_path_set_redirect(config_get_ptr(),
                dir_get_ptr(RARCH_DIR_SAVEFILE),
-               dir_get_ptr(RARCH_DIR_CURRENT_SAVESTATE));
+               dir_get_ptr(RARCH_DIR_SAVESTATE));
          }
          break;
 
