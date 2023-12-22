@@ -7552,6 +7552,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
          );
 #endif
+   ui_companion_driver_init_first();
    drivers_init(settings, DRIVERS_CMD_ALL, 0, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(input_st);

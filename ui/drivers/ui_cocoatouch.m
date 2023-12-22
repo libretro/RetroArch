@@ -41,6 +41,7 @@
 #endif
 
 #import <AVFoundation/AVFoundation.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
@@ -55,6 +56,46 @@ static CFRunLoopObserverRef iterate_observer;
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
+
+static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
+{
+   static struct string_list *list = NULL;
+   static dispatch_once_t onceToken;
+
+   dispatch_once(&onceToken, ^{
+         union string_list_elem_attr attr;
+         attr.i = 0;
+         NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
+         NSString *primary;
+#if TARGET_OS_TV
+         primary = iconfiles[@"CFBundlePrimaryIcon"];
+#else
+         primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
+#endif
+         list = string_list_new();
+         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+
+         NSArray<NSString *> *alts;
+#if TARGET_OS_TV
+         alts = iconfiles[@"CFBundleAlternateIcons"];
+#else
+         alts = [iconfiles[@"CFBundleAlternateIcons"] allKeys];
+#endif
+         NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+         for (NSString *str in sorted)
+            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+      });
+
+   return list;
+}
+
+static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
+{
+   NSString *str;
+   if (!string_is_equal(iconName, "Default"))
+      str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
+   [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
+}
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
@@ -457,6 +498,22 @@ enum
    }
 }
 
+- (NSData *)pngForIcon:(NSString *)iconName
+{
+    UIImage *img;
+    NSData *png;
+    img = [UIImage imageNamed:iconName];
+    if (!img)
+        NSLog(@"could not load %@\n", iconName);
+    else
+    {
+        png = UIImagePNGRepresentation(img);
+        if (!png)
+            NSLog(@"could not get png for %@\n", iconName);
+    }
+    return png;
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    char arguments[]   = "retroarch";
@@ -598,6 +655,26 @@ enum
 #endif
 
 @end
+
+ui_companion_driver_t ui_companion_cocoatouch = {
+   NULL, /* init */
+   NULL, /* deinit */
+   NULL, /* toggle */
+   ui_companion_cocoatouch_event_command,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
+   NULL, /* is_active */
+   ui_companion_cocoatouch_get_app_icons,
+   ui_companion_cocoatouch_set_app_icon,
+   NULL, /* browser_window */
+   NULL, /* msg_window */
+   NULL, /* window */
+   NULL, /* application */
+   "cocoatouch",
+};
 
 int main(int argc, char *argv[])
 {
