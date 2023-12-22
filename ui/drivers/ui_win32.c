@@ -336,8 +336,6 @@ ui_companion_driver_t ui_companion_win32 = {
    NULL,
    NULL, /* log_msg */
    NULL, /* is_active */
-   NULL, /* get_app_icons */
-   NULL, /* set_app_icon */
    &ui_browser_window_win32,
    &ui_msg_window_win32,
    &ui_window_win32,
