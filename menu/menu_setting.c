@@ -9001,16 +9001,6 @@ static void timezone_change_handler(rarch_setting_t *setting)
 }
 #endif
 
-static void appicon_change_handler(rarch_setting_t *setting)
-{
-   uico_driver_state_t *uico_st    = uico_state_get_ptr();
-   if (!setting)
-      return;
-   if (!uico_st->drv || !uico_st->drv->set_app_icon)
-      return;
-   uico_st->drv->set_app_icon(setting->value.target.string);
-}
-
 #ifdef _3DS
 static void new3ds_speedup_change_handler(rarch_setting_t *setting)
 {
@@ -19513,36 +19503,6 @@ static bool setting_append_list(
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-         {
-            uico_driver_state_t *uico_st    = uico_state_get_ptr();
-            struct string_list *icons;
-            if (uico_st->drv && uico_st->drv->get_app_icons && (icons = uico_st->drv->get_app_icons()) && icons->size)
-            {
-               char *options;
-               int len = 0, i = 0;
-               for (; i < icons->size; i++)
-                  len += strlen(icons->elems[i].data) + 1;
-               options = (char*)calloc(len, sizeof(char));
-               string_list_join_concat(options, len, icons, "|");
-               CONFIG_STRING_OPTIONS(
-                  list, list_info,
-                  settings->paths.app_icon,
-                  sizeof(settings->paths.app_icon),
-                  MENU_ENUM_LABEL_APPICON_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-                  icons->elems[0].data,
-                  options,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
-               (*list)[list_info->index - 1].action_ok      = setting_action_ok_uint;
-               (*list)[list_info->index - 1].change_handler = appicon_change_handler;
-            }
-         }
 
          CONFIG_BOOL(
                list, list_info,
