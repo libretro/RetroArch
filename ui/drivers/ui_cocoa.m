@@ -1111,6 +1111,8 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_get_main_window,
    NULL, /* log_msg */
    NULL, /* is_active */
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

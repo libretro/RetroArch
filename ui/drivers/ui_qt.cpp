@@ -4940,6 +4940,8 @@ ui_companion_driver_t ui_companion_qt = {
    NULL,
    ui_companion_qt_log_msg,
    ui_companion_qt_is_active,
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
    &ui_browser_window_qt,
    &ui_msg_window_qt,
    &ui_window_qt,
