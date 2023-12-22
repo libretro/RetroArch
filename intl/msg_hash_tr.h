@@ -5506,6 +5506,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Menü ekranı görünüm ayarlarını düzenle."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Uygulama Simgesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Uygulama Simgesini Değiştir."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,

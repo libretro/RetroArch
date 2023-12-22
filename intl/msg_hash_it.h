@@ -5430,6 +5430,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Cambia le impostazioni dell'aspetto del menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Icona App"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Cambia Icona App."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,

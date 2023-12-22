@@ -5466,6 +5466,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Modifier les réglages d'apparence de l'écran du menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Icône de l’app"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Changer l'icône de l'application."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
