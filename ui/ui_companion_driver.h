@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <lists/file_list.h>
+#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -130,6 +131,8 @@ typedef struct ui_companion_driver
    void *(*get_main_window)(void *data);
    void (*log_msg)(void *data, const char *msg);
    bool (*is_active)(void *data);
+   struct string_list *(*get_app_icons)(void);
+   void (*set_app_icon)(const char *icon);
    ui_browser_window_t *browser_window;
    ui_msg_window_t     *msg_window;
    ui_window_t         *window;
@@ -181,6 +184,7 @@ void ui_companion_driver_toggle(
 uico_driver_state_t *uico_state_get_ptr(void);
 
 extern ui_companion_driver_t ui_companion_cocoa;
+extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
 
