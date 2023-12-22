@@ -41,9 +41,9 @@
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
 
-/* MSVC really doesn't want CINTERFACE to be used 
+/* MSVC really doesn't want CINTERFACE to be used
  * with shobjidl for some reason, but since we use C++ mode,
- * we need a workaround... so use the names of the 
+ * we need a workaround... so use the names of the
  * COBJMACROS functions instead. */
 #if defined(__cplusplus) && !defined(CINTERFACE)
 #define ITaskbarList3_HrInit(x) (x)->HrInit()
@@ -53,14 +53,14 @@
 #endif
 
 /*
-   NOTE: When an application displays a window, 
+   NOTE: When an application displays a window,
    its taskbar button is created by the system.
    When the button is in place, the taskbar sends a
-   TaskbarButtonCreated message to the window. 
+   TaskbarButtonCreated message to the window.
 
    Its value is computed by calling RegisterWindowMessage(
    L("TaskbarButtonCreated")).
-   That message must be received by your application before 
+   That message must be received by your application before
    it calls any ITaskbarList3 method.
  */
 #endif
@@ -92,13 +92,13 @@ static void *win32_display_server_init(void)
 
 #ifdef HAS_TASKBAR_EXT
 #ifdef __cplusplus
-   /* When compiling in C++ mode, GUIDs 
+   /* When compiling in C++ mode, GUIDs
       are references instead of pointers */
    if (FAILED(CoCreateInstance(CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
          (void**)&dispserv->taskbar_list)))
 #else
-   /* Mingw GUIDs are pointers 
+   /* Mingw GUIDs are pointers
       instead of references since we're in C mode */
    if (FAILED(CoCreateInstance(&CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
@@ -285,19 +285,19 @@ static bool win32_display_server_set_resolution(void *data,
          continue;
 #endif
 
-      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT 
+      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT
                   | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 #if _WIN32_WINNT >= 0x0500
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-      res = win32_change_display_settings(&current_mon.szDevice, &dm, CDS_TEST);
+      res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, CDS_TEST);
 
       switch (res)
       {
          case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(&current_mon.szDevice, &dm, 0);
+            res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, 0);
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
@@ -461,7 +461,7 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_90 
+            if ((       dm.dmDisplayOrientation == DMDO_90
                      || dm.dmDisplayOrientation == DMDO_270)
                      && (width != (int)dm.dmPelsHeight))
             {
@@ -477,8 +477,8 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
-                     || dm.dmDisplayOrientation == DMDO_180) 
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
+                     || dm.dmDisplayOrientation == DMDO_180)
                      && (width != (int)dm.dmPelsHeight))
             {
                /* Device is changing orientations, swap the aspect */
@@ -493,7 +493,7 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_90 
+            if ((       dm.dmDisplayOrientation == DMDO_90
                      || dm.dmDisplayOrientation == DMDO_270)
                      && (width != (int)dm.dmPelsHeight))
             {
@@ -509,7 +509,7 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
                      || dm.dmDisplayOrientation == DMDO_180)
                      && (width != (int)dm.dmPelsHeight))
             {

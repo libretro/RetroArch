@@ -2693,7 +2693,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    memset(dm, 0, len);
    dm->dmSize  = len;
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
-   if (WIN32_GET_VIDEO_OUTPUT(&current_mon.szDevice, (mode == -1)
+   if (WIN32_GET_VIDEO_OUTPUT((const char*)&current_mon.szDevice, (mode == -1)
             ? ENUM_CURRENT_SETTINGS
             : (DWORD)mode,
             dm) == 0)
