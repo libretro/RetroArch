@@ -1864,7 +1864,7 @@ enum retro_mod
                                             * multiplayer, where a deterministic core supporting multiple
                                             * input devices does not need to take any action on its own.
                                             */
-#define RETRO_ENVIRONMENT_GET_EXTRA_INPUT_ACTIONS 79
+#define RETRO_ENVIRONMENT_GET_EXTRA_INPUT_ACTIONS (79 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_get_extra_input_actions * --
                                             * Allows the core to query information on input actions
                                             * that are additionally available but not bound to any
@@ -3397,10 +3397,10 @@ struct retro_get_extra_input_actions
         bool known;
 
         /** The number of extra IDs. */
-        unsigned numExtra;
+        unsigned num_extra;
 
         /** The start ID of the extra IDs. */
-        unsigned numExtraStartId;
+        unsigned extra_start_id;
     } response;
 };
 
