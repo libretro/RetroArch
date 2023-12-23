@@ -87,6 +87,15 @@ enum playlist_thumbnail_id
    PLAYLIST_THUMBNAIL_LEFT
 };
 
+enum playlist_thumbnail_name_flags
+{
+   PLAYLIST_THUMBNAIL_FLAG_INVALID          = 0,
+   PLAYLIST_THUMBNAIL_FLAG_FULL_NAME        = (1 << 0),
+   PLAYLIST_THUMBNAIL_FLAG_STD_NAME         = (1 << 1),
+   PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME       = (1 << 2),
+   PLAYLIST_THUMBNAIL_FLAG_NONE             = (1 << 3)
+};
+
 typedef struct content_playlist playlist_t;
 
 /* Holds all parameters required to uniquely
@@ -129,6 +138,7 @@ struct playlist_entry
    unsigned last_played_minute;
    unsigned last_played_second;
    enum playlist_runtime_status runtime_status;
+   enum playlist_thumbnail_name_flags thumbnail_flags;
 };
 
 /* Holds all configuration parameters required
@@ -290,6 +300,11 @@ void playlist_update(playlist_t *playlist, size_t idx,
 void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry,
       bool register_update);
+
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx, 
+     enum playlist_thumbnail_name_flags thumbnail_flags);
+enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx);
+enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx);
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
