@@ -3514,6 +3514,9 @@ struct retro_query_input_device_id
 
             /** The description of this specific id, such as @c "Right Trigger". */
             const char* description;
+
+            /** The glyph that is shown for this input, may be @c NULL . */
+            const char* glyph;
         } specific;
     } response;
 };
