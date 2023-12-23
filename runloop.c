@@ -1402,6 +1402,10 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
 }
 
 
+void rarch_query_input_device_id(rarch_system_info_t *system_info, struct retro_query_input_device_id *idQuery) {
+    /* TODO: Implement this. */
+}
+
 bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
@@ -3551,6 +3555,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+      case RETRO_ENVIRONMENT_QUERY_INPUT_DEVICE_ID:
+         rarch_query_input_device_id(sys_info, (struct retro_query_input_device_id*)data);
+         break;
+
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;

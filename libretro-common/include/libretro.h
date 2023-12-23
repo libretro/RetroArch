@@ -1864,6 +1864,16 @@ enum retro_mod
                                             * multiplayer, where a deterministic core supporting multiple
                                             * input devices does not need to take any action on its own.
                                             */
+#define RETRO_ENVIRONMENT_QUERY_INPUT_DEVICE_ID 79
+                                           /* const struct retro_query_input_device_id * --
+                                            * Allows a core to query information about what an id of
+                                            * a given device represents along with generic input information.
+                                            * The structure used is freeform.
+                                            * If this returns zero then the core must assume that the
+                                            * frontend does not provide such functionality.
+                                            * This realistically should be called before
+                                            * RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS.
+                                            */
 
 /* VFS functionality */
 
@@ -3370,6 +3380,142 @@ struct retro_input_descriptor
     * The pointer must remain valid until
     * retro_unload_game() is called. */
    const char *description;
+};
+
+/** Used with @c retro_query_input_device_id to classify a specific input. */
+enum retro_query_input_device_id_class
+{
+    /** Unbound action, not bound to any key. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_UNBOUND,
+
+    /** Standard digital button. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_DIGITAL_BUTTON,
+
+    /** Analog button. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_ANALOG_BUTTON,
+
+    /** Analog trigger. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_ANALOG_TRIGGER,
+
+    /** Analog Joystick. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_JOYSTICK,
+
+    /** Digital hat (d-pad). */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_HAT,
+
+    /** Throttle. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_THROTTLE,
+
+    /** Touch pad. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_TOUCH_PAD,
+
+    /** Mouse. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_MOUSE,
+
+    /** Light Gun. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_LIGHT_GUN,
+
+    /** Number Pad, 1 on bottom. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_NUMBER_PAD,
+
+    /** Dial Pad, 1 on top. */
+    RETRO_QUERY_INPUT_DEVICE_ID_CLASS_DIAL_PAD,
+
+    /** The number of input classes. */
+    RETRO_NUM_QUERY_INPUT_DEVICE_ID_CLASS
+};
+
+/** Used with @c retro_query_input_device_id to specify where on the controller an input is. */
+enum retro_query_input_device_id_location
+{
+    /** Undefined. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_UNDEFINED,
+
+    /** Left. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_LEFT,
+
+    /** Middle. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_MIDDLE,
+
+    /** Right. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_RIGHT,
+
+    /** Top. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_TOP,
+
+    /** Bottom. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_BOTTOM,
+
+    /** Back. */
+    RETRO_QUERY_INPUT_DEVICE_ID_LOCATION_BACK,
+
+    /** The number of locations. */
+    RETRO_NUM_QUERY_INPUT_DEVICE_ID_LOCATION
+};
+
+/** Used with @c retro_query_input_device_id to specify the direction of the input relative to the location. */
+enum retro_query_input_device_id_direction
+{
+    /** Undefined. */
+    RETRO_QUERY_INPUT_DEVICE_ID_DIRECTION_UNDEFINED,
+
+    /** Left. */
+    RETRO_QUERY_INPUT_DEVICE_ID_DIRECTION_LEFT,
+
+    /** Right. */
+    RETRO_QUERY_INPUT_DEVICE_ID_DIRECTION_RIGHT,
+
+    /** Up. */
+    RETRO_QUERY_INPUT_DEVICE_ID_DIRECTION_UP,
+
+    /** Down. */
+    RETRO_QUERY_INPUT_DEVICE_ID_DIRECTION_DOWN,
+
+    /** The number of directions. */
+    RETRO_NUM_QUERY_INPUT_DEVICE_ID_DIRECTION
+};
+
+/** Used with @c RETRO_ENVIRONMENT_QUERY_INPUT_DEVICE_ID to query device info. */
+struct retro_query_input_device_id
+{
+    /** Query for device information. */
+    struct {
+        /** The device type to query such as @c RETRO_DEVICE_JOYPAD . */
+        unsigned device;
+
+        /** The ID of the specific input such as @c RETRO_DEVICE_ID_JOYPAD_Y. */
+        unsigned id;
+    } query;
+
+    /** Response given from the give query. */
+    struct {
+        /** General response given for all commands. */
+        struct {
+            /** The number of unbound actions. */
+            unsigned numUnbound;
+
+            /** The start id of unbound actions. */
+            unsigned unboundStartId;
+        } general;
+
+        /** Response for the specific device and ID. */
+        struct {
+            /** Whether or not this input is known, if it is then other fields are valid. */
+            bool known_id;
+
+            /** The class of input this is, one of @c retro_query_input_device_id_class .*/
+            enum retro_query_input_device_id_class input_class;
+
+            /** The location where this button is on a controller, one of @c retro_query_input_device_id_location . */
+            enum retro_query_input_device_id_location location;
+
+            /** The direction the button is on relative to its location on the controller, one of @c retro_query_input_device_id_direction .*/
+            enum retro_query_input_device_id_direction direction;
+
+            /** The description of this specific id, such as @c "Right Trigger". */
+            const char* description;
+        } specific;
+    } response;
 };
 
 struct retro_system_info
