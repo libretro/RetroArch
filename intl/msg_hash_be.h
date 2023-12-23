@@ -3246,14 +3246,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    "Змяніць адлюстраванне элементаў меню RetroArch."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Значок праграмы"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Змяніць значок праграмы."
-   )
 #ifdef _3DS
 #endif
 MSG_HASH(
@@ -7236,6 +7228,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
    "Памылка пры зняцці набору налад шэйдара."
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Не атрымалася разблакаваць ядро: "
    )
 
 /* Lakka */
