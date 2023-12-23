@@ -92,7 +92,7 @@
 )
 
 /* Human readable order of input binds */
-const unsigned input_config_bind_order[24] = {
+const unsigned input_config_bind_order[RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
    RETRO_DEVICE_ID_JOYPAD_DOWN,
    RETRO_DEVICE_ID_JOYPAD_LEFT,
@@ -109,14 +109,14 @@ const unsigned input_config_bind_order[24] = {
    RETRO_DEVICE_ID_JOYPAD_R2,
    RETRO_DEVICE_ID_JOYPAD_L3,
    RETRO_DEVICE_ID_JOYPAD_R3,
-   19, /* Left Analog Up */
-   18, /* Left Analog Down */
-   17, /* Left Analog Left */
-   16, /* Left Analog Right */
-   23, /* Right Analog Up */
-   22, /* Right Analog Down */
-   21, /* Right Analog Left */
-   20, /* Right Analog Right */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_UP, /* Left Analog Up */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_DOWN, /* Left Analog Down */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_LEFT, /* Left Analog Left */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_RIGHT, /* Left Analog Right */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_UP, /* Right Analog Up */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_DOWN, /* Right Analog Down */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_LEFT, /* Right Analog Left */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_RIGHT, /* Right Analog Right */
 };
 
 /**************************************/

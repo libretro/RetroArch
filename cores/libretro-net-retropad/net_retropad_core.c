@@ -92,7 +92,7 @@ static struct descriptor joypad = {
    .index_min = 0,
    .index_max = 0,
    .id_min = RETRO_DEVICE_ID_JOYPAD_B,
-   .id_max = RETRO_DEVICE_ID_JOYPAD_R3
+   .id_max = RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS
 };
 
 static struct descriptor analog = {
