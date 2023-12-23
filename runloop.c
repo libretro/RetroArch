@@ -1401,8 +1401,14 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
+void rarch_query_input_device_id(rarch_system_info_t *system_info,
+    struct retro_get_extra_input_actions *idQuery) {
 
-void rarch_query_input_device_id(rarch_system_info_t *system_info, struct retro_query_input_device_id *idQuery) {
+    /* We only know about the joypad. */
+    if (idQuery->query.device != RETRO_DEVICE_JOYPAD) {
+        idQuery->response.known = false;
+    }
+
     /* TODO: Implement this. */
 }
 
@@ -3555,8 +3561,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
-      case RETRO_ENVIRONMENT_QUERY_INPUT_DEVICE_ID:
-         rarch_query_input_device_id(sys_info, (struct retro_query_input_device_id*)data);
+      case RETRO_ENVIRONMENT_GET_EXTRA_INPUT_ACTIONS:
+         rarch_query_input_device_id(sys_info, (struct retro_get_extra_input_actions*)data);
          break;
 
       default:
