@@ -5512,7 +5512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Uygulama Simgesini Değiştir."
+   "Uygulama Simgesini Değiştir"
    )
 #ifdef _3DS
 MSG_HASH(

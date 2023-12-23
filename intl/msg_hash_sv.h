@@ -4050,6 +4050,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    "Räkna körningar"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+   "Körräknare för RetroArch och kärnor. Räknardata kan hjälpa till att fastställa systemets flaskhalsar och finjustera prestanda."
+   )
 
 /* Settings > File Browser */
 
@@ -4090,7 +4094,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   "Hastighet Snabbspola framåt"
+   "Snabbspola framåt-hastighet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "Snabbspola framåt-bildrutshopp"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -4105,7 +4113,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "Spola tillbaka buffertstorleken (MB)"
+   "Spola tillbaka Buffertstorlek (MB)"
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
