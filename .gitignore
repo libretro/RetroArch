@@ -57,7 +57,6 @@ xcuserdata
 profile
 *.moved-aside
 DerivedData
-.idea/
 *.hmap
 apple/tmp
 apple/*.mobileprovision
