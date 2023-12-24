@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Dependencies" pattern="file[RetroArch]:deps//*" />
+</component>
