@@ -91,6 +91,8 @@
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
+#define INPUT_CONFIG_MASS_BIND_ORDER_NIL2
+#define INPUT_CONFIG_MASS_BIND_ORDER_NIL INPUT_CONFIG_MASS_BIND_ORDER_NIL2
 #define INPUT_CONFIG_MASS_BIND_ORDER_PASTE2(a, b) a##b
 #define INPUT_CONFIG_MASS_BIND_ORDER_PASTE(a, b) INPUT_CONFIG_MASS_BIND_ORDER_PASTE2(a, b)
 #define INPUT_CONFIG_MASS_BIND_ORDER(x) (24 + x)
@@ -145,7 +147,7 @@ const unsigned input_config_bind_order[rarch_num_bind_game_controller()] = {
    RETRO_DEVICE_ID_JOYPAD_ANALOG_R_RIGHT, /* Right Analog Right */
 
    /* The remaining 36 + 128 = 164 entries, just 1:1 mapped... starts at 24. */
-   INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED(,),
+   INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED(INPUT_CONFIG_MASS_BIND_ORDER_NIL,INPUT_CONFIG_MASS_BIND_ORDER_NIL),
    INPUT_CONFIG_MASS_BIND_ORDER_TEN(10),
    INPUT_CONFIG_MASS_BIND_ORDER_TEN(11),
    INPUT_CONFIG_MASS_BIND_ORDER_TEN(12),
@@ -157,6 +159,8 @@ const unsigned input_config_bind_order[rarch_num_bind_game_controller()] = {
 #undef INPUT_CONFIG_MASS_BIND_ORDER
 #undef INPUT_CONFIG_MASS_BIND_ORDER_TEN
 #undef INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED
+#undef INPUT_CONFIG_MASS_BIND_ORDER_NIL2
+#undef INPUT_CONFIG_MASS_BIND_ORDER_NIL
 
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
