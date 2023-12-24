@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #define MAX_USERS                      16
 
@@ -28,15 +29,18 @@
 
 #define RARCH_MAX_KEYS 137
 
+/**
+ * When using this to check if a bind is part of a game controller use
+ * instead @c rarch_bind_is_game_controller() .
+ *
+ * Instead of using @code RARCH_FIRST_CUSTOM_BIND + 8 @endcode use
+ * instead @c rarch_bind_num_game_controller() .
+ */
 #define RARCH_FIRST_CUSTOM_BIND        16
+
 #define RARCH_FIRST_LIGHTGUN_BIND      RARCH_ANALOG_BIND_LIST_END
 #define RARCH_FIRST_MISC_CUSTOM_BIND   RARCH_LIGHTGUN_BIND_LIST_END
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
-
-#define RARCH_MAX_EXTRA_BUTTON         (RETRO_DEVICE_ID_JOYPAD_MASK - RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS)
-#define RARCH_EXTRA_BUTTON_ID(id)      (RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS + (id))
-
-#define RARCH_EXTRA_BUTTON_ID_END      (RARCH_FIRST_META_KEY + RARCH_MAX_EXTRA_BUTTON)
 
 #define RARCH_UNMAPPED                 1024
 
@@ -126,6 +130,12 @@ enum
    /* Turbo */
    RARCH_TURBO_ENABLE = RARCH_FIRST_MISC_CUSTOM_BIND,
 
+   /**
+    * End of the custom bind list.
+    *
+    * Instead of using this to check whether a button is part of
+    * a game controller, use @c rarch_bind_is_game_controller() .
+    */
    RARCH_CUSTOM_BIND_LIST_END,
 
    /* Command binds. Not related to game input,
@@ -259,5 +269,85 @@ enum input_turbo_default_button
 };
 
 RETRO_END_DECLS
+
+/**
+ * Represents an actual bind id.
+ *
+ * @since 2023/12/24
+ */
+typedef unsigned rarch_bind_id;
+
+/**
+ * Represents a logical bind id.
+ *
+ * @since 2023/12/24
+ */
+typedef unsigned rarch_logical_bind_id;
+
+/**
+ * Translates a real bind id to a logical bind id.
+ *
+ * @param bind The input bind.
+ * @return The resultant logical index.
+ * @since 2023/12/24
+ */
+static INLINE rarch_logical_bind_id rarch_bind_to_logical_game_controller(rarch_bind_id bind)
+{
+    if (bind < RARCH_CUSTOM_BIND_LIST_END)
+        return bind;
+
+    if (bind >= RARCH_EXTRA_CORE_COMMAND_START && bind < RARCH_EXTRA_CORE_COMMAND_END)
+        return RARCH_CUSTOM_BIND_LIST_END + bind;
+
+    return RARCH_BIND_LIST_END_NULL;
+}
+
+/**
+ * Translates a logical bind id to an actual one.
+ *
+ * @param bind The logical game controller bind.
+ * @return The resultant bind id.
+ * @since 2023/12/24
+ */
+static INLINE rarch_bind_id rarch_logical_to_bind_game_controller(rarch_logical_bind_id bind)
+{
+    if (bind >= RARCH_CUSTOM_BIND_LIST_END)
+        return (RARCH_EXTRA_CORE_COMMAND_START + bind);
+
+    return bind;
+}
+
+/**
+ * Returns the number of binds that are part of game controllers.
+ *
+ * @return The number of binds that are part of game controllers.
+ * @since 2023/12/24
+ */
+#define rarch_bind_num_game_controller() (RARCH_CUSTOM_BIND_LIST_END + RARCH_EXTRA_CORE_COMMAND_COUNT)
+
+/**
+ * Checks whether the given bind is considered to be part of a controller.
+ *
+ * @param bind The bind id to check.
+ * @return If it is a game controller bind.
+ * @since 2023/12/24
+ */
+static INLINE bool rarch_bind_is_game_controller(rarch_bind_id bind)
+{
+    return (bind < RARCH_CUSTOM_BIND_LIST_END) ||
+           (bind >= RARCH_EXTRA_CORE_COMMAND_START && bind < RARCH_EXTRA_CORE_COMMAND_END);
+}
+
+/**
+ * Checks whether the given bind is valid for a logical bind.
+ *
+ * @param bind The logical bind to check.
+ * @return If it is a valid logical bind.
+ * @since 2023/12/24
+ */
+static INLINE bool rarch_logical_bind_is_game_controller(rarch_logical_bind_id bind)
+{
+    return bind < rarch_bind_num_game_controller();
+}
 
 #endif

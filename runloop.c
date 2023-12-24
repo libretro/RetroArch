@@ -1443,12 +1443,7 @@ static void rarch_set_input_descriptors(const void *data,
 
        /* Ignore extended custom binds. */
        if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
-       {
-          /* However if we are using extra keys, remap them accordingly. */
-          if (!(desc->id >= RARCH_EXTRA_BUTTON_ID(0) &&
-             desc->id < RARCH_EXTRA_BUTTON_ID(RARCH_MAX_EXTRA_BUTTON)))
-             continue;
-       }
+           continue;
 
        switch (desc->device)
        {
@@ -1542,18 +1537,6 @@ static void rarch_set_input_descriptors(const void *data,
                 RARCH_DBG("      \"%s\" => \"%s\"\n",
                       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index),
                       description);
-             }
-
-             for (retro_id = RARCH_EXTRA_BUTTON_ID(0); retro_id < RARCH_EXTRA_BUTTON_ID_END; retro_id++)
-             {
-                 const char *description = sys_info->input_desc_btn[mapped_port][retro_id];
-
-                 if (!description)
-                     continue;
-
-                 RARCH_DBG("      Extra %d => \"%s\"\n",
-                           retro_id,
-                           description);
              }
           }
        }
