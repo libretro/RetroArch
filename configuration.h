@@ -150,8 +150,8 @@ typedef struct settings
       unsigned input_analog_dpad_mode[MAX_USERS];
 
       unsigned input_remap_ports[MAX_USERS];
-      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
-      unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_remap_ids[MAX_USERS][RARCH_MAX_TOTAL_BUTTON];
+      unsigned input_keymapper_ids[MAX_USERS][RARCH_MAX_TOTAL_BUTTON];
       unsigned input_remap_port_map[MAX_USERS][MAX_USERS + 1];
 
       unsigned led_map[MAX_LEDS];

@@ -169,7 +169,7 @@ typedef struct rarch_system_info
    disk_control_interface_t disk_control;      /* ptr alignment */
    struct retro_system_info info;              /* ptr alignment */
    rarch_memory_map_t mmaps;                   /* ptr alignment */
-   const char *input_desc_btn[MAX_USERS][RARCH_EXTRA_BUTTON_ID_END];
+   const char *input_desc_btn[MAX_USERS][RARCH_MAX_TOTAL_BUTTON];
    struct
    {
       struct retro_subsystem_info *data;
