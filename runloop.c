@@ -1401,18 +1401,8 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
-static void rarch_get_extra_input_actions(rarch_system_info_t *system_info,
-    struct retro_get_extra_input_actions *request) {
-    /* We only know/care about the joypad. */
-    if (request->query.device != RETRO_DEVICE_JOYPAD) {
-        request->response.known = false;
-    }
-
-    /* Reserve all the buttons after the current maximum. */
-    /* When cores send the input descriptors they will have to start at the given base. */
-    request->response.known = true;
-    request->response.extra_start_id = RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS;
-    request->response.num_extra = RARCH_MAX_EXTRA_BUTTON;
+static void rarch_set_extra_core_commands(rarch_system_info_t *system_info,
+    struct retro_extra_core_commands *input) {
 }
 
 static void rarch_set_input_descriptors(const void *data, unsigned int p,
@@ -3588,8 +3578,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
-      case RETRO_ENVIRONMENT_GET_EXTRA_INPUT_ACTIONS:
-         rarch_get_extra_input_actions(sys_info, (struct retro_get_extra_input_actions*)data);
+      case RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS:
+         rarch_set_extra_core_commands(sys_info, (struct retro_extra_core_commands*)data);
          break;
 
       default:

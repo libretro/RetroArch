@@ -1864,15 +1864,13 @@ enum retro_mod
                                             * multiplayer, where a deterministic core supporting multiple
                                             * input devices does not need to take any action on its own.
                                             */
-#define RETRO_ENVIRONMENT_GET_EXTRA_INPUT_ACTIONS (79 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_get_extra_input_actions * --
-                                            * Allows the core to query information on input actions
-                                            * that are additionally available but not bound to any
-                                            * physical button or key.
-                                            * If this returns zero then the core must assume that the
-                                            * frontend does not provide such functionality.
-                                            * This realistically should be called before
-                                            * RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS.
+#define RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS (79 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_extra_core_commands* --
+                                            * Defines extra commands that can be specified
+                                            * in the menu that when executed will emit a callback into
+                                            * a core for the command. These can act as extra input keys
+                                            * for a given core. Some commands may be specified to
+                                            * send the command over netplay as well.
                                             */
 
 /* VFS functionality */
@@ -3382,26 +3380,48 @@ struct retro_input_descriptor
    const char *description;
 };
 
-/** Used with @c RETRO_ENVIRONMENT_GET_EXTRA_INPUT_ACTIONS to query device info. */
-struct retro_get_extra_input_actions
+/** Used with @c retro_extra_core_commands . */
+struct retro_extra_core_commands_action
 {
-    /** Query for device information. */
-    struct {
-        /** The device type to query such as @c RETRO_DEVICE_JOYPAD . */
-        unsigned device;
-    } query;
+    /** The ID number of the specific command. */
+    unsigned id;
 
-    /** Response given from the give query. */
-    struct {
-        /** Is this device type known? */
-        bool known;
+    /** Should this command be sent over net play?
+     * If this is @c true then input commands will be queued and executed
+     * before the next @c retro_run rather than instantly.
+     * Any command like this will be placed in the player controls accordingly. */
+    bool syncedPlayer;
 
-        /** The number of extra IDs. */
-        unsigned num_extra;
+    /** The glyph to use for this command. */
+    const char* glyph;
 
-        /** The start ID of the extra IDs. */
-        unsigned extra_start_id;
-    } response;
+    /** The description of the command. */
+    const char* description;
+};
+
+/**
+ * Call back to be called when the command is activated, this will be sent to the core
+ * and it may choose whatever action it desires.
+ *
+ * @param action The core action that is being executed.
+ * @param controllerPort The controller port which ran this command.
+ * @since 2023/12/23
+ */
+typedef void (*retro_extra_core_command_callback)(
+    struct retro_extra_core_commands_action* action,
+    unsigned controllerPort);
+
+/** Used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS to set extra core commands. */
+struct retro_extra_core_commands
+{
+    /** The callback to be executed on a command run. */
+    retro_extra_core_command_callback callback;
+
+    /** The number of actions to define. */
+    unsigned num_actions;
+
+    /** The core commands that exist. */
+    const struct retro_extra_core_commands_action* actions;
 };
 
 struct retro_system_info
