@@ -9021,7 +9021,7 @@ static bool setting_append_list_input_player_options(
     */
    static char buffer[MAX_USERS][13+2+1];
    static char group_label[MAX_USERS][255];
-   unsigned i, j;
+   unsigned bindish, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -9259,11 +9259,11 @@ static bool setting_append_list_input_player_options(
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
          size_t _len = 0;
-         i           =  (j < RARCH_ANALOG_BIND_LIST_END)
+          bindish           = (j < RARCH_ANALOG_BIND_LIST_END)
             ? input_config_bind_order[j]
             : j;
 
-         if (input_config_bind_map_get_meta(i))
+         if (input_config_bind_map_get_meta(bindish))
             continue;
 
          name[0]          = '\0';
@@ -9279,19 +9279,19 @@ static bool setting_append_list_input_player_options(
 
          if (
                settings->bools.input_descriptor_label_show
-               && (i < RARCH_FIRST_META_KEY)
+               && (bindish < RARCH_FIRST_META_KEY)
                && core_has_set_input_descriptor()
-               && (i != RARCH_TURBO_ENABLE)
+               && (bindish != RARCH_TURBO_ENABLE)
             )
          {
-            if (sys_info->input_desc_btn[user][i])
+            if (sys_info->input_desc_btn[user][bindish])
                strlcpy(label       + _len,
-                     sys_info->input_desc_btn[user][i],
+                     sys_info->input_desc_btn[user][bindish],
                      sizeof(label) - _len);
             else
             {
                snprintf(label, sizeof(label), "%s (%s)",
-                     input_config_bind_map_get_desc(i),
+                     input_config_bind_map_get_desc(bindish),
                      value_na);
 
                if (settings->bools.input_descriptor_hide_unbound)
@@ -9300,23 +9300,23 @@ static bool setting_append_list_input_player_options(
          }
          else
             strlcpy(label       + _len,
-                  input_config_bind_map_get_desc(i),
+                  input_config_bind_map_get_desc(bindish),
                   sizeof(label) - _len);
 
-         snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
+         snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(bindish));
 
          CONFIG_BIND_ALT(
                list, list_info,
-               &input_config_binds[user][i],
+               &input_config_binds[user][bindish],
                user + 1,
                user,
                strdup(name),
                strdup(label),
-               &defaults[i],
+               &defaults[bindish],
                &group_info,
                &subgroup_info,
                parent_group);
-         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+         (*list)[list_info->index - 1].bind_type = bindish + MENU_SETTINGS_BIND_BEGIN;
       }
    }
 
