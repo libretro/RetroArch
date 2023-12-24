@@ -1416,15 +1416,17 @@ static void rarch_set_extra_core_commands(rarch_system_info_t *system_info,
         /* Get base action. */
         action = &input->actions[at];
 
-
+        RARCH_LOG("TODO: ");
     }
 }
 
-static void rarch_set_input_descriptors(const void *data, unsigned int p,
+static void rarch_set_input_descriptors(const void *data,
         runloop_state_t *runloop_st, const settings_t *settings,
         rarch_system_info_t *sys_info) {
     unsigned retro_id;
     const struct retro_input_descriptor *desc = NULL;
+    unsigned int p
+
     memset((void*)&sys_info->input_desc_btn, 0,
           sizeof(sys_info->input_desc_btn));
 
@@ -2208,7 +2210,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          if (sys_info)
          {
-             rarch_set_input_descriptors(data, p, runloop_st, settings, sys_info);
+             rarch_set_input_descriptors(data, runloop_st, settings, sys_info);
          }
          break;
       }
