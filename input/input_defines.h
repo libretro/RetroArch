@@ -313,6 +313,20 @@ static INLINE bool rarch_logical_bind_is_extended_basic(rarch_logical_bind_id bi
 }
 
 /**
+ * Returns the extended index of a given key.
+ *
+ * @param bind The bind to get the extended index of.
+ * @return The index of then given key or @c -1 if not valid.
+ * @since 2023/12/24
+ */
+static INLINE int rarch_logical_bind_get_extended_index(rarch_logical_bind_id bind)
+{
+    if (bind < RARCH_CUSTOM_BIND_LIST_END)
+        return -1;
+    return bind - RARCH_CUSTOM_BIND_LIST_END;
+}
+
+/**
  * Translates a real bind id to a logical bind id.
  *
  * @param bind The input bind.

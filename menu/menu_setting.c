@@ -224,9 +224,9 @@
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_hex(a, b, c, d, e, f, g, h, i, j, k, l)
 
-#define CONFIG_BIND_ALT(a, b, c, d, e, f, g, h, i, j, k) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_bind_alt(a, b, c, d, e, f, g, h, i, j, k)
+#define CONFIG_BIND_ALT(list, list_info, target, player, player_offset, name, SHORT, default_value, group_info, subgroup_info, parent_group) \
+   if (SETTINGS_LIST_APPEND(list, list_info)) \
+      config_bind_alt(list, list_info, target, player, player_offset, name, SHORT, default_value, group_info, subgroup_info, parent_group)
 
 #define CONFIG_BIND(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
@@ -9272,7 +9272,7 @@ static bool setting_append_list_input_player_options(
 
             /* For extended basic buttons we go really deep into the actual bind
              * map as it is not at the start which @c input_config_bind_order
-             * assumes, so effectively use the real bindid for its position. */
+             * assumes, so effectively use the real bind id for its position. */
             if (rarch_logical_bind_is_extended_basic(logical_bind))
                 bindish = bindid;
             else
@@ -9308,16 +9308,28 @@ static bool setting_append_list_input_player_options(
          {
             /* For core defined keys, we use the label provided by the core... if any. */
             if (sys_info->input_desc_btn[user][logical_bind])
+            {
                strlcpy(label       + _len,
                      sys_info->input_desc_btn[user][logical_bind],
                      sizeof(label) - _len);
+            }
 
             /* Otherwise we just label it with the description of the key. */
             else
             {
-               snprintf(label, sizeof(label), "%s (%s)",
-                     input_config_bind_map_get_desc(bindish),
-                     value_na);
+               /* For logical keys they have no true label, so use a generic name for them. */
+               if (rarch_logical_bind_is_extended_basic(logical_bind))
+               {
+                   snprintf(label, sizeof(label), "Logical %d (%s)",
+                            rarch_logical_bind_get_extended_index(logical_bind),
+                            value_na);
+               }
+               else
+               {
+                   snprintf(label, sizeof(label), "%s (%s)",
+                         input_config_bind_map_get_desc(bindish),
+                         value_na);
+               }
 
                if (settings->bools.input_descriptor_hide_unbound)
                   continue;
@@ -9328,7 +9340,9 @@ static bool setting_append_list_input_player_options(
                   input_config_bind_map_get_desc(bindish),
                   sizeof(label) - _len);
 
-         snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(bindish));
+         /* Essentially p1_y. */
+         snprintf(name, sizeof(name), "p%u_%s",
+            user + 1, input_config_bind_map_get_base(bindish));
 
          CONFIG_BIND_ALT(
                list, list_info,
