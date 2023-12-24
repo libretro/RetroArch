@@ -394,8 +394,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
 
    DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
-
-   /* Extra defined keys. */
 #if 0
    /* Deprecated */
    DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,        MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
@@ -5671,34 +5669,6 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
    return task_push_start_dummy_core(&content_info);
 }
 
-#define KEYSTRING_BUTTON_BUF_SIZE 8
-typedef char rarch_key_strings_array[RARCH_MAX_TOTAL_BUTTON][KEYSTRING_BUTTON_BUF_SIZE];
-
-static rarch_key_strings_array* rarch_static_key_strings(void)
-{
-    static bool didInit;
-    static char key_strings[RARCH_MAX_TOTAL_BUTTON][KEYSTRING_BUTTON_BUF_SIZE] = {
-        "b", "y", "select", "start",
-        "up", "down", "left", "right",
-        "a", "x", "l", "r", "l2", "r2",
-        "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
-    int i;
-
-    /* Need to initialize all of the extra keys? */
-    if (!didInit)
-    {
-        /* Do not initialize again. */
-        didInit = true;
-
-        /* Setup massive number of extra buttons. */
-        for (i = RARCH_FIRST_ID_EXTRA_BUTTON; i < RARCH_LAST_ID_EXTRA_BUTTON; i++)
-            snprintf(key_strings[i], KEYSTRING_BUTTON_BUF_SIZE - 1,
-                "ext%d", i - RARCH_FIRST_ID_EXTRA_BUTTON);
-    }
-
-    return &key_strings;
-}
-
 /**
  * input_remapping_load_file:
  * @data                     : Path to config file.
@@ -5713,10 +5683,11 @@ bool input_remapping_load_file(void *data, const char *path)
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
    runloop_state_t *runloop_st                      = runloop_state_get_ptr();
-   rarch_key_strings_array* key_strings;
-
-   /* Get all the key strings. */
-   key_strings = rarch_static_key_strings();
+   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
+      "b", "y", "select", "start",
+      "up", "down", "left", "right",
+      "a", "x", "l", "r", "l2", "r2",
+      "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
 
    if (    !conf
          || string_is_empty(path))
@@ -5745,11 +5716,11 @@ bool input_remapping_load_file(void *data, const char *path)
       _len       = strlcpy(s3, prefix, sizeof(s3));
       strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
-      for (j = 0; j < RARCH_MAX_TOTAL_BUTTON + 8; j++)
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
       {
-         const char *key_string = (*key_strings)[j];
+         const char *key_string = key_strings[j];
 
-         if (j < RARCH_FIRST_CUSTOM_BIND || j >= RARCH_FIRST_ID_EXTRA_BUTTON)
+         if (j < RARCH_FIRST_CUSTOM_BIND)
          {
             int btn_remap = -1;
             int key_remap = -1;
@@ -5843,14 +5814,19 @@ bool input_remapping_save_file(const char *path)
    bool ret;
    unsigned i, j;
    char remap_file_dir[PATH_MAX_LENGTH];
+   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   {
+      "b",      "y",      "select", "start",
+      "up",     "down",   "left",   "right",
+      "a",      "x",      "l",      "r",
+      "l2",     "r2",     "l3",     "r3",
+      "l_x+",   "l_x-",   "l_y+",   "l_y-",
+      "r_x+",   "r_x-",   "r_y+",   "r_y-"
+   };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    settings_t        *settings = config_st;
    unsigned          max_users = settings->uints.input_max_users;
-   rarch_key_strings_array* key_strings;
-
-   /* Get all the key strings. */
-   key_strings = rarch_static_key_strings();
 
    if (string_is_empty(path))
       return false;
@@ -5911,11 +5887,11 @@ bool input_remapping_save_file(const char *path)
       _len       = strlcpy(s3, prefix, sizeof(s3));
       strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
-      for (j = 0; j < RARCH_MAX_TOTAL_BUTTON; j++)
+      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
          char btn_ident[128];
          char key_ident[128];
-         const char *key_string = (*key_strings)[j];
+         const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
 

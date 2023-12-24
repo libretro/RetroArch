@@ -1403,17 +1403,6 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
 
 static void rarch_get_extra_input_actions(rarch_system_info_t *system_info,
     struct retro_get_extra_input_actions *request) {
-    static bool didInitExtra;
-
-    int i;
-
-    /* Do extra inputs need to be initialized? */
-    if (!didInitExtra) {
-        /* Do not initialize again. */
-        didInitExtra = true;
-
-    }
-
     /* We only know/care about the joypad. */
     if (request->query.device != RETRO_DEVICE_JOYPAD) {
         request->response.known = false;
@@ -1448,9 +1437,9 @@ static void rarch_set_input_descriptors(const void *data, unsigned int p,
        /* Ignore extended custom binds. */
        if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
        {
-          /* However if we are using extra binds, remap them accordingly. */
-          if (!(desc->id >= RARCH_FIRST_ID_EXTRA_BUTTON &&
-             desc->id < RARCH_LAST_ID_EXTRA_BUTTON))
+          /* However if we are using extra keys, remap them accordingly. */
+          if (!(desc->id >= RARCH_EXTRA_BUTTON_ID(0) &&
+             desc->id < RARCH_EXTRA_BUTTON_ID(RARCH_MAX_EXTRA_BUTTON)))
              continue;
        }
 
@@ -1548,7 +1537,7 @@ static void rarch_set_input_descriptors(const void *data, unsigned int p,
                       description);
              }
 
-             for (retro_id = RARCH_FIRST_ID_EXTRA_BUTTON; retro_id < RARCH_LAST_ID_EXTRA_BUTTON; retro_id++)
+             for (retro_id = RARCH_EXTRA_BUTTON_ID(0); retro_id < RARCH_EXTRA_BUTTON_ID_END; retro_id++)
              {
                  const char *description = sys_info->input_desc_btn[mapped_port][retro_id];
 

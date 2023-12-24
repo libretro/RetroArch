@@ -33,26 +33,10 @@
 #define RARCH_FIRST_MISC_CUSTOM_BIND   RARCH_LIGHTGUN_BIND_LIST_END
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
-/** The number of extra buttons to define, this is virtualized. */
-#define RARCH_MAX_EXTRA_BUTTON         128
+#define RARCH_MAX_EXTRA_BUTTON         (RETRO_DEVICE_ID_JOYPAD_MASK - RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS)
+#define RARCH_EXTRA_BUTTON_ID(id)      (RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS + (id))
 
-/** The base for extra buttons. */
-#define RARCH_BASE_EXTRA_BUTTON        24
-
-/** The total number of button binds which are possible. */
-#define RARCH_MAX_TOTAL_BUTTON         (RARCH_BASE_EXTRA_BUTTON + RARCH_MAX_EXTRA_BUTTON)
-
-/** An extra button at the given index. */
-#define RARCH_ID_EXTRA_BUTTON(id)      (RARCH_BASE_EXTRA_BUTTON + (id))
-
-/** The first starting extra button. */
-#define RARCH_FIRST_ID_EXTRA_BUTTON    RARCH_ID_EXTRA_BUTTON(0)
-
-/** The last ending extra button. */
-#define RARCH_LAST_ID_EXTRA_BUTTON     RARCH_ID_EXTRA_BUTTON(RARCH_MAX_EXTRA_BUTTON)
-
-/** Is this an extra button bind? */
-#define RARCH_IS_EXTRA_BUTTON_BIND(id) (((id) >= RARCH_FIRST_EXTRA_BUTTON_BIND) ? 1 : 0)
+#define RARCH_EXTRA_BUTTON_ID_END      (RARCH_FIRST_META_KEY + RARCH_MAX_EXTRA_BUTTON)
 
 #define RARCH_UNMAPPED                 1024
 

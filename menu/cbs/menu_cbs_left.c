@@ -135,71 +135,61 @@ static int action_left_cheat(unsigned type, const char *label,
 }
 #endif
 
-int action_bidirectional_input_desc(unsigned type, const char *label, bool wraparound, int direction)
-{
-    unsigned btn_idx;
-    unsigned user_idx;
-    unsigned remap_idx;
-    unsigned bind_idx;
-    unsigned mapped_port;
-    settings_t *settings                  = config_get_ptr();
-    rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
-
-    if (!settings || !sys_info)
-        return 0;
-
-    /* TODO: Implement this in a much nicer way! */
-
-#if 0
-    user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-    btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
-    mapped_port = settings->uints.input_remap_ports[user_idx];
-
-    if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_UNMAPPED)
-        settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
-
-    remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-    for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
-    {
-        if (input_config_bind_order[bind_idx] == remap_idx)
-            break;
-    }
-
-    if (bind_idx > 0)
-    {
-        if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
-            settings->uints.input_remap_ids[user_idx][btn_idx]--;
-        else
-        {
-            bind_idx--;
-            bind_idx = input_config_bind_order[bind_idx];
-            settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
-        }
-    }
-    else if (bind_idx == 0)
-        settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
-    else
-        settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
-
-    remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-
-    /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
-       also skip all the axes until analog remapping is implemented */
-    if (remap_idx != RARCH_UNMAPPED)
-    {
-        if ((string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
-          (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
-            action_bidirectional_input_desc(type, label, wraparound, direction);
-    }
-#endif
-
-    return 0;
-}
-
 static int action_left_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-    return action_bidirectional_input_desc(type, label, wraparound, -1);
+   unsigned btn_idx;
+   unsigned user_idx;
+   unsigned remap_idx;
+   unsigned bind_idx;
+   unsigned mapped_port;
+   settings_t *settings                  = config_get_ptr();
+   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
+   if (!settings || !sys_info)
+      return 0;
+
+   user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   mapped_port = settings->uints.input_remap_ports[user_idx];
+
+   if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_UNMAPPED)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
+
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+   for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
+   {
+      if (input_config_bind_order[bind_idx] == remap_idx)
+         break;
+   }
+
+   if (bind_idx > 0)
+   {
+      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
+         settings->uints.input_remap_ids[user_idx][btn_idx]--;
+      else
+      {
+         bind_idx--;
+         bind_idx = input_config_bind_order[bind_idx];
+         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+      }
+   }
+   else if (bind_idx == 0)
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+   else
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
+
+   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+   /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
+      also skip all the axes until analog remapping is implemented */
+   if (remap_idx != RARCH_UNMAPPED)
+   {
+      if ((string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
+          (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
+         action_left_input_desc(type, label, wraparound);
+   }
+
+   return 0;
 }
 
 static int action_left_input_desc_kbd(unsigned type, const char *label,

@@ -5470,7 +5470,7 @@ static int menu_displaylist_parse_input_description_list(
    btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
 
    if (   (user_idx >= MAX_USERS)
-       || (btn_idx >= RARCH_MAX_TOTAL_BUTTON))
+       || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
       return 0;
 
    mapped_port = settings->uints.input_remap_ports[user_idx];

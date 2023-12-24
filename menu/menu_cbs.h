@@ -335,20 +335,6 @@ void cb_generic_download(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
 
-/**
- * Bidirectional input descriptor navigation.
- *
- * @param type
- * @param label
- * @param wraparound
- * @param direction
- * @return Always zero?
- */
-int action_bidirectional_input_desc(unsigned type,
-    const char *label,
-    bool wraparound,
-    int direction);
-
 RETRO_END_DECLS
 
 #endif
