@@ -282,6 +282,38 @@ enum midi_driver_enum
 #define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
 #define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
+#define DECLARE_EXTRA_BIND_PASTE2(a, b) a##b
+#define DECLARE_EXTRA_BIND_PASTE(a, b) DECLARE_EXTRA_BIND_PASTE2(a, b)
+#define DECLARE_EXTRA_BIND_STRINGY2(a) #a
+#define DECLARE_EXTRA_BIND_STRINGY(a) DECLARE_EXTRA_BIND_STRINGY2(a)
+
+/** Declare an extra logical bind, the label used depends on the core. */
+#define DECLARE_EXTRA_BIND(id) {DECLARE_EXTRA_BIND_STRINGY(DECLARE_EXTRA_BIND_PASTE(log, id)), MENU_ENUM_LABEL_VALUE_INPUT_KEY, 0, id, true }
+
+/** Declare ten binds. */
+#define DECLARE_EXTRA_BIND_10(dig) \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 0)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 1)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 2)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 3)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 4)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 5)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 6)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 7)), \
+    DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 9))
+
+/* Declare one hundred binds. */
+#define DECLARE_EXTRA_BIND_100(hun, ten) \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, ten)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 1)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 2)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 3)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 4)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 5)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 6)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 7)), \
+    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 9))
+
 const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_BIND(b,                             RETRO_DEVICE_ID_JOYPAD_B,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
    DECLARE_BIND(y,                             RETRO_DEVICE_ID_JOYPAD_Y,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
@@ -394,11 +426,32 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
 
    DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
+
+   /* Extra keys, all of them. */
+   DECLARE_EXTRA_BIND_100(,),
+   DECLARE_EXTRA_BIND_10(10),
+   DECLARE_EXTRA_BIND_10(11),
+   DECLARE_EXTRA_BIND(120),
+   DECLARE_EXTRA_BIND(121),
+   DECLARE_EXTRA_BIND(122),
+   DECLARE_EXTRA_BIND(123),
+   DECLARE_EXTRA_BIND(124),
+   DECLARE_EXTRA_BIND(125),
+   DECLARE_EXTRA_BIND(126),
+   DECLARE_EXTRA_BIND(127),
+
 #if 0
    /* Deprecated */
    DECLARE_META_BIND(2, send_debug_info,       RARCH_SEND_DEBUG_INFO,        MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO),
 #endif
 };
+
+#undef DECLARE_EXTRA_BIND_PASTE2
+#undef DECLARE_EXTRA_BIND_PASTE
+#undef DECLARE_EXTRA_BIND_STRINGY2
+#undef DECLARE_EXTRA_BIND_STRINGY
+#undef DECLARE_EXTRA_BIND_10
+#undef DECLARE_EXTRA_BIND_100
 
 #if defined(HAVE_METAL)
 #if defined(HAVE_VULKAN)
@@ -5670,6 +5723,43 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 }
 
 /**
+ * Returns the key string for a given logical game controller button.
+ *
+ * @param logical The input logical button.
+ * @return The character string for the given key.
+ * @since 2023/12/24
+ */
+static const char* rarch_input_get_key_string(rarch_logical_bind_id logical)
+{
+#define BUF_SIZE 8
+    static char key_strings[rarch_num_bind_game_controller()][BUF_SIZE] =
+    {
+            "b",      "y",      "select", "start",
+            "up",     "down",   "left",   "right",
+            "a",      "x",      "l",      "r",
+            "l2",     "r2",     "l3",     "r3",
+            "l_x+",   "l_x-",   "l_y+",   "l_y-",
+            "r_x+",   "r_x-",   "r_y+",   "r_y-"
+    };
+
+    /* Not valid at all. */
+    if (logical < 0 || logical >= rarch_num_bind_game_controller())
+        return NULL;
+
+    /* Is the key already filled in? */
+    if (key_strings[logical][0] != 0)
+        return key_strings[logical];
+
+    /* Just use a generic logical name for the key. */
+    snprintf(key_strings[logical], BUF_SIZE - 1, "log%d", logical);
+    key_strings[logical][BUF_SIZE - 1] = 0;
+
+    /* It can now be used. */
+    return key_strings[logical];
+#undef BUF_SIZE
+}
+
+/**
  * input_remapping_load_file:
  * @data                     : Path to config file.
  *
@@ -5679,15 +5769,10 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
  **/
 bool input_remapping_load_file(void *data, const char *path)
 {
-   unsigned i, j;
+   unsigned usernum, logical;
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
    runloop_state_t *runloop_st                      = runloop_state_get_ptr();
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
-      "b", "y", "select", "start",
-      "up", "down", "left", "right",
-      "a", "x", "l", "r", "l2", "r2",
-      "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
 
    if (    !conf
          || string_is_empty(path))
@@ -5699,14 +5784,14 @@ bool input_remapping_load_file(void *data, const char *path)
    input_remapping_set_defaults(false);
    runloop_st->name.remapfile = strdup(path);
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
       size_t _len;
       char prefix[16];
       char s1[32], s2[32], s3[32];
       char formatted_number[4];
       formatted_number[0] = '\0';
-      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      snprintf(formatted_number, sizeof(formatted_number), "%u", usernum + 1);
       _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
@@ -5716,11 +5801,11 @@ bool input_remapping_load_file(void *data, const char *path)
       _len       = strlcpy(s3, prefix, sizeof(s3));
       strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
+      for (logical = 0; logical < rarch_num_bind_game_controller(); logical++)
       {
-         const char *key_string = key_strings[j];
+         const char *key_string = rarch_input_get_key_string(logical);
 
-         if (j < RARCH_FIRST_CUSTOM_BIND)
+         if (rarch_logical_bind_is_basic(logical))
          {
             int btn_remap = -1;
             int key_remap = -1;
@@ -5738,14 +5823,14 @@ bool input_remapping_load_file(void *data, const char *path)
                   btn_remap = RARCH_UNMAPPED;
 
                configuration_set_uint(settings,
-                     settings->uints.input_remap_ids[i][j], btn_remap);
+                                      settings->uints.input_remap_ids[usernum][logical], btn_remap);
             }
 
             if (!config_get_int(conf, key_ident, &key_remap))
                key_remap = RETROK_UNKNOWN;
 
             configuration_set_uint(settings,
-                  settings->uints.input_keymapper_ids[i][j], key_remap);
+                                   settings->uints.input_keymapper_ids[usernum][logical], key_remap);
          }
          else
          {
@@ -5763,7 +5848,7 @@ bool input_remapping_load_file(void *data, const char *path)
                   stk_remap = RARCH_UNMAPPED;
 
                configuration_set_uint(settings,
-                     settings->uints.input_remap_ids[i][j], stk_remap);
+                                      settings->uints.input_remap_ids[usernum][logical], stk_remap);
             }
 
             fill_pathname_join_delim(key_ident, s2,
@@ -5773,21 +5858,21 @@ bool input_remapping_load_file(void *data, const char *path)
                key_remap = RETROK_UNKNOWN;
 
             configuration_set_uint(settings,
-                  settings->uints.input_keymapper_ids[i][j], key_remap);
+                                   settings->uints.input_keymapper_ids[usernum][logical], key_remap);
          }
       }
 
       _len = strlcpy(s1, prefix, sizeof(s1));
       strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[usernum], s1);
 
       _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[usernum], s1);
 
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[usernum], s1);
    }
 
    input_remapping_update_port_map();
@@ -5812,17 +5897,8 @@ bool input_remapping_save_file(const char *path)
 {
    size_t _len;
    bool ret;
-   unsigned i, j;
+   unsigned usernum, logical;
    char remap_file_dir[PATH_MAX_LENGTH];
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
-   {
-      "b",      "y",      "select", "start",
-      "up",     "down",   "left",   "right",
-      "a",      "x",      "l",      "r",
-      "l2",     "r2",     "l3",     "r3",
-      "l_x+",   "l_x-",   "l_y+",   "l_y-",
-      "r_x+",   "r_x-",   "r_y+",   "r_y-"
-   };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    settings_t        *settings = config_st;
@@ -5844,7 +5920,7 @@ bool input_remapping_save_file(const char *path)
    if (!(conf = config_file_new_alloc()))
       return false;
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
       size_t _len;
       bool skip_port = true;
@@ -5858,15 +5934,15 @@ bool input_remapping_save_file(const char *path)
 
       /* We must include all mapped ports + all those
        * with an index less than max_users */
-      if (i < max_users)
+      if (usernum < max_users)
          skip_port = false;
       else
       {
          /* Check whether current port is mapped
           * to an input device */
-         for (j = 0; j < max_users; j++)
+         for (logical = 0; logical < max_users; logical++)
          {
-            if (i == settings->uints.input_remap_ports[j])
+            if (usernum == settings->uints.input_remap_ports[logical])
             {
                skip_port = false;
                break;
@@ -5877,7 +5953,7 @@ bool input_remapping_save_file(const char *path)
       if (skip_port)
          continue;
 
-      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      snprintf(formatted_number, sizeof(formatted_number), "%u", usernum + 1);
       _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
@@ -5887,13 +5963,17 @@ bool input_remapping_save_file(const char *path)
       _len       = strlcpy(s3, prefix, sizeof(s3));
       strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
 
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+      for (logical = 0; logical < rarch_num_bind_game_controller(); logical++)
       {
+         /* Ignore the analog/gun binds. */
+         if (!rarch_logical_bind_is_basic(logical))
+             continue;
+
          char btn_ident[128];
          char key_ident[128];
-         const char *key_string = key_strings[j];
-         unsigned remap_id      = settings->uints.input_remap_ids[i][j];
-         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
+         const char *key_string = rarch_input_get_key_string(logical);
+         unsigned remap_id      = settings->uints.input_remap_ids[usernum][logical];
+         unsigned keymap_id     = settings->uints.input_keymapper_ids[usernum][logical];
 
          fill_pathname_join_delim(btn_ident, s1,
                key_string, '_', sizeof(btn_ident));
@@ -5901,7 +5981,7 @@ bool input_remapping_save_file(const char *path)
                key_string, '_', sizeof(key_ident));
 
          /* Only save modified button values */
-         if (remap_id == j)
+         if (remap_id == logical)
             config_unset(conf, btn_ident);
          else
          {
@@ -5909,7 +5989,7 @@ bool input_remapping_save_file(const char *path)
                config_set_int(conf, btn_ident, -1);
             else
                config_set_int(conf, btn_ident,
-                     settings->uints.input_remap_ids[i][j]);
+                     settings->uints.input_remap_ids[usernum][logical]);
          }
 
          /* Only save non-empty keymapper values */
@@ -5917,16 +5997,17 @@ bool input_remapping_save_file(const char *path)
             config_unset(conf, key_ident);
          else
             config_set_int(conf, key_ident,
-                  settings->uints.input_keymapper_ids[i][j]);
+                  settings->uints.input_keymapper_ids[usernum][logical]);
       }
 
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      /* This goes through axis and otherwise, so should keep the + 8 here. */
+      for (logical = RARCH_FIRST_CUSTOM_BIND; logical < (RARCH_FIRST_CUSTOM_BIND + 8); logical++)
       {
          char stk_ident[128];
          char key_ident[128];
-         const char *key_string = key_strings[j];
-         unsigned remap_id      = settings->uints.input_remap_ids[i][j];
-         unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
+         const char *key_string = rarch_input_get_key_string(logical);
+         unsigned remap_id      = settings->uints.input_remap_ids[usernum][logical];
+         unsigned keymap_id     = settings->uints.input_keymapper_ids[usernum][logical];
 
          fill_pathname_join_delim(stk_ident, s3,
                key_string, '_', sizeof(stk_ident));
@@ -5934,7 +6015,7 @@ bool input_remapping_save_file(const char *path)
                key_string, '_', sizeof(key_ident));
 
          /* Only save modified button values */
-         if (remap_id == j)
+         if (remap_id == logical)
             config_unset(conf, stk_ident);
          else
          {
@@ -5942,7 +6023,7 @@ bool input_remapping_save_file(const char *path)
                config_set_int(conf, stk_ident, -1);
             else
                config_set_int(conf, stk_ident,
-                     settings->uints.input_remap_ids[i][j]);
+                     settings->uints.input_remap_ids[usernum][logical]);
          }
 
          /* Only save non-empty keymapper values */
@@ -5950,20 +6031,20 @@ bool input_remapping_save_file(const char *path)
             config_unset(conf, key_ident);
          else
             config_set_int(conf, key_ident,
-                  settings->uints.input_keymapper_ids[i][j]);
+                  settings->uints.input_keymapper_ids[usernum][logical]);
       }
 
       _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
-      config_set_int(conf, s1, input_config_get_device(i));
+      config_set_int(conf, s1, input_config_get_device(usernum));
 
       _len = strlcpy(s1, prefix, sizeof(s1));
       strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
-      config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
+      config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[usernum]);
 
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
-      config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      config_set_int(conf, s1, settings->uints.input_remap_ports[usernum]);
    }
 
    ret = config_file_write(conf, path, true);

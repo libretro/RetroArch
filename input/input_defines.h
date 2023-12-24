@@ -34,7 +34,10 @@
  * instead @c rarch_bind_is_game_controller() .
  *
  * Instead of using @code RARCH_FIRST_CUSTOM_BIND + 8 @endcode use
- * instead @c rarch_bind_num_game_controller() .
+ * instead @c rarch_num_bind_game_controller() .
+ *
+ * Instead of using this to check if a bind is just a plain button
+ * with no axis, instead use @c rarch_logical_bind_is_basic() .
  */
 #define RARCH_FIRST_CUSTOM_BIND        16
 
@@ -134,7 +137,8 @@ enum
     * End of the custom bind list.
     *
     * Instead of using this to check whether a button is part of
-    * a game controller, use @c rarch_bind_is_game_controller() .
+    * a game controller, use @c rarch_bind_is_game_controller() or
+    * instead @c rarch_num_bind_game_controller() .
     */
    RARCH_CUSTOM_BIND_LIST_END,
 
@@ -285,6 +289,30 @@ typedef unsigned rarch_bind_id;
 typedef unsigned rarch_logical_bind_id;
 
 /**
+ * Is the given logical bind a basic button, one with no axis or otherwise?
+ *
+ * @param bind The logical bind to check.
+ * @return If the bind is simple.
+ * @since 2023/12/24
+ */
+static INLINE bool rarch_logical_bind_is_basic(rarch_logical_bind_id bind)
+{
+    return (bind < RARCH_FIRST_CUSTOM_BIND) || (bind >= RARCH_CUSTOM_BIND_LIST_END);
+}
+
+/**
+ * Is the given logical bind an extended basic button, one with no axis or otherwise?
+ *
+ * @param bind The logical bind to check.
+ * @return If the bind is simple and an extended button.
+ * @since 2023/12/24
+ */
+static INLINE bool rarch_logical_bind_is_extended_basic(rarch_logical_bind_id bind)
+{
+    return (bind >= RARCH_CUSTOM_BIND_LIST_END);
+}
+
+/**
  * Translates a real bind id to a logical bind id.
  *
  * @param bind The input bind.
@@ -323,7 +351,7 @@ static INLINE rarch_bind_id rarch_logical_to_bind_game_controller(rarch_logical_
  * @return The number of binds that are part of game controllers.
  * @since 2023/12/24
  */
-#define rarch_bind_num_game_controller() (RARCH_CUSTOM_BIND_LIST_END + RARCH_EXTRA_CORE_COMMAND_COUNT)
+#define rarch_num_bind_game_controller() (RARCH_CUSTOM_BIND_LIST_END + RARCH_EXTRA_CORE_COMMAND_COUNT)
 
 /**
  * Checks whether the given bind is considered to be part of a controller.
@@ -347,7 +375,7 @@ static INLINE bool rarch_bind_is_game_controller(rarch_bind_id bind)
  */
 static INLINE bool rarch_logical_bind_is_game_controller(rarch_logical_bind_id bind)
 {
-    return bind < rarch_bind_num_game_controller();
+    return bind < rarch_num_bind_game_controller();
 }
 
 #endif

@@ -6116,32 +6116,38 @@ void input_remapping_deinit(bool save_remap)
 
 void input_remapping_set_defaults(bool clear_cache)
 {
-   unsigned i, j;
+   unsigned usernum, logical;
    settings_t *settings        = config_get_ptr();
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
       /* Button/keyboard remaps */
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+      for (logical = 0; logical < rarch_num_bind_game_controller(); logical++)
       {
-         const struct retro_keybind *keybind = &input_config_binds[i][j];
+         /* Ignore the analog/gun binds. */
+         if (!rarch_logical_bind_is_basic(logical))
+            continue;
+
+         const struct retro_keybind *keybind = &input_config_binds[usernum][logical];
+
+         /* Force defaults for extended keys to be unmapped by default. */
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[usernum][logical],
+               (!rarch_logical_bind_is_extended_basic(logical) && keybind) ?
+                    keybind->id : RARCH_UNMAPPED);
 
          configuration_set_uint(settings,
-               settings->uints.input_remap_ids[i][j],
-                     keybind ? keybind->id : RARCH_UNMAPPED);
-
-         configuration_set_uint(settings,
-               settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
+                                settings->uints.input_keymapper_ids[usernum][logical], RETROK_UNKNOWN);
       }
 
-      /* Analog stick remaps */
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      /* Analog stick remaps, use +8 still here for compatibility purposes. */
+      for (logical = RARCH_FIRST_CUSTOM_BIND; logical < (RARCH_FIRST_CUSTOM_BIND + 8); logical++)
          configuration_set_uint(settings,
-               settings->uints.input_remap_ids[i][j], j);
+                                settings->uints.input_remap_ids[usernum][logical], logical);
 
       /* Controller port remaps */
       configuration_set_uint(settings,
-            settings->uints.input_remap_ports[i], i);
+                             settings->uints.input_remap_ports[usernum], usernum);
    }
 
    /* Need to call 'input_remapping_update_port_map()'
