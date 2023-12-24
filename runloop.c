@@ -1402,7 +1402,22 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
 }
 
 static void rarch_set_extra_core_commands(rarch_system_info_t *system_info,
-    struct retro_extra_core_commands *input) {
+    const struct retro_extra_core_commands *input) {
+    const struct retro_extra_core_commands_action* action;
+    unsigned at;
+
+    /* Debug. */
+    RARCH_LOG("[Core]: Initializing extra core commands!\n");
+
+    /* Go through the commands and process them. */
+    for (at = 0; input->actions[at].description != NULL &&
+        at < RARCH_EXTRA_CORE_COMMAND_COUNT; at++)
+    {
+        /* Get base action. */
+        action = &input->actions[at];
+
+
+    }
 }
 
 static void rarch_set_input_descriptors(const void *data, unsigned int p,

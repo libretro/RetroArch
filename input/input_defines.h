@@ -88,6 +88,9 @@
 
 #endif
 
+/** The number of extra core commands available, used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS . */
+#define RARCH_EXTRA_CORE_COMMAND_COUNT 128
+
 RETRO_BEGIN_DECLS
 
 /* RetroArch specific bind IDs. */
@@ -191,6 +194,12 @@ enum
 
    RARCH_OVERLAY_NEXT,
    RARCH_OSK,
+
+   /** Custom core command start, used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS. */
+   RARCH_EXTRA_CORE_COMMAND_START,
+
+   /** Custom core command end, used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS. */
+   RARCH_EXTRA_CORE_COMMAND_END = RARCH_EXTRA_CORE_COMMAND_START + RARCH_EXTRA_CORE_COMMAND_COUNT,
 
    RARCH_BIND_LIST_END,
 

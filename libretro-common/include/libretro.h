@@ -3408,7 +3408,7 @@ struct retro_extra_core_commands_action
  * @since 2023/12/23
  */
 typedef void (*retro_extra_core_command_callback)(
-    struct retro_extra_core_commands_action* action,
+    const struct retro_extra_core_commands_action* action,
     unsigned controllerPort);
 
 /** Used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS to set extra core commands. */
@@ -3417,10 +3417,7 @@ struct retro_extra_core_commands
     /** The callback to be executed on a command run. */
     retro_extra_core_command_callback callback;
 
-    /** The number of actions to define. */
-    unsigned num_actions;
-
-    /** The core commands that exist. */
+    /** The core commands that exist, NULL description ends. */
     const struct retro_extra_core_commands_action* actions;
 };
 
