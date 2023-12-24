@@ -1425,7 +1425,7 @@ static void rarch_set_input_descriptors(const void *data,
         rarch_system_info_t *sys_info) {
     unsigned retro_id;
     const struct retro_input_descriptor *desc = NULL;
-    unsigned int p
+    unsigned int p;
 
     memset((void*)&sys_info->input_desc_btn, 0,
           sizeof(sys_info->input_desc_btn));
