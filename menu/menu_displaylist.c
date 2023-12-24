@@ -11687,7 +11687,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (menu_entries_append(list, descriptor, info->path,
                                  MSG_UNKNOWN,
                                  MENU_SETTINGS_INPUT_DESC_BEGIN +
-                                 (port * (RARCH_FIRST_CUSTOM_BIND + 8)) + retro_id, 0, 0, NULL))
+                                 (port * rarch_num_bind_game_controller()) + retro_id, 0, 0, NULL))
                            count++;
                      }
                   }
