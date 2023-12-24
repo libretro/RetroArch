@@ -282,8 +282,7 @@ enum midi_driver_enum
 #define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
 #define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
-#define DECLARE_EXTRA_BIND_NIL2
-#define DECLARE_EXTRA_BIND_NIL DECLARE_EXTRA_BIND_NIL2
+#define DECLARE_EXTRA_BIND_NIL
 #define DECLARE_EXTRA_BIND_PASTE2(a, b) a##b
 #define DECLARE_EXTRA_BIND_PASTE(a, b) DECLARE_EXTRA_BIND_PASTE2(a, b)
 #define DECLARE_EXTRA_BIND_STRINGY2(a) #a
@@ -454,7 +453,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #undef DECLARE_EXTRA_BIND_STRINGY
 #undef DECLARE_EXTRA_BIND_10
 #undef DECLARE_EXTRA_BIND_100
-#undef DECLARE_EXTRA_BIND_NIL2
 #undef DECLARE_EXTRA_BIND_NIL
 
 #if defined(HAVE_METAL)

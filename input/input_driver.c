@@ -91,8 +91,7 @@
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
-#define INPUT_CONFIG_MASS_BIND_ORDER_NIL2
-#define INPUT_CONFIG_MASS_BIND_ORDER_NIL INPUT_CONFIG_MASS_BIND_ORDER_NIL2
+#define INPUT_CONFIG_MASS_BIND_ORDER_NIL
 #define INPUT_CONFIG_MASS_BIND_ORDER_PASTE2(a, b) a##b
 #define INPUT_CONFIG_MASS_BIND_ORDER_PASTE(a, b) INPUT_CONFIG_MASS_BIND_ORDER_PASTE2(a, b)
 #define INPUT_CONFIG_MASS_BIND_ORDER(x) (24 + x)
@@ -159,7 +158,6 @@ const unsigned input_config_bind_order[rarch_num_bind_game_controller()] = {
 #undef INPUT_CONFIG_MASS_BIND_ORDER
 #undef INPUT_CONFIG_MASS_BIND_ORDER_TEN
 #undef INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED
-#undef INPUT_CONFIG_MASS_BIND_ORDER_NIL2
 #undef INPUT_CONFIG_MASS_BIND_ORDER_NIL
 
 /**************************************/
@@ -6161,6 +6159,7 @@ void input_remapping_set_defaults(bool clear_cache)
 {
    unsigned usernum, logical;
    settings_t *settings        = config_get_ptr();
+   const struct retro_keybind *keybind = &input_config_binds[usernum][logical];
 
    for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
@@ -6170,8 +6169,6 @@ void input_remapping_set_defaults(bool clear_cache)
          /* Ignore the analog/gun binds. */
          if (!rarch_logical_bind_is_basic(logical))
             continue;
-
-         const struct retro_keybind *keybind = &input_config_binds[usernum][logical];
 
          /* Force defaults for extended keys to be unmapped by default. */
          configuration_set_uint(settings,
