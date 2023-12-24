@@ -325,7 +325,7 @@ static INLINE rarch_logical_bind_id rarch_bind_to_logical_game_controller(rarch_
         return bind;
 
     if (bind >= RARCH_EXTRA_CORE_COMMAND_START && bind < RARCH_EXTRA_CORE_COMMAND_END)
-        return RARCH_CUSTOM_BIND_LIST_END + bind;
+        return RARCH_CUSTOM_BIND_LIST_END + (bind - RARCH_EXTRA_CORE_COMMAND_START);
 
     return RARCH_BIND_LIST_END_NULL;
 }

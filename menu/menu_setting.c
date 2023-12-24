@@ -9021,7 +9021,7 @@ static bool setting_append_list_input_player_options(
     */
    static char buffer[MAX_USERS][13+2+1];
    static char group_label[MAX_USERS][255];
-   unsigned bindish, j;
+   unsigned bindish, bindid;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -9254,16 +9254,38 @@ static bool setting_append_list_input_player_options(
    {
       const char *value_na =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      for (bindid = 0; bindid < RARCH_BIND_LIST_END; bindid++)
       {
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
+         bool is_game;
+         rarch_logical_bind_id logical_bind;
          size_t _len = 0;
-          bindish           = (j < RARCH_ANALOG_BIND_LIST_END)
-            ? input_config_bind_order[j]
-            : j;
 
-         if (input_config_bind_map_get_meta(bindish))
+         /* Is this a game button or similar? */
+         is_game = rarch_bind_is_game_controller(bindid);
+
+         /* Which button does this belong to? */
+         if (is_game)
+         {
+            logical_bind = rarch_bind_to_logical_game_controller(bindid);
+
+            /* For extended basic buttons we go really deep into the actual bind
+             * map as it is not at the start which @c input_config_bind_order
+             * assumes, so effectively use the real bindid for its position. */
+            if (rarch_logical_bind_is_extended_basic(logical_bind))
+                bindish = bindid;
+            else
+                bindish = input_config_bind_order[logical_bind];
+         }
+         else
+         {
+            logical_bind = (rarch_logical_bind_id)-1;
+            bindish = bindid;
+         }
+
+         /* Checks keybind->meta, where 0 is for game controllers. */
+         if (0 != input_config_bind_map_get_meta(bindish))
             continue;
 
          name[0]          = '\0';
@@ -9279,15 +9301,18 @@ static bool setting_append_list_input_player_options(
 
          if (
                settings->bools.input_descriptor_label_show
-               && (bindish < RARCH_FIRST_META_KEY)
-               && core_has_set_input_descriptor()
+               && is_game
+               && (rarch_logical_bind_is_extended_basic(logical_bind) || core_has_set_input_descriptor())
                && (bindish != RARCH_TURBO_ENABLE)
             )
          {
-            if (sys_info->input_desc_btn[user][bindish])
+            /* For core defined keys, we use the label provided by the core... if any. */
+            if (sys_info->input_desc_btn[user][logical_bind])
                strlcpy(label       + _len,
-                     sys_info->input_desc_btn[user][bindish],
+                     sys_info->input_desc_btn[user][logical_bind],
                      sizeof(label) - _len);
+
+            /* Otherwise we just label it with the description of the key. */
             else
             {
                snprintf(label, sizeof(label), "%s (%s)",
