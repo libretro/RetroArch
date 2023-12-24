@@ -248,3 +248,4 @@ param.sfo
 
 # Visual Studio Code
 .vscode/
+/.gdbinit
