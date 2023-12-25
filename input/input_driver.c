@@ -6188,6 +6188,7 @@ void input_remapping_set_defaults(bool clear_cache)
    unsigned usernum, logical;
    settings_t *settings        = config_get_ptr();
    const struct retro_keybind *keybind;
+   bool is_ext;
 
    for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
@@ -6198,12 +6199,18 @@ void input_remapping_set_defaults(bool clear_cache)
          if (!rarch_logical_bind_is_basic(logical))
             continue;
 
-          keybind = &input_config_binds[usernum][logical];
+          is_ext = rarch_logical_bind_is_extended_basic(logical);
+
+         keybind = &input_config_binds[usernum][logical];
+
+         /* Debug. */
+         RARCH_LOG("Keybind user %d log %d -> %p %d\n",
+            usernum, logical, keybind, (keybind != NULL ? keybind->id : -1));
 
          /* Force defaults for extended keys to be unmapped by default. */
          configuration_set_uint(settings,
                settings->uints.input_remap_ids[usernum][logical],
-               (!rarch_logical_bind_is_extended_basic(logical) && keybind) ?
+               (/*!rarch_logical_bind_is_extended_basic(logical) &&*/ keybind) ?
                     keybind->id : RARCH_UNMAPPED);
 
          configuration_set_uint(settings,

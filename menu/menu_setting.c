@@ -9254,6 +9254,9 @@ static bool setting_append_list_input_player_options(
    {
       const char *value_na =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
+      RARCH_LOG("Filling in bind menu for user %d.\n", user);
+
       for (bindid = 0; bindid < RARCH_BIND_LIST_END; bindid++)
       {
          char label[NAME_MAX_LENGTH];

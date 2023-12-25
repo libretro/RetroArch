@@ -5466,11 +5466,11 @@ static int menu_displaylist_parse_input_description_list(
       return 0;
 
    /* Determine user/button indices */
-   user_idx    = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   user_idx    = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (rarch_num_bind_game_controller());
+   btn_idx     = (info->type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (rarch_num_bind_game_controller()) * user_idx;
 
    if (   (user_idx >= MAX_USERS)
-       || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+       || (btn_idx >= rarch_num_bind_game_controller()))
       return 0;
 
    mapped_port = settings->uints.input_remap_ports[user_idx];
@@ -5481,7 +5481,7 @@ static int menu_displaylist_parse_input_description_list(
    /* Get current mapping for selected button */
    current_remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
 
-   if (current_remap_idx >= RARCH_CUSTOM_BIND_LIST_END)
+   if (current_remap_idx < 0 || current_remap_idx >= rarch_num_bind_game_controller())
       current_remap_idx = RARCH_UNMAPPED;
 
    /* An annoyance: Menu entries do not have
@@ -5494,11 +5494,11 @@ static int menu_displaylist_parse_input_description_list(
    snprintf(entry_label, sizeof(entry_label), "%u", info->type);
 
    /* Loop over core input definitions */
-   for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+   for (j = 0; j < rarch_num_bind_game_controller(); j++)
    {
       const char *input_desc_btn;
 
-      i = (j < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[j] : j;
+      i = (rarch_logical_bind_is_basic(j) ? input_config_bind_order[j] : j);
       input_desc_btn = sys_info->input_desc_btn[mapped_port][i];
 
       /* Check whether an input is defined for
@@ -5514,7 +5514,7 @@ static int menu_displaylist_parse_input_description_list(
           *   indicators */
          size_t _len = strlcpy(input_description, input_desc_btn,
                sizeof(input_description));
-         if (i >= RARCH_FIRST_CUSTOM_BIND)
+         if (!rarch_logical_bind_is_basic(i))
          {
             input_description   [  _len] = ' ';
             if ((i % 2) == 0)

@@ -7137,17 +7137,17 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
 
    if (     !settings
        ||  (entry_type < MENU_SETTINGS_INPUT_DESC_BEGIN)
-       || ((remap_idx >= RARCH_CUSTOM_BIND_LIST_END)
+       || ((remap_idx >= rarch_num_bind_game_controller())
        &&  (remap_idx != RARCH_UNMAPPED)))
       return -1;
 
    /* Determine user/button indices */
    user_idx = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN)
-      / (RARCH_FIRST_CUSTOM_BIND + 8);
+      / (rarch_num_bind_game_controller());
    btn_idx  = (entry_type - MENU_SETTINGS_INPUT_DESC_BEGIN)
-      - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      - (rarch_num_bind_game_controller()) * user_idx;
 
-   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+   if ((user_idx >= MAX_USERS) || (btn_idx >= rarch_num_bind_game_controller()))
       return -1;
 
    /* Assign new mapping */

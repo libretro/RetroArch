@@ -1433,14 +1433,25 @@ static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
     const struct retro_core_extended_retropad_button* action;
     unsigned at, bind, usernum;
     const char** user_inputs;
+    bool did_standard;
 
     /* Debug. */
     RARCH_LOG("[Environ]: Setting extended retropad buttons.\n");
 
+    /* Check if standard inputs were set. */
+    did_standard = (runloop_st->current_core.flags & RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS) != 0;
+    if (!did_standard)
+        RARCH_LOG("[Environ]: Standard was not previously set.\n");
+
     /* Erase all the previous extended binds for all users. */
-    rarch_erase_input_desc_btn(sys_info,
-                               rarch_first_logical_bind_game_controller(),
-                               rarch_num_bind_game_controller());
+    if (did_standard)
+        rarch_erase_input_desc_btn(sys_info,
+                                   rarch_first_logical_bind_game_controller(),
+                                   rarch_num_bind_game_controller());
+
+    /* Otherwise erase everything as it has never been set before. */
+    else
+        rarch_erase_input_desc_btn(sys_info, 0, rarch_num_bind_game_controller());
 
     /* Set output details, if requested. */
     if (input->out_info != NULL) {
@@ -1448,39 +1459,47 @@ static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
     }
 
     /* Go through the commands and process them. */
-    for (at = 0; input->actions[at].description != NULL; at++)
+    if (input->actions != NULL)
     {
-        /* Get base action. */
-        action = &input->actions[at];
+        for (at = 0; input->actions[at].description != NULL; at++)
+        {
+            /* Get base action. */
+            action = &input->actions[at];
 
-        /* Map player. */
-        usernum = action->port;
-        if (usernum < 0 || usernum >= MAX_USERS)
-            continue;
+            /* Debug. */
+            RARCH_LOG("[Environ]: Wanting extra button %d %d %d %d %d %s %s.\n",
+                      at, action->port, action->device, action->port, action->logical_id,
+                      action->description, action->glyph);
 
-        /* We only care about gamepads and their analog equivalents. */
-        if (action->device != RETRO_DEVICE_JOYPAD &&
-            action->device != RETRO_DEVICE_ANALOG)
-            continue;
+            /* Map player. */
+            usernum = action->port;
+            if (usernum < 0 || usernum >= MAX_USERS)
+                continue;
 
-        /* Ignore logical binds which are out of bounds. */
-        bind = action->logical_id;
-        if (bind < 0 || bind >= RARCH_EXTRA_CORE_COMMAND_COUNT)
-            continue;
+            /* We only care about gamepads and their analog equivalents. */
+            if (action->device != RETRO_DEVICE_JOYPAD &&
+                action->device != RETRO_DEVICE_ANALOG)
+                continue;
 
-        /* Map to logical button internally. */
-        bind = rarch_first_logical_bind_game_controller() + bind;
+            /* Ignore logical binds which are out of bounds. */
+            bind = action->logical_id;
+            if (bind < 0 || bind >= RARCH_EXTRA_CORE_COMMAND_COUNT)
+                continue;
 
-        /* Set description. */
-        sys_info->input_desc_btn[usernum][bind] = action->description;
+            /* Map to logical button internally. */
+            bind = rarch_first_logical_bind_game_controller() + bind;
+
+            /* Set description. */
+            sys_info->input_desc_btn[usernum][bind] = action->description;
+
+            /* Debug. */
+            RARCH_LOG("[Environ]: Bound %d to %s.\n",
+                bind, action->description);
+        }
 
         /* Debug. */
-        RARCH_LOG("[Environ]: Bound %d to %s.\n",
-            bind, action->description);
+        RARCH_LOG("[Environ]: Set %d extended buttons.\n", at);
     }
-
-    /* Debug. */
-    RARCH_LOG("[Environ]: Set %d extended buttons.\n", at);
 
     /* Indicate that the input descriptors changed. */
     runloop_st->current_core.flags |=
@@ -7910,8 +7929,8 @@ bool core_has_set_input_descriptor(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    return ((runloop_st->current_core.flags &
-            RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS |
-            RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT) > 0);
+           (RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS |
+            RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT)) != 0);
 }
 
 void runloop_path_set_basename(const char *path)

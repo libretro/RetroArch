@@ -372,7 +372,8 @@ static INLINE rarch_bind_id rarch_logical_to_bind_game_controller(rarch_logical_
 /**
  * Returns the number of binds that are part of game controllers.
  *
- * Use this instead of @c RARCH_FIRST_CUSTOM_BIND .
+ * Use this instead of @c RARCH_FIRST_CUSTOM_BIND;
+ * Use this instead of @code RARCH_FIRST_CUSTOM_BIND + 8 @endcode.
  *
  * @return The number of binds that are part of game controllers.
  * @since 2023/12/24
