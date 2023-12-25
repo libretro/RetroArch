@@ -288,7 +288,7 @@ enum midi_driver_enum
 #define DECLARE_EXTRA_BIND_STRINGY(a) DECLARE_EXTRA_BIND_STRINGY2(a)
 
 /** Declare an extra logical bind, the label used depends on the core. */
-#define DECLARE_EXTRA_BIND(id) {DECLARE_EXTRA_BIND_STRINGY(DECLARE_EXTRA_BIND_PASTE(log, id)), MENU_ENUM_LABEL_VALUE_INPUT_KEY, 0, id, true }
+#define DECLARE_EXTRA_BIND(id) {DECLARE_EXTRA_BIND_STRINGY(DECLARE_EXTRA_BIND_PASTE(log, id)), MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LOGICAL, 0, id, true }
 
 /** Declare ten binds. */
 #define DECLARE_EXTRA_BIND_10(dig) \
