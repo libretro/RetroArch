@@ -3246,6 +3246,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    "Змяніць адлюстраванне элементаў меню RetroArch."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Значок праграмы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Змяніць значок праграмы."
+   )
 #ifdef _3DS
 #endif
 MSG_HASH(

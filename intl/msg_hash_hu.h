@@ -3208,6 +3208,14 @@ MSG_HASH(
    "Alapértelmezett gomb a \"Single Button\" turbó módhoz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Turbó iránygombok engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Bekapcsolva a digitális iránybemenetek (d-pad, hatswitch) is kiválaszthatóak turbó módban."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbó mód"
    )
@@ -5489,6 +5497,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "A menüképernyő kinézete."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Az alkalmazás ikonja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Alkalmazásikon megváltoztatása."
    )
 #ifdef _3DS
 MSG_HASH(
