@@ -1401,23 +1401,65 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
-static void rarch_set_extra_core_commands(rarch_system_info_t *system_info,
-    const struct retro_extra_core_commands *input) {
-    const struct retro_extra_core_commands_action* action;
-    unsigned at;
+static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
+                                             runloop_state_t *runloop_st,
+                                             const struct retro_core_extended_retropad *input) {
+    const struct retro_core_extended_retropad_button* action;
+    unsigned at, bind, usernum;
+    const char** user_inputs;
 
     /* Debug. */
-    RARCH_LOG("[Core]: Initializing extra core commands!\n");
+    RARCH_LOG("[Core]: Initializing extra core buttons!\n");
+
+    /* Erase all the previous extended binds for all users. */
+    for (usernum = 0; usernum < MAX_USERS; usernum++)
+    {
+        /* For simpler access. */
+        user_inputs = sys_info->input_desc_btn[usernum];
+
+        /* Invalidate all entries. */
+        for (at = rarch_first_logical_bind_game_controller();
+            at < rarch_num_bind_game_controller();
+            at++)
+            user_inputs[at] = NULL;;
+    }
+
+    /* Set output details, if requested. */
+    if (input->out_info != NULL) {
+        input->out_info->out_num_extra = RARCH_EXTRA_CORE_COMMAND_COUNT;
+    }
 
     /* Go through the commands and process them. */
-    for (at = 0; input->actions[at].description != NULL &&
-        at < RARCH_EXTRA_CORE_COMMAND_COUNT; at++)
+    for (at = 0; input->actions[at].description != NULL; at++)
     {
         /* Get base action. */
         action = &input->actions[at];
 
-        RARCH_LOG("TODO: ");
+        /* Map player. */
+        usernum = action->port;
+        if (usernum < 0 || usernum >= MAX_USERS)
+            continue;
+
+        /* We only care about gamepads and their analog equivalents. */
+        if (action->device != RETRO_DEVICE_JOYPAD &&
+            action->device != RETRO_DEVICE_ANALOG)
+            continue;
+
+        /* Ignore logical binds which are out of bounds. */
+        bind = action->logical_id;
+        if (bind < 0 || bind >= RARCH_EXTRA_CORE_COMMAND_COUNT)
+            continue;
+
+        /* Map to logical button internally. */
+        bind = rarch_first_logical_bind_game_controller() + bind;
+
+        /* Set description. */
+        sys_info->input_desc_btn[usernum][bind] = action->description;
     }
+
+    /* Indicate that the input descriptors changed. */
+    runloop_st->current_core.flags |=
+        RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS;
 }
 
 static void rarch_set_input_descriptors(const void *data,
@@ -3584,8 +3626,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
-      case RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS:
-         rarch_set_extra_core_commands(sys_info, (struct retro_extra_core_commands*)data);
+
+      case RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD:
+         rarch_set_core_extended_retropad(sys_info, runloop_st,
+            (struct retro_core_extended_retropad*)data);
          break;
 
       default:

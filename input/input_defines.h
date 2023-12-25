@@ -95,7 +95,7 @@
 
 #endif
 
-/** The number of extra core commands available, used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS . */
+/** The number of extra core commands available, used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD . */
 #define RARCH_EXTRA_CORE_COMMAND_COUNT 128
 
 RETRO_BEGIN_DECLS
@@ -139,6 +139,9 @@ enum
     * Instead of using this to check whether a button is part of
     * a game controller, use @c rarch_bind_is_game_controller() or
     * instead @c rarch_num_bind_game_controller() .
+    *
+    * To get the starting ID for logical buttons use
+    * instead @c rarch_first_logical_bind_game_controller() .
     */
    RARCH_CUSTOM_BIND_LIST_END,
 
@@ -209,10 +212,10 @@ enum
    RARCH_OVERLAY_NEXT,
    RARCH_OSK,
 
-   /** Custom core command start, used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS. */
+   /** Custom core command start, used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD. */
    RARCH_EXTRA_CORE_COMMAND_START,
 
-   /** Custom core command end, used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS. */
+   /** Custom core command end, used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD. */
    RARCH_EXTRA_CORE_COMMAND_END = RARCH_EXTRA_CORE_COMMAND_START + RARCH_EXTRA_CORE_COMMAND_COUNT,
 
    RARCH_BIND_LIST_END,
@@ -287,6 +290,13 @@ typedef unsigned rarch_bind_id;
  * @since 2023/12/24
  */
 typedef unsigned rarch_logical_bind_id;
+
+/**
+ * The first logical bind index.
+ *
+ * @since 2023/12/24
+ */
+#define rarch_first_logical_bind_game_controller() RARCH_CUSTOM_BIND_LIST_END
 
 /**
  * Is the given logical bind a basic button, one with no axis or otherwise?

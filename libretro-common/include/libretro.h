@@ -1864,13 +1864,11 @@ enum retro_mod
                                             * multiplayer, where a deterministic core supporting multiple
                                             * input devices does not need to take any action on its own.
                                             */
-#define RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS (79 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_extra_core_commands* --
-                                            * Defines extra commands that can be specified
-                                            * in the menu that when executed will emit a callback into
-                                            * a core for the command. These can act as extra input keys
-                                            * for a given core. Some commands may be specified to
-                                            * send the command over netplay as well.
+#define RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD (79 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_core_extended_retropad* --
+                                            * Similar to the setting of controls, this allows for
+                                            * the addition of additional button inputs which are not
+                                            * bound to anything.
                                             */
 
 /* VFS functionality */
@@ -3380,45 +3378,48 @@ struct retro_input_descriptor
    const char *description;
 };
 
-/** Used with @c retro_extra_core_commands . */
-struct retro_extra_core_commands_action
+/** Used with @c retro_core_extended_retropad , similar to @c retro_input_descriptor. */
+struct retro_core_extended_retropad_button
 {
-    /** The ID number of the specific command. */
-    unsigned id;
+    /** The controller port or player this is attached to. */
+    unsigned port;
 
-    /** Should this command be sent over net play?
-     * If this is @c true then input commands will be queued and executed
-     * before the next @c retro_run rather than instantly.
-     * Any command like this will be placed in the player controls accordingly. */
-    bool syncedPlayer;
+    /** The index of the device. */
+    unsigned index;
 
-    /** The glyph to use for this command. */
-    const char* glyph;
+    /** The device that this is associated with, either @c RETRO_DEVICE_JOYPAD or @c RETRO_DEVICE_ANALOG. */
+    unsigned device;
 
-    /** The description of the command. */
+    /**
+     * The logical bind ID number of the specific command.
+     * The value will be between @c 0 and @c out_num_extra .
+     */
+    unsigned logical_id;
+
+    /** The description of the command, @c NULL terminates the list.
+     * Must remain allocated until retro_unload_game() is called. */
     const char* description;
+
+    /** The glyph to use for this command, it is up to the front end to provide a picture.
+     * Must remain allocated until retro_unload_game() is called.*/
+    const char* glyph;
 };
 
-/**
- * Call back to be called when the command is activated, this will be sent to the core
- * and it may choose whatever action it desires.
- *
- * @param action The core action that is being executed.
- * @param controllerPort The controller port which ran this command.
- * @since 2023/12/23
- */
-typedef void (*retro_extra_core_command_callback)(
-    const struct retro_extra_core_commands_action* action,
-    unsigned controllerPort);
-
-/** Used with @c RETRO_ENVIRONMENT_SET_EXTRA_CORE_COMMANDS to set extra core commands. */
-struct retro_extra_core_commands
+/** Used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD to set extra core buttons. */
+struct retro_core_extended_retropad_info
 {
-    /** The callback to be executed on a command run. */
-    retro_extra_core_command_callback callback;
+    /** Output: The number of extra buttons which are available. */
+    unsigned out_num_extra;
+};
 
+/** Used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD to set extra core buttons. */
+struct retro_core_extended_retropad
+{
     /** The core commands that exist, NULL description ends. */
-    const struct retro_extra_core_commands_action* actions;
+    const struct retro_core_extended_retropad_button* actions;
+
+    /** Extended RetroPad information output. */
+    struct retro_core_extended_retropad_info* out_info;
 };
 
 struct retro_system_info
