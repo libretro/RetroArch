@@ -9302,7 +9302,7 @@ static bool setting_append_list_input_player_options(
          if (
                settings->bools.input_descriptor_label_show
                && is_game
-               && (rarch_logical_bind_is_extended_basic(logical_bind) || core_has_set_input_descriptor())
+               && (core_has_set_input_descriptor())
                && (bindish != RARCH_TURBO_ENABLE)
             )
          {

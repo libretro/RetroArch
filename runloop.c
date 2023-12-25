@@ -1401,6 +1401,32 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
+/**
+ * Erases input descriptor buttons.
+ *
+ * @param sys_info The current state of the front end.
+ * @param from The starting index, inclusive.
+ * @param to The ending index, exclusive.
+ */
+static void rarch_erase_input_desc_btn(rarch_system_info_t *sys_info, unsigned from, unsigned to)
+{
+    unsigned usernum, at;
+    const char** user_inputs;
+
+    /* Erase all the previous extended binds for all users. */
+    for (usernum = 0; usernum < MAX_USERS; usernum++)
+    {
+        /* For simpler access. */
+        user_inputs = sys_info->input_desc_btn[usernum];
+
+        /* Invalidate all entries. */
+        for (at = rarch_first_logical_bind_game_controller();
+             at < rarch_num_bind_game_controller();
+             at++)
+            user_inputs[at] = NULL;
+    }
+}
+
 static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
                                              runloop_state_t *runloop_st,
                                              const struct retro_core_extended_retropad *input) {
@@ -1412,17 +1438,9 @@ static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
     RARCH_LOG("[Core]: Initializing extra core buttons!\n");
 
     /* Erase all the previous extended binds for all users. */
-    for (usernum = 0; usernum < MAX_USERS; usernum++)
-    {
-        /* For simpler access. */
-        user_inputs = sys_info->input_desc_btn[usernum];
-
-        /* Invalidate all entries. */
-        for (at = rarch_first_logical_bind_game_controller();
-            at < rarch_num_bind_game_controller();
-            at++)
-            user_inputs[at] = NULL;;
-    }
+    rarch_erase_input_desc_btn(sys_info,
+                               rarch_first_logical_bind_game_controller(),
+                               rarch_num_bind_game_controller());
 
     /* Set output details, if requested. */
     if (input->out_info != NULL) {
@@ -1459,7 +1477,7 @@ static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
 
     /* Indicate that the input descriptors changed. */
     runloop_st->current_core.flags |=
-        RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS;
+        RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT;
 }
 
 static void rarch_set_input_descriptors(const void *data,
@@ -1469,8 +1487,13 @@ static void rarch_set_input_descriptors(const void *data,
     const struct retro_input_descriptor *desc = NULL;
     unsigned int p;
 
-    memset((void*)&sys_info->input_desc_btn, 0,
-          sizeof(sys_info->input_desc_btn));
+    /* If extended descriptors were set, only erase the standard ones. */
+    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT) != 0)
+        rarch_erase_input_desc_btn(sys_info, 0, rarch_first_logical_bind_game_controller());
+
+    /* Otherwise, erase everything to keep legacy behavior. */
+    else
+        rarch_erase_input_desc_btn(sys_info, 0, rarch_num_bind_game_controller());
 
     desc = (const struct retro_input_descriptor*)data;
 
@@ -7874,7 +7897,8 @@ bool core_has_set_input_descriptor(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    return ((runloop_st->current_core.flags &
-            RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS) > 0);
+            RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS |
+            RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT) > 0);
 }
 
 void runloop_path_set_basename(const char *path)

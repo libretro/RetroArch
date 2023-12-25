@@ -33,7 +33,8 @@ enum retro_core_flags
    RETRO_CORE_FLAG_GAME_LOADED               = (1 << 2),
    RETRO_CORE_FLAG_INPUT_POLLED              = (1 << 3),
    RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS        = (1 << 4),
-   RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS = (1 << 5)
+   RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS = (1 << 5),
+   RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT    = (1 << 6),
 };
 
 struct retro_core_t
