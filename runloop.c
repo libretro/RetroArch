@@ -1519,6 +1519,8 @@ static void rarch_set_input_descriptors(const void *data,
        if (log_level == RETRO_LOG_DEBUG)
        {
           unsigned input_driver_max_users = settings->uints.input_max_users;
+          unsigned bind_index;
+          const char *description;
 
           for (p = 0; p < input_driver_max_users; p++)
           {
@@ -1528,8 +1530,12 @@ static void rarch_set_input_descriptors(const void *data,
 
              for (retro_id = 0; retro_id < RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS; retro_id++)
              {
-                unsigned bind_index     = input_config_bind_order[retro_id];
-                const char *description = sys_info->input_desc_btn[mapped_port][bind_index];
+                bind_index = input_config_bind_order[retro_id];
+
+                if (bind_index == RARCH_UNMAPPED)
+                    continue;
+
+                description = sys_info->input_desc_btn[mapped_port][bind_index];
 
                 if (!description)
                    continue;

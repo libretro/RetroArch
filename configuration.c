@@ -282,7 +282,6 @@ enum midi_driver_enum
 #define DECLARE_BIND(base, bind, desc) { #base, desc, 0, bind, true }
 #define DECLARE_META_BIND(level, base, bind, desc) { #base, desc, level, bind, true }
 
-#define DECLARE_EXTRA_BIND_NIL
 #define DECLARE_EXTRA_BIND_PASTE2(a, b) a##b
 #define DECLARE_EXTRA_BIND_PASTE(a, b) DECLARE_EXTRA_BIND_PASTE2(a, b)
 #define DECLARE_EXTRA_BIND_STRINGY2(a) #a
@@ -302,18 +301,6 @@ enum midi_driver_enum
     DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 6)), \
     DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 7)), \
     DECLARE_EXTRA_BIND(DECLARE_EXTRA_BIND_PASTE(dig, 9))
-
-/* Declare one hundred binds. */
-#define DECLARE_EXTRA_BIND_100(hun, ten) \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, ten)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 1)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 2)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 3)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 4)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 5)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 6)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 7)), \
-    DECLARE_EXTRA_BIND_10(DECLARE_EXTRA_BIND_PASTE(hun, 9))
 
 const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_BIND(b,                             RETRO_DEVICE_ID_JOYPAD_B,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
@@ -429,7 +416,25 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
 
    /* Extra keys, all of them. */
-   DECLARE_EXTRA_BIND_100(DECLARE_EXTRA_BIND_NIL,DECLARE_EXTRA_BIND_NIL),
+   DECLARE_EXTRA_BIND(0),
+   DECLARE_EXTRA_BIND(1),
+   DECLARE_EXTRA_BIND(2),
+   DECLARE_EXTRA_BIND(3),
+   DECLARE_EXTRA_BIND(4),
+   DECLARE_EXTRA_BIND(5),
+   DECLARE_EXTRA_BIND(6),
+   DECLARE_EXTRA_BIND(7),
+   DECLARE_EXTRA_BIND(8),
+   DECLARE_EXTRA_BIND(9),
+   DECLARE_EXTRA_BIND_10(1),
+   DECLARE_EXTRA_BIND_10(2),
+   DECLARE_EXTRA_BIND_10(3),
+   DECLARE_EXTRA_BIND_10(4),
+   DECLARE_EXTRA_BIND_10(5),
+   DECLARE_EXTRA_BIND_10(6),
+   DECLARE_EXTRA_BIND_10(7),
+   DECLARE_EXTRA_BIND_10(8),
+   DECLARE_EXTRA_BIND_10(9),
    DECLARE_EXTRA_BIND_10(10),
    DECLARE_EXTRA_BIND_10(11),
    DECLARE_EXTRA_BIND(120),
@@ -452,8 +457,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 #undef DECLARE_EXTRA_BIND_STRINGY2
 #undef DECLARE_EXTRA_BIND_STRINGY
 #undef DECLARE_EXTRA_BIND_10
-#undef DECLARE_EXTRA_BIND_100
-#undef DECLARE_EXTRA_BIND_NIL
 
 #if defined(HAVE_METAL)
 #if defined(HAVE_VULKAN)
@@ -5741,7 +5744,25 @@ static const char* rarch_input_get_key_string(rarch_logical_bind_id logical)
             "a",      "x",      "l",      "r",
             "l2",     "r2",     "l3",     "r3",
             "l_x+",   "l_x-",   "l_y+",   "l_y-",
-            "r_x+",   "r_x-",   "r_y+",   "r_y-"
+            "r_x+",   "r_x-",   "r_y+",   "r_y-",
+
+            /* Light gun is only here because of the mixing between defines,
+             * This creates a difficult situation where we do not want to
+             * include it, but we must. */
+            "loggtr",
+            "loggrl",
+            "loggaa",
+            "loggab",
+            "loggac",
+            "loggst",
+            "loggsl",
+            "loggdu",
+            "loggdd",
+            "loggdl",
+            "loggdr",
+
+            /* Turbo as well. */
+            "logtrb"
     };
 
     /* Not valid at all. */

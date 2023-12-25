@@ -91,10 +91,9 @@
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
-#define INPUT_CONFIG_MASS_BIND_ORDER_NIL
 #define INPUT_CONFIG_MASS_BIND_ORDER_PASTE2(a, b) a##b
 #define INPUT_CONFIG_MASS_BIND_ORDER_PASTE(a, b) INPUT_CONFIG_MASS_BIND_ORDER_PASTE2(a, b)
-#define INPUT_CONFIG_MASS_BIND_ORDER(x) (24 + x)
+#define INPUT_CONFIG_MASS_BIND_ORDER(x) (36 + x)
 #define INPUT_CONFIG_MASS_BIND_ORDER_TEN(ten) \
     INPUT_CONFIG_MASS_BIND_ORDER(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(ten, 0)), \
     INPUT_CONFIG_MASS_BIND_ORDER(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(ten, 1)), \
@@ -106,17 +105,6 @@
     INPUT_CONFIG_MASS_BIND_ORDER(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(ten, 7)), \
     INPUT_CONFIG_MASS_BIND_ORDER(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(ten, 8)), \
     INPUT_CONFIG_MASS_BIND_ORDER(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(ten, 9))
-#define INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED(hun, ten) \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, ten)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 1)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 2)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 3)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 4)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 5)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 6)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 7)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 8)), \
-    INPUT_CONFIG_MASS_BIND_ORDER_TEN(INPUT_CONFIG_MASS_BIND_ORDER_PASTE(hun, 9))
 
 /* Human readable order of input binds */
 const unsigned input_config_bind_order[rarch_num_bind_game_controller()] = {
@@ -145,20 +133,60 @@ const unsigned input_config_bind_order[rarch_num_bind_game_controller()] = {
    RETRO_DEVICE_ID_JOYPAD_ANALOG_R_LEFT, /* Right Analog Left */
    RETRO_DEVICE_ID_JOYPAD_ANALOG_R_RIGHT, /* Right Analog Right */
 
-   /* The remaining 36 + 128 = 164 entries, just 1:1 mapped... starts at 24. */
-   INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED(INPUT_CONFIG_MASS_BIND_ORDER_NIL,INPUT_CONFIG_MASS_BIND_ORDER_NIL),
+   /* The remaining 36 + 128 = 164 entries, just 1:1 mapped... starts at 36. */
+   INPUT_CONFIG_MASS_BIND_ORDER(0),
+   INPUT_CONFIG_MASS_BIND_ORDER(1),
+   INPUT_CONFIG_MASS_BIND_ORDER(2),
+   INPUT_CONFIG_MASS_BIND_ORDER(3),
+   INPUT_CONFIG_MASS_BIND_ORDER(4),
+   INPUT_CONFIG_MASS_BIND_ORDER(5),
+   INPUT_CONFIG_MASS_BIND_ORDER(6),
+   INPUT_CONFIG_MASS_BIND_ORDER(7),
+   INPUT_CONFIG_MASS_BIND_ORDER(8),
+   INPUT_CONFIG_MASS_BIND_ORDER(9),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(1),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(2),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(3),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(4),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(5),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(6),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(7),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(8),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(9),
    INPUT_CONFIG_MASS_BIND_ORDER_TEN(10),
    INPUT_CONFIG_MASS_BIND_ORDER_TEN(11),
-   INPUT_CONFIG_MASS_BIND_ORDER_TEN(12),
-   INPUT_CONFIG_MASS_BIND_ORDER_TEN(13), /* 24 + 139 = 163! */
+   INPUT_CONFIG_MASS_BIND_ORDER(9),
+   INPUT_CONFIG_MASS_BIND_ORDER(120),
+   INPUT_CONFIG_MASS_BIND_ORDER(121),
+   INPUT_CONFIG_MASS_BIND_ORDER(122),
+   INPUT_CONFIG_MASS_BIND_ORDER(123),
+   INPUT_CONFIG_MASS_BIND_ORDER(124),
+   INPUT_CONFIG_MASS_BIND_ORDER(125),
+   INPUT_CONFIG_MASS_BIND_ORDER(126),
+   INPUT_CONFIG_MASS_BIND_ORDER(127),
+
+   /* Light gun order, this is here because there has been mix and match
+    * between buttons, analogs, etc. */
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+
+   /* Same goes for turbo. */
+   RARCH_UNMAPPED,
 };
 
 #undef INPUT_CONFIG_MASS_BIND_ORDER_PASTE
 #undef INPUT_CONFIG_MASS_BIND_ORDER_PASTE2
 #undef INPUT_CONFIG_MASS_BIND_ORDER
 #undef INPUT_CONFIG_MASS_BIND_ORDER_TEN
-#undef INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED
-#undef INPUT_CONFIG_MASS_BIND_ORDER_NIL
 
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
@@ -6159,7 +6187,7 @@ void input_remapping_set_defaults(bool clear_cache)
 {
    unsigned usernum, logical;
    settings_t *settings        = config_get_ptr();
-   const struct retro_keybind *keybind = &input_config_binds[usernum][logical];
+   const struct retro_keybind *keybind;
 
    for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
@@ -6169,6 +6197,8 @@ void input_remapping_set_defaults(bool clear_cache)
          /* Ignore the analog/gun binds. */
          if (!rarch_logical_bind_is_basic(logical))
             continue;
+
+          keybind = &input_config_binds[usernum][logical];
 
          /* Force defaults for extended keys to be unmapped by default. */
          configuration_set_uint(settings,
