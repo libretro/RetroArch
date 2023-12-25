@@ -245,13 +245,13 @@ static int action_start_input_desc(
 
    if (settings && sys_info)
    {
-      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (rarch_num_bind_game_controller());
+      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (rarch_num_bind_game_controller()) * user_idx;
       unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
 
       if (     (user_idx    >= MAX_USERS)
             || (mapped_port >= MAX_USERS)
-            || (btn_idx     >= RARCH_CUSTOM_BIND_LIST_END))
+            || !rarch_logical_bind_is_game_controller(btn_idx))
          return 0;
 
       /* Check whether core has defined this input */
