@@ -3384,11 +3384,11 @@ struct retro_core_extended_retropad_button
     /** The controller port or player this is attached to. */
     unsigned port;
 
-    /** The index of the device. */
-    unsigned index;
-
     /** The device that this is associated with, either @c RETRO_DEVICE_JOYPAD or @c RETRO_DEVICE_ANALOG. */
     unsigned device;
+
+    /** The index of the device. */
+    unsigned index;
 
     /**
      * The logical bind ID number of the specific command.

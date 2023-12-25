@@ -1435,7 +1435,7 @@ static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
     const char** user_inputs;
 
     /* Debug. */
-    RARCH_LOG("[Core]: Initializing extra core buttons!\n");
+    RARCH_LOG("[Environ]: Setting extended retropad buttons.\n");
 
     /* Erase all the previous extended binds for all users. */
     rarch_erase_input_desc_btn(sys_info,
@@ -1473,7 +1473,14 @@ static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
 
         /* Set description. */
         sys_info->input_desc_btn[usernum][bind] = action->description;
+
+        /* Debug. */
+        RARCH_LOG("[Environ]: Bound %d to %s.\n",
+            bind, action->description);
     }
+
+    /* Debug. */
+    RARCH_LOG("[Environ]: Set %d extended buttons.\n", at);
 
     /* Indicate that the input descriptors changed. */
     runloop_st->current_core.flags |=
@@ -1486,9 +1493,15 @@ static void rarch_set_input_descriptors(const void *data,
     unsigned retro_id;
     const struct retro_input_descriptor *desc = NULL;
     unsigned int p;
+    bool did_extra;
+
+    /* Check if extended inputs were set. */
+    did_extra = (runloop_st->current_core.flags & RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT) != 0;
+    if (!did_extra)
+        RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS: Extra was not previously set.\n");
 
     /* If extended descriptors were set, only erase the standard ones. */
-    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT) != 0)
+    if (did_extra)
         rarch_erase_input_desc_btn(sys_info, 0, rarch_first_logical_bind_game_controller());
 
     /* Otherwise, erase everything to keep legacy behavior. */
