@@ -1759,6 +1759,8 @@ enum retro_mod
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if this environment call is available,
  * regardless of the value returned in \c data.
+ *
+ * @see RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
  */
 #define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
@@ -2119,15 +2121,32 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY 63
 
+/**
+ * Allows the core to tell the frontend when it should enable fast-forwarding,
+ * rather than relying solely on the frontend and user interaction.
+ *
+ * Possible use cases include:
+ *
+ * \li Temporarily disabling a core's fastforward support
+ *     while investigating a related bug.
+ * \li Disabling fastforward during netplay sessions,
+ *     or when using an emulated console's network features.
+ * \li Automatically speeding up the game when in a loading screen
+ *     that cannot be shortened with high-level emulation.
+ *
+ * @param[in] data <tt>const struct retro_fastforwarding_override *</tt>.
+ * Pointer to the parameters that decide when and how
+ * the frontend is allowed to enable fast-forward mode.
+ * May be \c NULL, in which case the frontend will return \c true
+ * without updating the fastforward state,
+ * which can be used to detect support for this environment call.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ *
+ * @see retro_fastforwarding_override
+ * @see RETRO_ENVIRONMENT_GET_FASTFORWARDING
+ */
 #define RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE 64
-                                           /* const struct retro_fastforwarding_override * --
-                                            * Used by a libretro core to override the current
-                                            * fastforwarding mode of the frontend.
-                                            * If NULL is passed to this function, the frontend
-                                            * will return true if fastforwarding override
-                                            * functionality is supported (no change in
-                                            * fastforwarding state will occur in this case).
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE 65
                                            /* const struct retro_system_content_info_override * --
@@ -6872,46 +6891,62 @@ struct retro_framebuffer
 
 /** @} */
 
-/* Used by a libretro core to override the current
- * fastforwarding mode of the frontend */
+/** @defgroup SET_FASTFORWARDING_OVERRIDE Fast-Forward Override
+ * @{
+ */
+
+/**
+ * Parameters that govern when and how the core takes control
+ * of fast-forwarding mode.
+ */
 struct retro_fastforwarding_override
 {
-   /* Specifies the runtime speed multiplier that
-    * will be applied when 'fastforward' is true.
-    * For example, a value of 5.0 when running 60 FPS
-    * content will cap the fast-forward rate at 300 FPS.
-    * Note that the target multiplier may not be achieved
-    * if the host hardware has insufficient processing
-    * power.
-    * Setting a value of 0.0 (or greater than 0.0 but
-    * less than 1.0) will result in an uncapped
-    * fast-forward rate (limited only by hardware
-    * capacity).
-    * If the value is negative, it will be ignored
-    * (i.e. the frontend will use a runtime speed
-    * multiplier of its own choosing) */
+   /**
+    * The factor by which the core will be sped up
+    * when \c fastforward is \c true.
+    * This value is used as follows:
+    *
+    * @li A value greater than 1.0 will run the core at
+    *     the specified multiple of normal speed.
+    *     For example, a value of 5.0
+    *     combined with a normal target rate of 60 FPS
+    *     will result in a target rate of 300 FPS.
+    *     The actual rate may be lower if the host's hardware can't keep up.
+    * @li A value of 1.0 will run the core at normal speed.
+    * @li A value between 0.0 (inclusive) and 1.0 (exclusive)
+    *     will run the core as fast as the host system can manage.
+    * @li A negative value will let the frontend choose a factor.
+    * @li An infinite value or \c NaN results in undefined behavior.
+    *
+    * @attention Setting this value to less than 1.0 will \em not
+    * slow down the core.
+    */
    float ratio;
 
-   /* If true, fastforwarding mode will be enabled.
-    * If false, fastforwarding mode will be disabled. */
+   /**
+    * If \c true, the frontend should activate fast-forwarding
+    * until this field is set to \c false or the core is unloaded.
+    */
    bool fastforward;
 
-   /* If true, and if supported by the frontend, an
-    * on-screen notification will be displayed while
-    * 'fastforward' is true.
-    * If false, and if supported by the frontend, any
-    * on-screen fast-forward notifications will be
-    * suppressed */
+   /**
+    * If \c true, the frontend should display an on-screen notification or icon
+    * while \c fastforward is \c true (where supported).
+    * Otherwise, the frontend should not display any such notification.
+    */
    bool notification;
 
-   /* If true, the core will have sole control over
-    * when fastforwarding mode is enabled/disabled;
-    * the frontend will not be able to change the
-    * state set by 'fastforward' until either
-    * 'inhibit_toggle' is set to false, or the core
-    * is unloaded */
+   /**
+    * If \c true, the core has exclusive control
+    * over enabling and disabling fast-forwarding
+    * via the \c fastforward field.
+    * The frontend will not be able to start or stop fast-forwarding
+    * until this field is set to \c false or the core is unloaded.
+    */
    bool inhibit_toggle;
 };
+
+/** @} */
 
 /**
  * During normal operation.
