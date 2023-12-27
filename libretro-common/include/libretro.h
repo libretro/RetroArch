@@ -2331,30 +2331,39 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK 69
 
+/**
+ * Forcibly sets a core option's value.
+ *
+ * After changing a core option value with this callback,
+ * it will be reflected in the frontend
+ * and \ref RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE will return \c true.
+ * \ref retro_variable::key must match
+ * a \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 "previously-set core option",
+ * and \ref retro_variable::value must match one of its defined values.
+ *
+ * Possible use cases include:
+ *
+ * @li Allowing the player to set certain core options
+ *     without entering the frontend's option menu,
+ *     using an in-core hotkey.
+ * @li Adjusting invalid combinations of settings.
+ * @li Migrating settings from older releases of a core.
+ *
+ * @param[in] data <tt>const struct retro_variable *</tt>.
+ * Pointer to a single option that the core is changing.
+ * May be \c NULL, in which case the frontend will return \c true
+ * to indicate that this environment call is available.
+ * @return \c true if this environment call is available
+ * and the option named by \c key was successfully
+ * set to the given \c value.
+ * \c false if the \c key or \c value fields are \c NULL, empty,
+ * or don't match a previously set option.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+ */
 #define RETRO_ENVIRONMENT_SET_VARIABLE 70
-                                           /* const struct retro_variable * --
-                                            * Allows an implementation to notify the frontend
-                                            * that a core option value has changed.
-                                            *
-                                            * retro_variable::key and retro_variable::value
-                                            * must match strings that have been set previously
-                                            * via one of the following:
-                                            *
-                                            * - RETRO_ENVIRONMENT_SET_VARIABLES
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
-                                            *
-                                            * After changing a core option value via this
-                                            * callback, RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
-                                            * will return true.
-                                            *
-                                            * If data is NULL, no changes will be registered
-                                            * and the callback will return true; an
-                                            * implementation may therefore pass NULL in order
-                                            * to test whether the callback is supported.
-                                            */
 
 #define RETRO_ENVIRONMENT_GET_THROTTLE_STATE (71 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_throttle_state * --
