@@ -7562,6 +7562,7 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info);
  * @see RETRO_DEVICE_LIGHTGUN
  * @see RETRO_DEVICE_ANALOG
  * @see RETRO_DEVICE_POINTER
+ * @see RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
  */
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device);
 
