@@ -696,7 +696,8 @@ enum retro_mod
  * Frontends should mask out this bit before handling the environment call.
  */
 #define RETRO_ENVIRONMENT_EXPERIMENTAL 0x10000
-/* Environment callback to be used internally in frontend. */
+
+/** Frontend-internal environment callbacks should include this bit. */
 #define RETRO_ENVIRONMENT_PRIVATE 0x20000
 
 /* Environment commands. */
