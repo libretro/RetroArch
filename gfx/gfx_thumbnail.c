@@ -292,12 +292,12 @@ void gfx_thumbnail_request(
                const char *system                         = NULL;
                const char *img_name                       = NULL;
                static char last_img_name[PATH_MAX_LENGTH] = {0};
-
+               enum playlist_thumbnail_name_flags next_flag;
                if (!playlist)
                   goto end;
 
-               /* Get current image name */
-               if (!gfx_thumbnail_get_img_name(path_data, &img_name))
+               /* Validate entry */
+               if (!gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
                   goto end;
 
                /* Only trigger a thumbnail download if image
@@ -321,7 +321,15 @@ void gfx_thumbnail_request(
                if (!gfx_thumbnail_get_system(path_data, &system))
                   goto end;
 
-               /* Trigger thumbnail download */
+               /* Apply flexible thumbnail naming: ROM file name - database name - short name */
+               next_flag = playlist_get_next_thumbnail_name_flag(playlist,idx);
+               if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
+                  goto end;
+
+               /* Trigger thumbnail download *
+                * Note: download will grab all 3 possible thumbnails, no matter
+                * what left/right thumbnails are set at the moment */
+               playlist_update_thumbnail_name_flag(playlist, idx, next_flag);
                task_push_pl_entry_thumbnail_download(
                      system, playlist, (unsigned)idx,
                      false, true);

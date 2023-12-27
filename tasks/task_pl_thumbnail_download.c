@@ -74,7 +74,8 @@ typedef struct pl_thumb_handle
    unsigned type_idx;
 
    enum pl_thumb_status status;
-
+   enum playlist_thumbnail_name_flags name_flags;
+   
    uint8_t flags;
 } pl_thumb_handle_t;
 
@@ -155,7 +156,7 @@ static bool get_thumbnail_paths(
    /* Extract required strings */
    gfx_thumbnail_get_system( pl_thumb->thumbnail_path_data, &system);
    gfx_thumbnail_get_db_name(pl_thumb->thumbnail_path_data, &db_name);
-   if (!gfx_thumbnail_get_img_name(pl_thumb->thumbnail_path_data, &img_name))
+   if (!gfx_thumbnail_get_img_name(pl_thumb->thumbnail_path_data, &img_name, pl_thumb->name_flags))
       return false;
    if (!gfx_thumbnail_get_sub_directory(pl_thumb->type_idx, &sub_dir))
       return false;
@@ -816,7 +817,8 @@ bool task_push_pl_entry_thumbnail_download(
    gfx_thumbnail_path_data_t *
          thumbnail_path_data     = NULL;
    const char *dir_thumbnails    = NULL;
-   
+   enum playlist_thumbnail_name_flags curr_flag = PLAYLIST_THUMBNAIL_FLAG_INVALID;
+
    /* Sanity check */
    if (!settings || !task || !pl_thumb || !playlist || !entry_id)
       goto error;
@@ -871,7 +873,11 @@ bool task_push_pl_entry_thumbnail_download(
    if (!gfx_thumbnail_set_content_playlist(
          thumbnail_path_data, playlist, idx))
       goto error;
-   
+
+   curr_flag = playlist_get_curr_thumbnail_name_flag(playlist,idx);
+      if (curr_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
+         goto error;
+
    /* Configure handle
     * > Note: playlist_config is unused by this task */
    pl_thumb->system              = NULL;
@@ -883,6 +889,7 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb->list_size           = playlist_size(playlist);
    pl_thumb->list_index          = idx;
    pl_thumb->type_idx            = 1;
+   pl_thumb->name_flags          = curr_flag;
    pl_thumb->status              = PL_THUMB_BEGIN;
 
    if (overwrite)

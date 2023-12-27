@@ -1059,6 +1059,48 @@ error:
    return false;
 }
 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx, 
+      enum playlist_thumbnail_name_flags thumbnail_flags)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return;
+
+   entry                   = &playlist->entries[idx];
+   entry->thumbnail_flags |= thumbnail_flags;
+}
+
+enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return    PLAYLIST_THUMBNAIL_FLAG_NONE;
+
+   entry = &playlist->entries[idx];
+   return entry->thumbnail_flags;
+}
+
+
+enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return    PLAYLIST_THUMBNAIL_FLAG_NONE;
+   entry = &playlist->entries[idx];
+
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_NONE;
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_STD_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME;
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
+   return PLAYLIST_THUMBNAIL_FLAG_FULL_NAME;
+}
+
+
 /**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
