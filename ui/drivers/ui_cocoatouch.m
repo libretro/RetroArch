@@ -579,6 +579,7 @@ enum
    if (!ui_companion_start_on_boot)
       [self showGameView];
 
+#ifdef HAVE_CLOUDSYNC
    if (self.bgDate)
    {
       if (   [[NSDate date] timeIntervalSinceDate:self.bgDate] > 60.0f
@@ -587,6 +588,7 @@ enum
          task_push_cloud_sync();
       self.bgDate = nil;
    }
+#endif
 }
 
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
