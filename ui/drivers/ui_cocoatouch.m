@@ -559,6 +559,11 @@ enum
    retroarch_main_quit();
 }
 
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+   self.bgDate = [NSDate date];
+}
+
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
    rarch_start_draw_observer();
@@ -573,6 +578,15 @@ enum
 
    if (!ui_companion_start_on_boot)
       [self showGameView];
+
+   if (self.bgDate)
+   {
+      if (   [[NSDate date] timeIntervalSinceDate:self.bgDate] > 60.0f
+          && (   !(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+              || retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)))
+         task_push_cloud_sync();
+      self.bgDate = nil;
+   }
 }
 
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
