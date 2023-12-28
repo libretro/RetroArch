@@ -5539,6 +5539,9 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
     *   menu list) */
    menu_st->selection_ptr       = 0;
 
+   /* Check if we need to quit */
+   check_quit_on_close();
+
    /* Unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
@@ -5571,8 +5574,6 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
        * MENU_ST_FLAG_PREVENT_POPULATE */
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    }
-
-   check_quit_on_close();
 
    return ret;
 }
