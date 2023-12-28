@@ -1607,6 +1607,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
  * content_save_state:
  * @path      : path of saved state that shall be written to.
  * @save_to_disk: If false, saves the state onto undo_load_buf.
+ * @autosave: If the save is triggered automatically (ie. at core unload).
  * Save a state from memory to disk.
  *
  * Returns: true if successful, false otherwise.

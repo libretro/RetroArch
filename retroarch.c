@@ -3600,9 +3600,9 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
-            command_event_save_auto_state(
-                  settings->bools.savestate_auto_save,
-                  runloop_st->current_core_type);
+            if (settings->bools.savestate_auto_save &&
+                runloop_st->current_core_type != CORE_TYPE_DUMMY)
+               command_event_save_auto_state();
 
             if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
                   || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
@@ -8102,9 +8102,9 @@ bool retroarch_main_quit(void)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
 
-      command_event_save_auto_state(
-            settings->bools.savestate_auto_save,
-            runloop_st->current_core_type);
+      if (settings->bools.savestate_auto_save &&
+          runloop_st->current_core_type != CORE_TYPE_DUMMY)
+         command_event_save_auto_state();
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise
