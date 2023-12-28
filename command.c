@@ -1258,19 +1258,13 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    return true;
 }
 
-bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      const enum rarch_core_type current_core_type)
+bool command_event_save_auto_state(void)
 {
    size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    char savestate_name_auto[PATH_MAX_LENGTH];
 
    if (runloop_st->entry_state_slot)
-      return false;
-   if (!savestate_auto_save)
-      return false;
-   if (current_core_type == CORE_TYPE_DUMMY)
       return false;
    if (!core_info_current_supports_savestate())
       return false;

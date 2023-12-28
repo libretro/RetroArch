@@ -1274,6 +1274,7 @@ DATA RUNLOOP
 #endif
 #endif
 #endif
+#include "../save.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_movie.c"
 #include "../tasks/task_image.c"

@@ -269,6 +269,7 @@ ifeq ($(HAVE_PATCH), 1)
 endif
 
 OBJ += \
+       save.o \
        tasks/task_save.o \
        tasks/task_movie.o \
        tasks/task_file_transfer.o \
