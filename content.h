@@ -39,12 +39,6 @@ typedef struct content_ctx_info
    int argc;                       /* Argument count. */
 } content_ctx_info_t;
 
-/* Load a RAM state from disk to memory. */
-bool content_load_ram_file(unsigned slot);
-
-/* Save a RAM state from memory to disk. */
-bool content_save_ram_file(unsigned slot, bool compress);
-
 /* Load a state from memory. */
 bool content_load_state_from_ram(void);
 
