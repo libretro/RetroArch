@@ -155,7 +155,7 @@ error:
    return NULL;
 }
 
-static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
+static bool wasapi_flush(wasapi_t *w, const void *data, size_t size)
 {
    BYTE *dest         = NULL;
    UINT32 frame_count = size / w->frame_size;
@@ -173,7 +173,7 @@ static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
    return true;
 }
 
-static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
+static bool wasapi_flush_buffer(wasapi_t *w, size_t size)
 {
    BYTE *dest         = NULL;
    UINT32 frame_count = size / w->frame_size;
@@ -191,7 +191,7 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
    return true;
 }
 
-static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t size)
+static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void *data, size_t size)
 {
    ssize_t written    = -1;
    size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
@@ -222,7 +222,7 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void * data, size_t siz
    return written;
 }
 
-static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
+static ssize_t wasapi_write_sh(wasapi_t *w, const void *data, size_t size)
 {
    ssize_t written    = -1;
    size_t write_avail = 0;
@@ -246,7 +246,7 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
    return written;
 }
 
-static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t size)
+static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void *data, size_t size)
 {
    ssize_t written    = -1;
    size_t write_avail = 0;
@@ -291,7 +291,7 @@ static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t s
    return written;
 }
 
-static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size, DWORD ms)
+static ssize_t wasapi_write_ex(wasapi_t *w, const void *data, size_t size, DWORD ms)
 {
    ssize_t written    = 0;
    size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
@@ -395,9 +395,22 @@ static bool wasapi_alive(void *wh)
    return w->running;
 }
 
+static void wasapi_insert_silence(wasapi_t *w)
+{
+   int i;
+
+   for (i = 0; i < 12; i++)
+      audio_driver_menu_sample();
+}
+
 static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 {
    wasapi_t *w = (wasapi_t*)wh;
+
+   /* Since exclusive mode keeps repeating last sample while
+    * in paused menu, generate some silence first. */
+   if (!nonblock && w->exclusive)
+      wasapi_insert_silence(w);
 
    w->nonblock = nonblock;
 }
@@ -447,11 +460,12 @@ static size_t wasapi_write_avail(void *wh)
    wasapi_t *w    = (wasapi_t*)wh;
    UINT32 padding = 0;
 
-   if (w->buffer)
-      return FIFO_WRITE_AVAIL(w->buffer);
-
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
+
+   if (w->buffer)
+      /* Exaggarate available size for best results.. */
+      return FIFO_WRITE_AVAIL(w->buffer) + padding * 2;
 
    return w->engine_buffer_size - padding * w->frame_size;
 }
@@ -460,7 +474,7 @@ static size_t wasapi_buffer_size(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
-   if (!w->exclusive && w->buffer)
+   if (w->buffer)
       return w->buffer->size;
 
    return w->engine_buffer_size;
