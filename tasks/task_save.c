@@ -227,7 +227,7 @@ bool content_undo_load_state(void)
 
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
-   content_save_state("RAM", false, false);
+   content_save_state("RAM", false);
 
    ret = content_deserialize_state(temp_data, temp_data_size);
 
@@ -1072,7 +1072,7 @@ static void content_load_state_cb(retro_task_t *task,
    }
 
    /* Backup the current state so we can undo this load */
-   content_save_state("RAM", false, false);
+   content_save_state("RAM", false);
 
    ret = content_deserialize_state(buf, size);
 
@@ -1308,6 +1308,79 @@ static void task_push_load_and_save_state(const char *path, void *data,
 }
 
 /**
+ * content_auto_save_state:
+ * @path      : path of saved state that shall be written to.
+ * Save a state from memory to disk. This is used for automatic saving right
+ * before a core unload/deinit or content closing. The save is a blocking
+ * operation (does not use the task queue).
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_auto_save_state(const char *path)
+{
+   settings_t *settings = config_get_ptr();
+   void *serial_data  = NULL;
+   size_t serial_size;
+   intfstream_t *file = NULL;
+
+   if (!core_info_current_supports_savestate())
+   {
+      RARCH_LOG("[State]: %s\n",
+            msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
+      return false;
+   }
+
+   serial_size = core_serialize_size();
+
+   if (serial_size == 0 || !path_is_valid(path))
+      return false;
+
+   serial_data = content_get_serialized_data(&serial_size);
+   if (!serial_data)
+      return false;
+
+#if defined(HAVE_ZLIB)
+   if (settings->bools.savestate_file_compression)
+      file = intfstream_open_rzip_file(path, RETRO_VFS_FILE_ACCESS_WRITE);
+   else
+#endif
+      file = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_WRITE,
+                                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      free(serial_data);
+      return false;
+   }
+
+   if (serial_size != (size_t)intfstream_write(file, serial_data, serial_size))
+   {
+      intfstream_close(file);
+      free(serial_data);
+      free(file);
+      return false;
+   }
+
+   intfstream_close(file);
+   free(serial_data);
+   free(file);
+
+#ifdef HAVE_SCREENSHOTS
+   if (settings->bools.savestate_thumbnail_enable)
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      const char *dir_screenshot = settings->paths.directory_screenshot;
+      bool validfb = video_st->frame_cache_data &&
+                     video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
+
+      take_screenshot(dir_screenshot, path, true, validfb, false, false);
+   }
+#endif
+
+   return true;
+}
+
+/**
  * content_save_state:
  * @path      : path of saved state that shall be written to.
  * @save_to_disk: If false, saves the state onto undo_load_buf.
@@ -1316,7 +1389,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
  *
  * Returns: true if successful, false otherwise.
  **/
-bool content_save_state(const char *path, bool save_to_disk, bool autosave)
+bool content_save_state(const char *path, bool save_to_disk)
 {
    size_t serial_size;
    void *data  = NULL;
@@ -1352,17 +1425,17 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 
    if (save_to_disk)
    {
-      if (path_is_valid(path) && !autosave)
+      if (path_is_valid(path))
       {
          /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-         task_push_load_and_save_state(path, data, serial_size, true, autosave);
+         task_push_load_and_save_state(path, data, serial_size, true, false);
       }
       else
-         task_push_save_state(path, data, serial_size, autosave);
+         task_push_save_state(path, data, serial_size, false);
    }
    else
    {
@@ -1613,7 +1686,7 @@ bool content_load_state_from_ram(void)
 
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
-   content_save_state("RAM", false, false);
+   content_save_state("RAM", false);
 
    ret             = content_deserialize_state(temp_data, temp_data_size);
 
