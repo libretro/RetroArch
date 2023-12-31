@@ -500,10 +500,19 @@ bool gfx_thumbnail_set_content_playlist(
       {
          char *db_name_no_ext = NULL;
          char tmp_buf[PATH_MAX_LENGTH];
-         /* Remove .lpl extension
-          * > path_remove_extension() requires a char * (not const)
-          *   so have to use a temporary buffer... */
-         strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+         const char* pos = strchr(db_name, '|');
+         
+         if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf)) {
+            /* If db_name comes from core info, and there are multiple 
+             * databases mentioned separated by |, use only first one */
+            strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
+         }
+         else {
+            /* Remove .lpl extension
+             * > path_remove_extension() requires a char * (not const)
+             *   so have to use a temporary buffer... */
+            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+         }
          db_name_no_ext = path_remove_extension(tmp_buf);
 
          if (!string_is_empty(db_name_no_ext))
