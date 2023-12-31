@@ -52,7 +52,10 @@ bool content_ram_state_to_file(const char *path);
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
-bool content_save_state(const char *path, bool save_to_disk, bool autosave);
+bool content_save_state(const char *path, bool save_to_disk);
+
+/* Save an automatic savestate to disk. */
+bool content_auto_save_state(const char *path);
 
 /* Check a ram state write to disk. */
 bool content_ram_state_pending(void);
