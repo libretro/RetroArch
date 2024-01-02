@@ -407,8 +407,8 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
-				PRODUCT_NAME = RetroArchCg;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
+				PRODUCT_NAME = "RetroArchCg for Play Lab";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
@@ -450,8 +450,8 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
-				PRODUCT_NAME = RetroArchCg;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
+				PRODUCT_NAME = "RetroArchCg for Play Lab";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
@@ -492,8 +492,8 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
+				PRODUCT_NAME = "RetroArch for Play Lab";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
@@ -532,8 +532,8 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
+				PRODUCT_NAME = "RetroArch for Play Lab";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;

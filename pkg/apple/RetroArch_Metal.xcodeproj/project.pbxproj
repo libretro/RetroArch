@@ -1783,8 +1783,8 @@
 					"-UHAVE_OPENGL",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchM;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabM;
+				PRODUCT_NAME = "RetroArch for Play Lab";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
@@ -1821,8 +1821,8 @@
 					"-UHAVE_OPENGL",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchM;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabM;
+				PRODUCT_NAME = "RetroArch for Play Lab";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;

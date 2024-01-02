@@ -536,8 +536,8 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch6;
-				PRODUCT_NAME = "RetroArch iOS6";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab6;
+				PRODUCT_NAME = "RetroArch iOS6 for Play Lab";
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				VALID_ARCHS = armv7;
@@ -705,8 +705,8 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch6;
-				PRODUCT_NAME = "RetroArch iOS6";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab6;
+				PRODUCT_NAME = "RetroArch iOS6 for Play Lab";
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				VALID_ARCHS = armv7;

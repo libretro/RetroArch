@@ -1668,8 +1668,8 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-D__LIBRETRO__",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabiOS11;
+				PRODUCT_NAME = "RetroArch for Play Lab";
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SRCBASE = "$(SRCROOT)/../..";
@@ -1817,8 +1817,8 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-D__LIBRETRO__",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabiOS11;
+				PRODUCT_NAME = "RetroArch for Play Lab";
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SRCBASE = "$(SRCROOT)/../..";
@@ -2219,7 +2219,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabiOS11.RetroArchWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -2288,7 +2288,7 @@
 				MARKETING_VERSION = 1.16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabiOS11.RetroArchWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;

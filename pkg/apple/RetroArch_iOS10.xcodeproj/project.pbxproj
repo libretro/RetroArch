@@ -545,8 +545,8 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
-				PRODUCT_NAME = "RetroArch iOS10";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabiOS10;
+				PRODUCT_NAME = "RetroArch iOS10 for Play Lab";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
@@ -720,8 +720,8 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_KEYMAPPER",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
-				PRODUCT_NAME = "RetroArch iOS10";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLabiOS10;
+				PRODUCT_NAME = "RetroArch iOS10 for Play Lab";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";

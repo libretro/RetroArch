@@ -699,7 +699,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch8;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -875,7 +875,7 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch8;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;

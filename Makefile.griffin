@@ -56,7 +56,7 @@ else ifneq ($(findstring MINGW,$(shell uname -s)),)
    system_platform = win
 endif
 
-TARGET_NAME        := retroarch
+TARGET_NAME        := "retroarch for Play Lab"
 
 INCLUDE            :=
 LDFLAGS            :=

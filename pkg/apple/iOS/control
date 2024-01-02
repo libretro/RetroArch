@@ -1,4 +1,4 @@
-Package: com.libretro.retroarch
+Package: com.libretro.RetroArch.PlayLab
 Name: retroarch
 Depends: 
 Version: 0.0.1
