@@ -4308,7 +4308,7 @@ void video_frame_rest(video_driver_state_t *video_st,
    static int frame_time_near_count  = 0;
    static int frame_time_try_count   = 0;
    double video_stddev               = 0;
-   audio_statistics_t audio_stats;
+   audio_statistics_t audio_stats = {0};
 
    /* Must require video and audio deviation standards */
    video_monitor_fps_statistics(NULL, &video_stddev, NULL);
