@@ -7470,6 +7470,14 @@ MSG_HASH(
    "Allow content to be scanned and added to a playlist without a core installed that supports it."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Scan checks CRC on possible duplicates"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Sometimes ISOs duplicate serials, particularly with PSP/PSN titles. Relying solely on the serial can sometimes cause the scanner to put content in the wrong system. This adds a CRC check, which slows down scanning considerably, but may be more accurate."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Manage Playlists"
    )

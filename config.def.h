@@ -1435,6 +1435,8 @@
 
 #define DEFAULT_SCAN_WITHOUT_CORE_MATCH false
 
+#define DEFAULT_SCAN_SERIAL_AND_CRC false
+
 #ifdef __WINRT__
 /* Be paranoid about WinRT file I/O performance, and leave this disabled by
  * default */
