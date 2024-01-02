@@ -6939,6 +6939,17 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
          video_driver_cached_frame();
+
+         /* Limit paused video refresh when vsync is disabled */
+         if (!settings->bools.video_vsync)
+         {
+            float refresh_rate = (video_st->video_refresh_rate_original)
+                  ? video_st->video_refresh_rate_original : settings->floats.video_refresh_rate;
+
+            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / refresh_rate);
+            goto end;
+         }
+
          return 1;
       case RUNLOOP_STATE_MENU:
 #ifdef HAVE_NETWORKING
