@@ -1058,6 +1058,26 @@ static int task_database_iterate_playlist_lutro(
    return 0;
 }
 
+static bool task_database_check_serial_and_crc(
+      database_state_handle_t *db_state)
+{
+#ifdef RARCH_INTERNAL
+   settings_t *settings                    = config_get_ptr();
+#endif
+   const char         *db_path    =
+      database_info_get_current_name(db_state);
+
+#ifdef RARCH_INTERNAL
+   if (!settings->bools.scan_serial_and_crc)
+       return false;
+#endif
+
+   /* the PSP shares serials for disc/download content */
+   return string_starts_with(
+         path_basename_nocompression(db_path),
+         "Sony - PlayStation Portable");
+}
+
 static int task_database_iterate_serial_lookup(
       db_handle_t *_db,
       database_state_handle_t *db_state,
@@ -1100,8 +1120,19 @@ static int task_database_iterate_serial_lookup(
       if (db_info_entry && db_info_entry->serial)
       {
          if (string_is_equal(db_state->serial, db_info_entry->serial))
-            return database_info_list_iterate_found_match(_db,
-                  db_state, db, NULL);
+         {
+            if (task_database_check_serial_and_crc(db_state))
+            {
+               if (db_state->crc == 0)
+                  intfstream_file_get_crc(name, 0, SIZE_MAX, &db_state->crc);
+               if (db_state->crc == db_info_entry->crc32)
+                  return database_info_list_iterate_found_match(_db,
+                        db_state, db, NULL);
+            }
+            else
+               return database_info_list_iterate_found_match(_db,
+                     db_state, db, NULL);
+         }
       }
    }
 

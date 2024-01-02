@@ -11266,6 +11266,21 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.scan_serial_and_crc,
+                  MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,
+                  MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+                  DEFAULT_SCAN_SERIAL_AND_CRC,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
             CONFIG_ACTION(
                   list, list_info,
                   MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,

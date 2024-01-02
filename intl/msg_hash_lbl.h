@@ -6067,6 +6067,10 @@ MSG_HASH(
    "scan_without_core_match"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,
+   "scan_serial_and_crc"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
    "xmb_menu_animation_horizontal_highlight"
    )
