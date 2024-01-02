@@ -366,7 +366,8 @@ static void free_pl_thumb_handle(pl_thumb_handle_t *pl_thumb)
 static void task_pl_thumbnail_download_handler(retro_task_t *task)
 {
    pl_thumb_handle_t *pl_thumb = NULL;
-   
+   enum playlist_thumbnail_name_flags next_flag = PLAYLIST_THUMBNAIL_FLAG_INVALID;
+
    if (!task)
       goto task_finished;
    
@@ -421,6 +422,8 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             /* Start iterating over thumbnail type */
             pl_thumb->type_idx  = 1;
             pl_thumb->status    = PL_THUMB_ITERATE_TYPE;
+            playlist_update_thumbnail_name_flag(pl_thumb->playlist, pl_thumb->list_index, PLAYLIST_THUMBNAIL_FLAG_FULL_NAME);
+            pl_thumb->name_flags = PLAYLIST_THUMBNAIL_FLAG_FULL_NAME;
          }
          else
          {
@@ -450,13 +453,22 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          /* Check whether all thumbnail types have been processed */
          if (pl_thumb->type_idx > 3)
          {
-            /* Time to move on to the next entry */
-            pl_thumb->list_index++;
-            if (pl_thumb->list_index < pl_thumb->list_size)
-               pl_thumb->status = PL_THUMB_ITERATE_ENTRY;
-            else
-               pl_thumb->status = PL_THUMB_END;
-            break;
+            next_flag = playlist_get_next_thumbnail_name_flag(pl_thumb->playlist,pl_thumb->list_index);
+            if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE) {
+               if (pl_thumb->playlist )
+               /* Time to move on to the next entry */
+               pl_thumb->list_index++;
+               if (pl_thumb->list_index < pl_thumb->list_size)
+                  pl_thumb->status = PL_THUMB_ITERATE_ENTRY;
+               else
+                  pl_thumb->status = PL_THUMB_END;
+               break;
+            } else {
+               /* Increment the name flag to cover the 3 supported naming conventions. */
+               pl_thumb->type_idx = 1;
+               playlist_update_thumbnail_name_flag(pl_thumb->playlist, pl_thumb->list_index, next_flag);
+               pl_thumb->name_flags = next_flag;
+            }
          }
 
          /* Download current thumbnail */

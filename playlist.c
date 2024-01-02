@@ -1097,6 +1097,11 @@ enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlis
             return PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME;
    if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
             return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
+   /* Special case: only one entry in playlist, only one query is possible
+    * as flag swapping relies on going back and forth among entries
+    * so just use the most likely version here */
+   if (idx == 0 && RBUF_LEN(playlist->entries) == 1)
+            return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
    return PLAYLIST_THUMBNAIL_FLAG_FULL_NAME;
 }
 
