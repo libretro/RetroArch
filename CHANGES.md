@@ -1,6 +1,8 @@
 # Future
 - ACCESSIBILITY/TTS: fix target language and missing espeak handling on Linux
 - AI: AI service reworked: performance increase, automatic translation, configurable subtitle placement, and more
+- APPLE: Fix WebDAV crash with digest auth (Cloud Sync)
+- APPLE: Cloud sync fixes - ignore .DS_Store files and re-sync on app foreground
 - AUDIO/SYNC: Handle Hz skew adjustment for high refresh rates better (BFI, swap interval)
 - AUDIO/MIXER: Separate ffmpeg/mpv and audiomixer conditionals
 - AUDIO/WASAPI: Reworked shared buffer operation for more flexibility, fixed exclusive mode last buffer looping when entering menu
@@ -10,6 +12,8 @@
 - CHEEVOS: Use rc_client for state management
 - CHEEVOS: Don't track disc changes when achievements are disabled
 - CHEEVOS: Reinitialize rewind buffer after loading game with achievements
+- CHEEVOS: Inform user when server is unreachable
+- CHEEVOS: Fix crash on first load of game with achievements with threaded video
 - EMSCRIPTEN: Increase chunk size for reads/writes
 - EMSCRIPTEN: Modularize the JavaScript and clean up the web build
 - EMSCRIPTEN: Prefix core name with libretro_ for exports
@@ -22,8 +26,11 @@
 - IOS: Add option to disable respecting silent mode
 - IOS: Allow ignoring safe area (fullscreen over notch)
 - IOS: Default to not enabling keyboard gamepad
+- IOS: Fix XRGB8888 in GL driver
+- IOS: Allow changing the app icon
 - IOS/TVOS: Create GL context as GLES3 to fix some rendering performance problems
 - INPUT: Default 'Bind Hold' to 0 to prevent problems with controllers not resting at null state
+- INPUT: Add a setting to allow turbo d-pad directions
 - INPUT/UDEV: Change event detection to polling in udev_joypad
 - LAKKA: Add new menu options for Switch (overclock, CEC, BT ERTM)
 - LIBRETRO/NETPACKET:
@@ -42,6 +49,10 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - MENU: Add Belarusian language option
 - MENU: Fix savestate thumbnail behavior when navigating back to playlist while content is still running
 - MENU: Fix word wrapped widget length
+- MENU: Add help text to controller drivers
+- MENU: Fix quit on content close option
+- MENU: Fix thumbnails in History for content loaded through Load Content
+- MENU: Flexible thumbnail matching (ROM name - database name - short name)
 - MENU/GLUI: Icon corrections
 - MENU/OZONE: Thumbnail related fixes (missing thumbnail bar, fullscreen thumbnail flashing, sidebar focus)
 - MENU/RGUI: Fix text scaling in 16:9
@@ -49,12 +60,16 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - MENU/XMB: Fix segmentation fault when background image is missing
 - MENU/XMB: Several corrections and cleanups
 - NETWORKING/NETPLAY: Add support for joining MITM servers from command line
+- NETWORKING/NETPACKET: Interface connection flow improvements
 - OSX: Fix mouse support for MelonDS DS on OSX
 - PATCHES: Add support for XDelta-formatted patches.
 - PATCHES: Fix patching for cores that support contentless mode
 - PS2: Fix for no sound
 - PS2: Fix 0-byte logs and add memory stats
+- PSP: Fix memory leak in audio driver
 - RUNLOOP: Frame Rest, experimental sleep feature aiming to lower CPU usage and temperature when using certain CPU hungry vsync modes
+- RPI: Fix videocore + switchres compile failure
+- TVOS: Enable overlay support
 - VIDEO/GLSL: Add FinalViewportSize support to GLSL
 - VIDEO/GLSL: Change rotation type to int to maximize compatibility
 - VIDEO: Use video refresh rate instead of core refresh rate for menu frame limiting
@@ -62,10 +77,13 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - WIIU: Fix config file and core info reading
 - WIIU: Fix "Up" and "Left" directional input for both Analog sticks for GC Adapter
 - WIIU: Fix 3 USB controllers (NES/SNES/Retrode)
+- WIIU: Fix file descriptor leak
 - WIN32: Prefer D3D11 and WASAPI as default video and audio drivers
 - WIN32: Fix window size when aspect ratio is < 0
+- WIN32: Fix screen resolution always tied to the main monitor
 - WAYLAND: Enable fallback for screensaver inhibit via D-Bus
 - WAYLAND: Introduce wp_fractional_scale_v1 protocol for proper fractional scaling
+- WAYLAND: Update wayland-protocols version to 1.31
 
 # 1.16.0
 - 3DS: Update __system_initArgv
@@ -91,6 +109,7 @@ require fullpath or not, small and big ZIP files).
 - APPLE: Don't include MoltenVK library in Load Core menu list
 - APPLE: Enable AltServer JIT for builds installed by Xcode
 - APPLE: The default pthread stack size on Apple is too small for detect_ps2_game, so increase it
+- APPLE: Introduce Cloud Sync via a WebDAV service on iOS/TVOS/MacOS
 - CHEEVOS: Upgrade to rcheevos 10.7
 - CHEEVOS: Don't initialize rcheevos memory unless used
 - CHEEVOS: Add progress tracker widget
