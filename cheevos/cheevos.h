@@ -29,8 +29,8 @@ RETRO_BEGIN_DECLS
 
 void rcheevos_initialize_hooks
 (
-  void (*on_achievements_loaded)(const rcheevos_racheevo_t const*, const unsigned int),
-  void (*on_achievements_awarded)(const rcheevos_racheevo_t const*)
+  void (*on_achievements_loaded)(const rcheevos_racheevo_t*, const unsigned int),
+  void (*on_achievements_awarded)(const rcheevos_racheevo_t*)
 );
 
 bool rcheevos_load(const void *data);

@@ -130,8 +130,8 @@ void rcheevos_log(const char *fmt, ...)
 }
 #endif
 
-void (*_on_achievements_loaded)(const rcheevos_racheevo_t const*, const unsigned int) = NULL;
-void (*_on_achievements_awarded)(const rcheevos_racheevo_t const*) = NULL;
+void (*_on_achievements_loaded)(const rcheevos_racheevo_t*, const unsigned int) = NULL;
+void (*_on_achievements_awarded)(const rcheevos_racheevo_t*) = NULL;
 
 void rcheevos_initialize_hooks
 (

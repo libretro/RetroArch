@@ -81,11 +81,14 @@ struct async_http_request_t
 //  Contains all the shared state for all the webhook modules.
 wb_locals_t locals;
 
+int is_game_loaded = 0;
+retro_time_t last_update_time;
 unsigned long frame_counter = 0;
 
 const unsigned short LOADED = 1;
 const unsigned short STARTED = 2;
 const unsigned short ACHIEVEMENT = 3;
+const unsigned short KEEP_ALIVE = 4;
 const unsigned short UNLOADED = USHRT_MAX;
 const unsigned long PROGRESS_UPDATE_FRAME_FREQUENCY = 30;
 
@@ -180,7 +183,11 @@ static void wh_on_game_progress_downloaded
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wh_get_core_memory_info(unsigned id, rc_libretro_core_memory_info_t* info)
+static void wh_get_core_memory_info
+(
+  unsigned id,
+  rc_libretro_core_memory_info_t* info
+)
 {
   retro_ctx_memory_info_t ctx_info;
 
@@ -203,7 +210,10 @@ static void wh_get_core_memory_info(unsigned id, rc_libretro_core_memory_info_t*
 //  ---------------------------------------------------------------------------
 //  Initialize wb_locals_t's memory field.
 //  ---------------------------------------------------------------------------
-static int wh_init_memory(wb_locals_t* locals)
+static int wh_init_memory
+(
+  wb_locals_t* locals
+)
 {
   unsigned i;
   int result;
@@ -255,7 +265,39 @@ static void wb_check_progress
   int result = wpt_process_frame(&locals.runtime);
 
   if (result != PROGRESS_UNCHANGED) {
-    wc_update_progress(locals.console_id, locals.hash, wpt_get_last_progress(), frame_counter, time);
+
+    wc_update_progress
+    (
+      locals.console_id,
+      locals.hash,
+      wpt_get_last_progress(),
+      frame_counter,
+      time
+    );
+  }
+  else {
+    if (is_game_loaded == 1) {
+
+      retro_time_t current_time = cpu_features_get_time_usec();
+
+      long long elapsed_time = current_time - last_update_time;
+
+      if (elapsed_time >= 60000000) {
+
+        WEBHOOKS_LOG(WEBHOOKS_TAG "Sending KEEP ALIVE\n");
+
+        wc_send_keep_alive_event
+        (
+          locals.console_id,
+          locals.hash,
+          KEEP_ALIVE,
+          frame_counter,
+          time
+        );
+
+        last_update_time = current_time;
+      }
+    }
   }
 }
 
@@ -316,7 +358,10 @@ void webhooks_initialize()
 //  ---------------------------------------------------------------------------
 //  Called when a new game is loaded in the emulator.
 //  ---------------------------------------------------------------------------
-void webhooks_load_game(const struct retro_game_info* info)
+void webhooks_load_game
+(
+  const struct retro_game_info* info
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "New game loaded: %s\n", info->path);
 
@@ -332,6 +377,8 @@ void webhooks_load_game(const struct retro_game_info* info)
   wc_send_game_event(locals.console_id, locals.hash, LOADED, frame_counter, time);
 
   wpd_download_game_progress(&locals, &wh_on_game_progress_downloaded);
+
+  is_game_loaded = 1;
 }
 
 //  ---------------------------------------------------------------------------
@@ -344,6 +391,8 @@ void webhooks_unload_game()
   retro_time_t time = cpu_features_get_time_usec();
 
   wc_send_game_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
+
+  is_game_loaded = 0;
 }
 
 //  ---------------------------------------------------------------------------
@@ -381,10 +430,12 @@ void webhooks_process_frame()
 void webhooks_update_achievements()
 {
   int number_of_active  = 0;
+  
   int total_number      = 0;
 
   //  Only deals with supported & official achievements.
-  const rcheevos_racheevo_t const* current_achievement = locals.current_achievement;
+  const rcheevos_racheevo_t* current_achievement = locals.current_achievement;
+
   for (; current_achievement < locals.last_achievement; current_achievement++)
   {
     if (current_achievement->active & RCHEEVOS_ACTIVE_UNOFFICIAL)
@@ -408,8 +459,9 @@ void webhooks_update_achievements()
     total_number,
     frame_counter,
     time
-  );
+   );
 }
+
 void webhooks_on_achievements_loaded
 (
   const rcheevos_racheevo_t const* achievements,

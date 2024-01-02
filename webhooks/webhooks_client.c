@@ -253,6 +253,36 @@ static void wc_set_achievement_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+static void wc_set_keep_alive_request_url
+(
+  unsigned int console_id,
+  const char* rom_hash,
+  unsigned short game_event,
+  unsigned long frame_number,
+  retro_time_t time,
+  async_http_request_t* request
+)
+{
+  const settings_t *settings = config_get_ptr();
+  request->request.url = settings->arrays.webhook_url;
+
+  rc_api_url_builder_t builder;
+  rc_url_builder_init(&builder, &request->request.buffer, 48);
+
+  char time_str[64];
+  sprintf(time_str, "%lld", time);
+
+  char frame_number_str[64];
+  sprintf(frame_number_str, "%ld", frame_number);
+
+  rc_url_builder_append_str_param(&builder, "h", rom_hash);
+  rc_url_builder_append_num_param(&builder, "c", console_id);
+  rc_url_builder_append_num_param(&builder, "e", game_event);
+  rc_url_builder_append_str_param(&builder, "f", frame_number_str);
+  rc_url_builder_append_str_param(&builder, "t", time_str);
+  request->request.post_data = rc_url_builder_finalize(&builder);
+}
+
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's header, mainly the bearer token.
 //  ---------------------------------------------------------------------------
@@ -361,6 +391,29 @@ static void wc_prepare_achievement_http_request
   wc_set_request_header(request);
 }
 
+static void wc_prepare_keep_alive_http_request
+(
+  unsigned int console_id,
+  const char* rom_hash,
+  unsigned short game_event,
+  unsigned long frame_number,
+  retro_time_t time,
+  async_http_request_t* request
+)
+{
+  wc_set_keep_alive_request_url
+  (
+    console_id,
+    rom_hash,
+    game_event,
+    frame_number,
+    time,
+    request
+  );
+
+  wc_set_request_header(request);
+}
+
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
@@ -429,6 +482,29 @@ static void wc_initiate_achievement_request
   wc_begin_http_request(request);
 }
 
+static void wc_initiate_keep_alive_request
+(
+  unsigned int console_id,
+  const char* rom_hash,
+  unsigned short game_event,
+  unsigned long frame_number,
+  retro_time_t time,
+  async_http_request_t* request
+)
+{
+  wc_prepare_keep_alive_http_request
+  (
+    console_id,
+    rom_hash,
+    game_event,
+    frame_number,
+    time,
+    request
+  );
+
+  wc_begin_http_request(request);
+}
+
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
@@ -447,7 +523,7 @@ void wc_update_progress
 
   if (!request)
   {
-    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate rich presence request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate HTTP request\n");
     return;
   }
 
@@ -466,17 +542,25 @@ void wc_send_game_event
   retro_time_t time
 )
 {
-  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending webhook event '%d' for ROM's hash '%s'\n", game_event, rom_hash);
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending game event '%d' for ROM's hash '%s' (frame=%ld)\n", game_event, rom_hash, frame_number);
 
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
   if (!request)
   {
-    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate rich presence request\n");
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate HTTP request\n");
     return;
   }
 
-  wc_initiate_event_request(console_id, rom_hash, game_event, frame_number, time, request);
+  wc_initiate_event_request
+  (
+    console_id,
+    rom_hash,
+    game_event,
+    frame_number,
+    time,
+    request
+  );
 }
 
 //  ---------------------------------------------------------------------------
@@ -493,7 +577,7 @@ void wc_send_achievement_event
   retro_time_t time
 )
 {
-  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending game achievement event '%d' for ROM's hash '%s'\n", game_event, rom_hash);
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending game achievement event '%d' for ROM's hash '%s' (frame=%ld)\n", game_event, rom_hash, frame_number);
 
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
@@ -503,5 +587,49 @@ void wc_send_achievement_event
     return;
   }
 
-  wc_initiate_achievement_request(console_id, rom_hash, game_event, active_achievements, total_achievements, frame_number, time, request);
+  wc_initiate_achievement_request
+  (
+    console_id,
+    rom_hash,
+    game_event,
+    active_achievements,
+    total_achievements,
+    frame_number,
+    time,
+    request
+  );
 }
+
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
+void wc_send_keep_alive_event
+(
+  unsigned int console_id,
+  const char* rom_hash,
+  unsigned short game_event,
+  unsigned long frame_number,
+  retro_time_t time
+)
+{
+  WEBHOOKS_LOG(WEBHOOKS_TAG "Sending keep alive event '%d' for ROM's hash '%s' (frame=%ld)\n", game_event, rom_hash, frame_number);
+
+  async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
+
+  if (!request)
+  {
+    WEBHOOKS_LOG(WEBHOOKS_TAG "Failed to allocate HTTP request for keep alive event\n");
+    return;
+  }
+
+  wc_initiate_keep_alive_request
+  (
+    console_id,
+    rom_hash,
+    game_event,
+    frame_number,
+    time,
+    request
+  );
+}
+

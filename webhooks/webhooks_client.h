@@ -38,6 +38,15 @@ void wc_send_achievement_event
   retro_time_t time
 );
 
+void wc_send_keep_alive_event
+(
+  unsigned int console_id,
+  const char* rom_hash,
+  unsigned short game_event,
+  unsigned long frame_number,
+  retro_time_t time
+);
+
 void wc_update_progress
 (
   unsigned int console_id,
