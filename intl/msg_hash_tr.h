@@ -7378,6 +7378,14 @@ MSG_HASH(
    "İçeriğin, onu destekleyen bir çekirdek yüklenmeden taranmasına ve bir oynatma listesine eklenmesine izin verin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Tarama esnasında olası kopyalarda crc kontrol eder"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Bazen ISO dosya serileri PSP/PSN başlıklarını kopyalar. Yalnızca seri numarasına güvenmek bazen taranan içeriğin yanlış sisteme yerleştirmesine neden olabilir. Bu, taramayı önemli ölçüde yavaşlatan ancak daha doğru olabilecek bir CRC kontrolü ekler."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Oynatma Listelerini Yönet"
    )
