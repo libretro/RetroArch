@@ -14,21 +14,37 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
-
+#include <errno.h>
 #include <signal.h>
+#include <sys/types.h>
 
+#include <dirent.h>
 #include <linux/input.h>
 #include <linux/kd.h>
 #include <termios.h>
 #include <unistd.h>
 
 #include "linux_common.h"
+#include "verbosity.h"
+
+#include <string.h>
+
+#define IIO_DEVICES_DIR "/sys/bus/iio/devices"
+#define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
 
 /* TODO/FIXME - static globals */
 static struct termios old_term, new_term;
 static long old_kbmd               = 0xffff;
 static bool linux_stdin_claimed    = false;
+
+struct linux_illuminance_sensor
+{
+   /* This is a Linux-specific struct, so we can rely on FILE* here.
+      I don't want to introduce abstraction where it isn't needed. */
+   FILE* file;
+};
 
 void linux_terminal_restore_input(void)
 {
@@ -120,4 +136,109 @@ bool linux_terminal_disable_input(void)
    atexit(linux_terminal_restore_input);
 
    return true;
+}
+
+linux_illuminance_sensor_t *linux_open_illuminance_sensor()
+{
+   DIR *devices = opendir(IIO_DEVICES_DIR);
+   struct dirent *d = NULL;
+   linux_illuminance_sensor_t *sensor = malloc(sizeof(*sensor));
+
+   if (!sensor)
+      goto error;
+
+   if (!devices)
+   { /* If we couldn't find the IIO device directory... */
+      char errmesg[PATH_MAX];
+      strerror_r(errno, errmesg, sizeof(errmesg));
+      RARCH_ERR("Failed to open " IIO_DEVICES_DIR ": %s\n", errmesg);
+      goto error;
+   }
+
+   errno = 0;
+   for (d = readdir(devices); d != NULL; d = readdir(devices))
+   { /* For each IIO device... */
+      /* First ensure that the readdir call succeeded... */
+      int err = errno;
+      char pathbuf[PATH_MAX];
+      FILE *sensorfile = NULL;
+
+      if (err != 0)
+      {
+         char errmesg[PATH_MAX];
+         strerror_r(err, errmesg, sizeof(errmesg));
+         RARCH_ERR("readdir(" IIO_DEVICES_DIR ") failed: %s\n", errmesg);
+         goto error;
+      }
+
+      /* If that worked out, look to see if this device represents an illuminance sensor */
+      snprintf(pathbuf, sizeof(pathbuf), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, d->d_name);
+
+      sensorfile = fopen(pathbuf, "r");
+      if (sensorfile != NULL)
+      { /* If we found an illuminance sensor... */
+         sensor->file = sensorfile;
+         RARCH_LOG("Opened illuminance sensor at %s\n", pathbuf);
+         goto done;
+      }
+   }
+
+error:
+   RARCH_ERR("Failed to find an illuminance sensor\n");
+   if (devices)
+      closedir(devices);
+
+   free(sensor);
+
+   return NULL;
+done:
+   if (devices)
+      closedir(devices);
+
+   return sensor;
+}
+
+void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
+{
+   if (!sensor)
+      return;
+
+   if (sensor->file)
+      fclose(sensor->file);
+
+   free(sensor);
+}
+
+float linux_read_illuminance_sensor(linux_illuminance_sensor_t *sensor)
+{
+   char buffer[256];
+   float illuminance = 0.0f;
+   char errmesg[PATH_MAX];
+   int err;
+   if (!sensor || !sensor->file)
+      return -1.0f;
+
+   /* The illuminance will always be updated even if the file handle remains open,
+    * but the seek position won't be reset.
+    * So we have to do that before each read. */
+   rewind(sensor->file);
+   if (!fgets(buffer, sizeof(buffer), sensor->file))
+   { /* Read the illuminance value from the file. If that fails... */
+      strerror_r(errno, errmesg, sizeof(errmesg));
+      RARCH_ERR("Illuminance sensor read failed: %s\n", errmesg);
+      return -1.0f;
+   }
+
+   /* TODO: This may be locale-sensitive */
+   errno = 0;
+   illuminance = strtof(buffer, NULL);
+   err = errno;
+   if (err != 0)
+   {
+      strerror_r(err, errmesg, sizeof(errmesg));
+      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s", buffer, errmesg);
+      return -1.0f;
+   }
+
+   return illuminance;
 }
