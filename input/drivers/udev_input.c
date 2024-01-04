@@ -569,6 +569,8 @@ typedef struct udev_input
 #ifdef UDEV_XKB_HANDLING
    bool xkb_handling;
 #endif
+
+   linux_illuminance_sensor_t *illuminance_sensor;
 } udev_input_t;
 
 #ifdef UDEV_XKB_HANDLING
@@ -4026,7 +4028,55 @@ static void udev_input_free(void *data)
 
    udev_input_kb_free(udev);
 
+   linux_close_illuminance_sensor(udev->illuminance_sensor);
+
    free(udev);
+}
+
+static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   udev_input_t *udev = (udev_input_t*)data;
+
+   if (!udev)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         /* If already disabled, then do nothing */
+         linux_close_illuminance_sensor(udev->illuminance_sensor); /* noop if NULL */
+         udev->illuminance_sensor = NULL;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         /** Unimplemented sensor actions that probably shouldn't fail */
+         return true;
+
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         if (!udev->illuminance_sensor)
+            /* If the light sensor isn't already open... */
+            udev->illuminance_sensor = linux_open_illuminance_sensor();
+
+         return udev->illuminance_sensor != NULL;
+      default:
+         return false;
+   }
+}
+
+static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   udev_input_t *udev = (udev_input_t*)data;
+
+   if (!udev)
+      return 0.0f;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ILLUMINANCE:
+         if (udev->illuminance_sensor)
+            return linux_read_illuminance_sensor(udev->illuminance_sensor);
+      default:
+         return 0.0f;
+   }
 }
 
 static bool open_devices(udev_input_t *udev,
@@ -4240,8 +4290,8 @@ input_driver_t input_udev = {
    udev_input_poll,
    udev_input_state,
    udev_input_free,
-   NULL,
-   NULL,
+   udev_set_sensor_state,
+   udev_get_sensor_input,
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,
