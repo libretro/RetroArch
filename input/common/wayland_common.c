@@ -439,8 +439,8 @@ static void handle_relative_motion(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->input.mouse.delta_x = wl_fixed_to_int(dx);
-   wl->input.mouse.delta_y = wl_fixed_to_int(dy);
+   wl->input.mouse.delta_x = wl_fixed_to_int(dx_unaccel);
+   wl->input.mouse.delta_y = wl_fixed_to_int(dy_unaccel);
 
    if (wl->locked_pointer)
    {
