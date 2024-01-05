@@ -612,7 +612,7 @@ bool input_autoconfigure_connect(
 
    /* Configure handle */
    if (!(autoconfig_handle = (autoconfig_handle_t*)
-            malloc(sizeof(autoconfig_handle_t))))
+            calloc(1, sizeof(autoconfig_handle_t))))
       goto error;
 
    autoconfig_handle->port                         = port;
