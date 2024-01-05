@@ -465,6 +465,8 @@ bool gfx_thumbnail_set_content_playlist(
       const char* base_name = path_basename(path_data->content_path);
       strlcpy(tmp_buf, base_name, sizeof(tmp_buf));
       content_name_no_ext = path_remove_extension(tmp_buf);
+      if (!content_name_no_ext)
+         content_name_no_ext = tmp_buf;
       
       gfx_thumbnail_fill_content_img(path_data->content_img_full,
          sizeof(path_data->content_img_full), content_name_no_ext,false);
