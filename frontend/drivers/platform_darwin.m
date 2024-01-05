@@ -473,10 +473,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CACHE],
          temp_dir,
          sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-
-#ifndef IS_SALAMANDER
-   dir_check_defaults("custom.ini");
-#endif
 }
 
 static int frontend_darwin_get_rating(void)
