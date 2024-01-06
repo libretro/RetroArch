@@ -22,6 +22,7 @@ if [ "$HAVE_QT" = "yes" ]; then
 
 	moc_works=0
 	if [ "$MOC" ]; then
+	  printf %s 'HERE (1)'
 		QT_SELECT="$QT_VERSION" \
 		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
 			$(printf %s "$CXX") -o "$TEMP_EXE" \
@@ -29,6 +30,7 @@ if [ "$HAVE_QT" = "yes" ]; then
 			>/dev/null 2>&1 &&
 		moc_works=1
 	else
+	  printf %s 'HERE (2)'
 		for moc in "moc-$QT_VERSION" moc; do
 			MOC="$(exists "$moc")" || MOC=""
 			if [ "$MOC" ]; then
