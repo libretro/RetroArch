@@ -35,7 +35,7 @@ if [ "$HAVE_QT" = "yes" ]; then
 				QT_SELECT="$QT_VERSION" \
 				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
 					continue
-			  printf %s=%s ">OKK<" $QT5CORE_LIBS
+			  printf %s=%s "INCLUDES" "$QT5CORE_LIBS"
 				$(printf %s "$CXX") -o "$TEMP_EXE" \
 						$(printf %s "$QT_FLAGS") -fPIC -c \
 						"$TEMP_CPP" #>/dev/null 2>&1; then
