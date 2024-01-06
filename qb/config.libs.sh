@@ -32,7 +32,7 @@ CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
-INCLUDES='usr/include usr/local/include mingw64/include'
+INCLUDES='usr/include usr/local/include /c/tools/msys64/mingw64/include'
 SORT='sort'
 EXTRA_GL_LIBS=''
 VC_PREFIX=''
@@ -713,5 +713,3 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
       check_platform Win32 SR2 'CRT modeswitching is' true
    fi
 fi
-
-printf %s $INCLUDES
