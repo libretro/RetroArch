@@ -714,4 +714,4 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
    fi
 fi
 
-printf %s=%s 'INCLUDES' $INCLUDES
+printf %s $INCLUDES
