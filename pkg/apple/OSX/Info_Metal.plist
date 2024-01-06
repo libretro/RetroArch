@@ -51,5 +51,7 @@
 	<string>MainMenu_Metal</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>RAPortableInstall</key>
+	<false/>
 </dict>
 </plist>
