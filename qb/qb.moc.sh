@@ -36,12 +36,12 @@ if [ "$HAVE_QT" = "yes" ]; then
 				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
 					continue
 			  printf %s ">OKK<"
-				if $(printf %s "$CXX") -o "$TEMP_EXE" \
+				$(printf %s "$CXX") -o "$TEMP_EXE" \
 						$(printf %s "$QT_FLAGS") -fPIC -c \
-						"$TEMP_CPP" then
-					moc_works=1
-					break
-				fi
+						"$TEMP_CPP" #>/dev/null 2>&1; then
+				#	moc_works=1
+				#	break
+				#fi
 			fi
 		done
 	fi
