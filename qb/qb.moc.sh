@@ -38,7 +38,7 @@ if [ "$HAVE_QT" = "yes" ]; then
 			  printf %s ">OKK<"
 				if $(printf %s "$CXX") -o "$TEMP_EXE" \
 						$(printf %s "$QT_FLAGS") -fPIC -c \
-						"$TEMP_CPP" >/dev/null 2>&1; then
+						"$TEMP_CPP" then
 					moc_works=1
 					break
 				fi
