@@ -31,10 +31,9 @@ if [ "$HAVE_QT" = "yes" ]; then
 	else
 		for moc in "moc-$QT_VERSION" moc; do
 			MOC="$(exists "$moc")" || MOC=""
-			printf %s=%s 'Value of MOC (2)' $MOC
 			if [ "$MOC" ]; then
 				QT_SELECT="$QT_VERSION" \
-				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
+				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null ||
 					continue
 				if $(printf %s "$CXX") -o "$TEMP_EXE" \
 						$(printf %s "$QT_FLAGS") -fPIC -c \
