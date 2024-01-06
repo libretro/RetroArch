@@ -32,8 +32,9 @@ if [ "$HAVE_QT" = "yes" ]; then
 		for moc in "moc-$QT_VERSION" moc; do
 			MOC="$(exists "$moc")" || MOC=""
 			if [ "$MOC" ]; then
+			  printf %s "OKK"
 				QT_SELECT="$QT_VERSION" \
-				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" ||
+				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
 					continue
 				if $(printf %s "$CXX") -o "$TEMP_EXE" \
 						$(printf %s "$QT_FLAGS") -fPIC -c \
