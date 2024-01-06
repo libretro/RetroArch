@@ -464,7 +464,10 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
                   pl_thumb->status = PL_THUMB_END;
                break;
             } else {
-               /* Increment the name flag to cover the 3 supported naming conventions. */
+               /* Increment the name flag to cover the 3 supported naming conventions. 
+                * Side-effect: all combinations will be tried (3x3 requests for 1 playlist entry)
+                * even if some files were already downloaded, but that may be useful if later on
+                * different view priorities are implemented. */
                pl_thumb->type_idx = 1;
                playlist_update_thumbnail_name_flag(pl_thumb->playlist, pl_thumb->list_index, next_flag);
                pl_thumb->name_flags = next_flag;
@@ -829,7 +832,7 @@ bool task_push_pl_entry_thumbnail_download(
    gfx_thumbnail_path_data_t *
          thumbnail_path_data     = NULL;
    const char *dir_thumbnails    = NULL;
-   enum playlist_thumbnail_name_flags curr_flag = PLAYLIST_THUMBNAIL_FLAG_INVALID;
+   enum playlist_thumbnail_name_flags next_flag = PLAYLIST_THUMBNAIL_FLAG_INVALID;
 
    /* Sanity check */
    if (!settings || !task || !pl_thumb || !playlist || !entry_id)
@@ -886,9 +889,17 @@ bool task_push_pl_entry_thumbnail_download(
          thumbnail_path_data, playlist, idx))
       goto error;
 
-   curr_flag = playlist_get_curr_thumbnail_name_flag(playlist,idx);
-      if (curr_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
-         goto error;
+   /* Apply flexible thumbnail naming: ROM file name - database name - short name */
+   next_flag = playlist_get_next_thumbnail_name_flag(playlist,idx);
+   playlist_update_thumbnail_name_flag(playlist, idx, next_flag);
+   if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE) {
+      runloop_msg_queue_push(
+         msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE),
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);   
+      goto error;
+
+   }
 
    /* Configure handle
     * > Note: playlist_config is unused by this task */
@@ -901,7 +912,7 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb->list_size           = playlist_size(playlist);
    pl_thumb->list_index          = idx;
    pl_thumb->type_idx            = 1;
-   pl_thumb->name_flags          = curr_flag;
+   pl_thumb->name_flags          = next_flag;
    pl_thumb->status              = PL_THUMB_BEGIN;
 
    if (overwrite)
