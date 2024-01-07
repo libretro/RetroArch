@@ -1332,7 +1332,7 @@ bool content_auto_save_state(const char *path)
 
    serial_size = core_serialize_size();
 
-   if (serial_size == 0 || !path_is_valid(path))
+   if (serial_size == 0)
       return false;
 
    serial_data = content_get_serialized_data(&serial_size);
