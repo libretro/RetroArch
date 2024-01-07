@@ -1099,6 +1099,9 @@
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #define DEFAULT_INPUT_RATE  32730
+#elif defined(EMSCRIPTEN)
+#define DEFAULT_OUTPUT_RATE 44100
+#define DEFAULT_INPUT_RATE  44100
 #else
 #define DEFAULT_OUTPUT_RATE 48000
 #define DEFAULT_INPUT_RATE  48000
@@ -1607,7 +1610,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL
