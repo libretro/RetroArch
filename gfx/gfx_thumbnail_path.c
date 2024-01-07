@@ -48,8 +48,14 @@ static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src,
    /* Shortening logic: up to first space + bracket */
    if (shorten) {
       bracketpos = string_find_index_substring_string(src, cut);
-      if (bracketpos > 2)
+      if (bracketpos > 0)
          _len = bracketpos;
+      /* Explicit zero if short name is same as standard name - saves some queries later. */
+      else
+      {
+         s[0] = '\0';
+         return;
+      }
    }
    /* Scrub characters that are not cross-platform and/or violate the
     * No-Intro filename standard:
@@ -123,6 +129,8 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
    path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
    path_data->right_path[0]        = '\0';
    path_data->left_path[0]         = '\0';
 
@@ -284,6 +292,8 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
    path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -332,6 +342,8 @@ bool gfx_thumbnail_set_content_image(
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
    path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -407,6 +419,8 @@ bool gfx_thumbnail_set_content_playlist(
    path_data->content_core_name[0]    = '\0';
    path_data->content_db_name[0]      = '\0';
    path_data->content_img[0]          = '\0';
+   path_data->content_img_full[0]     = '\0';
+   path_data->content_img_short[0]    = '\0';
 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -472,6 +486,11 @@ bool gfx_thumbnail_set_content_playlist(
          sizeof(path_data->content_img_full), content_name_no_ext,false);
       gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label,false);
+      /* Explicit zero if full name is same as standard name - saves some queries later. */
+      if(strcmp(path_data->content_img, path_data->content_img_full) == 0) 
+      {
+         path_data->content_img_full[0] = '\0';
+      }
       gfx_thumbnail_fill_content_img(path_data->content_img_short,
          sizeof(path_data->content_img_short), path_data->content_label,true);
    }

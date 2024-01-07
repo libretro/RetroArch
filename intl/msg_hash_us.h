@@ -14626,6 +14626,10 @@ MSG_HASH(
    "No thumbnail available"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "All possible thumbnail downloads were already tried for this playlist entry."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Press again to quit..."
    )
