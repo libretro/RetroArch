@@ -102,30 +102,44 @@ bool fill_pathname_application_data(char *s, size_t len)
 #endif
 
 #elif defined(OSX)
-#if HAVE_STEAM
-   CFStringRef parent_path;
-   CFURLRef bundle_url, parent_url;
    CFBundleRef bundle = CFBundleGetMainBundle();
+   bool portable = false;
    if (!bundle)
       return false;
-   bundle_url  = CFBundleCopyBundleURL(bundle);
-   parent_url  = CFURLCreateCopyDeletingLastPathComponent(NULL, bundle_url);
-   parent_path = CFURLCopyFileSystemPath(parent_url, kCFURLPOSIXPathStyle);
-   CFStringGetCString(parent_path, s, len, kCFStringEncodingUTF8);
-   CFRelease(parent_path);
-   CFRelease(parent_url);
-   CFRelease(bundle_url);
-   return true;
+#if HAVE_STEAM
+   portable = true;
 #else
-   const char *appdata = getenv("HOME");
-
-   if (appdata)
-   {
-      fill_pathname_join(s, appdata,
-            "Library/Application Support/RetroArch", len);
-      return true;
-   }
+   CFStringRef key = CFStringCreateWithCString(NULL, "RAPortableInstall", kCFStringEncodingUTF8);
+   CFBooleanRef val = CFBundleGetValueForInfoDictionaryKey(bundle, key);
+   if (val)
+       portable = CFBooleanGetValue(val);
+   CFRelease(val);
+   CFRelease(key);
 #endif
+   if (portable)
+   {
+       CFStringRef parent_path;
+       CFURLRef bundle_url, parent_url;
+       bundle_url  = CFBundleCopyBundleURL(bundle);
+       parent_url  = CFURLCreateCopyDeletingLastPathComponent(NULL, bundle_url);
+       parent_path = CFURLCopyFileSystemPath(parent_url, kCFURLPOSIXPathStyle);
+       CFStringGetCString(parent_path, s, len, kCFStringEncodingUTF8);
+       CFRelease(parent_path);
+       CFRelease(parent_url);
+       CFRelease(bundle_url);
+       return true;
+   }
+   else
+   {
+       const char *appdata = getenv("HOME");
+
+       if (appdata)
+       {
+           fill_pathname_join(s, appdata,
+                              "Library/Application Support/RetroArch", len);
+           return true;
+       }
+   }
 #elif defined(RARCH_UNIX_CWD_ENV)
    getcwd(s, len);
    return true;
