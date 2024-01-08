@@ -13662,6 +13662,10 @@ MSG_HASH(
    "Nessuna miniatura disponibile"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Lo scaricamento di tutte le miniature possibili per questa playlist è stato già eseguito."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Premi di nuovo per uscire..."
    )

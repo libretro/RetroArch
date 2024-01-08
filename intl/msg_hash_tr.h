@@ -13934,6 +13934,10 @@ MSG_HASH(
    "Küçük resim yok"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Bu oynatma listesi girişi için olası tüm küçük resim indirmeleri zaten denendi."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Çıkmak için tekrar basın..."
    )
