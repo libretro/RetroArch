@@ -1644,7 +1644,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -d \"$MIST_PATH\" -a -f \"$MIST_PATH\"/libmist.dylib ]; then\n    install_name_tool -id @rpath/libmist.dylib \"$MIST_PATH\"/libmist.dylib\nfi\n\necho '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\n";
+			shellScript = "if [ -d \"$MIST_PATH\" -a -f \"$MIST_PATH\"/libmist.dylib ]; then\n    install_name_tool -id @rpath/libmist.dylib \"$MIST_PATH\"/libmist.dylib\nfi\n\ncd \"$SRCROOT\"\necho '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\n";
 			showEnvVarsInLog = 0;
 		};
 		0720995C29B1258C001642BB /* ShellScript */ = {
@@ -1667,21 +1667,22 @@
 		};
 		07340E8B2B4750520076B75D /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(SRCROOT)/.git/**",
 			);
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/git_version.h",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\n";
+			shellScript = "cd \"$SRCROOT\"\necho '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\n";
 			showEnvVarsInLog = 0;
 		};
 		07B7872F29EA3B7D0088B74F /* ShellScript */ = {
