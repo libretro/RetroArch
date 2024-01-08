@@ -7366,6 +7366,14 @@ MSG_HASH(
    "A tartalom beolvasása és játéklistához adása anélkül, hogy lenne azt támogató mag telepítve."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "CRC ellenőrzés duplikált azonosítók esetén"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Az ISO fájlok sorozatszáma néha megegyezik, különösen a PSP/PSN lemezeknél. Ilyenkor ha a beolvasó csak a sorozatszámra hagyatkozik, rossz rendszert társíthat a tartalomhoz. A CRC ellenőrzést bekapcsolva a beolvasás jóval lassabb, de pontosabb lehet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Játéklisták kezelése"
    )
@@ -13592,6 +13600,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Nincs elérhető bélyegkép"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "A játéklista ezen eleméhez már az összes bélyegkép letöltési opció végig volt próbálva."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

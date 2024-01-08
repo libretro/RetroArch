@@ -12474,6 +12474,10 @@ MSG_HASH(
    "Brak dostępnych miniatur"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Wszystkie możliwe pliki miniatur zostały już wypróbowane dla tego wpisu na playliście."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Naciśnij ponownie, aby wyjść..."
    )

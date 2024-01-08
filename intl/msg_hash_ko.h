@@ -3248,6 +3248,14 @@ MSG_HASH(
    "'단일 버튼' 터보 모드의 기본 터보 활성화 버튼을 설정합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "터보 십자패드 방향 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "활성화되면 디지털 방향 입력 (십자패드 또는 'hatswitch'라고도 함) 이 터보가 될 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "터보 입력"
    )
@@ -5538,6 +5546,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "메뉴 화면 설정을 변경합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "앱 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "앱 아이콘 변경합니다."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
@@ -7400,6 +7416,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
    "지원되는 코어가 설치되어 있지 않더라도 콘텐츠가 스캔되어 실행목록에 추가될 수 있게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "스캔은 가능한 중복에 대해 CRC를 확인"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "때때로 ISO는 특히 PSP/PSN 타이틀의 경우 시리즈를 복제합니다. 시리즈에만 의존하면 스캐너가 콘텐츠를 잘못된 시스템에 배치하는 경우가 있습니다. 이렇게 하면 CRC 검사가 추가되어 스캔 속도가 상당히 느려지지만 더 정확할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
