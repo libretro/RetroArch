@@ -39,6 +39,8 @@
 
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay.h"
+#include "../tasks/task_file_transfer.h"
+#include <net/net_http.h>
 #endif
 
 #include "../audio/audio_driver.h"
@@ -48,6 +50,7 @@
 #include "../driver.h"
 #include "../list_special.h"
 #include "../paths.h"
+#include "../file_path_special.h"
 #include "../tasks/task_powerstate.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -3701,6 +3704,53 @@ static void bundle_decompressed(retro_task_t *task,
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 }
 
+#if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+static void menu_download(enum msg_hash_enums enum_idx)
+{
+   char s[PATH_MAX_LENGTH];
+   char s2[PATH_MAX_LENGTH];
+   char s3[PATH_MAX_LENGTH];
+   const char *path;
+   file_transfer_t *transf      = NULL;
+   settings_t *settings         = config_get_ptr();
+   const char *network_buildbot_assets_url =
+      settings->paths.network_buildbot_assets_url;
+
+   fill_pathname_join_special(s,
+         network_buildbot_assets_url,
+         "frontend", sizeof(s));
+
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         path = FILE_PATH_ASSETS_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+         path = FILE_PATH_AUTOCONFIG_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+         path = FILE_PATH_CORE_INFO_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+         path = FILE_PATH_DATABASE_RDB_ZIP;
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+         path = FILE_PATH_OVERLAYS_ZIP;
+         break;
+      default:
+         return;
+   }
+
+   transf           = (file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->enum_idx = enum_idx;
+   strlcpy(transf->path, path, sizeof(transf->path));
+   fill_pathname_join_special(s2, s, path, sizeof(s2));
+   net_http_urlencode_full(s3, s2, sizeof(s3));
+   task_push_http_transfer_file(s3, false,
+         msg_hash_to_str(enum_idx), cb_generic_download, transf);
+}
+#endif
+
 static bool rarch_menu_init(
       struct menu_state *menu_st,
       menu_dialog_t        *p_dialog,
@@ -3771,6 +3821,29 @@ static bool rarch_menu_init(
       configuration_set_int(settings,
             settings->uints.bundle_assets_extract_last_version, 1);
    }
+#if defined(HAVE_ONLINE_UPDATER) && defined(HAVE_NETWORKING) && defined(HAVE_ZLIB)
+   else
+   {
+#ifdef HAVE_UPDATE_ASSETS
+      if (!path_is_directory(settings->paths.directory_assets))
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_ASSETS);
+#endif
+      if (!path_is_directory(settings->paths.directory_autoconfig))
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES);
+#ifdef HAVE_UPDATE_CORE_INFO
+      if (!path_is_directory(settings->paths.path_libretro_info))
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES);
+#endif
+#ifdef HAVE_LIBRETRODB
+      if (!path_is_directory(settings->paths.path_content_database))
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_DATABASES);
+#endif
+#if defined(RARCH_MOBILE) && defined(HAVE_OVERLAY)
+      if (!path_is_directory(settings->paths.directory_overlay))
+         menu_download(MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS);
+#endif
+   }
+#endif
 #endif
 
    return true;
