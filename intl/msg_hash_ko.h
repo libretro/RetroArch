@@ -13946,6 +13946,10 @@ MSG_HASH(
    "이용 가능한 미리보기가 없습니다"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "이 실행목록에 더 이상 미리보기 다운로드를 시도할 항목이 없습니다."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "종료하려면 한 번 더 누르세요..."
    )

@@ -7406,6 +7406,14 @@ MSG_HASH(
    "Разрешить сканирование и добавление контента в плейлист без установленных совместимых ядер."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Сверять CRC при сканировании возможных дублей"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Некоторые образы могут иметь одинаковые серийные номера, в частности игры PSP/PSN. При проверке только по серийному номеру сканер иногда может соотносить контент с неправильной системой. Данная опция добавляет проверку CRC, которая существенно замедляет сканирование, но дела[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Управление плейлистами"
    )
@@ -7423,7 +7431,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Исп. имена файлов для поиска миниатюр"
+   "Поиск миниатюр по именам файлов"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,

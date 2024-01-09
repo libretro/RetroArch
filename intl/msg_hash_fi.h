@@ -12802,6 +12802,10 @@ MSG_HASH(
    "Esikatselukuvaa ei ole saatavilla"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Kaikkia mahdollisia pienoiskuvalatauksia on jo kokeiltu tähän soittolistaan."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Paina uudelleen lopettaaksesi..."
    )

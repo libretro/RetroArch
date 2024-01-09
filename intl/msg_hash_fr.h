@@ -13774,6 +13774,10 @@ MSG_HASH(
    "Aucune miniature disponible"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Tous les téléchargements de miniatures possibles ont déjà été essayés pour cette entrée de liste de lecture."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Appuyez à nouveau pour quitter..."
    )
