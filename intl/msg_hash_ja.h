@@ -268,7 +268,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "[お気に入り] に追加されたコンテンツはここに表示されます。"
+   "[お気に入り] に追加したコンテンツがここに表示されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
@@ -276,7 +276,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "以前に再生された音楽がここに表示されます。"
+   "以前に再生した音楽がここに表示されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
@@ -284,7 +284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "以前に表示された画像がここに表示されます。"
+   "以前に表示した画像がここに表示されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -292,7 +292,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "以前に再生された動画がここに表示されます。"
+   "以前に再生した動画がここに表示されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -347,7 +347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "選択したプレイリストのエントリに対応するサムネイルをダウンロードします。 "
+   "選択したプレイリストのエントリーに対応するサムネイルをダウンロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -497,11 +497,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "必要なグラフィック API"
+   "必須グラフィック API"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "ステートセーブサポート"
+   "ステートセーブ対応"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -545,7 +545,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "現在インストールされているコアの更新を防止します. コンテンツが特定のコアバージョン(例：Arcade ROM セット)を必要とする場合, 望ましくない更新を避けるために使用されることがあります. "
+   "現在インストール済みのコアの変更を防止します。コンテンツが特定のコアのバージョン (例: アーケード ROM セット) を必要とする場合、望ましくない更新を避けるために使用されることがあります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -596,7 +596,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   "ビルド日付"
+   "ビルド日時"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
@@ -836,7 +836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   "SDLイメージ対応"
+   "SDL イメージ対応"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
@@ -868,7 +868,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "ｌibusb 対応"
+   "libusb 対応"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -962,7 +962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   "パブリッシャー"
+   "販売元"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
@@ -1111,7 +1111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "メニューに切り替え"
+   "メニュー切り替え"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -1119,7 +1119,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   "キーボードに切り替え"
+   "キーボード切り替え"
    )
 
 /* Settings */
@@ -1162,7 +1162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "ビデオ、オーディオ、入力レイテンシに関連する設定を変更します。"
+   "ビデオ、オーディオ、入力のレイテンシに関連する設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -1314,11 +1314,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   "動画です。選択してこのファイルを動画プレイヤーで開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
-   "ビデオ. ビデオプレーヤーでこのファイルを開くには、それを選択します。"
+   "音楽です。選択して音楽プレイヤーでこのファイルを開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
@@ -1326,7 +1326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   "画像です。画像ビューアでこのファイルを開くには、これを選択します。"
+   "画像です。選択して画像ビューアでこのファイルを開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
@@ -1338,7 +1338,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   "ディレクトリ。選択してこのディレクトリを開きます。"
+   "ディレクトリです。選択してこのディレクトリを開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1490,7 +1490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "使用する入力ドライバです. 一部のビデオドライバは強制的に異なる入力ドライバを使用します. "
+   "使用する入力のドライバです。一部のビデオドライバは異なる入力ドライバを強制します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -1502,7 +1502,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
-   "使用する入力ドライバです. 一部のビデオドライバは強制的に異なる入力ドライバを使用します."
+   "入力ドライバです。このビデオドライバは異なる入力ドライバを強制する可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -1515,6 +1515,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
    "DirectInput コントローラードライバです。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "低レベルのヒューマンインターフェースデバイスドライバです。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Raw Linux ドライバは、古いジョイスティック API を使用します。可能であれば代わりに udev を使用してください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "特別なアダプターを介してパラレルポートに接続されたコントローラー用の Linux ドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
@@ -1720,6 +1732,10 @@ MSG_HASH(
    "Windows Sinc 実装です。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "複雑なコサインの実装です。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
    "ニアレストリサンプリング実装です。このリサンプラーは品質設定を無視します。"
    )
@@ -1871,6 +1887,10 @@ MSG_HASH(
    "フレーム間に黒フレームを挿入します。一部の高リフレッシュレート画面で残像を取り除くときに便利です。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "フレームとフレームの間に黒いフレームを挿入します。120 Hz モニターで 60Hz のコンテンツをプレイするとき残像を除去するのに役立ちます。ビデオのリフレッシュレートは 60Hz モニターと同じように構成する必要があります (リフレッシュレートを 2 で割る)。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU スクリーンショット"
    )
@@ -1880,7 +1900,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-   "バイリニアフィルタ"
+   "バイリニアフィルタリング"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "画像にわずかなぼかしを加え、硬いピクセルのエッジを和らげます。このオプションはパフォーマンスにほとんど影響を与えません。シェーダーを使用する場合は無効にしてください。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1906,7 +1930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "整数スケールが無効になっている場合の補完方法を指定します。ニアレストネイバーはパフォーマンスへの影響が少なくなります。"
+   "整数倍拡大が無効になっている場合の補完方法を指定します。ニアレストネイバーはパフォーマンスへの影響が少なくなります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -1920,7 +1944,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "シェーダーの自動ロード遅延 (ms)"
+   "自動シェーダー遅延"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -2177,7 +2201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "非ウィンドウフルスクリーンモードのカスタム高さサイズを設定します。未設定の場合、デスクトップの解像度を使用します。"
+   "非ウィンドウフルスクリーンモードのカスタム高さサイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -2192,11 +2216,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "ウィンドウのスケール"
+   "ウィンドウ倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "ウィンドウのサイズをコアビューポートサイズの指定された倍率に設定します。"
+   "ウィンドウのサイズをコア表示領域サイズの指定された倍率に設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -2260,7 +2284,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "[ウィンドウのスケール] に基づいて自動的にサイズを変更するとき、表示ウィンドウの最大幅を設定します。"
+   "[ウィンドウ倍率] に基づいて自動的にサイズを変更するとき、表示ウィンドウの最大幅を設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -2268,26 +2292,26 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "[ウィンドウのスケール] に基づいて自動的にサイズを変更するとき、表示ウィンドウの最大高さを設定します。"
+   "[ウィンドウ倍率] に基づいて自動的にサイズを変更するとき、表示ウィンドウの最大高さを設定します。"
    )
 
 /* Settings > Video > Scaling */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "整数スケール"
+   "整数倍拡大"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "整数ステップでのみビデオをスケールします。基本サイズはシステムが報告するジオメトリとアスペクト比に依存します。[強制アスペクト比] が設定されていない場合、X/Y はそれぞれ独立して整数スケーリングされます。"
+   "整数刻みでのみビデオを拡大します。基本サイズはシステムが報告する形状とアスペクト比に依存します。[強制アスペクト比] が設定されていない場合、X/Y はそれぞれ独立して整数倍で拡大されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "整数スケールオーバースケール"
+   "整数倍拡大オーバースケール"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "整数スケーリングを、切り捨てる代わりに次の大きな整数に切り上げるように強制します。"
+   "整数倍拡大を、切り捨てる代わりに次の大きな整数に切り上げるように強制します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2295,15 +2319,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   "ディスプレイのアスペクト比を設定します。"
+   "表示アスペクト比を設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Config アスペクト比"
+   "構成アスペクト比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    "ビデオアスペクト比の浮動小数点値 (幅 / 高さ) です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "構成"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
@@ -2320,7 +2348,7 @@ MSG_HASH(
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "アスペクト比を維持する"
+   "アスペクト比を維持"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -2333,7 +2361,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "カスタム表示領域のX方向オフセット値です.\n'整数スケール'が有効の場合は無視されます."
+   "表示領域の X 軸位置を定義するために使用されるカスタム表示領域オフセットです。\n[整数倍拡大] が有効の場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2341,7 +2369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "カスタム表示領域のY方向オフセット値です.\n'整数スケール'が有効の場合は無視されます."
+   "表示領域の Y軸位置を定義するために使用されるカスタム表示領域オフセットです。\n[整数倍拡大] が有効の場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2491,7 +2519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "正確なフレームレートと同期(G-Sync/FreeSync)"
+   "正確なフレームレートに同期 (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
@@ -2575,6 +2603,10 @@ MSG_HASH(
    "ミキサーオーディオを消音にします。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "サイレントモードをリスペクト"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    "サイレントモードですべてのオーディオを消音にします。"
    )
@@ -2592,7 +2624,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   "早送り時に音声を高速化します。音割れを防ぎますが、ピッチがずれます。"
+   "早送り時にオーディオを高速化します。音割れを防ぎますが、ピッチがずれます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2612,7 +2644,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "グローバルのミキサー音量(dB)です. 0dBは通常の音量で, 増幅されません."
+   "グローバルオーディオミキサーの音量 (dB) です。0dB は通常の音量で、増幅されません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -2636,7 +2668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "WASAPI ドライバがオーディオデバイスの排他制御を行うことを許可します. 無効にすると, 代わりに共有モードが使用されます. "
+   "WASAPI ドライバがオーディオデバイスを排他的に制御できるようにします。無効にすると、代わりに共有モードを使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -2644,7 +2676,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "オーディオデバイスでサポートされている場合は, WASAPI ドライバに浮動小数点形式を使用します. "
+   "オーディオデバイスが対応している場合は、WASAPI ドライバに浮動小数形式を使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
@@ -2671,15 +2703,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "オーディオドライバが使用する標準オーディオデバイスを上書きします. この設定はドライバに依存します."
+   "オーディオドライバが使用するデフォルトのオーディオデバイスを上書きします。これはドライバに依存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "オーディオドライバが使用する標準オーディオデバイスを上書きします. この設定はドライバに依存します."
+   "オーディオドライバが使用するデフォルトのオーディオデバイスを上書きします。これはドライバに依存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
    "ALSA ドライバのカスタム PCM デバイス値です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "OSS ドライバのカスタムパス値 (例: /dev/dsp) です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "JACK ドライバのカスタムポート名 (例: sytem:playback1、system:playback_2) です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
@@ -2753,6 +2793,10 @@ MSG_HASH(
    "WASAPI 浮動小数点方式"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "オーディオデバイスが対応している場合は、WASAPI ドライバで浮動小数点入力を使用します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
    "WASAPI 共有バッファサイズ"
    )
@@ -2774,7 +2818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "出力レート(Hz)"
+   "出力レート (Hz)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
@@ -2789,7 +2833,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "オーディオを同期します(推奨)."
+   "オーディオを同期します。推奨です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -2855,7 +2899,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   "オーディオストリームの再生を開始します. 再生が終わると, 現在のオーディオストリームはメモリから取り除かれます."
+   "オーディオストリームの再生を開始します。再生が終わると、現在のオーディオストリームがメモリから削除されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
@@ -2863,7 +2907,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-   "オーディオストリームの再生を開始します. 再生が終わると, トラックは最初から繰り返して再生されます."
+   "オーディオストリームの再生を開始します。再生が終わると、トラックは最初から繰り返して再生されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
@@ -2871,7 +2915,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   "オーディオストリームの再生を開始します. 再生が終わると, 順番に次のオーディオストリームに移り, それを繰り返します. アルバム再生モードとして便利です."
+   "オーディオストリームの再生を開始します。再生が終わると、次のオーディオストリームに順番にジャンプし、この動作を繰り返します。アルバム再生モードとして便利です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
@@ -2899,7 +2943,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "状態 : なし"
+   "状態 : 該当なし"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
@@ -3017,7 +3061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   "現在のハードウェアでサポートされている場合は, 加速度センサ, ジャイロスコープ, 照明センサからの入力を有効にします. いくつかのプラットフォームでは, パフォーマンス低下や消費電力増加の可能性があります."
+   "現在のハードウェアでサポートされている場合は、加速度センサー、ジャイロスコープ、明るさセンサーからの入力を有効にします。一部のプラットフォームでパフォーマンスに影響を与えたり、消費電力を増加させたりする可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -3056,8 +3100,16 @@ MSG_HASH(
    "入力ボタン軸のしきい値"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "[アナログからデジカル] を使用しているときにボタンを押すために軸をどの程度傾ける必要があるかです。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "アナログ入力の遊び"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   "デッドゾーン値以下のアナログスティックの動きを無視します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
@@ -3153,7 +3205,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "ターボ動作"
+   "連射"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
@@ -3201,7 +3253,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "コア固有の入力割当を変更します。"
+   "コア固有の入力マッピングを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3274,6 +3326,10 @@ MSG_HASH(
    "OK/キャンセルボタンの扱いを入れ替えます. 'オフ'はマルボタンをOKとする日本式配置, 'オン'はバツボタンをOKとする西洋式配置です."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "メニュースクロールボタンの入れ替え"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
    "スクロールのボタンを入れ替えます。無効にすると、L/R で 10 項目をスクロールし、L2/R2 でアルファベット順にスクロールします。"
    )
@@ -3283,7 +3339,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "任意のユーザがメニューを操作することを許可します. 無効にすると, ユーザ1のみが操作できます."
+   "どのユーザーでもメニューを操作できるようにします。無効にすると、ユーザー 1 のみがメニューを操作できます。"
    )
 
 /* Settings > Input > Hotkeys */
@@ -3291,6 +3347,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "ホットキー有効化"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "このホットキーがキーボード、ジョイスティックボタンまたはジョイスティック軸のいずれかにバインドされている場合、このホットキーが同時に押されていない限り、他のすべてのホットキーは無効になります。\nこれは、ホットキーが邪魔になることが望ましくない、キーボードの広い範囲をクエリする RETRO_KEYBOARD 中心の実装に便利です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3306,7 +3366,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-   "メニューに切り替え"
+   "メニュー切り替え"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
@@ -3326,7 +3386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "RetroArchを終了し, すべての保存データと設定ファイルをディスクに書き込みます."
+   "RetroArch を閉じ、すべてのセーブデータと構成ファイルがディスクにフラッシュされるようにします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -3350,7 +3410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
-   "速度を早送りと通常で切り替えます."
+   "早送りと通常の速度を切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
@@ -3366,7 +3426,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
-   "速度をスローモーションと通常で切り替えます."
+   "スローモーションと通常の速度を切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
@@ -3611,6 +3671,10 @@ MSG_HASH(
    "ゲームフォーカス (切り替え)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "[ゲームフォーカス] モードのオン/オフを切り替えます。コンテンツにフォーカスがある場合、ホットキーは無効になります (すべてのキーボード入力は実行中のコアに渡されます)。マウスは占有されます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "フルスクリーン (切り替え)"
    )
@@ -3654,7 +3718,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
-   "FPS表示 (切り替え)"
+   "FPS 表示 (切り替え)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
@@ -3711,15 +3775,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "ネットプレイの参加/視聴モード (切り替え)"
+   "ネットプレイのプレイ/観戦モード (切り替え)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "現在のネットプレイセッションを [参加] と [視聴] モードで切り替えます。"
+   "現在のネットプレイセッションを [プレイ] と [観戦] モードで切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
    "ネットプレイプレイヤーチャット"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "現在のネットプレイセッションにチャットメッセージを送信します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "ネットプレイチャットフェード切り替え"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "ネットプレイチャットメッセージのフェードと固定を切り替えます。"
    )
 
 MSG_HASH(
@@ -3743,11 +3819,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "アナログのデジタル化のタイプ"
+   "アナログからデジタルの種類"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "指定したアナログスティックを十字キー入力に使用します。[強制] モードはコアネイティブアナログ入力を上書きします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "指定したアナログ入力を十字キー入力にマップします。\nコアがネイティブアナログ入力に対応する場合、[強制] オプションを使用しない限り十字キーマッピングは無効になります。\n十字キーマッピングを強制した場合、コアは指定したスティックかのアナログ入力を受け取りません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "デバイスインデックス"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "マップされたポート"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "どのコアポートがフロントエンドコントローラーポート %u からの入力を受け取るかを指定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -3755,7 +3847,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-   "初期設定に戻す"
+   "デフォルトコントロールに戻す"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
@@ -3763,7 +3855,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
-   "マウスのインデックス"
+   "マウスインデックス"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -3917,6 +4009,10 @@ MSG_HASH(
    "[先行実行を利用できません]"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "現在のコアは確定的なステートセーブの対応がないため、先行実行との互換性がありません。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "先行実行して遅延を減らす"
    )
@@ -3927,6 +4023,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "先行実行するフレーム数"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "先行実行するフレームの数です。ゲーム内部のラグフレーム数を超えると、ジッターなどのゲームプレイの問題が発生します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -3947,6 +4047,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
    "[先制フレームを利用できません]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
+   "現在のコアは確定的なステートセーブの対応がないため、先制フレームとの互換性がありません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
@@ -4110,7 +4214,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-   "終了時に設定を保存"
+   "終了時に構成を保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
@@ -4130,7 +4234,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   "コンテンツごとのコア設定を自動的にロード"
+   "自動的にコンテンツ固有のコアオプションをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -4138,7 +4242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "優先設定ファイルを自動的にロード"
+   "自動的に優先ファイルをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -4146,7 +4250,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "リマップファイルを自動的にロード"
+   "自動的にリマップファイルをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -4154,7 +4258,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "シェーダのプリセットを自動的にロード"
+   "自動的にシェーダープリセットをロード"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -4173,7 +4277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-   "使用したコアの名前に基づいた名前のフォルダにセーブファイルを振り分けます。"
+   "使用したコアに基づいた名前のフォルダにセーブファイルを振り分けます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -4221,19 +4325,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "セーブステートのインデックスを自動的に増加"
+   "自動的にステートセーブインデックスを増やす"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "ステートセーブを作成する前に、ステートセーブインデックスを自動的に増やします。コンテンツをロードするとき、インデックスは既存のインデックスの最も高い値に設定されます。"
+   "ステートセーブを作成する前に、ステートセーブインデックスが自動的に増加します。コンテンツをロードするとき、インデックスは既存の最も高いインデックスに設定されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "リプレイインデックスを自動的に増やす"
+   "自動的にリプレイインデックスを増やす"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "リプレイを作成する前に、リプレイインデックスが自動的に増加します。コンテンツをロードするとき、インデックスは既存の最も高いインデックスに設定されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "自動ステートセーブの最大保存数"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "[自動的にセーブステートインデックスを増やす] が有効になっているときに作成されるステートセーブの数を制限します。新しいステートを保存するときに制限を超えると、インデックスが最も低い既存のステートが削除されます。 [0] の値はステートが無制限に記録されることを意味します。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "[自動的にリプレイインデックスを増やす] が有効になっているときに作成されるリプレイの数を制限します。新しいリプレイを記録するときに制限を超えると、インデックスが最も低い既存のリプレイが削除されます。 [0] の値はリプレイが無制限に記録されることを意味します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -4392,7 +4508,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-   "パフォーマンスカウンタ"
+   "パフォーマンスカウンター"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
@@ -4415,7 +4531,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "サポートされている拡張子によってファイルブラウザに表示されるファイルをフィルタリングします."
+   "ファイルブラウザに表示されるファイルを対応している拡張子でフィルタリングします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4454,7 +4570,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   "早送りの倍率"
+   "早送り倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
@@ -4470,11 +4586,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
-   "スローモーションの倍率"
+   "スローモーション倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-   "スローモーションを使用するときにコンテンツが再生される倍率."
+   "スローモーションを使用する際のコンテンツの再生速度です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -4680,6 +4796,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "通知の表示"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "特定の種類の通知の表示を切り替えます。"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
@@ -4752,7 +4872,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "現在のオーバーレイでサポートされている場合, 画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます. "
+   "現在のオーバーレイが対応する場合、画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
@@ -4765,6 +4885,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
    "十字キーの斜め感度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "対角線ゾーンのサイズを調整します。8 方向対称の場合は 100% に設定します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "ABXY オーバーラップ感度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "フェイスボタンのダイヤモンドのオーバーラップゾーンのサイズを調整します。8 方向対称の場合は 100% に設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -4792,7 +4924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
-   "(横長画面) オーバーレイ倍率"
+   "(横向き) オーバーレイ倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
@@ -4840,7 +4972,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
-   "(縦長画面) オーバーレイ倍率"
+   "(縦向き) オーバーレイ倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
@@ -4965,23 +5097,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-   "装飾されたアニメーション, 通知, インジケータ, コントロールを使用します."
+   "装飾されたアニメーション、通知、インジケータとコントロールを使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-   "グラフィックウィジェットを自動的にスケーリングする"
+   "グラフィックウィジェットの自動スケール"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
-   "現在のメニュースケールに基づいて, 装飾された通知, インジケータ, コントロールのサイズを自動的に変更します."
+   "現在のメニュー表示倍率に基づいて、装飾された通知、インジケータ、およびコントロールのサイズを自動的に変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
    "グラフィックウィジェットスケール優先 (フルスクリーン)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "フルスクリーンモードで表示ウィジェットを描画するときに、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
    "グラフィックウィジェットスケール優先 (ウィンドウ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "ウィンドウモードで表示ウィジェットを描画するときに、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -5049,7 +5189,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
-   "入力デバイス接続通知 (オートコンフィグ)"
+   "入力 (自動構成) 接続通知"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -5081,11 +5221,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "設定上書きのロード時に通知"
+   "構成優先ロード通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
    "構成優先ファイルのロード時に OSD メッセージを表示します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "初期ディスク復元通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5441,6 +5585,10 @@ MSG_HASH(
    "ウィンドウマネージャーはコンポジションを使用して、視覚効果を適用したり、応答しないウィンドウを検出したりします。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
+   "コンポジションを強制的に無効にします。無効化は現在 Windows Vista/7 でのみ有効です。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    "メニュースクロール加速"
    )
@@ -5466,7 +5614,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
-   "起動時にユーザーインターフェースコンパニオンドライバを起動します (利用可能な場合)。"
+   "起動時にユーザーインターフェースコンパニオンドライバを開始します (利用可能な場合)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
@@ -5571,11 +5719,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   "[設定ファイル] を表示"
+   "[構成ファイル] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   "メインメニューに [設定ファイル] オプションを表示します。"
+   "メインメニューに [構成ファイル] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -5611,7 +5759,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "'設定'を有効にするためのパスワードを設定"
+   "[設定] を有効にするためのパスワードを設定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -5716,6 +5864,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "すべて"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "単独使用"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
@@ -6189,15 +6341,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "スケール係数"
+   "表示倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
-   "メニュー内でのユーザインタフェース部品のサイズを調整します."
+   "メニューのユーザーインターフェース要素のサイズの表示倍率です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
    "背景画像"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "メニュー背景として設定する画像を選択します。手動およびダイナミック画像は [カラーテーマ] を上書きします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -6296,11 +6452,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-   "AIサービス有効"
+   "AI サービス有効"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-   "AIサービスのホットキーを押したときにAIサービスの実行を有効にします。"
+   "AI サービスのホットキーを押したときに AI サービスの実行を有効にします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
@@ -6372,7 +6528,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "クラシックゲームで実績を獲得しましょう. 詳細については, 'https://retroachievements.org' をご覧ください."
+   "クラシックゲームで実績を獲得しましょう。詳細については、「https://retroachievements.org」をご覧ください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -6499,6 +6655,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
    "どのメッセージや OSD 要素を表示するかを変更します。機能を無効にしません。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   "スタートアップ概要"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "ロード中のゲームとユーザーの現在の進捗状況についての情報を表示します。\n[すべての認識されたゲーム] は実績が公開されていないゲームの概要を表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -6664,6 +6828,10 @@ MSG_HASH(
    "最大同時接続数"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "新しい接続を拒否する前にホストが受け入れるアクティブな接続の最大数です。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
    "Ping 制限"
    )
@@ -6681,19 +6849,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   "サーバー観覧パスワード"
+   "サーバー観戦専用パスワード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "視聴者としてホストに接続するクライアントが使用するパスワード."
+   "観客としてホストに接続するためにクライアントが使用するパスワードです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "ネットプレイの観覧モード"
+   "ネットプレイ観戦モード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "視聴モードでネットプレイを開始します."
+   "観戦モードでネットプレイを開始します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "観戦モードでネットプレイを開始するかどうかです。はいに設定すると、ネットプレイは開始時に観戦モードになります。後でモードをいつでも変更できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -6817,11 +6989,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
-   "オンデマンドでのサムネイルダウンロード"
+   "オンデマンドサムネイルダウンロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   "再生リストの閲覧中に, 欠落しているサムネイルを自動的にダウンロードします. パフォーマンスに大きな影響を与えます. "
+   "プレイリストの閲覧中、不足しているサムネイルを自動的にダウンロードします。パフォーマンスに大きな影響があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
@@ -6840,7 +7012,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-   "Libretro buildbot上のコアアップデータディレクトリを示すURLです."
+   "Libretro buildbot のコアアップデータディレクトリを示す URL です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
@@ -6848,7 +7020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   "Libretro buildbot上のアセットアップデータディレクトリを示すURLです."
+   "Libretro buildbot のアセットアップデータディレクトリを示す URL です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -6931,7 +7103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "'履歴', '画像', '音楽', '動画'を除き, プレイリストをアルファベット順に並べ替えます."
+   "[履歴]、[画像]、[音楽]、[動画] プレイリストを除くコンテンツプレイリストをアルファベッド順に並べ替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
@@ -6955,7 +7127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "(もしあれば)プレイリスト中の項目に関連付けられているコアを表示します.\nプレイリストのサブラベル表示が有効になっている場合, この設定は無視されます."
+   "プレイリストエントリーに、現在関連付けられているコア (もしあれば) をタグ付けするタイミングを指定します。\nプレイリストのサブラベルが有効になっている場合、この設定は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -6963,7 +7135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
-   "(可能であれば)現在のコア関連付けやプレイ記録など, 各プレイリスト項目の追加情報を表示します. パフォーマンスに影響があります."
+   "現在のコアの関連付けや実行時間など、各プレイリストエントリーの追加の情報を表示します (利用可能な場合)。パフォーマンスに影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
@@ -7047,15 +7219,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-   "プレイリストの項目にインデックス番号を表示"
+   "プレイリストエントリーインデックスを表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
-   "プレイリストを表示するときに各項目のインデックス番号を表示します. 表示形式は現在選択されているメニュードライバによって異なります."
+   "プレイリストを表示するときにエントリー番号を表示します。表示形式は現在選択されているメニュードライバに依存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "プレイ記録の種類"
+   "プレイリストのサブラベルの実行時間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
@@ -7086,12 +7258,20 @@ MSG_HASH(
    "サポートするコアがインストールされていないコンテンツを, スキャン対象としてプレイリストに追加します."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "スキャンで重複の可能性がある場合 CRC をチェックする"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "特に PSP/PSN タイトルで、ISO が重複するシリアルを持つ場合があります。シリアルにのみ依存すると、スキャナーがコンテンツを間違ったシステムに入れてしまうことがあります。これにより CRC チェックが追加され、スキャンが大幅に遅くなりますが、より正確になる可能性があります。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "プレイリストの管理"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
-   "プレイリストに対する管理タスクを実行します."
+   "プレイリストのメンテナンスタスクを実行します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
@@ -7100,6 +7280,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "有効にすると, 'ファイルブラウザ'ディレクトリも選択され, 現在の'ファイルブラウザ'の値がプレイリストに保存されます. 同じオプションが有効な別のシステムにプレイリストがロードされている場合, 'ファイルブラウザ'の値とプレイリストの値を比較します. それらが異なる場合, プレイリスト項目のパスは自動的に修正されます."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   "サムネイルマッチングにファイル名を使用"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "有効にすると、ラベルではなくエントリーのファイル名でサムネイルを検索します。"
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
@@ -7114,7 +7302,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-   "プレイリスト項目を介してコア関連付けを持たないコンテンツを起動するときに使用するコアを指定します. "
+   "既存のコアの関連付けを持たないプレイリストエントリーを介してコンテンツを起動するときに使用するコアを指定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
@@ -7122,7 +7310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
-   "全項目のコアの関連付けをリセットします."
+   "すべてのプレイリストエントリーの既存のコアの関連付けを削除します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
@@ -7138,7 +7326,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
-   "このプレイリストでの項目の並べ替え方法を決定します."
+   "このプレイリストでどのようにエントリーを並べ替えるかを決定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
@@ -7153,12 +7341,16 @@ MSG_HASH(
    "プレイリストをリフレッシュ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "プレイリストの作成または編集で最後に使用した [手動スキャン] 操作を繰り返すことで、新しいコンテンツを追加したり無効なエントリーを削除したりします。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "プレイリストを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
-   "ファイルシステムからプレイリストを削除します. "
+   "ファイルシステムからプレイリストを削除します。"
    )
 
 /* Settings > User */
@@ -7177,7 +7369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
-   "現在設定されているアカウントを管理します."
+   "現在構成されているアカウントを管理します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
@@ -7193,7 +7385,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-   "ユーザインタフェースの言語を指定します."
+   "ユーザーインターフェースの言語を設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
@@ -7238,7 +7430,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-   "ユーザ名"
+   "ユーザー名"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
@@ -7250,7 +7442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "RetroAchievementsアカウントのパスワードを入力してください。最大長：255文字"
+   "RetroAchievements アカウントのパスワードを入力してください。最大長：255文字。"
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -7326,7 +7518,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "メニュー設定ブラウザの開始ディレクトリを設定します."
+   "メニュー構成ブラウザの開始ディレクトリを設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -7362,7 +7554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-   "ビデオフィルタ"
+   "ビデオフィルター"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
@@ -7649,7 +7841,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "ネットプレイのホスト一覧を更新"
+   "ネットプレイホスト一覧を更新"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
@@ -7657,7 +7849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "ネットプレイ LAN リストを更新"
+   "ネットプレイ LAN 一覧を更新"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
@@ -7727,7 +7919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "コンテンツのファイル名に基づいた, 詳細設定可能なスキャンです. コンテンツはデータベースと一致している必要はありません."
+   "コンテンツのファイル名に基づいて構成可能なスキャンです。コンテンツがデータベースと一致する必要はありません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -7814,6 +8006,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Arcade DAT フィルタ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   "アーケード DAT ファイルを使用する場合、一致する DAT ファイルエントリーが見つかった場合にのみプレイリストにコンテンツを追加します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -8131,7 +8327,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "コンテンツを最初から再起動します."
+   "コンテンツを最初から再開します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -8139,7 +8335,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "現在のコンテンツを終了します. 保存されていない変更は失われます."
+   "現在のコンテンツを閉じます。すべての保存されていない設定は失われる可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -8519,7 +8715,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-   "チート検索を開始/再開"
+   "チート検索を開始または続行"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
@@ -8527,7 +8723,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   "チートファイルをロード"
+   "チートファイルをロード (置き換え)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
@@ -8535,7 +8731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
-   "チートファイルを追加"
+   "チートファイルをロード (追加)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
@@ -8551,7 +8747,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
-   "現在のチートをファイルに保存します."
+   "現在のチートをチートファイルとして保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
@@ -8575,11 +8771,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
-   "切り替えの後で適用"
+   "切り替え後に適用"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
-   "切り替えた後, 直ちにチートを適用します."
+   "切り替えの直後にチートを適用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
@@ -8587,7 +8783,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   "チートの変更はただちに適用されます。"
+   "チートの変更は直ちに反映されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -8598,7 +8794,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
-   "チート検索を開始/再開始"
+   "チート検索を開始または再開"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
@@ -8700,6 +8896,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
    "マッチした %u 件をリストに追加"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   "一致を削除 #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   "コード一致を作成 #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   "一致アドレス: %08X マスク: %02X"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
@@ -8712,7 +8920,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
-   "チートファイル(追加)"
+   "チートファイル (追加)"
    )
 
 /* Quick Menu > Cheats > Cheat Details */
@@ -8866,7 +9074,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "利用可能な画像のリストから現在のディスクを選択してください. 'ディスクを挿入'を選択するとディスクが読み込まれます."
+   "利用可能なイメージのリストから現在のディスクを選択します。[ディスクを挿入] を選択するとディスクがロードされます。"
    )
 
 /* Quick Menu > Shaders */
@@ -8888,6 +9096,10 @@ MSG_HASH(
    "ディスク上のシェーダーファイルに加えられた変更を自動的に適用します。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "シェーダーファイルの新しい変更を監視します。シェーダーの変更をディスクに保存すると、自動的に再コンパイルされ実行中のコンテンツに適用されます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    "最後に使用したシェーダーディレクトリを記憶"
    )
@@ -8901,7 +9113,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "シェーダプリセットをロードします. シェーダパイプラインは自動的にセットアップされます. "
+   "シェーダープリセットをロードします。シェーダーパイプラインは自動的にセットアップされます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "シェーダープリセットを直接ロードします。それに応じてシェーダーメニューが更新されます。\nメニューに表示されるスケーリング倍率は、プリセットが単純なスケーリング方式 (例: ソースの拡大縮小、X/Y の拡大倍率と同じ) を使用している場合にのみ信頼できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -8925,7 +9141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "現在のシェーダプリセットを保存します. "
+   "現在のシェーダープリセットを保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
@@ -8953,7 +9169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-   "現在のシェーダを直接変更します. 変更はプリセットファイルに保存されません."
+   "現在のシェーダーを直接変更します。変更はプリセットファイルには保存されません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
@@ -8977,7 +9193,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
-   "スケール"
+   "倍率"
    )
 
 /* Quick Menu > Shaders > Save */
@@ -9022,7 +9238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "現在のシェーダー設定を、現在のコンテンツディレクトリ内のすべてのファイルに対するデフォルトとして保存します。"
+   "現在のシェーダー設定を現在のコンテンツディレクトリ内のすべてのファイルに対するデフォルトとして保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -9111,7 +9327,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "このコアでロードされるすべてのコンテンツに適用する優先構成ファイルを保存します。メイン構成よりも優先されます。"
+   "このコアでロードされるすべてのコンテンツに適用される優先構成ファイルを保存します。メイン構成よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -9127,7 +9343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "現在のファイルと同じディレクトリからロードされたすべてのコンテンツに適用されるオーバーライド設定ファイルを保存します. メイン設定よりも優先されます."
+   "現在のファイルと同じディレクトリからロードされたすべてのコンテンツに適用される優先構成ファイルを保存します。メイン構成よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9143,7 +9359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "現在のコンテンツにのみ適用されるオーバーライド設定ファイルを保存します. メイン設定よりも優先されます."
+   "現在のコンテンツにのみ適用される優先構成ファイルを保存します。メイン構成よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9167,6 +9383,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
    "表示する実績がありません"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "実績ハードコアモードの一時停止をキャンセル"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
@@ -9863,15 +10083,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-   "マウス ボタン1(左)"
+   "マウス 1"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-   "マウス ボタン2(右)"
+   "マウス 2"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
-   "マウス ボタン3(中央)"
+   "マウス 3"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
@@ -10065,6 +10285,10 @@ MSG_HASH(
    "内部アップスケーリング"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "メニューインターフェースを画面に描画する前にアップスケーリングします。[メニューリニアフィルター] を有効にして使用すると、シャープな画像を維持しながらスケーリングアーティファクト (不均一なピクセル) を除去します。アップスケーリングレベルで増加するパフォーマンスに大きな影響を与えます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
    "アスペクト比"
    )
@@ -10145,8 +10369,16 @@ MSG_HASH(
    "上のサムネイル"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "プレイリストの右上に表示するサムネイルの種類です。このサムネイルの種類はレトロパッドの Y を押すことでサイクルすることができます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "下のサムネイル"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "プレイリストの右下に表示するサムネイルの種類です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -10158,11 +10390,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "サムネイルのダウンスケーリング方式"
+   "サムネイル縮小方式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "大きなサムネイルを縮小してディスプレイに合わせるためのリサンプリング方式です."
+   "画面に合わせるために大きなサムネイルを縮小するときに使用されるリサンプリング方式です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -10186,18 +10418,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
-   "オン/オフ文字列の代わりにアイコンを使用して, '切り替え' メニュー設定項目を表します."
+   "オン/オフテキストの代わりにアイコンを使用して [切り替えスイッチ] メニュー設定エントリーを表します。"
    )
 
 /* RGUI: Settings Options */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   "ニアレストネイバー(最近傍補間) (高速)"
+   "ニアレストネイバー (高速)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
-   "バイリニア（線形補間）"
+   "バイリニア"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
@@ -10245,7 +10477,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "整数スケール"
+   "整数倍拡大"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
@@ -10452,11 +10684,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
-   "オン/オフ文字列の代わりにアイコンを使用して, '切り替え' メニュー設定項目を表します."
+   "オン/オフテキストの代わりにアイコンを使用して [切り替えスイッチ] メニュー設定エントリーを表します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "影のエフェクト"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "アイコン、サムネイル、文字にドロップシャドウを描画します。パフォーマンスに若干の影響を与えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -10484,7 +10720,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   "サムネイルスケール係数"
+   "サムネイル表示倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
@@ -10738,11 +10974,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "サムネイルスケール係数"
+   "サムネイル表示倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "サムネイルバーのサイズをスケールします。"
+   "サムネイルバーのサイズの表示倍率です。"
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
@@ -10761,7 +10997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
-   "オン/オフ文字列の代わりにアイコンを使用して, '切り替え' メニュー設定項目を表します."
+   "オン/オフテキストの代わりにアイコンを使用して [切り替えスイッチ] メニュー設定エントリーを表します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -11003,7 +11239,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
-   "シェーダのパラメータ"
+   "シェーダーパラメータ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
@@ -11525,6 +11761,10 @@ MSG_HASH(
    "アカウントリストエンドポイント"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+   "連射/デッドゾーン"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
    "コアカウンタ"
    )
@@ -11609,12 +11849,20 @@ MSG_HASH(
    "ポート"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "ポート %d デバイス名: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "デバイス表示名: %s\nデバイス構成名: %s\nデバイス VID/PID %d/%d"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "チート設定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-   "チート検索を開始/続行"
+   "チート検索を開始または続行"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -11653,8 +11901,16 @@ MSG_HASH(
    "内蔵画像ビューアを使用"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "最大スワップチェーンイメージ"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "指定したバッファリングモードを明示的に使用するようビデオドライバに指定します. "
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "スワップチェーンイメージの最大数です。ビデオドライバに特定のビデオバッファリングモードを使用するよう指示できます。\nシングルバッファリング - 1\nダブルバッファリング - 2\nトリプルバッファリング -3\n正しいバッファリングモードを設定すると、レイテンシに大きな影響を与える可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -11667,6 +11923,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    "指定したバッファリングモードを明示的に使用するようビデオドライバに指定します. "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   "現在メニューで使用されているシェーダープリセット自体を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -11713,6 +11973,10 @@ MSG_HASH(
    "対応するコンテンツが見つかりました"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "CRC またはファイル名で一致するコンテンツを見つけることができませんでした"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_GONG,
    "開始"
    )
@@ -11752,6 +12016,14 @@ MSG_HASH(
    "出力ディレクトリを使用"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
+   "一致を表示 #"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+   "表示する一致を選択します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
    "アスペクト比を強制"
    )
@@ -11766,6 +12038,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
    "クイックメニューを閉じて現在動作中のアプリを再開します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
+   "%u 一致リストを表示"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
+   "この一致からコードを作成"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
+   "この一致を削除"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
@@ -11816,6 +12100,10 @@ MSG_HASH(
    "オーディオとビデオのトラブルシューティング"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
+   "仮想コントローラーオーバーレイを変更しています"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
    "コンテンツをロードするには"
    )
@@ -11857,7 +12145,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "ネットプレイの観覧を有効"
+   "ネットプレイ観戦"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -11872,12 +12160,16 @@ MSG_HASH(
    "新しいチート検索を開始"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+   "新しいチートの検索を開始します。ビット数を変更できます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
    "検索を続行"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
-   "新しいチートを検索し続けます。"
+   "新しいチートの検索を続行します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
@@ -11893,11 +12185,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-   "チート検索を開始/続行"
+   "チート検索を開始または続行"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
-   "チートコードの検索を開始/再開します."
+   "チートコードの検索を開始または続行します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
@@ -11941,6 +12233,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
    "データベース - フィルター: 販売元"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+   "データベース - フィルタ: 原点"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
@@ -11989,6 +12285,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "データベース情報"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG,
+   "構成"
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
@@ -12040,11 +12340,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "キーボードに切り替え"
+   "キーボード切り替え"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "メニューに切り替え"
+   "メニュー切り替え"
    )
 
 /* Discord Status */
@@ -12325,8 +12625,16 @@ MSG_HASH(
    "実行中"
    )
 MSG_HASH(
+   MSG_NETPLAY_STATUS_SPECTATING,
+   "観戦中"
+   )
+MSG_HASH(
    MSG_NETPLAY_CLIENT_DEVICES,
    "デバイス"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHAT_SUPPORTED,
+   "チャット対応"
    )
 
 MSG_HASH(
@@ -12403,7 +12711,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
-   "サポートされているすべてのコアがGoogleプレイストアのバージョンに切り替わりました"
+   "対応しているすべてのコアが Play ストアバージョンに切り替わりました"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
@@ -12532,6 +12840,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "既知のマジックナンバーと比較しています..."
+   )
+MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "API に対してコンパイル済み"
    )
 MSG_HASH(
    MSG_CONFIG_DIRECTORY_NOT_SET,
@@ -12710,6 +13022,10 @@ MSG_HASH(
    "構成の保存に失敗しました to"
    )
 MSG_HASH(
+   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+   "観客の承認に失敗しました。"
+   )
+MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    "パッチを適用したコンテンツのメモリ割り当てに失敗しました..."
    )
@@ -12884,6 +13200,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_LAST_REPLAY_SLOT,
    "最後のリプレイスロットが見つかりました"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "リプレイと互換性がありません"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -13158,6 +13478,14 @@ MSG_HASH(
    "巻き戻しています。"
    )
 MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "このコアはシリアル化されたステートセーブの対応がないため巻き戻しを利用できません。"
+   )
+MSG_HASH(
+   MSG_REWIND_INIT,
+   "巻き戻しバッファをサイズで初期化しています"
+   )
+MSG_HASH(
    MSG_REWIND_INIT_FAILED,
    "巻き戻しバッファの初期化に失敗しました。巻き戻しが無効になります。"
    )
@@ -13292,6 +13620,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "利用可能なサムネイルがありません"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "このプレイリストエントリーに対して可能なすべてのサムネイルダウンロードはすでに試行されています。"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -13495,11 +13827,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "このコアはステートセーブに対応していないために先行実行が無効になりました."
+   "このコアはステートセーブに対応していないため先行実行が無効になりました。"
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
-   "このコアは確定的なステートセーブの対応がないため、先行実行を利用できません。"
+   "このコアは確定的なステートセーブの対応がないため先行実行を利用できません。"
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
@@ -13510,12 +13842,28 @@ MSG_HASH(
    "ステートロードに失敗しました。先行実行が無効になりました。"
    )
 MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "2 番目のインスタンスの作成に失敗しました。先行実行は 1 つのインスタンスのみを使用します。"
+   )
+MSG_HASH(
    MSG_PREEMPT_ENABLED,
    "先制フレームを有効にしました。遅延フレームが削除されました: %u。"
    )
 MSG_HASH(
    MSG_PREEMPT_DISABLED,
    "先制フレームを無効にしました。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "このコアはステートセーブに対応していないため先制フレームが無効になりました。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "このコアは確定的なステートセーブの対応がないため先制フレームを利用できません。"
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "先制フレームのメモリ割り当てに失敗しました。"
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_SAVE_STATE,
@@ -13554,8 +13902,16 @@ MSG_HASH(
    "追加に失敗しました"
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "一致からコードを作成しました"
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
    "コードの生成に失敗しました"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "一致を削除しました"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13622,12 +13978,24 @@ MSG_HASH(
    "ホストからヘッダーを受信できませんでした"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "ステートロードするには実績ハードコアモードを無効にするか一時停止する必要があります。"
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "セーブステートがロードされました. このセッションでは実績ハードコアモードが無効になります."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "チートが有効になりました. このセッションでは実績ハードコアモードが無効になります."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "マスター済み %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "完了済み %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -13823,7 +14191,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
-   "非対応のビデオモード"
+   "対応していないビデオモード"
    )
 MSG_HASH(
    MSG_CORE_INFO_CACHE_UNSUPPORTED,
@@ -13836,6 +14204,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOADING_ENTRY_STATE_FROM,
    "エントリーステートをロード中 from"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "ゲームモードを有効にできませんでした"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "ゲームモードを有効にできませんでした - ゲームモードデーモンがインストール/実行されていることを確認してください"
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,
@@ -13871,6 +14247,14 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   "グラフィックウィジェット倍率のオーバーライド"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+   "手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
    "画面解像度"
@@ -13988,8 +14372,16 @@ MSG_HASH(
    "オーバースキャン補正 (上部)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "指定したスキャンライン数 (画面上部から取得) だけ画像サイズを縮小することにより、ディスプレイのオーバースキャントリミングを調整します。スケーリングアーティファクトが発生する可能性があります。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    "オーバースキャン補正 (下部)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "指定したスキャンライン数 (画面下部から取得) だけ画像サイズを縮小することにより、ディスプレイのオーバースキャントリミングを調整します。スケーリングアーティファクトが発生する可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -14028,6 +14420,10 @@ MSG_HASH(
    "カスタム管理"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   "メニューやゲームプレイ中に使用するガバナーを選択できます。パフォーマンス、オンデマンド、または Schedutil はゲームプレイ中に推奨されます。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
    "最大パフォーマンス"
    )
@@ -14046,6 +14442,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "バランス"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "現在の作業負荷に適応します。ほとんどデバイスとエミュレータで動作し、電力を節約するのに役立ちます。一部のデバイスでは、負荷の高いゲームやコアのパフォーマンスが低下する場合があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
@@ -14078,6 +14478,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
    "ゲームモード"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "パフォーマンスを改善させ、レイテンシを軽減し、オーディオのクラックの問題を修正できます。これを動作させるには、https://github.com/FeralInteractive/gamemode が必要です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+   "フレームレスト"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
@@ -14252,6 +14660,10 @@ MSG_HASH(
    "CEC 対応"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "ドッキング時にテレビで CEC ハンドシェイクを有効にする"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
    "Bluetooth ERTM を無効にする"
    )
@@ -14302,16 +14714,16 @@ MSG_HASH(
 #ifdef GEKKO
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
-   "マウススケール"
+   "マウス倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
-   "Wiimoteのライトガン速度に合わせてx/yスケールを調整します."
+   "Wii リモコンのライトガン速度に合わせて X/Y 倍率を調整します。"
    )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
-   "タッチスケール"
+   "タッチ倍率"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
@@ -14319,8 +14731,40 @@ MSG_HASH(
    )
 #ifdef UDEV_TOUCH_SUPPORT
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "タッチ仮想マウス (ポインタ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "入力タッチスクリーンからタッチイベントを渡すことを有効にします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "タッチ仮想マウス (マウス)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "入力タッチイベントを使用して仮想マウスエミュレーションを有効にします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "タッチ仮想マウスタッチパッドモード"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "タッチスクリーンをタッチパッドとして使用するには、マウスと併せて有効にします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "タッチ仮想マウストラックボールモード"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
    "マウスと併用すると、タッチスクリーンをトラックボールとして利用でき、ポインタに慣性が加わります。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "タッチ仮想マウスジェスチャー"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
