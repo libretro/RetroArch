@@ -749,7 +749,10 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
+#if 0
+/* Thumbnailpack removal */
       bool menu_show_legacy_thumbnail_updater;
+#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;

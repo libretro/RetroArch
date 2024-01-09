@@ -3072,7 +3072,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
+#if 0
+/* Thumbnailpack removal */
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
+#endif
       case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
       case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS:
