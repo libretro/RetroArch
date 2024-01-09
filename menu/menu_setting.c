@@ -19536,7 +19536,7 @@ static bool setting_append_list(
             {
                char *options;
                int len = 0, i = 0;
-               for (; i < icons->size; i++)
+               for (; i < (int)icons->size; i++)
                   len += strlen(icons->elems[i].data) + 1;
                options = (char*)calloc(len, sizeof(char));
                string_list_join_concat(options, len, icons, "|");
