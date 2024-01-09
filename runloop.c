@@ -6940,17 +6940,12 @@ int runloop_iterate(void)
 #endif
          video_driver_cached_frame();
 
-         /* Limit paused video refresh when vsync is disabled */
-         if (!settings->bools.video_vsync)
-         {
-            float refresh_rate = (video_st->video_refresh_rate_original)
-                  ? video_st->video_refresh_rate_original : settings->floats.video_refresh_rate;
-
-            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / refresh_rate);
-            goto end;
-         }
-
-         return 1;
+         /* Limit paused video refresh. */
+         runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+               ((video_st->video_refresh_rate_original)
+                  ? video_st->video_refresh_rate_original
+                  : settings->floats.video_refresh_rate));
+         goto end;
       case RUNLOOP_STATE_MENU:
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_MENU
@@ -6970,12 +6965,10 @@ int runloop_iterate(void)
 
          /* Otherwise run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-         {
-            float refresh_rate = (video_st->video_refresh_rate_original)
-                  ? video_st->video_refresh_rate_original : settings->floats.video_refresh_rate;
-
-            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / refresh_rate);
-         }
+            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+                  ((video_st->video_refresh_rate_original)
+                     ? video_st->video_refresh_rate_original
+                     : settings->floats.video_refresh_rate));
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
