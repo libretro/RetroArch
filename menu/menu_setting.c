@@ -19793,6 +19793,8 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 #endif
+#if 0
+/* Thumbnailpack removal */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_legacy_thumbnail_updater,
@@ -19807,6 +19809,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 #endif
 
 #ifdef HAVE_MIST
