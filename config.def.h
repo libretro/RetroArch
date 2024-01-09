@@ -699,8 +699,10 @@
 #ifdef HAVE_MIST
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
+#if 0
+/* Thumbnailpack removal */
 #define DEFAULT_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER false
-
+#endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false

@@ -499,6 +499,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
    "cb_menu_wallpaper"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD,
    "cb_thumbnails_updater_download"
@@ -507,6 +509,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST,
    "cb_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_CB_UPDATE_ASSETS,
    "cb_update_assets"
@@ -1415,10 +1418,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
    "deferred_cloud_sync_settings_list"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
    "deferred_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST,
    "deferred_pl_thumbnails_updater_list"
@@ -3822,6 +3828,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
    "thumbnails_directory"
    )
+/* Thumbnailpack removal - next entry is deprecated */
 MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
    "thumbnails_updater_list"
