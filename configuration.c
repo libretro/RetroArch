@@ -1537,7 +1537,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("webhook_usercode",         settings->arrays.webhook_usercode, false, NULL, true);
    SETTING_ARRAY("webhook_accesstoken",      settings->arrays.webhook_accesstoken, false, NULL, true);
    SETTING_ARRAY("webhook_refreshtoken",     settings->arrays.webhook_refreshtoken, false, NULL, true);
-   SETTING_ARRAY("webhook_expiresin",
+   SETTING_ARRAY("webhook_expiresin",        settings->arrays.webhook_expiresin, false, NULL, true);
 
 #ifdef HAVE_NETWORKING
    SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);

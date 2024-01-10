@@ -10380,7 +10380,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEEVOS
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, PARSE_ACTION},
 #endif
-               MENU_ENUM_LABEL_WEBHOOK_SETTINGS,            PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_WEBHOOK_SETTINGS,            PARSE_ACTION, true},
                {MENU_ENUM_LABEL_USER_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,          PARSE_ACTION, true},
                {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},
