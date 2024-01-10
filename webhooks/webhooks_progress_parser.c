@@ -49,8 +49,13 @@ int wpp_parse_game_progress
   };
   
   rc_api_response_t* api_response = (rc_api_response_t*)&game_progress_response;
-  
-  int result = rc_json_parse_response(api_response, game_progress, fields, sizeof(fields) / sizeof(fields[0]));
+
+  rc_api_server_response_t response_obj;
+  memset(&response_obj, 0, sizeof(response_obj));
+  response_obj.body = game_progress;
+  response_obj.body_length = rc_json_get_object_string_length(game_progress);
+
+  int result = rc_json_parse_server_response(api_response, &response_obj, fields, sizeof(fields) / sizeof(fields[0]));
 
   if (result != 0) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to parse the downloaded game progress. Result is '%d'\n", result);
@@ -58,18 +63,19 @@ int wpp_parse_game_progress
   }
 
   rc_json_field_t iterator;
-  rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
-  rc_buf_init(api_buffer);
+
+  rc_buffer_t* buffer = malloc(sizeof(rc_buffer_t));
+  rc_buffer_init(buffer);
 
   if (!rc_json_get_required_array(&game_progress_response.num_game_events, &iterator, api_response, &fields[3], "Events")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to get the 'Events' array from the downloaded game progress\n");
-    free(api_buffer);
+    free(buffer);
     return -1;
   }
 
   if (!rc_json_get_required_string(&game_progress_response.progress, api_response, &fields[2], "Progress")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to get the 'Progress' string from the downloaded game progress\n");
-    free(api_buffer);
+    free(buffer);
     return -1;
   }
 
@@ -77,11 +83,11 @@ int wpp_parse_game_progress
 
   if (game_progress_response.num_game_events) {
 
-    game_progress_response.game_events = (struct wpp_game_event_t*)rc_buf_alloc(api_buffer, game_progress_response.num_game_events * sizeof(struct wpp_game_event_t));
+    game_progress_response.game_events = (struct wpp_game_event_t*)rc_buffer_alloc(buffer, game_progress_response.num_game_events * sizeof(struct wpp_game_event_t));
 
     if (!game_progress_response.game_events) {
       WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to allocate memory for the downloaded game events\n");
-      free(api_buffer);
+      free(buffer);
       return -1;
     }
 
@@ -91,13 +97,13 @@ int wpp_parse_game_progress
 
       if (!rc_json_get_required_unum(&game_event->id, api_response, &events_fields[0], "Id")) {
         WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to get the 'Id' from the game event\n");
-        free(api_buffer);
+        free(buffer);
         return -1;
       }
 
       if (!rc_json_get_required_string(&game_event->macro, api_response, &events_fields[1], "Macro")) {
         WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to get the 'Macro' from the game event ID '%d'\n", game_event->id);
-        free(api_buffer);
+        free(buffer);
         return -1;
       }
 
@@ -106,7 +112,7 @@ int wpp_parse_game_progress
 
       if (result != RC_OK) {
         WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to activate the game event ID '%d'\n", game_event->id);
-        free(api_buffer);
+        free(buffer);
         return -1;
       }
 
@@ -125,7 +131,7 @@ int wpp_parse_game_progress
     WEBHOOKS_LOG(WEBHOOKS_TAG "Rich presence has been been activated\n");
   }
 
-  free(api_buffer);
+  free(buffer);
 
   return result;
 }

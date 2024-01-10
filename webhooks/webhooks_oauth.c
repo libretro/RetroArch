@@ -233,32 +233,31 @@ static void woauth_handle_accesstoken_response
   };
 
   rc_api_response_t* api_response = (rc_api_response_t*)&oauth_token_response;
-  
-  int result = rc_json_parse_response(api_response, data->data, fields, sizeof(fields) / sizeof(fields[0]));
+
+  rc_api_server_response_t response_obj;
+  memset(&response_obj, 0, sizeof(response_obj));
+  response_obj.body = data->data;
+  response_obj.body_length = rc_json_get_object_string_length(data->data);
+
+  int result = rc_json_parse_server_response(api_response, &response_obj, fields, sizeof(fields) / sizeof(fields[0]));
 
   if (result != 0) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to parse the response for a new access token request\n");
     return;
   }
 
-  rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
-  rc_buf_init(api_buffer);
-
   if (!rc_json_get_required_string(&oauth_token_response.access_token, api_response, &fields[2], "access_token")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "No access token received in the response\n");
-    free(api_buffer);
     return;
   }
 
   if (!rc_json_get_required_string(&oauth_token_response.refresh_token, api_response, &fields[3], "refresh_token")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "No refresh token received in the response\n");
-    free(api_buffer);
     return;
   }
   
   if (!rc_json_get_required_num(&oauth_token_response.expires_in, api_response, &fields[4], "expires_in")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "No expiration received in the response\n");
-    free(api_buffer);
     return;
   }
   
@@ -281,8 +280,6 @@ static void woauth_handle_accesstoken_response
   free(request);
   request = NULL;
 
-  free(api_buffer);
-  
   is_pairing = false;
   //if (is_pairing)
   //  is_end_pairing_scheduled = true;
@@ -358,8 +355,13 @@ void woauth_handle_devicecode_response
   };
 
   rc_api_response_t* api_response = (rc_api_response_t*)&oauth_code_response;
-  
-  int result = rc_json_parse_response(api_response, data->data, fields, sizeof(fields) / sizeof(fields[0]));
+
+  rc_api_server_response_t response_obj;
+  memset(&response_obj, 0, sizeof(response_obj));
+  response_obj.body = data->data;
+  response_obj.body_length = rc_json_get_object_string_length(data->data);
+
+  int result = rc_json_parse_server_response(api_response, &response_obj, fields, sizeof(fields) / sizeof(fields[0]));
 
   if (result != 0) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the OAuth response\n");
@@ -367,19 +369,14 @@ void woauth_handle_devicecode_response
     return;
   }
 
-  rc_api_buffer_t* api_buffer = malloc(sizeof(rc_api_buffer_t));
-  rc_buf_init(api_buffer);
-
   if (!rc_json_get_required_string(&oauth_code_response.device_code, api_response, &fields[2], "device_code")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the 'device_code' from the response\n");
-    free(api_buffer);
     is_pairing = true;
     return;
   }
 
   if (!rc_json_get_required_string(&oauth_code_response.user_code, api_response, &fields[3], "user_code")) {
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the 'user_code' from the response\n");
-    free(api_buffer);
     is_pairing = true;
     return;
   }

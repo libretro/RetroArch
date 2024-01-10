@@ -17,7 +17,7 @@
 #ifndef __RARCH_CHEEVOS_LOCALS_H
 #define __RARCH_CHEEVOS_LOCALS_H
 
-#define HAVE_RC_CLIENT 1
+//#define HAVE_RC_CLIENT 1
 
 #include "../deps/rcheevos/include/rc_client.h"
 #include "../deps/rcheevos/include/rc_runtime.h"

@@ -2,7 +2,7 @@
 #include "webhooks.h"
 
 #include "../deps/rcheevos/src/rcheevos/rc_internal.h"
-#include "../deps/rcheevos/src/rcheevos/rc_compat.h"
+#include "../deps/rcheevos/src/rc_compat.h"
 
 #include "rc_runtime_types.h"
 
