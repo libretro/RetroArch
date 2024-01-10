@@ -1866,6 +1866,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
 			};
 			name = Debug;
 		};
@@ -1873,6 +1875,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
 			};
 			name = Release;
 		};
