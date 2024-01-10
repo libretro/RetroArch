@@ -377,7 +377,8 @@
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = X2KH288B8T;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -407,7 +408,7 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
 				PRODUCT_NAME = RetroArchCg;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
@@ -423,6 +424,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -450,7 +452,7 @@
 					"-DHAVE_CG",
 				);
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
 				PRODUCT_NAME = RetroArchCg;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
@@ -460,13 +462,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = x86_64;
+				ARCHS = "$(ARCHS_STANDARD)";
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -490,9 +493,9 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
@@ -502,13 +505,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = x86_64;
+				ARCHS = "$(ARCHS_STANDARD)";
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = X2KH288B8T;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -530,9 +534,9 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch.PlayLab;
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
