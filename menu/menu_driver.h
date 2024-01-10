@@ -169,6 +169,7 @@ enum menu_settings_type
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS,
    MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS,
+   MENU_INFO_ACHIEVEMENTS_SERVER_UNREACHABLE,
    MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE,
    MENU_SETTING_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
@@ -250,10 +251,7 @@ enum menu_settings_type
 
    MENU_SET_SCREEN_BRIGHTNESS,
 
-#ifdef HAVE_LAKKA_SWITCH
-   MENU_SET_SWITCH_GPU_PROFILE,
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 
@@ -294,6 +292,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH,
 
    MENU_SETTING_ACTION_REMAP_FILE_LOAD,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_AS,
    MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE,
    MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR,
    MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME,
@@ -306,53 +305,6 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
 
    MENU_SETTINGS_LAST
-};
-
-enum menu_state_flags
-{
-   MENU_ST_FLAG_ALIVE                       = (1 << 0),
-   MENU_ST_FLAG_IS_BINDING                  = (1 << 1),
-   MENU_ST_FLAG_INP_DLG_KB_DISPLAY          = (1 << 2),
-   /* When enabled, on next iteration the 'Quick Menu' 
-    * list will be pushed onto the stack */
-   MENU_ST_FLAG_PENDING_QUICK_MENU          = (1 << 3),
-   MENU_ST_FLAG_PREVENT_POPULATE            = (1 << 4),
-   /* The menu driver owns the userdata */
-   MENU_ST_FLAG_DATA_OWN                    = (1 << 5),
-   /* Flagged when menu entries need to be refreshed */
-   MENU_ST_FLAG_ENTRIES_NEED_REFRESH        = (1 << 6),
-   MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH = (1 << 7),
-   /* 'Close Content'-hotkey menu resetting */
-   MENU_ST_FLAG_PENDING_CLOSE_CONTENT       = (1 << 8),
-   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
-    * requiring the menu to be flushed on the next iteration */
-   MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH  = (1 << 9),
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
-   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
-};
-
-enum menu_scroll_mode
-{
-   MENU_SCROLL_PAGE = 0,
-   MENU_SCROLL_START_LETTER
-};
-
-enum contentless_core_runtime_status
-{
-   CONTENTLESS_CORE_RUNTIME_UNKNOWN = 0,
-   CONTENTLESS_CORE_RUNTIME_MISSING,
-   CONTENTLESS_CORE_RUNTIME_VALID
-};
-
-enum action_iterate_type
-{
-   ITERATE_TYPE_DEFAULT = 0,
-   ITERATE_TYPE_HELP,
-   ITERATE_TYPE_INFO,
-   ITERATE_TYPE_BIND
 };
 
 struct menu_list
@@ -798,12 +750,9 @@ size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 extern menu_ctx_driver_t menu_ctx_ozone;
-extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_stripes;
-
 
 RETRO_END_DECLS
 

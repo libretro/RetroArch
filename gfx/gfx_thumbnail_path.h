@@ -60,6 +60,8 @@ struct gfx_thumbnail_path_data
    size_t playlist_index;
    char content_path[PATH_MAX_LENGTH];
    char content_img[PATH_MAX_LENGTH];
+   char content_img_short[PATH_MAX_LENGTH];
+   char content_img_full[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
    char content_label[256];
@@ -147,7 +149,7 @@ bool gfx_thumbnail_get_core_name(gfx_thumbnail_path_data_t *path_data, const cha
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
-bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name);
+bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name, enum playlist_thumbnail_name_flags name_flags);
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */

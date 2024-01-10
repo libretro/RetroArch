@@ -429,7 +429,7 @@ static void *psp_init(const video_info_t *video,
    else
    {
       u16 i;
-      video_driver_state_t *video_st = video_state_get_ptr(); 
+      video_driver_state_t *video_st = video_state_get_ptr();
       uint16_t* LUT_r_local = (uint16_t*)(SCEGU_VRAM_BP_2);
       uint16_t* LUT_b_local = (uint16_t*)(SCEGU_VRAM_BP_2) + (1 << 5);
 
@@ -550,9 +550,9 @@ static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   psp1_video_t *psp              = (psp1_video_t*)data;
+   psp1_video_t *psp  = (psp1_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive             = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!width || !height)
@@ -566,7 +566,7 @@ static bool psp_frame(void *data, const void *frame,
    if (!psp->hw_render)
       sceGuSync(0, 0); /* let the core decide when to sync when HW_RENDER */
 
-   if (msg) 
+   if (msg)
    {
       pspDebugScreenSetBase(psp->draw_buffer);
       pspDebugScreenSetXY(0,0);

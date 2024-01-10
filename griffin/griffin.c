@@ -19,9 +19,7 @@
 
 #define CINTERFACE
 
-#if !defined(__WINRT__)
 #define HAVE_IBXM 1
-#endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
@@ -188,6 +186,15 @@ ACHIEVEMENTS
 #include "../libretro-common/net/net_http.c"
 #endif
 
+/* rcheevos doesn't actually spawn and manage threads, RC_NO_THREADS
+ * simply disables the mutexes that provide thread safety. */
+#if !defined(HAVE_THREADS)
+#define RC_NO_THREADS 1
+#elif defined(GEKKO) || defined(_3DS)
+ /* Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c) */
+#define RC_NO_THREADS 1
+#endif
+
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
@@ -195,11 +202,15 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 
+#include "../deps/rcheevos/src/rc_client.c"
+#include "../deps/rcheevos/src/rc_compat.c"
+#include "../deps/rcheevos/src/rc_libretro.c"
+#include "../deps/rcheevos/src/rc_util.c"
 #include "../deps/rcheevos/src/rapi/rc_api_common.c"
+#include "../deps/rcheevos/src/rapi/rc_api_info.c"
 #include "../deps/rcheevos/src/rapi/rc_api_runtime.c"
 #include "../deps/rcheevos/src/rapi/rc_api_user.c"
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
-#include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
 #include "../deps/rcheevos/src/rcheevos/condset.c"
 #include "../deps/rcheevos/src/rcheevos/consoleinfo.c"
@@ -207,7 +218,6 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/lboard.c"
 #include "../deps/rcheevos/src/rcheevos/memref.c"
 #include "../deps/rcheevos/src/rcheevos/operand.c"
-#include "../deps/rcheevos/src/rcheevos/rc_libretro.c"
 #include "../deps/rcheevos/src/rcheevos/richpresence.c"
 #include "../deps/rcheevos/src/rcheevos/runtime.c"
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
@@ -938,7 +948,6 @@ DRIVERS
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail_path.c"
 #include "../gfx/gfx_thumbnail.c"
-#include "../gfx/video_coord_array.c"
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
 #endif
@@ -1161,17 +1170,10 @@ RETROARCH
 #include "../runahead.c"
 #endif
 #include "../command.c"
-#include "../midi_driver.c"
-#include "../location_driver.c"
 #include "../ui/ui_companion_driver.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
-#ifdef HAVE_LANGEXTRA
-#include "../intl/msg_hash_chs.c"
-#include "../intl/msg_hash_pt_br.c"
-#endif
-
 #include "../intl/msg_hash_us.c"
 
 /*============================================================
@@ -1257,7 +1259,22 @@ DATA RUNLOOP
 #endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
+#ifdef HAVE_XDELTA
+#define adler32(...) xdelta_adler32(__VA_ARGS__)
+#include "../deps/xdelta3/xdelta3.c"
+#undef adler32
+#ifdef Q
+#undef Q
 #endif
+#ifdef W
+#undef W
+#endif
+#ifdef Z
+#undef Z
+#endif
+#endif
+#endif
+#include "../save.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_movie.c"
 #include "../tasks/task_image.c"
@@ -1620,4 +1637,13 @@ STEAM INTEGRATION USING MIST
 
 #ifdef HAVE_PRESENCE
 #include "../network/presence.c"
+#endif
+
+/*============================================================
+CLOUD SYNC
+============================================================ */
+#ifdef HAVE_CLOUDSYNC
+#include "../tasks/task_cloudsync.c"
+#include "../network/cloud_sync_driver.c"
+#include "../network/cloud_sync/webdav.c"
 #endif

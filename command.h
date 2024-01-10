@@ -88,6 +88,8 @@ enum event_command
    CMD_EVENT_REWIND_DEINIT,
    /* Initializes rewind. */
    CMD_EVENT_REWIND_INIT,
+   /* Reinitializes rewind (primarily if the state size changes). */
+   CMD_EVENT_REWIND_REINIT,
    /* Toggles rewind. */
    CMD_EVENT_REWIND_TOGGLE,
    /* Initializes autosave. */
@@ -347,9 +349,7 @@ void command_event_set_mixer_volume(
 bool command_event_resize_windowed_scale(settings_t *settings,
       unsigned window_scale);
 
-bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      const enum rarch_core_type current_core_type);
+bool command_event_save_auto_state(void);
 
 /**
  * event_set_volume:

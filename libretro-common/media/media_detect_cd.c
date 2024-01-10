@@ -43,24 +43,18 @@ static void media_zero_trailing_spaces(char *buf, size_t len)
 
 static bool media_skip_spaces(const char **buf, size_t len)
 {
-   bool found = false;
-   unsigned i;
-
-   if (!buf || !*buf || !**buf)
-      return false;
-
-   for (i = 0; i < len; i++)
+   if (buf && *buf && **buf)
    {
-      if ((*buf)[i] == ' ' || (*buf)[i] == '\t')
-         continue;
+      size_t i;
+      for (i = 0; i < len; i++)
+      {
+         if ((*buf)[i] == ' ' || (*buf)[i] == '\t')
+            continue;
 
-      *buf += i;
-      found = true;
-      break;
+         *buf += i;
+         return true;
+      }
    }
-
-   if (found)
-      return true;
 
    return false;
 }
@@ -68,22 +62,20 @@ static bool media_skip_spaces(const char **buf, size_t len)
 /* Fill in "info" with detected CD info. Use this when you have a cue file and want it parsed to find the first data track and any pregap info. */
 bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 {
-   RFILE *file = NULL;
-   char *line = NULL;
-   char track_path[PATH_MAX_LENGTH] = {0};
+   RFILE *file                          = NULL;
+   char *line                           = NULL;
+   char track_path[PATH_MAX_LENGTH]     = {0};
    char track_abs_path[PATH_MAX_LENGTH] = {0};
-   char track_mode[11] = {0};
-   bool found_file = false;
-   bool found_track = false;
-   unsigned first_data_track = 0;
-   uint64_t data_track_pregap_bytes = 0;
+   char track_mode[11]                  = {0};
+   bool found_file                      = false;
+   bool found_track                     = false;
+   unsigned first_data_track            = 0;
+   uint64_t data_track_pregap_bytes     = 0;
 
    if (string_is_empty(path) || !info)
       return false;
 
-   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
-
-   if (!file)
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
    {
 #ifdef MEDIA_CUE_PARSE_DEBUG
       printf("[MEDIA] Could not open cue path for reading: %s\n", path);
@@ -116,8 +108,8 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          if (!string_is_empty(file))
          {
             const char *file_end = NULL;
-            size_t file_len = 0;
-            bool quoted = false;
+            size_t file_len      = 0;
+            bool quoted          = false;
 
             if (file[0] == '"')
             {
@@ -198,7 +190,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
                if (!string_is_empty(pregap))
                {
                   media_skip_spaces(&pregap, strlen(pregap));
-                  found_file = false;
+                  found_file  = false;
                   found_track = false;
 
                   if (first_data_track && !string_is_empty(track_mode))
@@ -273,9 +265,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
    if (string_is_empty(path) || !info)
       return false;
 
-   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
-
-   if (!file)
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
    {
 #ifdef MEDIA_CUE_PARSE_DEBUG
       printf("[MEDIA] Could not open path for reading: %s\n", path);
@@ -285,11 +275,11 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
    }
 
    {
-      unsigned offset = 0;
+      unsigned offset      = 0;
       unsigned sector_size = 0;
-      unsigned buf_size = 17 * 2352;
-      char *buf = (char*)calloc(1, buf_size);
-      int64_t read_bytes = 0;
+      unsigned buf_size    = 17 * 2352;
+      char *buf            = (char*)calloc(1, buf_size);
+      int64_t read_bytes   = 0;
 
       if (!buf)
          return false;
@@ -321,23 +311,14 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
          /* Assume track data contains all fields. */
          sector_size = 2352;
 
+         /* Assume Mode 2 formed (formless is rarely used) */
          if (buf[15] == 2)
-         {
-            /* assume Mode 2 formed (formless is rarely used) */
-            offset = 24;
-         }
-         else
-         {
-            /* assume Mode 1 */
-            offset = 16;
-         }
+            offset   = 24;
+         else /* Assume Mode 1 */
+            offset   = 16;
       }
-      else
-      {
-         /* Assume sectors only contain user data instead. */
-         offset = 0;
+      else /* Assume sectors only contain user data instead. */
          sector_size = 2048;
-      }
 
       if (!memcmp(buf + offset, "SEGADISCSYSTEM",
                STRLEN_CONST("SEGADISCSYSTEM")))
@@ -551,13 +532,11 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
       else if (!memcmp(buf + offset, "\x01\x5a\x5a\x5a\x5a\x5a\x01\x00\x00\x00\x00\x00", 12))
       {
          info->system_id = MEDIA_CD_SYSTEM_3DO;
-
          strcpy_literal(info->system, "3DO");
       }
       else if (!memcmp(buf + offset + 0x950, "PC Engine CD-ROM SYSTEM", 23))
       {
          info->system_id = MEDIA_CD_SYSTEM_PC_ENGINE_CD;
-
          strcpy_literal(info->system, "TurboGrafx-CD / PC-Engine CD");
       }
 

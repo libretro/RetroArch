@@ -33,7 +33,6 @@
 #include <formats/image.h>
 
 #include "../video_driver.h"
-#include "../video_coord_array.h"
 #include "../drivers_shader/shader_gl3.h"
 
 RETRO_BEGIN_DECLS

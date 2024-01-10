@@ -176,7 +176,7 @@ static void gfx_display_gl3_draw_pipeline(
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
          draw->backend_data               = ubo_scratch_data;
-         draw->backend_data_size          = sizeof(math_matrix_4x4) 
+         draw->backend_data_size          = sizeof(math_matrix_4x4)
             + 4 * sizeof(float);
 
          /* Match UBO layout in shader. */
@@ -190,9 +190,9 @@ static void gfx_display_gl3_draw_pipeline(
          if (draw->pipeline_id == VIDEO_SHADER_MENU_5)
             yflip = 1.0f;
 
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4)
                + 2 * sizeof(float), &t, sizeof(t));
-         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
+         memcpy(ubo_scratch_data + sizeof(math_matrix_4x4)
                + 3 * sizeof(float), &yflip, sizeof(yflip));
          draw->coords          = &blank_coords;
          blank_coords.vertices = 4;
@@ -212,8 +212,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    const float *color        = NULL;
    GLuint            texture = 0;
    gl3_t *gl                 = (gl3_t*)data;
-   const struct 
-      gl3_buffer_locations 
+   const struct
+      gl3_buffer_locations
       *loc                   = NULL;
 
    if (!gl || !draw)
@@ -240,7 +240,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         glBlendFunc(GL_ONE, GL_ONE);
+         glBlendFunc(GL_DST_COLOR, GL_ONE);
          break;
       default:
          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -296,7 +296,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    else
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data 
+                     ? (const math_matrix_4x4*)draw->matrix_data
                      : (const math_matrix_4x4*)&gl->mvp_no_rot;
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
@@ -430,7 +430,7 @@ static void gl3_raster_font_free(void *data,
 
    if (is_threaded)
       if (
-            font->gl && 
+            font->gl &&
             font->gl->ctx_driver &&
             font->gl->ctx_driver->make_current)
          font->gl->ctx_driver->make_current(true);
@@ -481,7 +481,7 @@ static void *gl3_raster_font_init(void *data,
 
    if (is_threaded)
       if (
-            font->gl && 
+            font->gl &&
             font->gl->ctx_driver &&
             font->gl->ctx_driver->make_current)
          font->gl->ctx_driver->make_current(false);
@@ -1319,7 +1319,7 @@ static const gfx_ctx_driver_t *gl3_get_context(gl3_t *gl)
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
          api, major, minor,
-         gl->flags & GL3_FLAG_USE_SHARED_CONTEXT,
+         (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) ? true : false,
          &ctx_data);
 
    if (ctx_data)
@@ -1327,7 +1327,7 @@ static const gfx_ctx_driver_t *gl3_get_context(gl3_t *gl)
 
    /* Need to force here since video_context_driver_init also checks for global option. */
    if (gfx_ctx->bind_hw_render)
-      gfx_ctx->bind_hw_render(ctx_data, gl->flags & GL3_FLAG_USE_SHARED_CONTEXT);
+      gfx_ctx->bind_hw_render(ctx_data, (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) ? true : false);
    return gfx_ctx;
 }
 
@@ -1396,7 +1396,7 @@ static void gl3_set_viewport(gl3_t *gl,
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            gl->flags & GL3_FLAG_KEEP_ASPECT);
+            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
@@ -1571,8 +1571,8 @@ static bool gl3_init_default_filter_chain(gl3_t *gl)
       return false;
 
    gl->filter_chain = gl3_filter_chain_create_default(
-         gl->video_info.smooth 
-         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         gl->video_info.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!gl->filter_chain)
@@ -1589,7 +1589,7 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
    gl->filter_chain = gl3_filter_chain_create_from_preset(
          shader_path,
          gl->video_info.smooth
-         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST);
 
    if (!gl->filter_chain)
@@ -1875,16 +1875,7 @@ static void *gl3_init(const video_info_t *video,
    if (!string_is_empty(version))
       sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
 
-   {
-      char device_str[128];
-      size_t len        = strlcpy(device_str, vendor, sizeof(device_str));
-      device_str[  len] = ' ';
-      device_str[++len] = '\0';
-      strlcpy(device_str + len, renderer, sizeof(device_str) - len);
-
-      video_driver_set_gpu_device_string(device_str);
-      video_driver_set_gpu_api_version_string(version);
-   }
+   video_driver_set_gpu_api_version_string(version);
 
 #ifdef _WIN32
    if (   string_is_equal(vendor,   "Microsoft Corporation"))
@@ -1948,7 +1939,7 @@ static void *gl3_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL_CORE_API);
 
-   if (video_gpu_record 
+   if (video_gpu_record
       && recording_state_get_ptr()->enable)
    {
       gl->flags |=  GL3_FLAG_PBO_READBACK_ENABLE;
@@ -2412,8 +2403,8 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       glGenTextures(1, &streamed->tex);
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
       glTexStorage2D(GL_TEXTURE_2D, 1,
-            gl->video_info.rgb32 
-            ? GL_RGBA8 
+            gl->video_info.rgb32
+            ? GL_RGBA8
             : GL_RGB565,
             width, height);
       streamed->width = width;
@@ -2519,7 +2510,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool runloop_is_slowmotion              = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state        = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
-   bool menu_is_alive                      = video_info->menu_is_alive;
+   bool menu_is_alive                      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                     = video_info->widgets_active;
@@ -2535,7 +2526,7 @@ static bool gl3_frame(void *data, const void *frame,
    glBindVertexArray(gl->vao);
 
    if (frame)
-      gl->textures_index = (gl->textures_index + 1) 
+      gl->textures_index = (gl->textures_index + 1)
          & (GL_CORE_NUM_TEXTURES - 1);
 
    streamed = &gl->textures[gl->textures_index];
@@ -2604,7 +2595,7 @@ static bool gl3_frame(void *data, const void *frame,
    gl3_filter_chain_build_viewport_pass(gl->filter_chain,
          &gl->filter_chain_vp,
          (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT)
-         ? gl->mvp.data 
+         ? gl->mvp.data
          : gl->mvp_yflip.data);
    gl3_filter_chain_end_frame(gl->filter_chain);
 
@@ -2685,20 +2676,20 @@ static bool gl3_frame(void *data, const void *frame,
          black_frame_insertion
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
-         && !runloop_is_paused 
+         && !runloop_is_paused
          && (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
     {
         size_t n;
         for (n = 0; n < black_frame_insertion; ++n)
         {
           glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);			
+          glClear(GL_COLOR_BUFFER_BIT);
 
           if (gl->ctx_driver->swap_buffers)
             gl->ctx_driver->swap_buffers(gl->ctx_data);
-        }  
-    }   
-#endif 
+        }
+    }
+#endif
 
    if (    hard_sync
        && !input_driver_nonblock_state
@@ -2850,7 +2841,7 @@ static void gl3_set_texture_frame(void *data,
       float alpha)
 {
    settings_t *settings = config_get_ptr();
-   GLenum menu_filter   = settings->bools.menu_linear_filter 
+   GLenum menu_filter   = settings->bools.menu_linear_filter
       ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl3_t *gl            = (gl3_t*)data;
@@ -2864,15 +2855,15 @@ static void gl3_set_texture_frame(void *data,
       glDeleteTextures(1, &gl->menu_texture);
    glGenTextures(1, &gl->menu_texture);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
-   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32 
+   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
          ? GL_RGBA8 : GL_RGBA4, width, height);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, base_size);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                   width, height, GL_RGBA, rgb32 
-                   ? GL_UNSIGNED_BYTE 
+                   width, height, GL_RGBA, rgb32
+                   ? GL_UNSIGNED_BYTE
                    : GL_UNSIGNED_SHORT_4_4_4_4, frame);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

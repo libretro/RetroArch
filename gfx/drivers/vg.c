@@ -411,10 +411,10 @@ static bool vg_frame(void *data, const void *frame,
    unsigned width                     = video_info->width;
    unsigned height                    = video_info->height;
 #ifdef HAVE_MENU
-   bool menu_is_alive                 = video_info->menu_is_alive;
+   bool menu_is_alive                 = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (     frame_width != vg->mRenderWidth
+   if (     frame_width  != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
          || vg->should_resize)
    {

@@ -918,18 +918,17 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 #endif
    char szSourceDevice[48]     = {0};
    char szDestinationDrive[16] = {0};
-
-   snprintf(szSourceDevice, sizeof(szSourceDevice),
+   size_t sz_src_device_len    = snprintf(szSourceDevice, sizeof(szSourceDevice),
          "\\Device\\%s", szDevice);
-   snprintf(szDestinationDrive, sizeof(szDestinationDrive),
+   size_t sz_dest_len          = snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
 
-   DeviceName.Length        = strlen(szSourceDevice);
-   DeviceName.MaximumLength = strlen(szSourceDevice) + 1;
+   DeviceName.Length        = sz_src_device_len;
+   DeviceName.MaximumLength = sz_src_device_len + 1;
    DeviceName.Buffer        = szSourceDevice;
 
-   LinkName.Length          = strlen(szDestinationDrive);
-   LinkName.MaximumLength   = strlen(szDestinationDrive) + 1;
+   LinkName.Length          = sz_dest_len;
+   LinkName.MaximumLength   = sz_dest_len + 1;
    LinkName.Buffer          = szDestinationDrive;
 
    IoCreateSymbolicLink(&LinkName, &DeviceName);
@@ -947,12 +946,11 @@ static HRESULT xbox_io_unmount(char *szDrive)
 {
    STRING LinkName;
    char szDestinationDrive[16] = {0};
-
-   snprintf(szDestinationDrive, sizeof(szDestinationDrive),
+   size_t sz_dest_len     = snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
 
-   LinkName.Length        = strlen(szDestinationDrive);
-   LinkName.MaximumLength = strlen(szDestinationDrive) + 1;
+   LinkName.Length        = sz_dest_len;
+   LinkName.MaximumLength = sz_dest_len + 1;
    LinkName.Buffer        = szDestinationDrive;
 
    IoDeleteSymbolicLink(&LinkName);
@@ -976,8 +974,7 @@ HRESULT ObCreateSymbolicLink(PSTRING SymbolicLinkName, PSTRING DeviceName);
 static HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 {
 	STRING DeviceName, LinkName;
-	char szDestinationDrive[PATH_MAX_LENGTH];
-
+	char szDestinationDrive[16];
 	snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
 	RtlInitAnsiString(&DeviceName, szDevice);

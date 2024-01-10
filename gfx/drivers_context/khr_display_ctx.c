@@ -95,7 +95,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   *resize                     = khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *resize                     = (khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
    if (khr->width != *width || khr->height != *height)
    {

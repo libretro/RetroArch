@@ -87,7 +87,7 @@ static void task_overlay_load_desc_image(
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
-      image_tex.supports_rgba = (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT);
+      image_tex.supports_rgba = (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
 
       if (image_texture_load(&image_tex, path))
       {
@@ -244,7 +244,7 @@ static bool task_overlay_load_desc(
    const char *box                      = NULL;
    config_file_t *conf                  = loader->conf;
 
-   overlay_desc_key[0]                  = 
+   overlay_desc_key[0]                  =
       overlay_key[0]                    =
       conf_key[0]                       =
       overlay[0]                        = '\0';
@@ -755,7 +755,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
          image_tex.supports_rgba =
-               (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT);
+               (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
 
          if (!image_texture_load(&image_tex, overlay_resolved_path))
          {
@@ -804,7 +804,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
          string_list_initialize(&list);
 
          if (     !string_split_noalloc(
-                  &list, overlay->config.rect.array, ", ")  
+                  &list, overlay->config.rect.array, ", ")
                || list.size < 4)
          {
             RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",

@@ -314,14 +314,12 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
-#if !TARGET_OS_TV
    if (fp)
    {
       fprintf(fp, "%s ", tag_v);
       vfprintf(fp, fmt, ap);
       fflush(fp);
    }
-#endif
 #if defined(HAVE_LIBNX)
    mutexUnlock(&g_verbosity->mtx);
 #endif

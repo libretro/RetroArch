@@ -746,11 +746,11 @@ static bool drm_frame(void *data, const void *frame, unsigned width,
 {
    struct drm_video *_drmvars = data;
 #ifdef HAVE_MENU
-   bool menu_is_alive         = video_info->menu_is_alive;
+   bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (  ( width != _drmvars->core_width) ||
-         (height != _drmvars->core_height))
+   if (   (width  != _drmvars->core_width)
+       || (height != _drmvars->core_height))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -770,7 +770,7 @@ static bool drm_frame(void *data, const void *frame, unsigned width,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
             _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,
-	    255,
+            255,
             _drmvars->current_aspect,
             3,
             0,

@@ -23,7 +23,8 @@ class HelperBarViewModel {
    
    lazy var barItems: [HelperBarItem] = [
       KeyboardBarItem(actionDelegate: actionDelegate),
-      MouseBarItem(actionDelegate: actionDelegate)
+      MouseBarItem(actionDelegate: actionDelegate),
+      LockOrientationBarItem(actionDelegate: actionDelegate)
    ]
    
    var barItemMapping = [UIBarButtonItem: HelperBarItem]()

@@ -123,26 +123,26 @@ static const unsigned long retroarch_icon_data[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
-static int GLXExtensionSupported(Display *dpy, const char *extension)
+static int GLXExtensionSupported(Display *dpy, const char *ext)
 {
-   const char *extensionsString  = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   const char *ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
    const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
-   const char *pos               = strstr(extensionsString, extension);
-   size_t pos_ext_len            = strlen(extension);
+   const char *pos               = strstr(ext_string, ext);
+   size_t pos_ext_len            = strlen(ext);
 
-   if (  pos &&
-         (pos == extensionsString || pos[-1] == ' ') &&
-         (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
+   if (      pos
+         && (pos == ext_string       || pos[-1] == ' ')
+         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
       )
       return 1;
 
-   pos                           = strstr(client_extensions, extension);
-   pos_ext_len                   = strlen(extension);
+   pos                           = strstr(client_extensions, ext);
+   pos_ext_len                   = strlen(ext);
 
    if (
-         pos &&
-         (pos == extensionsString || pos[-1] == ' ') &&
-         (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
+             pos
+         && (pos == ext_string       || pos[-1] == ' ')
+         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
       )
       return 1;
 
@@ -424,8 +424,8 @@ static void *gfx_ctx_x_init(void *data)
             x->adaptive_vsync = true;
          }
 
-         if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
-               GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
+         if (     GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control")
+               && GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
             )
             x->swap_mode         = 1;
 #endif
@@ -465,7 +465,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    Atom net_wm_icon          = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
    Atom cardinal             = XInternAtom(g_x11_dpy, "CARDINAL", False);
    settings_t *settings      = config_get_ptr();
-   unsigned opacity          = settings->uints.video_window_opacity 
+   unsigned opacity          = settings->uints.video_window_opacity
       * ((unsigned)-1 / 100.0);
    bool disable_composition  = settings->bools.video_disable_composition;
    bool show_decorations     = settings->bools.video_window_show_decorations;
@@ -593,7 +593,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    if (!show_decorations)
    {
-      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead, 
+      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead,
        * but that removes the window from any taskbar/panel,
        * so we are forced to use the old motif hints method. */
       Hints hints;

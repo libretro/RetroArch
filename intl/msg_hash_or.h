@@ -344,6 +344,7 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "ଵିଡ଼ିଓ"
@@ -560,7 +561,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "ଇତିଵୃତ୍ତି"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 
@@ -770,6 +771,10 @@ MSG_HASH(
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+   "ଦିଗଚଳନ ଦଣ୍ଡିକା ଦେଖାଇବା"
+   )
 
 /* MaterialUI: Settings Options */
 
@@ -842,12 +847,13 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    "ପ୍ରଦର୍ଶନ ମୋଡ୍ ଚୟନ କରନ୍ତୁ (ପୁନଃଆରମ୍ଭ ଦରକାର ପଡ଼ିବ)"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

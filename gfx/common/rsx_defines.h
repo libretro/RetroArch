@@ -31,7 +31,6 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
-#include "../video_coord_array.h"
 
 #define RSX_MAX_BUFFERS 2
 #define RSX_MAX_MENU_BUFFERS 2

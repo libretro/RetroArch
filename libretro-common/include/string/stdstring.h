@@ -48,7 +48,7 @@ RETRO_BEGIN_DECLS
 #define TOUPPER(c)   ((c) & ~(lr_char_props[(unsigned char)(c)] & 0x20))
 
 /* C standard says \f \v are space, but this one disagrees */
-#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80) 
+#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80)
 
 #define ISDIGIT(c)   (lr_char_props[(unsigned char)(c)] & 0x40)
 #define ISALPHA(c)   (lr_char_props[(unsigned char)(c)] & 0x20)
@@ -204,7 +204,7 @@ char *string_trim_whitespace(char *const s);
  * correctly any text containing so-called 'wide' Unicode
  * characters (e.g. CJK languages, emojis, etc.).
  **/
-void word_wrap(char *dst, size_t dst_size, const char *src, size_t src_len,
+size_t word_wrap(char *dst, size_t dst_size, const char *src, size_t src_len,
       int line_width, int wideglyph_width, unsigned max_lines);
 
 /**
@@ -241,7 +241,7 @@ void word_wrap(char *dst, size_t dst_size, const char *src, size_t src_len,
  * on-screen pixel width deviates greatly from the set
  * @wideglyph_width value.
  **/
-void word_wrap_wideglyph(
+size_t word_wrap_wideglyph(
       char *dst, size_t dst_size,
       const char *src, size_t src_len,
       int line_width, int wideglyph_width,
@@ -331,7 +331,7 @@ int string_count_occurrences_single_character(const char *str, char c);
 
 /**
  * string_replace_whitespace_with_single_character:
- * 
+ *
  * Leaf function.
  *
  * Replaces all spaces with given character @c.
