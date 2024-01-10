@@ -2618,6 +2618,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY:
+      {
+         const char **dir            = (const char**)data;
+         const char *dir_playlist    = settings->paths.directory_playlist;
+
+         *dir = *dir_playlist ? dir_playlist : NULL;
+         RARCH_LOG("[Environ]: PLAYLIST_DIRECTORY: \"%s\".\n",
+               dir_playlist);
+         break;
+      }
+
       case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
       /**
        * Update the system Audio/Video information.

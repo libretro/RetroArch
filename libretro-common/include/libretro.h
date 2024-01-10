@@ -1853,6 +1853,17 @@ enum retro_mod
                                             * input devices does not need to take any action on its own.
                                             */
 
+#define RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY 79
+                                           /* const char ** --
+                                            * Returns the "playlist" directory of the frontend.
+                                            * This directory can be used to store core generated playlists,
+                                            * in case this internal functionality is available (e.g. internal core
+                                            * game detection engine).
+                                            *
+                                            * The returned value can be NULL.
+                                            * If so, no such directory is defined,
+                                            * and it's up to the implementation to find a suitable directory.
+                                            */
 /* VFS functionality */
 
 /* File paths:
