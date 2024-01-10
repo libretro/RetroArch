@@ -202,13 +202,6 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 
-#include "../webhooks/webhooks.c"
-#include "../webhooks/webhooks_oauth.c"
-#include "../webhooks/webhooks_client.c"
-#include "../webhooks/webhooks_progress_downloader.c"
-#include "../webhooks/webhooks_progress_parser.c"
-#include "../webhooks/webhooks_progress_tracker.c"
-
 #include "../deps/rcheevos/src/rc_client.c"
 #include "../deps/rcheevos/src/rc_compat.c"
 #include "../deps/rcheevos/src/rc_libretro.c"
@@ -234,6 +227,13 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rhash/hash.c"
 
 #endif
+
+#include "../webhooks/webhooks.c"
+#include "../webhooks/webhooks_oauth.c"
+#include "../webhooks/webhooks_client.c"
+#include "../webhooks/webhooks_progress_downloader.c"
+#include "../webhooks/webhooks_progress_parser.c"
+#include "../webhooks/webhooks_progress_tracker.c"
 
 /*============================================================
 MD5
