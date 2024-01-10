@@ -38,6 +38,7 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif
+#include "../runloop.h"
 #endif
 
 enum manual_scan_status
@@ -208,7 +209,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      manual_scan->task_config->file_exts, "|");
 
             /* Get content list */
-            if (!(manual_scan->content_list 
+            if (!(manual_scan->content_list
                      = manual_content_scan_get_content_list(
                         manual_scan->task_config)))
             {
@@ -246,7 +247,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                playlist_clear(manual_scan->playlist);
 
             /* Get initial playlist size */
-            manual_scan->playlist_size = 
+            manual_scan->playlist_size =
                playlist_size(manual_scan->playlist);
 
             /* Set default core, if required */
@@ -273,6 +274,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->task_config->search_archives);
             playlist_set_scan_filter_dat_content(manual_scan->playlist,
                   manual_scan->task_config->filter_dat_content);
+            playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+                  manual_scan->task_config->overwrite_playlist);
 
             /* All good - can start iterating
              * > If playlist has content and 'validate
@@ -501,9 +504,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          task_set_progress(task, 100);
          goto task_finished;
    }
-   
+
    return;
-   
+
 task_finished:
 
    if (task)

@@ -27,20 +27,20 @@ extern "C" {
 
   /* data for rc_hash_iterate
    */
-  struct rc_hash_iterator
+  typedef struct rc_hash_iterator
   {
-    uint8_t* buffer;
+    const uint8_t* buffer;
     size_t buffer_size;
     uint8_t consoles[12];
     int index;
     const char* path;
-  };
+  } rc_hash_iterator_t;
 
   /* initializes a rc_hash_iterator
    * - path must be provided
    * - if buffer and buffer_size are provided, path may be a filename (i.e. for something extracted from a zip file)
    */
-  void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, uint8_t* buffer, size_t buffer_size);
+  void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, const uint8_t* buffer, size_t buffer_size);
 
   /* releases resources associated to a rc_hash_iterator
    */
@@ -92,12 +92,12 @@ extern "C" {
 
   /* ===================================================== */
 
-  #define RC_HASH_CDTRACK_FIRST_DATA ((uint32_t)-1)
-  #define RC_HASH_CDTRACK_LAST ((uint32_t)-2)
-  #define RC_HASH_CDTRACK_LARGEST ((uint32_t)-3)
-  #define RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION ((uint32_t)-4)
+  #define RC_HASH_CDTRACK_FIRST_DATA ((uint32_t)-1) /* the first data track (skip audio tracks) */
+  #define RC_HASH_CDTRACK_LAST ((uint32_t)-2) /* the last data/audio track */
+  #define RC_HASH_CDTRACK_LARGEST ((uint32_t)-3) /* the largest data/audio track */
+  #define RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION ((uint32_t)-4) /* the first data/audio track of the second session */
 
-  /* opens a track from the specified file. track 0 indicates the largest data track should be opened.
+  /* opens a track from the specified file. see the RC_HASH_CDTRACK_ defines for special tracks.
    * returns a handle to be passed to the other functions, or NULL if the track could not be opened.
    */
   typedef void* (*rc_hash_cdreader_open_track_handler)(const char* path, uint32_t track);

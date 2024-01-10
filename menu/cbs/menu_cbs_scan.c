@@ -254,6 +254,19 @@ static int action_scan_video_font_path(const char *path,
    return 0;
 }
 
+#ifdef HAVE_XMB
+static int action_scan_video_xmb_font(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   strlcpy(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
+   command_event(CMD_EVENT_REINIT, NULL);
+
+   return 0;
+}
+#endif
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
@@ -312,6 +325,13 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
                BIND_ACTION_SCAN(cbs, action_scan_video_font_path);
                return 0;
             }
+#ifdef HAVE_XMB
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT)))
+            {
+               BIND_ACTION_SCAN(cbs, action_scan_video_xmb_font);
+               return 0;
+            }
+#endif
             break;
          default:
          case ST_NONE:

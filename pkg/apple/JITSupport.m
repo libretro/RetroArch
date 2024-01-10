@@ -10,16 +10,21 @@
 
 #import <Foundation/Foundation.h>
 
+#import "JITSupport.h"
+
 #include <dlfcn.h>
 #include <mach/mach.h>
+#include <mach-o/dyld.h>
 #include <mach-o/loader.h>
 #include <mach-o/getsect.h>
 #include <pthread.h>
+#include <dirent.h>
 
 #if defined(HAVE_ALTKIT)
 @import AltKit;
 #endif
 
+#include <string/stdstring.h>
 #include "../../verbosity.h"
 
 extern int csops(pid_t pid, unsigned int ops, void * useraddr, size_t usersize);
@@ -40,7 +45,7 @@ static void *exception_handler(void *argument) {
     return NULL;
 }
 
-bool jb_has_debugger_attached(void) {
+static bool jb_has_debugger_attached(void) {
     int flags;
     return !csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) && flags & CS_DEBUGGED;
 }
@@ -94,7 +99,7 @@ bool jb_enable_ptrace_hack(void) {
 void jb_start_altkit(void) {
 #if HAVE_ALTKIT
    // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
-   if (jb_has_debugger_attached())
+   if (jit_available())
       return;
 
    [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {
@@ -113,4 +118,43 @@ void jb_start_altkit(void) {
 
    [[ALTServerManager sharedManager] startDiscovering];
 #endif
+}
+
+bool jit_available(void)
+{
+   static bool canOpenApps = false;
+   static dispatch_once_t appsOnce = 0;
+   dispatch_once(&appsOnce, ^{
+      DIR *apps = opendir("/Applications");
+      if (apps)
+      {
+         closedir(apps);
+         canOpenApps = true;
+      }
+   });
+
+   static bool dylded = false;
+   static dispatch_once_t dyldOnce = 0;
+   dispatch_once(&dyldOnce, ^{
+      int imageCount = _dyld_image_count();
+      for (int i = 0; i < imageCount; i++)
+      {
+         if (string_is_equal("/usr/lib/pspawn_payload-stg2.dylib", _dyld_get_image_name(i)))
+            dylded = true;
+      }
+   });
+
+   static bool doped = false;
+   static dispatch_once_t dopeOnce = 0;
+   dispatch_once(&dopeOnce, ^{
+      int64_t (*jbdswDebugMe)(void) = dlsym(RTLD_DEFAULT, "jbdswDebugMe");
+      if (jbdswDebugMe)
+      {
+         int64_t ret = jbdswDebugMe();
+         doped = (ret == 0);
+      }
+   });
+
+   /* the debugger could be attached at any time, its value can't be cached */
+   return canOpenApps || dylded || doped || jb_has_debugger_attached();
 }

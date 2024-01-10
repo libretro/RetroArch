@@ -80,8 +80,8 @@ static Display* x11_display_server_open_display(dispserv_x11_t *dispserv)
 static void x11_display_server_close_display(dispserv_x11_t *dispserv,
       Display *dpy)
 {
-   if (     !dpy 
-         || !dispserv 
+   if (     !dpy
+         || !dispserv
          || (dispserv->flags & DISPSERV_X11_FLAG_USING_GLOBAL_DPY)
          || dpy == g_x11_dpy)
       return;
@@ -93,9 +93,10 @@ static bool x11_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
+   size_t _len;
    int m, screen;
    Window window;
-   XRRScreenResources 
+   XRRScreenResources
       *resources            = NULL;
    XRRScreenResources  *res = NULL;
    Display *dpy             = NULL;
@@ -121,8 +122,10 @@ static bool x11_display_server_set_resolution(void *data,
    dispserv->monitor_index  = monitor_index;
    dispserv->flags         |= DISPSERV_X11_FLAG_CRT_EN;
    dispserv->crt_name_id   += 1;
-   snprintf(dispserv->crt_name, sizeof(dispserv->crt_name),
-         "CRT%d", dispserv->crt_name_id);
+   _len  = strlcpy(dispserv->crt_name, "CRT", sizeof(dispserv->crt_name));
+   _len += snprintf(dispserv->crt_name + _len,
+         sizeof(dispserv->crt_name) - _len,
+         "%d", dispserv->crt_name_id);
 
    strlcpy(dispserv->old_mode, dispserv->new_mode,
          sizeof(dispserv->old_mode));
@@ -192,11 +195,11 @@ static bool x11_display_server_set_resolution(void *data,
 
    /* Create interlaced new mode from modline variables */
    if (height < 300)
-      crt_mode_flag = 10; 
+      crt_mode_flag = 10;
 
    /* Create interlaced new mode from modline variables */
    if (height > 300)
-      crt_mode_flag = 26; 
+      crt_mode_flag = 26;
    strlcpy(dispserv->old_mode, dispserv->new_mode, sizeof(dispserv->old_mode));
    /* variable for new mode */
    strlcpy(dispserv->new_mode, dispserv->crt_name, sizeof(dispserv->new_mode));
@@ -205,7 +208,7 @@ static bool x11_display_server_set_resolution(void *data,
     * add and delete modes */
 
    dispserv->crt_rrmode.name          = dispserv->new_mode;
-   dispserv->crt_rrmode.nameLength    = strlen(dispserv->crt_name);
+   dispserv->crt_rrmode.nameLength    = _len;
    dispserv->crt_rrmode.dotClock      = pixel_clock;
    dispserv->crt_rrmode.width         = width;
    dispserv->crt_rrmode.hSyncStart    = hfp;
@@ -235,7 +238,7 @@ static bool x11_display_server_set_resolution(void *data,
    XRRFreeScreenResources(resources);
 
    if (!crt_exists)
-      XRRCreateMode(dpy, window, &dispserv->crt_rrmode); 
+      XRRCreateMode(dpy, window, &dispserv->crt_rrmode);
 
    resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -273,7 +276,7 @@ static bool x11_display_server_set_resolution(void *data,
             XSync(dpy, False);
             XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
                   crtc->x, crtc->y, crtc->mode, crtc->rotation,
-                  crtc->outputs, crtc->noutput);   
+                  crtc->outputs, crtc->noutput);
             XSync(dpy, False);
 
 
@@ -497,16 +500,16 @@ static void x11_display_server_destroy(void *data)
 #ifdef HAVE_XRANDR
    if (dispserv->flags & DISPSERV_X11_FLAG_CRT_EN)
    {
+      char dmode[25];
       XRRModeInfo *swoldmode   = NULL;
       XRRModeInfo *swdeskmode  = NULL;
-      XRRScreenResources 
+      XRRScreenResources
          *resources            = NULL;
       XRRScreenResources  *res = NULL;
       Display *dpy             = XOpenDisplay(0);
       int screen               = DefaultScreen(dpy);
       Window window            = RootWindow(dpy, screen);
       bool crt_exists          = false;
-      char dmode[25]           = {0};
 
       strlcpy(dmode, "d_mo", sizeof(dmode));
 
@@ -544,7 +547,7 @@ static void x11_display_server_destroy(void *data)
 
 
       if (!crt_exists)
-         XRRCreateMode(dpy, window, &dispserv->crt_rrmode); 
+         XRRCreateMode(dpy, window, &dispserv->crt_rrmode);
 
       resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -561,7 +564,7 @@ static void x11_display_server_destroy(void *data)
       {
          for (i = 0; i < res->noutput; i++)
          {
-            XRROutputInfo *outputs = 
+            XRROutputInfo *outputs =
                XRRGetOutputInfo(dpy, res, res->outputs[i]);
 
             if (outputs->connection == RR_Connected)
@@ -586,7 +589,7 @@ static void x11_display_server_destroy(void *data)
 
 
                XRRFreeCrtcInfo(crtc);
-            }  
+            }
             XRRFreeOutputInfo(outputs);
          }
 

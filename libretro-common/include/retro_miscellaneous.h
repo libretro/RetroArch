@@ -90,7 +90,7 @@ static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
 }
 
 #ifndef PATH_MAX_LENGTH
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__)
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__) || defined(HAVE_EMSCRIPTEN)
 #define PATH_MAX_LENGTH 512
 #else
 #define PATH_MAX_LENGTH 4096

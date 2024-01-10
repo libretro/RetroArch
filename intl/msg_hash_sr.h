@@ -72,6 +72,10 @@ MSG_HASH(
    "Odaberi jezgro za korišćenje."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Potraži implementaciju libretro core. Pretraživač počinje u zavisnosti od putanje osnovnog direktorijuma. Ako je prazan, počeće iz root-a. \nAko je osnovni direktorijum definisan, meni će ga koristiti kao glavni direktorijum. Ako osnovni direktorijum sadrži punu putanju, onda će početi iz foldera gde se nalazi datoteka."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Učitaj sadržaj"
    )
@@ -1288,6 +1292,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Drajver za kontroler."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Video drajver."
@@ -1513,10 +1518,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Isključi bilo koji aktivan video filter baziran na procesoru."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Omogući režim celog ekrana kod Android uređaja sa zasekom"
-)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2120,7 +2121,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jezgro:"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 
@@ -2295,6 +2296,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Odnos ekrana"
+   )
 
 /* RGUI: Settings Options */
 
@@ -2438,12 +2443,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Restartuj RetroArch"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

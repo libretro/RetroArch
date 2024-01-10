@@ -122,10 +122,10 @@ static void caca_font_render_msg(
       align = TEXT_ALIGN_LEFT;
    }
 
-   if (   !font->caca 
+   if (   !font->caca
        || !font->caca->cv
        || !font->caca->display
-       || !font->caca->cv 
+       || !font->caca->cv
        || !font->caca->display)
       return;
 
@@ -165,7 +165,7 @@ font_renderer_t caca_font = {
    NULL                       /* get_line_metrics */
 };
 
-/* 
+/*
  * VIDEO DRIVER
  */
 static void caca_create(caca_t *caca)
@@ -239,7 +239,7 @@ static bool caca_frame(void *data, const void *frame,
    bool draw                 = true;
    caca_t *caca              = (caca_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive        = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)

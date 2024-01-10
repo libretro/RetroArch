@@ -305,8 +305,8 @@ static void dinput_poll(void *data)
       POINT point;
       DIMOUSESTATE2 mouse_state;
       BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
-      bool swap_mouse_buttons   = g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
-      
+      bool swap_mouse_buttons   = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
+
       point.x                   = 0;
       point.y                   = 0;
 
@@ -407,39 +407,39 @@ static void dinput_poll(void *data)
 static bool dinput_mouse_button_pressed(
       struct dinput_input *di, unsigned port, unsigned key)
 {
-	bool result = false;
+   bool result = false;
 
-	switch (key)
+   switch (key)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return (di->flags & DINP_FLAG_MOUSE_L_BTN);
+         return (di->flags & DINP_FLAG_MOUSE_L_BTN)  ? true : false;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return (di->flags & DINP_FLAG_MOUSE_R_BTN);
+         return (di->flags & DINP_FLAG_MOUSE_R_BTN)  ? true : false;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return (di->flags & DINP_FLAG_MOUSE_M_BTN);
+         return (di->flags & DINP_FLAG_MOUSE_M_BTN)  ? true : false;
       case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return (di->flags & DINP_FLAG_MOUSE_B4_BTN);
+         return (di->flags & DINP_FLAG_MOUSE_B4_BTN) ? true : false;
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return (di->flags & DINP_FLAG_MOUSE_B5_BTN);
+         return (di->flags & DINP_FLAG_MOUSE_B5_BTN) ? true : false;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         result        = di->flags & DINP_FLAG_MOUSE_WU_BTN;
+         result        = (di->flags & DINP_FLAG_MOUSE_WU_BTN)  ? true : false;
          di->flags    &= ~DINP_FLAG_MOUSE_WU_BTN;
          break;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         result        = di->flags & DINP_FLAG_MOUSE_WD_BTN;
+         result        = (di->flags & DINP_FLAG_MOUSE_WD_BTN)  ? true : false;
          di->flags    &= ~DINP_FLAG_MOUSE_WD_BTN;
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         result        = di->flags & DINP_FLAG_MOUSE_HWU_BTN;
+         result        = (di->flags & DINP_FLAG_MOUSE_HWU_BTN) ? true : false;
          di->flags    &= ~DINP_FLAG_MOUSE_HWU_BTN;
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         result        = di->flags & DINP_FLAG_MOUSE_HWD_BTN;
+         result        = (di->flags & DINP_FLAG_MOUSE_HWD_BTN) ? true : false;
          di->flags    &= ~DINP_FLAG_MOUSE_HWD_BTN;
          break;
    }
 
-	return result;
+   return result;
 }
 
 static int16_t dinput_lightgun_aiming_state(
@@ -456,7 +456,7 @@ static int16_t dinput_lightgun_aiming_state(
    int y                       = 0;
    unsigned num                = 0;
 
-   struct dinput_pointer_status 
+   struct dinput_pointer_status
       *check_pos               = di->pointer_head.next;
 
    vp.x                        = 0;
@@ -488,8 +488,8 @@ static int16_t dinput_lightgun_aiming_state(
                &vp, x, y,
                &res_x, &res_y, &res_screen_x, &res_screen_y))
    {
-      bool inside =    
-            (res_x >= -edge_detect) 
+      bool inside =
+            (res_x >= -edge_detect)
          && (res_y >= -edge_detect)
          && (res_x <=  edge_detect)
          && (res_y <=  edge_detect);
@@ -564,7 +564,7 @@ static int16_t dinput_input_state(
    settings_t *settings;
    struct dinput_input *di    = (struct dinput_input*)data;
 
-	if (port < MAX_USERS)
+   if (port < MAX_USERS)
    {
       switch (device)
       {
@@ -614,7 +614,7 @@ static int16_t dinput_input_state(
                      if  (binds[port][id].key < RETROK_LAST
                            && (di->state[rarch_keysym_lut
                               [(enum retro_key)binds[port][id].key]] & 0x80)
-                           && (   (id == RARCH_GAME_FOCUS_TOGGLE) 
+                           && (   (id == RARCH_GAME_FOCUS_TOGGLE)
                               || !keyboard_mapping_blocked)
                          )
                         return 1;
@@ -629,7 +629,7 @@ static int16_t dinput_input_state(
             }
             break;
          case RETRO_DEVICE_KEYBOARD:
-            return (id < RETROK_LAST) && 
+            return (id < RETROK_LAST) &&
                di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
          case RETRO_DEVICE_ANALOG:
             {
@@ -665,7 +665,7 @@ static int16_t dinput_input_state(
             break;
          case RARCH_DEVICE_MOUSE_SCREEN:
             settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[ port ] != 0)
+            if (settings->uints.input_mouse_index[port] != 0)
                break;
 
             switch (id)
@@ -689,9 +689,9 @@ static int16_t dinput_input_state(
                   case RETRO_DEVICE_ID_MOUSE_Y:
                      return di->mouse_rel_y;
                   case RETRO_DEVICE_ID_MOUSE_LEFT:
-                     return (di->flags & DINP_FLAG_MOUSE_L_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                     return (di->flags & DINP_FLAG_MOUSE_R_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_R_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                      if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
                      {
@@ -725,11 +725,11 @@ static int16_t dinput_input_state(
                      di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
                      break;
                   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                     return (di->flags & DINP_FLAG_MOUSE_M_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_M_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                     return (di->flags & DINP_FLAG_MOUSE_B4_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_B4_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                     return (di->flags & DINP_FLAG_MOUSE_B5_BTN);
+                     return (di->flags & DINP_FLAG_MOUSE_B5_BTN) > 0;
                }
             }
             break;
@@ -790,7 +790,7 @@ static int16_t dinput_input_state(
                         case RETRO_DEVICE_ID_POINTER_Y:
                            return res_y;
                         case RETRO_DEVICE_ID_POINTER_PRESSED:
-                           return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN); 
+                           return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN);
                         default:
                            break;
                      }
@@ -838,7 +838,7 @@ static int16_t dinput_input_state(
                                  joyport, (uint16_t)joykey))
                            return 1;
                         if (joyaxis != AXIS_NONE &&
-                              ((float)abs(joypad->axis(joyport, joyaxis)) 
+                              ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
                         else if (
@@ -1012,11 +1012,11 @@ bool dinput_handle_message(void *data,
          return true;
       case WM_DEVICECHANGE:
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-         if (  wParam == DBT_DEVICEARRIVAL  || 
+         if (  wParam == DBT_DEVICEARRIVAL  ||
                wParam == DBT_DEVICEREMOVECOMPLETE)
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
-            /* TODO/FIXME: Don't destroy everything, let's just 
+            /* TODO/FIXME: Don't destroy everything, let's just
              * handle new devices gracefully */
             if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
                joypad_driver_reinit(di, di->joypad_drv_name);

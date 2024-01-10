@@ -88,8 +88,14 @@ class HelperBarViewController: UIViewController {
          }
          if helperBarItem.isSelected {
             barButtonItem.image = helperBarItem.selectedImage
+            if let tintColor = helperBarItem.tintColorOnSelection {
+               barButtonItem.tintColor = tintColor
+            } else {
+               barButtonItem.tintColor = nil
+            }
          } else {
             barButtonItem.image = helperBarItem.image
+            barButtonItem.tintColor = nil
          }
       }
    }

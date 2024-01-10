@@ -6,6 +6,7 @@ HAVE_CORE_INFO_CACHE=yes   # Core info cache support
 HAVE_BLUETOOTH=no          # Bluetooth support
 HAVE_NVDA=yes              # NVDA support
 HAVE_PATCH=yes             # Softpatching support (BPS/IPS/UPS)
+HAVE_XDELTA=auto           # Xdelta softpatching support (requires softpatching)
 HAVE_SAPI=no               # SAPI support
 HAVE_VIDEO_FILTER=yes      # Video filter support
 HAVE_WINRAWINPUT=yes       # Windows Raw Input support (XP and higher)

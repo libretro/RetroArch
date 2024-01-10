@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -74,7 +75,7 @@ typedef struct
    double view_abs_ratio_y;
    HWND window;
    /* Dummy head for easier iteration */
-   struct winraw_pointer_status pointer_head; 
+   struct winraw_pointer_status pointer_head;
    RECT active_rect; /* Needed for checking for a windows size change */
    RECT prev_rect;   /* Needed for checking for a windows size change */
    int rect_delay;   /* Needed to delay resize of window */
@@ -101,7 +102,7 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
 
    wc.lpfnWndProc   = wnd_proc;
    wc.lpszClassName = "winraw-input";
-   if (     !RegisterClassA(&wc) 
+   if (     !RegisterClassA(&wc)
          &&  GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
       return NULL;
 
@@ -286,7 +287,7 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
                &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
-   inside =    (res_x >= -edge_detect) 
+   inside =    (res_x >= -edge_detect)
             && (res_y >= -edge_detect)
             && (res_x <=  edge_detect)
             && (res_y <=  edge_detect);
@@ -359,11 +360,11 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
    }
 }
 
-static void winraw_update_mouse_state(winraw_input_t *wr, 
+static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
-   bool swap_mouse_buttons = g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS;
+   bool swap_mouse_buttons = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
 
    /* Used for fixing coordinates after switching resolutions */
    GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
@@ -675,7 +676,7 @@ static void winraw_poll(void *data)
 
    /* Prevent LAlt sticky after unfocusing with Alt-Tab */
    if (     !winraw_focus
-         && wr->keyboard.keys[SC_LALT] 
+         && wr->keyboard.keys[SC_LALT]
          && !(GetKeyState(VK_MENU) & 0x8000))
    {
       wr->keyboard.keys[SC_LALT] = 0;
@@ -742,7 +743,7 @@ static int16_t winraw_input_state(
 
    if (port < MAX_USERS)
    {
-      bool process_mouse    = 
+      bool process_mouse    =
          (device == RETRO_DEVICE_JOYPAD)
          || (device == RETRO_DEVICE_MOUSE)
          || (device == RARCH_DEVICE_MOUSE_SCREEN)
@@ -792,7 +793,7 @@ static int16_t winraw_input_state(
                   {
                      if (binds[port][i].valid)
                      {
-                        if ((binds[port][i].key < RETROK_LAST) && 
+                        if ((binds[port][i].key < RETROK_LAST) &&
                               WINRAW_KEYBOARD_PRESSED(wr, binds[port][i].key))
                            ret |= (1 << i);
                      }
@@ -807,9 +808,9 @@ static int16_t winraw_input_state(
                if (binds[port][id].valid)
                {
                   if (
-                        (binds[port][id].key < RETROK_LAST) 
+                        (binds[port][id].key < RETROK_LAST)
                         && WINRAW_KEYBOARD_PRESSED(wr, binds[port][id].key)
-                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
+                        && ((    id == RARCH_GAME_FOCUS_TOGGLE)
                            || !keyboard_mapping_blocked)
                      )
                      return 1;
@@ -1001,7 +1002,7 @@ static int16_t winraw_input_state(
                                  joyport, (uint16_t)joykey))
                            return 1;
                         if (joyaxis != AXIS_NONE &&
-                              ((float)abs(joypad->axis(joyport, joyaxis)) 
+                              ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
                         else if (

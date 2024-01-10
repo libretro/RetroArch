@@ -292,6 +292,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Input Driver"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Video Driver"
@@ -780,7 +781,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
    "Enable or disable recent playlist for games, images, music, and videos."
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -1146,10 +1147,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    "Small Keyboard Enable"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -1172,6 +1170,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
    "Enable or disable remote command line access."
    )
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

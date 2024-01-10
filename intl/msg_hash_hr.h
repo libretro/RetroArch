@@ -403,6 +403,10 @@ MSG_HASH(
 /* Main Menu > Information > System Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "RetroArch verzija"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git verzija"
    )
@@ -421,6 +425,122 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Arhitektura procesora"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "CPU jezgre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
+   "Vulkan podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
+   "Metal podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
+   "OpenGL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
+   "OpenGL ES podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+   "KMS/EGL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+   "udev podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+   "OpenVG podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+   "EGL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+   "X11 podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
+   "Wayland podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+   "XVideo podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+   "ALSA podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+   "OSS podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+   "OpenAL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+   "OpenSL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+   "RSound podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+   "RoarAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+   "JACK podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
+   "PulseAudio podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
+   "XAudio2 podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
+   "zlib podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
+   "7zip podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
+   "Cg podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
+   "GLSL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
+   "HLSL podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+   "Podrška SDL slike"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
+   "FFmpeg podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "mpv podrška"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -485,12 +605,36 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    "Informacije"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   "Izlaz"
+   )
 
 /* Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   "Upravljački programi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   "Zvuk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Latencija"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    "Jezgra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   "Konfiguracija"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   "Spremanje"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -526,17 +670,54 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Mediji"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Zvuk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Specifikacije"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Pohrana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "Sustav"
+   )
 
 #ifdef HAVE_MIST
 #endif
 
 /* Settings > Drivers */
 
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   "Zvuk"
+   )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Mikrofon"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   "Lokacija"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Izbornik"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   "Snimanje"
    )
 
 /* Settings > Video */
@@ -546,6 +727,14 @@ MSG_HASH(
    "Sinkronizacija"
    )
 #if defined(DINGUX)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "Bikubično"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "Bilinearno"
+   )
 #if defined(RS90) || defined(MIYOO)
 #endif
 #endif
@@ -596,6 +785,10 @@ MSG_HASH(
 /* Settings > Audio */
 
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Mikrofon"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -604,9 +797,17 @@ MSG_HASH(
 
 /* Settings > Audio > Output */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   "Zvuk"
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Mikrofon"
+   )
 #endif
 
 /* Settings > Audio > Resampler */
@@ -651,6 +852,10 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "Izlaz"
+   )
 
 
 
@@ -725,6 +930,14 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Ikona aplikacije"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Promijenite ikonu aplikacije."
+   )
 #ifdef _3DS
 #endif
 
@@ -792,7 +1005,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jezgra:"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 
@@ -999,6 +1212,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Omjer slike"
+   )
 
 /* RGUI: Settings Options */
 
@@ -1097,6 +1314,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
    "Informacije"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "Izlaz"
+   )
 
 /* Discord Status */
 
@@ -1114,12 +1335,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Ponovno pokreni RetroArch"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

@@ -344,6 +344,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    char documents_dir_buf[PATH_MAX_LENGTH] = {0};
    char application_data[PATH_MAX_LENGTH]  = {0};
    CFBundleRef bundle                      = CFBundleGetMainBundle();
+   BOOL portable;
 
    if (!bundle)
       return;
@@ -356,23 +357,29 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 
 #if HAVE_STEAM
    /* For Steam, we're going to put everything next to the .app */
-   fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
+   portable = YES;
 #else
-   CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
+   portable = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"RAPortableInstall"] boolValue];
+#endif
+   if (portable)
+      fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
+   else
+   {
+      CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
 #if TARGET_OS_IPHONE
-   char resolved_documents_dir_buf[PATH_MAX_LENGTH] = {0};
-   char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
-   if (realpath(documents_dir_buf, resolved_documents_dir_buf))
-      strlcpy(documents_dir_buf,
-               resolved_documents_dir_buf,
-               sizeof(documents_dir_buf));
-   if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
-      strlcpy(bundle_path_buf,
-            resolved_bundle_dir_buf,
-            sizeof(bundle_path_buf));
+      char resolved_documents_dir_buf[PATH_MAX_LENGTH] = {0};
+      char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+      if (realpath(documents_dir_buf, resolved_documents_dir_buf))
+         strlcpy(documents_dir_buf,
+                 resolved_documents_dir_buf,
+                 sizeof(documents_dir_buf));
+      if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
+         strlcpy(bundle_path_buf,
+                 resolved_bundle_dir_buf,
+                 sizeof(bundle_path_buf));
 #endif
-   strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
-#endif
+      strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
+   }
 
 #if defined(OSX)
    fill_pathname_application_data(application_data, sizeof(application_data));
@@ -473,20 +480,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CACHE],
          temp_dir,
          sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
-
-   path_mkdir(bundle_path_buf);
-
-   if (access(bundle_path_buf, 0755) != 0) { }
-   else
-   {
-      path_mkdir(g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
-
-      if (access(g_defaults.dirs[DEFAULT_DIR_SYSTEM], 0755) != 0) { }
-   }
-
-#ifndef IS_SALAMANDER
-   dir_check_defaults("custom.ini");
-#endif
 }
 
 static int frontend_darwin_get_rating(void)

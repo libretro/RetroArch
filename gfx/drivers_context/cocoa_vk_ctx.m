@@ -150,11 +150,9 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 {
    unsigned new_width, new_height;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-
-   *quit                       = false;
-
-   *resize                     = cocoa_ctx->vk.flags &
-      VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *quit                          = false;
+   *resize                        = (cocoa_ctx->vk.flags &
+         VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
 #if MAC_OS_X_VERSION_10_7 && defined(OSX)
    cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
@@ -226,7 +224,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-   static bool 
+   static bool
       has_went_fullscreen         = false;
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
@@ -272,7 +270,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
       free(cocoa_ctx);
       return NULL;
    }
-    
+
    return cocoa_ctx;
 }
 #else
@@ -296,7 +294,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       return false;
    }
 
-   /* TODO: Maybe iOS users should be able to 
+   /* TODO: Maybe iOS users should be able to
     * show/hide the status bar here? */
    return true;
 }

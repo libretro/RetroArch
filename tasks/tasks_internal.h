@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <lists/string_list.h>
 
 #include <queues/task_queue.h>
 #include <gfx/scaler/scaler.h>
@@ -85,6 +86,7 @@ struct screenshot_task_state
 typedef struct
 {
    char *data;
+   struct string_list *headers;
    size_t len;
    int status;
 } http_transfer_data_t;
@@ -108,6 +110,17 @@ void *task_push_http_post_transfer_with_headers(const char *url, const char *pos
    const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
+
+void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_put(const char *url, const void *put_data, size_t len, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_delete(const char *url, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_move(const char *url, const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb);
 
@@ -227,9 +240,11 @@ bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,
+      bool is_xdelta_pref,
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
+      const char *name_xdelta,
       uint8_t **buf,
       void *data);
 
@@ -291,6 +306,9 @@ void menu_explore_wait_for_init_task(void);
 #endif
 
 extern const char* const input_builtin_autoconfs[];
+
+/* cloud sync tasks */
+void task_push_cloud_sync(void);
 
 RETRO_END_DECLS
 

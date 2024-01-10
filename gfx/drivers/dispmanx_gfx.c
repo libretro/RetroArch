@@ -438,14 +438,14 @@ static bool dispmanx_frame(void *data, const void *frame, unsigned width,
    struct dispmanx_video *_dispvars = data;
    float                     aspect = video_driver_get_aspect_ratio();
    unsigned    max_swapchain_images = video_info->max_swapchain_images;
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
    if (!frame)
       return true;
 
-   if (  (width != _dispvars->core_width)   ||
-         (height != _dispvars->core_height) ||
-         (_dispvars->aspect_ratio != aspect))
+   if (     (width  != _dispvars->core_width)
+         || (height != _dispvars->core_height)
+         || (_dispvars->aspect_ratio != aspect))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)

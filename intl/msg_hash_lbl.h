@@ -1,10 +1,4 @@
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
-   "switch_gpu_profile"
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
    "switch_cpu_profile"
@@ -282,6 +276,10 @@ MSG_HASH(
    "audio_mute_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,
+   "audio_respect_silent_mode"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
    "audio_fastforward_mute"
    )
@@ -501,6 +499,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
    "cb_menu_wallpaper"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD,
    "cb_thumbnails_updater_download"
@@ -509,6 +509,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST,
    "cb_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_CB_UPDATE_ASSETS,
    "cb_update_assets"
@@ -1319,6 +1320,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,
    "deferred_menu_settings_list"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_APPICON_SETTINGS,
+   "appicon_settings"
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_BOTTOM_SETTINGS_LIST,
@@ -1446,9 +1451,16 @@ MSG_HASH(
    "deferred_saving_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
+   "deferred_cloud_sync_settings_list"
+   )
+#if 0
+/* Thumbnailpack removal */
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
    "deferred_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST,
    "deferred_pl_thumbnails_updater_list"
@@ -1924,10 +1936,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_BIND_MODE,
-   "input_bind_mode"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
    "input_bind_timeout"
    )
@@ -2344,10 +2352,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_DRIVER_XMB,
    "xmb"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
@@ -3274,6 +3278,10 @@ MSG_HASH(
    "remap_file_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS,
+   "remap_file_save_as"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
    "remap_file_save_core"
    )
@@ -3364,6 +3372,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
    "vrr_runloop_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
+   "menu_throttle_framerate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SETTINGS,
@@ -3464,6 +3480,10 @@ MSG_HASH(
    "override_file_load"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,
+   "override_file_save_as"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OVERRIDE_UNLOAD,
    "override_unload"
    )
@@ -3518,6 +3538,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
    "saving_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,
+   "cloud_sync_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,
+   "cloud_sync_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "cloud_sync_destructive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
+   "cloud_sync_driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_URL,
+   "cloud_sync_url"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,
+   "cloud_sync_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,
+   "cloud_sync_password"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_DIRECTORY,
@@ -3685,6 +3733,29 @@ MSG_HASH(
    "ssh_enable"
    )
 #endif
+
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST,
+   "deferred_lakka_switch_options_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,
+   "Switch_Options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_OC_ENABLE,
+   "Switch_OC_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,
+   "Switch_CEC_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,
+   "Switch_ERTM_Disable"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_START_CORE,
    "start_core"
@@ -3793,6 +3864,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
    "thumbnails_directory"
    )
+/* Thumbnailpack removal - next entry is deprecated */
 MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
    "thumbnails_updater_list"
@@ -4198,6 +4270,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
    "video_frame_delay_auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_FRAME_REST,
+   "video_frame_rest"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
@@ -4726,10 +4802,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
    "deferred_rpl_entry_actions"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
-   "menu_throttle_framerate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SETTINGS,
@@ -5317,6 +5389,109 @@ MSG_HASH(
    "null"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_ANDROID,
+   "android"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_CTR,
+   "ctr"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_DINPUT,
+   "dinput"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_DOS,
+   "dos"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_GX,
+   "gx"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_HID,
+   "hid"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_LINUXRAW,
+   "linuxraw"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_PARPORT,
+   "parport"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_PS2,
+   "ps2"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_PS3,
+   "ps3"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_PS4,
+   "ps4"
+)
+#ifdef VITA
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_PSP,
+   "vita"
+)
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_PSP,
+   "psp"
+)
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_QNX,
+   "qnx"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_RWEBPAD,
+   "rwebpad"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_SDL_DINGUX,
+   "sdl_dingux"
+)
+#ifdef HAVE_SDL2
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_SDL,
+   "sdl2"
+)
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_SDL,
+   "sdl"
+)
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_SWITCH,
+   "switch"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_UDEV,
+   "udev"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_WIIU,
+   "wiiu"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_XDK,
+   "xdk"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_XINPUT,
+   "xinput"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_JOYPAD_DRIVER_NULL,
+   "null"
+)
+
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    "video_window_show_decorations"
    )
@@ -5895,6 +6070,10 @@ MSG_HASH(
    "notification_show_set_initial_disk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "notification_show_save_state"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD,
    "notification_show_fast_forward"
    )
@@ -5929,6 +6108,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
    "scan_without_core_match"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,
+   "scan_serial_and_crc"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
@@ -6009,6 +6192,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,
    "ai_service_source_lang"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,
+   "ai_service_poll_delay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION,
+   "ai_service_text_position"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,
+   "ai_service_text_padding"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,
@@ -6233,6 +6428,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "input_turbo_default_button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,
+   "input_allow_turbo_dpad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,

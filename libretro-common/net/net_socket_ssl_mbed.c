@@ -234,11 +234,24 @@ int ssl_socket_send_all_blocking(void *state_data,
 
    mbedtls_net_set_block(&state->net_ctx);
 
-   while ((ret = mbedtls_ssl_write(&state->ctx, data, size)) <= 0)
+   while (size)
    {
-      if (  ret != MBEDTLS_ERR_SSL_WANT_READ && 
-            ret != MBEDTLS_ERR_SSL_WANT_WRITE)
-         return false;
+      ret = mbedtls_ssl_write(&state->ctx, data, size);
+
+      if (!ret)
+         continue;
+
+      if (ret < 0)
+      {
+         if (  ret != MBEDTLS_ERR_SSL_WANT_READ &&
+              ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+            return false;
+      }
+      else
+      {
+          data += ret;
+          size -= ret;
+      }
    }
 
    return true;

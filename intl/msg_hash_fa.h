@@ -1005,6 +1005,14 @@ MSG_HASH(
    "تنظیمات ذخیره کردن را تغییر دهید."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "نام کاربری"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "گذرواژه"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "ثبت گزارش‌ها"
    )
@@ -1160,6 +1168,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "درایور دستهٔ بازی برای استفاده."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "ویدیو"
@@ -2022,10 +2031,6 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "تصاویر بندانگشتی"
-   )
 
 /* Settings > AI Service */
 
@@ -2092,7 +2097,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "واپسین بازی:"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 
@@ -2370,10 +2375,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "سایه‌زن‌های ویدیو"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "حذف"
-   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -2427,6 +2428,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "نسبت تصویر"
+   )
 
 /* RGUI: Settings Options */
 
@@ -2436,6 +2441,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   "خودکار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
    "خودکار"
    )
 MSG_HASH(
@@ -2572,10 +2581,6 @@ MSG_HASH(
    "پیشینه"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "اجرا"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "کاربر"
    )
@@ -2662,16 +2667,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "ریستارت رتروآرچ"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
    "بلوتوث"
    )
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

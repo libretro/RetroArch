@@ -115,7 +115,7 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
 
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
-   *resize    = and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *resize    = (and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
    new_width  = android_app->content_rect.width;
    new_height = android_app->content_rect.height;
 

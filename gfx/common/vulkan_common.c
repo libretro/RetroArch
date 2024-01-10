@@ -175,7 +175,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
 {
    VkFence fence;
    VkFenceCreateInfo info;
-   struct vulkan_emulated_mailbox *mailbox = 
+   struct vulkan_emulated_mailbox *mailbox =
       (struct vulkan_emulated_mailbox*)userdata;
 
    if (!mailbox)
@@ -190,7 +190,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
    for (;;)
    {
       slock_lock(mailbox->lock);
-      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD) 
+      while (   !(mailbox->flags & VK_MAILBOX_FLAG_DEAD)
              && !(mailbox->flags & VK_MAILBOX_FLAG_REQUEST_ACQUIRE))
          scond_wait(mailbox->cond, mailbox->lock);
 
@@ -207,9 +207,9 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
             mailbox->device, mailbox->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &mailbox->index);
 #ifdef ANDROID
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
-       * This is not an error we need to care about, 
+       * This is not an error we need to care about,
        * and we'll treat it as SUCCESS. */
       if (mailbox->result == VK_SUBOPTIMAL_KHR)
          mailbox->result = VK_SUCCESS;
@@ -569,7 +569,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    unsigned enabled_device_extension_count = 0;
 
-   struct retro_hw_render_context_negotiation_interface_vulkan 
+   struct retro_hw_render_context_negotiation_interface_vulkan
                                     *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)
                                     video_st->hw_render_context_negotiation;
 
@@ -593,7 +593,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    if (iface)
    {
-      if (iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN) 
+      if (iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
       {
          RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong API.\n");
          iface = NULL;
@@ -713,29 +713,14 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    RARCH_LOG("[Vulkan]: Using GPU: \"%s\".\n", vk->context.gpu_properties.deviceName);
 
    {
-      char device_str[128];
       char version_str[128];
-      size_t len            = strlcpy(device_str, vk->context.gpu_properties.deviceName, sizeof(device_str));
-      device_str[len  ]     = ' ';
-      device_str[++len]     = '\0';
-
-      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.driverVersion));
-      device_str[len  ]     = '.';
-      device_str[++len]     = '\0';
-      len                  += snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.driverVersion));
-      device_str[len  ]     = '.';
-      device_str[++len]     = '\0';
-      snprintf(device_str + len, sizeof(device_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.driverVersion));
-
-      len                   = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
-      version_str[len  ]    = '.';
+      size_t len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      version_str[  len]    = '.';
       version_str[++len]    = '\0';
       len                  += snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
-      version_str[len  ]    = '.';
+      version_str[  len]    = '.';
       version_str[++len]    = '\0';
       snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
-
-      video_driver_set_gpu_device_string(device_str);
       video_driver_set_gpu_api_version_string(version_str);
    }
 
@@ -1126,7 +1111,7 @@ retry:
          vkGetDisplayPlaneCapabilitiesKHR(vk->context.gpu,
                best_mode, i, &plane_caps);
 
-         if (    plane_caps.supportedAlpha 
+         if (    plane_caps.supportedAlpha
                & VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR)
          {
             best_plane = j;
@@ -1257,7 +1242,7 @@ static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
    if (ctx->num_recycled_acquire_semaphores == 0)
    {
       VkSemaphoreCreateInfo sem_info;
-      
+
       sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
       sem_info.pNext = NULL;
       sem_info.flags = 0;
@@ -1756,7 +1741,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    fence_info.sType               = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
    fence_info.pNext               = NULL;
    fence_info.flags               = 0;
-   
+
    sem_info.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
    sem_info.pNext                 = NULL;
    sem_info.flags                 = 0;
@@ -1811,9 +1796,9 @@ retry:
             vk->swapchain, UINT64_MAX,
             semaphore, fence, &vk->context.current_swapchain_index);
 #ifdef ANDROID
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
-       * This is not an error we need to care about, and 
+       * This is not an error we need to care about, and
        * we'll treat it as SUCCESS. */
       if (err == VK_SUBOPTIMAL_KHR)
          err = VK_SUCCESS;
@@ -1973,7 +1958,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             &&   (vk->mailbox.swapchain != VK_NULL_HANDLE))
       {
          VkResult res = VK_SUCCESS;
-         /* We are tearing down, and entering a state 
+         /* We are tearing down, and entering a state
           * where we are supposed to have
           * acquired an image, so block until we have acquired. */
          if (! (vk->context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
@@ -2026,7 +2011,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vk->context.swap_interval = swap_interval;
    for (i = 0; i < present_mode_count; i++)
    {
-      if (     !swap_interval 
+      if (     !swap_interval
             && (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR))
       {
          swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
@@ -2038,7 +2023,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
          break;
       }
-      else if ( swap_interval 
+      else if ( swap_interval
             && (present_modes[i] == VK_PRESENT_MODE_FIFO_KHR))
       {
          /* Kind of tautological since FIFO must always be present. */
@@ -2058,7 +2043,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->vk_surface, &format_count, formats);
 
    format.format = VK_FORMAT_UNDEFINED;
-   if (     format_count == 1 
+   if (     format_count == 1
          && (formats[0].format == VK_FORMAT_UNDEFINED))
    {
       format        = formats[0];
@@ -2070,7 +2055,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       {
          RARCH_ERR("[Vulkan]: Surface has no formats.\n");
          return false;
-      }  
+      }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (settings->bools.video_hdr_enable)
@@ -2206,7 +2191,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageExtent.height     = swapchain_size.height;
    info.imageArrayLayers       = 1;
    info.imageUsage             =  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-	   			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
+	   			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 				| VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount  = 0;
@@ -2298,7 +2283,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
    const char *prog_name          = NULL;
    video_driver_state_t *video_st = video_state_get_ptr();
-   struct retro_hw_render_context_negotiation_interface_vulkan 
+   struct retro_hw_render_context_negotiation_interface_vulkan
                            *iface = (struct retro_hw_render_context_negotiation_interface_vulkan*)video_st->hw_render_context_negotiation;
 
    if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
@@ -2418,8 +2403,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
    else
    {
-      if (     iface 
-            && iface->interface_version >= 2 
+      if (     iface
+            && iface->interface_version >= 2
             && iface->create_instance)
          vk->context.instance = iface->create_instance(
                GetInstanceProcAddr, &app,
@@ -2495,7 +2480,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    vulkan_destroy_swapchain(vk);
 
-   if (     destroy_surface 
+   if (     destroy_surface
          && (vk->vk_surface != VK_NULL_HANDLE))
    {
       vkDestroySurfaceKHR(vk->context.instance,
@@ -2570,9 +2555,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
 #ifdef ANDROID
-   /* VK_SUBOPTIMAL_KHR can be returned on 
+   /* VK_SUBOPTIMAL_KHR can be returned on
     * Android 10 when prerotate is not dealt with.
-    * This is not an error we need to care about, 
+    * This is not an error we need to care about,
     * and we'll treat it as SUCCESS. */
    if (result == VK_SUBOPTIMAL_KHR)
       result = VK_SUCCESS;

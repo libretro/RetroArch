@@ -647,8 +647,13 @@ int modeline_parse(const char *user_modeline, modeline *mode)
 
 int modeline_to_monitor_range(monitor_range *range, modeline *mode)
 {
-	range->vfreq_min = mode->vfreq - 0.2;
-	range->vfreq_max = mode->vfreq + 0.2;
+	// If Vfreq range is empty, create it around the provided vfreq
+	if (range->vfreq_min == 0.0f) range->vfreq_min = mode->vfreq - 0.2;
+	if (range->vfreq_max == 0.0f) range->vfreq_max = mode->vfreq + 0.2;
+
+	// Make sure the range includes the target vfreq
+	if (mode->vfreq < range->vfreq_min || mode->vfreq > range->vfreq_max)
+		return 0;
 
 	double line_time = 1 / mode->hfreq;
 	double pixel_time = line_time / mode->htotal * 1000000;

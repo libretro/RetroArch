@@ -1029,6 +1029,14 @@ MSG_HASH(
    "Αλλαγή ρυθμίσεων αποθήκευσης."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Όνομα Χρήστη"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "Κωδικός"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Αρχείο Καταγραφής"
    )
@@ -1164,6 +1172,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Επιλογή οδηγού χειριστηρίων."
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Οδηγός Βίντεο"
@@ -2703,16 +2712,8 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Συντελεστής Κλίμακας Μενού"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Αδιαφάνεια φόντου"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Σκίτσα"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -2822,10 +2823,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
    "Enable stdin command interface."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Ενημερωτής"
-   )
 
 /* Settings > Network > Updater */
 
@@ -2880,7 +2877,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Φορητές Λίστες Αναπαραγωγής"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -3527,18 +3524,6 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Φόρτωση"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Αποθήκευση"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Αφαίρεση"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
    "Remove shader presets of a specific type."
    )
@@ -3901,10 +3886,6 @@ MSG_HASH(
    "Δεξί Αναλογικό"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "(Κουμπί: %s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Ποντίκι 1"
    )
@@ -4044,8 +4025,8 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Χρώμα Θέματος Μενού"
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "Αναλογία Οθόνης"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
@@ -4085,6 +4066,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
    "5:3 (Στο Κέντρο)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "Αυτόματο"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
@@ -4142,36 +4127,8 @@ MSG_HASH(
    "Ενεργοποίηση οριζόντιας απεικόνισης για το μενού. Θα επηρεάσει την απόδοση."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Γραμματοσειρά Μενού"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Γραμματοσειρά Μενού Κόκκινο Χρώμα"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Γραμματοσειρά Μενού Πράσινο Χρώμα"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Γραμματοσειρά Μενού Μπλε Χρώμα"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Διάταξη Μενού"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Θέμα Εικόνων Μενού"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Select a different theme for the icon. Changes will take effect after you restart the program."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Χρώμα Θέματος Μενού"
    )
 
 /* XMB: Settings Options */
@@ -4237,10 +4194,6 @@ MSG_HASH(
    "Μεσωνύκτιο Μπλε"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Απλό"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
    "Κάτω Από Την Θάλασσα"
    )
@@ -4251,20 +4204,12 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Χρώμα Θέματος Μενού"
-   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Εικονίδια Μενού"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Χρώμα Θέματος Μενού"
+   "Εικονίδια"
    )
 
 /* MaterialUI: Settings Options */
@@ -4600,10 +4545,6 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Ενημερωτής"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Επιτεύγματα Λογαριασμού"
    )
@@ -4662,10 +4603,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
    "Έναρξη ή Συνέχιση Αναζήτησης Απάτης"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Εκκίνηση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
@@ -5602,18 +5539,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    "Φωτεινότητα Οθόνης"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "Υπερχρονισμός Κάρτας Γραφικών"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "Υπερχρονισμός ή υποχρονισμός της Κάρτας Γραφικών του Switch."
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "Υπερχρονισμός Επεξεργαστή"
@@ -5660,6 +5586,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Επιλέξτε τη ζώνη ώρας σας για να προσαρμόσετε την ημερομηνία και την ώρα στην τοποθεσία σας."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "Υπερχρονισμός Επεξεργαστή"
+   )
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 MSG_HASH(

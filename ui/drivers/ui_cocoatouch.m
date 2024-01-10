@@ -41,6 +41,7 @@
 #endif
 
 #import <AVFoundation/AVFoundation.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
@@ -56,6 +57,46 @@ static CFRunLoopObserverRef iterate_observer;
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
 
+static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
+{
+   static struct string_list *list = NULL;
+   static dispatch_once_t onceToken;
+
+   dispatch_once(&onceToken, ^{
+         union string_list_elem_attr attr;
+         attr.i = 0;
+         NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
+         NSString *primary;
+#if TARGET_OS_TV
+         primary = iconfiles[@"CFBundlePrimaryIcon"];
+#else
+         primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
+#endif
+         list = string_list_new();
+         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+
+         NSArray<NSString *> *alts;
+#if TARGET_OS_TV
+         alts = iconfiles[@"CFBundleAlternateIcons"];
+#else
+         alts = [iconfiles[@"CFBundleAlternateIcons"] allKeys];
+#endif
+         NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+         for (NSString *str in sorted)
+            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+      });
+
+   return list;
+}
+
+static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
+{
+   NSString *str;
+   if (!string_is_equal(iconName, "Default"))
+      str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
+   [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
+}
+
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
@@ -69,6 +110,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       ui_companion_cocoatouch_event_command(
             NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
+      exit(0);
       return;
    }
 
@@ -456,9 +498,24 @@ enum
    }
 }
 
+- (NSData *)pngForIcon:(NSString *)iconName
+{
+    UIImage *img;
+    NSData *png;
+    img = [UIImage imageNamed:iconName];
+    if (!img)
+        NSLog(@"could not load %@\n", iconName);
+    else
+    {
+        png = UIImagePNGRepresentation(img);
+        if (!png)
+            NSLog(@"could not get png for %@\n", iconName);
+    }
+    return png;
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   NSError *error;
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -470,7 +527,6 @@ enum
    self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
-   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
    [self refreshSystemConfig];
@@ -503,14 +559,36 @@ enum
    retroarch_main_quit();
 }
 
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+   self.bgDate = [NSDate date];
+}
+
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
    rarch_start_draw_observer();
+   NSError *error;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
+   if (settings->bools.audio_respect_silent_mode)
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   else
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+
    if (!ui_companion_start_on_boot)
       [self showGameView];
+
+#ifdef HAVE_CLOUDSYNC
+   if (self.bgDate)
+   {
+      if (   [[NSDate date] timeIntervalSinceDate:self.bgDate] > 60.0f
+          && (   !(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+              || retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)))
+         task_push_cloud_sync();
+      self.bgDate = nil;
+   }
+#endif
 }
 
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
@@ -593,6 +671,26 @@ enum
 #endif
 
 @end
+
+ui_companion_driver_t ui_companion_cocoatouch = {
+   NULL, /* init */
+   NULL, /* deinit */
+   NULL, /* toggle */
+   ui_companion_cocoatouch_event_command,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
+   NULL, /* is_active */
+   ui_companion_cocoatouch_get_app_icons,
+   ui_companion_cocoatouch_set_app_icon,
+   NULL, /* browser_window */
+   NULL, /* msg_window */
+   NULL, /* window */
+   NULL, /* application */
+   "cocoatouch",
+};
 
 int main(int argc, char *argv[])
 {
