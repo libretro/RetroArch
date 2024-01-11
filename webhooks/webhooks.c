@@ -44,7 +44,7 @@
 
 struct wb_identify_game_data_t
 {
-  struct rc_hash_iterator iterator;
+  rc_hash_iterator_t iterator;
   char* path;
   uint8_t* datacopy;
   char hash[HASH_LENGTH];
@@ -54,7 +54,7 @@ typedef struct async_http_request_t async_http_request_t;
 
 typedef void (*async_http_handler)
 (
-  struct async_http_request_t *request,
+  async_http_request_t *request,
   http_transfer_data_t *data,
   char buffer[],
   size_t buffer_size
