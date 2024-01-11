@@ -2,8 +2,8 @@
 
 #include "webhooks_progress_parser.h"
 
-const int ERROR_MESSAGE_LENGTH = 512;
-const int PROGRESS_LENGTH = 2048;
+#define ERROR_MESSAGE_LENGTH 512
+#define PROGRESS_LENGTH 2048
 
 struct wpp_game_event_t {
   unsigned int id;
