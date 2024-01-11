@@ -50,9 +50,9 @@ typedef struct wb_locals_t
   char game_progress[GAME_PROGRESS_LENGTH];
   struct rc_runtime_t runtime;
   rc_libretro_memory_regions_t memory;
-  uint console_id;
-  const rcheevos_racheevo_t const* current_achievement;
-  const rcheevos_racheevo_t const* last_achievement;
+  unsigned int console_id;
+  const rcheevos_racheevo_t* current_achievement;
+  const rcheevos_racheevo_t* last_achievement;
 } wb_locals_t;
 
 unsigned wb_peek
@@ -73,9 +73,13 @@ void webhooks_send_presence();
 
 void webhooks_on_achievements_loaded
 (
-  const rcheevos_racheevo_t const* achievements,
+  const rcheevos_racheevo_t* achievements,
   const unsigned int achievements_count
 );
-void webhooks_on_achievement_awarded(rcheevos_racheevo_t* cheevo);
+
+void webhooks_on_achievement_awarded
+(
+    rcheevos_racheevo_t* cheevo
+);
 
 #endif /* __WEBHOOKS_H */
