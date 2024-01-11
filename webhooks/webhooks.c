@@ -40,7 +40,7 @@
 //  Keeps dependency on rcheevos to reuse the triggers.
 #include "../deps/rcheevos/include/rc_runtime.h"
 
-#include "cheevos/cheevos_locals.h"
+#include "../cheevos/cheevos_locals.h"
 
 struct wb_identify_game_data_t
 {
