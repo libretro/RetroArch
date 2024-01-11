@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "webhooks.h"
 #include "webhooks_progress_parser.h"
 
 #define ERROR_MESSAGE_LENGTH 512

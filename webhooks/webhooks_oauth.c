@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <net/net_http.h>
 
+#include "webhooks.h"
 #include "webhooks_oauth.h"
+
 #include "../command.h"
 
 enum oauth_async_io_type
