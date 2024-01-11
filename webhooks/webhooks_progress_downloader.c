@@ -5,7 +5,6 @@
 #include "webhooks_oauth.h"
 
 #include "../tasks/tasks_internal.h"
-#include "rc_api_request.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
