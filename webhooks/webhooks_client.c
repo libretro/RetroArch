@@ -18,6 +18,7 @@
 #endif
 
 #include "webhooks.h"
+#include "webhooks_client.h"
 
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 
