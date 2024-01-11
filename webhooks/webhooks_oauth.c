@@ -22,7 +22,7 @@ enum oauth_async_io_type
 
 const long MAX_DEVICECODE_LENGTH = 128;
 const long MAX_USERCODE_LENGTH = 128;
-const int OAUTH_ERROR_MESSAGE_LENGTH = 512;
+constexpr int OAUTH_ERROR_MESSAGE_LENGTH = 512;
 const int OAUTH_TOKEN_LENGTH = 2048;
 
 const char* DEFAULT_CLIENT_ID = "retro_arch";
