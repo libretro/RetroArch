@@ -40,8 +40,8 @@ void webhooks_log(const char *fmt, ...);
  #define WEBHOOKS_ERR RARCH_ERR
 #endif
 
-const int HASH_LENGTH = 33;
-const int GAME_PROGRESS_LENGTH = 4096;
+#define HASH_LENGTH 33
+#define GAME_PROGRESS_LENGTH 4096
 
 typedef struct wb_locals_t
 {
