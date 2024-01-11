@@ -44,6 +44,8 @@
 #include "../cheevos/cheevos_menu.h"
 #endif
 
+#include "../webhooks/webhooks_oauth.h"
+
 #ifdef HAVE_NETWORKING
 #include <net/net_http_parse.h>
 #include "../../network/netplay/netplay.h"
