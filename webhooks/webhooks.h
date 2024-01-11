@@ -64,7 +64,11 @@ unsigned wb_peek
 
 void webhooks_initialize();
 
-void webhooks_load_game(const struct retro_game_info* info);
+void webhooks_load_game
+(
+    const struct retro_game_info* info
+);
+
 void webhooks_unload_game();
 void webhooks_reset_game();
 

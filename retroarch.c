@@ -149,6 +149,7 @@
 #include "cheevos/cheevos_menu.h"
 #endif
 
+#include "webhooks/webhooks.h"
 #include "webhooks/webhooks_oauth.h"
 
 #ifdef HAVE_TRANSLATE
