@@ -2503,4 +2503,13 @@ ifeq ($(HAVE_ODROIDGO2), 1)
          gfx/drivers/oga_gfx.o
 endif
 
+## HAVE_WEBHOOKS
+OBJ += \
+       webhooks/webhooks.o \
+       webhooks/webhooks_client.o \
+       webhooks/webhooks_oauth.o \
+       webhooks/webhooks_progress_downloader.o \
+       webhooks/webhooks_progress_parser.o \
+       webhooks/webhooks_progress_tracker.o
+
 ##################################
