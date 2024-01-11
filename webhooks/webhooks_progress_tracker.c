@@ -25,7 +25,7 @@ bool first_run = false;
 //  ---------------------------------------------------------------------------
 //  Clears the last progress
 //  ---------------------------------------------------------------------------
-wpt_clear_progress() {
+void wpt_clear_progress() {
   memset(last_progress, 0, sizeof(last_progress));
 }
 
