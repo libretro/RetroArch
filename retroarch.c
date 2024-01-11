@@ -149,6 +149,7 @@
 #include "cheevos/cheevos_menu.h"
 #endif
 
+#include "cheevos/cheevos.h"
 #include "webhooks/webhooks.h"
 #include "webhooks/webhooks_oauth.h"
 
