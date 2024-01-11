@@ -33,12 +33,13 @@
 #include "webhooks_progress_tracker.h"
 #include "webhooks_oauth.h"
 
-#include "webhooks_client.h"
-
 //  Keeps dependency on rcheevos to compute the hash of a ROM.
-#include "../deps/rcheevos/include/rc_api_runtime.h"
 //  Keeps dependency on rcheevos to reuse the triggers.
+#include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/include/rc_runtime.h"
+#include "../deps/rcheevos/include/rc_hash.h"
+
+#include "../tasks/tasks_internal.h"
 
 #include "../cheevos/cheevos_locals.h"
 
