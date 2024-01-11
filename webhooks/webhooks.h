@@ -21,7 +21,7 @@
 #include <libretro.h>
 #include <lrc_hash.h>
 
-#include "cheevos/cheevos_locals.h"
+#include "../cheevos/cheevos_locals.h"
 
 /* Define this macro to get extra-verbose log for cheevos. */
 #define WEBHOOKS_VERBOSE
