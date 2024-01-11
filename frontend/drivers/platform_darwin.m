@@ -480,6 +480,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CACHE],
          temp_dir,
          sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+
+   if (!path_is_directory(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
+      path_mkdir(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
 }
 
 static int frontend_darwin_get_rating(void)

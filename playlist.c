@@ -1676,7 +1676,6 @@ void playlist_write_file(playlist_t *playlist)
    size_t i, len;
    intfstream_t *file = NULL;
    bool compressed    = false;
-   char dir_path[PATH_MAX_LENGTH];
 
    /* Playlist will be written if any of the
     * following are true:
@@ -1692,11 +1691,6 @@ void playlist_write_file(playlist_t *playlist)
 #endif
         (playlist->old_format != playlist->config.old_format)))
       return;
-
-   fill_pathname_basedir(dir_path, playlist->config.path, sizeof(dir_path));
-   if (!path_is_directory(dir_path))
-      if (!path_mkdir(dir_path))
-         return;
 
 #if defined(HAVE_ZLIB)
    if (playlist->config.compress)
