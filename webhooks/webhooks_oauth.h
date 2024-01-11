@@ -16,7 +16,6 @@
 #ifndef __WEBHOOKS_OAUTH_H
 #define __WEBHOOKS_OAUTH_H
 
-#include "rc_api_request.h"
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
 
 void woauth_initiate_pairing();
