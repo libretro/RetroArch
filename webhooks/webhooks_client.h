@@ -16,8 +16,6 @@
 #ifndef __WEBHOOKS_CLIENT_H
 #define __WEBHOOKS_CLIENT_H
 
-#include "rc_runtime.h"
-
 void wc_send_game_event
 (
   unsigned int console_id,
