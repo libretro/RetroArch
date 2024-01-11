@@ -9036,7 +9036,11 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_APPICON_SETTINGS:
-                     build_list[i].checked = (uico_st->drv && uico_st->drv->set_app_icon);
+                     if (uico_st->drv && uico_st->drv->get_app_icons)
+                     {
+                         struct string_list *icons = uico_st->drv->get_app_icons();
+                         build_list[i].checked = icons && icons->size > 1;
+                     }
                      break;
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_onscreen_display;
