@@ -17,10 +17,13 @@
 #include "../config.h"
 #endif
 
+#include <stdio.h>
+
 #include "webhooks.h"
 #include "webhooks_client.h"
 
 #include "../deps/rcheevos/include/rc_api_runtime.h"
+#include "../deps/rcheevos/src/rapi/rc_api_common.h"
 
 //  ---------------------------------------------------------------------------
 //
@@ -65,16 +68,19 @@ static void wc_handle_http_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strlcpy(buffer, "Load aborted", sizeof(buffer));
+    strncpy(buffer, "Load aborted", sizeof(buffer));
+    buffer[sizeof(buffer)-1] = '\0';
   }
   else */if (error)
   {
-    strlcpy(buffer, error, sizeof(buffer));
+    strncpy(buffer, error, sizeof(buffer));
+    buffer[sizeof(buffer)-1] = '\0';
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strlcpy(buffer, "Server communication error", sizeof(buffer));
+    strncpy(buffer, "Server communication error", sizeof(buffer));
+    buffer[sizeof(buffer)-1] = '\0';
   }
   else if (!data->data || !data->len)
   {
@@ -90,8 +96,11 @@ static void wc_handle_http_callback
     {
       snprintf(buffer, sizeof(buffer), "HTTP error code %d", data->status);
     }
-    else /* Server sent empty response without error status code */
-      strlcpy(buffer, "No response from server", sizeof(buffer));
+    else {
+      /* Server sent empty response without error status code */
+      strncpy(buffer, "No response from server", sizeof(buffer));
+      buffer[sizeof(buffer)-1] = '\0';
+    }
   }
   else
   {
