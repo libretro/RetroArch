@@ -23,6 +23,8 @@
 
 #include "../cheevos/cheevos_locals.h"
 
+#include "../tasks/tasks_internal.h"
+
 /* Define this macro to get extra-verbose log for cheevos. */
 #define WEBHOOKS_VERBOSE
 
@@ -40,6 +42,34 @@ void webhooks_log(const char *fmt, ...);
 
 #define HASH_LENGTH 33
 #define GAME_PROGRESS_LENGTH 4096
+
+typedef struct async_http_request_t async_http_request_t;
+
+typedef void (*async_http_handler)
+(
+  async_http_request_t *request,
+  http_transfer_data_t *data,
+  char buffer[],
+  size_t buffer_size
+);
+
+typedef void (*async_client_callback)(void* userdata);
+
+struct async_http_request_t
+{
+    rc_api_request_t request;
+    async_http_handler handler;
+    async_client_callback callback;
+    void* callback_data;
+
+    //  Not used yet.
+    int id;
+    int attempt_count;
+    const char* success_message;
+    const char* failure_message;
+    const char* headers;
+    char type;
+};
 
 typedef struct wb_locals_t
 {

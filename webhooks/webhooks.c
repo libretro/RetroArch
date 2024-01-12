@@ -39,8 +39,6 @@
 #include "../deps/rcheevos/include/rc_runtime.h"
 #include "../deps/rcheevos/include/rc_hash.h"
 
-#include "../tasks/tasks_internal.h"
-
 #include "../cheevos/cheevos_locals.h"
 
 struct wb_identify_game_data_t
@@ -49,34 +47,6 @@ struct wb_identify_game_data_t
   char* path;
   uint8_t* datacopy;
   char hash[HASH_LENGTH];
-};
-
-typedef struct async_http_request_t async_http_request_t;
-
-typedef void (*async_http_handler)
-(
-  async_http_request_t *request,
-  http_transfer_data_t *data,
-  char buffer[],
-  size_t buffer_size
-);
-
-typedef void (*async_client_callback)(void* userdata);
-
-struct async_http_request_t
-{
-  rc_api_request_t request;
-  async_http_handler handler;
-  async_client_callback callback;
-  void* callback_data;
-
-  //  Not used yet.
-  int id;
-  int attempt_count;
-  const char* success_message;
-  const char* failure_message;
-  const char* headers;
-  char type;
 };
 
 //  Contains all the shared state for all the webhook modules.
