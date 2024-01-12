@@ -3,6 +3,8 @@
 #include "webhooks.h"
 #include "webhooks_progress_parser.h"
 
+#include "../deps/rcheevos/src/rapi/rc_api_common.h"
+
 #define ERROR_MESSAGE_LENGTH 512
 #define PROGRESS_LENGTH 2048
 
@@ -109,7 +111,7 @@ int wpp_parse_game_progress
       }
 
       //  Activate the trigger.
-      result = rc_runtime_activate_achievement(&locals.runtime, game_event->id, game_event->macro, NULL, 0);
+      result = rc_runtime_activate_achievement(runtime, game_event->id, game_event->macro, NULL, 0);
 
       if (result != RC_OK) {
         WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to activate the game event ID '%d'\n", game_event->id);
