@@ -42,6 +42,8 @@
 
 #include "../cheevos/cheevos_locals.h"
 
+#include "../runloop.h"
+
 struct wb_identify_game_data_t
 {
   rc_hash_iterator_t iterator;
