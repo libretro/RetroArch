@@ -493,11 +493,10 @@ const char* woauth_get_accesstoken()
   retro_time_t now = cpu_features_get_time_usec();
 
   char * e;
-  int errno = 0;
 
   retro_time_t expecting_refresh = (retro_time_t)strtoll(settings->arrays.webhook_expiresin, &e, 10);
     
-  if (*e != 0 || errno != 0) {
+  if (*e != 0) {
     //  The emulator has not been associated.
     //  Nothing can be done without any user intervention.
     WEBHOOKS_LOG(WEBHOOKS_TAG "Unable to read the expires_in from the configuration: the association must be established.\n");
