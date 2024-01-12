@@ -13834,6 +13834,10 @@ MSG_HASH(
    "No hay miniaturas disponibles"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Ya se buscaron todas las posibles miniaturas descargables para este elemento de la lista de reproducción."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Vuelve a pulsar la tecla para cerrar RetroArch..."
    )

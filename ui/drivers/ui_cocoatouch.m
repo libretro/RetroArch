@@ -536,6 +536,27 @@ enum
 
    rarch_main(argc, argv, NULL);
 
+   uico_driver_state_t *uico_st     = uico_state_get_ptr();
+   rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
+   struct string_list *icons;
+   if (appicon_setting && uico_st->drv && uico_st->drv->get_app_icons && (icons = uico_st->drv->get_app_icons()) && icons->size > 1)
+   {
+      appicon_setting->default_value.string = icons->elems[0].data;
+      int len = 0, i = 0;
+      const char *iconName = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; // need to ask uico_st for this
+      for (; i < (int)icons->size; i++)
+      {
+         len += strlen(icons->elems[i].data) + 1;
+         if (string_is_equal(iconName, icons->elems[i].data))
+            appicon_setting->value.target.string = icons->elems[i].data;
+      }
+      char *options = (char*)calloc(len, sizeof(char));
+      string_list_join_concat(options, len, icons, "|");
+      if (appicon_setting->values)
+         free((void*)appicon_setting->values);
+      appicon_setting->values = options;
+   }
+
    rarch_start_draw_observer();
 
 #if TARGET_OS_IOS

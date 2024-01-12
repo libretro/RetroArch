@@ -5038,6 +5038,10 @@ MSG_HASH(
    "Obtendo captura de ecrã"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Já foram tentadas todas as transferências de miniaturas possíveis para esta entrada de lista de reprodução."
+   )
+MSG_HASH(
    MSG_TO,
    "para"
    )
