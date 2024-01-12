@@ -94,6 +94,50 @@ unsigned wb_peek
   return 0;
 }
 
+static void* wb_on_hash_handle_file_open
+(
+  const char* path
+)
+{
+  return intfstream_open_file(path,
+        RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+}
+
+static void wb_on_hash_handle_file_seek
+(
+  void* file_handle,
+  int64_t offset,
+  int origin
+)
+{
+  intfstream_seek((intfstream_t*)file_handle, offset, origin);
+}
+
+static int64_t wb_on_hash_handle_file_tell
+(
+  void* file_handle
+)
+{
+  return intfstream_tell((intfstream_t*)file_handle);
+}
+
+static size_t wb_on_hash_handle_file_read
+(
+  void* file_handle,
+  void* buffer,
+  size_t requested_bytes
+)
+{
+  return intfstream_read((intfstream_t*)file_handle,
+        buffer, requested_bytes);
+}
+
+static void wb_on_hash_handle_file_close(void* file_handle)
+{
+  intfstream_close((intfstream_t*)file_handle);
+  CHEEVOS_FREE(file_handle);
+}
+
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
@@ -111,11 +155,11 @@ static void wh_compute_hash(const struct retro_game_info* info)
 
   /* provide hooks for reading files */
   memset(&file_reader, 0, sizeof(file_reader));
-  file_reader.open = rc_hash_handle_file_open;
-  file_reader.seek = rc_hash_handle_file_seek;
-  file_reader.tell = rc_hash_handle_file_tell;
-  file_reader.read = rc_hash_handle_file_read;
-  file_reader.close = rc_hash_handle_file_close;
+  file_reader.open = wb_on_hash_handle_file_open;
+  file_reader.seek = wb_on_hash_handle_file_seek;
+  file_reader.tell = wb_on_hash_handle_file_tell;
+  file_reader.read = wb_on_hash_handle_file_read;
+  file_reader.close = wb_on_hash_handle_file_close;
   rc_hash_init_custom_filereader(&file_reader);
 
   //rc_hash_init_error_message_callback(rcheevos_handle_log_message);
