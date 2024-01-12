@@ -14,6 +14,7 @@
 #include "webhooks_oauth.h"
 
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
+#include "../libretro-common/include/features/features_cpu.h"
 
 #include "../command.h"
 
@@ -492,7 +493,7 @@ const char* woauth_get_accesstoken()
   retro_time_t now = cpu_features_get_time_usec();
 
   char * e;
-  errno = 0;
+  int errno = 0;
 
   retro_time_t expecting_refresh = (retro_time_t)strtoll(settings->arrays.webhook_expiresin, &e, 10);
     
