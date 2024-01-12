@@ -53,16 +53,19 @@ static void wpd_send_http_request_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strlcpy(buffer, "Load aborted", sizeof(buffer));
+    strncpy(buffer, "Load aborted", sizeof(buffer));
+    buffer[size(buffer)-1] = '\0';
   }
   else*/ if (error)
   {
-    strlcpy(buffer, error, sizeof(buffer));
+    strncpy(buffer, error, sizeof(buffer));
+    buffer[size(buffer)-1] = '\0';
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strlcpy(buffer, "Server communication error", sizeof(buffer));
+    strncpy(buffer, "Server communication error", sizeof(buffer));
+    buffer[size(buffer)-1] = '\0';
   }
   else if (!data->data || !data->len)
   {
@@ -78,8 +81,11 @@ static void wpd_send_http_request_callback
     {
       snprintf(buffer, sizeof(buffer), "HTTP error code %d", data->status);
     }
-    else /* Server sent empty response without error status code */
-      strlcpy(buffer, "No response from server", sizeof(buffer));
+    else {
+      /* Server sent empty response without error status code */
+      strncpy(buffer, "No response from server", sizeof(buffer));
+      buffer[size(buffer)-1] = '\0';
+    }
   }
   else
   {

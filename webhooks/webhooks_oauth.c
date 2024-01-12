@@ -6,6 +6,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <net/net_http.h>
 
@@ -124,12 +125,14 @@ static void woauth_end_http_request
 
   if (error)
   {
-    strlcpy(buffer, error, sizeof(buffer));
+    strncpy(buffer, error, sizeof(buffer));
+    buffer[sizeof(buffer)-1] = '\0';
   }
   else if (!data)
   {
     // Server did not return HTTP headers
-    strlcpy(buffer, "Server communication error", sizeof(buffer));
+    strncpy(buffer, "Server communication error", sizeof(buffer));
+    buffer[sizeof(buffer)-1] = '\0';
   }
   else if (!data->data || !data->len)
   {
@@ -145,8 +148,11 @@ static void woauth_end_http_request
     {
       snprintf(buffer, sizeof(buffer), "Received HTTP status code %d", data->status);
     }
-    else // Server sent empty response without error status code
-      strlcpy(buffer, "No response from server", sizeof(buffer));
+    else {
+      // Server sent empty response without error status code
+      strncpy(buffer, "No response from server", sizeof(buffer));
+      buffer[sizeof(buffer)-1] = '\0';
+    }
   }
   else
   {
@@ -450,7 +456,9 @@ void woauth_initiate_pairing()
 
   WEBHOOKS_LOG(WEBHOOKS_TAG "Starting pairing device to the server\n");
 
-  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
+  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
+  oauth_code_response.client_id[sizeof(oauth_code_response.client_id)-1] = '\0';
+
   woauth_schedule_devicecode_retrieval();
 }
 
@@ -480,7 +488,8 @@ const char* woauth_get_accesstoken()
   const settings_t *settings = config_get_ptr();
   const int EXPIRATION_WINDOW = 1000 * 10 * 5;
 
-  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
+  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
+  oauth_code_response.client_id[sizeof(oauth_code_response.client_id)-1] = '\0';
 
   retro_time_t now = cpu_features_get_time_usec();
 
