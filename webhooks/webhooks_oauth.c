@@ -12,6 +12,8 @@
 #include "webhooks.h"
 #include "webhooks_oauth.h"
 
+#include "../deps/rcheevos/src/rapi/rc_api_common.h"
+
 #include "../command.h"
 
 enum oauth_async_io_type

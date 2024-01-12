@@ -37,6 +37,7 @@
 //  Keeps dependency on rcheevos to reuse the triggers.
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/include/rc_runtime.h"
+#include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_hash.h"
 
 #include "../cheevos/cheevos_locals.h"
