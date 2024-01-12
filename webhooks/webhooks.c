@@ -167,7 +167,8 @@ static void wh_compute_hash(const struct retro_game_info* info)
 
   //rc_hash_init_error_message_callback(rcheevos_handle_log_message);
 
-  rc_hash_reset_cdreader_hooks();
+  //  TODO: Ignored for now: obj-unix/release/webhooks/webhooks.o:webhooks.c:(.text+0x27f): undefined reference to `rc_hash_reset_cdreader_hooks'
+  //  rc_hash_reset_cdreader_hooks();
 
   /* fetch the first hash */
   rc_hash_initialize_iterator(&data->iterator, info->path, (uint8_t*)info->data, info->size);
