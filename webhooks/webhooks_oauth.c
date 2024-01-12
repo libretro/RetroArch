@@ -423,8 +423,6 @@ static void woauth_initialize_devicecode_request
   request->handler = (async_http_handler)woauth_handle_devicecode_response;
   request->request.url = settings->arrays.webhook_code_url;
   request->request.post_data = rc_url_builder_finalize(&builder);
-
-  rcheevos_log_post_url(request->request.url, request->request.post_data);
 }
 
 //  ------------------------------------------------------------------------------
