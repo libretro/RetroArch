@@ -5007,9 +5007,14 @@ bool config_save_autoconf_profile(const
    {
       const struct retro_keybind *bind = &input_config_binds[user][i];
       if (bind->valid)
-         input_config_save_keybind(
+      {
+         save_keybind_joykey(
                conf, "input", input_config_bind_map_get_base(i),
                bind, false);
+         save_keybind_axis(
+               conf, "input", input_config_bind_map_get_base(i),
+               bind, false);
+      }
    }
 
    ret = config_file_write(conf, autoconf_file, false);
