@@ -483,7 +483,7 @@ void webhooks_update_achievements()
 
 void webhooks_on_achievements_loaded
 (
-  const rcheevos_racheevo_t const* achievements,
+  const rcheevos_racheevo_t* achievements,
   const unsigned int achievements_count
 )
 {

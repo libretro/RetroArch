@@ -96,6 +96,7 @@ int wpp_parse_game_progress
 
     struct wpp_game_event_t* game_event = game_progress_response.game_events;
 
+    //  TODO 3rd parameter does not match!!
     while (rc_json_get_array_entry_object(events_fields, sizeof(events_fields) / sizeof(events_fields[0]), &iterator)) {
 
       if (!rc_json_get_required_unum(&game_event->id, api_response, &events_fields[0], "Id")) {

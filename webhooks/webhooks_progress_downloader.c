@@ -13,26 +13,26 @@
 //  ---------------------------------------------------------------------------
 
 
-//  ---------------------------------------------------------------------------
+// //  ---------------------------------------------------------------------------
+// //
+// //  ---------------------------------------------------------------------------
+// static void wpd_end_http_request(async_http_request_t* request)
+// {
+//   rc_api_destroy_request(&request->request);
 //
-//  ---------------------------------------------------------------------------
-static void wpd_end_http_request(async_http_request_t* request)
-{
-  rc_api_destroy_request(&request->request);
-
-  if (request->callback/* && !rcheevos_load_aborted()*/)
-    request->callback(request->callback_data);
-
-  /* rich presence request will be reused on next ping - reset the attempt
-   * counter. for all other request types, free the request object */
-  //free(request->request.url);
-  //request->request.url = NULL;
-
-  //free(request->headers);
-  //request->headers = NULL;
-
-  //free(request);
-}
+//   if (request->callback/* && !rcheevos_load_aborted()*/)
+//     request->callback(request->callback_data);
+//
+//   /* rich presence request will be reused on next ping - reset the attempt
+//    * counter. for all other request types, free the request object */
+//   //free(request->request.url);
+//   //request->request.url = NULL;
+//
+//   //free(request->headers);
+//   //request->headers = NULL;
+//
+//   //free(request);
+// }
 
 //  ---------------------------------------------------------------------------
 //

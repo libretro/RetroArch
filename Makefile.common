@@ -2504,6 +2504,7 @@ ifeq ($(HAVE_ODROIDGO2), 1)
 endif
 
 ## HAVE_WEBHOOKS
+INCLUDE_DIRS += -Iwebhooks
 OBJ += \
        webhooks/webhooks.o \
        webhooks/webhooks_client.o \

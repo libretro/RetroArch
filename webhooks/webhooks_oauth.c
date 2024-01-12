@@ -56,11 +56,11 @@ bool is_pairing;
 static void woauth_schedule_accesstoken_retrieval();
 static void woauth_trigger_accesstoken_retrieval();
 
-static void woauth_end_pairing()
-{
-  is_pairing = false;
-  command_event(CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION, NULL);
-}
+// static void woauth_end_pairing()
+// {
+//   is_pairing = false;
+//   command_event(CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION, NULL);
+// }
 
 //  ------------------------------------------------------------------------------
 //  Drops the User Code from the configuration.
@@ -93,21 +93,21 @@ static void woauth_schedule_accesstoken_retrieval()
   task_queue_push(retry_task);
 }
 
-//  ------------------------------------------------------------------------------
-//  Clears the memory from the request.
-//  ------------------------------------------------------------------------------
-static void woauth_free_request
-(
-  async_http_request_t* request
-)
-{
-  rc_api_destroy_request(&request->request);
-
-  if (request->callback)
-    request->callback(request->callback_data);
-
-  free(request);
-}
+// //  ------------------------------------------------------------------------------
+// //  Clears the memory from the request.
+// //  ------------------------------------------------------------------------------
+// static void woauth_free_request
+// (
+//   async_http_request_t* request
+// )
+// {
+//   rc_api_destroy_request(&request->request);
+//
+//   if (request->callback)
+//     request->callback(request->callback_data);
+//
+//   free(request);
+// }
 
 //  ------------------------------------------------------------------------------
 //  Handles the HTTP response.
