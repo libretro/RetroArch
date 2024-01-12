@@ -1,7 +1,7 @@
 #ifndef RC_API_COMMON_H
 #define RC_API_COMMON_H
 
-#include "rc_api_request.h"
+#include "../../include/rc_api_request.h"
 
 #include <stddef.h>
 #include <time.h>
