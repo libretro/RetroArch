@@ -5044,7 +5044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用しているときの水平オーバーレイオフセットです。正の値はオーバーレイを右に移動させ、負の値は左に移動させます。"
+   "横向きの表示方向を使用しているときの水平オーバーレイオフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -5052,7 +5052,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用しているときの垂直オーバーレイオフセットです。正の値はオーバーレイを上に移動させ、負の値は下に移動させます。"
+   "横向きの表示方向を使用しているときの垂直オーバーレイオフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
