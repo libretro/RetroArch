@@ -56,7 +56,7 @@ int wpt_process_frame(rc_runtime_t* runtime)
   rc_richpresence_t* richpresence = runtime_richpresence->richpresence;
 
   //
-  rc_richpresence_display_t* new_display;
+  rc_richpresence_display_t* new_display = NULL;
 
   //  This is needed to support all the rich presences defined with Retro Achievement.
   //  For the webhooks, there should not be multiple displays needed but only one.
@@ -67,39 +67,45 @@ int wpt_process_frame(rc_runtime_t* runtime)
     }
   }
 
-  rc_richpresence_display_part_t* new_display_part = new_display->display;
+  rc_richpresence_display_part_t* new_display_part = NULL;
+
+  if(new_display != NULL)
+    new_display_part = new_display->display;
 
   int charactersWritten = 0;
   int frame_progress_position = 0;
 
-  for (; new_display_part; new_display_part = new_display_part->next) {
+  if(new_display_part != NULL)
+  {
+    for (; new_display_part; new_display_part = new_display_part->next) {
 
-    rc_typed_value_t new_value;
+      rc_typed_value_t new_value;
 
-    switch (new_display_part->display_type) {
+      switch (new_display_part->display_type) {
       case 101: //RC_FORMAT_STRING:
         charactersWritten = sprintf(&frame_progress[frame_progress_position], "%s", new_display_part->text);
         frame_progress_position += charactersWritten;
-      break;
+        break;
       case 102: //RC_FORMAT_LOOKUP:
         //  LOOKUPs are kept for Retro Achievement's Rich Presence support.
       default:
         if (new_display_part->value != NULL) {
           rc_typed_value_from_memref_value(&new_value, new_display_part->value);
           switch(new_value.type) {
-            case RC_VALUE_TYPE_UNSIGNED:
-              charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.u32);
-              break;
-            case RC_VALUE_TYPE_SIGNED:
-              charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.i32);
-              break;
-            case RC_VALUE_TYPE_FLOAT:
-              charactersWritten = sprintf(&frame_progress[frame_progress_position], "%.2f", new_value.value.f32);
-              break;
+          case RC_VALUE_TYPE_UNSIGNED:
+            charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.u32);
+            break;
+          case RC_VALUE_TYPE_SIGNED:
+            charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.i32);
+            break;
+          case RC_VALUE_TYPE_FLOAT:
+            charactersWritten = sprintf(&frame_progress[frame_progress_position], "%.2f", new_value.value.f32);
+            break;
           }
           frame_progress_position += charactersWritten;
         }
         break;
+      }
     }
   }
 
