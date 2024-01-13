@@ -188,7 +188,7 @@
 		053FC25521433F1700D98D46 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = /usr/local/opt/qt/lib/QtConcurrent.framework; sourceTree = "<group>"; };
 		053FC25621433F1800D98D46 /* QtNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtNetwork.framework; path = /usr/local/opt/qt/lib/QtNetwork.framework; sourceTree = "<group>"; };
 		053FC25721433F1800D98D46 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = /usr/local/opt/qt/lib/QtWidgets.framework; sourceTree = "<group>"; };
-		05422E592140C8DB00F09961 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		05422E592140C8DB00F09961 /* RetroArch for Play Lab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch for Play Lab.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		05422E5C2140CFC500F09961 /* Metal.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Metal.xcconfig; sourceTree = "<group>"; };
 		0548E2B320F976E10094A083 /* dynamic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dynamic.c; path = ../../dynamic.c; sourceTree = "<group>"; };
 		0548E2B420F976E10094A083 /* dynamic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dynamic.h; path = ../../dynamic.h; sourceTree = "<group>"; };
@@ -1383,7 +1383,7 @@
 			isa = PBXGroup;
 			children = (
 				8D1107320486CEB800E47090 /* RetroArch.app */,
-				05422E592140C8DB00F09961 /* RetroArch.app */,
+				05422E592140C8DB00F09961 /* RetroArch for Play Lab.app */,
 				0720996029B1258C001642BB /* RetroArch.app */,
 			);
 			name = Products;
@@ -1489,7 +1489,7 @@
 			name = RetroArchQt;
 			productInstallPath = "$(HOME)/Applications";
 			productName = RetroArch;
-			productReference = 05422E592140C8DB00F09961 /* RetroArch.app */;
+			productReference = 05422E592140C8DB00F09961 /* RetroArch for Play Lab.app */;
 			productType = "com.apple.product-type.application";
 		};
 		0720993B29B1258C001642BB /* RetroArchSteam */ = {

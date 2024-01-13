@@ -34,6 +34,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -109,7 +110,8 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
-									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
+                                    <listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
@@ -219,6 +221,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -288,6 +291,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -401,6 +405,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -470,6 +475,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -580,6 +586,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
@@ -649,6 +656,7 @@
 									<listOptionValue builtIn="false" value="HAVE_CORE_INFO_CACHE"/>
 									<listOptionValue builtIn="false" value="HAVE_LIBRETRODB"/>
 									<listOptionValue builtIn="false" value="HAVE_CHEEVOS"/>
+									<listOptionValue builtIn="false" value="HAVE_WEBHOOKS"/>
 									<listOptionValue builtIn="false" value="HAVE_FREETYPE"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
 									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>

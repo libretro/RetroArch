@@ -173,6 +173,7 @@ endif
       WANT_LIBFAT = 1
       WANT_IOSUHAX = 1
       HAVE_CORE_INFO_CACHE = 1
+      HAVE_WEBHOOKS = 1
 
       include Makefile.common
       DEFINES += $(DEF_FLAGS)
