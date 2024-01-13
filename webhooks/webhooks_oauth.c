@@ -7,7 +7,7 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 #include <net/net_http.h>
 
 #include "include/webhooks.h"

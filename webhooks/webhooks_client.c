@@ -2,7 +2,7 @@
 #include "../config.h"
 #endif
 
-#include <stdio.h>
+#include <string.h>
 
 #include "include/webhooks.h"
 #include "include/webhooks_client.h"

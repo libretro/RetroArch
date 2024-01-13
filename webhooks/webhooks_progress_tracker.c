@@ -7,7 +7,7 @@
 
 #include "rc_runtime_types.h"
 
-#include <stdbool.h>
+#include <string.h>
 
 typedef struct progress_t progress_t;
 
@@ -92,15 +92,15 @@ int wpt_process_frame(rc_runtime_t* runtime)
         if (new_display_part->value != NULL) {
           rc_typed_value_from_memref_value(&new_value, new_display_part->value);
           switch(new_value.type) {
-          case RC_VALUE_TYPE_UNSIGNED:
-            charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.u32);
-            break;
-          case RC_VALUE_TYPE_SIGNED:
-            charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.i32);
-            break;
-          case RC_VALUE_TYPE_FLOAT:
-            charactersWritten = sprintf(&frame_progress[frame_progress_position], "%.2f", new_value.value.f32);
-            break;
+            case RC_VALUE_TYPE_UNSIGNED:
+              charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.u32);
+              break;
+            case RC_VALUE_TYPE_SIGNED:
+              charactersWritten = sprintf(&frame_progress[frame_progress_position], "0x%X", new_value.value.i32);
+              break;
+            case RC_VALUE_TYPE_FLOAT:
+              charactersWritten = sprintf(&frame_progress[frame_progress_position], "%.2f", new_value.value.f32);
+              break;
           }
           frame_progress_position += charactersWritten;
         }
