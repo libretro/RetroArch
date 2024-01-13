@@ -1,6 +1,8 @@
 #ifndef __WEBHOOKS_PROGRESS_DOWNLOADER_H
 #define __WEBHOOKS_PROGRESS_DOWNLOADER_H
 
+RETRO_BEGIN_DECLS
+
 typedef void (*on_game_progress_downloaded_t)
 (
   wb_locals_t* locals,

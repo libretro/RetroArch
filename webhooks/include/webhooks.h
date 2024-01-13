@@ -42,6 +42,8 @@ void webhooks_log(const char *fmt, ...);
 #define HASH_LENGTH 33
 #define GAME_PROGRESS_LENGTH 4096
 
+RETRO_BEGIN_DECLS
+
 typedef struct async_http_request_t async_http_request_t;
 
 typedef void (*async_http_handler)
@@ -112,5 +114,7 @@ void webhooks_on_achievement_awarded
 (
     rcheevos_racheevo_t* cheevo
 );
+
+RETRO_END_DECLS
 
 #endif /* __WEBHOOKS_H */
