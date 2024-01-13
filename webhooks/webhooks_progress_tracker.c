@@ -117,8 +117,7 @@ int wpt_process_frame(rc_runtime_t* runtime)
   first_run = false;
   
   if (state_changed) {
-    strncpy(last_progress, frame_progress, 2047);
-    last_progress[2047] = '\0';
+    strlcpy(last_progress, frame_progress, 2047);
     return PROGRESS_UPDATED;
   }
 

@@ -129,14 +129,12 @@ static void woauth_end_http_request
 
   if (error)
   {
-    strncpy(buffer, error, sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, error, sizeof(buffer));
   }
   else if (!data)
   {
     // Server did not return HTTP headers
-    strncpy(buffer, "Server communication error", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Server communication error", sizeof(buffer));
   }
   else if (!data->data || !data->len)
   {
@@ -154,8 +152,7 @@ static void woauth_end_http_request
     }
     else {
       // Server sent empty response without error status code
-      strncpy(buffer, "No response from server", sizeof(buffer));
-      buffer[sizeof(buffer)-1] = '\0';
+      strlcpy(buffer, "No response from server", sizeof(buffer));
     }
   }
   else
@@ -458,8 +455,7 @@ void woauth_initiate_pairing()
 
   WEBHOOKS_LOG(WEBHOOKS_TAG "Starting pairing device to the server\n");
 
-  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
-  oauth_code_response.client_id[sizeof(oauth_code_response.client_id)-1] = '\0';
+  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
 
   woauth_schedule_devicecode_retrieval();
 }
@@ -490,8 +486,7 @@ const char* woauth_get_accesstoken()
   const settings_t *settings = config_get_ptr();
   const int EXPIRATION_WINDOW = 1000 * 10 * 5;
 
-  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
-  oauth_code_response.client_id[sizeof(oauth_code_response.client_id)-1] = '\0';
+  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
 
   retro_time_t now = cpu_features_get_time_usec();
 

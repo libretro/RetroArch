@@ -54,19 +54,16 @@ static void wc_handle_http_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strncpy(buffer, "Load aborted", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Load aborted", sizeof(buffer));
   }
   else */if (error)
   {
-    strncpy(buffer, error, sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, error, sizeof(buffer));
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strncpy(buffer, "Server communication error", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Server communication error", sizeof(buffer));
   }
   else if (!data->data || !data->len)
   {
@@ -84,8 +81,7 @@ static void wc_handle_http_callback
     }
     else {
       /* Server sent empty response without error status code */
-      strncpy(buffer, "No response from server", sizeof(buffer));
-      buffer[sizeof(buffer)-1] = '\0';
+      strlcpy(buffer, "No response from server", sizeof(buffer));
     }
   }
   else
@@ -308,8 +304,8 @@ static void wc_set_request_header
     return;
   }
 
-  strncpy(headers, authorization_header, auth_header_len);
-  strncpy(headers + auth_header_len, access_token, token_len);
+  strlcpy(headers, authorization_header, auth_header_len);
+  strlcpy(headers + auth_header_len, access_token, token_len);
 
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';
