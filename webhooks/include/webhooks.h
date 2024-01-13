@@ -112,7 +112,7 @@ void webhooks_on_achievements_loaded
 
 void webhooks_on_achievement_awarded
 (
-    rcheevos_racheevo_t* cheevo
+  const rcheevos_racheevo_t* cheevo
 );
 
 RETRO_END_DECLS
