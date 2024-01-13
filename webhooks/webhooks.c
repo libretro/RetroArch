@@ -315,8 +315,9 @@ static void wb_check_game_events
 )
 {
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
-  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
-    struct rc_trigger_t* trigger = triggers->trigger;
+
+  for (uint32_t trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    rc_trigger_t* trigger = triggers->trigger;
     int result = rc_evaluate_trigger(trigger, &wb_peek, NULL, 0);
 
     if (result == RC_TRIGGER_STATE_TRIGGERED) {
@@ -332,8 +333,8 @@ static void wb_check_game_events
 static void wb_reset_game_events()
 {
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
-  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
-    struct rc_trigger_t* trigger = triggers->trigger;
+  for (uint32_t trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    rc_trigger_t* trigger = triggers->trigger;
     rc_reset_trigger(trigger);
   }
 }
@@ -370,7 +371,8 @@ void webhooks_load_game
   WEBHOOKS_LOG(WEBHOOKS_TAG "New game loaded: %s\n", info->path);
 
   frame_counter = 0;
-  retro_time_t time = cpu_features_get_time_usec();
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wh_compute_hash(info);
 
@@ -392,7 +394,7 @@ void webhooks_unload_game()
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been unloaded\n");
 
-  retro_time_t time = cpu_features_get_time_usec();
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wc_send_game_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 
@@ -407,7 +409,8 @@ void webhooks_reset_game()
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been reset\n");
 
   frame_counter = 0;
-  retro_time_t time = cpu_features_get_time_usec();
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wb_reset_game_events();
 
@@ -424,7 +427,8 @@ void webhooks_reset_game()
 void webhooks_process_frame()
 {
   frame_counter++;
-  retro_time_t time = cpu_features_get_time_usec();
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wb_check_game_events(frame_counter, time);
 
@@ -436,6 +440,8 @@ void webhooks_update_achievements()
   int number_of_active  = 0;
   
   int total_number      = 0;
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   //  Only deals with supported & official achievements.
   const rcheevos_racheevo_t* current_achievement = locals.current_achievement;
