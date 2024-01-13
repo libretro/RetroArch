@@ -45,7 +45,7 @@
 #endif
 
 #ifdef HAVE_WEBHOOKS
-#include "../webhooks/webhooks_oauth.h"
+#include "../webhooks/include/webhooks_oauth.h"
 #endif
 
 #ifdef HAVE_NETWORKING
