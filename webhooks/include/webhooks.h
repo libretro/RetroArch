@@ -16,12 +16,11 @@
 #ifndef __WEBHOOKS_H
 #define __WEBHOOKS_H
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <libretro.h>
-#include <lrc_hash.h>
 
+#ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos_locals.h"
+#endif
 
 #include "../tasks/tasks_internal.h"
 

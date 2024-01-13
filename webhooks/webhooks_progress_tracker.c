@@ -1,12 +1,12 @@
-#include "webhooks_progress_tracker.h"
-#include "webhooks.h"
+#include "include/webhooks_progress_tracker.h"
+
+#include "include/webhooks.h"
 
 #include "../deps/rcheevos/src/rcheevos/rc_internal.h"
 #include "../deps/rcheevos/src/rc_compat.h"
 
 #include "rc_runtime_types.h"
 
-#include <ctype.h>
 #include <stdbool.h>
 
 typedef struct progress_t progress_t;

@@ -2200,7 +2200,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_WEBHOOKS), 1)
        DEFINES += -DHAVE_WEBHOOKS
-       INCLUDE_DIRS += -Iwebhooks
+       INCLUDE_DIRS += -Iwebhooks/include
        OBJ += \
              webhooks/webhooks.o \
              webhooks/webhooks_client.o \

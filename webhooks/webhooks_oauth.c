@@ -10,10 +10,13 @@
 #include <stdlib.h>
 #include <net/net_http.h>
 
-#include "webhooks.h"
-#include "webhooks_oauth.h"
+#include "include/webhooks.h"
+#include "include/webhooks_oauth.h"
 
+#ifdef HAVE_CHEEVOS
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
+#endif
+
 #include "../libretro-common/include/features/features_cpu.h"
 
 #include "../command.h"

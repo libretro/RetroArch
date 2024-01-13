@@ -192,7 +192,7 @@ INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
 endif
 
 ifeq ($(HAVE_WEBHOOKS),1)
-INCLUDE_DIRS += -Iwebhooks
+INCLUDE_DIRS += -Iwebhooks/include
 endif
 
 LOCAL_CFLAGS     += $(INCLUDE_DIRS)

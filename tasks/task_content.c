@@ -78,7 +78,7 @@
 #endif
 
 #ifdef HAVE_WEBHOOKS
-#include "../webhooks/webhooks.h"
+#include "../webhooks/include/webhooks.h"
 #endif
 
 #include "task_content.h"

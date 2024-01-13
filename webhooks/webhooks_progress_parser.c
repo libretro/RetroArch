@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#include "webhooks.h"
-#include "webhooks_progress_parser.h"
+#include "include/webhooks.h"
+#include "include/webhooks_progress_parser.h"
 
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
 

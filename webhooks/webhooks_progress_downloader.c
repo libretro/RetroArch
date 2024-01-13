@@ -1,8 +1,8 @@
 #include <stdio.h>
 
-#include "webhooks.h"
-#include "webhooks_progress_downloader.h"
-#include "webhooks_oauth.h"
+#include "include/webhooks.h"
+#include "include/webhooks_progress_downloader.h"
+#include "include/webhooks_oauth.h"
 
 #include "../tasks/tasks_internal.h"
 
