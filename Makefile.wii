@@ -162,8 +162,9 @@ HAVE_XMB                 := 0
 HAVE_OZONE               := 0
 HAVE_RGUI                := 1
 HAVE_MATERIALUI          := 0
+HAVE_CHEEVOS             := 1
 
-CFLAGS      += -DHAVE_SOCKET_LEGACY
+CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
@@ -174,6 +175,7 @@ endif
 
 INCLUDE += -I./libretro-common/include \
            -Ideps \
+	   -Ideps/rcheevos/include \
            -Ideps/stb
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
