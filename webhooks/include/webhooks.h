@@ -91,18 +91,32 @@ unsigned wb_peek
   void* ud
 );
 
-void webhooks_initialize();
+void webhooks_initialize
+(
+  void
+);
 
 void webhooks_load_game
 (
     const struct retro_game_info* info
 );
 
-void webhooks_unload_game();
-void webhooks_reset_game();
+void webhooks_unload_game(
+  void
+);
 
-void webhooks_process_frame();
-void webhooks_send_presence();
+void webhooks_reset_game(
+  void
+);
+
+void webhooks_process_frame(
+  void
+);
+
+void webhooks_send_presence
+(
+  void
+);
 
 void webhooks_on_achievements_loaded
 (
