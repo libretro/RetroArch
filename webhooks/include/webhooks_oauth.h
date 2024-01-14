@@ -3,13 +3,25 @@
 
 RETRO_BEGIN_DECLS
 
-void woauth_initiate_pairing();
+void woauth_initiate_pairing
+(
+  void
+);
 
-bool woauth_is_pairing();
+bool woauth_is_pairing
+(
+  void
+);
 
-void woauth_abort_pairing();
+void woauth_abort_pairing
+(
+  void
+);
 
-const char* woauth_get_accesstoken();
+const char* woauth_get_accesstoken
+(
+  void
+);
 
 RETRO_END_DECLS
 

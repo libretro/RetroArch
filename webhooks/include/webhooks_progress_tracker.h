@@ -8,9 +8,15 @@ enum {
     PROGRESS_UPDATED = 1
 };
 
-const char* wpt_get_last_progress();
+const char* wpt_get_last_progress
+(
+  void
+);
 
-void wpt_clear_progress();
+void wpt_clear_progress
+(
+  void
+);
 
 int wpt_process_frame
 (
