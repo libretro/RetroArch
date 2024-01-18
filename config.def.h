@@ -177,6 +177,12 @@
 
 #define DEFAULT_GAMEMODE_ENABLE true
 
+#ifdef HAVE_LAKKA_SWITCH
+#define DEFAULT_SWITCH_OC false
+#define DEFAULT_SWITCH_CEC true
+#define DEFAULT_BLUETOOTH_ERTM false
+#endif
+
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
 #define DEFAULT_MOUSE_ENABLE true
 #else
@@ -311,7 +317,7 @@
 /* Number of threads to use for video recording */
 #define DEFAULT_VIDEO_RECORD_THREADS 2
 
-#if defined(RARCH_CONSOLE) || defined(__APPLE__)
+#if defined(RARCH_CONSOLE)
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN false
 #else
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
@@ -384,6 +390,9 @@
 #define DEFAULT_FRAME_DELAY 0
 #define MAXIMUM_FRAME_DELAY 19
 #define DEFAULT_FRAME_DELAY_AUTO false
+
+/* Try to sleep the spare time after frame is presented in order to reduce vsync CPU usage. */
+#define DEFAULT_FRAME_REST false
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
@@ -690,8 +699,10 @@
 #ifdef HAVE_MIST
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
+#if 0
+/* Thumbnailpack removal */
 #define DEFAULT_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER false
-
+#endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
@@ -788,7 +799,7 @@
 #endif
 
 #define DEFAULT_MENU_FRAMEBUFFER_OPACITY 0.900f
-#define DEFAULT_MENU_WALLPAPER_OPACITY 0.300f
+#define DEFAULT_MENU_WALLPAPER_OPACITY 0.900f
 #define DEFAULT_MENU_FOOTER_OPACITY 1.000f
 #define DEFAULT_MENU_HEADER_OPACITY 1.000f
 
@@ -1031,7 +1042,7 @@
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true
 
 /* Display a notification when applying an
- * IPS/BPS/UPS patch file */
+ * IPS/BPS/UPS/Xdelta patch file */
 #define DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED true
 
 /* Display a notification when loading an
@@ -1090,6 +1101,9 @@
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #define DEFAULT_INPUT_RATE  32730
+#elif defined(EMSCRIPTEN)
+#define DEFAULT_OUTPUT_RATE 44100
+#define DEFAULT_INPUT_RATE  44100
 #else
 #define DEFAULT_OUTPUT_RATE 48000
 #define DEFAULT_INPUT_RATE  48000
@@ -1138,7 +1152,12 @@
 #define DEFAULT_WASAPI_EXCLUSIVE_MODE false
 #define DEFAULT_WASAPI_FLOAT_FORMAT false
 /* Automatic shared mode buffer */
-#define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
+#define DEFAULT_WASAPI_SH_BUFFER_LENGTH 0
+#endif
+
+#if TARGET_OS_IOS
+/* Respect silent mode (false will render audio in silent mode) */
+#define DEFAULT_AUDIO_RESPECT_SILENT_MODE true
 #endif
 
 /* Automatically mute audio when fast forward
@@ -1421,6 +1440,8 @@
 
 #define DEFAULT_SCAN_WITHOUT_CORE_MATCH false
 
+#define DEFAULT_SCAN_SERIAL_AND_CRC false
+
 #ifdef __WINRT__
 /* Be paranoid about WinRT file I/O performance, and leave this disabled by
  * default */
@@ -1438,6 +1459,8 @@
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
 
 #define DEFAULT_PLAYLIST_PORTABLE_PATHS false
+
+#define DEFAULT_PLAYLIST_USE_FILENAME false
 
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
@@ -1492,6 +1515,13 @@
 #define DEFAULT_TURBO_DUTY_CYCLE 3
 #define DEFAULT_TURBO_MODE 0
 #define DEFAULT_TURBO_DEFAULT_BTN RETRO_DEVICE_ID_JOYPAD_B
+#define DEFAULT_ALLOW_TURBO_DPAD false
+
+#if TARGET_OS_IPHONE
+#define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE false
+#else
+#define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE true
+#endif
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
@@ -1523,7 +1553,7 @@
 #endif
 
 #define DEFAULT_INPUT_BIND_TIMEOUT 3
-#define DEFAULT_INPUT_BIND_HOLD 1
+#define DEFAULT_INPUT_BIND_HOLD 0
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 
@@ -1582,7 +1612,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL
@@ -1741,7 +1771,13 @@
 
 #define DEFAULT_AI_SERVICE_MODE 1
 
+#define DEFAULT_AI_SERVICE_TEXT_POSITION 0
+#define DEFAULT_AI_SERVICE_TEXT_PADDING 5
+
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
+
+#define DEFAULT_AI_SERVICE_POLL_DELAY 0
+#define MAXIMUM_AI_SERVICE_POLL_DELAY 500
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 #define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true

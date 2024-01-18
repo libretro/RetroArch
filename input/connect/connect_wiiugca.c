@@ -135,7 +135,7 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
    if (!pad || axis_data.axis >= 4)
       return 0;
    if (pad->datatype == GCA_TYPE_PAD)
-      return gamepad_get_axis_value(pad->analog, &axis_data);
+      return gamepad_get_axis_value_raw(pad->analog, &axis_data, false);
    return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
 }
 

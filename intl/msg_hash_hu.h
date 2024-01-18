@@ -1470,7 +1470,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Az udev bemeneti illesztő a mostani evdev joypad API-t használja a joystick támogatáshoz. A menet közbeni csatlakoztatás és a force feedback is támogatott.\nAz illesztő a billentyűzet eseményeket evdev eseményként olvassa. Támogatja a billentyűzet callback-et, egeret és touchpadet.\nA legtöbb disztribúción a /dev/input bejegyzések csak root által használhatók (mode 600). Egy udev szabállyal ezeket nem-root felhasználók számára is elérhetővé lehet tenni."
+   "Az udev bemeneti illesztő a billentyűzet eseményeket evdev eseményként olvassa. Támogatja a billentyűzet callback-et, egeret és touchpadet.\nA legtöbb disztribúción a /dev/input bejegyzések csak root által használhatók (mode 600). Egy udev szabállyal ezeket nem-root felhasználók számára is elérhetővé lehet tenni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
@@ -1488,6 +1488,35 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "A használt kontroller illesztő."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "DirectInput bemeneti illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Alacsonyszintű Human Interface Device illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Közvetlen Linux illesztő, a korábbi joystick API használatával. Az udev használata javasolt helyette."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux illesztő a párhuzamos portra, különleges adapterekkel csatlakoztatott kontrollerekhez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Az SDL könyvtárakra épülő kontroller illesztő."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Az udev kontroller illesztő a mostani evdev joypad API-t használja a joystick támogatáshoz. A menet közbeni csatlakoztatás és a force feedback is támogatott.\nA legtöbb disztribúción a /dev/input bejegyzések csak root által használhatók (mode 600). Egy udev szabállyal ezeket nem-root felhasználók számára is elérhetővé lehet tenni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput kontroller illesztő. Leginkább az XBox kontrollerekhez."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Videó"
@@ -1927,7 +1956,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "A teljes képernyő kiterjesztése a bevágásra Android eszközökön"
+   "A teljes képernyő kiterjesztése a bevágásra Android és iOS eszközökön"
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -2562,6 +2591,14 @@ MSG_HASH(
    "A hangkeverőből jövő hang némítása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Csendes mód figyelembevétele"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Minden hang letiltása Csendes módban."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "Hang kikapcsolása gyorsításkor"
    )
@@ -3169,6 +3206,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "Alapértelmezett gomb a \"Single Button\" turbó módhoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Turbó iránygombok engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Bekapcsolva a digitális iránybemenetek (d-pad, hatswitch) is kiválaszthatóak turbó módban."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -5453,6 +5498,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "A menüképernyő kinézete."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Az alkalmazás ikonja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Alkalmazásikon megváltoztatása."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
@@ -6368,7 +6421,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Háttérkép beállítása a menühöz."
+   "A menu hátterében látható kép. A kézzel vagy dinamikusan megadott képek felülírják a színtémát."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -6461,9 +6514,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "Az AI szolgáltatás eredménye"
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "A fordítást szöveges rátétként jelenítse-e meg (Kép mód), vagy olvassa fel (Beszéd mód)."
+   "Fordítás megjelenítése képrátétként (Kép mód), közvetlen hangként (Beszéd), felolvasott szöveként (Narrátor), vagy szöveges rátétként (Szöveg)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -6504,6 +6557,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "A fordítási szolgáltatás célnyelve. \"Alapértelmezett\" az angol."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
+   "Az AI szolgáltatás lekérdezési késleltetése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_POLL_DELAY,
+   "Az automatikus hívások közti minimális késleltetés. Lassítja a reakcióidőt, de növeli a CPU teljesítményt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
+   "Az AI szolgáltatás szöveg helyzetének felülbírálata"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_POSITION,
+   "A rátét pozíciójának felülbírálása, amikor a szolgáltatás Szöveges módban van."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
+   "Az AI szolgáltatás szövegének kitöltése (%)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
+   "A szöveges rátét függőleges kitöltése, amikor a szolgáltatás Szöveges módban van. Nagyobb kitöltés a szöveget a képernyő közepe felé mozdítja."
    )
 
 /* Settings > Accessibility */
@@ -7289,6 +7366,14 @@ MSG_HASH(
    "A tartalom beolvasása és játéklistához adása anélkül, hogy lenne azt támogató mag telepítve."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "CRC ellenőrzés duplikált azonosítók esetén"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Az ISO fájlok sorozatszáma néha megegyezik, különösen a PSP/PSN lemezeknél. Ilyenkor ha a beolvasó csak a sorozatszámra hagyatkozik, rossz rendszert társíthat a tartalomhoz. A CRC ellenőrzést bekapcsolva a beolvasás jóval lassabb, de pontosabb lehet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Játéklisták kezelése"
    )
@@ -7305,6 +7390,14 @@ MSG_HASH(
    "Bekapcsolt állapotban, ha a fájlböngésző könyvtára is ki van választva, ennek értékét eltárolja a játéklistába. Ha más rendszeren töltik be a játéklistát, ahol ez a lehetőség ugyancsak engedélyezve van, a játéklista elérési útjait automatikusan hozzáigazítja a fájlböngésző könyvtárához, ha nem ugyanaz az értéke."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   "Fájlnevek használata a bélyegképek párosításához"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "Bekapcsolva a bélyegképek keresése a bejegyzés fájlneve alapján történik, a címke helyett."
+   )
+   MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Kezelés"
    )
@@ -9156,7 +9249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Betöltés"
+   "Preset betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -9168,23 +9261,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Hozzáadás az elejére"
+   "Preset beszúrása az elejére"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "A preset beszúrása a jelenleg betöltött elé"
+   "A preset beszúrása a jelenleg betöltött elé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Hozzáadás a végére"
+   "Preset hozzáadás a végére"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "A preset beszúrása a jelenleg betöltött mögé"
+   "A preset beszúrása a jelenleg betöltött mögé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Mentés"
+   "Preset mentése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
@@ -9192,7 +9285,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Eltávolítás"
+   "Preset eltávolítása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
@@ -9472,6 +9565,22 @@ MSG_HASH(
    "A trófeák Hardcore módjának visszaállítása. Ezáltal nem lesz elérhető a játékállás mentés, a csalások, a visszatekerés, a lassítás és az újraindítás."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "A RetroAchievements kiszolgáló nem elérhető"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "Egy vagy több trófea feloldását nem sikerült beküldeni a kiszolgálónak. A beküldés mindaddig újra lesz próbálva, amíg az alkalmazás nyitva marad."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "A RetroAchievements kiszolgáló nem elérhető. A beküldés mindaddig újra lesz próbálva, amíg nem sikerül, vagy az alkalmazás nyitva marad."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "A függőben maradt RetroAchievements kiszolgáló kérések szinkronizálása sikeres."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Nincs bejelentkezve"
 )
@@ -9691,6 +9800,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Narrátor mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE,
+   "Szöveges mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE,
+   "Szöveg + narrátor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE,
+   "Kép + narrátor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
+   "Felfordítás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
+   "Felül"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -11685,7 +11814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Futtatás"
+   "Lejátszás a médialejátszóval"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
@@ -12224,6 +12353,22 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Mag telepítése sikertelen"
    )
 MSG_HASH(
+   MSG_AI_VIDEO_DRIVER_NOT_SUPPORTED,
+   "Az AI szolgáltatás nem támogatja ezt a videomeghajtót."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_ENABLED,
+   "Automatikus fordítás engedélyezve."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_DISABLED,
+   "Automatikus fordítás letiltva."
+   )
+MSG_HASH(
+   MSG_AI_NOTHING_TO_TRANSLATE,
+   "Nincs mit lefordítani."
+   )
+MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Nyomja meg a jobbra gombot ötször minden csalás törléséhez."
    )
@@ -12679,6 +12824,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "A tartalmak CRC32-je eltér. Nem lehet eltérő játékokat használni."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "A kiszolgáló eltérő játékot futtat."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
@@ -13451,6 +13600,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Nincs elérhető bélyegkép"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "A játéklista ezen eleméhez már az összes bélyegkép letöltési opció végig volt próbálva."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -14327,6 +14480,14 @@ MSG_HASH(
    "A Linux GameMode engedélyezése segíthet a késleltetésen, megjavíthatja a hang recsegését és az általános teljesítményt maximalizálhatja, a CPU és a GPU konfigurálásával a legjobb teljesítményhez.\nA GameMode programot ehhez telepíteni kell. A GameMode telepítési információi: https://github.com/FeralInteractive/gamemode."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+   "Képkocka pihentetés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
+   "A függőleges szinkron CPU használatának csökkentése, a képmegjelenítés után alvó módba állítás, ameddig csak lehetséges. Elsősorban külső scanline szinkronizáló programokhoz."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 mód használata"
    )
@@ -14422,18 +14583,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
    "A kijelző fényerejének növelése vagy csökkentése."
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "GPU túlhajtás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "A Switch GPU-jának túlhajtása vagy visszafogása."
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "CPU túlhajtás"
@@ -14484,6 +14634,40 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Az elérhető időzónák listájának megjelenítése. Időzóna választása után a dátum és az idő a kiválasztott időzónához lesz igazítva. Feltételezi, hogy a rendszer/hardver órája UTC-re van állítva."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch beállítások"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch-en használatos beállítások kezelése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "CPU túlhajtás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "CPU túlhajtás engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "CEC támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "CEC kapcsolódás engedélyezése a TV-hez dokkoláskor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Bluetooth ERTM kikapcsolás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "A Bluetooth ERTM letiltása, amely gondot okoz néhány eszköz párosításánál"
+   )
+#endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi hozzáférési pont kikapcsolása."
@@ -14520,6 +14704,8 @@ MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_PARSE,
    "Rossz konfigurációs fájl - nincs APNAME vagy PASSWORD itt: %s"
    )
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 MSG_HASH(

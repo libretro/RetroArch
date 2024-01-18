@@ -72,6 +72,7 @@ UINavigationControllerDelegate> {
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
 @property (nonatomic) int menu_count;
+@property (nonatomic) NSDate *bgDate;
 
 + (RetroArch_iOS*)get;
 

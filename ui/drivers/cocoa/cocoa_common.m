@@ -157,10 +157,14 @@ void *glkitview_init(void);
                               || controller.extendedGamepad.rightThumbstick.down.pressed;
             else if (type == UIPressTypeLeftArrow)
                 extendedPress |= controller.extendedGamepad.dpad.left.pressed
+                              || controller.extendedGamepad.leftShoulder.pressed
+                              || controller.extendedGamepad.leftTrigger.pressed
                               || controller.extendedGamepad.leftThumbstick.left.pressed
                               || controller.extendedGamepad.rightThumbstick.left.pressed;
             else if (type == UIPressTypeRightArrow)
                 extendedPress |= controller.extendedGamepad.dpad.right.pressed
+                              || controller.extendedGamepad.rightShoulder.pressed
+                              || controller.extendedGamepad.rightTrigger.pressed
                               || controller.extendedGamepad.leftThumbstick.right.pressed
                               || controller.extendedGamepad.rightThumbstick.right.pressed;
             else if (type == UIPressTypeSelect)
@@ -375,10 +379,21 @@ void *glkitview_init(void);
     * the notch in iPhone X phones */
    if (@available(iOS 11, *))
    {
+      settings_t *settings               = config_get_ptr();
       RAScreen *screen                   = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
       CGRect screenSize                  = [screen bounds];
       UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
       UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+
+      if (settings->bools.video_notch_write_over_enable)
+      {
+         self.view.frame = CGRectMake(screenSize.origin.x,
+                     screenSize.origin.y,
+                     screenSize.size.width,
+                     screenSize.size.height);
+         return;
+      }
+
       switch (orientation)
       {
          case UIInterfaceOrientationPortrait:
@@ -859,7 +874,7 @@ config_file_t *open_userdefaults_config_file(void)
 {
    config_file_t *conf = NULL;
    NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
-   if ([backup length] >= 0)
+   if ([backup length] > 0)
    {
       char *str = strdup(backup.UTF8String);
       conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));

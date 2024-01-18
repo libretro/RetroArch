@@ -1262,9 +1262,10 @@ static int16_t input_state_device(
 #endif
             }
 
-            /* Don't allow turbo for D-pad. */
+            /* Don't allow turbo for D-pad unless explicitly allowed. */
             if (          (id  < RETRO_DEVICE_ID_JOYPAD_UP)
-                  || (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                  || (    ((settings->bools.input_allow_turbo_dpad)
+                       || (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT))
                        && (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
             {
                /*
@@ -5039,11 +5040,27 @@ static void input_keys_pressed(
 /* Forward declaration */
 void bsv_movie_free(bsv_movie_t*);
 
+void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t * state, enum bsv_flags flags)
+{ 
+   if (input_st->bsv_movie_state_next_handle)
+      bsv_movie_free(input_st->bsv_movie_state_next_handle);
+   input_st->bsv_movie_state_next_handle    = state;
+   input_st->bsv_movie_state.flags          = flags;
+}
+
 void bsv_movie_deinit(input_driver_state_t *input_st)
 {
    if (input_st->bsv_movie_state_handle)
       bsv_movie_free(input_st->bsv_movie_state_handle);
    input_st->bsv_movie_state_handle = NULL;
+}
+
+void bsv_movie_deinit_full(input_driver_state_t *input_st)
+{
+   bsv_movie_deinit(input_st);
+   if (input_st->bsv_movie_state_next_handle)
+      bsv_movie_free(input_st->bsv_movie_state_next_handle);
+   input_st->bsv_movie_state_next_handle = NULL;
 }
 
 void bsv_movie_frame_rewind(void)
@@ -5134,7 +5151,18 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    settings_t *settings           = config_get_ptr();
    unsigned checkpoint_interval   = settings->uints.replay_checkpoint_interval;
+   /* if bsv_movie_state_next_handle is not null, deinit and set
+      bsv_movie_state_handle to bsv_movie_state_next_handle and clear
+      next_handle */
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+   if (input_st->bsv_movie_state_next_handle)
+   {
+      if(handle)
+         bsv_movie_deinit(input_st);
+      handle = input_st->bsv_movie_state_next_handle;
+      input_st->bsv_movie_state_handle = handle;
+      input_st->bsv_movie_state_next_handle = NULL;
+   }
 
    if (!handle)
       return;
@@ -6170,6 +6198,13 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          int k;
          int s;
 
+         /* Remember original analog D-pad binds. */
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
+            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
+         }
+
          /* Read input from both analog sticks. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
@@ -6235,6 +6270,15 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
+         int k;
+
+         /* Restore analog D-pad binds temporarily overridden. */
+         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+         {
+            (auto_binds)[k].joyaxis    = (auto_binds)[k].orig_joyaxis;
+            (general_binds)[k].joyaxis = (general_binds)[k].orig_joyaxis;
+         }
+
          if (!all_users_control_menu)
             break;
       }

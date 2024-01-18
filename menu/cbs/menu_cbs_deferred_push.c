@@ -215,6 +215,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_netplay_kick_list,              DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_netplay_ban_list,               DISPLAYLIST_NETPLAY_BAN_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_netplay_lobby_filters_list,     DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
+#ifdef HAVE_LAKKA_SWITCH
+GENERIC_DEFERRED_PUSH(deferred_push_lakka_switch_options_list,      DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
@@ -252,7 +255,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_menu_sounds_list,               DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_rgui_theme_preset,              DISPLAYLIST_RGUI_THEME_PRESETS)
 
 #ifdef HAVE_NETWORKING
+#if 0
+/* Thumbnailpack removal */
 GENERIC_DEFERRED_PUSH(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_pl_thumbnails_updater_list,     DISPLAYLIST_PL_THUMBNAILS_UPDATER)
 GENERIC_DEFERRED_PUSH(deferred_push_core_updater_list,              DISPLAYLIST_CORES_UPDATER)
 GENERIC_DEFERRED_PUSH(deferred_push_core_content_list,              DISPLAYLIST_CORE_CONTENT)
@@ -262,12 +268,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_system_files_list,         DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_list,                     DISPLAYLIST_LAKKA)
 #endif
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 GENERIC_DEFERRED_PUSH(deferred_push_switch_cpu_profile,             DISPLAYLIST_SWITCH_CPU_PROFILE)
-#endif
-
-#ifdef HAVE_LAKKA_SWITCH
-GENERIC_DEFERRED_PUSH(deferred_push_switch_gpu_profile,             DISPLAYLIST_SWITCH_GPU_PROFILE)
 #endif
 
 #if defined(HAVE_LAKKA)
@@ -409,7 +411,7 @@ static int general_push(menu_displaylist_info_t *info,
    char newstring2[PATH_MAX_LENGTH];
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
    bool 
       multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
 #endif
@@ -560,13 +562,29 @@ static int general_push(menu_displaylist_info_t *info,
                string_list_initialize(&str_list3);
                string_split_noalloc(&str_list3, newstring, "|");
 
-#ifdef HAVE_IBXM
+#if defined(HAVE_AUDIOMIXER)
+               if (multimedia_builtin_mediaplayer_enable)
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
+#if defined(HAVE_DR_MP3)
+                  string_list_append(&str_list3, "mp3", attr);
+#endif
+#if defined(HAVE_STB_VORBIS)
+                  string_list_append(&str_list3, "ogg", attr);
+#endif
+#if defined(HAVE_DR_FLAC)
+                  string_list_append(&str_list3, "flac", attr);
+#endif
+#if defined(HAVE_RWAV)
+                  string_list_append(&str_list3, "wav", attr);
+#endif
+#ifdef HAVE_IBXM
+
                   string_list_append(&str_list3, "s3m", attr);
                   string_list_append(&str_list3, "mod", attr);
                   string_list_append(&str_list3, "xm", attr);
+#endif
                }
 #endif
                string_list_join_concat(newstring2, sizeof(newstring2),
@@ -743,6 +761,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST, deferred_push_wifi_networks_list},
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST, deferred_push_lakka_services_list},
+#ifdef HAVE_LAKKA_SWITCH
+      {MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST, deferred_push_lakka_switch_options_list},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST, deferred_push_user_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST, deferred_push_directory_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST, deferred_push_privacy_settings_list},
@@ -751,7 +772,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST, deferred_push_core_content_dirs_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST, deferred_push_core_content_dirs_subdir_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST, deferred_push_core_updater_list},
+#if 0
+/* Thumbnailpack removal */
       {MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST, deferred_push_thumbnails_updater_list},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST, deferred_push_pl_thumbnails_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST, deferred_push_core_content_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST, deferred_push_core_system_files_list},
@@ -787,10 +811,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST, deferred_push_audio_output_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST, deferred_push_audio_mixer_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST, deferred_push_latency_settings_list},
-#ifdef HAVE_LAKKA_SWITCH
-      {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE, deferred_push_switch_gpu_profile},
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if  defined(HAVE_LIBNX)
       {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE, deferred_push_switch_cpu_profile},
 #endif
 #if defined(HAVE_LAKKA)
@@ -1007,11 +1028,14 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_system_files_list);
 #endif
             break;
+#if 0
+/* Thumbnailpack removal */
          case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
 #endif
             break;
+#endif
          case MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_pl_thumbnails_updater_list);

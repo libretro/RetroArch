@@ -159,7 +159,6 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
    { (unsigned int)VirtualKey::RightControl, RETROK_RCTRL },
    { (unsigned int)VirtualKey::LeftMenu, RETROK_LALT },
    { (unsigned int)VirtualKey::RightMenu, RETROK_RALT },
-//key   { VK_RETURN, RETROK_KP_ENTER },
    { (unsigned int)VirtualKey::CapitalLock, RETROK_CAPSLOCK },
    { VK_OEM_1, RETROK_SEMICOLON },
    { VK_OEM_PLUS, RETROK_EQUALS },
@@ -305,12 +304,6 @@ void App::SetWindow(CoreWindow^ window)
 
    window->Closed              +=
       ref new TypedEventHandler<CoreWindow^, CoreWindowEventArgs^>(this, &App::OnWindowClosed);
-
-   window->KeyDown             +=
-      ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKey);
-
-   window->KeyUp               +=
-      ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKey);
 
    window->PointerPressed      +=
       ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
@@ -577,11 +570,32 @@ void App::OnVisibilityChanged(CoreWindow^ sender, VisibilityChangedEventArgs^ ar
 void App::OnWindowActivated(CoreWindow^ sender, WindowActivatedEventArgs^ args)
 {
    m_windowFocused = args->WindowActivationState != CoreWindowActivationState::Deactivated;
+   if (!m_windowFocused)
+   {
+      /* When deactivating the window, send key up events for anything still held down */
+      for (rarch_key_map it : rarch_key_map_uwp)
+      {
+         if ((sender->GetKeyState((VirtualKey)it.sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
+            input_keyboard_event(false, it.rk, 0, 0, RETRO_DEVICE_KEYBOARD);
+      }
+   }
 }
 
-bool App::GetKey(CoreWindow^ window, VirtualKey vkey, bool down, bool extended, unsigned& keycode, uint16_t& mod)
+void App::OnAcceleratorKey(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args)
 {
+   if (args->EventType != CoreAcceleratorKeyEventType::KeyDown && args->EventType != CoreAcceleratorKeyEventType::KeyUp &&
+       args->EventType != CoreAcceleratorKeyEventType::SystemKeyDown && args->EventType != CoreAcceleratorKeyEventType::SystemKeyUp)
+      return;
+
+   /* Unlike CoreWindow::KeyDown/KeyUp events, this callback gets called for all keys including
+    * F10, Alt and any keys pressed in addition to while Alt is being held down. */
+   bool down = !args->KeyStatus.IsKeyReleased;
+   bool extended = args->KeyStatus.IsExtendedKey;
+   VirtualKey vkey = args->VirtualKey;
+   CoreWindow^ window = CoreWindow::GetForCurrentThread();
+
    /* Some keys we need to specify via the extended flag */
+   unsigned keycode = RETROK_UNKNOWN;
    if (vkey == VirtualKey::Enter)
       keycode = (extended ? RETROK_KP_ENTER : RETROK_RETURN);
    else if (vkey == VirtualKey::Control)
@@ -604,17 +618,14 @@ bool App::GetKey(CoreWindow^ window, VirtualKey vkey, bool down, bool extended, 
          had_right_down = down;
          keycode = RETROK_RSHIFT;
       }
-      else
-         return false;
    }
    else
-   {
       keycode = input_keymaps_translate_keysym_to_rk((unsigned)vkey);
-      if (keycode == RETROK_UNKNOWN)
-         return false;
-   }
 
-   mod = 0;
+   if (keycode == RETROK_UNKNOWN)
+      return;
+
+   uint16_t mod = 0;
    if ((window->GetKeyState(VirtualKey::Shift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_SHIFT;
    if ((window->GetKeyState(VirtualKey::Control) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
@@ -629,35 +640,7 @@ bool App::GetKey(CoreWindow^ window, VirtualKey vkey, bool down, bool extended, 
          (window->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_META;
 
-   return true;
-}
-
-void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args)
-{
-   bool down = !args->KeyStatus.IsKeyReleased;
-   unsigned keycode;
-   uint16_t mod;
-   if (GetKey(sender, args->VirtualKey, down, args->KeyStatus.IsExtendedKey, keycode, mod))
-      input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
-}
-
-void App::OnAcceleratorKey(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args)
-{
-   if (args->EventType == CoreAcceleratorKeyEventType::KeyDown || args->EventType == CoreAcceleratorKeyEventType::KeyUp ||
-         args->EventType == CoreAcceleratorKeyEventType::SystemKeyDown || args->EventType == CoreAcceleratorKeyEventType::SystemKeyUp)
-   {
-      /* This callback is called for all keys but we're only interested in the Alt keys which don't call OnKey */
-      VirtualKey vkey = args->VirtualKey;
-      if (vkey == VirtualKey::Menu || vkey == VirtualKey::LeftMenu || vkey == VirtualKey::RightMenu)
-      {
-         CoreWindow^ window = CoreWindow::GetForCurrentThread();
-         bool down = !args->KeyStatus.IsKeyReleased;
-         unsigned keycode;
-         uint16_t mod;
-         if (GetKey(window, vkey, down, args->KeyStatus.IsExtendedKey, keycode, mod))
-            input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
-      }
-   }
+   input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
 }
 
 void App::OnPointer(CoreWindow^ sender, PointerEventArgs^ args)

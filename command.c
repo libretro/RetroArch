@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <locale.h>
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -737,8 +738,8 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
       {
          input_driver_state_t *input_st = input_state_get_ptr();
          task_queue_wait(NULL,NULL);
-         if(input_st->bsv_movie_state_handle)
-            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_handle->identifier));
+         if(input_st->bsv_movie_state_next_handle)
+            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
          else
             snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT 0");
          command_post_state_loaded();
@@ -1166,6 +1167,10 @@ bool command_event_save_config(
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
+   /* Workaround for libdecor 0.2.0 setting unwanted locale */
+#if defined(HAVE_WAYLAND) && defined(HAVE_DYNAMIC)
+   setlocale(LC_NUMERIC,"C");
+#endif
    if (path_exists && config_save_file(config_path))
    {
       snprintf(s, len, "%s \"%s\".",
@@ -1253,19 +1258,13 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    return true;
 }
 
-bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      const enum rarch_core_type current_core_type)
+bool command_event_save_auto_state(void)
 {
    size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    char savestate_name_auto[PATH_MAX_LENGTH];
 
    if (runloop_st->entry_state_slot)
-      return false;
-   if (!savestate_auto_save)
-      return false;
-   if (current_core_type == CORE_TYPE_DUMMY)
       return false;
    if (!core_info_current_supports_savestate())
       return false;
@@ -1279,7 +1278,7 @@ bool command_event_save_auto_state(
          ".auto",
          sizeof(savestate_name_auto) - _len);
 
-   if (content_save_state((const char*)savestate_name_auto, true, true))
+   if (content_auto_save_state((const char*)savestate_name_auto))
 	   RARCH_LOG("%s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "succeeded");
@@ -1971,7 +1970,7 @@ bool command_event_main_state(unsigned cmd)
                      settings->bools.frame_time_counter_reset_after_save_state;
 
                if (cmd == CMD_EVENT_SAVE_STATE)
-                  content_save_state(state_path, true, false);
+                  content_save_state(state_path, true);
                else
                   content_save_state_to_ram();
 

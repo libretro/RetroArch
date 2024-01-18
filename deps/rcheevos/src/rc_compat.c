@@ -83,3 +83,80 @@ struct tm* rc_gmtime_s(struct tm* buf, const time_t* timer)
 }
 
 #endif
+
+#ifndef RC_NO_THREADS
+
+#if defined(_WIN32)
+
+/* https://gist.github.com/roxlu/1c1af99f92bafff9d8d9 */
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+ 
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  /* default security, not owned by calling thread, unnamed */
+  mutex->handle = CreateMutex(NULL, FALSE, NULL);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  CloseHandle(mutex->handle);
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  WaitForSingleObject(mutex->handle, 0xFFFFFFFF);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  ReleaseMutex(mutex->handle);
+}
+
+#elif defined(GEKKO)
+
+void rc_mutex_init(rc_mutex_t *mutex)
+{
+  LWP_MutexInit(mutex, NULL);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  LWP_MutexDestroy(mutex);
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  LWP_MutexLock(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  LWP_MutexUnlock(mutex);
+}
+
+#else
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  pthread_mutex_init(mutex, NULL);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  pthread_mutex_destroy(mutex);
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  pthread_mutex_lock(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  pthread_mutex_unlock(mutex);
+}
+
+#endif
+#endif /* RC_NO_THREADS */

@@ -98,7 +98,7 @@
 #include "../../play_feature_delivery/play_feature_delivery.h"
 #endif
 
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 #include "../../switch_performance_profiles.h"
 #endif
 
@@ -247,6 +247,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 #ifdef HAVE_LAKKA
 static char *lakka_get_project(void)
 {
+#ifndef HAVE_LAKKA_CANARY
    size_t len;
    static char lakka_project[128];
    FILE *command_file = popen("cat /etc/release | cut -d - -f 1", "r");
@@ -259,6 +260,9 @@ static char *lakka_get_project(void)
 
    pclose(command_file);
    return lakka_project;
+#else
+   return "/";
+#endif
 }
 #endif
 #endif
@@ -453,6 +457,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST;
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST;
+#ifdef HAVE_LAKKA_SWITCH
+      case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST;
+#endif
       case ACTION_OK_DL_USER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST;
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
@@ -1519,6 +1527,8 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
+#if 0
+/* Thumbnailpack removal */
       case ACTION_OK_DL_THUMBNAILS_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1528,6 +1538,7 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
+#endif
       case ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1717,6 +1728,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
+#ifdef HAVE_LAKKA_SWITCH
+      case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
+#endif
       case ACTION_OK_DL_USER_SETTINGS_LIST:
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
       case ACTION_OK_DL_PRIVACY_SETTINGS_LIST:
@@ -4052,19 +4066,11 @@ static int action_ok_deferred_list_stub(const char *path,
    return 0;
 }
 
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char command[PATH_MAX_LENGTH] = {0};
-#ifdef HAVE_LAKKA_SWITCH
-   char* profile_name            = SWITCH_CPU_PROFILES[entry_idx];
-   /* TODO/FIXME - localize */
-   snprintf(command, sizeof(command), "cpu-profile set '%s'", profile_name);
-   system(command);
-   /* TODO/FIXME - localize */
-   snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
-#else
    unsigned profile_clock          = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
    settings_t *settings            = config_get_ptr();
 
@@ -4082,33 +4088,12 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    /* TODO/FIXME - localize */
    snprintf(command, sizeof(command),
          "Current Clock set to %i", profile_clock);
-#endif
 
    runloop_msg_queue_push(command, 1, 90, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return -1;
 }
-#endif
-
-#ifdef HAVE_LAKKA_SWITCH
-static int action_ok_set_switch_gpu_profile(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   size_t _len;
-   char command[PATH_MAX_LENGTH];
-   char *profile_name  = SWITCH_GPU_PROFILES[entry_idx];
-   size_t _len         = strlcpy(command, "gpu-profile set ", sizeof(command));
-   snprintf(command + _len, sizeof(command) - _len, "'%s'", profile_name);
-   system(command);
-   /* TODO/FIXME - localize */
-   _len = strlcpy(command, "Current profile set to ", sizeof(command));
-   strlcpy(command + _len, profile_name, sizeof(command) - _len);
-   runloop_msg_queue_push(command, 1, 90, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   return -1;
-}
-
 #endif
 
 static int action_ok_load_core_deferred(const char *path,
@@ -4989,6 +4974,8 @@ static int generic_action_ok_network(const char *path,
          callback     = cb_net_generic;
          suppress_msg = true;
          break;
+#if 0
+/* Thumbnailpack removal */
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join_special(url_path,
                FILE_PATH_CORE_THUMBNAILPACKS_URL,
@@ -4997,6 +4984,7 @@ static int generic_action_ok_network(const char *path,
          type_id2     = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback     = cb_net_generic;
          break;
+#endif
 #ifdef HAVE_LAKKA
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
          /* TODO unhardcode this path */
@@ -5035,7 +5023,10 @@ static int generic_action_ok_network(const char *path,
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_core_system_files_list, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST)
+#if 0
+/* Thumbnailpack removal */
 DEFAULT_ACTION_OK_LIST(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
+#endif
 DEFAULT_ACTION_OK_LIST(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
 static void cb_generic_dir_download(retro_task_t *task,
@@ -5467,7 +5458,10 @@ static int action_ok_sideload_core(const char *path,
 #ifdef HAVE_NETWORKING
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
+#if 0
+/* Thumbnailpack removal */
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_thumbnails_updater_download, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD)
+#endif
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
 #ifdef HAVE_LAKKA
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
@@ -5556,6 +5550,9 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
     *   the active entry to be 'Run' (first item in
     *   menu list) */
    menu_st->selection_ptr       = 0;
+
+   /* Check if we need to quit */
+   check_quit_on_close();
 
    /* Unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
@@ -6084,6 +6081,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_appearance_list, ACTION_OK_DL_CH
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_visibility_list, ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_updater_list, ACTION_OK_DL_UPDATER_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_services, ACTION_OK_DL_LAKKA_SERVICES_LIST)
+#ifdef HAVE_LAKKA_SWITCH
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_switch_options, ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_user_list, ACTION_OK_DL_USER_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_sublist, ACTION_OK_DL_NETPLAY)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST)
@@ -6250,8 +6250,18 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
    else
       snprintf(hostname, sizeof(hostname), "%s|%d", room->address, room->port);
 
-   task_push_netplay_crc_scan(room->gamecrc, room->gamename,
-      room->subsystem_name, room->corename, hostname);
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+   {
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)hostname);
+      menu_input_dialog_end();
+      retroarch_menu_running_finished(false);
+   }
+   else
+   {
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+         room->subsystem_name, room->corename, hostname);
+   }
 
    return 0;
 }
@@ -7716,7 +7726,14 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
 {
    if (!string_is_empty(line))
    {
-      if (!task_push_netplay_content_reload(line))
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+      {
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)line);
+         menu_input_dialog_end();
+         retroarch_menu_running_finished(false);
+      }
+      else if (!task_push_netplay_content_reload(line))
       {
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -8460,7 +8477,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #if defined(ANDROID)
          {MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,          action_ok_switch_installed_cores_pfd},
 #endif
+#if 0
+/* Thumbnailpack removal */
          {MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,             action_ok_thumbnails_updater_list},
+#endif
          {MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,          action_ok_pl_thumbnails_updater_list},
          {MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,        action_ok_pl_entry_content_thumbnails},
          {MENU_ENUM_LABEL_UPDATE_LAKKA,                        action_ok_lakka_list},
@@ -8469,10 +8489,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN,                 action_ok_push_netplay_refresh_lan},
 #endif
 #endif
-#ifdef HAVE_LAKKA_SWITCH
-         {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,                  action_ok_push_default},
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
          {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,                  action_ok_push_default},
 #endif
          {MENU_ENUM_LABEL_MENU_WALLPAPER,                      action_ok_menu_wallpaper},
@@ -8730,6 +8747,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
          {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},
+#ifdef HAVE_LAKKA_SWITCH
+         {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,                action_ok_lakka_switch_options},
+#endif
          {MENU_ENUM_LABEL_NETPLAY_SETTINGS,                    action_ok_netplay_sublist},
          {MENU_ENUM_LABEL_USER_SETTINGS,                       action_ok_user_list},
          {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,                  action_ok_directory_list},
@@ -9007,12 +9027,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_PLAYLIST_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             break;
-#ifdef HAVE_LAKKA_SWITCH
-         case MENU_SET_SWITCH_GPU_PROFILE:
-            BIND_ACTION_OK(cbs, action_ok_set_switch_gpu_profile);
-            break;
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
          case MENU_SET_SWITCH_CPU_PROFILE:
             BIND_ACTION_OK(cbs, action_ok_set_switch_cpu_profile);
             break;
@@ -9193,8 +9208,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL:
+#if 0
+/* Thumbnailpack removal */
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
+#endif
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_LAKKA:

@@ -1522,6 +1522,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
       }
 
       case RETRO_LANGUAGE_RUSSIAN:
+      case RETRO_LANGUAGE_BELARUSIAN:
       {
          rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.rus_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_RUSSIAN);
@@ -4343,6 +4344,7 @@ static void rgui_set_blit_functions(
             rgui_blit_line    = rgui_blit_line_cjk_shadow;
             break;
          case RETRO_LANGUAGE_RUSSIAN:
+         case RETRO_LANGUAGE_BELARUSIAN:
             rgui_blit_line    = rgui_blit_line_rus_shadow;
             break;
          case RETRO_LANGUAGE_ESPERANTO:
@@ -4381,6 +4383,7 @@ static void rgui_set_blit_functions(
             rgui_blit_line = rgui_blit_line_cjk;
             break;
          case RETRO_LANGUAGE_RUSSIAN:
+         case RETRO_LANGUAGE_BELARUSIAN:
             rgui_blit_line = rgui_blit_line_rus;
             break;
          case RETRO_LANGUAGE_ESPERANTO:
@@ -6093,7 +6096,7 @@ static bool rgui_set_aspect_ratio(
    {
       case RGUI_ASPECT_RATIO_16_9:
          if (rgui->frame_buf.height == 240)
-            rgui->frame_buf.width = max_frame_buf_width;
+            rgui->frame_buf.width = 424;
          else
             rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                   (16.0f / 9.0f) * (float)rgui->frame_buf.height);
@@ -6102,7 +6105,7 @@ static bool rgui_set_aspect_ratio(
       case RGUI_ASPECT_RATIO_16_9_CENTRE:
          if (rgui->frame_buf.height == 240)
          {
-            rgui->frame_buf.width = max_frame_buf_width;
+            rgui->frame_buf.width = 424;
             base_term_width       = 320;
          }
          else
@@ -6926,6 +6929,9 @@ static void rgui_reset_savestate_thumbnail(void *data)
 {
    rgui_t *rgui    = (rgui_t*)data;
 
+   if (string_is_empty(rgui->savestate_thumbnail_file_path))
+      return;
+
    rgui->mini_left_thumbnail.width    = 0;
    rgui->mini_left_thumbnail.height   = 0;
    rgui->mini_left_thumbnail.is_valid = false;
@@ -6936,12 +6942,6 @@ static void rgui_update_savestate_thumbnail_image(void *data)
 {
    rgui_t *rgui    = (rgui_t*)data;
    if (!rgui)
-      return;
-
-   /* Savestate thumbnails are only relevant
-    * when viewing the running quick menu or state slots */
-   if (!(   (rgui->is_quick_menu && menu_is_running_quick_menu())
-         || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)))
       return;
 
    /* If path is empty, just reset thumbnail */
@@ -7038,15 +7038,11 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          has_thumbnail = gfx_thumbnail_update_path(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT) || has_thumbnail;
    }
 
-   /* Save state thumbnails */
-   if (     (rgui->is_quick_menu)
-         || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT))
+   /* Reset savestate thumbnails always */
+   if (selection < list_size)
    {
-      if (selection < list_size)
-      {
-         rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
-         rgui_update_savestate_thumbnail_image(rgui);
-      }
+      rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
+      rgui_update_savestate_thumbnail_image(rgui);
    }
 
    /* Check whether thumbnails should be loaded */

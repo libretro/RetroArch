@@ -1482,7 +1482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Udev giriş sürücüsü, joystick desteği için en son evdev joypad API kullanır. Çalışırken takmayı ve zorla geri bildirimi destekler.\nSürücü, klavye desteği için evdev olaylarını okur. Ayrıca klavye geri aramasını, fareleri ve dokunmatik yüzeyleri destekler.\nÇoğu dağıtımda varsayılan olarak, /dev/input düğümleri yalnızca root olur (mod 600). Bunları root olmayanlar için erişilebilir kılan bir udev kuralı oluşturabilirsiniz."
+   "Udev sürücüsü, klavye desteği olaylarını okur. Ayrıca klavye geri çağırmayı, fareleri ve dokunmatik yüzeyleri de destekler.\nÇoğu dağıtımda varsayılan olarak, /dev/input düğümleri yalnızca root (mod 600). Bunları root olmayanlar için erişilebilir kılan bir udev kuralı oluşturabilirsiniz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
@@ -1500,6 +1500,35 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Kullanılacak kontrolcü sürücüsü."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "DirectInput kontrolcü sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Düşük Seviyeli İnsan Arayüzü Aygıtı sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Ham Linux sürücüsü, eski joystick API kullanır. Mümkünse bunun yerine udev kullanın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Özel adaptörler aracılığıyla paralel bağlantı noktasına bağlanan kontrolcüler için Linux sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "SDL kitaplıklarını temel alan kontrolcü sürücüsü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Udev arayüzlü kotrolcü sürücüsü, genellikle önerilir. Joystick desteği için en yeni evdev joypad API kullanır. Çalışırken takmayı ve zorla geri bildirimi destekler.\nÇoğu dağıtımda varsayılan olarak, /dev/input düğümleri yalnızca root (mod 600). Bunları root olmayanlar için erişilebilir kılan bir udev kuralı oluşturabilirsiniz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput kontrolcü sürücüsü. Çoğunlukla XBox kontrolcüleri için."
+   )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Kullanılacak video sürücüsü."
@@ -1935,7 +1964,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Android cihazlarda çentik üzerinde tam ekranı etkinleştir"
+   "Android ve iOS cihazlarda çentik üzerinde tam ekranı etkinleştir"
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -2570,6 +2599,14 @@ MSG_HASH(
    "Karıştırıcı sesini kapat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Sessiz Saygı Modu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Sessiz modda tüm sesleri kapatın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "Hızlı İleri Sararken Sesi Kapat"
    )
@@ -3177,6 +3214,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "Turbo Kipi için varsayılan etkin düğme 'Tek Düğme'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Turbo D-Pad Yönlerine İzin Ver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Etkinleştirilirse, dijital yönlü girişler (aynı zamanda d-pad veya 'hatswitch' olarak da bilinir) turbo olabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -4597,7 +4642,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Hızlı ileri sarma hızına göre kareleri atlayın. Bu güç tasarrufu sağlar ve 3. taraf kare sınırlamasının kullanılmasına izin verir."
+   "Hızlı ileri sarma hızına göre kareleri atlayın. Bu güç tasarrufu sağlar ve üçüncü taraf kare sınırlamasının kullanılmasına izin verir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -5460,6 +5505,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Menü ekranı görünüm ayarlarını düzenle."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Uygulama Simgesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Uygulama Simgesini Değiştir"
    )
 #ifdef _3DS
 MSG_HASH(
@@ -6380,7 +6433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Menü arka planı olarak ayarlamak için bir resim seçin."
+   "Menü arka planı ayarlamak için bir resim seçin. Sabit ve dinamik görüntüler 'Renk Temasını' geçersiz kılacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -6473,9 +6526,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "Çeviri Servisi Çıkışı"
    )
-MSG_HASH( /* FIXME What does the Narrator mode do? */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Çeviriyi metin kaplama olarak gösterin (Resim Kipi) veya Metinden Konuşmaya (Konuşma Kipi) olarak oynatın."
+   "Çeviriyi görüntü katmanı (Görüntü Modu), doğrudan ses (Konuşma), metinden konuşmaya (Anlatıcı) veya metin katmanı (Metin) olarak gösterin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -6516,6 +6569,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Hizmetin çevireceği dil. \"Varsayılan\" İngilizcedir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
+   "Çeviri Hizmeti Otomatik Seçim Gecikmesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_POLL_DELAY,
+   "Otomatik çağrılar arasında ms cinsinden asgari gecikme. Tepkimeyi azaltır ancak CPU performansını artırır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
+   "Çeviri Hizmeti Metin Konumunu Özelleştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_POSITION,
+   "Hizmet Metin modundayken kaplamanın konumunu özelleştirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
+   "Çeviri Hizmeti Metin Dolgusu (%)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
+   "Hizmet Metin modundayken metin kaplamasına uygulanacak dikey dolgu. Daha fazla dolgu, metni ekranın ortasına doğru itecektir."
    )
 
 /* Settings > Accessibility */
@@ -7301,6 +7378,14 @@ MSG_HASH(
    "İçeriğin, onu destekleyen bir çekirdek yüklenmeden taranmasına ve bir oynatma listesine eklenmesine izin verin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Tarama esnasında olası kopyalarda crc kontrol eder"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Bazen ISO dosya serileri PSP/PSN başlıklarını kopyalar. Yalnızca seri numarasına güvenmek bazen taranan içeriğin yanlış sisteme yerleştirmesine neden olabilir. Bu, taramayı önemli ölçüde yavaşlatan ancak daha doğru olabilecek bir CRC kontrolü ekler."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Oynatma Listelerini Yönet"
    )
@@ -7317,6 +7402,14 @@ MSG_HASH(
    "Etkinleştirildiğinde ve 'Dosya Tarayıcısı' dizini de seçildiğinde, 'Dosya Tarayıcısı' parametresinin mevcut değeri oynatma listesine kaydedilir. Oynatma listesi, aynı seçeneğin etkinleştirildiği başka bir sisteme yüklendiğinde, 'Dosya Tarayıcısı' parametresinin değeri oynatma listesi değeri ile karşılaştırılır; farklıysa, oynatma listesi girdilerinin yolları otomatik olarak sabitlenir."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   "Küçük Resimleri Eşleştirmek İçin Dosya Adı Kullan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "Etkinleştirildiğinde, küçük resimleri giriş etiketi yerine dosya adına göre bulur."
+   )
+   MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Yönet"
    )
@@ -9172,11 +9265,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Yükle"
+   "Ön Ayar Yükle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "Gölgelendirici önayarı yükleyin. Gölgelendirici düzeni otomatik olarak kurulacaktır."
+   "Gölgelendirici ön ayarı yükleyin. Gölgelendirici düzeni otomatik olarak kurulacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
@@ -9184,23 +9277,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Başa Ekle"
+   "Ön Ayarı Başa Ekle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Şu anda yüklü olan Ön Ayarı Başa Ekle"
+   "O anda yüklü olan ön ayarın başına ön ayarı ekleyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Sona Ekle"
+   "Ön Ayar Ekle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Şu anda yüklü olan Ön Ayarı Sona Ekle"
+   "Mevcut yüklü ön ayara bu ön ayarı ekleyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Kaydet"
+   "Ön Ayarı Kaydet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
@@ -9208,7 +9301,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Kaldır"
+   "Ön Ayarı Kaldır"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
@@ -9492,6 +9585,22 @@ MSG_HASH(
    "Mevcut oturum için başarıları zorlu kipte devam ettirin. Bu eylem, hileleri, geri sarmayı, ağır çekimi ve durum kaydı yüklemesini devre dışı bırakır ve mevcut oyunu sıfırlar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "RetroAchievements sunucusuna erişilemiyor"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "Bir veya daha fazla başarının kilidi sunucuya ulaşmadı. Uygulamayı açık bıraktığınız sürece kilit açma işlemleri yeniden denenecektir."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "RetroAchievements sunucusuna erişilemiyor. Başarılı oluncaya veya uygulama kapatılıncaya kadar yeniden denenecek."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Bekleyen tüm istekler RetroAchievements sunucusuyla başarıyla eşitlendi."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Giriş yapmadınız"
 )
@@ -9707,6 +9816,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Ekran Okuyucusu Kipi"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE,
+   "Metin Modu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE,
+   "Metin + Anlatıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE,
+   "Resim + Anlatıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
+   "Alt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
+   "Üst"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -12017,7 +12146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Çalıştır"
+   "Medya Oynatıcıda Oynat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
@@ -12548,6 +12677,22 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Çekirdek kurulumu başarısız"
    )
 MSG_HASH(
+   MSG_AI_VIDEO_DRIVER_NOT_SUPPORTED,
+   "Video sürücüsü Çeviri Hizmeti için desteklenmiyor."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_ENABLED,
+   "Otomatik çeviri etkin."
+   )
+MSG_HASH(
+   MSG_AI_AUTO_MODE_DISABLED,
+   "Otomatik çeviri devre dışı."
+   )
+MSG_HASH(
+   MSG_AI_NOTHING_TO_TRANSLATE,
+   "Çevirecek birşey yok."
+   )
+MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Tüm hileleri silmek için beş kez sağa basın."
    )
@@ -13003,6 +13148,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "İçerik CRC32'leri farklıdır. Farklı oyunlar kullanılamaz."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Sunucu farklı bir oyun çalıştırıyor."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
@@ -13783,6 +13932,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Küçük resim yok"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Bu oynatma listesi girişi için olası tüm küçük resim indirmeleri zaten denendi."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -14647,6 +14800,14 @@ MSG_HASH(
    "Linux GameMode etkinleştirilmesi, en iyi performans için CPU ve GPU'nuzu otomatik olarak yapılandırarak gecikmeyi iyileştirebilir, ses cızırtı sorunlarını düzeltebilir ve genel performansı en üst düzeye çıkarabilir.\nBunun çalışması için GameMode yazılımının yüklenmesi gerekir. GameMode nasıl kurulacağı hakkında bilgi için https://github.com/FeralInteractive/gamemode adresine bakın."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
+   "Kare Desteği"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
+   "Kare sunumundan sonra mümkün olduğunca uyuyarak vsync CPU kullanımını azaltmaya çalışın. Öncelikle üçüncü taraf tarama hattı eşitlenmesi için tasarlandı."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 Kipi Kullan"
    )
@@ -14746,18 +14907,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
    "Ekran parlaklığını arttır veya azalt."
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
-   "GPU Hız Aşırtma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_GPU_PROFILE,
-   "GPU hızını arttır yada düşür."
-   )
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "CPU Hız Aşırtma"
@@ -14808,6 +14958,40 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Kullanılabilir saat dilimlerinin bir listesini görüntüler. Bir saat dilimi seçtikten sonra, saat ve tarih seçilen saat dilimine göre ayarlanır. Sistem/donanım saatinin UTC olarak ayarlandığını varsayar."
    )
+#ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch Seçenekleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch Özel Seçeneklerini Yönetin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "CPU Hız Aşırtma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "CPU Hız Aşırtma frekanslarını etkinleştirin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "CEC Desteği"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "CEC Handshaking Tv İçin Etkinleştir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Bluetooth ERTM Devre Dışı Bırak"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Cihaz eşleşmesini düzeltmek için Bluetooth ERTM devre dışı bırakın"
+   )
+#endif
 MSG_HASH(
    MSG_LOCALAP_SWITCHING_OFF,
    "Wi-Fi Erişim Noktası Kapatılıyor."
@@ -14844,6 +15028,8 @@ MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_PARSE,
    "Yanlış yapılandırma dosyası - %s içinde APNAME veya PASSWORD bulunamadı"
    )
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 MSG_HASH(
