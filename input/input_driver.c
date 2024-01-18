@@ -3717,7 +3717,7 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 #endif
    if (!input_driver_st.primary_joypad)
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
-#ifdef HAVE_MFI
+#if 0
    if (!input_driver_st.secondary_joypad)
       input_driver_st.secondary_joypad  = input_joypad_init_driver("mfi", data);
 #endif
@@ -3800,7 +3800,7 @@ void input_driver_init_joypads(void)
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
-#ifdef HAVE_MFI
+#if 0
    if (!input_driver_st.secondary_joypad)
       input_driver_st.secondary_joypad      = input_joypad_init_driver(
             "mfi",
