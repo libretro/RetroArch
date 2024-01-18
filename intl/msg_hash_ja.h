@@ -230,7 +230,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "「Downloads」ディレクトリからコアをインストールまたは復元します。"
+   "[Downloads] ディレクトリからコアをインストールまたは復元します。"
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -4240,7 +4240,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-   "「コアの管理」を表示"
+   "[コアの管理] を表示"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
@@ -4294,7 +4294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "自動的に優先ファイルをロード"
+   "自動的に優先構成ファイルをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -4345,7 +4345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "コンテンツがあるディレクトリに基づいた名前のフォルダにセーブファイルを振り分けます。"
+   "コンテンツが存在するディレクトリに基づいた名前のフォルダにセーブファイルを振り分けます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -4353,7 +4353,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "コンテンツがあるディレクトリに基づいた名前のフォルダにステートセーブを振り分けます。"
+   "コンテンツが存在するディレクトリに基づいた名前のフォルダにステートセーブを振り分けます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
@@ -4465,7 +4465,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "コンテンツがあるディレクトリに基づいた名前のフォルダにスクリーンショットを振り分けます。"
+   "コンテンツが存在するディレクトリに基づいた名前のフォルダにスクリーンショットを振り分けます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -5269,7 +5269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "「コンテンツをロード」起動時の通知"
+   "[コンテンツをロード] 起動時の通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5309,11 +5309,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "構成優先ロード通知"
+   "優先構成ロード通知"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "構成優先ファイルのロード時に OSD メッセージを表示します。"
+   "優先構成ファイルのロード時に OSD メッセージを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -6158,27 +6158,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "[コア優先を保存] を表示"
+   "[コア優先構成を保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "[優先] メニューに [コア優先を保存] オプションを表示します。"
+   "[優先構成] メニューに [コア優先構成を保存] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "[コンテンツディレクトリ優先を保存] を表示"
+   "[コンテンツディレクトリ優先構成を保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "[優先] メニューに [コンテンツディレクトリ優先を保存] オプションを表示します。"
+   "[優先構成] メニューに [コンテンツディレクトリ優先構成を保存] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "[ゲーム優先を保存] を表示"
+   "[ゲーム優先構成を保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "[優先] メニューに [ゲーム優先を保存] オプションを表示します。"
+   "[優先構成] メニューに [ゲーム優先構成を保存] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
@@ -6548,7 +6548,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-   "AI サービス有効"
+   "AI サービスを有効にする"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
@@ -7227,7 +7227,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "[履歴]、[画像]、[音楽]、[動画] プレイリストを除くコンテンツプレイリストをアルファベッド順に並べ替えます。"
+   "[履歴]、[画像]、[音楽]、[動画] プレイリストを除くコンテンツプレイリストをアルファベット順に並べ替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
@@ -7379,7 +7379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   "サポートするコアがインストールされていないコンテンツを, スキャン対象としてプレイリストに追加します."
+   "対応するコアがインストールされていないコンテンツをスキャンし、プレイリストに追加することを許可します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
@@ -7630,7 +7630,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-   "ボックスアート、スクリーンショット、タイトル画面のサムネイルはこのディレクトリに保存されます。"
+   "ボックスアート、スクリーンショットおよびタイトル画面のサムネイルはこのディレクトリに保存されます。"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
@@ -7694,7 +7694,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-   "オーディオ DSP フィルタはこのディレクトリに保存されます。"
+   "オーディオ DSP フィルターはこのディレクトリに保存されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -8133,7 +8133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Arcade DAT フィルタ"
+   "Arcade DAT フィルター"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
@@ -8651,7 +8651,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-   "優先"
+   "優先構成"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -8674,7 +8674,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "現在のコンテンツのオプション優先を保存または削除します。"
+   "現在のコンテンツのオプション優先構成を保存または削除します。"
    )
 
 /* Quick Menu > Options > Manage Core Options */
@@ -9471,31 +9471,31 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
-   "アクティブな優先ファイル"
+   "アクティブな優先構成ファイル"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
-   "現在使用中の優先ファイルです。"
+   "現在使用中の優先構成ファイルです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
-   "優先ファイルをロード"
+   "優先構成ファイルをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
-   "優先ファイルをロードして現在の構成を置き換えます。"
+   "優先構成ファイルをロードして現在の構成を置き換えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
-   "優先に名前を付けて保存"
+   "優先構成に名前を付けて保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
-   "現在の構成を新しい優先ファイルとして保存します。"
+   "現在の構成を新しい優先構成ファイルとして保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "コア優先を保存"
+   "コア優先構成を保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -9503,7 +9503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "コア優先を削除"
+   "コア優先構成を削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -9511,7 +9511,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "コンテンツディレクトリ優先を保存"
+   "コンテンツディレクトリ優先構成を保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9519,7 +9519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "コンテンツディレクトリ優先を削除"
+   "コンテンツディレクトリ優先構成を削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9527,7 +9527,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "ゲーム優先を保存"
+   "ゲーム優先構成を保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9535,7 +9535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "ゲーム優先を削除"
+   "ゲーム優先構成を削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9543,7 +9543,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
-   "優先をアンロード"
+   "優先構成をアンロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
@@ -10458,7 +10458,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
-   "ピクセルの角を取るため、メニューにぼかしを少し追加します。"
+   "鋭いピクセルの角を取るため、メニューを少しだけぼかします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
@@ -10824,7 +10824,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "カラーテーマアルファ係数"
+   "カラーテーマの不透明度"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -10916,7 +10916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
-   "タイトルヘッダーを表示"
+   "見出しを表示"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
@@ -11839,7 +11839,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
-   "他のダウンロードが実行中です。"
+   "他のダウンロードが進行中です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
@@ -12464,7 +12464,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-   "尋ねる"
+   "確認する"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
@@ -12538,7 +12538,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
-   "グラフィックドライバは, RetroArchの現在のビデオドライバと互換性がありません.  %s ドライバに戻ります.  変更を有効にするには, RetroArchを再起動してください. "
+   "使用中のグラフィックドライバは RetroArch で現在設定されているビデオドライバと互換性がありません。 %s ドライバにフォールバックします。変更を適用するには RetroArch を再起動してください。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
@@ -12999,7 +12999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "ハードコアモードが有効になりました。ステートセーブと巻き戻しが無効になります。"
+   "実績ハードコアモードが有効になりました。ステートセーブと巻き戻しが無効になります。"
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -13431,7 +13431,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_OVERRIDE_FILENAME,
-   "優先ファイル名を入力"
+   "優先構成ファイル名を入力"
    )
 MSG_HASH(
    MSG_INPUT_REMAP_FILENAME,
@@ -13551,31 +13551,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
-   "優先ファイルの保存に失敗しました。"
+   "優先構成ファイルの保存に失敗しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_REMOVING,
-   "優先の削除に失敗しました。"
+   "優先構成の削除に失敗しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-   "優先を正常に保存しました。"
+   "優先構成を正常に保存しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
-   "優先を正常に削除しました。"
+   "優先構成を正常に削除しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
-   "優先を正常にアンロードしました。"
+   "優先構成を正常にアンロードしました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_NOT_SAVED,
-   "保存するものがありません。優先は保存されません。"
+   "保存するものがありません。優先構成は保存されません。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ACTIVE_NOT_SAVING,
-   "保存されません。優先がアクティブです。"
+   "保存されません。優先構成がアクティブです。"
    )
 MSG_HASH(
    MSG_PAUSED,
@@ -13979,7 +13979,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
-   "優先をロードしました。"
+   "優先構成をロードしました。"
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
