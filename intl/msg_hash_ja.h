@@ -355,7 +355,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "選択したコアの無料コンテンツをダウンロードします。"
+   "選択したコアのフリーコンテンツをダウンロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -553,7 +553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "このコアが「コンテンツレスコア」タブ/メニューに表示されないようにします。表示モードが「カスタム」に設定されている場合にのみ適用されます。"
+   "このコアが [コンテンツレスコア] タブ/メニューに表示されないようにします。表示モードが [カスタム] に設定されている場合にのみ適用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1498,7 +1498,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
-   "Linuxraw入力ドライバにはアクティブなTTYが必要です。 キーボードイベントは TTY から直接読み取られ、簡単になりますが、udevほど柔軟ではありません。 マウスなどは全くサポートされていません。このドライバーは古いジョイスティックAPI(/dev/input/js*) を使用しています。"
+   "Linuxraw 入力ドライバにはアクティブな TTY が必要です。キーボードイベントは TTY から直接読み取られ、簡単になりますが、udev ほど柔軟ではありません。 マウスなどは全くサポートされていません。このドライバは古いジョイスティック API (/dev/input/js*) を使用しています。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
@@ -1840,7 +1840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "ビデオのスケーリングの設定を変更します。"
+   "ビデオのスケーリング設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
@@ -1930,7 +1930,7 @@ MSG_HASH(
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "画像の補間"
+   "画像補間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
@@ -2023,7 +2023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "コンテンツが読み込まれていない場合は、高解像度メニューで使用するための高解像度モデルに切り替えます。"
+   "コンテンツが読み込まれていない場合、高解像度メニューで使用するための高解像度モデルに切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -2307,7 +2307,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "整数刻みでのみビデオを拡大します。基本サイズはシステムが報告する形状とアスペクト比に依存します。[強制アスペクト比] が設定されていない場合、X/Y はそれぞれ独立して整数倍で拡大されます。"
+   "整数刻みでのみビデオを拡大します。基本となるサイズはシステムによって報告される形状とアスペクト比に依存します。[強制アスペクト比] が設定されていない場合、X/Y はそれぞれ独立して整数倍で拡大されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
@@ -4145,11 +4145,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "一部のコアには終了機能があり, ダミーコアをロードするとRetroArchが終了するのを防止できます. "
+   "一部のコアにはシャットダウン機能があり、ダミーコアをロードすることで RetroArch の終了を防止できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   "一部のコアにはシャットダウン機能があります。このオプションを無効のままにすると、シャットダウンの手続きを選択したときに RetroArch がシャットダウンされます。\nこのオプションを有効にすると、代わりにダミーコアがロードされ、メニュー内に留まり RetroArch はシャットダウンしません。"
+   "一部のコアにはシャットダウン機能があります。このオプションを無効のままにすると、終了の手続きを選択したときに RetroArch の終了を引き起こします。\nこのオプションを有効にすることで代わりにダミーコアがロードされ、RetroArch の終了を防止し、メニュー内に留まることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -4169,7 +4169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
-   "コアオプションカテゴリー"
+   "コアオプションのカテゴリー化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
@@ -4449,7 +4449,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "不揮発性セーブRAMファイルをアーカイブ形式で書き込みます. 保存/読み込み時間が長くなりますが, ファイルサイズを大幅に削減します.\n 標準のlibretroセーブRAMインタフェースを介して保存をするコアにのみ適用されます."
+   "不揮発性 SaveRAM ファイルをアーカイブ形式で書き込みます。保存/読み込み時間が長くなる代わりに、ファイルのサイズを大幅に削減します。\n標準 libretro SaveRAM インターフェースを介して保存を行うコアにのみ適用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -4646,7 +4646,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "早送り中のコンテンツの最大フレームレートです. 例えば, 60FPSコンテンツに5xを指定すると, 最大フレームレートは300FPSになります. '0.0x'を指定した場合は無制限になります(フレームレート制限なし)."
+   "早送り中のコンテンツの最大フレームレートです。例えば、60fps コンテンツに対して 5x を指定すると、最大フレームレートは300fps になります。[0.0x] を指定した場合は無制限になります (FPS 制限なし)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
@@ -4889,7 +4889,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "オーバーレイは枠や OSD コントロールに使用されます。"
+   "オーバーレイは外枠や OSD コントロールに使用されます。"
    )
 
 MSG_HASH(
@@ -4944,7 +4944,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "'オーバーレイに入力を表示' が'Physical (Controller)'に設定されているときに監視する入力デバイスのポートを選択します."
+   "[オーバーレイに入力を表示] が [物理 (コントローラー)] に設定されているときに監視する入力デバイスのポートを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -5201,7 +5201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "フルスクリーンモードで表示ウィジェットを描画するときに、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   "フルスクリーンモードで表示ウィジェットを描画する際に、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
@@ -5209,7 +5209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "ウィンドウモードで表示ウィジェットを描画するときに、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   "ウィンドウモードで表示ウィジェットを描画する際に、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -7105,7 +7105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
-   "stdinコマンド"
+   "stdin コマンド"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
@@ -10482,7 +10482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "メニューが常に正しいアスペクト比で表示されるようにします. 無効にすると, クイックメニューは現在読み込まれているコンテンツと一致するように表示されます."
+   "メニューが常に正しいアスペクト比で表示されるようにします。無効にすると、クイックメニューは現在ロードされているコンテンツと一致するように引き伸ばされます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
@@ -10490,7 +10490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   "別のカラーテーマを選択します. 'カスタム'を選択すると, メニューのテーマプリセットファイルを使用できます."
+   "別のカラーテーマを選択します。[カスタム] を選択すると、メニューのテーマプリセットファイルを使用できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
@@ -11213,7 +11213,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "リスト形式のサムネイル表示モードを使用している場合, 2番目のサムネイルを表示します. この設定は, 画面に2つのサムネイルを表示するのに十分な幅がある場合のみ適用されます."
+   "[リスト] 形式のサムネイル表示モードを使用している場合、セカンダリーサムネイルを表示します。この設定は画面に 2 つのサムネイルを表示するのに十分な幅がある場合にのみ適用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -12871,11 +12871,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "コアを更新しました: "
+   "更新されたコア: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "スキップしたコア: "
+   "スキップされたコア: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
@@ -12887,7 +12887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_CORES_RESET,
-   "コアのリセット: "
+   "コアをリセット: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
@@ -13087,7 +13087,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
-   "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
+   "リプレイファイルヘッダーに含まれるコンテンツファイルと保存されたコンテンツチェックサムの CRC 32 チェックサムが一致しません。リプレイの再生時に高確率で同期ずれが発生します。"
    )
 MSG_HASH(
    MSG_CUSTOM_TIMING_GIVEN,
@@ -14435,6 +14435,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   "Joy-Con を分割"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    "グラフィックウィジェット表示倍率のオーバーライド"
