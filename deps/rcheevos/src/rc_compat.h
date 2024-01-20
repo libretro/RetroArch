@@ -1,13 +1,13 @@
 #ifndef RC_COMPAT_H
 #define RC_COMPAT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "rc_export.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+RC_BEGIN_C_DECLS
 
 #if defined(MINGW) || defined(__MINGW32__) || defined(__MINGW64__)
 
@@ -92,8 +92,6 @@ extern "C" {
  void rc_mutex_unlock(rc_mutex_t* mutex);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_COMPAT_H */

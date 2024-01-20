@@ -60,7 +60,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse, in
           /* right hand side is not required when Measured is used in a value */
           if (is_value)
             break;
-          /* fallthrough to default */
+          /* fallthrough */ /* to default */
 
         default:
           parse->offset = RC_INVALID_OPERATOR;

@@ -6,9 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
 /* --- Login --- */
 
@@ -48,10 +46,10 @@ typedef struct rc_api_login_response_t {
 }
 rc_api_login_response_t;
 
-int rc_api_init_login_request(rc_api_request_t* request, const rc_api_login_request_t* api_params);
-int rc_api_process_login_response(rc_api_login_response_t* response, const char* server_response);
-int rc_api_process_login_server_response(rc_api_login_response_t* response, const rc_api_server_response_t* server_response);
-void rc_api_destroy_login_response(rc_api_login_response_t* response);
+RC_EXPORT int RC_CCONV rc_api_init_login_request(rc_api_request_t* request, const rc_api_login_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_process_login_response(rc_api_login_response_t* response, const char* server_response);
+RC_EXPORT int RC_CCONV rc_api_process_login_server_response(rc_api_login_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_login_response(rc_api_login_response_t* response);
 
 /* --- Start Session --- */
 
@@ -65,6 +63,10 @@ typedef struct rc_api_start_session_request_t {
   const char* api_token;
   /* The unique identifier of the game */
   uint32_t game_id;
+  /* (recommended) The hash associated to the game being played */
+  const char* game_hash;
+  /* Non-zero if hardcore is currently enabled (ignored if game_hash is null) */
+  uint32_t hardcore;
 }
 rc_api_start_session_request_t;
 
@@ -101,10 +103,10 @@ typedef struct rc_api_start_session_response_t {
 }
 rc_api_start_session_response_t;
 
-int rc_api_init_start_session_request(rc_api_request_t* request, const rc_api_start_session_request_t* api_params);
-int rc_api_process_start_session_response(rc_api_start_session_response_t* response, const char* server_response);
-int rc_api_process_start_session_server_response(rc_api_start_session_response_t* response, const rc_api_server_response_t* server_response);
-void rc_api_destroy_start_session_response(rc_api_start_session_response_t* response);
+RC_EXPORT int RC_CCONV rc_api_init_start_session_request(rc_api_request_t* request, const rc_api_start_session_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_process_start_session_response(rc_api_start_session_response_t* response, const char* server_response);
+RC_EXPORT int RC_CCONV rc_api_process_start_session_server_response(rc_api_start_session_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_start_session_response(rc_api_start_session_response_t* response);
 
 /* --- Fetch User Unlocks --- */
 
@@ -137,13 +139,11 @@ typedef struct rc_api_fetch_user_unlocks_response_t {
 }
 rc_api_fetch_user_unlocks_response_t;
 
-int rc_api_init_fetch_user_unlocks_request(rc_api_request_t* request, const rc_api_fetch_user_unlocks_request_t* api_params);
-int rc_api_process_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response, const char* server_response);
-int rc_api_process_fetch_user_unlocks_server_response(rc_api_fetch_user_unlocks_response_t* response, const rc_api_server_response_t* server_response);
-void rc_api_destroy_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_user_unlocks_request(rc_api_request_t* request, const rc_api_fetch_user_unlocks_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_process_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response, const char* server_response);
+RC_EXPORT int RC_CCONV rc_api_process_fetch_user_unlocks_server_response(rc_api_fetch_user_unlocks_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_fetch_user_unlocks_response(rc_api_fetch_user_unlocks_response_t* response);
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_API_H */

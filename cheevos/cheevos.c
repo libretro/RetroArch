@@ -374,7 +374,7 @@ void rcheevos_spectating_changed(void)
 bool rcheevos_is_pause_allowed(void)
 {
 #ifdef HAVE_RC_CLIENT
-   return rc_client_can_pause(rcheevos_locals.client);
+   return rc_client_can_pause(rcheevos_locals.client, NULL);
 #else
    return (rcheevos_locals.unpaused_frames == 0);
 #endif

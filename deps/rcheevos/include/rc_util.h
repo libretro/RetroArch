@@ -1,12 +1,12 @@
 #ifndef RC_UTIL_H
 #define RC_UTIL_H
 
+#include "rc_export.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
 /**
  * A block of memory for variable length data (like strings and arrays).
@@ -46,8 +46,6 @@ uint32_t rc_djb2(const char* input);
 
 void rc_format_md5(char checksum[33], const uint8_t digest[16]);
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_UTIL_H */

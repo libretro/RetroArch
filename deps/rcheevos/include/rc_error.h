@@ -1,9 +1,9 @@
 #ifndef RC_ERROR_H
 #define RC_ERROR_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "rc_export.h"
+
+RC_BEGIN_C_DECLS
 
 /*****************************************************************************\
 | Return values                                                               |
@@ -48,10 +48,8 @@ enum {
   RC_EXPIRED_TOKEN = -35
 };
 
-const char* rc_error_str(int ret);
+RC_EXPORT const char* RC_CCONV rc_error_str(int ret);
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_ERROR_H */
