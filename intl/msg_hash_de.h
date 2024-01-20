@@ -3124,6 +3124,14 @@ MSG_HASH(
    "Standard aktive Taste für Turbo-Modus 'Einzeltaste'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Erlaube Turbo bei Steuerkreuz-Richtungseingaben"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Wenn aktiviert, können digitale Richtungseingaben (auch bekannt als Steuerkreuz oder \"Hatswitch\") Turbo sein."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbo"
    )
@@ -7244,6 +7252,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
    "Prüft CRC auf mögliche Duplikate"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Manchmal duplizieren ISOs Seriennummern, insbesondere bei PSP/PSN-Titeln. Sich allein auf die Seriennummer zu verlassen, kann manchmal dazu führen, daß der Scanner Inhalte in das falsche System einfügt. Dadurch wird eine CRC-Prüfung hinzugefügt, die das Scannen erheblich verlangsamt, aber möglicherweise präziser ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -13500,6 +13512,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Kein Vorschaubild verfügbar"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Alle möglichen Thumbnail-Downloads wurden bereits für diesen Playlist-Eintrag versucht."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
