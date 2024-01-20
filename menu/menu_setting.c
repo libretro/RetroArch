@@ -6392,6 +6392,65 @@ static void setting_get_string_representation_video_swap_interval(rarch_setting_
       snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
 }
 
+static void setting_get_string_representation_black_frame_insertion(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF), len);
+         break;
+      case 1:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120), len);
+         break;
+      case 2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180), len);
+         break;
+      case 3:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240), len);
+         break;
+      case 4:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300), len);
+         break;
+      case 5:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360), len);
+         break;
+      case 6:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420), len);
+         break;
+      case 7:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480), len);
+         break;
+      case 8:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540), len);
+         break;
+      case 9:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600), len);
+         break;
+      case 10:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660), len);
+         break;
+      case 11:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720), len);
+         break;
+      case 12:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780), len);
+         break;
+      case 13:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840), len);
+         break;
+      case 14:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900), len);
+         break;
+      case 15:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_video_frame_delay(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -8105,14 +8164,79 @@ static void general_write_handler(rarch_setting_t *setting)
                settings->floats.audio_max_timing_skew,
                *setting->value.target.fraction);
          break;
+      case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+         /* If enabling BFI, auto disable other sync settings 
+            that do not work together with BFI */
+         if (*setting->value.target.unsigned_integer > 0)
+         {
+            configuration_set_uint(settings,
+               settings->uints.video_swap_interval,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_frame_delay,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.video_frame_delay_auto,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.vrr_runloop_enable,
+               0);
+
+             /* Set reasonable default for dark frames for current BFI value.
+                Even results OR odd 60hz multiples should be mostly immune to lcd voltage retention.
+                Nothing to be done for 120hz except phase retention usage if needed. */
+            if (*setting->value.target.unsigned_integer == 1)
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  1);
+            }
+            /* Odd 60hz multiples, safe to nudge result over 50% for more clarity by default */
+            else if ((*setting->value.target.unsigned_integer + 1) % 2 != 0)
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  ((*setting->value.target.unsigned_integer + 1) / 2) + 1);
+            }
+            /* Odd result on even multiple, bump result up one */
+            else if (((*setting->value.target.unsigned_integer + 1) / 2) % 2 != 0)
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  ((*setting->value.target.unsigned_integer + 1) / 2) + 1);
+            }
+            /* Even result on even multiple, leave alone */
+            else
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  ((*setting->value.target.unsigned_integer + 1) / 2));
+            }
+         }
 #ifdef HAVE_CHEEVOS
+         rcheevos_validate_config_settings();
+#endif
+         break;
+      case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
+         /* Limit choice to max possible for current BFI Hz Setting */
+         if (*setting->value.target.unsigned_integer > settings->uints.video_black_frame_insertion)
+            configuration_set_uint(settings,
+               settings->uints.video_bfi_dark_frames,
+               settings->uints.video_black_frame_insertion);
+         break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
-      case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+         /* BFI doesn't play nice with any of these */
+         configuration_set_bool(settings,
+            settings->uints.video_black_frame_insertion,
+            0);
+#ifdef HAVE_CHEEVOS
          rcheevos_validate_config_settings();
-         break;
 #endif
+         break;
+
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
@@ -13449,9 +13573,26 @@ static bool setting_append_list(
                         general_write_handler,
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+                  (*list)[list_info->index - 1].get_string_representation =
+                        &setting_get_string_representation_black_frame_insertion;
+                  menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
                   MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
                   SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+                  CONFIG_UINT(
+                        list, list_info,
+                        &settings->uints.video_bfi_dark_frames,
+                        MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+                        DEFAULT_BFI_DARK_FRAMES,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  (*list)[list_info->index - 1].offset_by = 1;
+                  menu_settings_list_current_add_range(list, list_info, 1, 15, 1, true, true);
                }
             }
 #endif

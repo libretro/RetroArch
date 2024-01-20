@@ -1920,11 +1920,87 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insert a black frame between frames. Useful on some high refresh rate screens to eliminate ghosting."
+   "Insert black frame(s) between frames. Can greatly reduce motion blur by emulating CRT scan out, but at cost of brightness. Do not combine with Swap Interval > 1 (Auto is ok), Frame Delay, or Sync to Exact Content Framerate."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Inserts a black frame inbetween frames. Useful for 120 Hz monitors to play 60 Hz material with eliminated ghosting. Video refresh rate should still be configured as if it is a 60 Hz monitor (divide refresh rate by 2)."
+   "Inserts black frame(s) inbetween frames for enhanced motion clarity. Only use option designated for your current display refresh rate. Not for use at refresh rates that are non-multiples of 60Hz such as 144Hz, 165Hz, etc. Do not combine with Swap Interval > 1 (Auto is ok), Frame Delay, or Sync to Exact Content Framerate. Leaving system VRR on is ok, just not that setting. If you notice -any- temporary image retention, you should disable at 120hz, and for higher hz adjust the dark frames setting below."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - For 120Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - For 180Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - For 240Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - For 300Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - For 360Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - For 420Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - For 480Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - For 540Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - For 600Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - For 660Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - For 720Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - For 780Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - For 840Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - For 900Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - For 960Hz Display Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Black Frame Insertion - Dark Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Adjust number of black frames in total BFI scan out sequence. More equals higher motion clarity, less equals higher brightness. Not applicable at 120hz as there is only 1 BFI frame to work with total. Settings higher than possible will limit you to the maximum possible for your chosen refresh rate."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Adjusts the number of frames displayed in the bfi sequence that are black. More black frames increases motion clarity but reduces brightness. Not applicable at 120hz as there is only one total extra 60hz frame, so it must be black otherwise BFI would not be active at all."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

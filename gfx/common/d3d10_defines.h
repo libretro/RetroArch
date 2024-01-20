@@ -42,7 +42,8 @@ enum d3d10_video_flags
    D3D10_ST_FLAG_OVERLAYS_ENABLE     = (1 << 7),
    D3D10_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 8),
    D3D10_ST_FLAG_MENU_ENABLE         = (1 << 9),
-   D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10)
+   D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10),
+   D3D10_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 11)
 };
 
 

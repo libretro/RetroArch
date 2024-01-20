@@ -2393,6 +2393,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_max_swapchain_images",    &settings->uints.video_max_swapchain_images, true, DEFAULT_MAX_SWAPCHAIN_IMAGES, false);
    SETTING_UINT("video_max_frame_latency",       &settings->uints.video_max_frame_latency, true, DEFAULT_MAX_FRAME_LATENCY, false);
    SETTING_UINT("video_black_frame_insertion",   &settings->uints.video_black_frame_insertion, true, DEFAULT_BLACK_FRAME_INSERTION, false);
+   SETTING_UINT("video_bfi_dark_frames",         &settings->uints.video_bfi_dark_frames, true, DEFAULT_BFI_DARK_FRAMES, false);
    SETTING_UINT("video_swap_interval",           &settings->uints.video_swap_interval, true, DEFAULT_SWAP_INTERVAL, false);
    SETTING_UINT("video_rotation",                &settings->uints.video_rotation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("screen_orientation",            &settings->uints.screen_orientation, true, ORIENTATION_NORMAL, false);

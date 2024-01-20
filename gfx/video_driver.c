@@ -2551,6 +2551,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
+   video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->runahead                    = settings->bools.run_ahead_enabled;

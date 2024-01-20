@@ -62,7 +62,8 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_VSYNC                 = (1 << 12),
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_WAIT_FOR_VBLANK       = (1 << 14),
-   D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 15)
+   D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 15),
+   D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 16)
 };
 
 typedef enum
@@ -350,7 +351,7 @@ typedef struct
 #ifdef DEBUG
    D3D12Debug debugController;
 #endif
-   uint16_t flags;
+   uint32_t flags;
 } d3d12_video_t;
 
 /* end of auto-generated */

@@ -1481,6 +1481,8 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned pot_height              = 0;
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
+   int bfi_light_frames;
+   unsigned n;
 #ifdef HAVE_MENU
    bool menu_is_alive               = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -1715,22 +1717,51 @@ static bool gl1_frame(void *data, const void *frame,
          && !video_info->runloop_is_paused
          && !(gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE))
    {
-        int n;
-        for (n = 0; n < (int)video_info->black_frame_insertion; ++n)
-        {
-          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);
 
-          if (gl1->ctx_driver->swap_buffers)
-            gl1->ctx_driver->swap_buffers(gl1->ctx_data);
-        }
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+      video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(gl1->flags & GL1_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl1->flags |= GL1_FLAG_FRAME_DUPE_LOCK;
+
+         while (bfi_light_frames > 0)
+         {
+            if (!(gl1_frame(gl1, frame, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(gl1->flags & GL1_FLAG_FRAME_DUPE_LOCK))
+         {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (gl1->ctx_driver->swap_buffers)
+               gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+         }
+      }
    }
 #endif
+
 
    /* check if we are fast forwarding or in menu,
       if we are ignore hard sync */
    if (      hard_sync
          && !video_info->input_driver_nonblock_state
+
       )
    {
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1742,7 +1773,6 @@ static bool gl1_frame(void *data, const void *frame,
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
-
    return true;
 }
 

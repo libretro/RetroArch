@@ -997,6 +997,7 @@ static uint32_t d3d11_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
@@ -2793,6 +2794,12 @@ static bool d3d11_gfx_frame(
    struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
+   unsigned black_frame_insertion = video_info->black_frame_insertion;
+   int bfi_light_frames;
+   unsigned n;
+   bool nonblock_state            = video_info->input_driver_nonblock_state;
+   bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
+   bool runloop_is_paused         = video_info->runloop_is_paused;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -3373,6 +3380,47 @@ static bool d3d11_gfx_frame(
       DXGIGetContainingOutput(d3d11->swapChain, &pOutput);
       DXGIWaitForVBlank(pOutput);
       Release(pOutput);
+   }
+
+   if (
+           black_frame_insertion
+        && !(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
+        && !nonblock_state
+        && !runloop_is_slowmotion
+        && !runloop_is_paused)
+   {
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+         video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK))
+      {
+         d3d11->flags |= D3D11_ST_FLAG_FRAME_DUPE_LOCK;
+         while (bfi_light_frames > 0)
+         {
+            if (!(d3d11_gfx_frame(d3d11, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               d3d11->flags &= ~D3D11_ST_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         d3d11->flags &= ~D3D11_ST_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK))
+         {
+            context->lpVtbl->OMSetRenderTargets(context, 1, &rtv, NULL);
+            context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
+            DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+         }
+      } 
    }
 
    Release(rtv);

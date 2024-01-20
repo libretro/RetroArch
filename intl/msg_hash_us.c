@@ -419,6 +419,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION), len);
              break;
+          case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES), len);
+             break;
           case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY), len);
              break;

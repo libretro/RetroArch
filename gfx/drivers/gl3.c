@@ -2504,7 +2504,8 @@ static bool gl3_frame(void *data, const void *frame,
    bool msg_bgcolor_enable                 = video_info->msg_bgcolor_enable;
 #endif
    unsigned black_frame_insertion          = video_info->black_frame_insertion;
-
+   int bfi_light_frames;
+   unsigned n;
    unsigned hard_sync_frames               = video_info->hard_sync_frames;
    bool runloop_is_paused                  = video_info->runloop_is_paused;
    bool runloop_is_slowmotion              = video_info->runloop_is_slowmotion;
@@ -2672,23 +2673,50 @@ static bool gl3_frame(void *data, const void *frame,
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-    if (
-         black_frame_insertion
-         && !input_driver_nonblock_state
-         && !runloop_is_slowmotion
-         && !runloop_is_paused
-         && (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
-    {
-        size_t n;
-        for (n = 0; n < black_frame_insertion; ++n)
-        {
-          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);
+   if (
+         video_info->black_frame_insertion
+         && !video_info->input_driver_nonblock_state
+         && !video_info->runloop_is_slowmotion
+         && !video_info->runloop_is_paused
+         && !(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+   {
 
-          if (gl->ctx_driver->swap_buffers)
-            gl->ctx_driver->swap_buffers(gl->ctx_data);
-        }
-    }
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+      video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl->flags |= GL3_FLAG_FRAME_DUPE_LOCK;
+
+         while (bfi_light_frames > 0)
+         {
+            if (!(gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+         {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (gl->ctx_driver->swap_buffers)
+               gl->ctx_driver->swap_buffers(gl->ctx_data);
+         }
+      }
+   }
 #endif
 
    if (    hard_sync
