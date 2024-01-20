@@ -52,14 +52,20 @@ bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_s
       const rc_client_achievement_t* cheevo = menuitem->achievement;
       if (cheevo)
       {
-         if (cheevo->measured_progress[0])
+         if (cheevo->state != RC_CLIENT_ACHIEVEMENT_STATE_ACTIVE)
          {
-            snprintf(buffer, buffer_size, "%s - %s",
-               msg_hash_to_str(menuitem->state_label_idx), cheevo->measured_progress);
+            strlcpy(buffer, msg_hash_to_str(menuitem->state_label_idx), buffer_size);
          }
          else
-            strlcpy(buffer, msg_hash_to_str(menuitem->state_label_idx), buffer_size);
-
+         {
+            const char* missable = cheevo->type == RC_CLIENT_ACHIEVEMENT_TYPE_MISSABLE ? "[m] " : "";
+            if (cheevo->measured_progress[0])
+               snprintf(buffer, buffer_size, "%s%s - %s", missable,
+                  msg_hash_to_str(menuitem->state_label_idx), cheevo->measured_progress);
+            else
+               snprintf(buffer, buffer_size, "%s%s", missable,
+                  msg_hash_to_str(menuitem->state_label_idx));
+         }
          return true;
       }
    }
@@ -405,10 +411,12 @@ void rcheevos_menu_populate(void* data)
       do
       {
          if (menuitem->achievement)
+         {
             menu_entries_append(info->list, menuitem->achievement->title,
                menuitem->achievement->description,
                MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                MENU_SETTINGS_CHEEVOS_START + idx, 0, 0, NULL);
+         }
          else
          {
             if (menuitem->subset_id)
