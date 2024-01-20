@@ -396,10 +396,16 @@
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
- * material with eliminated  ghosting. video_refresh_rate should still be configured
- * as if it is a 60 Hz monitor (divide refresh rate by multiple of 60 Hz).
+ * material with CRT-like motion clarity.
  */
 #define DEFAULT_BLACK_FRAME_INSERTION 0
+
+/* Black Frame Insertion Dark Frames.
+ * Increase for more clarity at the cost of lower brightness. Adjusting can also eliminate
+ * any temporary image retention if noticed. Only useful at 180hz or higher 60hz multiples, 
+ * as 120hz only has one total extra frame for BFI to work with.
+ */
+#define DEFAULT_BFI_DARK_FRAMES 1
 
 /* Uses a custom swap interval for VSync.
  * Set this to effectively halve monitor refresh rate.
