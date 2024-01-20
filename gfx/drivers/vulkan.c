@@ -4064,6 +4064,8 @@ static bool vulkan_frame(void *data, const void *frame,
    bool statistics_show                          = video_info->statistics_show;
    const char *stat_text                         = video_info->stat_text;
    unsigned black_frame_insertion                = video_info->black_frame_insertion;
+   int bfi_light_frames;
+   unsigned n;
    bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
    bool runloop_is_paused                        = video_info->runloop_is_paused;
@@ -4870,7 +4872,7 @@ static bool vulkan_frame(void *data, const void *frame,
       vulkan_check_swapchain(vk);
 
    /* Disable BFI during fast forward, slow-motion,
-    * and pause to prevent flicker. */
+    * pause, and menu to prevent flicker. */
    if (
             (backbuffer->image != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
@@ -4880,12 +4882,37 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_is_paused
          && (!(vk->flags & VK_FLAG_MENU_ENABLE)))
    {
-      int n;
-      for (n = 0; n < (int) black_frame_insertion; ++n)
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+         video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
       {
-         vulkan_inject_black_frame(vk, video_info);
-         if (vk->ctx_driver->swap_buffers)
-            vk->ctx_driver->swap_buffers(vk->ctx_data);
+         vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+         while (bfi_light_frames > 0)
+         {
+            if (!(vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
+         {
+            vulkan_inject_black_frame(vk, video_info);
+            if (vk->ctx_driver->swap_buffers)
+               vk->ctx_driver->swap_buffers(vk->ctx_data);
+         }
       }
    }
 

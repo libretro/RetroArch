@@ -415,6 +415,7 @@ typedef struct video_frame_info
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
    unsigned black_frame_insertion;
+   unsigned bfi_dark_frames;
    unsigned fps_update_interval;
    unsigned memory_update_interval;
    unsigned msg_queue_delay;

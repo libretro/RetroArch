@@ -54,7 +54,8 @@ enum d3d11_state_flags
    D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 14),
    D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 15),
    D3D11_ST_FLAG_MENU_ENABLE         = (1 << 16),
-   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17)
+   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17),
+   D3D11_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 18)
 };
 
 enum d3d11_feature_level_hint

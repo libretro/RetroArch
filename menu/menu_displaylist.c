@@ -9316,6 +9316,7 @@ unsigned menu_displaylist_build_list(
             bool video_vsync          = settings->bools.video_vsync;
             bool video_hard_sync      = settings->bools.video_hard_sync;
             bool video_wait_swap      = settings->bools.video_waitable_swapchains;
+            unsigned bfi              = settings->uints.video_black_frame_insertion;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_VSYNC,
@@ -9332,6 +9333,14 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+
+               if (bfi > 0)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
                         PARSE_ONLY_BOOL, false) == 0)

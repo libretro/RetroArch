@@ -4032,6 +4032,10 @@ MSG_HASH(
    "video_black_frame_insertion"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+   "video_bfi_dark_frames"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
    "video_crop_overscan"
    )
