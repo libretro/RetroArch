@@ -4513,7 +4513,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "各コンテンツが実行された時間を、すべてのコアの合計として記録し追跡します。"
+   "各コンテンツが実行された時間を足し合わせ、すべてのコアの合計として記録し追跡します。"
    )
 
 /* Settings > Logging */
@@ -7259,7 +7259,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
-   "現在のコアの関連付けや実行時間など、各プレイリストエントリーの追加の情報を表示します (利用可能な場合)。パフォーマンスに影響します。"
+   "現在のコアの関連付けや実行時間など、各プレイリストエントリーの追加情報を表示します (利用可能な場合)。パフォーマンスに影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
@@ -8303,7 +8303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
-   "原点別"
+   "国別"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
@@ -9700,7 +9700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE,
-   "コアはありません"
+   "コアなし"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SEARCH,
@@ -10586,7 +10586,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
-   "プレイリストエントリーを選択したとき、関連付けられたサムネイルを読み込むまでの時間遅延を適用します。この値を 256ms 以上に設定すると、最も低性能なデバイスでも遅延のない高速スクロールが可能になります。"
+   "プレイリストエントリーを選択したとき、関連付けられたサムネイルの読み込みを開始するまでの遅延時間です。この値を 256ms 以上に設定すると、最も低性能なデバイスでも遅延のない高速なスクロールが可能になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
@@ -11547,7 +11547,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
-   "コアに関連付ける"
+   "コアを関連付ける"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
@@ -11863,7 +11863,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   "システムのすべて"
+   "すべてのシステム"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
@@ -12871,11 +12871,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "更新されたコア: "
+   "更新したコア: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "スキップされたコア: "
+   "スキップしたコア: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
@@ -13071,7 +13071,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "データトラックを開くことができませんでした。"
+   "データトラックを開くことができませんでした"
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
