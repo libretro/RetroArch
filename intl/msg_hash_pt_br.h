@@ -1643,10 +1643,6 @@ MSG_HASH(
    "Inserção de quadro opaco"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insira um quadro preto entre os quadros. É útil em algumas telas com alta taxa de atualização para eliminar o efeito fantasma."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Habilitar captura de tela da GPU"
    )

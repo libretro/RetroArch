@@ -45,6 +45,10 @@ MSG_HASH(
    "Εξερεύνηση"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Πυρήνες Χωρίς Περιεχόμενα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Εισαγωγή περιεχομένου"
    )
@@ -68,12 +72,20 @@ MSG_HASH(
    "Επιλέξτε ποιον πυρήνα θα χρησιμοποιήσετε."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Αναζήτηση για μια εφαρμογή πυρήνα libretro. Όπου το πρόγραμμα περιήγησης ξεκινά εξαρτάται από τη διαδρομή του καταλόγου πυρήνα. Αν είναι κενό, θα ξεκινήσει στη ρίζα.\nΑν ο κατάλογος πυρήνων είναι ένας κατάλογος, το μενού θα το χρησιμοποιήσει ως κορυφαίο φάκελο. Αν ο κατάλογος πυ[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Φόρτωση Περιεχομένου"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Επιλέξτε ποιο περιεχόμενο θα ξεκινήσετε."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Περιηγηθείτε για περιεχόμενο. Για να φορτώσετε περιεχόμενο, χρειάζεστε έναν «Πυρήνα» για χρήση και ένα αρχείο περιεχομένου.\nΓια να ελέγξετε πού ξεκινά η αναζήτηση περιεχομένου από το μενού, ορίστε τον «Κατάλογο προγράμματος περιήγησης αρχείων». Εάν δεν οριστεί, θα ξεκινή[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -95,6 +107,10 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
    "Εξαγωγή Δίσκου"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_EJECT_DISC,
+   "Εξάγει το δίσκο από φυσική μονάδα CD/DVD."
    )
 #endif
 MSG_HASH(
@@ -193,6 +209,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Έξοδος από το πρόγραμμα."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Τερματίστε RetroArch. Σκοτώνοντας το πρόγραμμα με οποιονδήποτε σκληρό τρόπο (SIGKILL, κλπ.) θα τερματίσει το RetroArch χωρίς αποθήκευση της διαμόρφωσης, κλπ. Σε Unix-likes, SIGINT/SIGTERM επιτρέπει μια καθαρή απαρχικοποίηση."
+   )
 
 /* Main Menu > Load Core */
 
@@ -282,6 +302,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Αναζητηστε όλο το περιεχόμενο ταιριάζοντας την βάση δεδομενων μέσω μιας κατηγοριοποιησης της διεπαφής αναζητήσεων."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Πυρήνες Χωρίς Περιεχόμενα"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Εγκατεστημένοι πυρήνες που μπορούν να λειτουργήσουν χωρίς φόρτωση περιεχομένου θα εμφανιστούν εδώ."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -324,6 +352,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Λήψη Περιεχομένου"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Κατεβάστε δωρεάν περιεχόμενο για τον επιλεγμένο πυρήνα."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Λήψη Αρχείων Συστήματος Πυρήνα"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Κατεβάστε τα αρχεία βοηθητικού συστήματος που απαιτούνται για τη σωστή / βέλτιστη λειτουργία πυρήνα."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -424,6 +464,10 @@ MSG_HASH(
    "Επιγραφή πυρήνα"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "Έκδοση Πυρήνα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
    "Όνομα συστήματος"
    )
@@ -456,12 +500,44 @@ MSG_HASH(
    "Απαιτούμενο API γραφικών"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Υποστήριξη αποθήκευσης κατάστασης"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
    "Κανείς"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Βασικό (Αποθήκευση/Φόρτωση)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   "Σειριακή (Αποθήκευση/Φόρτωση, Αναίρεση)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Ντετερμινιστική (Αποθήκευση/Φόρτωση, Αναίρεση, Προώθηση, Netplay)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Λογισμικό"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Λείπει, Απαιτείται:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Λείπει, Προαιρετικό:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Υπάρχων, Απαιτείται:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Υπάρχον, Προαιρετικό:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -470,6 +546,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "Αποτροπή τροποποιήσεων του τρέχοντος εγκατεστημένου πυρήνα. Μπορεί να χρησιμοποιηθεί για αποφυγή ανεπιθύμητων ενημερώσεων όταν το περιεχόμενο απαιτεί συγκεκριμένη έκδοση πυρήνα (π.χ. Παιχνίδια Arcade)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "Εξαίρεση από το μενού 'Πυρήνες χωρίς περιεχόμενο'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "Αποτρέψτε την εμφάνιση αυτού του πυρήνα στην καρτέλα/μενού 'Πυρήνες χωρίς περιεχόμενο'. Εφαρμόζεται μόνο όταν η λειτουργία εμφάνισης έχει οριστεί σε 'Προσαρμοσμένη'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -513,6 +597,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Ημερομηνία Κατασκευής"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Έκδοση RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -809,6 +897,10 @@ MSG_HASH(
    "Επιτεύγματα"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   "Κατηγορία"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
    "Γλώσσα"
    )
@@ -817,8 +909,52 @@ MSG_HASH(
    "Περιοχή"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "Αποκλειστική κονσόλα"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "Αποκλειστική πλατφόρμα"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Βαθμολογία"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Μέσα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
    "Χειρισμοί"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   "Στυλ τέχνης"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Τρόπος παιχνιδιού"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Αφηγηματική"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   "Βηματοδότηση"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "Προοπτική"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Ρυθμίσεις"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   "Εμφάνιση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -1146,6 +1282,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "Μέσα"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
    "Επίδοση"

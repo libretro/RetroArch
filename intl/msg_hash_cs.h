@@ -1847,14 +1847,6 @@ MSG_HASH(
    "Vložení černého rámečku"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Mezi snímky se vloží černý rámeček. Užitečné na některých obrazovkách s vysokou obnovovací frekvencí k odstranění duchů."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Vloží černý rámeček mezi snímky. Užitečné pro 120 Hz monitory k přehrávání 60 Hz materiálu s eliminací duchů. Obnovovací frekvence videa by měla být stále nastavena jako u 60 Hz monitoru (vydělte obnovovací frekvenci dvěma)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU snímek obrazovky"
    )

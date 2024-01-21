@@ -1439,10 +1439,6 @@ MSG_HASH(
    "Ubacivanje crnog frejma"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Ubaci crni frejm između frejmova. Korsino za neke ekrana sa velikom brzinom osvežavanja da bi se eliminisalno razmazivanje."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU slika ekrana"
    )

@@ -1383,8 +1383,84 @@ MSG_HASH(
    "Inserção de frame preto"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere um frame preto entre frames. Útil nalguns ecrãs com alta taxa de atualização para eliminar efeito ghosting."
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Insere fotogramas pretos entre fotogramas para melhorar a nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combinar com Intervalo de troca > 1 (Auto está bem), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo. Deixar o VRR (Taxa de atualização variável) do sistema ativado é aceitável, mas n[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Desligado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Para uma taxa de atualização do ecrã de 120Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Para uma taxa de atualização do ecrã de 180Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Para uma taxa de atualização do ecrã de 240Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Para uma taxa de atualização do ecrã de 300Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Para uma taxa de atualização do ecrã de 360Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Para uma taxa de atualização do ecrã de 420Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Para uma taxa de atualização do ecrã de 480Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Para uma taxa de atualização do ecrã de 540Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Para uma taxa de atualização do ecrã de 600Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Para uma taxa de atualização do ecrã de 660Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Para uma taxa de atualização do ecrã de 720Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Para uma taxa de atualização do ecrã de 780Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Para uma taxa de atualização do ecrã de 840Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Para uma taxa de atualização do ecrã de 900Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Para uma taxa de atualização do ecrã de 960Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Inserir fotogramas a preto - Fotogramas escuros"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Ajusta o número de fotogramas pretos na sequência total de digitalização BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. Não é aplicável a 120hz, uma vez que só existe 1 fotograma BFI para trabalhar no total. As definições superiores ao possível limitam-no ao máximo possível para a taxa de atualização escolhida."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Ajusta o número de fotogramas apresentados na sequência BFI que são pretos. Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. Não é aplicável a 120hz, uma vez que existe apenas um fotograma extra total a 60hz, pelo que tem de ser preto, caso contrário a BFI não estaria ativa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1760,6 +1836,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    "Sincronização vertical (Vsync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   "Intervalo de troca VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Utilize um intervalo de troca personalizado para o VSync. Reduz eficazmente a taxa de atualização do monitor pelo fator especificado. 'Auto' define o fator com base na taxa de fotogramas relatada pelo núcleo, proporcionando um ritmo de fotogramas melhorado ao executar, por exemplo, conteúdo de 30 fps num ecrã de 60 Hz ou conteúdo de 60 fps num ecrã de 120 Hz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,

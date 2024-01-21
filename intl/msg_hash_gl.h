@@ -1423,10 +1423,6 @@ MSG_HASH(
    "Inserción de Black Frame"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Inserta un cadro en negro entre 2 cadros normais. Útil nalgunhas pantallas de tasa alta de refresco pra eliminar imaxes pantasma."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Captura de pantalla da GPU"
    )

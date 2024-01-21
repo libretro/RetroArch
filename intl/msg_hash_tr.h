@@ -1868,11 +1868,87 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Kareler arasına siyah bir kare ekler. Bazı yüksek yenileme hızlı ekranlarda gölgelenmeyi ortadan kaldırmak için kullanışlıdır."
+   "Karelerin arasına siyah kareler ekleyin. CRT tarama çıkışını taklit ederek hareket bulanıklığını büyük ölçüde azaltabilir, ancak parlaklık azalabilir. Değiştirme Aralığı > 1 (Otomatik uygundur), Kare Gecikmesi veya Tam İçerik Kare Hızına Eşitleme ile birleştirmeyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Kareler arasına siyah bir çerçeve ekler. 120 Hz monitörler için 60 Hz materyali gölgelenmeyi ortadan kaldırarak oynatmak için kullanışlıdır. Video yenileme hızı yine de 60 Hz'lik bir monitör gibi yapılandırılmalıdır (yenileme hızını 2'ye bölün)."
+   "Gelişmiş hareket netliği için karelerin arasına siyah kareler ekler. Yalnızca mevcut ekran yenileme hızınız için belirlenen seçeneği kullanın. 144Hz, 165Hz vb. gibi 60Hz katı olmayan yenileme hızlarında kullanılmaz. Değiştirme Aralığı > 1 (Otomatik tamam), Kare Gecikmesi veya Tam İçerik Kare Hızına Eşitleme ile birleştirmeyin. Sistem VRR açık bırakmak normalde sorun değil ancak bu ayarla uygun değil. Herhangi bir geçici görüntü tutulması fark ederseniz, 120h[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Kapalı"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - 120Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - 180Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - 240Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - 300Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - 360Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - 420Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - 480Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - 540Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - 600Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - 660Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - 720Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - 780Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - 840Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - 900Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - 960Hz Ekran Yenileme Hızı İçin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Siyah Kare Ekleme - Koyu Kareler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Toplam BFI tarama sırasındaki siyah kare sayısını ayarlayın. Daha fazlası daha yüksek hareket netliğine, daha azı daha yüksek parlaklığa eşittir. Toplamda çalışacak yalnızca 1 BFI kare olduğundan 120 Hz için geçerli değildir. Mümkün olandan daha yüksek ayarlar, sizi seçtiğiniz yenileme hızı için mümkün olan azami değerle sınırlayacaktır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Bfi dizisinde görüntülenen siyah kare sayısını ayarlar. Daha fazla siyah kare hareket netliğini artırır ancak parlaklığı azaltır. Toplamda yalnızca bir adet ekstra 60hz çerçeve olduğundan 120hz için geçerli değildir, bu nedenle siyah olmalıdır, aksi takdirde BFI hiç aktif olmazdı."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

@@ -1311,10 +1311,6 @@ MSG_HASH(
    "درج فریم سیاه"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "یک فریم سیاه را بین فریم‌ها درج کن. برای جلوگیری از ایجاد حالت سایه در نمایشگرهای با نرخ تازه‌سازی بالا مفید است."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "نماگرفت پردازندهٔ گرافیکی"
    )

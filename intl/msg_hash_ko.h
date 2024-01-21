@@ -1895,14 +1895,6 @@ MSG_HASH(
    "검은 프레임 삽입"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "프레임 사이 검은 프레임을 삽입합니다. 120Hz 디스플레이에서 60Hz 콘텐츠 실행 시 고스트 현상을 줄이는데 유용합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "프레임 사이에 검은색 프레임을 삽입합니다. 120Hz 모니터에서 고스팅이 제거된 60Hz 자료를 실행하는 데 유용합니다. 비디오 새로 고침 빈도는 60Hz 모니터상태 그대로 구성해야 합니다(새로 고침 빈도를 2로 나눔)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU 스크린샷 사용"
    )

@@ -1852,11 +1852,87 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insérer une image noire entre les images. Utile pour certains écrans à fréquence de rafraîchissement élevée pour éliminer la rémanence."
+   "Insérer une ou plusieurs images noires entre les images. Peut considérablement réduire le flou de mouvement en émulant le balayage CRT, mais au détriment de la luminosité. Ne pas combiner avec les options Intervalle d'échange > 1 (Auto est correct), Retard d'images ou Synchroniser à la fréquence d'affichage exacte du contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Insère une image noire entre les images. Utile pour les moniteurs à 120 Hz pour jouer à du contenu à 60 Hz avec rémanence éliminée. La fréquence de rafraîchissement vidéo devrait toujours être configurée comme s'il s'agissait d'un moniteur à 60 Hz (fréquence de rafraîchissement divisée par 2)."
+   "Insérer une ou plusieurs images noires entre les images pour une plus grande clarté de mouvement. Utilisez uniquement l'option désignée pour votre fréquence de rafraîchissement actuelle. Ne pas utiliser à des fréquences de rafraîchissement qui ne sont pas des multiples de 60 Hz tels que 144 Hz, 165 Hz, etc. Ne pas combiner avec les options Intervalle d'échange > 1 (Auto est correct), Retard d'images ou Synchroniser à la fréquence d'affichage exacte du contenu. Laisser l'option VRR (f[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Aucune"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Pour une fréquence de rafraîchissement à 120 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Pour une fréquence de rafraîchissement à 180 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Pour une fréquence de rafraîchissement à 240 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Pour une fréquence de rafraîchissement à 300 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Pour une fréquence de rafraîchissement à 360 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Pour une fréquence de rafraîchissement à 420 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Pour une fréquence de rafraîchissement à 480 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Pour une fréquence de rafraîchissement à 540 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Pour une fréquence de rafraîchissement à 600 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Pour une fréquence de rafraîchissement à 660 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Pour une fréquence de rafraîchissement à 720 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Pour une fréquence de rafraîchissement à 780 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Pour une fréquence de rafraîchissement à 840 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Pour une fréquence de rafraîchissement à 900 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Pour une fréquence de rafraîchissement à 960 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Insertion d'images noir - Images sombres"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Ajuster le nombre d'images noires dans la séquence de balayage BFI. Plus équivaut à une plus grande clarté de mouvement, moins équivaut à une plus grande luminosité. Non applicable à 120 Hz car il n'y a qu'1 image BFI pour fonctionner au total. Les réglages plus élevés que possible vous limiteront au maximum possible pour la fréquence de rafraîchissement choisie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Ajuste le nombre d'images affichées dans la séquence BFI qui sont noires. Plus d'images noires augmente la clarté de mouvement mais réduit la luminosité. Non applicable à 120 Hz car il n'y a qu'une seule image de 60 Hz supplémentaire, elle doit donc être noire sinon le BFI ne serait pas actif du tout."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

@@ -1403,10 +1403,6 @@ MSG_HASH(
    "Sett inn en svart ramme"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Sett inn en svart ramme mellom bilder. Nyttig på noen høy oppdateringsfrekvensskjermer for å eliminere \"ghosting\"."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU skjermbilde"
    )
