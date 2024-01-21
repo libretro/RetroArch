@@ -1803,10 +1803,6 @@ MSG_HASH(
    "Insättning av svart bildruta"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Sätt in en svart bildruta mellan bildrutor. Användbar på vissa skärmar med hög uppdateringsfrekvens för att eliminera spökbilder."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU-skärmdump"
    )

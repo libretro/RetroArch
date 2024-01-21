@@ -1859,14 +1859,6 @@ MSG_HASH(
    "Fekete képkocka beszúrása"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Egy vagy több fekete képkocka beszúrása a képkockák közé. Néhány nagy frissítési gyakoriságú képernyőn hasznos a szellemkép kiküszöbölésére."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Fekete képkocka beillesztése a képkockák közé. 120 Hz-es monitorokhoz hasznos, 60 Hz-es tartalmak szellemképmentes lejátszásához. A képfrissítési ütemet továbbra is úgy kell beállítani, mintha 60 Hz-es monitorról lenne szó (az ütemet el kell osztani 2-vel)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU képernyőkép"
    )

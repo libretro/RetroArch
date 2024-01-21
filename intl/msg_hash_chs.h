@@ -1855,14 +1855,6 @@ MSG_HASH(
    "黑帧补间"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在帧之间插入黑色帧。这能在高刷新率屏幕上消除残影。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "在帧之间插入黑帧。适用于 120 Hz 显示器播放 60 Hz 素材并消除重影。视频刷新率仍应按 60 Hz 显示器配置 (刷新率除以 2)。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU 截屏"
    )

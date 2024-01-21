@@ -1659,14 +1659,6 @@ MSG_HASH(
    "Zwarte Frame Injectie"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Voegt een zwarte frame toe tussen frames. Kan ghosting voorkomen op monitoren met een hoge vernieuwingsfrequentie."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Voegt een zwart frame tussen frames. Handig voor 120 Hz monitors om 60 Hz materiaal te spelen met geëlimineerde ghosting. Video vernieuwingssnelheid moet nog steeds worden geconfigureerd alsof het een 60 Hz monitor is (deel verversingssnelheid door 2)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU Screenshots Activeren"
    )

@@ -1895,14 +1895,6 @@ MSG_HASH(
    "插入黑幀"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在幀之間插入全黑幀, 用於消除高更新率螢幕的殘影。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "在幀之間插入全黑幀, 用於消除使用120Hz的顯示器, 顯示60Hz內容時產生的殘影。\n依據此選項設定幀數, 調整「垂直同步切換間隔」設定, 以達到準確的動態速率控制。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "圖形處理器截圖"
    )

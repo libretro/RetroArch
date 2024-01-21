@@ -1443,10 +1443,6 @@ MSG_HASH(
    "Inserir fotogrames negres"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Inserix fotogrames negres en la imatge. Útil per eliminar l'efecte fantasma (ghosting) en algunes pantalles d'alt nivell de refresc d'imatge."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Captura de pantalla mitjançant la GPU"
    )

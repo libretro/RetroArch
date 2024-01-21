@@ -1395,10 +1395,6 @@ MSG_HASH(
    "Penyisipan Bingkai Hitam"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Masukkan bingkai hitam di antara bingkai. Berguna pada beberapa layar refresh rate tinggi untuk menghilangkan ghosting."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Cuplikan Layar GPU"
    )
