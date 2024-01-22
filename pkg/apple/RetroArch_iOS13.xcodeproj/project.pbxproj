@@ -1416,7 +1416,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT\"\necho '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\n";
+			shellScript = "cd \"$SRCROOT\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		07340E8D2B47A4910076B75D /* ShellScript */ = {
@@ -1436,7 +1436,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT\"\necho '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\n";
+			shellScript = "cd \"$SRCROOT\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		9204BE271D319EF300BD49DB /* ShellScript */ = {
