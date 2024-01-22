@@ -1644,7 +1644,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -d \"$MIST_PATH\" -a -f \"$MIST_PATH\"/libmist.dylib ]; then\n    install_name_tool -id @rpath/libmist.dylib \"$MIST_PATH\"/libmist.dylib\nfi\n\ncd \"$SRCROOT\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
+			shellScript = "if [ -d \"$MIST_PATH\" -a -f \"$MIST_PATH\"/libmist.dylib ]; then\n    install_name_tool -id @rpath/libmist.dylib \"$MIST_PATH\"/libmist.dylib\nfi\n\ncd \"$SRCBASE\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		0720995C29B1258C001642BB /* ShellScript */ = {
@@ -1682,7 +1682,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
+			shellScript = "cd \"$SRCBASE\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		07B7872F29EA3B7D0088B74F /* ShellScript */ = {
