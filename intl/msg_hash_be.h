@@ -2636,6 +2636,10 @@ MSG_HASH(
    "Прадвызначаная кнопка турба"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Дазваляць турбакірункі D-Pad"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "Кіраванне меню"
    )
@@ -4428,6 +4432,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    "таму"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Сканаваць з праверкай CRC на магчымыя дублікаты"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -7284,6 +7292,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Няма даступных мініяцюр"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Усе магчымыя спампоўкі мініяцюр для гэтага запісу плэй-ліста ўжо апрабаваныя."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
