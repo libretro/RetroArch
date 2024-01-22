@@ -1,3 +1,26 @@
+# v11.1.0
+* add rc_client_get_user_agent_clause to generate substring to include in client User-Agents
+* add rc_client_can_pause function to control pause spam
+* add achievement type and rarity to rc_api_fetch_game_data_response_t and rc_client_achievement_t
+* add RC_CLIENT_ACHIEVEMENT_BUCKET_UNSYNCED for achievements that have been unlocked locally but not synced to the server
+* add RC_CONSOLE_NEO_GEO_CD to supported consoles for chd file extension
+* add hash logic for RC_CONSOLE_NINTENDO_3DS (note: added new file rhash/aes.c to support this)
+* add hash logic for RC_CONSOLE_MS_DOS
+* add game_hash and hardcore fields to rc_api_start_session_request_t and rc_api_ping_request_t
+* add RC_FORMAT_FIXED1/2/3, RC_FORMAT_TENS, RC_FORMAT_HUNDREDS, RC_FORMAT_THOUSANDS, and RC_FORMAT_UNSIGNED_VALUE
+* add RC_CONSOLE_STANDALONE
+* add extern "C" and __cdecl attributes to public functions
+* add __declspec(dllexport/dllimport) attributes to public functions via #define enablement
+* add rc_version and rc_version_string functions for accessing version from external linkage
+* add unicode path support to default filereader (Windows builds)
+* add rc_mutex support for GEKKO (libogc)
+* fix async_handle being returned when rc_client_begin_login is aborted synchronously
+* fix logic error hashing CD files smaller than one sector
+* fix read across region boundary in rc_libretro_memory_read
+* fix RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW event not being raised if achievement is reset in the same frame that it's primed
+* moved rc_util.h from src/ to include/
+* initial (incomplete) support for rc_client_external_t and rc_client_raintegration_t
+
 # v11.0.0
 * add rc_client_t and related functions
 * add RC_MEMSIZE_FLOAT_BE

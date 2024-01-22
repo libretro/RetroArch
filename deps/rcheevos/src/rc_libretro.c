@@ -51,6 +51,11 @@ static const rc_disallowed_setting_t _rc_disallowed_dolphin_settings[] = {
   { NULL, NULL }
 };
 
+static const rc_disallowed_setting_t _rc_disallowed_dosbox_pure_settings[] = {
+  { "dosbox_pure_strict_mode", "false" },
+  { NULL, NULL }
+};
+
 static const rc_disallowed_setting_t _rc_disallowed_duckstation_settings[] = {
   { "duckstation_CDROM.LoadImagePatches", "true" },
   { NULL, NULL }
@@ -93,6 +98,11 @@ static const rc_disallowed_setting_t _rc_disallowed_mesen_settings[] = {
 
 static const rc_disallowed_setting_t _rc_disallowed_mesen_s_settings[] = {
   { "mesen-s_region", "PAL" },
+  { NULL, NULL }
+};
+
+static const rc_disallowed_setting_t _rc_disallowed_neocd_settings[] = {
+  { "neocd_bios", "uni-bios*" },
   { NULL, NULL }
 };
 
@@ -144,6 +154,7 @@ static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
   { "bsnes-mercury", _rc_disallowed_bsnes_settings },
   { "cap32", _rc_disallowed_cap32_settings },
   { "dolphin-emu", _rc_disallowed_dolphin_settings },
+  { "DOSBox-pure", _rc_disallowed_dosbox_pure_settings },
   { "DuckStation", _rc_disallowed_duckstation_settings },
   { "ecwolf", _rc_disallowed_ecwolf_settings },
   { "FCEUmm", _rc_disallowed_fceumm_settings },
@@ -152,6 +163,7 @@ static const rc_disallowed_core_settings_t rc_disallowed_core_settings[] = {
   { "Genesis Plus GX Wide", _rc_disallowed_gpgx_wide_settings },
   { "Mesen", _rc_disallowed_mesen_settings },
   { "Mesen-S", _rc_disallowed_mesen_s_settings },
+  { "NeoCD", _rc_disallowed_neocd_settings },
   { "PPSSPP", _rc_disallowed_ppsspp_settings },
   { "PCSX-ReARMed", _rc_disallowed_pcsx_rearmed_settings },
   { "PicoDrive", _rc_disallowed_picodrive_settings },
@@ -318,27 +330,38 @@ uint8_t* rc_libretro_memory_find(const rc_libretro_memory_regions_t* regions, ui
 
 uint32_t rc_libretro_memory_read(const rc_libretro_memory_regions_t* regions, uint32_t address,
       uint8_t* buffer, uint32_t num_bytes) {
-  uint32_t i;
+  uint32_t bytes_read = 0;
   uint32_t avail;
+  uint32_t i;
 
   for (i = 0; i < regions->count; ++i) {
     const size_t size = regions->size[i];
-    if (address < size) {
-      if (regions->data[i] == NULL)
-        break;
-
-      avail = (unsigned)(size - address);
-      if (avail < num_bytes)
-         return avail;
-
-      memcpy(buffer, &regions->data[i][address], num_bytes);
-      return num_bytes;
+    if (address >= size) {
+      /* address is not in this block, adjust and look at next block */
+      address -= (unsigned)size;
+      continue;
     }
 
-    address -= (unsigned)size;
+    if (regions->data[i] == NULL) /* no memory associated to this block. abort */
+      break;
+
+    avail = (unsigned)(size - address);
+    if (avail >= num_bytes) {
+      /* requested memory is fully within this block, copy and return it */
+      memcpy(buffer, &regions->data[i][address], num_bytes);
+      bytes_read += num_bytes;
+      return bytes_read;
+    }
+
+    /* copy whatever is available in this block, and adjust for the next block */
+    memcpy(buffer, &regions->data[i][address], avail);
+    buffer += avail;
+    bytes_read += avail;
+    num_bytes -= avail;
+    address = 0;
   }
 
-  return 0;
+  return bytes_read;
 }
 
 void rc_libretro_init_verbose_message_callback(rc_libretro_message_callback callback) {
@@ -616,7 +639,7 @@ static void rc_libretro_memory_init_from_unmapped_memory(rc_libretro_memory_regi
 }
 
 int rc_libretro_memory_init(rc_libretro_memory_regions_t* regions, const struct retro_memory_map* mmap,
-                            rc_libretro_get_core_memory_info_func get_core_memory_info, int console_id) {
+                            rc_libretro_get_core_memory_info_func get_core_memory_info, uint32_t console_id) {
   const rc_memory_regions_t* console_regions = rc_console_memory_regions(console_id);
   rc_libretro_memory_regions_t new_regions;
   int has_valid_region = 0;
@@ -665,8 +688,7 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
     return;
 
   file_handle = rc_file_open(m3u_path);
-  if (!file_handle)
-  {
+  if (!file_handle) {
     rc_hash_error("Could not open playlist");
     return;
   }
@@ -676,8 +698,7 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
   rc_file_seek(file_handle, 0, SEEK_SET);
 
   m3u_contents = (char*)malloc((size_t)file_len + 1);
-  if (m3u_contents)
-  {
+  if (m3u_contents) {
     rc_file_read(file_handle, m3u_contents, (int)file_len);
     m3u_contents[file_len] = '\0';
 
@@ -690,23 +711,19 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
       while (isspace((int)*ptr))
         ++ptr;
 
-      if (*ptr == '#')
-      {
+      if (*ptr == '#') {
         /* ignore comment unless it's the special SAVEDISK extension */
-        if (memcmp(ptr, "#SAVEDISK:", 10) == 0)
-        {
+        if (memcmp(ptr, "#SAVEDISK:", 10) == 0) {
           /* get the path to the save disk from the frontend, assign it a bogus hash so
            * it doesn't get hashed later */
-          if (get_image_path(index, image_path, sizeof(image_path)))
-          {
+          if (get_image_path(index, image_path, sizeof(image_path))) {
             const char save_disk_hash[33] = "[SAVE DISK]";
             rc_libretro_hash_set_add(hash_set, image_path, -1, save_disk_hash);
             ++index;
           }
         }
       }
-      else
-      {
+      else {
         /* non-empty line, tally a file */
         ++index;
       }
@@ -720,8 +737,7 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
     free(m3u_contents);
   }
 
-  if (hash_set->entries_count > 0)
-  {
+  if (hash_set->entries_count > 0) {
     /* at least one save disk was found. make sure the core supports the #SAVEDISK: extension by
      * asking for the last expected disk. if it's not found, assume no #SAVEDISK: support */
     if (!get_image_path(index - 1, image_path, sizeof(image_path)))
@@ -753,13 +769,10 @@ void rc_libretro_hash_set_add(struct rc_libretro_hash_set_t* hash_set,
   struct rc_libretro_hash_entry_t* scan;
   struct rc_libretro_hash_entry_t* stop = hash_set->entries + hash_set->entries_count;;
 
-  if (path_djb2)
-  {
+  if (path_djb2) {
     /* attempt to match the path */
-    for (scan = hash_set->entries; scan < stop; ++scan)
-    {
-      if (scan->path_djb2 == path_djb2)
-      {
+    for (scan = hash_set->entries; scan < stop; ++scan) {
+      if (scan->path_djb2 == path_djb2) {
         entry = scan;
         break;
       }
@@ -769,18 +782,19 @@ void rc_libretro_hash_set_add(struct rc_libretro_hash_set_t* hash_set,
   if (!entry)
   {
     /* entry not found, allocate a new one */
-    if (hash_set->entries_size == 0)
-    {
+    if (hash_set->entries_size == 0) {
       hash_set->entries_size = 4;
       hash_set->entries = (struct rc_libretro_hash_entry_t*)
           malloc(hash_set->entries_size * sizeof(struct rc_libretro_hash_entry_t));
     }
-    else if (hash_set->entries_count == hash_set->entries_size)
-    {
+    else if (hash_set->entries_count == hash_set->entries_size) {
       hash_set->entries_size += 4;
       hash_set->entries = (struct rc_libretro_hash_entry_t*)realloc(hash_set->entries,
           hash_set->entries_size * sizeof(struct rc_libretro_hash_entry_t));
     }
+
+    if (hash_set->entries == NULL) /* unexpected, but better than crashing */
+      return;
 
     entry = hash_set->entries + hash_set->entries_count++;
   }
@@ -796,8 +810,7 @@ const char* rc_libretro_hash_set_get_hash(const struct rc_libretro_hash_set_t* h
   const uint32_t path_djb2 = rc_libretro_djb2(path);
   struct rc_libretro_hash_entry_t* scan = hash_set->entries;
   struct rc_libretro_hash_entry_t* stop = scan + hash_set->entries_count;
-  for (; scan < stop; ++scan)
-  {
+  for (; scan < stop; ++scan) {
     if (scan->path_djb2 == path_djb2)
       return scan->hash;
   }
@@ -809,8 +822,7 @@ int rc_libretro_hash_set_get_game_id(const struct rc_libretro_hash_set_t* hash_s
 {
   struct rc_libretro_hash_entry_t* scan = hash_set->entries;
   struct rc_libretro_hash_entry_t* stop = scan + hash_set->entries_count;
-  for (; scan < stop; ++scan)
-  {
+  for (; scan < stop; ++scan) {
     if (memcmp(scan->hash, hash, sizeof(scan->hash)) == 0)
       return scan->game_id;
   }

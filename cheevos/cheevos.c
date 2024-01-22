@@ -115,6 +115,7 @@ static rcheevos_locals_t rcheevos_locals =
    0.0,  /* tracker_progress */
  #endif
    {RCHEEVOS_LOAD_STATE_NONE, 0, 0 },  /* load_info */
+   0,    /* unpaused_frames */
    false,/* hardcore_active */
    false,/* loaded */
  #ifdef HAVE_GFX_WIDGETS
@@ -367,6 +368,15 @@ void rcheevos_spectating_changed(void)
       if (spectating != rc_client_get_spectator_mode_enabled(rcheevos_locals.client))
          rc_client_set_spectator_mode_enabled(rcheevos_locals.client, !rcheevos_is_player_active());
    }
+#endif
+}
+
+bool rcheevos_is_pause_allowed(void)
+{
+#ifdef HAVE_RC_CLIENT
+   return rc_client_can_pause(rcheevos_locals.client, NULL);
+#else
+   return (rcheevos_locals.unpaused_frames == 0);
 #endif
 }
 
@@ -1964,6 +1974,11 @@ void rcheevos_test(void)
       rcheevos_locals.tracker_progress = 0.0;
    }
  #endif
+
+   /* We processed a frame - if there's a pause delay in effect, process it */
+   if (rcheevos_locals.unpaused_frames > 0)
+      rcheevos_locals.unpaused_frames--;
+
 #endif /* HAVE_RC_CLIENT */
 }
 

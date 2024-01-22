@@ -1,7 +1,7 @@
 #include "rc_runtime.h"
 #include "rc_internal.h"
 
-#include "../rc_util.h"
+#include "rc_util.h"
 #include "../rhash/md5.h"
 
 #include <stdlib.h>

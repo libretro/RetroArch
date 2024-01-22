@@ -116,7 +116,9 @@ void rc_mutex_unlock(rc_mutex_t* mutex)
 
 #elif defined(GEKKO)
 
-void rc_mutex_init(rc_mutex_t *mutex)
+/* https://github.com/libretro/RetroArch/pull/16116 */
+
+void rc_mutex_init(rc_mutex_t* mutex)
 {
   LWP_MutexInit(mutex, NULL);
 }

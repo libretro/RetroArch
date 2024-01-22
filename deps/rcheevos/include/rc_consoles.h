@@ -1,11 +1,11 @@
 #ifndef RC_CONSOLES_H
 #define RC_CONSOLES_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "rc_export.h"
 
 #include <stdint.h>
+
+RC_BEGIN_C_DECLS
 
 /*****************************************************************************\
 | Console identifiers                                                         |
@@ -95,10 +95,11 @@ enum {
   RC_CONSOLE_UZEBOX = 80,
 
   RC_CONSOLE_HUBS = 100,
-  RC_CONSOLE_EVENTS = 101
+  RC_CONSOLE_EVENTS = 101,
+  RC_CONSOLE_STANDALONE = 102
 };
 
-const char* rc_console_name(int console_id);
+RC_EXPORT const char* RC_CCONV rc_console_name(uint32_t console_id);
 
 /*****************************************************************************\
 | Memory mapping                                                              |
@@ -129,11 +130,8 @@ typedef struct rc_memory_regions_t {
 }
 rc_memory_regions_t;
 
-const rc_memory_regions_t* rc_console_memory_regions(uint32_t console_id);
+RC_EXPORT const rc_memory_regions_t* RC_CCONV rc_console_memory_regions(uint32_t console_id);
 
-
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_CONSOLES_H */

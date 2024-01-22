@@ -6,16 +6,12 @@
 
 #ifndef RC_DISABLE_LUA
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
 #include <lua.h>
 #include <lauxlib.h>
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_DISABLE_LUA */
 
@@ -238,7 +234,7 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, uint8_t is_indire
 
     case '0':
       if (aux[1] == 'x' || aux[1] == 'X') { /* hex integer constant */
-        /* fall through */
+        /* fallthrough */ /* to default */
     default:
         ret = rc_parse_operand_memory(self, &aux, parse, is_indirect);
 
@@ -247,8 +243,7 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, uint8_t is_indire
 
         break;
       }
-
-      /* fall through for case '0' where not '0x' */
+      /* fallthrough */ /* to case '1' for case '0' where not '0x' */
     case '1': case '2': case '3': case '4': case '5': /* unsigned integer constant */
     case '6': case '7': case '8': case '9':
       value = strtoul(aux, &end, 10);
