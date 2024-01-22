@@ -3,6 +3,8 @@
 - AI: AI service reworked: performance increase, automatic translation, configurable subtitle placement, and more
 - APPLE: Fix WebDAV crash with digest auth (Cloud Sync)
 - APPLE: Cloud sync fixes - ignore .DS_Store files and re-sync on app foreground
+- APPLE: Don't re-create default directories
+- APPLE: Show Git information correctly
 - AUDIO/SYNC: Handle Hz skew adjustment for high refresh rates better (BFI, swap interval)
 - AUDIO/MIXER: Separate ffmpeg/mpv and audiomixer conditionals
 - AUDIO/WASAPI: Reworked shared buffer operation for more flexibility, fixed exclusive mode last buffer looping when entering menu
@@ -19,6 +21,7 @@
 - EMSCRIPTEN: Prefix core name with libretro_ for exports
 - EMSCRIPTEN: replace dashes with underscores in corenames (fix for vitaquake cores)
 - EMSCRIPTEN: Use ZipFS for web player asset bundle
+- EMSCRIPTEN: Change default audio rate to 44100
 - IOS: Fix widget on IOS17
 - IOS: Exit instead of crash on some errors
 - IOS: Fix ios-vulkan-ppsspp
@@ -31,8 +34,12 @@
 - IOS/TVOS: Create GL context as GLES3 to fix some rendering performance problems
 - INPUT: Default 'Bind Hold' to 0 to prevent problems with controllers not resting at null state
 - INPUT: Add a setting to allow turbo d-pad directions
+- INPUT: Don't save mouse buttons to autoconfig
+- INPUT/mFI: disable secondary_joypad to prevent issues with controllers detected both as HID and mFI
 - INPUT/UDEV: Change event detection to polling in udev_joypad
+- INPUT/WAYLAND: Use unaccelerated pointer motion to prevent mouse dead zone
 - LAKKA: Add new menu options for Switch (overclock, CEC, BT ERTM)
+- LIBRETRO: Add environment command to get playlist path
 - LIBRETRO/NETPACKET:
 Switch environment call number from 76 to 78 (retire 76 as it was never used by any core)
 Simplify broadcasts by removing the option to send to all but one client, use an explicit RETRO_NETPACKET_BROADCAST constant instead
@@ -53,6 +60,7 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - MENU: Fix quit on content close option
 - MENU: Fix thumbnails in History for content loaded through Load Content
 - MENU: Flexible thumbnail matching (ROM name - database name - short name)
+- MENU: Remove legacy thumbnail pack downloader
 - MENU/GLUI: Icon corrections
 - MENU/OZONE: Thumbnail related fixes (missing thumbnail bar, fullscreen thumbnail flashing, sidebar focus)
 - MENU/RGUI: Fix text scaling in 16:9
@@ -62,6 +70,7 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - NETWORKING/NETPLAY: Add support for joining MITM servers from command line
 - NETWORKING/NETPACKET: Interface connection flow improvements
 - OSX: Fix mouse support for MelonDS DS on OSX
+- OSX: Option to create a portable build
 - PATCHES: Add support for XDelta-formatted patches.
 - PATCHES: Fix patching for cores that support contentless mode
 - PS2: Fix for no sound
@@ -69,11 +78,15 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - PSP: Fix memory leak in audio driver
 - RUNLOOP: Frame Rest, experimental sleep feature aiming to lower CPU usage and temperature when using certain CPU hungry vsync modes
 - RPI: Fix videocore + switchres compile failure
+- SCAN: Do CRC check on PSP/PSP(PSN) content
 - TVOS: Enable overlay support
+- VIDEO/BFI: Black Frame Insertion added to DirectX10/11/12. BFI Hz range now covers every 60hz multiple under 1000hz. Variable Strobe length via new 'Dark Frames' option, algorithm to auto select 'decent' Dark Frames choice.
 - VIDEO/GLSL: Add FinalViewportSize support to GLSL
 - VIDEO/GLSL: Change rotation type to int to maximize compatibility
 - VIDEO: Use video refresh rate instead of core refresh rate for menu frame limiting
+- VIDEO: Limit paused video refresh rate
 - VIDEO: Enforce swap interval 1 in menu if vsync is on
+- WII: Enable Cheevos for Wii builds
 - WIIU: Fix config file and core info reading
 - WIIU: Fix "Up" and "Left" directional input for both Analog sticks for GC Adapter
 - WIIU: Fix 3 USB controllers (NES/SNES/Retrode)
