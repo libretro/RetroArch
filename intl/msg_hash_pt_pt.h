@@ -1383,8 +1383,12 @@ MSG_HASH(
    "Inserção de frame preto"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Insere fotogramas pretos entre fotogramas. Pode reduzir bastante a desfocagem de movimento ao emular a varrimento CRT, mas à custa do brilho. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas para melhorar a nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combinar com Intervalo de troca > 1 (Auto está bem), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo. Deixar o VRR (Taxa de atualização variável) do sistema ativado é aceitável, mas n[...]"
+   "Insere fotogramas pretos entre fotogramas para melhorar a nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo. Deixar o VRR (Taxa de atualização variável) do sistema ativado é a[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,

@@ -2107,7 +2107,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Wii Uゲームパッドに最適化 (再起動が必要)"
+   "Wii U ゲームパッドに最適化 (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -2587,7 +2587,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "コアの要求するタイミングから逸脱しません. 可変リフレッシュレート画面 (G-Sync, FreeSync, HDMI 3.1 VRR) に使用します."
+   "コアが要求したタイミングと極めて正確に同期します。可変リフレッシュレートに対応する画面 (G-Sync, FreeSync, HDMI 2.1 VRR) で使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
@@ -4130,7 +4130,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "先行実行に2番目のインスタンスを使用"
+   "先行実行に 2 番目のインスタンスを使用"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -4741,7 +4741,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "直近のゲームプレイで以前のポイントに戻ります. パフォーマンスが大きく悪化します."
+   "ゲームプレイ中に行った操作を巻き戻します。プレイ中のパフォーマンスが大きく悪化します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -5738,7 +5738,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "スクロールするときのカーソルの最大速度."
+   "一定方向にスクロールし続けたときのカーソルの最大速度です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
@@ -5859,7 +5859,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-   "メインメニューに [情報] オプションを表示します."
+   "メインメニューに [情報] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
@@ -6537,7 +6537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "指定された値より小さい幅/高さのサムネイル画像を自動的に拡大します. 画質を改善します. 中程度のパフォーマンスへの影響があります. "
+   "指定された値より小さい幅/高さの画像を自動的に拡大し、画質を改善します。パフォーマンスにやや影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -7013,7 +7013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "ホストに接続しているクライアントが使用するパスワード."
+   "ホストに接続するためにクライアントが使用するパスワードです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
@@ -7141,7 +7141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-   "ネットワークコマンドを有効"
+   "ネットワークコマンド"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
@@ -7439,7 +7439,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "スキャンで重複の可能性がある場合 CRC をチェックする"
+   "スキャン時に重複の可能性がある場合 CRC をチェック"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
@@ -7514,7 +7514,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
-   "コアの関連付けを検証し, 無効または重複した項目を削除します."
+   "コアの関連付けを検証し、無効または重複したエントリーを削除します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
@@ -10339,7 +10339,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-   "マウスホイール上"
+   "マウスホイール 上"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
@@ -10347,11 +10347,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-   "マウスホイール左"
+   "マウスホイール 左"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-   "マウスホイール右"
+   "マウスホイール 右"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
@@ -10650,7 +10650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
-   "非標準ASCII文字の表示を有効にします. 特定の非英語言語との互換性に必要です. パフォーマンスに中程度の影響を与えます."
+   "非標準 ASCII 文字の表示を有効にします。特定の非英語言語との互換性に必要です。パフォーマンスに中程度の影響があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
@@ -10852,7 +10852,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-   "メニューの水平アニメーションを有効にします. これによりパフォーマンスが低下します. "
+   "メニューの水平アニメーションを有効にします。パフォーマンスに多少影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
@@ -12642,11 +12642,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "2回以上押すと, 診断情報をRetroArchチームに送信します."
+   "もう 2 回押すと、診断情報を RetroArch チームに送信します."
    )
 MSG_HASH(
    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-   "もう一度押すと, 診断情報をRetroArchチームに送信します."
+   "もう一度押すと、診断情報を RetroArch チームに送信します。"
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
@@ -13195,7 +13195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
-   "Libretroコアはコンテンツを必要としますが, 何も提供されませんでした."
+   "Libretro コアはコンテンツを必要としますが、何も提供されませんでした。"
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,

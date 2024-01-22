@@ -1859,6 +1859,90 @@ MSG_HASH(
    "Fekete képkocka beszúrása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Egy vagy több fekete képkocka beszúrása a képkockák közé. A mozgási elmosódást nagymértékben csökkentheti a CRT hatás emulálásával, a fényerő kárára. Nem kombinálható az 1-nél nagyobb váltóperiódussal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Egy vagy több fekete képkocka beszúrása a mozgás tisztább visszaadásáért. Csak az aktuális képernyőfrissítéshez igazodó opció használható. Nem alkalmas olyan frissítési frekvenciához, ami nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással. Átmeneti képbeégés esetén 120 Hz-en kikapcsolandó, magasabb Hz-en pedig a lentebbi sötét képk[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Ki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - 120 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - 180 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - 240 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - 300 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - 360 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - 420 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - 480 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - 540 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - 600 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - 660 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - 720 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - 780 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - 840 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - 900 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - 960 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Fekete képkocka beszúrása - Sötét képkockák"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "A fekete képkockák darabszáma a képkocka beszúrás szekvenciában. Nagyobb értéknél pontosabb a mozgásvisszaadás, kisebb értéknél nagyobb a fényerő. 120 Hz-nél csak 1 képkocka beszúrása lehetséges. Az elméletileg lehetségesnél nagyobb érték beállítása a lehető legtöbb fekete képkocka beszúrását eredményezi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "A fekete képkockák darabszáma a képkocka beszúrás szekvenciában. Nagyobb értéknél pontosabb a mozgásvisszaadás, kisebb értéknél nagyobb a fényerő. 120 Hz-nél csak 1 képkocka beszúrása lehetséges, így annak mindenképp feketének kell lennie, ha a BFI aktiválva van."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU képernyőkép"
    )
