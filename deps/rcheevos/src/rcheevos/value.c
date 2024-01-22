@@ -447,7 +447,7 @@ void rc_typed_value_negate(rc_typed_value_t* value) {
   {
     case RC_VALUE_TYPE_UNSIGNED:
       rc_typed_value_convert(value, RC_VALUE_TYPE_SIGNED);
-      /* fallthrough to RC_VALUE_TYPE_SIGNED */
+      /* fallthrough */ /* to RC_VALUE_TYPE_SIGNED */
 
     case RC_VALUE_TYPE_SIGNED:
       value->value.i32 = -(value->value.i32);

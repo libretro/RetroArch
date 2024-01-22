@@ -35,7 +35,7 @@ void rc_buffer_destroy(rc_buffer_t* buffer)
   {
     rc_buffer_chunk_t* next = chunk->next;
 #ifdef DEBUG_BUFFERS
-    total += (int)(chunk->end - chunk->data);
+    total += (int)(chunk->end - chunk->start);
     wasted += (int)(chunk->end - chunk->write);
     ++count;
 #endif

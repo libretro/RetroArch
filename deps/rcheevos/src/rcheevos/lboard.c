@@ -235,7 +235,7 @@ int rc_evaluate_lboard(rc_lboard_t* self, int32_t* value, rc_peek_t peek, void* 
         *value = rc_evaluate_value(self->progress, peek, peek_ud, L);
         break;
       }
-      /* fallthrough to RC_LBOARD_STATE_TRIGGERED */
+      /* fallthrough */ /* to RC_LBOARD_STATE_TRIGGERED */
 
     case RC_LBOARD_STATE_TRIGGERED:
       *value = rc_evaluate_value(&self->value, peek, peek_ud, L);
