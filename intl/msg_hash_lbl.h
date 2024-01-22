@@ -1944,6 +1944,10 @@ MSG_HASH(
    "input_hotkey_block_delay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "input_hotkey_device_merge"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
    "input_icade_enable"
    )
