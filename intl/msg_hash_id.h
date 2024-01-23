@@ -179,19 +179,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Jalankan Ulang RetroArch"
+   "Mulai ulang"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Jalankan ulang program."
+   "Memulai ulang aplikasi RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Tutup RetroArch"
+   "Keluar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Tutup program."
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dinyalakan."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Keluar dari aplikasi RetroArch. Simpan konfigurasi saat keluar dimatikan."
    )
 
 /* Main Menu > Load Core */
@@ -1313,7 +1317,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Driver Menu yang digunakan."
+   "Kandar menu yang dipilih. Perlu mulai ulang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -2501,6 +2505,14 @@ MSG_HASH(
    "Tombol Kombinasi Mengaktifkan 'Delay' (Frame)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Gabungan Jenis Perangkat Hotkey"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Menutup semua hotkey dari jenis papan ketik dan stik kendali lain jika ada yang diatur 'Hotkey Nyala'."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Kombinasi tombol stik kendali untuk membuka menu."
    )
@@ -3099,6 +3111,18 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Perambah Berkas"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   "Atur Direktori Awal untuk Peramban Berkas."
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Berkas konfigurasi"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   "Berkas konfigurasi bawaan disimpan di direktori ini."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
