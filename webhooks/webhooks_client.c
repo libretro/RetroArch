@@ -1,27 +1,13 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2016 - Andre Leiradella
- *
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
- *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
 #include <stdio.h>
+#include <string.h>
 
-#include "webhooks.h"
-#include "webhooks_client.h"
-#include "webhooks_oauth.h"
+#include "include/webhooks.h"
+#include "include/webhooks_client.h"
+#include "include/webhooks_oauth.h"
 
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
@@ -69,19 +55,16 @@ static void wc_handle_http_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strncpy(buffer, "Load aborted", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Load aborted", sizeof(buffer));
   }
   else */if (error)
   {
-    strncpy(buffer, error, sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, error, sizeof(buffer));
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strncpy(buffer, "Server communication error", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Server communication error", sizeof(buffer));
   }
   else if (!data->data || !data->len)
   {
@@ -99,8 +82,7 @@ static void wc_handle_http_callback
     }
     else {
       /* Server sent empty response without error status code */
-      strncpy(buffer, "No response from server", sizeof(buffer));
-      buffer[sizeof(buffer)-1] = '\0';
+      strlcpy(buffer, "No response from server", sizeof(buffer));
     }
   }
   else
@@ -198,6 +180,9 @@ static void wc_set_progress_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wc_set_event_request_url
 (
   unsigned int console_id,
@@ -228,6 +213,9 @@ static void wc_set_event_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wc_set_achievement_request_url
 (
   unsigned int console_id,
@@ -262,6 +250,9 @@ static void wc_set_achievement_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wc_set_keep_alive_request_url
 (
   unsigned int console_id,
@@ -323,8 +314,8 @@ static void wc_set_request_header
     return;
   }
 
-  strncpy(headers, authorization_header, auth_header_len);
-  strncpy(headers + auth_header_len, access_token, token_len);
+  strlcpy(headers, authorization_header, auth_header_len + 1);
+  strlcpy(headers + auth_header_len, access_token, token_len + 1);
 
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';

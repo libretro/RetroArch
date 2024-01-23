@@ -228,12 +228,14 @@ ACHIEVEMENTS
 
 #endif
 
+#ifdef HAVE_WEBHOOKS
 #include "../webhooks/webhooks.c"
 #include "../webhooks/webhooks_oauth.c"
 #include "../webhooks/webhooks_client.c"
 #include "../webhooks/webhooks_progress_downloader.c"
 #include "../webhooks/webhooks_progress_parser.c"
 #include "../webhooks/webhooks_progress_tracker.c"
+#endif
 
 /*============================================================
 MD5

@@ -77,7 +77,9 @@
 #include "../cheevos/cheevos.h"
 #endif
 
-#include "../webhooks/webhooks.h"
+#ifdef HAVE_WEBHOOKS
+#include "../webhooks/include/webhooks.h"
+#endif
 
 #include "task_content.h"
 #include "tasks_internal.h"
@@ -1150,7 +1152,9 @@ static bool content_file_load(
       return false;
    }
 
+#ifdef HAVE_WEBHOOKS
   webhooks_load_game(p_content->content_list->game_info);
+#endif
 
 #ifdef HAVE_CHEEVOS
    if (!special)

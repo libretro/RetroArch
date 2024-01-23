@@ -44,7 +44,9 @@
 #include "../cheevos/cheevos_menu.h"
 #endif
 
-#include "../webhooks/webhooks_oauth.h"
+#ifdef HAVE_WEBHOOKS
+#include "../webhooks/include/webhooks_oauth.h"
+#endif
 
 #ifdef HAVE_NETWORKING
 #include <net/net_http_parse.h>
@@ -8967,6 +8969,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#ifdef HAVE_WEBHOOKS
      case DISPLAYLIST_WEBHOOK_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -9005,6 +9008,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#endif
       case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
@@ -10386,7 +10390,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEEVOS
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, PARSE_ACTION},
 #endif
+#ifdef HAVE_WEBHOOKS
                {MENU_ENUM_LABEL_WEBHOOK_SETTINGS,            PARSE_ACTION, true},
+#endif
                {MENU_ENUM_LABEL_USER_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,          PARSE_ACTION, true},
                {MENU_ENUM_LABEL_LAKKA_SERVICES,              PARSE_ACTION, true},

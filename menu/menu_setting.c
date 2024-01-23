@@ -316,7 +316,9 @@ enum settings_list_type
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CHEEVOS_APPEARANCE,
    SETTINGS_LIST_CHEEVOS_VISIBILITY,
+#ifdef HAVE_WEBHOOKS
    SETTINGS_LIST_WEBHOOK,
+#endif
    SETTINGS_LIST_CORE_UPDATER,
    SETTINGS_LIST_NETPLAY,
    SETTINGS_LIST_LAKKA_SERVICES,
@@ -10367,6 +10369,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+#ifdef HAVE_WEBHOOKS
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_WEBHOOK_SETTINGS,
@@ -10374,6 +10377,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -21201,6 +21205,7 @@ static bool setting_append_list(
 #endif
          break;
 
+#ifdef HAVE_WEBHOOKS
       case SETTINGS_LIST_WEBHOOK:
         START_GROUP(list, list_info, &group_info,
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WEBHOOK_SETTINGS),
@@ -21297,7 +21302,7 @@ static bool setting_append_list(
         END_SUB_GROUP(list, list_info, parent_group);
         END_GROUP(list, list_info, parent_group);
           break;
-
+#endif
       case SETTINGS_LIST_CHEEVOS_VISIBILITY:
 #ifdef HAVE_CHEEVOS
          START_GROUP(list, list_info, &group_info,
@@ -23594,7 +23599,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CHEEVOS_APPEARANCE,
       SETTINGS_LIST_CHEEVOS_VISIBILITY,
+#ifdef HAVE_WEBHOOKS
       SETTINGS_LIST_WEBHOOK,
+#endif
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
       SETTINGS_LIST_LAKKA_SERVICES,

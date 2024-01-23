@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 
-#include "webhooks.h"
-#include "webhooks_progress_downloader.h"
-#include "webhooks_oauth.h"
+#include "include/webhooks.h"
+#include "include/webhooks_progress_downloader.h"
+#include "include/webhooks_oauth.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -53,19 +54,16 @@ static void wpd_send_http_request_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strncpy(buffer, "Load aborted", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Load aborted", sizeof(buffer));
   }
   else*/ if (error)
   {
-    strncpy(buffer, error, sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, error, sizeof(buffer));
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strncpy(buffer, "Server communication error", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Server communication error", sizeof(buffer));
   }
   else if (!data->data || !data->len)
   {
@@ -83,8 +81,7 @@ static void wpd_send_http_request_callback
     }
     else {
       /* Server sent empty response without error status code */
-      strncpy(buffer, "No response from server", sizeof(buffer));
-      buffer[sizeof(buffer)-1] = '\0';
+      strlcpy(buffer, "No response from server", sizeof(buffer));
     }
   }
   else
@@ -168,8 +165,8 @@ static void wpd_set_request_header(async_http_request_t* request)
     return;
   }
 
-  strncpy(headers, authorization_header, auth_header_len);
-  strncpy(headers + auth_header_len, access_token, token_len);
+  strlcpy(headers, authorization_header, auth_header_len);
+  strlcpy(headers + auth_header_len, access_token, token_len);
   
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';
@@ -181,7 +178,11 @@ static void wpd_set_request_header(async_http_request_t* request)
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's URL.
 //  ---------------------------------------------------------------------------
-static void wpd_set_request_url(const wb_locals_t* locals, async_http_request_t* request)
+static void wpd_set_request_url
+(
+  const wb_locals_t* locals,
+  async_http_request_t* request
+)
 {
   const settings_t *settings = config_get_ptr();
   const char* base_url = settings->arrays.webhook_url;
@@ -251,7 +252,11 @@ static void wpd_on_request_completed
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-void wpd_download_game_progress(wb_locals_t* locals, on_game_progress_downloaded_t on_game_progress_downloaded)
+void wpd_download_game_progress
+(
+  wb_locals_t* locals,
+  on_game_progress_downloaded_t on_game_progress_downloaded
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Requesting progress for game's hash '%s'\n", locals->hash);
 

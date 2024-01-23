@@ -431,8 +431,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST;
       case ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST;
+#ifdef HAVE_WEBHOOKS
      case ACTION_OK_DL_WEBHOOK_SETTINGS_LIST:
         return MENU_ENUM_LABEL_DEFERRED_WEBHOOK_SETTINGS_LIST;
+#endif
      case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
@@ -1717,7 +1719,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
       case ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST:
       case ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST:
+#ifdef HAVE_WEBHOOKS
       case ACTION_OK_DL_WEBHOOK_SETTINGS_LIST:
+#endif
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
@@ -6082,7 +6086,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_file_browser_list, ACTION_OK_DL_MEN
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_retro_achievements_list, ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_appearance_list, ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_visibility_list, ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST)
+#ifdef HAVE_WEBHOOKS
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_webhook_list, ACTION_OK_DL_WEBHOOK_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_updater_list, ACTION_OK_DL_UPDATER_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_services, ACTION_OK_DL_LAKKA_SERVICES_LIST)
 #ifdef HAVE_LAKKA_SWITCH
@@ -7804,6 +7810,7 @@ static int action_ok_netplay_disconnect(const char *path,
 }
 #endif
 
+#ifdef HAVE_WEBHOOKS
 static int action_ok_webhook_start_association(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -7821,6 +7828,7 @@ static int action_ok_webhook_abort_association(const char *path,
 
   return -1;
 }
+#endif
 
 static int action_ok_core_create_backup(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -8750,9 +8758,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
          {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,         action_ok_cheevos_appearance_list},
          {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,         action_ok_cheevos_visibility_list},
+#ifdef HAVE_WEBHOOKS
          {MENU_ENUM_LABEL_WEBHOOK_SETTINGS,            action_ok_cheevos_webhook_list},
          {MENU_ENUM_LABEL_WEBHOOK_START_ASSOCIATION,   action_ok_webhook_start_association},
          {MENU_ENUM_LABEL_WEBHOOK_ABORT_ASSOCIATION,   action_ok_webhook_abort_association},
+#endif
          {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
 #ifdef HAVE_BLUETOOTH
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},

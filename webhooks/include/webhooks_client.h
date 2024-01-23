@@ -16,6 +16,8 @@
 #ifndef __WEBHOOKS_CLIENT_H
 #define __WEBHOOKS_CLIENT_H
 
+RETRO_BEGIN_DECLS
+
 void wc_send_game_event
 (
   unsigned int console_id,
@@ -53,5 +55,7 @@ void wc_update_progress
   unsigned long frame_number,
   retro_time_t time
 );
+
+RETRO_END_DECLS
 
 #endif /* __WEBHOOKS_CLIENT_H */

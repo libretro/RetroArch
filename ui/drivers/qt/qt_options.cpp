@@ -101,7 +101,7 @@ QWidget *AchievementsPage::widget()
    }
    file_list_free(visibilityList);
 
-  menu_displaylist_build_list(visibilityList, settings,
+    menu_displaylist_build_list(visibilityList, settings,
                               DISPLAYLIST_WEBHOOK_SETTINGS_LIST, true);
 
   for (i = 0; i < visibilityList->size; i++)

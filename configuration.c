@@ -1531,6 +1531,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("cheevos_leaderboards_enable",  settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
 #endif
 
+#ifdef HAVE_WEBHOOKS
    SETTING_ARRAY("webhook_url",              settings->arrays.webhook_url, false, NULL, true);
    SETTING_ARRAY("webhook_code_url",         settings->arrays.webhook_code_url, false, NULL, true);
    SETTING_ARRAY("webhook_token_url",        settings->arrays.webhook_token_url, false, NULL, true);
@@ -1538,6 +1539,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("webhook_accesstoken",      settings->arrays.webhook_accesstoken, false, NULL, true);
    SETTING_ARRAY("webhook_refreshtoken",     settings->arrays.webhook_refreshtoken, false, NULL, true);
    SETTING_ARRAY("webhook_expiresin",        settings->arrays.webhook_expiresin, false, NULL, true);
+#endif
 
 #ifdef HAVE_NETWORKING
    SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);

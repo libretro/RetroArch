@@ -7,13 +7,16 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 #include <net/net_http.h>
 
-#include "webhooks.h"
-#include "webhooks_oauth.h"
+#include "include/webhooks.h"
+#include "include/webhooks_oauth.h"
 
+#ifdef HAVE_CHEEVOS
 #include "../deps/rcheevos/src/rapi/rc_api_common.h"
+#endif
+
 #include "../libretro-common/include/features/features_cpu.h"
 
 #include "../command.h"
@@ -53,8 +56,15 @@ woauth_token_response_t oauth_token_response;
 
 bool is_pairing;
 
-static void woauth_schedule_accesstoken_retrieval();
-static void woauth_trigger_accesstoken_retrieval();
+static void woauth_schedule_accesstoken_retrieval
+(
+  void
+);
+
+static void woauth_trigger_accesstoken_retrieval
+(
+  void
+);
 
 // static void woauth_end_pairing()
 // {
@@ -66,7 +76,10 @@ static void woauth_trigger_accesstoken_retrieval();
 //  Drops the User Code from the configuration.
 //  This instance can't be linked to another webhook server.
 //  ------------------------------------------------------------------------------
-static void woauth_clear_usercode()
+static void woauth_clear_usercode
+(
+  void
+)
 {
   settings_t *settings = config_get_ptr();
   configuration_set_string(settings, settings->arrays.webhook_usercode, "");
@@ -85,7 +98,10 @@ static void woauth_retry_accesstoken_retrieval(retro_task_t* task)
 //  ------------------------------------------------------------------------------
 //  Schedules the retrieval of a new access token after it has expired.
 //  ------------------------------------------------------------------------------
-static void woauth_schedule_accesstoken_retrieval()
+static void woauth_schedule_accesstoken_retrieval
+(
+  void
+)
 {
   retro_task_t* retry_task = task_init();
   retry_task->when = ACCESS_TOKEN_FREQUENCY;
@@ -126,14 +142,12 @@ static void woauth_end_http_request
 
   if (error)
   {
-    strncpy(buffer, error, sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, error, sizeof(buffer));
   }
   else if (!data)
   {
     // Server did not return HTTP headers
-    strncpy(buffer, "Server communication error", sizeof(buffer));
-    buffer[sizeof(buffer)-1] = '\0';
+    strlcpy(buffer, "Server communication error", sizeof(buffer));
   }
   else if (!data->data || !data->len)
   {
@@ -151,8 +165,7 @@ static void woauth_end_http_request
     }
     else {
       // Server sent empty response without error status code
-      strncpy(buffer, "No response from server", sizeof(buffer));
-      buffer[sizeof(buffer)-1] = '\0';
+      strlcpy(buffer, "No response from server", sizeof(buffer));
     }
   }
   else
@@ -330,7 +343,10 @@ static void woauth_initialize_accesstoken_request
 //  ------------------------------------------------------------------------------
 //  Creates the HTTP request to get an access token and sends it.
 //  ------------------------------------------------------------------------------
-static void woauth_trigger_accesstoken_retrieval()
+static void woauth_trigger_accesstoken_retrieval
+(
+  void
+)
 {
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
@@ -429,7 +445,10 @@ static void woauth_initialize_devicecode_request
 //  ------------------------------------------------------------------------------
 //  Starts the OAuth Device Flow to first retrieve a device code and a user code.
 //  ------------------------------------------------------------------------------
-void woauth_schedule_devicecode_retrieval()
+void woauth_schedule_devicecode_retrieval
+(
+  void
+)
 {
   async_http_request_t *request = (async_http_request_t*) calloc(1, sizeof(async_http_request_t));
 
@@ -449,14 +468,16 @@ void woauth_schedule_devicecode_retrieval()
 //  ------------------------------------------------------------------------------
 //  Starts the process to associate the emulator with the Webhook server.
 //  ------------------------------------------------------------------------------
-void woauth_initiate_pairing()
+void woauth_initiate_pairing
+(
+  void
+)
 {
   is_pairing = true;
 
   WEBHOOKS_LOG(WEBHOOKS_TAG "Starting pairing device to the server\n");
 
-  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
-  oauth_code_response.client_id[sizeof(oauth_code_response.client_id)-1] = '\0';
+  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
 
   woauth_schedule_devicecode_retrieval();
 }
@@ -464,7 +485,10 @@ void woauth_initiate_pairing()
 //  ------------------------------------------------------------------------------
 //
 //  ------------------------------------------------------------------------------
-bool woauth_is_pairing()
+bool woauth_is_pairing
+(
+  void
+)
 {
   return is_pairing;
 }
@@ -472,7 +496,10 @@ bool woauth_is_pairing()
 //  ------------------------------------------------------------------------------
 //
 //  ------------------------------------------------------------------------------
-void woauth_abort_pairing()
+void woauth_abort_pairing
+(
+  void
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Cancelling pairing device to the server\n");
 
@@ -482,13 +509,15 @@ void woauth_abort_pairing()
 //  ------------------------------------------------------------------------------
 //  Returns an access token used to contact the Webhook server.
 //  ------------------------------------------------------------------------------
-const char* woauth_get_accesstoken()
+const char* woauth_get_accesstoken
+(
+  void
+)
 {
   const settings_t *settings = config_get_ptr();
   const int EXPIRATION_WINDOW = 1000 * 10 * 5;
 
-  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
-  oauth_code_response.client_id[sizeof(oauth_code_response.client_id)-1] = '\0';
+  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
 
   retro_time_t now = cpu_features_get_time_usec();
 

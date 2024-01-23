@@ -16,12 +16,11 @@
 #ifndef __WEBHOOKS_H
 #define __WEBHOOKS_H
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <libretro.h>
-#include <lrc_hash.h>
 
+#ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos_locals.h"
+#endif
 
 #include "../tasks/tasks_internal.h"
 
@@ -42,6 +41,8 @@ void webhooks_log(const char *fmt, ...);
 
 #define HASH_LENGTH 33
 #define GAME_PROGRESS_LENGTH 4096
+
+RETRO_BEGIN_DECLS
 
 typedef struct async_http_request_t async_http_request_t;
 
@@ -90,18 +91,32 @@ unsigned wb_peek
   void* ud
 );
 
-void webhooks_initialize();
+void webhooks_initialize
+(
+  void
+);
 
 void webhooks_load_game
 (
     const struct retro_game_info* info
 );
 
-void webhooks_unload_game();
-void webhooks_reset_game();
+void webhooks_unload_game(
+  void
+);
 
-void webhooks_process_frame();
-void webhooks_send_presence();
+void webhooks_reset_game(
+  void
+);
+
+void webhooks_process_frame(
+  void
+);
+
+void webhooks_send_presence
+(
+  void
+);
 
 void webhooks_on_achievements_loaded
 (
@@ -111,7 +126,9 @@ void webhooks_on_achievements_loaded
 
 void webhooks_on_achievement_awarded
 (
-    rcheevos_racheevo_t* cheevo
+  const rcheevos_racheevo_t* cheevo
 );
+
+RETRO_END_DECLS
 
 #endif /* __WEBHOOKS_H */

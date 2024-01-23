@@ -1,13 +1,13 @@
-#include "webhooks_progress_tracker.h"
-#include "webhooks.h"
+#include "include/webhooks_progress_tracker.h"
+
+#include "include/webhooks.h"
 
 #include "../deps/rcheevos/src/rcheevos/rc_internal.h"
 #include "../deps/rcheevos/src/rc_compat.h"
 
 #include "rc_runtime_types.h"
 
-#include <ctype.h>
-#include <stdbool.h>
+#include <string.h>
 
 typedef struct progress_t progress_t;
 
@@ -56,7 +56,7 @@ int wpt_process_frame(rc_runtime_t* runtime)
   rc_richpresence_t* richpresence = runtime_richpresence->richpresence;
 
   //
-  rc_richpresence_display_t* new_display;
+  rc_richpresence_display_t* new_display = NULL;
 
   //  This is needed to support all the rich presences defined with Retro Achievement.
   //  For the webhooks, there should not be multiple displays needed but only one.
@@ -67,20 +67,25 @@ int wpt_process_frame(rc_runtime_t* runtime)
     }
   }
 
-  rc_richpresence_display_part_t* new_display_part = new_display->display;
+  rc_richpresence_display_part_t* new_display_part = NULL;
+
+  if(new_display != NULL)
+    new_display_part = new_display->display;
 
   int charactersWritten = 0;
   int frame_progress_position = 0;
 
-  for (; new_display_part; new_display_part = new_display_part->next) {
+  if(new_display_part != NULL)
+  {
+    for (; new_display_part; new_display_part = new_display_part->next) {
 
-    rc_typed_value_t new_value;
+      rc_typed_value_t new_value;
 
-    switch (new_display_part->display_type) {
+      switch (new_display_part->display_type) {
       case 101: //RC_FORMAT_STRING:
         charactersWritten = sprintf(&frame_progress[frame_progress_position], "%s", new_display_part->text);
         frame_progress_position += charactersWritten;
-      break;
+        break;
       case 102: //RC_FORMAT_LOOKUP:
         //  LOOKUPs are kept for Retro Achievement's Rich Presence support.
       default:
@@ -100,6 +105,7 @@ int wpt_process_frame(rc_runtime_t* runtime)
           frame_progress_position += charactersWritten;
         }
         break;
+      }
     }
   }
 
@@ -111,8 +117,7 @@ int wpt_process_frame(rc_runtime_t* runtime)
   first_run = false;
   
   if (state_changed) {
-    strncpy(last_progress, frame_progress, 2047);
-    last_progress[2047] = '\0';
+    strlcpy(last_progress, frame_progress, 2047);
     return PROGRESS_UPDATED;
   }
 

@@ -149,8 +149,10 @@
 #include "cheevos/cheevos_menu.h"
 #endif
 
-#include "webhooks/webhooks.h"
-#include "webhooks/webhooks_oauth.h"
+#ifdef HAVE_WEBHOOKS
+#include "webhooks/include/webhooks.h"
+#include "webhooks/include/webhooks_oauth.h"
+#endif
 
 #ifdef HAVE_TRANSLATE
 #include <encodings/base64.h>
@@ -3477,8 +3479,10 @@ bool command_event(enum event_command cmd, void *data)
          rcheevos_reset_game(false);
 #endif
 #endif
-       
+
+#ifdef HAVE_WEBHOOKS
          webhooks_reset_game();
+#endif
        
 #ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
@@ -3716,7 +3720,11 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_PRESENCE_UPDATE, &userdata);
             }
 #endif
+
+#ifdef HAVE_WEBHOOKS
             webhooks_unload_game();
+#endif
+
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
             runloop_system_info_free();
@@ -5366,12 +5374,14 @@ bool command_event(enum event_command cmd, void *data)
                                                         : MSG_VRR_RUNLOOP_DISABLED),
                1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          break;
+#ifdef HAVE_WEBHOOKS
       case CMD_EVENT_WEBHOOK_START_ASSOCIATION:
         woauth_initiate_pairing();
         break;
       case CMD_EVENT_WEBHOOK_ABORT_ASSOCIATION:
         woauth_abort_pairing();
         break;
+#endif
      case CMD_EVENT_NONE:
          return false;
 
@@ -7674,13 +7684,17 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 #endif
 
+#ifdef HAVE_WEBHOOKS
   webhooks_initialize();
 
+#ifdef HAVE_CHEEVOS
   rcheevos_initialize_hooks
   (
       &webhooks_on_achievements_loaded,
       &webhooks_on_achievement_awarded
   );
+#endif
+#endif
 
 #if defined(HAVE_AUDIOMIXER)
    audio_driver_load_system_sounds();
@@ -7800,10 +7814,12 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_REWIND
             command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 #endif
-           
+
+#ifdef HAVE_WEBHOOKS
             // TODO Can't use it as is since the task_queue seems to have been cleared at this point.
             webhooks_unload_game();
-           
+#endif
+
 #ifdef HAVE_CHEATS
             cheat_manager_state_free();
 #endif

@@ -102,6 +102,7 @@ else
 	HAVE_AUDIOMIXER 	:= 1
 	HAVE_RWAV       	:= 1
 	HAVE_CORE_INFO_CACHE    := 1
+    HAVE_WEBHOOKS := 1
 
 	ifeq ($(DEBUG), 1)
 		HAVE_NETLOGGER	= 1

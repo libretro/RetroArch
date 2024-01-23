@@ -1,18 +1,3 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015-2016 - Andre Leiradella
- *
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
- *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
@@ -26,12 +11,12 @@
 #include "../config.h"
 #endif
 
-#include "webhooks.h"
-#include "webhooks_client.h"
-#include "webhooks_progress_downloader.h"
-#include "webhooks_progress_parser.h"
-#include "webhooks_progress_tracker.h"
-#include "webhooks_oauth.h"
+#include "include/webhooks.h"
+#include "include/webhooks_client.h"
+#include "include/webhooks_progress_downloader.h"
+#include "include/webhooks_progress_parser.h"
+#include "include/webhooks_progress_tracker.h"
+#include "include/webhooks_oauth.h"
 
 //  Keeps dependency on rcheevos to compute the hash of a ROM.
 //  Keeps dependency on rcheevos to reuse the triggers.
@@ -330,8 +315,9 @@ static void wb_check_game_events
 )
 {
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
-  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
-    struct rc_trigger_t* trigger = triggers->trigger;
+
+  for (uint32_t trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    rc_trigger_t* trigger = triggers->trigger;
     int result = rc_evaluate_trigger(trigger, &wb_peek, NULL, 0);
 
     if (result == RC_TRIGGER_STATE_TRIGGERED) {
@@ -344,11 +330,14 @@ static void wb_check_game_events
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wb_reset_game_events()
+static void wb_reset_game_events
+(
+ void
+)
 {
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
-  for (int trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
-    struct rc_trigger_t* trigger = triggers->trigger;
+  for (uint32_t trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
+    rc_trigger_t* trigger = triggers->trigger;
     rc_reset_trigger(trigger);
   }
 }
@@ -356,7 +345,10 @@ static void wb_reset_game_events()
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-void webhooks_initialize()
+void webhooks_initialize
+(
+ void
+)
 {
   if (locals.initialized) {
     return;
@@ -385,7 +377,8 @@ void webhooks_load_game
   WEBHOOKS_LOG(WEBHOOKS_TAG "New game loaded: %s\n", info->path);
 
   frame_counter = 0;
-  retro_time_t time = cpu_features_get_time_usec();
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wh_compute_hash(info);
 
@@ -403,11 +396,14 @@ void webhooks_load_game
 //  ---------------------------------------------------------------------------
 //  Called when a game is being unloaded.
 //  ---------------------------------------------------------------------------
-void webhooks_unload_game()
+void webhooks_unload_game
+(
+ void
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been unloaded\n");
 
-  retro_time_t time = cpu_features_get_time_usec();
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wc_send_game_event(locals.console_id, locals.hash, UNLOADED, frame_counter, time);
 
@@ -417,12 +413,16 @@ void webhooks_unload_game()
 //  ---------------------------------------------------------------------------
 //  Called when the game is being reset.
 //  ---------------------------------------------------------------------------
-void webhooks_reset_game()
+void webhooks_reset_game
+(
+ void
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been reset\n");
 
   frame_counter = 0;
-  retro_time_t time = cpu_features_get_time_usec();
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wb_reset_game_events();
 
@@ -436,21 +436,30 @@ void webhooks_reset_game()
 //  ---------------------------------------------------------------------------
 //  Called for each frame.
 //  ---------------------------------------------------------------------------
-void webhooks_process_frame()
+void webhooks_process_frame
+ (
+   void
+ )
 {
   frame_counter++;
-  retro_time_t time = cpu_features_get_time_usec();
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   wb_check_game_events(frame_counter, time);
 
   wb_check_progress(frame_counter, time);
 }
 
-void webhooks_update_achievements()
+void webhooks_update_achievements
+(
+  void
+)
 {
   int number_of_active  = 0;
   
   int total_number      = 0;
+
+  const retro_time_t time = cpu_features_get_time_usec();
 
   //  Only deals with supported & official achievements.
   const rcheevos_racheevo_t* current_achievement = locals.current_achievement;
@@ -495,7 +504,7 @@ void webhooks_on_achievements_loaded
 
 void webhooks_on_achievement_awarded
 (
-  rcheevos_racheevo_t* cheevo
+  const rcheevos_racheevo_t* cheevo
 )
 {
   webhooks_update_achievements();
