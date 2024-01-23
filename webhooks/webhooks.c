@@ -330,7 +330,10 @@ static void wb_check_game_events
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-static void wb_reset_game_events()
+static void wb_reset_game_events
+(
+ void
+)
 {
   rc_runtime_trigger_t* triggers = locals.runtime.triggers;
   for (uint32_t trigger_num = 0; trigger_num < locals.runtime.trigger_count; ++trigger_num, ++triggers) {
@@ -342,7 +345,10 @@ static void wb_reset_game_events()
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-void webhooks_initialize()
+void webhooks_initialize
+(
+ void
+)
 {
   if (locals.initialized) {
     return;
@@ -390,7 +396,10 @@ void webhooks_load_game
 //  ---------------------------------------------------------------------------
 //  Called when a game is being unloaded.
 //  ---------------------------------------------------------------------------
-void webhooks_unload_game()
+void webhooks_unload_game
+(
+ void
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been unloaded\n");
 
@@ -404,7 +413,10 @@ void webhooks_unload_game()
 //  ---------------------------------------------------------------------------
 //  Called when the game is being reset.
 //  ---------------------------------------------------------------------------
-void webhooks_reset_game()
+void webhooks_reset_game
+(
+ void
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Current game has been reset\n");
 
@@ -424,7 +436,10 @@ void webhooks_reset_game()
 //  ---------------------------------------------------------------------------
 //  Called for each frame.
 //  ---------------------------------------------------------------------------
-void webhooks_process_frame()
+void webhooks_process_frame
+ (
+   void
+ )
 {
   frame_counter++;
 
@@ -435,7 +450,10 @@ void webhooks_process_frame()
   wb_check_progress(frame_counter, time);
 }
 
-void webhooks_update_achievements()
+void webhooks_update_achievements
+(
+  void
+)
 {
   int number_of_active  = 0;
   

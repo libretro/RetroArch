@@ -180,6 +180,9 @@ static void wc_set_progress_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wc_set_event_request_url
 (
   unsigned int console_id,
@@ -210,6 +213,9 @@ static void wc_set_event_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wc_set_achievement_request_url
 (
   unsigned int console_id,
@@ -244,6 +250,9 @@ static void wc_set_achievement_request_url
   request->request.post_data = rc_url_builder_finalize(&builder);
 }
 
+//  ---------------------------------------------------------------------------
+//
+//  ---------------------------------------------------------------------------
 static void wc_set_keep_alive_request_url
 (
   unsigned int console_id,
@@ -305,8 +314,8 @@ static void wc_set_request_header
     return;
   }
 
-  strlcpy(headers, authorization_header, auth_header_len);
-  strlcpy(headers + auth_header_len, access_token, token_len);
+  strlcpy(headers, authorization_header, auth_header_len + 1);
+  strlcpy(headers + auth_header_len, access_token, token_len + 1);
 
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';

@@ -178,7 +178,11 @@ static void wpd_set_request_header(async_http_request_t* request)
 //  ---------------------------------------------------------------------------
 //  Builds and sets the request's URL.
 //  ---------------------------------------------------------------------------
-static void wpd_set_request_url(const wb_locals_t* locals, async_http_request_t* request)
+static void wpd_set_request_url
+(
+  const wb_locals_t* locals,
+  async_http_request_t* request
+)
 {
   const settings_t *settings = config_get_ptr();
   const char* base_url = settings->arrays.webhook_url;
@@ -248,7 +252,11 @@ static void wpd_on_request_completed
 //  ---------------------------------------------------------------------------
 //
 //  ---------------------------------------------------------------------------
-void wpd_download_game_progress(wb_locals_t* locals, on_game_progress_downloaded_t on_game_progress_downloaded)
+void wpd_download_game_progress
+(
+  wb_locals_t* locals,
+  on_game_progress_downloaded_t on_game_progress_downloaded
+)
 {
   WEBHOOKS_LOG(WEBHOOKS_TAG "Requesting progress for game's hash '%s'\n", locals->hash);
 
