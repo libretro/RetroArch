@@ -83,6 +83,10 @@ RSOUND_CFLAGS    := -DHAVE_RSOUND
 RSOUND_LIBS      := -lrsound
 endif
 
+ifeq ($(HAVE_WEBHOOKS), 1)
+LIBS      := -lbsd
+endif
+
 ifeq ($(HAVE_FFMPEG), 1)
 AVCODEC_LIBS     := -lavcodec
 AVUTIL_LIBS      := -lavutil
