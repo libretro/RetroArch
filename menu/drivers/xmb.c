@@ -5834,22 +5834,24 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             || (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)))
    {
       float thumb_width         = right_thumbnail_margin_width;
-      float thumb_height        = thumbnail_margin_height_full;
+      float thumb_height        = thumb_width - (thumb_width / 4);
       float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
       float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
       float thumb_x             = right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
-      float thumb_y             = xmb->margins_title_top + (xmb->icon_size / 4.0f) + ((thumb_height - scaled_thumb_height) / 2.0f);
+      float thumb_y             = (video_height - thumb_height) / 2.0f;
+
+      /* Make sure thumbnail stays visible with extra wide screens */
+      if (thumb_height > video_height)
+         thumb_y -= (thumb_height - video_height) / 2.0f;
 
       if (!xmb->use_ps3_layout)
       {
-         float y_offset      = ((xmb->depth != 1) ? 1.2f : -0.25f) * xmb->icon_size;
-
          thumb_width         = xmb->icon_size * 2.4f;
-         thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - (xmb->icon_size / 6.0f) - y_offset;
+         thumb_height        = thumb_width - (thumb_width / 4);
          scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
          scaled_thumb_height = thumb_height * thumbnail_scale_factor;
          thumb_x             = (thumb_width - scaled_thumb_width) / 2.0f;
-         thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
+         thumb_y             = xmb->margins_screen_top + xmb->icon_size * 2.5f;
       }
 
       gfx_thumbnail_draw(
@@ -6003,13 +6005,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
        *   (if available) */
       else if (show_right_thumbnail || show_left_thumbnail)
       {
-         float y_offset            = ((xmb->depth != 1) ? 1.2f : -0.25f) * xmb->icon_size;
          float thumb_width         = xmb->icon_size * 2.4f;
-         float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - (xmb->icon_size / 6.0f) - y_offset;
+         float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - (xmb->icon_size * 2.0f);
          float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
          float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
          float thumb_x             = (thumb_width - scaled_thumb_width) / 2.0f;
-         float thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
+         float thumb_y             = xmb->margins_screen_top + xmb->icon_size * 2.5f;
 
          /* Very small thumbnails look ridiculous
           * > Impose a minimum size limit */
@@ -6023,7 +6024,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   thumb_y,
                   scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
                   scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
-                  GFX_THUMBNAIL_ALIGN_TOP,
+                  GFX_THUMBNAIL_ALIGN_CENTRE,
                   1.0f, 1.0f, &thumbnail_shadow);
       }
    }
