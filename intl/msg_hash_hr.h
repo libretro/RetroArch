@@ -174,20 +174,8 @@ MSG_HASH(
    "Saznaj više o tome kako program funkcionira."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Ponovno pokreni RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Ponovo pokretanje programa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Zatvori RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Zatvori pogram."
+   "Izlaz"
    )
 
 /* Main Menu > Load Core */

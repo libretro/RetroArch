@@ -183,23 +183,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Starta om RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Startar om programmet."
+   "Starta om"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Avsluta RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Avslutar programmet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Avsluta RetroArch. Dödas programmet på något drastiskt sätt (SIGKILL, etc.) kommer RetroArch att avslutas utan att spara konfigurationen, etc. På Unix-liknande system tillåter SIGINT/SIGTERM en ordentlig avstängning."
+   "Avsluta"
    )
 
 /* Main Menu > Load Core */
@@ -1690,10 +1678,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Meny-drivrutin att använda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,

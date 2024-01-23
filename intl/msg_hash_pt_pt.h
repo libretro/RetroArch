@@ -175,19 +175,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Reiniciar o RetroArch"
+   "Reiniciar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Reinicie o programa."
+   "Reiniciar a aplicação RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Sair do RetroArch"
+   "Sair"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Sair do programa."
+   "Sair da aplicação RetroArch. A configuração é guardada ao sair."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Sair da aplicação RetroArch. A gravação da configuração ao sair está desativada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Sair do RetroArch. Se encerrar o programa de qualquer forma forçada (SIGKILL, etc.) irá encerrar o RetroArch sem guardar a configuração em qualquer caso. Em sistemas Unix, SIGINT/SIGTERM permite uma desinicialização limpa que inclui a gravação da configuração se estiver ativa."
    )
 
 /* Main Menu > Load Core */
@@ -1292,10 +1300,6 @@ MSG_HASH(
    "Driver de localização a ser usado."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Driver de menu a ser usado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Gravação de vídeo"
    )
@@ -2128,6 +2132,14 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Unir tipos de dispositivos de teclas de atalho"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Bloqueia todas as teclas de atalho dos tipos de dispositivo teclado e controlador se um dos tipos tiver a opção 'Ativação de teclas de atalho' definida."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    "Mostrar/esconder menu"
@@ -3007,6 +3019,14 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Explorador de ficheiros"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Ficheiros de configuração"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   "O ficheiro de configuração predefinido é armazenado neste diretório."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,

@@ -191,19 +191,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Programı yeniden başlat."
+   "RetroArch uygulamasını yeniden başlat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Çıkış"
+   "Çık"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Programdan çık."
+   "RetroArch uygulamasından çıkın. Çıkışta yapılandırma kaydetme etkin."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "RetroArch uygulamasından çıkın. Çıkışta yapılandırma kaydetme etkin değil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch üstünden çıkın. Programı herhangi bir şekilde zorla kapatmak (SIGKILL, vb.), Yapılandırmayı kaydetmeden RetroArch'ı sonlandırır, vb. Unix benzerlerinde, SIGINT/SIGTERM temiz bir destartizasyona izin verir."
+   "RetroArch çıkış. Programın herhangi bir şekilde (SIGKILL vb.) sonlandırılması, her durumda yapılandırmayı kaydetmeden RetroArch uygulamasını sonlandıracaktır. Unix benzeri sistemlerde SIGINT/SIGTERM, eğer etkinleştirilirse yapılandırma kaydetmeyi de içeren temiz bir başlangıç ​​giderme işlemine izin verir."
    )
 
 /* Main Menu > Load Core */
@@ -1753,7 +1757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Kullanılacak menü sürücüsü."
+   "Kullanılacak menü sürücüsü. Yeniden başlatılmalı."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -3463,6 +3467,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "Atanan 'Kısayol Tuşu Etkinleştir' tuşuna basıldıktan sonra normal giriş engellenmeden önce karelere gecikme ekler. 'Kısayol Tuşu Etkinleştir' tuşundan normal girişin başka bir eyleme eşlendiğinde yakalanmasına izin verir (örn. RetroPad 'Seç')."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Kısayol Tuşu Cihaz Türlerini Birleştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Her iki türde de 'Kısayol Tuşu Etkinleştir' ayarlanmışsa, hem klavye hem de kontrolcü cihazı türlerindeki tüm kısayol tuşlarını engelleyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -7714,15 +7726,15 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Dosya tarayıcısı için başlangıç ​​dizinini ayarlayın."
+   "Dosya Tarayıcı için Başlangıç ​​Dizini'ni ayarlayın."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Yapılandırma"
+   "Yapılandırma Dosyaları"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Menü yapılandırma tarayıcısı için başlangıç dizinini ayarlar."
+   "Varsayılan yapılandırma dosyası bu dizinde saklanır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,

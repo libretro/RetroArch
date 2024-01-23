@@ -170,20 +170,8 @@ MSG_HASH(
    "Dysgu mwy am sut mae'r rhaglen yn gweithio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Ailgychwyn RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Ailgychwyn y rhaglen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Gadael RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Gadael’r rhaglen."
+   "Cau"
    )
 
 /* Main Menu > Load Core */

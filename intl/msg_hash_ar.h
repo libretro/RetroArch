@@ -195,23 +195,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "إعادة تشغيل رترو أرك"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "يعيد تشغيل البرنامج."
+   "إعادة التشغيل"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "مغادرة البرنامج"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "مغادرة البرنامج."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "إنهاء RetroArch. قتل البرنامج بأي طريقة صعبة (SIGKILL، إلخ. سيتم إنهاء RetroArch دون حفظ التكوين، إلخ. على أحب يونكس، يسمح SIGINT/SIGTERM بإزالة التشكيلات النظيفة."
+   "خروج"
    )
 
 /* Main Menu > Load Core */
@@ -1458,10 +1446,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "نظام تشغيل القائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "مشغل القائمة لاستخدامه."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,

@@ -195,23 +195,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Επανεκκίνηση RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Επανεκκίνηση του προγράμματος."
+   "Επανεκκίνηση"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Έξοδος από RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Έξοδος από το πρόγραμμα."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Τερματίστε RetroArch. Σκοτώνοντας το πρόγραμμα με οποιονδήποτε σκληρό τρόπο (SIGKILL, κλπ.) θα τερματίσει το RetroArch χωρίς αποθήκευση της διαμόρφωσης, κλπ. Σε Unix-likes, SIGINT/SIGTERM επιτρέπει μια καθαρή απαρχικοποίηση."
+   "Έξοδος"
    )
 
 /* Main Menu > Load Core */
@@ -1370,10 +1358,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Οδηγός Μενού"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Οδηγός Μενού προς χρήση."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,

@@ -187,23 +187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "RetroArch Opnieuw Opstarten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Programma herstarten."
+   "Opnieuw opstarten"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "RetroArch Afsluiten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Sluit het programma af."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch afsluiten. Het programma op een harde manier afsluiten (SIGKILL, etc.) zal RetroArch beëindigen zonder de configuratie op te slaan etc. Op Unix-likes kan SIGINT/SIGTERM een schone de-initialisatie toestaan."
+   "Afsluiten"
    )
 
 /* Main Menu > Load Core */
@@ -1546,10 +1534,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    "Locatiestuurprogramma om te gebruiken."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Menustuurprogramma om te gebruiken."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,

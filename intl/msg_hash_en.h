@@ -29,10 +29,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
    "Join or host a net-play session."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Quit RetroArch. Killing the program in any hard way (SIGKILL, etc.) will terminate RetroArch without saving the configuration, etc. On Unix-likes, SIGINT/SIGTERM allows a clean deinitialisation."
-   )
 
 /* Main Menu > Load Core */
 
@@ -1268,10 +1264,6 @@ MSG_HASH(
 
 /* Settings > Directory */
 
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Configurations"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
    "Recording Configurations"

@@ -127,7 +127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "コンテンツをスキャンしてプレイリストを作成、更新します。"
+   "コンテンツをスキャンしてプレイリストの作成や更新を行います。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -195,23 +195,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "RetroArch を再起動"
+   "再起動"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "プログラムを再起動します。"
+   "RetroArch アプリケーションを再起動します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "RetroArch を終了"
+   "終了"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "プログラムを終了します。"
+   "RetroArch アプリケーションを終了します。終了時に構成を保存する設定が有効化されています。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "RetroArch アプリケーションを終了します。終了時に構成を保存する設定が無効化されています。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch を終了します。任意のハードな方法でプログラムを殺す(SIGKILLなど)。 設定を保存せずに RetroArch を終了させます。Unix ライクでは SIGINT/SIGTERM はクリーンな初期化を可能にします。"
+   "RetroArch を終了します。プログラムを (SIGKILL などで) 強制終了すると、構成を保存せずに RetroArch を終了します。 Unix 系では、SIGINT/SIGTERM を有効にすることで構成の保存を含むクリーンな初期化を可能にします。"
    )
 
 /* Main Menu > Load Core */
@@ -1053,7 +1057,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   "既存の構成をロードし、現在の値を置き換えます。"
+   "既存の構成をロードして現在の値を置き換えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1769,7 +1773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "使用するメニューのドライバです。"
+   "使用するメニュードライバです。再起動が必要です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -3213,7 +3217,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_BIND_PRESS,
-   "キーボード、マウス、またはコントローラーを押してください"
+   "キーボード、マウスまたはコントローラーを押してください"
    )
 MSG_HASH(
    MSG_INPUT_BIND_RELEASE,
@@ -4217,7 +4221,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "コンテンツをロードしようとする前に必要なファームウェアがすべて存在するかどうかを確認します。"
+   "コンテンツのロードを試みる前に必要なファームウェアがすべて存在するかどうかを確認します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
@@ -4513,7 +4517,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "セーブステートファイルをアーカイブ形式で書き込みます. 保存/読み込み時間の増加を犠牲にしてファイルサイズを劇的に削減します. "
+   "ステートセーブファイルをアーカイブ形式で書き込みます。保存/読み込み時間が増加する代わりにファイルサイズを劇的に削減します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -5746,7 +5750,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "スクロールする方向を保持したときの初期遅延(ms)です."
+   "一定方向にスクロールし続けるときの初期遅延 (ms) です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -7243,7 +7247,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   "最近使ったファイルの履歴を有効または無効にします。"
+   "最近使用したゲーム、画像、音楽および動画のプレイリストを管理します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
@@ -7251,7 +7255,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   "画像、音楽およびビデオの最近使ったファイルの履歴の最大エントリー数を制限します。"
+   "最近使用したゲーム、画像、音楽および動画のプレイリストの最大エントリー数です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -7283,7 +7287,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "[履歴]、[画像]、[音楽]、[動画] プレイリストを除くコンテンツプレイリストをアルファベット順に並べ替えます。"
+   "[履歴]、[画像]、[音楽] および [動画] プレイリストを除くコンテンツプレイリストをアルファベット順に並べ替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
@@ -7299,7 +7303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   "ディスクに書き込むときにプレイリストデータをアーカイブします. CPU使用率が上昇しますがファイルサイズと読み込み時間を短縮できます. 古い形式と新しい形式のどちらのプレイリストでも使用できます."
+   "ディスクに書き込むときにプレイリストデータをアーカイブします。CPU 使用率が (わずかに) 上昇する代わりに、ファイルサイズと読み込み時間を削減します。プレイリストの形式 (古い, 新しい) を問わず使用できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
@@ -7654,7 +7658,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-   "BIOS、ブート ROM、システム固有のファイルなどはこのディレクトリに保存されます。"
+   "BIOS、ブート ROM およびその他のシステム固有のファイルなどはこのディレクトリに保存されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
@@ -7698,11 +7702,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "構成"
+   "構成ファイル"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "メニュー構成ブラウザの開始ディレクトリを設定します。"
+   "デフォルトの構成ファイルはこのディレクトリに保存されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -8153,7 +8157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "スキャンしたコンテンツを起動するときに使用するデフォルトのコアを選択します."
+   "スキャンしたコンテンツを起動するときに使用するデフォルトのコアを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -8810,7 +8814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
-   "現在のコンテンツの入力リマップファイルをロード、保存、または削除します。"
+   "現在のコンテンツの入力リマップファイルをロード、保存または削除します。"
    )
 
 /* Quick Menu > Controls > Manage Remap Files */
@@ -10155,15 +10159,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-   "地域を保持"
+   "地域を残す"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-   "ディスクインデックスを保持"
+   "ディスクインデックスを残す"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-   "地域とディスクインデックスを保持"
+   "地域とディスクインデックスを残す"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
@@ -10343,7 +10347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-   "マウスホイール下"
+   "マウスホイール 下"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
@@ -10570,7 +10574,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
-   "メニューテキスト, 外枠, サムネイルの影のドロップを有効にします. パフォーマンスに影響を与えます. "
+   "メニューテキスト、外枠およびサムネイルのドロップシャドウを有効にします。パフォーマンスに少し影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
@@ -11245,7 +11249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "メニューの異なる階層間を移動するときに, スムーズなアニメーション効果を有効にします."
+   "メニューの階層を移動するときにスムーズなアニメーション効果を有効にします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
@@ -15024,7 +15028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
-   "タップ、タップドラッグ、指スワイプなどを含むタッチスクリーンジェスチャーを有効にします。"
+   "タップ、タップドラッグおよび指スワイプなどを含むタッチスクリーンジェスチャーを有効にします。"
    )
 #endif
 #ifdef HAVE_ODROIDGO2
