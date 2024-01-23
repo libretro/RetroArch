@@ -5762,6 +5762,62 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
+   /* Arrow image */
+   gfx_display_set_alpha(xmb_item_color, MIN(xmb->textures_arrow_alpha, xmb->alpha));
+
+   if (!xmb->assets_missing)
+   {
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      xmb_draw_icon(
+            userdata,
+            p_disp,
+            dispctx,
+            video_width,
+            video_height,
+            shadows_enable,
+            xmb->icon_size,
+            xmb->textures.list[XMB_TEXTURE_ARROW],
+            xmb->x + xmb->margins_screen_left +
+            xmb->icon_spacing_horizontal -
+            xmb->icon_size / 2.0 + xmb->icon_size,
+            xmb->margins_screen_top +
+            xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
+            * xmb->active_item_factor,
+            video_width,
+            video_height,
+            xmb->textures_arrow_alpha,
+            0,
+            1,
+            &xmb_item_color[0],
+            xmb->shadow_offset,
+            &mymat);
+
+      /* Previous icon */
+      xmb_draw_items(
+            userdata,
+            p_disp,
+            dispctx,
+            p_anim,
+            menu_st,
+            settings,
+            video_width,
+            video_height,
+            shadows_enable,
+            xmb,
+            &xmb->selection_buf_old,
+            xmb->selection_ptr_old,
+            xmb->categories_selection_ptr,
+            &xmb_item_color[0],
+            video_width,
+            video_height,
+            &mymat);
+
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
+
    /**************************/
    /* Draw thumbnails: START */
    /**************************/
@@ -5815,7 +5871,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
          scaled_thumb_height = thumb_height * thumbnail_scale_factor;
          thumb_x             = (thumb_width - scaled_thumb_width) / 2.0f;
-         thumb_y             = xmb->margins_screen_top + xmb->icon_size * 2.5f;
+         thumb_y             = video_height - thumbnail_margin_height_under - (xmb->icon_size * 0.55f);
       }
 
       gfx_thumbnail_draw(
@@ -5970,11 +6026,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       else if (show_right_thumbnail || show_left_thumbnail)
       {
          float thumb_width         = xmb->icon_size * 2.4f;
-         float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - (xmb->icon_size * 2.0f);
+         float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom;
          float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
          float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
          float thumb_x             = (thumb_width - scaled_thumb_width) / 2.0f;
-         float thumb_y             = xmb->margins_screen_top + xmb->icon_size * 2.5f;
+         float thumb_y             = video_height - thumbnail_margin_height_under - (xmb->icon_size * 0.55f);
 
          /* Very small thumbnails look ridiculous
           * > Impose a minimum size limit */
@@ -5988,7 +6044,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   thumb_y,
                   scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
                   scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
-                  GFX_THUMBNAIL_ALIGN_CENTRE,
+                  GFX_THUMBNAIL_ALIGN_TOP,
                   1.0f, 1.0f, &thumbnail_shadow);
       }
    }
@@ -6121,40 +6177,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height, xmb->font);
    }
 
-   /* Arrow image */
-   gfx_display_set_alpha(xmb_item_color, MIN(xmb->textures_arrow_alpha, xmb->alpha));
-
-   if (!xmb->assets_missing)
-   {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
-      xmb_draw_icon(
-            userdata,
-            p_disp,
-            dispctx,
-            video_width,
-            video_height,
-            shadows_enable,
-            xmb->icon_size,
-            xmb->textures.list[XMB_TEXTURE_ARROW],
-            xmb->x + xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal -
-            xmb->icon_size / 2.0 + xmb->icon_size,
-            xmb->margins_screen_top +
-            xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
-            * xmb->active_item_factor,
-            video_width,
-            video_height,
-            xmb->textures_arrow_alpha,
-            0,
-            1,
-            &xmb_item_color[0],
-            xmb->shadow_offset,
-            &mymat);
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
-   }
-
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
@@ -6248,26 +6270,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
       }
    }
-
-   /* Previous icon */
-   xmb_draw_items(
-         userdata,
-         p_disp,
-         dispctx,
-         p_anim,
-         menu_st,
-         settings,
-         video_width,
-         video_height,
-         shadows_enable,
-         xmb,
-         &xmb->selection_buf_old,
-         xmb->selection_ptr_old,
-         xmb->categories_selection_ptr,
-         &xmb_item_color[0],
-         video_width,
-         video_height,
-         &mymat);
 
    selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
 
@@ -6522,7 +6524,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    float scale_factor            = xmb->last_scale_factor;
    float margins_title           = xmb->margins_title;
    float margins_title_h_offset  = xmb->margins_title_horizontal_offset;
-   unsigned new_font_size        = 24.0           * scale_factor;
+   unsigned new_font_size        = 26.0           * scale_factor;
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;
@@ -6530,9 +6532,9 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->under_item_offset        =  3.0;
 
    xmb->categories_active_zoom   = 1.0;
-   xmb->categories_passive_zoom  = 1.0;
+   xmb->categories_passive_zoom  = 0.5;
    xmb->items_active_zoom        = 1.0;
-   xmb->items_passive_zoom       = 1.0;
+   xmb->items_passive_zoom       = 0.5;
 
    xmb->categories_active_alpha  = 1.0;
    xmb->categories_passive_alpha = 0.85;
@@ -6546,7 +6548,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
       xmb->shadow_offset         = 2.0;
 
    xmb->font_size                = new_font_size;
-   xmb->font2_size               = 22.0           * scale_factor;
+   xmb->font2_size               = 18.0           * scale_factor;
 
    /* Limit minimum font size */
    xmb->font_size                = (xmb->font_size  < 7) ? 7 : xmb->font_size;
@@ -6555,7 +6557,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->cursor_size              = 64.0           * scale_factor;
    xmb->icon_size                = 128.0          * scale_factor;
    xmb->icon_spacing_horizontal  = 250.0          * scale_factor;
-   xmb->icon_spacing_vertical    = 96.0           * scale_factor;
+   xmb->icon_spacing_vertical    = 82.0           * scale_factor;
 
    xmb->margins_screen_top       = (256 + 16)     * scale_factor;
    xmb->margins_screen_left      = 136.0          * scale_factor;
