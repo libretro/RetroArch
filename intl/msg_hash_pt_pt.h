@@ -195,7 +195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Sair do RetroArch. Se encerrar o programa de qualquer forma forçada (SIGKILL, etc.) irá encerrar o RetroArch sem guardar a configuração em qualquer caso. Em sistemas Unix, SIGINT/SIGTERM permite uma desinicialização limpa que inclui a gravação da configuração se estiver ativa."
+   "Sair do RetroArch. Se encerrar o programa de forma forçada (SIGKILL, etc.) irá encerrar o RetroArch sem guardar a configuração em qualquer cenário. Em sistemas Unix, SIGINT/SIGTERM permite uma desinicialização limpa que inclui a gravação da configuração se estiver ativa."
    )
 
 /* Main Menu > Load Core */
