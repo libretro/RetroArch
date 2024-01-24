@@ -3391,7 +3391,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   "メニューコントロールを統一"
+   "メニューコントロールを一元化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
@@ -13227,7 +13227,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_REMAP_FILE,
-   "リマップファイルの削除に失敗しました"
+   "リマップファイルの削除に失敗しました。"
    )
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
@@ -13279,7 +13279,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
-   "クライアントのニックネームの取得に失敗しました"
+   "クライアントのニックネームの取得に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
@@ -13375,11 +13375,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_AUDIO_DRIVER,
-   "オーディオドライバの開始に失敗しました。オーディオなしで続行します"
+   "オーディオドライバの開始に失敗しました。オーディオなしで続行します。"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
-   "動画の録画の開始に失敗しました"
+   "動画の録画の開始に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
@@ -13507,7 +13507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INTERNAL_STORAGE,
-   "内蔵ストレージ"
+   "内部ストレージ"
    )
 MSG_HASH(
    MSG_REMOVABLE_STORAGE,
@@ -13535,7 +13535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
-   "libretroのフロントエンド"
+   "libretro のフロントエンド"
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
@@ -13583,11 +13583,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
-   "動画の再生を終了しました"
+   "動画の再生を終了しました。"
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
-   "動画の録画を停止しました"
+   "動画の録画を停止しました。"
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
@@ -13667,11 +13667,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-   "リマップファイルを保存しました"
+   "リマップファイルを保存しました。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
-   "リマップファイルを削除しました"
+   "リマップファイルを削除しました。"
    )
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
@@ -13731,7 +13731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_REACHED_END,
-   "巻き戻しバッファの終わりに達しました"
+   "巻き戻しバッファの終わりに達しました。"
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
@@ -13751,7 +13751,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVING_RAM_TYPE,
-   "RAMの種類を保存中"
+   "RAM の種類を保存中"
    )
 MSG_HASH(
    MSG_SAVING_STATE,
@@ -13803,11 +13803,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_BLOCKING_SRAM_OVERWRITE,
-   "SRAMの上書きをブロックしています"
+   "SRAM の上書きをブロックしています"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
-   "動画の再生を開始しています"
+   "動画の再生を開始しています。"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_RECORD_TO,
