@@ -187,23 +187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Перезапустити RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Перезапустити програму."
+   "Перезапустити"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Вихід з RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Вийти з програми."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Вийти з RetroArch. Примусове аварійне вимкнення (SIGKILL, тощо) завершить роботу Retroarch без збереження конфіґурації та ін. На UNIX-подібних системах, SIGINT/SIGTERM справно вимкне програму."
+   "Вихід"
    )
 
 /* Main Menu > Load Core */
@@ -1600,10 +1588,6 @@ MSG_HASH(
    "Меню"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Драйвер меню для використання."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Запис"
    )
@@ -1689,10 +1673,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Вставка чорного кадра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Вставляти чорний кадр між кадрами. Корисно на деяких екранах з високою швидкістю оновлення для усунення залишкового зображення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

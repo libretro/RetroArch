@@ -17,7 +17,7 @@
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
-		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
+		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		9204BE131D319EF300BD49DB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
 		9204BE141D319EF300BD49DB /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -51,7 +51,7 @@
 		9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 9222F20A2315DD3D0097C0FD /* retroarch_logo.png */; };
 		926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 926C77E221FD1E6700103EDE /* Assets.xcassets */; };
 		926C77EA21FD20C100103EDE /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
-		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
+		926C77EB21FD20C400103EDE /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
 		926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77EE21FD263800103EDE /* AudioToolbox.framework */; };
 		926C77F121FD26E800103EDE /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 926C77F021FD26E800103EDE /* GameController.framework */; };
 		9289D20A25E40D7B004B5D52 /* EmulatorKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9289D20925E40D7B004B5D52 /* EmulatorKeyboardView.swift */; };
@@ -73,7 +73,7 @@
 		9292D6ED28F549D200E47A75 /* RetroArchWidgetExtension.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 9292D6E928F549D100E47A75 /* RetroArchWidgetExtension.intentdefinition */; };
 		9292D6EE28F549D200E47A75 /* RetroArchWidgetExtension.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 9292D6E928F549D100E47A75 /* RetroArchWidgetExtension.intentdefinition */; };
 		9292D6F128F549D200E47A75 /* RetroArchWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9292D6E128F549D000E47A75 /* RetroArchWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
+		929784502200EEE400989A60 /* iOS/Resources/Icons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Icons.xcassets */; };
 		92A1F81827006CAE00DEAD2A /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
 		92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC058221FE3C1700FF79F0 /* GCDWebServerResponse.m */; };
@@ -175,7 +175,7 @@
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		696012F119F3389A006A1088 /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
-		69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Media.xcassets; sourceTree = SOURCE_ROOT; };
+		69D31DE31A547EC800EF4C92 /* iOS/Resources/Icons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Resources/Icons.xcassets; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
 		9204BE2B1D319EF300BD49DB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9210C2F024B3A19100E6FE7C /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
@@ -517,7 +517,7 @@
 				07F7FB012A2DA8B800037C04 /* filters */,
 				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
-				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
+				69D31DE31A547EC800EF4C92 /* iOS/Resources/Icons.xcassets */,
 			);
 			name = iOS;
 			path = Resources;
@@ -1249,6 +1249,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9204BE281D319EF300BD49DB /* Build configuration list for PBXNativeTarget "RetroArchiOS" */;
 			buildPhases = (
+				07340E8C2B47A4290076B75D /* ShellScript */,
 				9204BE0A1D319EF300BD49DB /* Sources */,
 				9204BE111D319EF300BD49DB /* Frameworks */,
 				9204BE271D319EF300BD49DB /* ShellScript */,
@@ -1273,6 +1274,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 926C77E921FD1E6700103EDE /* Build configuration list for PBXNativeTarget "RetroArchTV" */;
 			buildPhases = (
+				07340E8D2B47A4910076B75D /* ShellScript */,
 				926C77D321FD1E6500103EDE /* Sources */,
 				926C77D421FD1E6500103EDE /* Frameworks */,
 				92CC057521FE2D4900FF79F0 /* ShellScript */,
@@ -1368,7 +1370,7 @@
 				9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */,
 				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
-				929784502200EEE400989A60 /* iOS/Resources/Media.xcassets in Resources */,
+				929784502200EEE400989A60 /* iOS/Resources/Icons.xcassets in Resources */,
 				9204BE261D319EF300BD49DB /* iOS/modules in Resources */,
 				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
 			);
@@ -1397,6 +1399,46 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		07340E8C2B47A4290076B75D /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.git/**",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/git_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCBASE\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		07340E8D2B47A4910076B75D /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.git/**",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/git_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCBASE\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 		9204BE271D319EF300BD49DB /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -1540,7 +1582,8 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
@@ -1599,7 +1642,6 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SRCBASE = "$(SRCROOT)/../..";
 				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1614,7 +1656,8 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = "$(ARCHS_STANDARD)";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
@@ -1673,7 +1716,6 @@
 				PRODUCT_NAME = RetroArch;
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SRCBASE = "$(SRCROOT)/../..";
 				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VALID_ARCHS = "armv7 arm64";
@@ -1765,7 +1807,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = appletvos;
-				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
@@ -1854,7 +1895,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = appletvos;
-				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
@@ -2039,6 +2079,7 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_ACCESSIBILITY",
 					"-DHAVE_AL",
 					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
@@ -2059,6 +2100,7 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GFX_WIDGETS",
+					"-DHAVE_GIT_VERSION",
 					"-DHAVE_GLSL",
 					"-DHAVE_GLSLANG",
 					"-DHAVE_GRIFFIN",
@@ -2120,6 +2162,7 @@
 				);
 				"OTHER_LDFLAGS[arch=*]" = "-Wl,-segalign,4000";
 				SDKROOT = iphoneos;
+				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = "armv7 arm64";
 			};
@@ -2162,6 +2205,7 @@
 					"-DGLES_SILENCE_DEPRECATION",
 					"-DGLSLANG_OSINCLUDE_UNIX",
 					"-DHAVE_7ZIP",
+					"-DHAVE_ACCESSIBILITY",
 					"-DHAVE_AL",
 					"-DHAVE_ALTKIT",
 					"-DHAVE_AUDIOMIXER",
@@ -2182,6 +2226,7 @@
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_GFX_WIDGETS",
+					"-DHAVE_GIT_VERSION",
 					"-DHAVE_GLSL",
 					"-DHAVE_GLSLANG",
 					"-DHAVE_GRIFFIN",
@@ -2243,6 +2288,7 @@
 				);
 				"OTHER_LDFLAGS[arch=*]" = "-Wl,-segalign,4000";
 				SDKROOT = iphoneos;
+				SRCBASE = "$(SRCROOT)/../..";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 				VALID_ARCHS = "armv7 arm64";

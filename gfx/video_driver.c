@@ -2551,6 +2551,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
+   video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->runahead                    = settings->bools.run_ahead_enabled;
@@ -4308,7 +4309,7 @@ void video_frame_rest(video_driver_state_t *video_st,
    static int frame_time_near_count  = 0;
    static int frame_time_try_count   = 0;
    double video_stddev               = 0;
-   audio_statistics_t audio_stats;
+   audio_statistics_t audio_stats = {0};
 
    /* Must require video and audio deviation standards */
    video_monitor_fps_statistics(NULL, &video_stddev, NULL);

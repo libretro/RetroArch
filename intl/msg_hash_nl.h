@@ -187,23 +187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "RetroArch Opnieuw Opstarten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Programma herstarten."
+   "Opnieuw opstarten"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "RetroArch Afsluiten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Sluit het programma af."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch afsluiten. Het programma op een harde manier afsluiten (SIGKILL, etc.) zal RetroArch beëindigen zonder de configuratie op te slaan etc. Op Unix-likes kan SIGINT/SIGTERM een schone de-initialisatie toestaan."
+   "Afsluiten"
    )
 
 /* Main Menu > Load Core */
@@ -1548,10 +1536,6 @@ MSG_HASH(
    "Locatiestuurprogramma om te gebruiken."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Menustuurprogramma om te gebruiken."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
    "XMB is een RetroArch GUI die lijkt op een console menu van de 7e generatie. Het kan dezelfde functies als Ozone ondersteunen."
    )
@@ -1657,14 +1641,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Zwarte Frame Injectie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Voegt een zwarte frame toe tussen frames. Kan ghosting voorkomen op monitoren met een hoge vernieuwingsfrequentie."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Voegt een zwart frame tussen frames. Handig voor 120 Hz monitors om 60 Hz materiaal te spelen met geëlimineerde ghosting. Video vernieuwingssnelheid moet nog steeds worden geconfigureerd alsof het een 60 Hz monitor is (deel verversingssnelheid door 2)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

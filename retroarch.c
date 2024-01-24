@@ -3000,6 +3000,59 @@ void dir_check_defaults(const char *custom_ini_path)
    }
 }
 
+#ifdef __APPLE__
+static void dir_check_config(void)
+{
+   settings_t *settings            = config_get_ptr();
+
+#define ENSURE_DIRECTORY(DIRPATH)               \
+   if (!string_is_empty(DIRPATH))               \
+      if (!path_is_directory(DIRPATH))          \
+         path_mkdir(DIRPATH)
+
+   /* the order here mimics the order of enum default_dirs */
+   /* TODO: not all of these are necessary/used and many are created on demand, make fewer */
+   ENSURE_DIRECTORY(settings->paths.directory_menu_content);
+   ENSURE_DIRECTORY(settings->paths.directory_core_assets);
+   ENSURE_DIRECTORY(settings->paths.directory_menu_config);
+   ENSURE_DIRECTORY(settings->paths.directory_autoconfig);
+   ENSURE_DIRECTORY(settings->paths.directory_audio_filter);
+   ENSURE_DIRECTORY(settings->paths.directory_video_filter);
+   ENSURE_DIRECTORY(settings->paths.directory_assets);
+#ifdef _3DS
+   ENSURE_DIRECTORY(settings->paths.directory_bottom_assets);
+#endif
+   ENSURE_DIRECTORY(settings->paths.directory_libretro);
+   ENSURE_DIRECTORY(settings->paths.path_libretro_info);
+   ENSURE_DIRECTORY(settings->paths.directory_overlay);
+   ENSURE_DIRECTORY(settings->paths.directory_osk_overlay);
+   /* PORT */
+   ENSURE_DIRECTORY(settings->paths.directory_video_shader);
+   ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVESTATE));
+   ENSURE_DIRECTORY(settings->paths.directory_resampler);
+   ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVEFILE));
+   ENSURE_DIRECTORY(settings->paths.directory_screenshot);
+   ENSURE_DIRECTORY(settings->paths.directory_system);
+   ENSURE_DIRECTORY(settings->paths.directory_playlist);
+   ENSURE_DIRECTORY(settings->paths.directory_content_favorites);
+   ENSURE_DIRECTORY(settings->paths.directory_content_history);
+   ENSURE_DIRECTORY(settings->paths.directory_content_image_history);
+   ENSURE_DIRECTORY(settings->paths.directory_content_music_history);
+   ENSURE_DIRECTORY(settings->paths.directory_content_video_history);
+   ENSURE_DIRECTORY(settings->paths.directory_input_remapping);
+   ENSURE_DIRECTORY(settings->paths.directory_cache);
+   ENSURE_DIRECTORY(settings->paths.directory_dynamic_wallpapers);
+   ENSURE_DIRECTORY(settings->paths.directory_thumbnails);
+   ENSURE_DIRECTORY(settings->paths.path_content_database);
+   ENSURE_DIRECTORY(settings->paths.path_cheat_database);
+   /* RECORD_CONFIG */
+   /* RECORD_OUTPUT */
+   ENSURE_DIRECTORY(settings->paths.log_dir);
+
+#undef ENSURE_DIRECTORY
+}
+#endif
+
 #ifdef HAVE_ACCESSIBILITY
 bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enabled)
 {
@@ -3600,9 +3653,9 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
-            command_event_save_auto_state(
-                  settings->bools.savestate_auto_save,
-                  runloop_st->current_core_type);
+            if (settings->bools.savestate_auto_save &&
+                runloop_st->current_core_type != CORE_TYPE_DUMMY)
+               command_event_save_auto_state();
 
             if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
                   || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
@@ -3645,15 +3698,6 @@ bool command_event(enum event_command cmd, void *data)
             if (    (flags & CONTENT_ST_FLAG_IS_INITED)
                   && load_dummy_core)
             {
-#ifdef HAVE_MENU
-               if (       ((settings->uints.quit_on_close_content ==
-                           QUIT_ON_CLOSE_CONTENT_CLI)
-                        && global->launched_from_cli)
-                        || (settings->uints.quit_on_close_content ==
-                           QUIT_ON_CLOSE_CONTENT_ENABLED)
-                  )
-                  command_event(CMD_EVENT_QUIT, NULL);
-#endif
                if (!task_push_start_dummy_core(&content_info))
                   return false;
             }
@@ -3693,6 +3737,8 @@ bool command_event(enum event_command cmd, void *data)
             menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
+         /* Check if we need to quit Retroarch */
+         check_quit_on_close();
 #else
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -7320,6 +7366,17 @@ bool retroarch_main_init(int argc, char *argv[])
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch,
          global_get_ptr(), argc, argv);
 
+#ifdef __APPLE__
+   /* This doesn't have to be apple specific but it's currently the only
+    * platform that doesn't call dir_check_defaults(). This does exactly the
+    * same thing as dir_check_defaults() except that it makes the directories
+    * pointed at by the config file rather than the defaults, which is why it
+    * comes right after parsing the config. osx users seem to be more likely to
+    * want to do change the default directories.
+    */
+   dir_check_config();
+#endif
+
 #ifdef HAVE_ACCESSIBILITY
    accessibility_enable                = settings->bools.accessibility_enable;
    accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -8019,6 +8076,22 @@ void retroarch_fail(int error_code, const char *error)
    longjmp(global->error_sjlj_context, error_code);
 }
 
+/* Called on close content, checks if we need to also exit retroarch */
+void check_quit_on_close(void)
+{
+#ifdef HAVE_MENU
+   settings_t *settings   = config_get_ptr();
+   global_t   *global     = global_get_ptr();
+   if (       ((settings->uints.quit_on_close_content ==
+               QUIT_ON_CLOSE_CONTENT_CLI)
+            && global->launched_from_cli)
+            || (settings->uints.quit_on_close_content ==
+               QUIT_ON_CLOSE_CONTENT_ENABLED)
+      )
+      command_event(CMD_EVENT_QUIT, NULL);
+#endif
+}
+
 /*
  * Also saves configuration files to disk,
  * and (optionally) autosave state.
@@ -8092,9 +8165,9 @@ bool retroarch_main_quit(void)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
 
-      command_event_save_auto_state(
-            settings->bools.savestate_auto_save,
-            runloop_st->current_core_type);
+      if (settings->bools.savestate_auto_save &&
+          runloop_st->current_core_type != CORE_TYPE_DUMMY)
+         command_event_save_auto_state();
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise

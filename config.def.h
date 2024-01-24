@@ -396,10 +396,16 @@
 
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
- * material with eliminated  ghosting. video_refresh_rate should still be configured
- * as if it is a 60 Hz monitor (divide refresh rate by multiple of 60 Hz).
+ * material with CRT-like motion clarity.
  */
 #define DEFAULT_BLACK_FRAME_INSERTION 0
+
+/* Black Frame Insertion Dark Frames.
+ * Increase for more clarity at the cost of lower brightness. Adjusting can also eliminate
+ * any temporary image retention if noticed. Only useful at 180hz or higher 60hz multiples, 
+ * as 120hz only has one total extra frame for BFI to work with.
+ */
+#define DEFAULT_BFI_DARK_FRAMES 1
 
 /* Uses a custom swap interval for VSync.
  * Set this to effectively halve monitor refresh rate.
@@ -699,8 +705,10 @@
 #ifdef HAVE_MIST
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
+#if 0
+/* Thumbnailpack removal */
 #define DEFAULT_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER false
-
+#endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
@@ -1099,6 +1107,9 @@
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #define DEFAULT_INPUT_RATE  32730
+#elif defined(EMSCRIPTEN)
+#define DEFAULT_OUTPUT_RATE 44100
+#define DEFAULT_INPUT_RATE  44100
 #else
 #define DEFAULT_OUTPUT_RATE 48000
 #define DEFAULT_INPUT_RATE  48000
@@ -1435,6 +1446,8 @@
 
 #define DEFAULT_SCAN_WITHOUT_CORE_MATCH false
 
+#define DEFAULT_SCAN_SERIAL_AND_CRC false
+
 #ifdef __WINRT__
 /* Be paranoid about WinRT file I/O performance, and leave this disabled by
  * default */
@@ -1549,6 +1562,7 @@
 #define DEFAULT_INPUT_BIND_HOLD 0
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
+#define DEFAULT_INPUT_HOTKEY_DEVICE_MERGE false
 
 #define DEFAULT_GFX_THUMBNAILS_DEFAULT 3
 
@@ -1605,7 +1619,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL

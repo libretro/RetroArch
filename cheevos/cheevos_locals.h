@@ -230,6 +230,8 @@ typedef struct rcheevos_locals_t
 
    rcheevos_load_info_t load_info;    /* load info */
 
+   uint32_t unpaused_frames;          /* number of unpaused frames before next pause is allowed */
+
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */
 #ifdef HAVE_GFX_WIDGETS

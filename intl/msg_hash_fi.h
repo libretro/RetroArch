@@ -195,23 +195,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Käynnistä RetroArch uudelleen"
+   "Käynnistä uudelleen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Käynnistä ohjelma uudelleen."
+   "Käynnistä RetroArch uudelleen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Sulje RetroArch"
+   "Lopeta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Sulje ohjelma."
+   "Lopeta RetroArch. Asetusten tallennus poistuessa on käytössä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Lopeta RetroArch. Ohjelman väkisin lopettaminen millä tahansa kovalla tavalla (SIGKILL, jne.) sulkee RetroArchin tallentamatta asetuksia, jne. Unix-pohjaisissa käyttöjärjestelmissä, SIGINT/SIGTERM mahdollistaa rauhallisen sulkemisen."
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Lopeta RetroArch. Asetusten tallennus poistuessa ei ole käytössä."
    )
 
 /* Main Menu > Load Core */
@@ -1705,7 +1705,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Käytettävä valikkoajuri."
+   "Käytettävä valikkoajuri. Vaatii uudelleenkäynnistyksen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1793,10 +1793,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Mustan ruudun lisäys"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Aseta musta kuva muiden kuvien väliin. Hyödyllinen joillekin korkean virkistystaajuuden näytöille haamukuvan poistamiseksi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -6881,16 +6877,12 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Tiedostoselain"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Aseta tiedostoselaimen aloituskansio."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Kokoonpanot"
+   "Asetustiedostot"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Aseta aloituskansio valikon kokoonpanoselaimelle."
+   "Oletusarvoinen asetustiedosto talletetaan tähän kansioon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -12800,6 +12792,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Esikatselukuvaa ei ole saatavilla"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Kaikkia mahdollisia pienoiskuvalatauksia on jo kokeiltu tähän soittolistaan."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

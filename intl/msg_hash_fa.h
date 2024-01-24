@@ -183,19 +183,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "ریستارت رتروآرچ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "بازآغاز کردن برنامه."
+   "بازآغاز کردن"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "خروج از رتروآرچ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "از برنامه خارج می‌شود."
+   "خروج"
    )
 
 /* Main Menu > Load Core */
@@ -1232,10 +1224,6 @@ MSG_HASH(
    "فهرست"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "درایور فهرست برای استفاده."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "ضبط"
    )
@@ -1309,10 +1297,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "درج فریم سیاه"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "یک فریم سیاه را بین فریم‌ها درج کن. برای جلوگیری از ایجاد حالت سایه در نمایشگرهای با نرخ تازه‌سازی بالا مفید است."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

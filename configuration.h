@@ -345,6 +345,7 @@ typedef struct settings
 
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
+      unsigned video_bfi_dark_frames;
       unsigned video_autoswitch_refresh_rate;
       unsigned quit_on_close_content;
 
@@ -563,6 +564,7 @@ typedef struct settings
       char directory_bottom_assets[PATH_MAX_LENGTH];
 #endif
       char log_dir[PATH_MAX_LENGTH];
+      char app_icon[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;
@@ -672,6 +674,7 @@ typedef struct settings
       bool input_keyboard_gamepad_enable;
       bool input_auto_mouse_grab;
       bool input_allow_turbo_dpad;
+      bool input_hotkey_device_merge;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
@@ -748,7 +751,10 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
+#if 0
+/* Thumbnailpack removal */
       bool menu_show_legacy_thumbnail_updater;
+#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;
@@ -1026,6 +1032,7 @@ typedef struct settings
       bool log_to_file_timestamp;
 
       bool scan_without_core_match;
+      bool scan_serial_and_crc;
 
       bool ai_service_enable;
       bool ai_service_pause;

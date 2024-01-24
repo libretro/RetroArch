@@ -2618,6 +2618,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY:
+      {
+         const char **dir            = (const char**)data;
+         const char *dir_playlist    = settings->paths.directory_playlist;
+
+         *dir = *dir_playlist ? dir_playlist : NULL;
+         RARCH_LOG("[Environ]: PLAYLIST_DIRECTORY: \"%s\".\n",
+               dir_playlist);
+         break;
+      }
+
       case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
       /**
        * Update the system Audio/Video information.
@@ -6015,7 +6026,7 @@ static enum runloop_state_enum runloop_check_state(
             menu->state               = 0;
          }
 
-         if (!libretro_running)
+         if (settings->bools.audio_enable_menu && !libretro_running)
             audio_driver_menu_sample();
       }
 
@@ -6236,22 +6247,23 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_CHEEVOS
       if (cheevos_hardcore_active)
       {
-         static int unpaused_frames = 0;
-
-         if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-            unpaused_frames         = 0;
-         else
-         /* Frame advance is not allowed when achievement hardcore is active */
+         if (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
          {
-            /* Limit pause to approximately three times per second (depending on core framerate) */
-            if (unpaused_frames < 20)
+            /* In hardcore mode, the user is only allowed to pause infrequently. */
+            if ((pause_pressed && !old_pause_pressed) ||
+               (!focused && old_focus && pause_nonactive))
             {
-               ++unpaused_frames;
-               pause_pressed        = false;
+               /* If the user is trying to pause, check to see if it's allowed. */
+               if (!rcheevos_is_pause_allowed())
+               {
+                  pause_pressed = false;
+                  if (pause_nonactive)
+                     focused = true;
+               }
             }
          }
       }
-      else
+      else /* frame advance not allowed in hardcore */
 #endif
       {
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
@@ -6939,7 +6951,13 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
          video_driver_cached_frame();
-         return 1;
+
+         /* Limit paused video refresh. */
+         runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+               ((video_st->video_refresh_rate_original)
+                  ? video_st->video_refresh_rate_original
+                  : settings->floats.video_refresh_rate));
+         goto end;
       case RUNLOOP_STATE_MENU:
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_MENU
@@ -6959,12 +6977,10 @@ int runloop_iterate(void)
 
          /* Otherwise run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-         {
-            float refresh_rate = (video_st->video_refresh_rate_original)
-                  ? video_st->video_refresh_rate_original : settings->floats.video_refresh_rate;
-
-            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f / refresh_rate);
-         }
+            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+                  ((video_st->video_refresh_rate_original)
+                     ? video_st->video_refresh_rate_original
+                     : settings->floats.video_refresh_rate));
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif

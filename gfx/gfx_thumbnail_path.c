@@ -37,14 +37,29 @@
 
 /* Fills content_img field of path_data using existing
  * content_label field (for internal use only) */
-static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src)
+static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src, bool shorten)
 {
+   const char* cut = " (";
    char *scrub_char_ptr = NULL;
    /* Copy source label string */
    size_t _len          = strlcpy(s, src, len);
+   int bracketpos       = -1;
+   
+   /* Shortening logic: up to first space + bracket */
+   if (shorten) {
+      bracketpos = string_find_index_substring_string(src, cut);
+      if (bracketpos > 0)
+         _len = bracketpos;
+      /* Explicit zero if short name is same as standard name - saves some queries later. */
+      else
+      {
+         s[0] = '\0';
+         return;
+      }
+   }
    /* Scrub characters that are not cross-platform and/or violate the
     * No-Intro filename standard:
-    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
+    * https://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).pdf
     * Replace these characters in the entry name with underscores */
    while ((scrub_char_ptr = strpbrk(s, "&*/:`\"<>?\\|")))
       *scrub_char_ptr = '_';
@@ -114,6 +129,8 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
    path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
    path_data->right_path[0]        = '\0';
    path_data->left_path[0]         = '\0';
 
@@ -275,6 +292,8 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
    path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -289,7 +308,9 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
 
    /* Determine content image name */
    gfx_thumbnail_fill_content_img(path_data->content_img,
-         sizeof(path_data->content_img), path_data->content_label);
+         sizeof(path_data->content_img), path_data->content_label, false);
+   gfx_thumbnail_fill_content_img(path_data->content_img_short,
+         sizeof(path_data->content_img_short), path_data->content_label, true);
 
    /* Have to set content path to *something*...
     * Just use label value (it doesn't matter) */
@@ -321,6 +342,8 @@ bool gfx_thumbnail_set_content_image(
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
    path_data->content_img[0]       = '\0';
+   path_data->content_img_full[0]  = '\0';
+   path_data->content_img_short[0] = '\0';
 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -396,6 +419,8 @@ bool gfx_thumbnail_set_content_playlist(
    path_data->content_core_name[0]    = '\0';
    path_data->content_db_name[0]      = '\0';
    path_data->content_img[0]          = '\0';
+   path_data->content_img_full[0]     = '\0';
+   path_data->content_img_short[0]    = '\0';
 
    /* Must also reset playlist thumbnail display modes */
    path_data->playlist_right_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -444,7 +469,6 @@ bool gfx_thumbnail_set_content_playlist(
             "", sizeof(path_data->content_label));
 
    /* Determine content image name */
-   if (settings->bools.playlist_use_filename)
    {
       char* content_name_no_ext = NULL;
       char tmp_buf[PATH_MAX_LENGTH];
@@ -455,14 +479,20 @@ bool gfx_thumbnail_set_content_playlist(
       const char* base_name = path_basename(path_data->content_path);
       strlcpy(tmp_buf, base_name, sizeof(tmp_buf));
       content_name_no_ext = path_remove_extension(tmp_buf);
+      if (!content_name_no_ext)
+         content_name_no_ext = tmp_buf;
       
+      gfx_thumbnail_fill_content_img(path_data->content_img_full,
+         sizeof(path_data->content_img_full), content_name_no_ext,false);
       gfx_thumbnail_fill_content_img(path_data->content_img,
-         sizeof(path_data->content_img), content_name_no_ext);
-   }
-   else
-   {
-      gfx_thumbnail_fill_content_img(path_data->content_img,
-         sizeof(path_data->content_img), path_data->content_label);
+         sizeof(path_data->content_img), path_data->content_label,false);
+      /* Explicit zero if full name is same as standard name - saves some queries later. */
+      if(strcmp(path_data->content_img, path_data->content_img_full) == 0) 
+      {
+         path_data->content_img_full[0] = '\0';
+      }
+      gfx_thumbnail_fill_content_img(path_data->content_img_short,
+         sizeof(path_data->content_img_short), path_data->content_label,true);
    }
 
    /* Store playlist index */
@@ -474,6 +504,8 @@ bool gfx_thumbnail_set_content_playlist(
 
    /* Thumbnail image name is done -> now check if
     * per-content database name is defined */
+   if (string_is_empty(db_name))
+      playlist_get_db_name(playlist, idx, &db_name);
    if (!string_is_empty(db_name))
    {
       /* Hack: There is only one MAME thumbnail repo,
@@ -489,10 +521,19 @@ bool gfx_thumbnail_set_content_playlist(
       {
          char *db_name_no_ext = NULL;
          char tmp_buf[PATH_MAX_LENGTH];
-         /* Remove .lpl extension
-          * > path_remove_extension() requires a char * (not const)
-          *   so have to use a temporary buffer... */
-         strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+         const char* pos = strchr(db_name, '|');
+         
+         if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf)) {
+            /* If db_name comes from core info, and there are multiple 
+             * databases mentioned separated by |, use only first one */
+            strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
+         }
+         else {
+            /* Remove .lpl extension
+             * > path_remove_extension() requires a char * (not const)
+             *   so have to use a temporary buffer... */
+            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+         }
          db_name_no_ext = path_remove_extension(tmp_buf);
 
          if (!string_is_empty(db_name_no_ext))
@@ -617,10 +658,28 @@ bool gfx_thumbnail_update_path(
       /* >> Add type */
       fill_pathname_join_special(tmp_buf, thumbnail_path, type, sizeof(tmp_buf));
 
-      /* >> Add content image */
       thumbnail_path[0] = '\0';
-      fill_pathname_join_special(thumbnail_path, tmp_buf,
-            path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
+      /* >> Add content image - first try with full file name */
+      if(path_data->content_img_full[0] != '\0') {
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img_full, PATH_MAX_LENGTH * sizeof(char));
+      }
+      /* >> Add content image - second try with label (database name) */
+      if(!path_is_valid(thumbnail_path) && path_data->content_img[0] != '\0')
+      {
+         thumbnail_path[0] = '\0';
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img, PATH_MAX_LENGTH * sizeof(char));
+      }
+      /* >> Add content image - third try with shortened name (title only) */
+      if(!path_is_valid(thumbnail_path) && path_data->content_img_short[0] != '\0')
+      {
+         thumbnail_path[0] = '\0';
+         fill_pathname_join_special(thumbnail_path, tmp_buf,
+               path_data->content_img_short, PATH_MAX_LENGTH * sizeof(char));
+      }
+      /* This logic is valid for locally stored thumbnails. For optional downloads, 
+       * gfx_thumbnail_get_img_name() is used */
    }
 
    /* Final error check - is cached path empty? */
@@ -712,18 +771,35 @@ bool gfx_thumbnail_get_core_name(
    return true;
 }
 
-/* Fetches current thumbnail image name
+/* Fetches current thumbnail image name according to name flag
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
 bool gfx_thumbnail_get_img_name(
-      gfx_thumbnail_path_data_t *path_data, const char **img_name)
+      gfx_thumbnail_path_data_t *path_data, const char **img_name,
+      enum playlist_thumbnail_name_flags name_flags)
 {
-   if (!path_data || !img_name)
+   if (!path_data || !img_name || name_flags == PLAYLIST_THUMBNAIL_FLAG_NONE)
       return false;
-   if (string_is_empty(path_data->content_img))
-      return false;
+   if (name_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME) {
+      if (string_is_empty(path_data->content_img_short))
+         return false;
 
-   *img_name = path_data->content_img;
+      *img_name = path_data->content_img_short;
+   }
+   else if (name_flags & PLAYLIST_THUMBNAIL_FLAG_STD_NAME) {
+      if (string_is_empty(path_data->content_img))
+         return false;
+
+      *img_name = path_data->content_img;
+   }
+   else if (name_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME) {
+      if (string_is_empty(path_data->content_img_full))
+         return false;
+
+      *img_name = path_data->content_img_full;
+   }
+   else
+      return false;
 
    return true;
 }

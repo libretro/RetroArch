@@ -191,19 +191,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Перазапуск RetroArch"
+   "Перазапуск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Перазапусціць праграму."
+   "Перазапусціць праграму RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Выхад з RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Выйсці з праграмы."
+   "Выхад"
    )
 
 /* Main Menu > Load Core */
@@ -1440,6 +1436,30 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Ужыты драйвер кантролера."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "Драйвер кантролера DirectInput."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Нізкаўзроўневы драйвер Human Interface Device."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Драйвер Raw Linux, ужывае састарэлы joystick API. Па магчымасці, замест яго ўжывайце udev."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Драйвер Linux для кантролераў, падлучаных да паралельнага порта праз спецыяльныя адаптары."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Драйвер кантролера, грунтаваны на бібліятэках SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "Драйвер кантролера XInput. Нацэлены на кантролеры XBox."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -1612,6 +1632,18 @@ MSG_HASH(
    "Ужыты драйвер перадыскрэтызацыі гуку."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Рэалізацыя Windowed Sinc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Рэалізацыя Convoluted Cosine."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "Рэалізацыя найбліжэйшай перадыскрэтызацыі. Гэтая перадыскрэтызацыя ігнаруе налады якасці."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    "Камера"
    )
@@ -1641,7 +1673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Ужыты драйвер меню."
+   "Ужыты драйвер меню. Патрабуе перазапуску."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1727,8 +1759,80 @@ MSG_HASH(
    "Прыпыняе ахоўнік экрана. Служыць падказкай драйверу відэа; неабавязкова павінна выконвацца."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   "Паточнае відэа"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Устаўка чорнага кадра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Выкл"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - для чашчыні абнаўлення дысплэя 120Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - для чашчыні абнаўлення дысплэя 180Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - для чашчыні абнаўлення дысплэя 240Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - для чашчыні абнаўлення дысплэя 300Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - для чашчыні абнаўлення дысплэя 360Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - для чашчыні абнаўлення дысплэя 420Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - для чашчыні абнаўлення дысплэя 480Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - для чашчыні абнаўлення дысплэя 540Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - для чашчыні абнаўлення дысплэя 600Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - для чашчыні абнаўлення дысплэя 660Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - для чашчыні абнаўлення дысплэя 720Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - для чашчыні абнаўлення дысплэя 780Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - для чашчыні абнаўлення дысплэя 840Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - для чашчыні абнаўлення дысплэя 900Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - для чашчыні абнаўлення дысплэя 960Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Устаўлянне чорнага кадра - зацямнёныя кадры"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1764,8 +1868,16 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "Метад бліжэйшага суседа"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "Паўлінейная"
+   )
 #endif
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Затрымка аўташэйдара"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Відэафільтр"
@@ -1811,11 +1923,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Уласная частата абнаўлення"
+   "Уласная чашчыня абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Ужываць уласную частату абнаўлення, адзначаную ў файле канфігурацыі."
+   "Ужываць уласную чашчыню абнаўлення, адзначаную ў файле канфігурацыі."
    )
 
 /* Settings > Video > Output */
@@ -1860,31 +1972,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   "Вертыкальная частата абнаўлення"
+   "Вертыкальная чашчыня абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Ацэнка частаты абнаўлення экрана"
+   "Ацэнка чашчыні абнаўлення экрана"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "Дакладная ацэнка частаты абнаўлення экрана ў Гц."
+   "Дакладная ацэнка чашчыні абнаўлення экрана ў Гц."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Вызначаная дысплэем частата абнаўлення"
+   "Вызначаная дысплэем чашчыня абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "Частата абнаўлення, нададзеная драйверам дысплэя."
+   "Чашчыня абнаўлення, нададзеная драйверам дысплэя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Аўтаматычнае пераключэнне частаты абнаўлення"
+   "Аўтаматычнае пераключэнне чашчыні абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Пераключаць частату абнаўлення экрана на падставе бягучага змесціва."
+   "Пераключаць чашчыню абнаўлення экрана на падставе бягучага змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -1900,16 +2012,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Парог аўтаматычнай частаты абнаўлення PAL"
+   "Парог аўтаматычнай чашчыні абнаўлення PAL"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Максімальная частата абнаўлення, якую падтрымлівае PAL."
+   "Максімальная чашчыня абнаўлення, якую падтрымлівае PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   "Вертыкальная частата абнаўлення"
+   "Вертыкальная чашчыня абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
@@ -2341,6 +2453,10 @@ MSG_HASH(
    "Якасць перадыскрэтызацыі"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Латэнтнасць уваходнага гуку (мс)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
    "Пажаданая латэнтнасць уводу гуку ў мілісекундах. Можа не ўлічвацца, калі драйвер мікрафона не зможа забяспечыць зададзенае значэнне."
    )
@@ -2356,12 +2472,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    "Якасць перадыскрэтызацыі"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   "Выходная чашчыня (Гц)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   "Выхадная чашчыня дыскрэтызацыі гуку."
+   )
 
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    "Сінхранізацыя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Сінхранізаваць гук. Рэкамендавана."
    )
 
 /* Settings > Audio > MIDI */
@@ -2420,6 +2548,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    "Гучнасць"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   "Дапасаваць гучнасць плыні гуку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
@@ -2568,6 +2700,14 @@ MSG_HASH(
    "Прадвызначаная кнопка турба"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Дазваляць турбакірункі D-Pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Калі ўключана, уводы лічбавых кірункаў (таксама вядомыя як d-pad ці 'hatswitch') могуць быць турба."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
    "Кіраванне меню"
    )
@@ -2629,8 +2769,24 @@ MSG_HASH(
    "Закрыць змесціва"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   "Закрывае бягучае змесціва."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
    "Скінуць змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Зноўку запускае бягучае змесціва."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   "Перамотка наперад (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Перамотка наперад (утрыманне)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -2764,7 +2920,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-   "Стрымінг (пераключэнне)"
+   "Трансляцыя (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -3031,7 +3187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-   "Рэжым стрымінгу"
+   "Рэжым трансляцыі"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
@@ -3043,7 +3199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-   "Якасць стрымінгу"
+   "Якасць трансляцыі"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
@@ -3063,7 +3219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   "Уласная канфігурацыя стрымінгу"
+   "Уласная канфігурацыя трансляцыі"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -3229,6 +3385,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    "Змяніць адлюстраванне элементаў меню RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Значок праграмы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Змяніць значок праграмы."
    )
 #ifdef _3DS
 #endif
@@ -3606,11 +3770,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   "Паказ 'Пачаць стрымінг'"
+   "Паказ 'Пачаць трансляцыю'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   "Паказваць опцыю 'Пачаць стрымінг'."
+   "Паказваць опцыю 'Пачаць трансляцыю'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
@@ -4338,6 +4502,10 @@ MSG_HASH(
    "таму"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Сканаваць з праверкай CRC на магчымыя дублікаты"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Кіраванне плэй-лістамі"
    )
@@ -4458,11 +4626,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Канфігурацыі"
+   "Файлы канфігурацыі"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Задаць пачатковы каталог для аглядальніка меню канфігурацыі."
+   "Прадвызначаны файл канфігурацыі захоўваецца ў гэтым каталозе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -4866,7 +5034,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   "Пазбавіцца"
+   "Прыбраць"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
@@ -4987,11 +5155,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-   "Пачаць стрымінг"
+   "Пачаць трансляцыю"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   "Пачаць трансляцыю на мэтавым рэсурсе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
-   "Спыніць стрымінг"
+   "Спыніць трансляцыю"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
@@ -5280,6 +5452,22 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "Сервер RetroAchievements недаступны"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   "Адно ці некалькі раскрытых дасягненняў не падхапіліся серверам. Спробы будуць паўтарацца пакуль праграма будзе заставацца адкрытай."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "Сервер RetroAchievements недаступны. Спробы будуць працягвацца да поспеху або да выхаду з праграмы."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Усе неапрацаваныя запыты паспяхова сінхранізаваныя з серверам RetroAchievements."
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Уваход не выкананы"
@@ -7174,6 +7362,10 @@ MSG_HASH(
    "Няма даступных мініяцюр"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Усе магчымыя спампоўкі мініяцюр для гэтага запісу плэй-ліста ўжо апрабаваныя."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Націсніце зноў каб выйсці..."
    )
@@ -7196,6 +7388,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
    "Памылка пры зняцці набору налад шэйдара."
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Не атрымалася разблакаваць ядро: "
    )
 
 /* Lakka */

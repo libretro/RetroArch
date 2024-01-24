@@ -187,23 +187,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "A RetroArch újraindítása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "A program újraindítása."
+   "Újraindítás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Kilépés a RetroArch-ból"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "A program bezárása."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Kilépés a RetroArch-ból. A program kényszerített bezárása (SIGKILL, stb.) a konfiguráció mentése nélkül állítja le a RetroArch-ot. Unix-hoz hasonló környezetekben a SIGINT/SIGTERM is használható tiszta leállításra."
+   "Kilépés"
    )
 
 /* Main Menu > Load Core */
@@ -1744,10 +1732,6 @@ MSG_HASH(
    "Menü"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "A használt menüillesztő."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
    "Az XMB egy RetroArch grafikus felület, amely a 7. generációs konzolok menüjére hasonlít. Ugyanazokat a lehetőségeket biztosítja, mint az Ozone."
    )
@@ -1860,11 +1844,87 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Egy vagy több fekete képkocka beszúrása a képkockák közé. Néhány nagy frissítési gyakoriságú képernyőn hasznos a szellemkép kiküszöbölésére."
+   "Egy vagy több fekete képkocka beszúrása a képkockák közé. A mozgási elmosódást nagymértékben csökkentheti a CRT hatás emulálásával, a fényerő kárára. Nem kombinálható az 1-nél nagyobb váltóperiódussal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Fekete képkocka beillesztése a képkockák közé. 120 Hz-es monitorokhoz hasznos, 60 Hz-es tartalmak szellemképmentes lejátszásához. A képfrissítési ütemet továbbra is úgy kell beállítani, mintha 60 Hz-es monitorról lenne szó (az ütemet el kell osztani 2-vel)."
+   "Egy vagy több fekete képkocka beszúrása a mozgás tisztább visszaadásáért. Csak az aktuális képernyőfrissítéshez igazodó opció használható. Nem alkalmas olyan frissítési frekvenciához, ami nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással. Átmeneti képbeégés esetén 120 Hz-en kikapcsolandó, magasabb Hz-en pedig a lentebbi sötét képk[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Ki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - 120 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - 180 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - 240 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - 300 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - 360 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - 420 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - 480 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - 540 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - 600 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - 660 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - 720 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - 780 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - 840 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - 900 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - 960 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Fekete képkocka beszúrása - Sötét képkockák"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "A fekete képkockák darabszáma a képkocka beszúrás szekvenciában. Nagyobb értéknél pontosabb a mozgásvisszaadás, kisebb értéknél nagyobb a fényerő. 120 Hz-nél csak 1 képkocka beszúrása lehetséges. Az elméletileg lehetségesnél nagyobb érték beállítása a lehető legtöbb fekete képkocka beszúrását eredményezi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "A fekete képkockák darabszáma a képkocka beszúrás szekvenciában. Nagyobb értéknél pontosabb a mozgásvisszaadás, kisebb értéknél nagyobb a fényerő. 120 Hz-nél csak 1 képkocka beszúrása lehetséges, így annak mindenképp feketének kell lennie, ha a BFI aktiválva van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -3206,6 +3266,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "Alapértelmezett gomb a \"Single Button\" turbó módhoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Turbó iránygombok engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Bekapcsolva a digitális iránybemenetek (d-pad, hatswitch) is kiválaszthatóak turbó módban."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -5490,6 +5558,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "A menüképernyő kinézete."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Az alkalmazás ikonja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Alkalmazásikon megváltoztatása."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
@@ -7350,6 +7426,14 @@ MSG_HASH(
    "A tartalom beolvasása és játéklistához adása anélkül, hogy lenne azt támogató mag telepítve."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "CRC ellenőrzés duplikált azonosítók esetén"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "Az ISO fájlok sorozatszáma néha megegyezik, különösen a PSP/PSN lemezeknél. Ilyenkor ha a beolvasó csak a sorozatszámra hagyatkozik, rossz rendszert társíthat a tartalomhoz. A CRC ellenőrzést bekapcsolva a beolvasás jóval lassabb, de pontosabb lehet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Játéklisták kezelése"
    )
@@ -7599,18 +7683,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Fájlkezelő"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "A fájlböngésző kezdő könyvtára."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Konfigurációk"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "A menübeállítás böngésző kezdő könyvtára."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -13576,6 +13648,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Nincs elérhető bélyegkép"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "A játéklista ezen eleméhez már az összes bélyegkép letöltési opció végig volt próbálva."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

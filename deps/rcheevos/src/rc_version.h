@@ -1,12 +1,14 @@
 #ifndef RC_VERSION_H
 #define RC_VERSION_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "rc_export.h"
+
+#include <stdint.h>
+
+RC_BEGIN_C_DECLS
 
 #define RCHEEVOS_VERSION_MAJOR 11
-#define RCHEEVOS_VERSION_MINOR 0
+#define RCHEEVOS_VERSION_MINOR 1
 #define RCHEEVOS_VERSION_PATCH 0
 
 #define RCHEEVOS_MAKE_VERSION(major, minor, patch) (major * 1000000 + minor * 1000 + patch)
@@ -22,8 +24,9 @@ extern "C" {
  #define RCHEEVOS_VERSION_STRING RCHEEVOS_MAKE_VERSION_STRING_SHORT(RCHEEVOS_VERSION_MAJOR, RCHEEVOS_VERSION_MINOR)
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+RC_EXPORT uint32_t rc_version(void);
+RC_EXPORT const char* rc_version_string(void);
+
+RC_END_C_DECLS
 
 #endif /* RC_VERSION_H */

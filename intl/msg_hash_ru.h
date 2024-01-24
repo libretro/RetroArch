@@ -195,7 +195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Перезапуск RetroArch"
+   "Перезапуск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
@@ -207,11 +207,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Закрыть RetroArch."
+   "Закрыть RetroArch. Сохранение конфигурации при выходе включено."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Закрыть RetroArch. Сохранение конфигурации при выходе отключено."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Выход из RetroArch. Закрытие программы любым принудительным способом (SIGKILL и др.) выгружает RetroArch без сохранения конфигурации. На Unix-подобных системах SIGINT/SIGTERM позволяет выполнить чистую деинициализацию."
+   "Выход из RetroArch. Закрытие программы любым принудительным способом (SIGKILL и т.д.) выгружает RetroArch без сохранения конфигурации. На Unix-подобных системах SIGINT/SIGTERM позволяет выполнить чистую деинициализацию с сохранением конфигурации, если данная настройка включена."
    )
 
 /* Main Menu > Load Core */
@@ -276,7 +280,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "Здесь отображаются прослушанные ранее аудиофайлы."
+   "Список прослушанных аудиофайлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
@@ -284,7 +288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Здесь отображаются просмотренные ранее изображения."
+   "Список просмотренных изображений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -292,7 +296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Здесь отображаются просмотренные ранее видеофайлы."
+   "Список просмотренных видеофайлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -300,7 +304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Просмотр всего контента, совпадающего с базами данных с помощью поиска по категориям."
+   "Просмотр всего контента, совпадающего с записями баз данных при помощи поиска по категориям."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
@@ -1769,7 +1773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Используемый драйвер меню."
+   "Используемый драйвер меню. Требуется перезапуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1884,11 +1888,87 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Вставлять чёрный кадр между кадрами. Помогает устранить двоение для мониторов с высокой частотой обновления."
+   "Вставка чёрного кадра(ов) между кадрами. Может существенно уменьшить размытие движения путём эмуляции развёртки ЭЛТ, но ценой снижения яркости. Не используйте вместе с интервалом обновления > 1 (допускается значение 'Автоматически'), задержкой кадра или синхронизацией с ка[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Вставляет между кадрами чёрный кадр. Используется с 120 Гц экранами, чтобы отображать контент в 60 Гц без эффекта двоения. Независимо от этого, частота обновления должна быть настроена под 60 Гц экран (с делением частоты обновления пополам)."
+   "Вставляет между кадрами кадр(ы) чёрного цвета для повышения чёткости движения. Используйте значение только для текущей частоты обновления. Не предназначено для частот обновления не кратных 60 Гц, например 144 Гц, 165 Гц и т.д. Не используйте вместе с интервалом обновления > 1 (до[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "ВЫКЛ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - для частоты обновления экрана 120 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - для частоты обновления экрана 180 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - для частоты обновления экрана 240 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - для частоты обновления экрана 300 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - для частоты обновления экрана 360 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - для частоты обновления экрана 420 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7- для частоты обновления экрана 480 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - для частоты обновления экрана 540 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - для частоты обновления экрана 600 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - для частоты обновления экрана 660 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - для частоты обновления экрана 720 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - для частоты обновления экрана 780 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - для частоты обновления экрана 840 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - для частоты обновления экрана 900 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - для частоты обновления экрана 960 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Вставка чёрного кадра - тёмные кадры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Регулирует количество чёрных кадров в общей последовательности развёртки BFI. Повышение значения улучшает чёткость движения, понижение увеличивает яркость. Не применимо к 120 Гц, т.к. при этом доступен только один кадр для обработки BFI. При превышении настройки будет установ[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Регулирует количество кадров, которые отображаются чёрными в последовательности BFI. Большее количество чёрных кадров повышает чёткость движения, но снижает яркость. Не применимо для 120 Гц из-за наличия только одного лишнего кадра в 60 Гц, который должен быть чёрным, иначе BFI[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -3409,6 +3489,14 @@ MSG_HASH(
    "Добавляет задержку в кадрах перед блокировкой стандартного ввода после нажатия кнопки 'Активатор горячих клавиш'. Позволяет перехватывать стандартный ввод с кнопки 'Активатор горячих клавиш', если на неё назначено другое действие (напр. RetroPad 'Select')."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Объединение типов устройств для горячих клавиш"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Блокирует все горячие клавиши клавиатуры и контроллера, если для каждого типа устройств включен 'Активатор горячих клавиш'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Вызов меню (сочетание контроллера)"
    )
@@ -4181,7 +4269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Разрешить отображение опций ядер в виде подменю по категориям. Требуется перезагрузка ядра для применения изменений."
+   "Разрешать ядрам отображать опции категориями в отдельном меню. Необходим перезапуск ядра для применения изменений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -4389,11 +4477,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
-   "Во время записи повтора автоматически сохраняет состояние игры через равные интервалы (в секундах)."
+   "При записи повтора состояние игры автоматически сохраняется через равные интервалы (в секундах)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
-   "Автоматически создавать быстрые сохранения с равным интервалом во время записи повтора. По умолчанию отключено, если не переопределено другими настройками. Интервал измеряется в секундах. Значение 0 отключает запись контрольных точек."
+   "Автоматически сохраняет состояние игры через равные интервалы при записи повтора. По умолчанию отключено, если не переопределено другими настройками. Интервал измеряется в секундах. Значение 0 отключает запись контрольных точек."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -4417,7 +4505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Ограничение количества сохранений, создаваемых при вкл. опции 'Автоматически повышать слот сохранения'. При превышении установленного значения новое сохранение удалит существующее сохранение с наименьшим индексом. Значение '0' отменяет данное ограничение."
+   "Максимальное число сохранений, создаваемых если включена опция 'Автоматически повышать слот сохранения'. При превышении значения новое сохранение удалит существующее сохранение с наименьшим индексом. Значение '0' снимает ограничение на количество сохранений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
@@ -4425,7 +4513,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Ограничение количества повторов, сохраняемых при вкл. опции 'Автоматически повышать слот повтора'. При превышении значения создание нового повтора удалит запись с наименьшим номером. Значение '0' снимает ограничение на количество записей."
+   "Максимальное число повторов, сохраняемых если включена опция 'Автоматически повышать слот повтора'. При превышении значения запись нового повтора удалит существующую запись с наименьшим индексом. Значение '0' снимает ограничение на количество записей."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -5135,7 +5223,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
-   "Автомасштаб оверлея клавиатуры"
+   "Автомасштабирование оверлея клавиатуры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
@@ -5534,6 +5622,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Настройка внешнего вида меню."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Значок приложения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Выбор иконки приложения."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
@@ -5574,7 +5670,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Переходить в начало/конец списка при достижении горизонтальной или вертикальной границ."
+   "Переходить в начало/конец списка, если достигнута горизонтальная или вертикальная граница."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -5606,7 +5702,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "Автоматически закрывать RetroArch при остановке контента. 'CLI' закрывается только если контент был запущен из командной строки."
+   "Автоматически закрывать RetroArch при остановке контента. Интерфейс командной строки будет закрыт, только если контент был запущен с помощью него."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -5614,7 +5710,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
-   "Если открыто меню, после заданного периода бездействия будет запускаться хранитель экрана."
+   "При вызове меню запускать хранитель экрана после заданного периода бездействия."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
@@ -5911,7 +6007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Показывать вкладку с историей запуска (требуется перезагрузка для Ozone/XMB)."
+   "Показывать вкладку истории запуска (требуется перезапуск для Ozone/XMB)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -6015,7 +6111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
-   "Подписи к элементам меню"
+   "Описания элементов меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
@@ -6501,7 +6597,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
-   "Выбор метода скроллинга для отображения длинных строк текста в меню."
+   "Метод скроллинга, используемый для отображения длинных строк текста в меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -6517,7 +6613,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   "Сглаживать анимацию прокрутки при отображении длинных строк в меню. Незначительно влияет на производительность."
+   "Использовать гладкую анимацию прокрутки при отображении длинных текстовых строк в меню. Почти не влияет на производительность."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
@@ -7211,7 +7307,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   "Ограничение количества записей в плейлисте истории загруженных игр, изображений, музыки и видео."
+   "Максимальное число записей для плейлиста истории игр, изображений, музыки и видео."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -7219,7 +7315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Ограничение количества записей в плейлисте 'Избранное'. При достижении предела новые записи не будут добавляться до удаления старых. Установка значения -1 разрешает неограниченное количество записей.\nВНИМАНИЕ: уменьшение значения удалит существующие записи!"
+   "Максимальное число записей для плейлиста 'Избранное'. При достижении предельного значения новые записи не будут добавляться до удаления старых. Значение '-1' снимает ограничение на количество записей.\nВНИМАНИЕ: уменьшение значения удалит существующие записи!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -7387,7 +7483,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "При поиске в плейлистах записей, связанных с архивами, искать совпадения только по имени архива вместо [имя файла]+[контент]. Включите, чтобы избежать повторных записей в истории запуска при загрузке сжатых файлов."
+   "При поиске записей в плейлистах, ассоциированных с архивами, искать совпадения только по имени файла с архивом вместо [имя файла]+[контент]. Включите, чтобы избежать появления повторных записей в истории запуска при загрузке сжатых файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -7396,6 +7492,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
    "Разрешить сканирование и добавление контента в плейлист без установленных совместимых ядер."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Сверять CRC при сканировании возможных дублей"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "В некоторых случаях образы дублируют серийные номера, в частности игры PSP/PSN. Проверяя только серийный номер сканер иногда может соотносить контент с другой системой. Данная опция добавляет проверку CRC, которая существенно замедляет сканирование, но повышает его точность."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -7415,11 +7519,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Исп. имена файлов для поиска миниатюр"
+   "Поиск миниатюр по именам файлов"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Если вкл., поиск миниатюр будет производиться по именам файлов вместо названий записей."
+   "Если включено, поиск миниатюр вместо названий записей производится по именам файлов."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
@@ -7654,11 +7758,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Конфигурации"
+   "Файлы конфигураций"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Установка начального каталога для браузера в меню конфигураций."
+   "Каталог хранения файла с исходной конфигурацией."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -8059,7 +8163,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Настройка сканирования на основании имён файлов. Не требует соответствие контента базам данных."
+   "Настройка сканирования на основе имён файлов контента. Не требует совпадения с базами данных."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8125,7 +8229,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "При включении настройки будут также сканироваться все подкаталоги в выбранном 'Каталоге контента'."
+   "Если включено, в сканирование будут добавлены все подкаталоги в выбранном 'Каталоге контента'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -8133,7 +8237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "При включении настройки в сканирование контента будут добавлены архивы (.zip, .7z и т.д.). Может существенно влиять на скорость сканирования."
+   "Если включено, в поиск совместимого контента будут добавлены файлы архивов (.zip, .7z и т.д.). Может существенно влиять на скорость сканирования."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
@@ -8153,7 +8257,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Переписать существующий плейлист"
+   "Перезаписать существующий плейлист"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -8161,7 +8265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
-   "Проверить существующие записи"
+   "Проверять существующие записи"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
@@ -11209,7 +11313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Режим эскизов в портрете"
+   "Вид эскизов в портрет. режиме"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
@@ -11217,7 +11321,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Режим эскизов в ландшафте"
+   "Вид эскизов в ландш. режиме"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
@@ -11229,7 +11333,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Показывает дополнительный эскиз в режиме отображении плейлиста типа 'Список'. Настройка работает только если ширины экрана достаточно для отображения двух эскизов."
+   "Показывает дополнительный эскиз в режиме плейлиста типа 'Список'. Настройка работает только если ширины экрана достаточно для отображения двух эскизов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -11245,7 +11349,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
-   "Основной тип эскиза для записей в плейлистах. Используется в качестве иконок контента."
+   "Основной тип эскиза, отображаемый для записей в плейлистах. Используется в качестве значков контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
@@ -12971,11 +13075,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
-   "Обновление не удалось - аркадный DAT-файл неправильный или отсутствует: "
+   "Ошибка обновления - неверный/отсутствующий аркадный DAT-файл: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
-   "Обновление не удалось - аркадный DAT-файл слишком большой (недостаточно памяти): "
+   "Ошибка обновления - слишком большой аркадный DAT-файл (недостаточно памяти): "
    )
 MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
@@ -13860,6 +13964,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Нет доступных миниатюр"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Для данной записи в плейлисте уже произведены все возможные загрузки эскизов."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

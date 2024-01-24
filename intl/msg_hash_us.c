@@ -298,6 +298,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT), len);
              break;
+          case MENU_ENUM_LABEL_QUIT_RETROARCH:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_QUIT_RETROARCH), len);
+             break;
           case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS), len);
              break;
@@ -418,6 +421,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION), len);
+             break;
+          case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES), len);
              break;
           case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY), len);

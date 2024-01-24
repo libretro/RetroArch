@@ -6706,6 +6706,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,        PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,             PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,        PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                 PARSE_ONLY_BOOL, true},
@@ -6827,6 +6828,10 @@ unsigned menu_displaylist_build_list(
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
                      PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
 
             /* All other binds come last */
@@ -8989,8 +8994,10 @@ unsigned menu_displaylist_build_list(
                   (enum menu_screensaver_effect)
                   settings->uints.menu_screensaver_animation;
 #endif
+            uico_driver_state_t *uico_st    = uico_state_get_ptr();
 
             menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_APPICON_SETTINGS,                                      PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,                             PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,                            PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
@@ -9032,6 +9039,13 @@ unsigned menu_displaylist_build_list(
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_APPICON_SETTINGS:
+                     if (uico_st->drv && uico_st->drv->get_app_icons)
+                     {
+                         struct string_list *icons = uico_st->drv->get_app_icons();
+                         build_list[i].checked = icons && icons->size > 1;
+                     }
+                     break;
                   case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
                      build_list[i].checked = settings->bools.settings_show_onscreen_display;
                      break;
@@ -9306,6 +9320,7 @@ unsigned menu_displaylist_build_list(
             bool video_vsync          = settings->bools.video_vsync;
             bool video_hard_sync      = settings->bools.video_hard_sync;
             bool video_wait_swap      = settings->bools.video_waitable_swapchains;
+            unsigned bfi              = settings->uints.video_black_frame_insertion;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_VSYNC,
@@ -9322,6 +9337,14 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+
+               if (bfi > 0)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
                         PARSE_ONLY_BOOL, false) == 0)
@@ -9573,7 +9596,10 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_ONLINE_UPDATER
                {MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,                                PARSE_ONLY_BOOL, true  },
+#if 0
+/* Thumbnailpack removal */
                {MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,                    PARSE_ONLY_BOOL, true  },
+#endif
 #endif
 #ifdef HAVE_MIST
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM,                          PARSE_ONLY_BOOL, true  },
@@ -12778,6 +12804,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
+#if 0
+/* Thumbnailpack removal */
          case DISPLAYLIST_THUMBNAILS_UPDATER:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
@@ -12797,6 +12825,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                | MD_FLAG_NEED_CLEAR;
 #endif
             break;
+#endif
          case DISPLAYLIST_PL_THUMBNAILS_UPDATER:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
@@ -13969,6 +13998,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
+#if 0
+/* Thumbnailpack removal */
                if (settings->bools.menu_show_legacy_thumbnail_updater)
                {
                   if (menu_entries_append(info->list,
@@ -13978,7 +14009,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
                }
-
+#endif
 #elif defined(HAVE_NETWORKING)
 #ifdef HAVE_UPDATE_CORES
                if (settings->bools.menu_show_core_updater)
@@ -14053,6 +14084,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
+#if 0
+/* Thumbnailpack removal */
                if (settings->bools.menu_show_legacy_thumbnail_updater)
                {
                   if (menu_entries_append(info->list,
@@ -14062,7 +14095,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
                }
-
+#endif
 #ifdef HAVE_NETWORKING
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                         MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,

@@ -195,23 +195,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "RetroArch 다시 시작"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "프로그램을 재시작합니다."
+   "다시 시작"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "RetroArch 종료"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "프로그램을 종료합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "RetroArch를 종료합니다. 프로그램을 강제 종료(SIGKILL 등)할 경우 RetroArch의 구성 등이 저장되지 않고 종료됩니다. 유닉스 계열 운영체제의 경우, SIGINT/SIGTERM을 사용하면 정상 종료가 가능합니다."
+   "나가기"
    )
 
 /* Main Menu > Load Core */
@@ -1780,10 +1768,6 @@ MSG_HASH(
    "메뉴 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "사용할 메뉴 드라이버입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
    "XMB는 어느 7세대 콘솔의 메뉴와 유사한 모습의 RetroArch GUI입니다. Ozone과 같은 기능을 제공합니다."
    )
@@ -1893,14 +1877,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "검은 프레임 삽입"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "프레임 사이 검은 프레임을 삽입합니다. 120Hz 디스플레이에서 60Hz 콘텐츠 실행 시 고스트 현상을 줄이는데 유용합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "프레임 사이에 검은색 프레임을 삽입합니다. 120Hz 모니터에서 고스팅이 제거된 60Hz 자료를 실행하는 데 유용합니다. 비디오 새로 고침 빈도는 60Hz 모니터상태 그대로 구성해야 합니다(새로 고침 빈도를 2로 나눔)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -3246,6 +3222,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "'단일 버튼' 터보 모드의 기본 터보 활성화 버튼을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "터보 십자패드 방향 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "활성화되면 디지털 방향 입력 (십자패드 또는 'hatswitch'라고도 함) 이 터보가 될 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -5538,6 +5522,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "메뉴 화면 설정을 변경합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "앱 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "앱 아이콘 변경합니다."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
@@ -7402,6 +7394,14 @@ MSG_HASH(
    "지원되는 코어가 설치되어 있지 않더라도 콘텐츠가 스캔되어 실행목록에 추가될 수 있게 합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "스캔은 가능한 중복에 대해 CRC를 확인"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "때때로 ISO는 특히 PSP/PSN 타이틀의 경우 시리즈를 복제합니다. 시리즈에만 의존하면 스캐너가 콘텐츠를 잘못된 시스템에 배치하는 경우가 있습니다. 이렇게 하면 CRC 검사가 추가되어 스캔 속도가 상당히 느려지지만 더 정확할 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "실행목록 관리"
    )
@@ -7647,18 +7647,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "파일 탐색기"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "파일 탐색기의 시작 디렉토리를 설정합니다."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "구성"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "메뉴 구성 브라우저의 시작 디렉터리를 설정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -13920,6 +13908,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "이용 가능한 미리보기가 없습니다"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "이 실행목록에 더 이상 미리보기 다운로드를 시도할 항목이 없습니다."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

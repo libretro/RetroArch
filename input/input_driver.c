@@ -3717,7 +3717,7 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 #endif
    if (!input_driver_st.primary_joypad)
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
-#ifdef HAVE_MFI
+#if 0
    if (!input_driver_st.secondary_joypad)
       input_driver_st.secondary_joypad  = input_joypad_init_driver("mfi", data);
 #endif
@@ -3800,7 +3800,7 @@ void input_driver_init_joypads(void)
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
-#ifdef HAVE_MFI
+#if 0
    if (!input_driver_st.secondary_joypad)
       input_driver_st.secondary_joypad      = input_joypad_init_driver(
             "mfi",
@@ -4738,7 +4738,8 @@ static void input_keys_pressed(
       const struct retro_keybind *binds_auto,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info)
+      rarch_joypad_info_t *joypad_info,
+      settings_t *settings)
 {
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
@@ -4753,6 +4754,10 @@ static void input_keys_pressed(
 
    if (!binds)
       return;
+
+   if (     settings->bools.input_hotkey_device_merge
+         && (libretro_hotkey_set || keyboard_hotkey_set))
+      libretro_hotkey_set = keyboard_hotkey_set = true;
 
    if (     binds[port][RARCH_ENABLE_HOTKEY].valid
          && CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
@@ -6265,7 +6270,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             binds_auto,
             joypad,
             sec_joypad,
-            &joypad_info);
+            &joypad_info,
+            settings);
 
 #ifdef HAVE_MENU
       if (menu_is_alive)

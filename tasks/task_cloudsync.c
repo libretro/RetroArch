@@ -255,6 +255,9 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
          return true;
    }
 
+   if (string_ends_with(filename, "/.DS_Store"))
+       return true;
+
    return false;
 }
 

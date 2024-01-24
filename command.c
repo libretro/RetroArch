@@ -1258,19 +1258,13 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    return true;
 }
 
-bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      const enum rarch_core_type current_core_type)
+bool command_event_save_auto_state(void)
 {
    size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    char savestate_name_auto[PATH_MAX_LENGTH];
 
    if (runloop_st->entry_state_slot)
-      return false;
-   if (!savestate_auto_save)
-      return false;
-   if (current_core_type == CORE_TYPE_DUMMY)
       return false;
    if (!core_info_current_supports_savestate())
       return false;
@@ -1284,7 +1278,7 @@ bool command_event_save_auto_state(
          ".auto",
          sizeof(savestate_name_auto) - _len);
 
-   if (content_save_state((const char*)savestate_name_auto, true, true))
+   if (content_auto_save_state((const char*)savestate_name_auto))
 	   RARCH_LOG("%s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "succeeded");
@@ -1976,7 +1970,7 @@ bool command_event_main_state(unsigned cmd)
                      settings->bools.frame_time_counter_reset_after_save_state;
 
                if (cmd == CMD_EVENT_SAVE_STATE)
-                  content_save_state(state_path, true, false);
+                  content_save_state(state_path, true);
                else
                   content_save_state_to_ram();
 

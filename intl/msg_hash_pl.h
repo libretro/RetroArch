@@ -195,23 +195,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Uruchom ponownie RetroArch"
+   "Uruchom ponownie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Uruchom ponownie program."
+   "Uruchom ponownie aplikację RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Zamknij RetroArch"
+   "Wyjdź"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Zamknij program."
+   "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest włączone."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Wyjdź z RetroArch. Zabijanie programu w jakikolwiek trudny sposób (SIGKILL, itp.) zakończy RetroArch bez zapisywania konfiguracji, itp. Na Unix-likach, SIGINT/SIGTERM pozwala na czyste deinicjalizację."
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest wyłączone."
    )
 
 /* Main Menu > Load Core */
@@ -1700,10 +1700,6 @@ MSG_HASH(
    "Sterownik lokalizacji do użycia."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Sterownik menu do użycia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
    "XMB to interfejs RetroArch, który wygląda jak menu konsoli 7 generacji. Może obsługiwać te same funkcje co Ozone."
    )
@@ -1807,8 +1803,80 @@ MSG_HASH(
    "Wstawianie czarnej klatki"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Wstawia czarną ramkę pomiędzy ramkami. Przydatne na ekranach z dużą prędkością odświeżania, aby wyeliminować efekt widma."
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Wyłączony"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Dla tempa odświeżania ekranu 120Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Dla tempa odświeżania ekranu 180Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Dla częstotliwości Odświeżania ekranu 240Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Dla częstotliwości odświeżania ekranu 300Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Dla częstotliwości odświeżania ekranu 360Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Dla częstotliwości odświeżania ekranu 420 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Dla częstotliwości odświeżania obrazu 480Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Częstotliwość odświeżania ekranu 540Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Dla częstotliwości odświeżania ekranu 600Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Dla częstotliwości odświeżania obrazu 660Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Przy częstotliwości odświeżania ekranu 720 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Przy częstotliwości odświeżania ekranu 780Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Dla częstotliwości odświeżania obrazu 840Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Dla częstotliwości odświeżania obrazu 900 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Przy częstotliwości odświeżania ekranu 960Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Wstawianie Czarnej Ramki - Ciemne Ramki"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Dostosuj liczbę czarnych ramek w całkowitej sekwencji skanowania BFI. Więcej równa się większej jasności ruchu, mniej równa się większej jasności. Nie dotyczy to 120hz, ponieważ tylko 1 rama BFI może działać całkowicie. Ustawienia wyższe niż to możliwe, ograniczą Cię do maksymalnej możliwej dla wybranej przez Ciebie szybkości odświeżania."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Dostosowuje liczbę ramek wyświetlanych w czarnej sekwencji bfi. Więcej czarnych ramek zwiększa przezroczystość ruchu, ale zmniejsza jasność. Nie dotyczy 120hz, ponieważ jest tylko jedna dodatkowa 60hz, więc musi być czarny w przeciwnym razie BFI nie byłby w ogóle aktywny."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -4894,6 +4962,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Zmień ustawienia wyglądu ekranu menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Ikona aplikacji"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Zmień ikonę aplikacji."
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
@@ -6562,6 +6638,10 @@ MSG_HASH(
    "Zezwalaj na skanowanie zawartości i dodawanie do playlisty bez zainstalowanego rdzenia obsługującego ją."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Skanuj CRC pod kątem możliwych duplikatów"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Zarządzaj playlistami"
    )
@@ -6807,18 +6887,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Przeglądarka plików"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Ustaw katalog startowy dla przeglądarki plików."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Konfiguracje"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Ustaw folder startowy dla przeglądarki konfiguracyjnej menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -12460,6 +12528,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Brak dostępnych miniatur"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Wszystkie możliwe pliki miniatur zostały już wypróbowane dla tego wpisu na playliście."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,

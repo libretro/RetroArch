@@ -195,23 +195,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "重新啟動"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "重新啟動應用程式。"
+   "重開"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "結束復古電玩"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "結束復古電玩應用程式。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "結束復古電玩。\n應用程式強制關閉或立即終止時, 將無法儲存變更的設定檔。\n類Unix的作業系統, 可使用中斷訊號和終止訊號正確的結束。"
+   "結束"
    )
 
 /* Main Menu > Load Core */
@@ -1145,6 +1133,10 @@ MSG_HASH(
    "音效"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "變更音源輸入/輸出相關的設定。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "輸入"
    )
@@ -1185,12 +1177,56 @@ MSG_HASH(
    "變更遊戲相關儲存和載入的設定。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "雲端同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "變更雲端同步的設定。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "開啟雲端同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "嘗試將雲端設定檔、記憶存檔與狀態同步到雲端儲存供應商。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "若未啟用，覆蓋或刪除前檔案將會移動到備份資料夾。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "雲端同步後端"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "使用哪個雲端儲存網路協定。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "雲端儲存網址"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "用於雲端儲存服務 API 進入端點的網址。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "使用者名稱"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "你的雲端儲存帳號名稱。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "密碼"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "你的雲端儲存帳號密碼。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1441,6 +1477,10 @@ MSG_HASH(
    "設定鍵盤、滑鼠和光線槍等輸入裝置使用的驅動程式, 此選項會依據顯示驅動程式強制變更。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "udev 驅動程式讀取支援鍵盤的 evdev 事件，還支援鍵盤回呼、滑鼠和觸控板。\n大多數發行版預設情況下, /dev/input裝置節點僅限root權限使用（mode 600），可以設定一個裝置管理員（udev）規則，用於非root權限時使用。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "linuxraw輸入驅動程式。\n需要開啟終端機(TTY)直接從終端機讀取鍵盤事件, 不支援滑鼠輸入不如裝置管理員(udev)操作方便。\n此驅動程式使用joystick API (/dev/input/js*)。"
    )
@@ -1455,6 +1495,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "設定遊戲控制器使用的驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "直接輸入控制器驅動。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "低階人類使用者介面裝置驅動。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "原始的 Linux 驅動使用舊版 joystick API，儘量改用裝置管理員(udev)。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux 控制器驅動程式透過特殊轉接器連接到平行端口。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "使用 SDL 函式庫的控制器驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "一般推薦使用配備 udev 介面的控制器驅動程式，其使用 evdev joypad API 支援搖桿。\n此驅動程式支援熱插拔和力反饋。\n大多數發行版預設情況下，/dev/input裝置節點僅限root權限(mode 600)使用，可以設定一個裝置管理員(udev)規則，用於非root權限時使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "XInput 控制器驅動程式，通常用於 XBox 控制器。"
    )
 
 MSG_HASH(
@@ -1614,6 +1682,26 @@ MSG_HASH(
    "JACK Audio Connection Kit驅動程式。\n音效驅動程式。"
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "麥克風"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "使用麥克風驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "麥克風重新取樣器"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "使用麥克風重新取樣器驅動程式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "麥克風區塊幀數"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1670,10 +1758,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "選單主題"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "設定選單使用的佈景主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1795,14 +1879,6 @@ MSG_HASH(
    "插入黑幀"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在幀之間插入全黑幀, 用於消除高更新率螢幕的殘影。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "在幀之間插入全黑幀, 用於消除使用120Hz的顯示器, 顯示60Hz內容時產生的殘影。\n依據此選項設定幀數, 調整「垂直同步切換間隔」設定, 以達到準確的動態速率控制。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "圖形處理器截圖"
    )
@@ -1890,6 +1966,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "關閉目前使用的影像濾鏡。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "瀏海螢幕開啟全螢幕 (Android 與 iOS 裝置 )"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2035,6 +2115,14 @@ MSG_HASH(
    "裝置預設的螢幕更新率, 按[確定鍵]可套用預設值至「垂直更新率」選項。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "自動更新率開關"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "根據目前使用內容自動開關螢幕更新率。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "僅限全螢幕獨占模式"
    )
@@ -2045,6 +2133,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "所有全螢幕模式"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "自動更新率 PAL 上限"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "最高更新率視為 PAL。"
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -2445,6 +2541,14 @@ MSG_HASH(
    "變更音源輸出相關的設定。"
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "麥克風"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "變更音源輸入相關的設定。"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2501,6 +2605,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    "混音器靜音模式。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "尊重靜音模式"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "靜音模式下靜音所有音源"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
@@ -2629,8 +2741,24 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "麥克風"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "在支援的核心中開啟音源輸入。若核心未使用麥克風，則不影響效能。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "裝置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "覆蓋預設值選擇輸入裝置，依據麥克風驅動程式顯示可使用的裝置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "覆蓋預設值選擇輸入裝置，依據麥克風驅動程式顯示可使用的裝置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2641,12 +2769,36 @@ MSG_HASH(
    "設定降低時會降低音質提升效能, 設定提高時會提升音質降低效能。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "預設輸入率 (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "若核心未請求指定數值，則使用此音源輸入取樣率。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "音訊輸入延遲 (毫秒)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "設定音訊輸入延遲(毫秒)，麥克風驅動程式不支援時設定無效。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "WASAPI 獨占模式"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "使用 WASAPI 麥克風驅動裝置時，允許 RetorArch 獨佔音效輸出，關閉此選項時變更為共用模式。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "WASAPI 浮點格式"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "如果音訊裝置支援，變更WASAPI 驅動程式音訊取樣使用浮點輸入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -3000,6 +3152,22 @@ MSG_HASH(
    "設定按鍵時綁定所需按住的時間。"
    )
 MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "按下鍵盤、滑鼠或控制器"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_RELEASE,
+   "放開鍵盤與按鍵！"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "超時"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "保留"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "連發週期"
    )
@@ -3054,6 +3222,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "設定[連發鍵]要持續連發的單鍵, 僅限模式為<單鍵(按住/開關)>時使用。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "允許 Turbo D-Pad Directions"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -7319,18 +7491,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "開始資料夾"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "設定檔案瀏覽器的「開始資料夾」瀏覽位置。"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "設定檔"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "設定核心、著色器和控制器等多種設定檔的儲存位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,

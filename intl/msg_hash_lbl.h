@@ -499,6 +499,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
    "cb_menu_wallpaper"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD,
    "cb_thumbnails_updater_download"
@@ -507,6 +509,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST,
    "cb_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_CB_UPDATE_ASSETS,
    "cb_update_assets"
@@ -1285,6 +1288,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,
    "deferred_menu_settings_list"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_APPICON_SETTINGS,
+   "appicon_settings"
+   )
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_BOTTOM_SETTINGS_LIST,
@@ -1411,10 +1418,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
    "deferred_cloud_sync_settings_list"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
    "deferred_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST,
    "deferred_pl_thumbnails_updater_list"
@@ -1932,6 +1942,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "input_hotkey_block_delay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "input_hotkey_device_merge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
@@ -3818,6 +3832,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
    "thumbnails_directory"
    )
+/* Thumbnailpack removal - next entry is deprecated */
 MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
    "thumbnails_updater_list"
@@ -4019,6 +4034,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
    "video_black_frame_insertion"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+   "video_bfi_dark_frames"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
@@ -6061,6 +6080,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
    "scan_without_core_match"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,
+   "scan_serial_and_crc"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
