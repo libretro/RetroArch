@@ -760,6 +760,12 @@ static int16_t input_state_wrap(
          }
       }
    }
+   else if (device == RETRO_DEVICE_KEYBOARD)
+   {
+      /* Always ignore null key. */
+      if (id == RETROK_UNKNOWN)
+         return ret;
+   }
 
    if (current_input && current_input->input_state)
       ret |= current_input->input_state(
@@ -773,6 +779,22 @@ static int16_t input_state_wrap(
             device,
             idx,
             id);
+
+   /* No binds, no input. This is for ignoring RETROK_UNKNOWN
+    * if the driver allows setting the key down somehow.
+    * Otherwise all hotkeys and inputs with null bind get triggered. */
+   if (device == RETRO_DEVICE_JOYPAD)
+   {
+      /* Drivers can also overflow when sending all keys at once,
+       * resulting in negative values which also need to be ignored.. */
+      if (     (id == RETRO_DEVICE_ID_JOYPAD_MASK && ret < 0)
+            || (  binds[_port][id].key     == RETROK_UNKNOWN
+               && binds[_port][id].mbutton == NO_BTN
+               && binds[_port][id].joykey  == NO_BTN
+               && binds[_port][id].joyaxis == AXIS_NONE))
+         return 0;
+   }
+
    return ret;
 }
 
@@ -6341,7 +6363,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
-            if (current_input->input_state(
+            if (ids[i][0] && current_input->input_state(
                      input_st->current_data,
                      joypad,
                      sec_joypad,
