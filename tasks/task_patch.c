@@ -616,12 +616,12 @@ static enum patch_error ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
 static enum patch_error xdelta_apply_patch(
         const uint8_t *patchdata, uint64_t patchlen,
         const uint8_t *sourcedata, uint64_t sourcelength,
         uint8_t **targetdata, uint64_t *targetlength)
 {
-#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
    int ret;
    enum patch_error error_patch = PATCH_SUCCESS;
    xd3_stream stream;
@@ -710,10 +710,8 @@ cleanup_stream:
    xd3_close_stream(&stream);
    xd3_free_stream(&stream);
    return error_patch;
-#else /* HAVE_PATCH is defined and HAVE_XDELTA is defined */
-   return PATCH_PATCH_UNSUPPORTED;
-#endif
 }
+#endif
 
 static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
