@@ -1,4 +1,6 @@
 # Future
+
+# 1.17.0
 - ACCESSIBILITY/TTS: fix target language and missing espeak handling on Linux
 - AI: AI service reworked: performance increase, automatic translation, configurable subtitle placement, and more
 - APPLE: Fix WebDAV crash with digest auth (Cloud Sync)
@@ -31,10 +33,13 @@
 - IOS: Default to not enabling keyboard gamepad
 - IOS: Fix XRGB8888 in GL driver
 - IOS: Allow changing the app icon
+- IOS: Add HAVE_ACCESSIBILITY to iOS builds
 - IOS/TVOS: Create GL context as GLES3 to fix some rendering performance problems
+- INPUT: Fix ghost input when setting RETROK_UNKNOWN
 - INPUT: Default 'Bind Hold' to 0 to prevent problems with controllers not resting at null state
 - INPUT: Add a setting to allow turbo d-pad directions
 - INPUT: Don't save mouse buttons to autoconfig
+- INPUT/MENU: Add option for merging 'Hotkey Enable' device types
 - INPUT/mFI: disable secondary_joypad to prevent issues with controllers detected both as HID and mFI
 - INPUT/UDEV: Change event detection to polling in udev_joypad
 - INPUT/WAYLAND: Use unaccelerated pointer motion to prevent mouse dead zone
@@ -43,7 +48,7 @@
 - LIBRETRO/NETPACKET:
 Switch environment call number from 76 to 78 (retire 76 as it was never used by any core)
 Simplify broadcasts by removing the option to send to all but one client, use an explicit RETRO_NETPACKET_BROADCAST constant instead
-Separate explicit flushing and querying of incoming packet into two operations 
+Separate explicit flushing and querying of incoming packet into two operations
 Enable a core to specify a protocol version string which can get used instead of core version to determine compatibility between two players
 Log and notify a separate message when there is a content crc mismatch while using this interface to convey it being less severe
 - MENU: Fix menu analog stick navigation (1.16.0.1)
@@ -67,6 +72,7 @@ Log and notify a separate message when there is a content crc mismatch while usi
 - MENU/XMB: Background images take precedence over color themes, default image opacity set the same as color theme opacity
 - MENU/XMB: Fix segmentation fault when background image is missing
 - MENU/XMB: Several corrections and cleanups
+- MENU/XMB: Layout/thumbnail fixes - Thumbnail layout adjustments, Header title improvements, Handheld layout adjustments
 - NETWORKING/NETPLAY: Add support for joining MITM servers from command line
 - NETWORKING/NETPACKET: Interface connection flow improvements
 - OSX: Fix mouse support for MelonDS DS on OSX
@@ -163,7 +169,7 @@ require fullpath or not, small and big ZIP files).
 - INPUT/REMAP: Remap label fix when no autoconf profile active
 - INPUT/REMAP: Add 'Save As' option for remaps and overrides
 - INPUT/OVERLAY: Add overlay parameter to control x/y separation in auto-scale mode
-- INPUT/OVERLAY: Revive/rewrite Keyboard Overlay and OSK Toggle. Add keyboard overlay preset, keyboard submenu, 
+- INPUT/OVERLAY: Revive/rewrite Keyboard Overlay and OSK Toggle. Add keyboard overlay preset, keyboard submenu,
 and osk_toggle hotkey. Use overlay caching for osk_toggle.
 - INPUT/OVERLAY: Overlay Caching. Adds overlay_cache_ptr to keep a disabled overlay in memory when it's expected to be shown again.
 Most input_overlay_deinit calls are replaced with input_overlay_unload, which caches the overlay unless initing/deiniting core or disabling overlays.
@@ -253,7 +259,7 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - MENU/XMB: Stop showing playlist entry index outside of playlists
 - MENU/XMB: Fix menu focus issue when returning from "Set Core Association" if playlist index is greater than the previous menu
 - MENU/EXPLORE: Prevent flashing when browsing fullscreen thumbnails
-- MENU/EXPLORE: Match label ticker length behavior with playlists 
+- MENU/EXPLORE: Match label ticker length behavior with playlists
 - MENU/SOUNDS: Fix certain audio drivers from hanging when menu pause is enabled with menu sounds
 - MENU/SOUNDS: Fix menu sounds stopping after fullscreen toggle / video reinit
 - MENU/QT/WIMP: Cleanup Desktop Menu welcome text
@@ -263,7 +269,7 @@ being able to do the expected tvOS behavior of "backing out" of the app.
 - MICROPHONE/SDL: Add `sdl2` microphone driver.
 - MICROPHONE/WASAPI: Add `wasapi` microphone driver.
 - MOBILE: On mobile in portrait mode, don't override custom viewport
-- NETWORKING: Enhance netpacket interface 
+- NETWORKING: Enhance netpacket interface
 - NETWORKING/NETPLAY: Enable core host to refuse connecting new players to limit the number of connected players
 - NETWORKING/NETPLAY: Enable a core to flush outgoing packets and read incoming packets without waiting for the next frame (can be used for lower latency or blocking reads)
 - OPENDINGUX/RG350: Enable networking for RG350
@@ -483,7 +489,7 @@ after the current event handler, which then did exactly the same. Fixes issue #1
 - STATICALLY LINKED/SALAMANDER: Fix salamander config save on fork for static platforms
 - TVOS/VULKAN/MOLTENVK: Vulkan on tvOS
 - VIDEO: Allow manual video swap interval forcing. The addition of auto swap interval effectively prevented manual forcing, which is beneficial when the rate is not reported properly. Therefore use the interval in the calculation only when using automatic interval.
-- VULKAN: Fix crash when using multiple physical devices and HW core (#14889) 
+- VULKAN: Fix crash when using multiple physical devices and HW core (#14889)
 - VULKAN: Detect if wrong PhysicalDevice is returned.
 - VULKAN: Actually query physical device before creating core device.
 - VULKAN: Define and implement v2 of context negotiation interface
@@ -515,7 +521,7 @@ So this removes the artificial clamping that was being done to desired_swapchain
 - CLI: Reformatted --features to require less rows and to be more consistent
 - CLI: Added -V shorthand for --version
 - CLI: Tab removal + whitespace nits
-- CONFIG/MIDI: Prevent MIDI startup error with old configurations 
+- CONFIG/MIDI: Prevent MIDI startup error with old configurations
 - D3D11: Fix when using shaders with TATE mode arcades etc
 - D3D12: Fix when using shaders with TATE mode arcades etc
 - D3D12: Added support for break on errors  (development aid - define DEVICE_DEBUG to use)
@@ -572,7 +578,7 @@ menu_explore_get_entry_playlist_index() returns -1 on invalid entries, but the v
 - OSX/MACOS: Fixed Cocoa keyboard not allowing to map Analog stick
 - PS2: Use the recently created ps2_drivers which makes easier the loading and init of all the drivers: Memory Card, USB, HDD, Audio, Controllers
 - PS2: Adds exFat support for USB, and probably solves some unexpected issues when using an HDD driver for booting cores/games.
-- SDL GFX: Fix no menu on start/blank screen issue. 
+- SDL GFX: Fix no menu on start/blank screen issue.
 - SRAM: Don't init SRAM saving without content (gets rid of the redundant logging)
 
 # 1.13.0
@@ -664,7 +670,7 @@ If there is no thumbnail with title, find the thumbnail image with rom-name. Thi
 - MIST/STEAM/STEAMDECK: Don't expose Black Frame Insertion (BFI) if we are running on a Steam Deck
 - NETWORKING/WINDOWS: Disable poll support for MSVC 2010 and earlier. WSAPoll is not supported on Windows XP and earlier.
 - NETWORKING/WIIU: Fix socket_connect_with_timeout for WIIU
-- NETWORKING/WIIU: Fixes RetroAchievements login 
+- NETWORKING/WIIU: Fixes RetroAchievements login
 - NETWORKING/WIIU: Fixes other online updater functionality
 - SAVESTATES/NOTIFICATIONS: Add delay to savestate notifications, so that GPU savestate screenshots stay untouched
 - SAVESTATES/SCREENSHOTS: Avoid 'video_gpu_screenshot' with savestates. Allow GPU screenshots with savestates only when there is no other way of getting a screenshot.
@@ -688,7 +694,7 @@ If there is no thumbnail with title, find the thumbnail image with rom-name. Thi
 - 3DS: Only enable internal counter with CONSOLE_LOG defined
 - 3DS: Set default bottom font values
 - 3DS: Fix CIA installation issues
-- 3DS: Support latest libctru 
+- 3DS: Support latest libctru
 - ANDROID: Add HAVE_ACCESSIBILITY
 - ANDROID: Gingerbread support
 - ANDROID: Touchpads support
@@ -765,7 +771,7 @@ prevents it from being overwritten/deleted while the program is still running.
 - MENU: Allow changing savestate slots with left/right on save/load
 - MENU: Add 'Ago' to playlist last played styles
 - MENU: Add proper icons for shader items
-- MENU/MATERIALUI: Add icon for 'Download Thumbnails' 
+- MENU/MATERIALUI: Add icon for 'Download Thumbnails'
 - MENU/XMB: Add options for hiding header and horizontal title margin
 - MENU/XMB: Dynamic wallpaper fixes
 - MENU/XMB: Add Daite XMB Icon Theme
@@ -807,7 +813,7 @@ prevents it from being overwritten/deleted while the program is still running.
 - NETWORK/NETPLAY: Special saves directory for client
 - NETWORK/NETPLAY: Ensure current content is reloaded before joining a host
 - NETWORK/NETPLAY: Fix client info devices index
-- NETWORK/NETPLAY: Fix input for some cores when hosting 
+- NETWORK/NETPLAY: Fix input for some cores when hosting
 - NETWORK/NETPLAY: Memory leak fixes
 - NETWORK/NETPLAY: Force a core update when starting netplay
 - NETWORK/NETPLAY: Fix NAT traversal announce for HAVE_SOCKET_LEGACY platforms
