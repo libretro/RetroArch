@@ -709,11 +709,33 @@ static int menu_displaylist_parse_core_info(
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;
-      bool update_missing_firmware   = false;
-      bool set_missing_firmware      = false;
+      uint8_t flags                   = content_get_flags();
+      bool update_missing_firmware    = false;
+      bool set_missing_firmware       = false;
+      bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
+      bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
+      char tmp_path[PATH_MAX_LENGTH];
 
       firmware_info.path             = core_info->path;
-      firmware_info.directory.system = settings->paths.directory_system;
+
+      /* If 'System Files are in Content Directory' is enabled and content is inited,
+       * adjust the path to check for firmware files */
+      if (systemfiles_in_content_dir && content_is_inited)
+      {
+         size_t len;
+
+         strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
+         path_basedir(tmp_path);
+
+         /* Removes trailing slash, doesn't really matter but it's more consistent with how
+          * the path is stored and displayed without 'System Files are in Content Directory' */
+         len = strlen(tmp_path);
+         if (tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
+            tmp_path[len - 1] = '\0';
+         firmware_info.directory.system = tmp_path;
+      }
+      else
+         firmware_info.directory.system = settings->paths.directory_system;
 
       update_missing_firmware         = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
@@ -736,6 +758,25 @@ static int menu_displaylist_parse_core_info(
          tmp[  len] = ':';
          tmp[++len] = ' ';
          tmp[++len] = '\0';
+         if (menu_entries_append(list, tmp, "",
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+            count++;
+
+         /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
+         if (systemfiles_in_content_dir)
+         {
+            len = strlcpy(tmp,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY), 
+                  sizeof(tmp));
+            if (menu_entries_append(list, tmp, "",
+                  MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+               count++;
+         }
+
+         /* Show the path that was checked */
+         len = snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
+               firmware_info.directory.system);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
