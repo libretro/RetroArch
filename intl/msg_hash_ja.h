@@ -549,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "現在インストール済みのコアの変更を防止します。コンテンツが特定のコアのバージョン (例: アーケード ROM セット) を必要とする場合、望ましくない更新を避けるために使用されることがあります。"
+   "現在インストールされているコアの変更を防止します。コンテンツが特定のコアバージョン (例: アーケード ROM セット) を必要とする場合に、望ましくない更新を回避するために使用されることがあります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -1885,6 +1885,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "黒フレーム挿入"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "フレーム間に黒フレームを挿入します。CRT スキャンをエミュレートすることでモーションブラーを大幅に減らすことができますが、明るさが減少します。1 以上のスワップ間隔 (自動は可)、フレーム遅延または正確なコンテンツフレームレートに同期と組み合わせないでください。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "フレーム間に黒フレームを挿入し、動きをより鮮明にします。現在のディスプレイのリフレッシュレートに指定されたオプションのみを使用してください。144Hz、165Hz など、60Hz の倍数ではないリフレッシュレートでは使用できません。1 以上のスワップ間隔、フレーム遅延または正確なフレームレートに同期と組み合わせないでください。システムの VRR をオンのままにす[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
@@ -4245,15 +4253,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
-   "インストールされているコア情報の永続的なローカルキャッシュを維持します. ディスクへのアクセスが遅いプラットフォームでの読み込み時間を大幅に短縮します."
+   "インストールされているコア情報の永続的なローカルキャッシュを維持します。ディスクアクセスが遅いプラットフォームでの読み込み時間を大幅に短縮します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "コア情報のステートセーブ機能をバイパス"
+   "コア情報のステートセーブ機能を無視"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "コア情報のステートセーブ機能を無視するかどうかを指定し、関連する機能 (先行実行、巻き戻しなど) を試すことができます。"
+   "コア情報のステートセーブ機能の対応の有無を無視するかどうかを指定し、関連する機能 (先行実行、巻き戻しなど) を試すことができます。"
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4279,7 +4287,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
-   "インストールされているコアのオフラインでの管理(バックアップ, 復元, 削除など)を行い, コア情報を表示します. "
+   "インストールされているコアのオフライン管理タスク (バックアップ, 復元, 削除など) およびコア情報の表示を行います。"
    )
 #ifdef HAVE_MIST
 MSG_HASH(
@@ -4346,7 +4354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "コアを閉じたり RetroArch を終了したりするとき、アクティブな入力リマップファイルに変更を保存します。"
+   "コアを閉じたり RetroArch を終了したりする際、アクティブな入力リマップファイルに変更を保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -4354,15 +4362,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   "カスタマイズされたコアオプションを起動時にデフォルトでロードします。"
+   "起動時にカスタマイズされたコアオプションをデフォルトでロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "自動的に優先構成ファイルをロード"
+   "自動的に優先設定ファイルをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   "カスタマイズされた設定を起動時にロードします。"
+   "起動時にカスタマイズされた設定をロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -4370,7 +4378,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   "カスタマイズされたコントロールを起動時にロードします。"
+   "起動時にカスタマイズされたコントロールをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -5249,7 +5257,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-   "装飾されたアニメーション、通知、インジケータとコントロールを使用します。"
+   "装飾されたアニメーション、通知、インジケータおよびコントロールを使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
@@ -5261,19 +5269,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "グラフィックウィジェットスケール優先 (フルスクリーン)"
+   "グラフィックウィジェット表示倍率優先設定 (フルスクリーン)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "フルスクリーンモードで表示ウィジェットを描画する際に、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   "フルスクリーンモードで表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューから切り離して独立させ、拡大または縮小する場合に使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "グラフィックウィジェットスケール優先 (ウィンドウ)"
+   "グラフィックウィジェット表示倍率優先設定 (ウィンドウ)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "ウィンドウモードで表示ウィジェットを描画する際に、手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   "ウィンドウモードで表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューから切り離して独立させ、拡大または縮小する場合に使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -6222,27 +6230,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "[コア優先構成を保存] を表示"
+   "[コア優先設定を保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "[優先構成] メニューに [コア優先構成を保存] オプションを表示します。"
+   "[優先設定] メニューに [コア優先設定を保存] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "[コンテンツディレクトリ優先構成を保存] を表示"
+   "[コンテンツディレクトリ優先設定を保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "[優先構成] メニューに [コンテンツディレクトリ優先構成を保存] オプションを表示します。"
+   "[優先設定] メニューに [コンテンツディレクトリ優先設定を保存] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "[ゲーム優先構成を保存] を表示"
+   "[ゲーム優先設定を保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "[優先構成] メニューに [ゲーム優先構成を保存] オプションを表示します。"
+   "[優先設定] メニューに [ゲーム優先設定を保存] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
@@ -7232,7 +7240,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
-   "オンラインアップデートを実行するときに, インストールされているコアのバックアップを自動的に作成します. 更新で問題が発生した場合, 動作するコアに簡単に戻せるようになります."
+   "オンラインアップデートを実行する際に、インストールされているコアのバックアップを自動的に作成します。更新で問題が発生した場合、動作するコアに簡単にロールバックできるようになります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -8738,7 +8746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "現在のコンテンツのオプション優先構成を保存または削除します。"
+   "現在のコンテンツのオプション優先設定を保存または削除します。"
    )
 
 /* Quick Menu > Options > Manage Core Options */
@@ -9535,15 +9543,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
-   "アクティブな優先構成ファイル"
+   "アクティブな優先設定ファイル"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
-   "現在使用中の優先構成ファイルです。"
+   "現在使用中の優先設定ファイルです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
-   "優先構成ファイルをロード"
+   "優先設定ファイルをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
@@ -9551,7 +9559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
-   "優先構成に名前を付けて保存"
+   "優先設定に名前を付けて保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
@@ -9607,7 +9615,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
-   "優先構成をアンロード"
+   "優先設定をアンロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
@@ -11233,7 +11241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "ナビゲーションバーを自動的に回転"
+   "ナビゲーションバーの自動回転"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
@@ -12114,7 +12122,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "指定したバッファリングモードを明示的に使用するようビデオドライバに指定します. "
+   "指定されたバッファリングモードを明示的に使用するようにビデオドライバに指示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -12134,7 +12142,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   "指定したバッファリングモードを明示的に使用するようビデオドライバに指定します. "
+   "指定されたバッファリングモードを明示的に使用するようにビデオドライバに指示します。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
@@ -12895,7 +12903,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LATEST_CORE_INSTALLED,
-   "すでに最新バージョンがインストール済み: "
+   "既に最新バージョンがインストールされています: "
    )
 MSG_HASH(
    MSG_UPDATING_CORE,
@@ -13275,7 +13283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
-   "ディレクトリの作成に失敗しました"
+   "ディレクトリの作成に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
@@ -13495,7 +13503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_OVERRIDE_FILENAME,
-   "優先構成ファイル名を入力"
+   "優先設定ファイル名を入力"
    )
 MSG_HASH(
    MSG_INPUT_REMAP_FILENAME,
@@ -13615,31 +13623,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
-   "優先構成ファイルの保存に失敗しました。"
+   "優先設定ファイルの保存に失敗しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_REMOVING,
-   "優先構成の削除に失敗しました。"
+   "優先設定の削除に失敗しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-   "優先構成を正常に保存しました。"
+   "優先設定を正常に保存しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
-   "優先構成を正常に削除しました。"
+   "優先設定を正常に削除しました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
-   "優先構成を正常にアンロードしました。"
+   "優先設定を正常にアンロードしました。"
    )
 MSG_HASH(
    MSG_OVERRIDES_NOT_SAVED,
-   "保存するものがありません。優先構成は保存されません。"
+   "保存するものがありません。優先設定は保存されません。"
    )
 MSG_HASH(
    MSG_OVERRIDES_ACTIVE_NOT_SAVING,
-   "保存されません。優先構成がアクティブです。"
+   "保存されません。優先設定がアクティブです。"
    )
 MSG_HASH(
    MSG_PAUSED,
@@ -14359,7 +14367,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_BACKUP_ALREADY_EXISTS,
-   "インストールされているコアのバックアップは既に存在します: "
+   "インストール済みコアのバックアップは既に存在します: "
    )
 MSG_HASH(
    MSG_BACKING_UP_CORE,
@@ -14509,7 +14517,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "手動スケーリング倍率オーバーライドを適用します。[グラフィックウィジェットの自動拡大] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   "表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
@@ -14958,7 +14966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOCALAP_NOT_RUNNING,
-   "Wi-Fi アクセスポイントが動作してません"
+   "Wi-Fi アクセスポイントが動作していません"
    )
 MSG_HASH(
    MSG_LOCALAP_STARTING,
