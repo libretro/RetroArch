@@ -2079,7 +2079,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   "画像がディスプレイ上で正しく中央寄せされていない場合はこのオプションをサイクルしてください。"
+   "画像がディスプレイ上で正しく中央寄せされていない場合はこのオプションを微調整してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
@@ -2087,7 +2087,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "これらのオプションを循環させて, ポーチの設定を調整し, 画像サイズを変更します."
+   "これらのオプションを微調整し、ポーチの設定を合わせ画像のサイズを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -3245,11 +3245,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   "ターボ周期"
+   "ターボ間隔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "ターボを有効にしたボタンが押されている周期 (フレーム単位) です。"
+   "ターボを有効にしたボタンが押される間隔 (フレーム単位) です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -3257,7 +3257,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "ターボ期間中にボタンを押したままにしておくフレーム数です. この値がターボ期間と同じかそれ以上であれば, ボタンは離されず押したままになります."
+   "ターボ間隔中にボタンを押したままにしておくフレーム数です。この値がターボ間隔と同じかそれ以上であれば、ボタンは離されず押したままになります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3281,11 +3281,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "2 ボタン操作のクラシックモードです。ボタンを押したまま連射ボタンをタップすると、プレスリリースシーケンスが有効になります。\n連射ボタンは設定/入力/ポート 1 コントロールで割り当てることができます。"
+   "2 ボタン操作のクラシックモードです。ボタンを押したままターボボタンをタップすると、プレスリリースシーケンスが有効になります。\n連射ボタンは設定/入力/ポート 1 コントロールで割り当てることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "モードを切り替えます。ターボボタンを一度押すと、選択されたデフォルトボタンのプレスリリースシーケンスが有効になり、もう一度押すとオフになります。\nターボボタンは設定/入力/ポート 1 コントロールで割り当てることができます。"
+   "切り替えモードです。ターボボタンを一度押すと、選択されたデフォルトボタンのプレスリリースシーケンスが有効になり、もう一度押すとオフになります。\nターボボタンは設定/入力/ポート 1 コントロールで割り当てることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
@@ -3502,7 +3502,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "RetroArch を閉じ、すべてのセーブデータと設定ファイルがディスクにフラッシュされるようにします。"
+   "RetroArch を閉じ、すべてのセーブデータと設定ファイルがディスクに保存されるようにします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -3866,7 +3866,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "AIサービス"
+   "AI サービス"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
@@ -5273,7 +5273,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "フルスクリーンモードで表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューから切り離して独立させ、拡大または縮小する場合に使用することができます。"
+   "フルスクリーンモードで表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューのそれから切り離して独立させ、拡大または縮小する場合に使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
@@ -5281,7 +5281,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "ウィンドウモードで表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューから切り離して独立させ、拡大または縮小する場合に使用することができます。"
+   "ウィンドウモードで表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューのそれから切り離して独立させ、拡大または縮小する場合に使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -6158,11 +6158,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "[ディスクへのフラッシュオプション] を表示"
+   "[オプションを強制的にディスクに保存] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "[オプション > コアオプションの管理] メニューに [ディスクへのフラッシュオプション] エントリーを表示します。"
+   "[オプション > コアオプションの管理] メニューに [オプションを強制的にディスクに保存] エントリーを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -6425,7 +6425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
-   "[AIサービス] を表示"
+   "[AI サービス] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
@@ -8723,7 +8723,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-   "優先構成"
+   "優先設定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -8801,11 +8801,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
-   "ディスクへのフラッシュオプション"
+   "オプションを強制的にディスクに保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
-   "現在の設定を強制的にアクティブなオプションファイルに書き込むようにします。コアのバグによってフロントエンドが不適切にシャットダウンされた場合でも、オプションが確実に保持されるようにします。"
+   "現在の設定を強制的にアクティブなオプションファイルに書き込みます。コアのバグによってフロントエンドが不適切にシャットダウンされた場合でも、オプションが確実に保持されます。"
    )
 
 /* - Legacy (unused) */
@@ -9555,7 +9555,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
-   "優先設定ファイルをロードして現在の構成を置き換えます。"
+   "優先設定ファイルをロードして現在の設定を置き換えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
@@ -9780,7 +9780,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
-   "サムネイルの周期表示"
+   "サムネイル切り替え"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
@@ -10626,7 +10626,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "プレイリストの右上に表示するサムネイルの種類です。このサムネイルの種類はレトロパッドの Y を押すことでサイクルすることができます。"
+   "プレイリストの右上に表示するサムネイルの種類です。このサムネイルの種類はレトロパッドの Y を押すことで切り替えることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -14067,11 +14067,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
-   "入力リマップオプションを次の場所に保存しました:"
+   "入力リマップオプションを保存しました to:"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSH_FAILED,
-   "入力リマップオプションを次の場所に保存できませんでした:"
+   "入力リマップオプションの保存に失敗しました to:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
@@ -14517,7 +14517,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。メニュー自体から独立して、装飾された通知、インジケータ、およびコントロールのサイズを増減するために使用することができます。"
+   "表示ウィジェットを描画する際に、手動で設定した表示倍率を適用します。[グラフィックウィジェットの自動スケーリング] が無効になっている場合にのみ適用されます。装飾された通知、インジケータおよびコントロールの表示倍率をメニューのそれから切り離して独立させ、拡大または縮小する場合に使用することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
