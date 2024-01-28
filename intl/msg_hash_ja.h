@@ -1438,7 +1438,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "ファイルがあるデフォルトのディレクトリを変更します。"
+   "ファイルが置かれるデフォルトのディレクトリを変更します。"
    )
 
 /* Core option category placeholders for icons */
@@ -1963,6 +1963,14 @@ MSG_HASH(
    "黒フレーム挿入 - 暗フレーム"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "黒フレーム挿入シーケンス全体の黒フレーム数を調整します。多くするほど動きが明瞭になり、少なくするほど輝度が高くなります。120Hz では、動作する合計黒フレーム数が 1 つしか確保できないため、適用されません。可能な限り高く設定すると、選択されたリフレッシュレートで利用可能な最大値に制限されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "黒フレーム挿入シーケンスで表示される黒フレーム数を調整します。黒フレームを増やすほど動きが鮮明になりますが、明るさが低下します。120Hz の場合、追加の 60Hz フレームを 合計 1 つしか確保できないため、黒でなければ黒フレーム挿入を有効化できません。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU スクリーンショット"
    )
@@ -2136,7 +2144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "特定のビデオの回転を強制します。この回転はコアが設定する回転に追加されます。"
+   "ビデオの向きを特定の角度で強制的に回転させます。この回転はコアが設定する回転に追加されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
@@ -2144,7 +2152,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "OS から特定の画面の向きを強制します。"
+   "オペレーティングシステムから画面の向きを特定の角度で強制的に回転させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -2488,7 +2496,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "ディスプレイの最大輝度(cd/m2) を設定します。ディスプレイの最大輝度については RTings を参照してください。"
+   "ディスプレイの最大輝度 (cd/m2) を設定します。ディスプレイの最大輝度については RTings を参照してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -3415,7 +3423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "有効にすると、情報ボタンは無視されます。"
+   "有効にすると、情報ボタンの押下が無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
@@ -3423,7 +3431,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "有効にすると、検索ボタンは無視されます。"
+   "有効にすると、検索ボタンの押下が無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3471,6 +3479,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "割り当てられた [ホットキーの有効化] キーを押したあと、通常の入力がブロックされるまでにフレーム単位で遅延を追加します。[ホットキーの有効化] キーが別のアクション (例: レトロパッド [セレクト])にマッピングされたときに、そのキーからの通常の入力をキャプチャできるようにします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "ホットキーデバイスの種類の統合"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "キーボードとコントローラーのいずれかの種類のデバイスに [ホットキーの有効化] が設定されている場合、すべてのホットキーをブロックします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -5750,7 +5766,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "メニュースクロール加速"
+   "メニュースクロール加速度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -5758,7 +5774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "メニュースクロールの遅延"
+   "メニュースクロール遅延"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -7443,7 +7459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "圧縮ファイルに関連付けられた項目をプレイリストで検索するときは, 'ファイル名'+'内容'ではなく, アーカイブファイル名のみを一致させます. 圧縮ファイルをロードするときに重複するコンテンツ履歴項目を避けるためにこれを有効にしてください."
+   "圧縮ファイルに関連付けられたエントリーをプレイリストで検索する際、[ファイル名] + [コンテンツ] の代わりにアーカイブファイル名のみを一致させます。有効にすると、圧縮ファイルをロードするときにコンテンツ履歴のエントリーの重複を回避することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -9294,7 +9310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "現在のディスクを取り出し、ファイルシステムから新しいディスクを選択して挿入し、仮想ディスクトレイを閉じます。\n注意: これは古い機能です。代わりに、M3U プレイリストを介して複数ディスクタイトルをロードすることをお勧めします。これにより、[ディスクの取り出し/挿入] と [現在のディスクインデックス] オプションを使用してディスクの選択が可能になり[...]"
+   "現在のディスクを取り出し、ファイルシステムから新しいディスクを選択して挿入したあと、仮想ディスクトレイを閉じます。\n注意: これは古い機能です。代わりに、M3U プレイリストを介して複数ディスクタイトルをロードすることをお勧めします。これにより、[ディスクの取り出し/挿入] と [現在のディスクインデックス] オプションを使用してディスクの選択が可能[...]"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
@@ -10654,7 +10670,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
-   "サムネイルの遅延 (ms)"
+   "サムネイル遅延 (ms)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
@@ -10876,7 +10892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-   "タブ間をスクロールしたときのアニメーション. "
+   "タブ間をスクロールする際のアニメーションです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
@@ -12014,7 +12030,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
-   "最近の履歴プレイリストからコンテンツを選択します."
+   "履歴プレイリストからコンテンツを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
@@ -14625,7 +14641,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-   "非フリッカー"
+   "ちらつき抑制"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,

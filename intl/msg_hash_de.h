@@ -194,8 +194,24 @@ MSG_HASH(
    "Neu starten"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "RetroArch-Anwendung neu starten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Beenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist aktiviert."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, ohne die Konfiguration zu speichern in jedem Fall. Auf Unix-ähnlichen Systemen ermöglicht SIGINT/SIGTERM eine saubere Deinitialisierung, welche das Speichern der Konfigurationsdatei mit einschließt, falls aktiviert."
    )
 
 /* Main Menu > Load Core */
@@ -1680,6 +1696,10 @@ MSG_HASH(
    "Menütreiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Zu verwendender Menütreiber. Neustart erforderlich."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
    "XMB ist eine RetroArch-GUI, die wie ein Konsolenmenü der 7. Generation aussieht. Sie kann dieselben Funktionen wie Ozone unterstützen."
    )
@@ -1791,6 +1811,14 @@ MSG_HASH(
    "Schwarzes Bild einfügen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Fügt Schwarzbild(er) zwischen Frames ein. Kann Bewegungsunschärfe durch Emulation von CRT-Ausgabe erheblich reduzieren, aber auf Kosten der Helligkeit. Nicht kombinieren mit Swap-Intervall > 1 (Automatisch ist ok), Bildverzögerung oder mit exakter Inhaltssignalfrequenz synchronisieren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Fügt Schwarzbild(er) zwischen Frames für verbesserte Bewegungsschärfe ein. Nur die Option benutzen, die für die aktuelle Aktualisierungsrate bestimmt ist. Nicht für die Verwendung bei Aktualisierungsraten mit nicht multiplen 60 Hz wie 144 Hz, 165Hz, usw. Nicht kombinieren mit Swap-Intervall > 1 (Automatisch ist ok), Bildverzögerung oder mit exakter Inhaltssignalfrequenz synchronisieren. System-VRR einschalten ist ok, nur nicht diese Einstellung. Wenn -irgendein- temporäres Bild-Nachleucht[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
    "Aus"
    )
@@ -1857,6 +1885,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
    "Schwarzbild einfügen - Dunkle Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Passt die Anzahl der Schwarzbilder in Summe der BFI-Ausgabe-Sequenz an. Mehr entspricht einer höheren Bewegungsschärfe, weniger entspricht einer höheren Helligkeit. Nicht anwendbar bei 120 Hz, da es nur 1 BFI-Frame gibt, mit dem insgesamt gearbeitet werden kann. Die Einstellungen höher als möglich beschränken sich auf die maximal mögliche gewählte Aktualisierungsrate."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Stellt die Anzahl von Bildern in der BFI-Sequenz ein, welche schwarz sind. Mehr schwarze Bilder erhöhen die Bewegungsschärfe, verringern aber die Helligkeit. Nicht anwendbar bei 120 Hz, da es insgesamt nur einen Gesamtframe bei 60 Hz gibt, somit muß es schwarz sein, sonst wäre BFI überhaupt nicht aktiv."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -7523,6 +7559,18 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Dateibrowser"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   "Das Startverzeichnis für den Dateibrowser festlegen."
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Konfigurationsdateien"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   "Die Standardkonfigurationsdatei wird in diesem Verzeichnis gespeichert."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
