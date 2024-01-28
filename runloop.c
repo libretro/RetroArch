@@ -1971,6 +1971,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                if (!string_is_empty(fullpath))
                {
+                  size_t len;
                   char tmp_path[PATH_MAX_LENGTH];
 
                   if (string_is_empty(dir_system))
@@ -1979,12 +1980,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                   strlcpy(tmp_path, fullpath, sizeof(tmp_path));
                   path_basedir(tmp_path);
+
+                  /* Removes trailing slash */
+                  len = strlen(tmp_path);
+                  if (tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
+                     tmp_path[len - 1] = '\0';
+
                   dir_set(RARCH_DIR_SYSTEM, tmp_path);
                }
 
                *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
                RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
-                     dir_system);
+                     *(const char**)data);
             }
             else
             {

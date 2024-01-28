@@ -528,6 +528,14 @@ MSG_HASH(
    "Firmware"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Note: 'System Files are in Content Directory' is currently enabled."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Looking in: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Missing, Required:"
    )
