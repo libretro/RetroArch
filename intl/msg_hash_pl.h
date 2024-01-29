@@ -524,6 +524,14 @@ MSG_HASH(
    "Oprogramowanie układowe"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Uwaga: 'Pliki systemowe są w katalogu zawartości' są obecnie włączone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Patrz w: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Brakujące, wymagane:"
    )

@@ -524,6 +524,14 @@ MSG_HASH(
    "Determinístico (guardado/carga, rebobinado, reducción predictiva de latencia, juego en red)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   " - Nota: La opción Guardar archivos del sistema en el directorio del contenido se encuentra activada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Buscando en: «%s»"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Archivo no encontrado, necesario:"
    )
