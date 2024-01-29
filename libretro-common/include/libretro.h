@@ -747,7 +747,6 @@ enum retro_mod
  * such as errors or the result of long-running operations.
  * For trivial messages or logging, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr.
  *
- * @example
  * \code{.c}
  * void set_message_example(void)
  * {
