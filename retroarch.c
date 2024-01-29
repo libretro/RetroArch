@@ -8342,6 +8342,17 @@ bool accessibility_speak_priority(
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
 {
+   const char *voice = get_user_language_iso639_1(false);
+   return narrator_speak_priority(accessibility_enable, voice, accessibility_narrator_speech_speed, speak_text, priority);
+}
+
+bool narrator_speak_priority(
+      bool accessibility_enable,
+      const char *voice,
+      unsigned accessibility_narrator_speech_speed,
+      const char *speak_text,
+      int priority)
+{
    access_state_t *access_st   = access_state_get_ptr();
    if (is_accessibility_enabled(
             accessibility_enable,
@@ -8353,21 +8364,10 @@ bool accessibility_speak_priority(
       RARCH_LOG("Spoke: %s\n", speak_text);
 
       if (frontend && frontend->accessibility_speak)
-         return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
+         return frontend->accessibility_speak(voice, accessibility_narrator_speech_speed, speak_text,
                priority);
 
       RARCH_LOG("Platform not supported for accessibility.\n");
-      /* The following method is a fallback for other platforms to use the
-         AI Service url to do the TTS.  However, since the playback is done
-         via the audio mixer, which only processes the audio while the
-         core is running, this playback method won't work.  When the audio
-         mixer can handle playing streams while the core is paused, then
-         we can use this. */
-#if 0
-#if defined(HAVE_NETWORKING)
-      return accessibility_speak_ai_service(speak_text, voice, priority);
-#endif
-#endif
    }
 
    return true;

@@ -111,7 +111,7 @@ typedef struct frontend_ctx_driver
    const char* (*get_cpu_model_name)(void);
    enum retro_language (*get_user_language)(void);
    bool (*is_narrator_running)(void);
-   bool (*accessibility_speak)(int speed,
+   bool (*accessibility_speak)(const char* voice, int speed,
          const char* speak_text, int priority);
    bool (*set_gamemode)(bool on);
 

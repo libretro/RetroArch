@@ -884,11 +884,10 @@ static bool is_narrator_running_macos(void)
    return (kill(speak_pid, 0) == 0);
 }
 
-static bool accessibility_speak_macos(int speed,
+static bool accessibility_speak_macos(const char* voice, int speed,
       const char* speak_text, int priority)
 {
    int pid;
-   const char *voice      = get_user_language_iso639_1(false);
    char* language_speaker = accessibility_mac_language_code(voice);
    char* speeds[10]       = {"80",  "100", "125", "150", "170", "210",
                              "260", "310", "380", "450"};

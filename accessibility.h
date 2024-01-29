@@ -143,6 +143,13 @@ bool accessibility_speak_priority(
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority);
 
+bool narrator_speak_priority(
+      bool accessibility_enable,
+      const char *voice,
+      unsigned accessibility_narrator_speech_speed,
+      const char *speak_text,
+      int priority);
+
 access_state_t *access_state_get_ptr(void);
 
 #endif
