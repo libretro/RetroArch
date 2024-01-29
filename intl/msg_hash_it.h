@@ -516,6 +516,14 @@ MSG_HASH(
    "Deterministico (Salva/Carica, Riavvolgi, Run-Ahead, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Nota: 'File di sistema sono nella cartella contenuti' è attualmente abilitato."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Guardando: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Mancante, Richiesto:"
    )

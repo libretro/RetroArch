@@ -516,6 +516,14 @@ MSG_HASH(
    "Determinisztikus (mentés/visszatöltés, visszatekerés, run-ahead, netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Megjegyzés: a 'Rendszerfájlok a tartalom könyvtárában' beállítás be van kapcsolva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Keresés itt: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Hiányzik, elvárt:"
    )
