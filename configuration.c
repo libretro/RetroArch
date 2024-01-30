@@ -1532,9 +1532,9 @@ static struct config_array_setting *populate_settings_array(
 #endif
 
 #ifdef HAVE_WEBHOOKS
-   SETTING_ARRAY("webhook_url",              settings->arrays.webhook_url, false, NULL, true);
-   SETTING_ARRAY("webhook_code_url",         settings->arrays.webhook_code_url, false, NULL, true);
-   SETTING_ARRAY("webhook_token_url",        settings->arrays.webhook_token_url, false, NULL, true);
+   SETTING_ARRAY("webhook_url",              settings->arrays.webhook_url, false, DEFAULT_WEBHOOKS_URL, true);
+   SETTING_ARRAY("webhook_code_url",         settings->arrays.webhook_code_url, false, DEFAULT_WEBHOOKS_CODE_URL, true);
+   SETTING_ARRAY("webhook_token_url",        settings->arrays.webhook_token_url, false, DEFAULT_WEBHOOKS_TOKEN_URL, true);
    SETTING_ARRAY("webhook_usercode",         settings->arrays.webhook_usercode, false, NULL, true);
    SETTING_ARRAY("webhook_accesstoken",      settings->arrays.webhook_accesstoken, false, NULL, true);
    SETTING_ARRAY("webhook_refreshtoken",     settings->arrays.webhook_refreshtoken, false, NULL, true);
