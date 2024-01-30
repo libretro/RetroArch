@@ -54,16 +54,18 @@ static void wpd_send_http_request_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strlcpy(buffer, "Load aborted", sizeof(buffer));
+    strcpy(buffer, "Load aborted", sizeof(buffer));
   }
   else*/ if (error)
   {
-    strlcpy(buffer, error, sizeof(buffer));
+    strncpy(buffer, error, sizeof(buffer));
+    buffer[strlen(error)] = '0';
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strlcpy(buffer, "Server communication error", sizeof(buffer));
+    strncpy(buffer, "Server communication error", sizeof(buffer));
+    buffer[sizeof(buffer)] = '0';
   }
   else if (!data->data || !data->len)
   {
@@ -81,7 +83,8 @@ static void wpd_send_http_request_callback
     }
     else {
       /* Server sent empty response without error status code */
-      strlcpy(buffer, "No response from server", sizeof(buffer));
+      strncpy(buffer, "No response from server", sizeof(buffer));
+      buffer[sizeof(buffer)] = '0';
     }
   }
   else
@@ -165,8 +168,8 @@ static void wpd_set_request_header(async_http_request_t* request)
     return;
   }
 
-  strlcpy(headers, authorization_header, auth_header_len);
-  strlcpy(headers + auth_header_len, access_token, token_len);
+  strncpy(headers, authorization_header, auth_header_len);
+  strncpy(headers + auth_header_len, access_token, token_len);
   
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';

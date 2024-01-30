@@ -59,12 +59,14 @@ static void wc_handle_http_callback
   }
   else */if (error)
   {
-    strlcpy(buffer, error, sizeof(buffer));
+    strncpy(buffer, error, sizeof(buffer));
+    buffer[sizeof(buffer)] = '0';
   }
   else if (!data)
   {
     /* Server did not return HTTP headers */
-    strlcpy(buffer, "Server communication error", sizeof(buffer));
+    strncpy(buffer, "Server communication error", sizeof(buffer));
+    buffer[sizeof(buffer)] = '0';
   }
   else if (!data->data || !data->len)
   {
@@ -82,7 +84,8 @@ static void wc_handle_http_callback
     }
     else {
       /* Server sent empty response without error status code */
-      strlcpy(buffer, "No response from server", sizeof(buffer));
+      strncpy(buffer, "No response from server", sizeof(buffer));
+      buffer[sizeof(buffer)] = '0';
     }
   }
   else
@@ -314,8 +317,8 @@ static void wc_set_request_header
     return;
   }
 
-  strlcpy(headers, authorization_header, auth_header_len + 1);
-  strlcpy(headers + auth_header_len, access_token, token_len + 1);
+  strncpy(headers, authorization_header, auth_header_len + 1);
+  strncpy(headers + auth_header_len, access_token, token_len + 1);
 
   headers[auth_header_len + token_len] = '\r';
   headers[auth_header_len + token_len + 1] = '\n';
