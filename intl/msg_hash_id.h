@@ -496,6 +496,14 @@ MSG_HASH(
    "Berserial (Simpan/Muat, Gerak Mundur)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Catatan: 'Berkas Sistem ada di Direktori Konten' sedang aktif."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Mencari di: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Tidak ditemukan, yang diperlukan:"
    )
