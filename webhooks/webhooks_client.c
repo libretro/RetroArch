@@ -55,7 +55,7 @@ static void wc_handle_http_callback
   /*if (aborted)
   {
     // load was aborted. don't process the response
-    strlcpy(buffer, "Load aborted", sizeof(buffer));
+    str-cpy(buffer, "Load aborted", sizeof(buffer));
   }
   else */if (error)
   {

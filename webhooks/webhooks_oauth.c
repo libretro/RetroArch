@@ -167,7 +167,7 @@ static void woauth_end_http_request
     }
     else {
       // Server sent empty response without error status code
-      strlcpy(buffer, "No response from server", sizeof(buffer));
+      strncpy(buffer, "No response from server", sizeof(buffer));
       buffer[sizeof(buffer)] = '0';
     }
   }
@@ -521,7 +521,7 @@ const char* woauth_get_accesstoken
   const settings_t *settings = config_get_ptr();
   const int EXPIRATION_WINDOW = 1000 * 10 * 5;
 
-  strlcpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
+  strncpy(oauth_code_response.client_id, DEFAULT_CLIENT_ID, sizeof(oauth_code_response.client_id));
   oauth_code_response.client_id[strlen(DEFAULT_CLIENT_ID)] = '0';
 
   retro_time_t now = cpu_features_get_time_usec();
