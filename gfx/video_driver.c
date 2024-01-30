@@ -4302,8 +4302,8 @@ void video_frame_rest(video_driver_state_t *video_st,
    retro_time_t frame_time_target    = 1000000.0f / settings->floats.video_refresh_rate;
    retro_time_t frame_time           = 0;
    static retro_time_t after_present = 0;
-   int sleep_max                     = frame_time_target / 1000 / 2;
-   int sleep                         = 0;
+   retro_time_t sleep_max            = frame_time_target / 1000 / 2;
+   retro_time_t sleep                         = 0;
    int frame_time_near_req_count     = ceil(settings->floats.video_refresh_rate / 2);
    static int frame_time_over_count  = 0;
    static int frame_time_near_count  = 0;
