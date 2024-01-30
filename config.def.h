@@ -206,6 +206,12 @@
 #define DEFAULT_CHEEVOS_VISIBILITY_PROGRESS_TRACKER true
 #endif
 
+#ifdef HAVE_WEBHOOKS
+#define DEFAULT_WEBHOOKS_URL "https://www-dev.play-lab.ca/api/v1/webhooks"
+#define DEFAULT_WEBHOOKS_CODE_URL "https://www-dev.play-lab.ca/oauth2/v2.0/devicecode"
+#define DEFAULT_WEBHOOKS_TOKEN_URL "https://www-dev.play-lab.ca/oauth2/v2.0/token"
+#endif
+
 /* VIDEO */
 
 #if defined(_XBOX360)
