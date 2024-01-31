@@ -1553,7 +1553,6 @@ static void xmb_selection_pointer_changed(
       if (i == selection)
       {
          unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-         unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
 
          /* Update entry index text */
          if (xmb->entry_idx_enabled)
@@ -2694,8 +2693,6 @@ static void xmb_populate_entries(void *data,
    settings_t *settings               = config_get_ptr();
    struct menu_state *menu_st         = menu_state_get_ptr();
    menu_list_t *menu_list             = menu_st->entries.list;
-   bool menu_dynamic_wallpaper_enable = settings
-         ? settings->bools.menu_dynamic_wallpaper_enable : false;
    bool show_entry_idx                = settings
          ? settings->bools.playlist_show_entry_idx : false;
    bool was_db_manager_list           = false;
@@ -4111,7 +4108,7 @@ static int xmb_draw_item(
        * change animation is still in progress while entering a menu */
       if (list == &xmb->selection_buf_old)
       {
-         node->y     = xmb_item_y(xmb, i, current);
+         node->y     = xmb_item_y(xmb, (int)i, current);
          node->alpha = xmb->items_active_alpha;
          node->zoom  = xmb->items_active_zoom;
       }
@@ -6350,7 +6347,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       if (use_smooth_ticker)
       {
-         ticker_smooth.field_width = tmp_len;
+         ticker_smooth.field_width = (unsigned)tmp_len;
          ticker_smooth.src_str     = title_truncated;
          ticker_smooth.dst_str     = tmp;
          ticker_smooth.dst_str_len = sizeof(tmp);
@@ -7414,9 +7411,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
          || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
    {
-      unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-      unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
-
       if (     xmb->is_playlist
             || xmb->is_db_manager_list
             || xmb->is_explore_list

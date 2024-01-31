@@ -3633,7 +3633,6 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool load_dummy_core            = data ? *(bool*)data : true;
             content_ctx_info_t content_info = {0};
-            global_t   *global              = global_get_ptr();
             video_driver_state_t *video_st  = video_state_get_ptr();
             rarch_system_info_t *sys_info   = &runloop_st->system;
             uint8_t flags                   = content_get_flags();
