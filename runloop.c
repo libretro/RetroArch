@@ -4782,6 +4782,7 @@ void runloop_pause_checks(void)
    presence_userdata_t userdata;
 #endif
    video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    bool is_idle                   = (runloop_st->flags & RUNLOOP_FLAG_IDLE)   ? true : false;
@@ -4819,12 +4820,21 @@ void runloop_pause_checks(void)
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
+
+      /* Limit paused frames to video refresh. */
+      runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+            ((video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : settings->floats.video_refresh_rate));
    }
    else
    {
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
+
+      /* Restore frame limit. */
+      runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -6958,12 +6968,6 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
          video_driver_cached_frame();
-
-         /* Limit paused video refresh. */
-         runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
-               ((video_st->video_refresh_rate_original)
-                  ? video_st->video_refresh_rate_original
-                  : settings->floats.video_refresh_rate));
          goto end;
       case RUNLOOP_STATE_MENU:
 #ifdef HAVE_NETWORKING
