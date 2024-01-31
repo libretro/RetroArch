@@ -207,11 +207,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Lopeta RetroArch. Asetusten tallennus poistuessa on käytössä."
+   "Sulje RetroArch. Kokoonpanon tallennus suljettaessa on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Lopeta RetroArch. Asetusten tallennus poistuessa ei ole käytössä."
+   "Sulje RetroArch. Kokoonpanon tallennus suljettaessa ei ole käytössä."
    )
 
 /* Main Menu > Load Core */
@@ -522,6 +522,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Laiteohjelmisto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Huomioi: \"Järjestelmätiedostot ovat sisältökansiossa\" on tällä hetkellä käytössä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Katsotaan: \"%s\""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1045,7 +1053,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   "Lataa olemassa olevat asetukset ja korvaa nykyiset arvot."
+   "Lataa olemassa oleva kokoonpano ja korvaa nykyiset arvot."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1053,7 +1061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   "Korvaa nykyinen asetustiedosto."
+   "Korvaa nykyinen kokoonpanotiedosto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -1061,7 +1069,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   "Tallenna nykyiset asetukset erilliseen tiedostoon."
+   "Tallenna nykyinen kokoonpano erilliseen tiedostoon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -1069,7 +1077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Palauta nykyiset asetukset oletusarvoihin."
+   "Palauta nykyinen kokoonpano oletusarvoihin."
    )
 
 /* Main Menu > Help */
@@ -1258,7 +1266,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   "Tallennetaan asetustiedostoa."
+   "Nauhoituksen kokoonpanotiedosto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
@@ -1793,6 +1801,70 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Mustan ruudun lisäys"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
+   "Ei käytössä"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Näytön 120 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Näytön 180 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Näytön 240 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Näytön 300 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Näytön 360 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Näytön 420 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Näytön 480 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Näytön 540 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Näytön 600 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Näytön 660 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Näytön 720 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Näytön 780 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Näytön 840 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Näytön 900 Hz:n virkistystaajuudelle"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Näytön 960 Hz:n virkistystaajuudelle"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -2793,7 +2865,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "Ohita syötteen sidokset nykyiselle ytimelle asetettujen uusittujen sidosten kanssa."
+   "Ohita syötemääritykset nykyiselle ytimelle määritetyillä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3814,7 +3886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "Tallenna muutokset asetustiedostoon suljettaessa."
+   "Tallenna kokoonpanotiedoston muutokset suljettaessa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -3826,7 +3898,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   "Lataa mukautetut ydinasetukset oletuksena käynnistyksessä."
+   "Lataa mukautetut ydinasetukset oletuksena käynnistettäessä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -3877,7 +3949,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Lajittele tallennukset kansioihin sisällön hakemiston mukaan"
+   "Lajittele tallennukset kansioihin sisältökansioiden perusteella"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -3885,7 +3957,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Lajittele tilatallennukset kansioihin sisällön kansion mukaan"
+   "Lajittele tilatallennukset kansioihin sisältökansioiden perusteella"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -3977,7 +4049,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Lajittele kuvakaappaukset kansioihin sisällön kansion mukaan"
+   "Lajittele kuvankaappaukset kansioihin sisältökansioiden perusteella"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -3985,19 +4057,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Tallenna tallennukset sisällön kansioon"
+   "Tallenna tallennukset sisältönkansioon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Käytä sisältökansiota tiedostotallennusten kansiona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Tallenna tilatallennukset sisällön kansioon"
+   "Tallenna tilatallennukset sisältökansioon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Käytä sisältökansiota tilatallennusten kansiona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Järjestelmätiedostot ovat sisällön kansiossa"
+   "Järjestelmätiedostot ovat sisälltökansiossa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Käytä sisältökansiota järejstelmän kansiona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Tallenna kuvakaappaukset sisällön kansioon"
+   "Tallenna kuvankaappaukset sisältökansioon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Käytä sisältökansiota kuvankaappausten kansiona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -4761,7 +4849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "Näytä ruudulla viesti ladatessa kokoonpanon ohitustiedostoa."
+   "Ilmoita ruudulla kun kokoonpanon ohitustiedostoja ladataan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5466,7 +5554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-   "Näytä \"Ytimen asetukset\"-valinta."
+   "Näytä \"Ytimen asetukset\" -valinta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
@@ -5547,6 +5635,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
    "Näytä \"Tallenna ytimen ohitukset\"-valinta \"Ohitukset\"-valikossa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Näytä \"Tallenna sisältökansion ohitukset\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Näytä \"Tallenna ytimen ohitukset\" -valinta \"Ohitukset\"-valikossa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
@@ -6878,11 +6974,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Asetustiedostot"
+   "Kokoonpanotiedostot"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Oletusarvoinen asetustiedosto talletetaan tähän kansioon."
+   "Oletusarvoinen kokoonpanotiedosto tallennetaan tähän kansioon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -7333,7 +7429,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "Kun käytössä, kaikki alakansiot määritetystä 'sisältökansiosta' sisällytetään skannaukseen."
+   "Kun käytössä, kaikki määritetyn 'sisältökansion' alikansiot sisällytetään skannaukseen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -7867,7 +7963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-   "Asetuksia globaalien kokoonpanoasetusten ohittamiseen."
+   "Globaalien kokoonpanoasetusten ohitusvalinnat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -7886,7 +7982,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "Tallenna tai poista nykyisen sisällön asetuksien ohitukset."
+   "Tallenna tai poista nykyisen sisällön asetusohitukset."
    )
 
 /* Quick Menu > Options > Manage Core Options */
@@ -7896,8 +7992,36 @@ MSG_HASH(
    "Tallenna pelin asetukset"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Tallenna ydinasetukset, jotka koskevat vain nykyistä sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Poista ydinasetukset, jotka koskevat vain nykyistä sisältöä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Tallenna sisällön hakemiston asetukset"
+   "Tallenna sisältökansioasetukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Tallenna ydinasetukset, jotka koskevat kaikkea nykyisen tiedoston kansiosta ladattavaa sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Poista sisältökansioasetukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Poista ydinasetukset, jotka koskevat kaikkea nykyisen tiedoston kansiosta ladattavaa sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   "Aktiivinen asetustiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   "Tällä hetkellä käytössä oleva asetustiedosto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -7948,12 +8072,32 @@ MSG_HASH(
    "Tallenna ytimen uudelleenmääritystiedosto"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Tallenna kohdistustiedosto, joka koskee kaikkea tällä ytimellä ladattavaa sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Poista kohdistustiedosto, joka koskee kaikkea tällä ytimellä ladattavaa sisältöä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "Tallenna sisällön kansion uudelleenmääritystiedosto"
+   "Tallenna sisältökansion uudelleenkohdistustiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Poista pelin sisältökansion uudelleenkohdistustiedosto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Tallenna pelin uudelleenmääritystiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Tallenna kohdistustiedosto, joka koskee vain nykyistä sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Poista kohdistustiedosto, joka koskee vain nykyistä sisältöä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -8474,7 +8618,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "Tallenna nykyisen varjostimen asetukset oletuksena kaikille nykyisen sisältökansion tiedostoille."
+   "Tallenna nykyiset varjostinasetukset oletuksiksi kaikille nykyisen sisältökansion tiedostoille."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
@@ -8513,7 +8657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "Poista sisällön kansion esiasetukset, joita käytetään kaikessa nykyisessä kansiossa olevassa sisällössä."
+   "Poista sisältökansion esiasetukset, joita käytetään kaikessa nykyisen työkansion sisällölle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
@@ -8534,12 +8678,44 @@ MSG_HASH(
 /* Quick Menu > Overrides */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "Aktiivinen ohitustiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "Tällä hetkellä käytössä oleva ohitustiedosto."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "Lataa ohitustiedosto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "Lataa nykyisen korvaava kokoonpano."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "Tallenna ohitukset nimellä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Tallenna nykyinen kokoonpano uutena ohitustiedostona."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Tallenna ytimen ohitukset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Tallenna kokoonpanon ohitustiedosto, joka koskee kaikkea tähän ytimeen ladattua sisältöä. Asetetaan pääasetusten edelle."
+   "Tallenna kokoonpanon ohitustiedosto, joka koskee kaikkea tällä ytimellä ladattavaa sisältöä. Käytetään ensisijaisesti ennen pääkokoonpanoa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Poista ytimen ohitukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Poista kokoonpanon ohitustiedosto, joka koskee kaikkea tällä ytimellä ladattavaa sisältöä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -8547,7 +8723,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Tallenna kokoonpanon ohitustiedosto, joka koskee kaikkea sisältöä, joka on ladattu samasta kansiosta kuin nykyinen tiedosto. Asetetaan pääasetusten edelle."
+   "Tallenna kokoonpanon ohitustiedosto, joka koskee kaikkea nykyisen tiedoston kansiosta ladattavaa sisältöä. Käytetään ensisijaisesti ennen pääkokoonpanoa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Poista sisältökansion ohitukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Poista kokoonpanon ohitustiedosto, joka koskee kaikkea nykyisen tiedoston kansiosta ladattavaa sisältöä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -8555,7 +8739,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Tallenna kokoonpanon ohitustiedosto, joka koskee vain nykyistä sisältöä. Asetetaan pääasetusten edelle."
+   "Tallenna kokoonpanon ohitustiedosto, joka koskee vain nykyistä sisältöä. Käytetään ensisijaisesti ennen pääkokoonpanoa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Poista pelin ohitukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Poista kokoonpanon ohitustiedosto, joka koskee vain nykyistä sisältöä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "Poista ladattu ohitus käytöstä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "Palauta kaikki asetukset globaaleihin asetusarvoihin."
    )
 
 /* Quick Menu > Achievements */
@@ -8907,7 +9107,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-   "<Sisältöhakemisto>"
+   "<Sisältökansio>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -11321,7 +11521,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-   "Lähettää diagnoositiedot laitteestasi ja RetroArch-kokoonpanostasi palvelimillemme analysoitavaksi."
+   "Lähettää laitteestasi ja RetroArch-kokoonpanostasi diagnostiikkatietoja palvelimillemme analysoitavaksi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -11943,7 +12143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
-   "Päivitys epäonnistui - virheellinen/puuttuva sisältöhakemisto: "
+   "Päivitys epäonnistui - virheellinen/puuttuva sisältökansio: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
@@ -12079,19 +12279,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
-   "Ydin asetustiedosto poistettu onnistuneesti."
+   "Ydinasetustiedosto poistettiin."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
-   "Kaikki ydinasetukset palautetaan oletusarvoisiksi."
+   "Kaikki ydinasetukset palautetaan niiden oletusarvoihin."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSHED,
-   "Ydin asetukset tallennettu:"
+   "Ydinasetukset tallennettiin kohteeseen:"
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
-   "Ei voitu tallentaa ydinasetuksia:"
+   "Ydinasetuksia ei voitu tallentaa kohteeseen:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -12419,11 +12619,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "Pelikohtaiset ytimen asetukset löytyvät"
+   "Pelikohtaiset ydinasetukset löytyvät kohteesta"
    )
 MSG_HASH(
    MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "Kansiokohtaiset ytimen asetukset löytyvät"
+   "Kansiokohtaiset ydinasetukset löytyvät kohteesta"
    )
 MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
@@ -12460,6 +12660,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
    "Syötteen esiasetuksen tiedostonimi"
+   )
+MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Syötä ohitustiedoston nimi"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
@@ -12574,8 +12778,28 @@ MSG_HASH(
    "Virhe tallentaessa ohituksia."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Virhe poistettaessa ohituksia."
+   )
+MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-   "Ohitukset tallennettu onnistuneesti."
+   "Ohitukset tallennettiin."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Ohitukset poistettiiin."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Ladatut ohitukset poistettiin käytöstä."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Tallennettavaa ei ole. Ohituksia ei tallennettu."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Ei tallenneta. Ohitukset ovat käytössä."
    )
 MSG_HASH(
    MSG_PAUSED,
@@ -12687,7 +12911,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
-   "Tallennettu onnistuneesti kansioon"
+   "Tallennettiin kansioon"
    )
 MSG_HASH(
    MSG_SAVING_RAM_TYPE,
@@ -12963,7 +13187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
-   "Kokoonpanon ohitus ladattu."
+   "Kokoonpanon ohitus ladattiin."
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
@@ -12971,7 +13195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DIRECTORY_REMAP_FILE_LOADED,
-   "Sisällön kansion uudelleenmääritys tiedosto ladattu."
+   "Sisältökansion uudelleenkohdistustiedosto ladattiin."
    )
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
@@ -13011,7 +13235,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Huijaushaku käynnistetty onnistuneesti"
+   "Huijaushaku käynnistettiin"
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
@@ -13369,11 +13593,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-   "Grafiikka-widgettien skaalauksen ohitus"
+   "Grafiikkawidgettien skaalauksen ohitus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "Käytä manuaalista skaalauskertoimen ohitusta, kun piirretään näyttö widgettejä. Käytössä vain, jos 'skaalaa grafiikkaa widgettejä automaattisesti' on pois päältä. Voidaan käyttää koristettujen ilmoitusten, indikaattorien ja hallintalaitteiden koon kasvattamiseen tai pienentämiseen riippumatta itse valikosta."
+   "Käytä manuaalista skaalauskertoimen ohitusta näyttöwidgettejä piirrettäessä. Käytetään vain kun \"Skaalaa grafiikkawidgetit automaattisesti\" ei ole käytössä. Voidaan käyttää koristeellisten ilmoitusten, indikaattorien ja ohjainten suurennukseen tai piennnykseen vaikuttamatta itse valikkoon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
