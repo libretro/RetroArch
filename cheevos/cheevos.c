@@ -616,7 +616,7 @@ static void rcheevos_server_error(const char* api_name, const char* message)
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 }
 
-static void rcheevos_server_disconnected()
+static void rcheevos_server_disconnected(void)
 {
    CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server\n");
 
@@ -633,7 +633,7 @@ static void rcheevos_server_disconnected()
 #endif
 }
 
-static void rcheevos_server_reconnected()
+static void rcheevos_server_reconnected(void)
 {
    CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server\n");
 
@@ -731,7 +731,7 @@ int rcheevos_get_richpresence(char* s, size_t len)
       }
    }
 
-   return rc_client_get_rich_presence_message(rcheevos_locals.client, s, (size_t)len);
+   return (int)rc_client_get_rich_presence_message(rcheevos_locals.client, s, (size_t)len);
 }
 
 #else /* !HAVE_RC_CLIENT */

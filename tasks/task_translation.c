@@ -568,14 +568,7 @@ static access_response_t* parse_response_json(http_transfer_data_t *data)
 {
    int key                       = -1;
    rjson_t* json                 = NULL;
-   char* image_data              = NULL;
-   int image_size                = 0;
-#ifdef HAVE_AUDIOMIXER
-   void *sound_data              = NULL;
-   int sound_size                = 0;
-#endif
    access_response_t *response   = NULL;
-   bool empty                    = true;
    enum rjson_type type;
 
    if (!data || !data->data)
@@ -675,7 +668,6 @@ static void translation_response_image_widget(
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
-   access_state_t *access_st      = access_state_get_ptr();
 
    bool ai_res;
    bool gfx_widgets_paused        = video_st->flags & VIDEO_FLAG_WIDGETS_PAUSED;
@@ -1082,7 +1074,6 @@ static void translation_response_input(access_response_t *response)
 #ifdef HAVE_ACCESSIBILITY
       input_driver_state_t *input_st   = input_state_get_ptr();
 #endif
-      int length                       = strlen(response->input);
       char *token                      = strtok(response->input, ",");
 
       while (token)
@@ -1355,7 +1346,9 @@ static bool translation_dupe_fail(access_frame_t *frame)
  */
 static access_base64_t* translation_frame_encode(access_frame_t *frame)
 {
+#ifndef HAVE_RPNG
    uint8_t header[54];
+#endif
    uint8_t *buffer         = NULL;
    uint64_t bytes          = 0;
    access_base64_t *encode = NULL;

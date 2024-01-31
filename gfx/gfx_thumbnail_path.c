@@ -403,7 +403,6 @@ bool gfx_thumbnail_set_content_playlist(
    const char *core_name              = NULL;
    const char *db_name                = NULL;
    const struct playlist_entry *entry = NULL;
-   settings_t* settings = config_get_ptr();
 
    if (!path_data)
       return false;

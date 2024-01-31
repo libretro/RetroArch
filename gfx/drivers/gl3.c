@@ -2503,12 +2503,9 @@ static bool gl3_frame(void *data, const void *frame,
 #if 0
    bool msg_bgcolor_enable                 = video_info->msg_bgcolor_enable;
 #endif
-   unsigned black_frame_insertion          = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
    unsigned hard_sync_frames               = video_info->hard_sync_frames;
-   bool runloop_is_paused                  = video_info->runloop_is_paused;
-   bool runloop_is_slowmotion              = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state        = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
    bool menu_is_alive                      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;

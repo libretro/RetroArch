@@ -3129,7 +3129,7 @@ typedef void (RETRO_CALLCONV *retro_netpacket_send_t)(int flags, const void* buf
  * This function is not guaranteed to be thread-safe and must be called during
  * retro_run or any of the netpacket callbacks passed with this interface.
  */
-typedef void (RETRO_CALLCONV *retro_netpacket_poll_receive_t)();
+typedef void (RETRO_CALLCONV *retro_netpacket_poll_receive_t)(void);
 
 /* Called by the frontend to signify that a multiplayer session has started.
  * If client_id is 0 the local player is the host of the session and at this
