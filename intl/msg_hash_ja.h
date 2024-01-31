@@ -3297,15 +3297,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "2 ボタン操作のクラシックモードです。ボタンを押したままターボボタンをタップすると、連打シーケンスが有効になります。\nターボボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
+   "クラシックモードです。ターボの有効化ボタンと連射したいボタンを同時に押している間、連射したいボタンが連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "切り替えモードです。ターボボタンを一度押すと、選択されたデフォルトボタンの連打シーケンスが有効になり、もう一度押すとオフになります。\nターボボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
+   "切り替えモードです。ターボの有効化ボタンを一度押すと、次にターボの有効化ボタンを押すまで選択されたデフォルトボタンが押下せずとも自動で連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "長押しモードです。ターボボタンが押されている間、選択されたデフォルトボタンの連打シーケンスが有効になります。\nターボボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。\nホームコンピュータ時代の連射機能をエミュレートするには、ターボとデフォルトボタンをジョイスティックのファイアボタンと同じに設定します。"
+   "長押しモードです。ターボの有効化ボタンを押している間、選択されたデフォルトボタンが連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。\nホームコンピュータ時代の連射機能をエミュレートするには、ターボの有効化ボタンとデフォルトボタンをジョイスティックのファイアボタンと同じに設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3313,7 +3313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "ターボモード [シングルボタン] のデフォルトアクティブボタンです。"
+   "ターボモード [シングルボタン] で連射されるデフォルトのボタンです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
@@ -4139,7 +4139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "ターボ"
+   "ターボの有効化"
    )
 
 /* Settings > Latency */
@@ -14693,7 +14693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   "ガバナー, 周波数など, CPUの挙動詳細を手動で調整できます. 上級ユーザにのみお勧めします."
+   "ガバナーや周波数など、CPU の詳細な挙動を手動で調整します。上級ユーザーにのみお勧めします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
@@ -14713,19 +14713,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
-   "最大パフォーマンス"
+   "最高パフォーマンス"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
-   "最大のパフォーマンスを得るため, 常に最高周波数で動作します."
+   "最高のパフォーマンスを得るため、常に最大周波数で動作します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   "最小電力"
+   "最低消費電力"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   "電力を節約するため, 利用可能な最低周波数で動作します. バッテリー駆動のデバイスで役立ちますが, パフォーマンスは大幅に低下します."
+   "消費電力を節約するため、利用可能な最小周波数で動作します。バッテリー駆動のデバイスで役立ちますが、パフォーマンスが大幅に低下します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,

@@ -520,6 +520,14 @@ MSG_HASH(
    "Ürün Yazılımı"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Not: 'Sistem Dosyaları İçerik Dizinindedir' seçeneği şu anda etkindir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Şuraya bakılıyor: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Eksik, Gerekli:"
    )
