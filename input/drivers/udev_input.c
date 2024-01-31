@@ -206,7 +206,6 @@ enum udev_input_dev_type
    UDEV_INPUT_TOUCHPAD,
    UDEV_INPUT_TOUCHSCREEN,
    UDEV_INPUT_SENSOR
-   //UDEV_INPUT_DUALSHOCK4 = 0x80
 };
 
 /* NOTE: must be in sync with enum udev_input_dev_type */
@@ -3276,7 +3275,7 @@ static int udev_input_add_device(udev_input_t *udev,
    struct input_absinfo absinfo;
    int fd                                   = -1;
    int ret                                  = 0;
-   int clobber                              = 1;
+   int new_device                           = 1;
    struct stat st;
 #if defined(HAVE_EPOLL)
    struct epoll_event event;
@@ -3395,7 +3394,6 @@ static int udev_input_add_device(udev_input_t *udev,
    } else if (type == UDEV_INPUT_SENSOR){
       udev_init_sensor_dev(device);
    }
-   RARCH_DBG("%s %s\n",device->ident,strstr(device->ident,"Sony Interactive Entertain"));
    /* Care needs to be taken to unify the touchpad and sensors of playstation controllers */
    if (strstr(device->ident,"Sony Interactive Entertain") != NULL){
       char equivalent_device_name[256];
@@ -3415,18 +3413,18 @@ static int udev_input_add_device(udev_input_t *udev,
       for (i=0; i<(int)udev->num_devices; i++){
          if (!strncmp(udev->devices[i]->ident,equivalent_device_name,255)){
             RARCH_DBG("[udev]: Found equivalent device at index %d\n", i);
-            if (type == UDEV_INPUT_SENSOR){
+            if (type == UDEV_INPUT_SENSOR)
                udev->devices[i]->aggregate_with=device;
-            } else /* type == UDEV_INPUT_TOUCHPAD */{
+            else /* type == UDEV_INPUT_TOUCHPAD */
                udev->devices[i]->aggregate_with=device;
-            }
-            clobber=0;
+            
+            new_device=0;
             break;
          }
       }
 
    }
-   if (clobber) {
+   if (new_device) {
       tmp = (udev_input_device_t**)realloc(udev->devices,
             (udev->num_devices + 1) * sizeof(*udev->devices));
 
@@ -3471,6 +3469,7 @@ end:
    return ret;
 }
 static void close_child_devices(udev_input_device_t * curdevice){
+   RARCH_DBG("[udev] close child %p\n", curdevice->aggregate_with);
    if (curdevice->aggregate_with) {
       close_child_devices(curdevice->aggregate_with);
       close(curdevice->aggregate_with->fd);
@@ -3502,6 +3501,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_mouse             = NULL;
    const char *val_touchpad          = NULL;
    const char *val_touchscreen       = NULL;
+   const char *val_sensor            = NULL;
    const char *action                = NULL;
    const char *devnode               = NULL;
    int mouse                         = 0;
@@ -3518,6 +3518,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    val_mouse       = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
    val_touchpad    = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
    val_touchscreen = udev_device_get_property_value(dev, "ID_INPUT_TOUCHSCREEN");
+   val_sensor      = udev_device_get_property_value(dev, "ID_INPUT_ACCELEROMETER");
    action          = udev_device_get_action(dev);
    devnode         = udev_device_get_devnode(dev);
 
@@ -3547,6 +3548,11 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
       cb         = udev_handle_mouse;
 #endif
    }
+   else if (val_sensor && string_is_equal(val_sensor, "1") && devnode)
+   {
+      dev_type   = UDEV_INPUT_SENSOR;
+      cb         = udev_handle_sensor;
+   }
    else
       goto end;
 
@@ -3573,7 +3579,8 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    {
       udev_input_device_t * cur_device=udev->devices[i];
       do {
-      if (cur_device->type != UDEV_INPUT_KEYBOARD)
+      if (cur_device->type == UDEV_INPUT_SENSOR);
+      else if (cur_device->type != UDEV_INPUT_KEYBOARD)
       {
          /* Pointers */
          input_config_set_mouse_display_name(mouse, cur_device->ident);
@@ -4389,15 +4396,18 @@ static void udev_input_grab_mouse(void *data, bool state)
 
 static bool udev_input_set_sensor_state (void *data, unsigned port, enum retro_sensor_action action, unsigned rate) {
    //TODO
+   RARCH_DBG("udev_input_set_sensor_state: %d %d %d\n", port, action,rate);
    return true;
 }
 static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id) {
    const udev_input_t *udev = (const udev_input_t *)data;
-   const udev_input_device_t * device = udev->devices[port];
+   const udev_input_device_t * device;
    const udev_input_sensor_t * sensor;
    float sensor_value;
    udev_input_sensor_limits_t limits;
-
+   if (udev->devices == NULL) return 0.0f;
+   
+   device = udev->devices[port];
    while(device->type != UDEV_INPUT_SENSOR){
       if (device->aggregate_with == NULL){
          RARCH_ERR("[udev]: udev_input_get_sensor_input recieved a "
@@ -4443,7 +4453,7 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
          
    }  
    RARCH_DBG(
-      "sensor:\n"
+      "[udev] sensor:\n"
       "\t%f\n"
       "\t%d\n"
       "\t%d\n"
