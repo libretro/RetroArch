@@ -232,7 +232,13 @@ typedef struct
    bool wu, wd, whu, whd;
    bool pp;
 } udev_input_mouse_t;
+enum udev_sensor_type
+{
 
+   UDEV_SENSOR_ACCELEROMETER,
+   UDEV_SENSOR_GYROSCOPE,
+   UDEV_SENSOR_SIXAXIS
+};
 #ifdef UDEV_TOUCH_SUPPORT
 
 /**
@@ -554,7 +560,7 @@ typedef struct {
       } s;
       int32_t a[6];
    } sensor_data;
-
+   enum udev_sensor_type type;
 } udev_input_sensor_t;
 
 typedef struct udev_input_device
@@ -4412,13 +4418,12 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
       if (device->aggregate_with == NULL){
          RARCH_ERR("[udev]: udev_input_get_sensor_input recieved a "
             "device where none of it's children are sensors\n");
-         break;
+         return 0.0f;
       } else {
          device=device->aggregate_with;
       }
    }
    sensor=&device->SENSOR;
-   
    switch (id)
    {
       case RETRO_SENSOR_ACCELEROMETER_X: 
@@ -4449,9 +4454,9 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
          limits=sensor->limits.s.gyro_x_limit;
          break;
       default:
-         return 0.0f;
-         
-   }  
+         return 0.0f;  
+   }
+
    RARCH_DBG(
       "[udev] sensor:\n"
       "\t%f\n"
