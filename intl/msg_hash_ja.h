@@ -1530,7 +1530,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
-   "低レベルのヒューマンインターフェースデバイスドライバです。"
+   "低レベルヒューマンインターフェースデバイスドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
@@ -2277,7 +2277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "フルスクリーンの場合は、表示モードの切り替えを防ぐためにフルスクリーンウィンドウを使用することをお勧めします。"
+   "フルスクリーンにする場合は、表示モードの切り替えを防ぐためにウィンドウフルスクリーンモードを使用することをお勧めします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -2285,7 +2285,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "非ウィンドウフルスクリーンモードのカスタム幅サイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
+   "排他的フルスクリーンモードのカスタム幅サイズを設定します。未設定の場合、デスクトップの解像度を使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -2293,7 +2293,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "非ウィンドウフルスクリーンモードのカスタム高さサイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
+   "排他的フルスクリーンモードのカスタム高さサイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -3125,7 +3125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "入力バインドを現在のコアに設定されているリマップされたバインドで上書きします。"
+   "入力割り当てを現在のコアに設定されているリマップ設定で上書きします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3133,7 +3133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "プロファイルを持つコントローラーを自動的に設定します。プラグアンドプレイスタイルです。"
+   "プロファイルが存在するコントローラーを自動的に設定します。プラグアンドプレイスタイルです。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
@@ -3229,19 +3229,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-   "バインドのタイムアウト"
+   "割り当て時のタイムアウト時間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "次のバインドに進むまで待機する秒数です。"
+   "次の割り当てに進むまで待機する秒数です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-   "バインドの長押し"
+   "割り当て時の長押し時間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "入力をバインドするために長押しする秒数です。"
+   "入力を割り当てるために長押しする秒数です。"
    )
 MSG_HASH(
    MSG_INPUT_BIND_PRESS,
@@ -3269,11 +3269,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "ターボデューティサイクル"
+   "ターボ間隔中のボタン押下フレーム数"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "ターボ間隔中にボタンを押したままにしておくフレーム数です。この値がターボ間隔と同じかそれ以上であれば、ボタンは離されず押したままになります。"
+   "ターボ間隔中にボタンの押下状態を維持するフレーム数です。この値をターボ間隔と同じかそれ以上にすると、ボタンは離されず押されたままの状態になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3281,7 +3281,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "ターボモードの一般的な動作を選択します。"
+   "ターボモードの方式を選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -3329,7 +3329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "連射の設定を変更します。\n注意: 連射機能は、対応する「ポート X コントロール」メニューの入力デバイスにターボボタンを割り当てる必要があります。"
+   "連射の設定を変更します。\n注意: 連射機能を使用するには、対応する [ポート X コントロール] メニューの入力デバイスにターボの有効化ボタンを割り当てる必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3357,11 +3357,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
-   "レトロパッドのバインド"
+   "レトロパッドの割り当て"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "仮想レトロパッドが物理入力デバイスにどのようにマップされるかを変更します。入力デバイスが認識され、正しく自動設定されている場合は、おそらくこのメニューを使用する必要はありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用します。"
+   "仮想レトロパッドが物理入力デバイスにどのように割り当てられるかを変更します。入力デバイスが認識され、正しく自動設定されている場合は、おそらくこのメニューを使用する必要はありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
@@ -3373,11 +3373,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "仮想レトロパッドがこの仮想ポートの物理入力デバイスにどのようにマップされるかを変更します。"
+   "仮想レトロパッドがこの仮想ポートの物理入力デバイスにどのように割り当てられるかを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "コア固有の入力マッピングを変更します。"
+   "コア固有の入力割り当てを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3820,7 +3820,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "フルスクリーンとウィンドウ表示モードを切り替えます。"
+   "フルスクリーンモードとウィンドウモードを切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
@@ -3955,11 +3955,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
-   "エミュレートされたコントローラーの種類を指定します。"
+   "エミュレートされるコントローラーの種類を指定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "アナログからデジタルの種類"
+   "アナログデジタル変換の種類"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
@@ -3975,7 +3975,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
-   "マップされたポート"
+   "割り当てるポート"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
@@ -4998,7 +4998,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   "メニューでオーバーレイを隠す"
+   "メニュー表示時にオーバーレイを隠す"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -5006,7 +5006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "コントローラーが接続されているときにオーバーレイを隠す"
+   "コントローラー接続時にオーバーレイを隠す"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -5036,7 +5036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "ポートからの入力を表示"
+   "入力を監視するポート"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
@@ -5096,7 +5096,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "オーバーレイのすべての UI 要素の不透明度です。"
+   "オーバーレイの全 UI 要素の不透明度です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -5112,7 +5112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
-   "横向きの表示方向を使用するときのすべての UI 要素の表示倍率です。"
+   "横向きの表示方向を使用するときの全 UI 要素の表示倍率です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
@@ -5160,7 +5160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
-   "縦向きの表示方向を使用しているときのすべての UI 要素の表示倍率です。"
+   "縦向きの表示方向を使用しているときの全 UI 要素の表示倍率です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
@@ -5235,7 +5235,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
-   "キーボードオーバーレイのすべての UI 要素の不透明度です。"
+   "キーボードオーバーレイの全 UI 要素の不透明度です。"
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -8869,7 +8869,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
-   "リマップファイルをロードして現在の入力マッピングを置き換えます。"
+   "リマップファイルをロードして現在の入力割り当てを置き換えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
@@ -8877,7 +8877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
-   "現在の入力マッピングを新しいリマップファイルとして保存します。"
+   "現在の入力割り当てを新しいリマップファイルとして保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
@@ -8905,7 +8905,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "ゲームコンテンツディレクトリリマップファイルを削除"
+   "コンテンツディレクトリリマップファイルを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
@@ -8929,7 +8929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
-   "入力マッピングをリセット"
+   "入力割り当てをリセット"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
@@ -9611,7 +9611,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "現在のファイルと同じディレクトリからロードされたすべてのコンテンツに適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
+   "現在のファイルと同じディレクトリからロードされるすべてのコンテンツに適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -12722,7 +12722,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "ネットプレイポートのマッピングに成功"
+   "ネットプレイポートの割り当てに成功しました"
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
@@ -12730,7 +12730,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "ネットプレイ UPnP ポートのマッピングに失敗"
+   "ネットプレイ UPnP ポートの割り当てに失敗しました"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -13303,7 +13303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
-   "ソケットのバインドに失敗しました。"
+   "ソケットの割り当てに失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
