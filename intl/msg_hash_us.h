@@ -16078,3 +16078,9 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Touch mouse is disabled"
    )
+
+/* Extra logical buttons. */
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LOGICAL,
+    "Logical Button %d"
+    )

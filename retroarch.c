@@ -5587,6 +5587,7 @@ static void global_free(struct rarch_state *p_rarch)
 #endif
 
    runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
+                                     | RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT
                                      | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
 
    global                                = global_get_ptr();
@@ -6786,6 +6787,7 @@ static bool retroarch_parse_input_and_config(
    /* Flush out some states that could have been set
     * by core environment variables. */
    runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
+                                     | RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT
                                      | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
 
    /* Load the config file now that we know what it is */

@@ -1401,6 +1401,253 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
+/**
+ * Erases input descriptor buttons.
+ *
+ * @param sys_info The current state of the front end.
+ * @param from The starting index, inclusive.
+ * @param to The ending index, exclusive.
+ */
+static void rarch_erase_input_desc_btn(rarch_system_info_t *sys_info, unsigned from, unsigned to)
+{
+    unsigned usernum, at;
+    const char** user_inputs;
+
+    /* Erase all the previous extended binds for all users. */
+    for (usernum = 0; usernum < MAX_USERS; usernum++)
+    {
+        /* For simpler access. */
+        user_inputs = sys_info->input_desc_btn[usernum];
+
+        /* Invalidate all entries. */
+        for (at = rarch_first_logical_bind_game_controller();
+             at < rarch_num_bind_game_controller();
+             at++)
+            user_inputs[at] = NULL;
+    }
+}
+
+static void rarch_set_core_extended_retropad(rarch_system_info_t *sys_info,
+                                             runloop_state_t *runloop_st,
+                                             const struct retro_core_extended_retropad *input) {
+    const struct retro_core_extended_retropad_button* action;
+    unsigned at, bind, usernum;
+    const char** user_inputs;
+    bool did_standard;
+
+    /* Debug. */
+    RARCH_LOG("[Environ]: Setting extended retropad buttons.\n");
+
+    /* Check if standard inputs were set. */
+    did_standard = (runloop_st->current_core.flags & RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS) != 0;
+    if (!did_standard)
+        RARCH_LOG("[Environ]: Standard was not previously set.\n");
+
+    /* Erase all the previous extended binds for all users. */
+    if (did_standard)
+        rarch_erase_input_desc_btn(sys_info,
+                                   rarch_first_logical_bind_game_controller(),
+                                   rarch_num_bind_game_controller());
+
+    /* Otherwise erase everything as it has never been set before. */
+    else
+        rarch_erase_input_desc_btn(sys_info, 0, rarch_num_bind_game_controller());
+
+    /* Set output details, if requested. */
+    if (input->out_info != NULL) {
+        input->out_info->out_num_extra = RARCH_EXTRA_CORE_COMMAND_COUNT;
+    }
+
+    /* Go through the commands and process them. */
+    if (input->actions != NULL)
+    {
+        for (at = 0; input->actions[at].description != NULL; at++)
+        {
+            /* Get base action. */
+            action = &input->actions[at];
+
+            /* Debug. */
+            RARCH_LOG("[Environ]: Wanting extra button %d %d %d %d %d %s %s.\n",
+                      at, action->port, action->device, action->port, action->logical_id,
+                      action->description, action->glyph);
+
+            /* Map player. */
+            usernum = action->port;
+            if (usernum < 0 || usernum >= MAX_USERS)
+                continue;
+
+            /* We only care about gamepads and their analog equivalents. */
+            if (action->device != RETRO_DEVICE_JOYPAD &&
+                action->device != RETRO_DEVICE_ANALOG)
+                continue;
+
+            /* Ignore logical binds which are out of bounds. */
+            bind = action->logical_id;
+            if (bind < 0 || bind >= RARCH_EXTRA_CORE_COMMAND_COUNT)
+                continue;
+
+            /* Map to logical button internally. */
+            bind = rarch_first_logical_bind_game_controller() + bind;
+
+            /* Set description. */
+            sys_info->input_desc_btn[usernum][bind] = action->description;
+
+            /* Debug. */
+            RARCH_LOG("[Environ]: Bound %d to %s.\n",
+                bind, action->description);
+        }
+
+        /* Debug. */
+        RARCH_LOG("[Environ]: Set %d extended buttons.\n", at);
+    }
+
+    /* Indicate that the input descriptors changed. */
+    runloop_st->current_core.flags |=
+        RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT;
+}
+
+static void rarch_set_input_descriptors(const void *data,
+        runloop_state_t *runloop_st, const settings_t *settings,
+        rarch_system_info_t *sys_info) {
+    unsigned retro_id;
+    const struct retro_input_descriptor *desc = NULL;
+    unsigned int p;
+    bool did_extra;
+
+    /* Check if extended inputs were set. */
+    did_extra = (runloop_st->current_core.flags & RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT) != 0;
+    if (!did_extra)
+        RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS: Extra was not previously set.\n");
+
+    /* If extended descriptors were set, only erase the standard ones. */
+    if (did_extra)
+        rarch_erase_input_desc_btn(sys_info, 0, rarch_first_logical_bind_game_controller());
+
+    /* Otherwise, erase everything to keep legacy behavior. */
+    else
+        rarch_erase_input_desc_btn(sys_info, 0, rarch_num_bind_game_controller());
+
+    desc = (const struct retro_input_descriptor*)data;
+
+    for (; desc->description; desc++)
+    {
+       unsigned retro_port = desc->port;
+
+       retro_id            = desc->id;
+
+       if (desc->port >= MAX_USERS)
+          continue;
+
+       /* Ignore extended custom binds. */
+       if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
+           continue;
+
+       switch (desc->device)
+       {
+          case RETRO_DEVICE_JOYPAD:
+             sys_info->input_desc_btn[retro_port]
+                [retro_id] = desc->description;
+             break;
+          case RETRO_DEVICE_ANALOG:
+             switch (retro_id)
+             {
+                case RETRO_DEVICE_ID_ANALOG_X:
+                   switch (desc->index)
+                   {
+                      case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                         break;
+                      case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                         break;
+                   }
+                   break;
+                case RETRO_DEVICE_ID_ANALOG_Y:
+                   switch (desc->index)
+                   {
+                      case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                         break;
+                      case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                         sys_info->input_desc_btn[retro_port]
+                            [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                         break;
+                   }
+                   break;
+                case RETRO_DEVICE_ID_JOYPAD_R2:
+                   switch (desc->index)
+                   {
+                      case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+                         sys_info->input_desc_btn[retro_port]
+                            [retro_id] = desc->description;
+                         break;
+                   }
+                   break;
+                case RETRO_DEVICE_ID_JOYPAD_L2:
+                   switch (desc->index)
+                   {
+                      case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+                         sys_info->input_desc_btn[retro_port]
+                            [retro_id] = desc->description;
+                         break;
+                   }
+                   break;
+             }
+             break;
+       }
+    }
+
+    RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS:\n");
+
+    {
+       unsigned log_level      = settings->uints.libretro_log_level;
+
+       if (log_level == RETRO_LOG_DEBUG)
+       {
+          unsigned input_driver_max_users = settings->uints.input_max_users;
+          unsigned bind_index;
+          const char *description;
+
+          for (p = 0; p < input_driver_max_users; p++)
+          {
+             unsigned mapped_port = settings->uints.input_remap_ports[p];
+
+             RARCH_DBG("   %s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+
+             for (retro_id = 0; retro_id < RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS; retro_id++)
+             {
+                bind_index = input_config_bind_order[retro_id];
+
+                if (bind_index == RARCH_UNMAPPED)
+                    continue;
+
+                description = sys_info->input_desc_btn[mapped_port][bind_index];
+
+                if (!description)
+                   continue;
+
+                RARCH_DBG("      \"%s\" => \"%s\"\n",
+                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index),
+                      description);
+             }
+          }
+       }
+    }
+
+    runloop_st->current_core.flags |=
+       RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS;
+}
 
 bool runloop_environment_cb(unsigned cmd, void *data)
 {
@@ -2059,124 +2306,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          if (sys_info)
          {
-            unsigned retro_id;
-            const struct retro_input_descriptor *desc = NULL;
-            memset((void*)&sys_info->input_desc_btn, 0,
-                  sizeof(sys_info->input_desc_btn));
-
-            desc = (const struct retro_input_descriptor*)data;
-
-            for (; desc->description; desc++)
-            {
-               unsigned retro_port = desc->port;
-
-               retro_id            = desc->id;
-
-               if (desc->port >= MAX_USERS)
-                  continue;
-
-               if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
-                  continue;
-
-               switch (desc->device)
-               {
-                  case RETRO_DEVICE_JOYPAD:
-                     sys_info->input_desc_btn[retro_port]
-                        [retro_id] = desc->description;
-                     break;
-                  case RETRO_DEVICE_ANALOG:
-                     switch (retro_id)
-                     {
-                        case RETRO_DEVICE_ID_ANALOG_X:
-                           switch (desc->index)
-                           {
-                              case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
-                                 break;
-                              case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
-                                 break;
-                           }
-                           break;
-                        case RETRO_DEVICE_ID_ANALOG_Y:
-                           switch (desc->index)
-                           {
-                              case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
-                                 break;
-                              case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
-                                 sys_info->input_desc_btn[retro_port]
-                                    [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
-                                 break;
-                           }
-                           break;
-                        case RETRO_DEVICE_ID_JOYPAD_R2:
-                           switch (desc->index)
-                           {
-                              case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
-                                 sys_info->input_desc_btn[retro_port]
-                                    [retro_id] = desc->description;
-                                 break;
-                           }
-                           break;
-                        case RETRO_DEVICE_ID_JOYPAD_L2:
-                           switch (desc->index)
-                           {
-                              case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
-                                 sys_info->input_desc_btn[retro_port]
-                                    [retro_id] = desc->description;
-                                 break;
-                           }
-                           break;
-                     }
-                     break;
-               }
-            }
-
-            RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS:\n");
-
-            {
-               unsigned log_level      = settings->uints.libretro_log_level;
-
-               if (log_level == RETRO_LOG_DEBUG)
-               {
-                  unsigned input_driver_max_users = settings->uints.input_max_users;
-
-                  for (p = 0; p < input_driver_max_users; p++)
-                  {
-                     unsigned mapped_port = settings->uints.input_remap_ports[p];
-
-                     RARCH_DBG("   %s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
-
-                     for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
-                     {
-                        unsigned bind_index     = input_config_bind_order[retro_id];
-                        const char *description = sys_info->input_desc_btn[mapped_port][bind_index];
-
-                        if (!description)
-                           continue;
-
-                        RARCH_DBG("      \"%s\" => \"%s\"\n",
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index),
-                              description);
-                     }
-                  }
-               }
-            }
-
-            runloop_st->current_core.flags |=
-               RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS;
+             rarch_set_input_descriptors(data, runloop_st, settings, sys_info);
          }
          break;
       }
@@ -3572,6 +3702,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD:
+         rarch_set_core_extended_retropad(sys_info, runloop_st,
+            (struct retro_core_extended_retropad*)data);
+         break;
+
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
@@ -7823,7 +7959,8 @@ bool core_has_set_input_descriptor(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    return ((runloop_st->current_core.flags &
-            RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS) > 0);
+           (RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS |
+            RETRO_CORE_FLAG_HAS_SET_EXTENDED_INPUT)) != 0);
 }
 
 void runloop_path_set_basename(const char *path)

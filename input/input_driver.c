@@ -91,8 +91,32 @@
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
+#define INPUT_CONFIG_MASS_BIND_ORDER(x) (36 + x)
+#define INPUT_CONFIG_MASS_BIND_ORDER_TEN(base) \
+    INPUT_CONFIG_MASS_BIND_ORDER(base), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 1), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 2), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 3), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 4), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 5), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 6), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 7), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 8), \
+    INPUT_CONFIG_MASS_BIND_ORDER(base + 9)
+#define INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED(base) \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 1), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 2), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 3), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 4), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 5), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 6), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 7), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 8), \
+    INPUT_CONFIG_MASS_BIND_ORDER_TEN(base + 9)
+
 /* Human readable order of input binds */
-const unsigned input_config_bind_order[24] = {
+const unsigned input_config_bind_order[rarch_num_bind_game_controller()] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
    RETRO_DEVICE_ID_JOYPAD_DOWN,
    RETRO_DEVICE_ID_JOYPAD_LEFT,
@@ -109,15 +133,48 @@ const unsigned input_config_bind_order[24] = {
    RETRO_DEVICE_ID_JOYPAD_R2,
    RETRO_DEVICE_ID_JOYPAD_L3,
    RETRO_DEVICE_ID_JOYPAD_R3,
-   19, /* Left Analog Up */
-   18, /* Left Analog Down */
-   17, /* Left Analog Left */
-   16, /* Left Analog Right */
-   23, /* Right Analog Up */
-   22, /* Right Analog Down */
-   21, /* Right Analog Left */
-   20, /* Right Analog Right */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_UP, /* Left Analog Up */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_DOWN, /* Left Analog Down */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_LEFT, /* Left Analog Left */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_L_RIGHT, /* Left Analog Right */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_UP, /* Right Analog Up */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_DOWN, /* Right Analog Down */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_LEFT, /* Right Analog Left */
+   RETRO_DEVICE_ID_JOYPAD_ANALOG_R_RIGHT, /* Right Analog Right */
+
+   /* The remaining 36 + 128 = 164 entries, just 1:1 mapped... starts at 36. */
+   INPUT_CONFIG_MASS_BIND_ORDER_HUNDRED(0),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(100),
+   INPUT_CONFIG_MASS_BIND_ORDER_TEN(110),
+   INPUT_CONFIG_MASS_BIND_ORDER(120),
+   INPUT_CONFIG_MASS_BIND_ORDER(121),
+   INPUT_CONFIG_MASS_BIND_ORDER(122),
+   INPUT_CONFIG_MASS_BIND_ORDER(123),
+   INPUT_CONFIG_MASS_BIND_ORDER(124),
+   INPUT_CONFIG_MASS_BIND_ORDER(125),
+   INPUT_CONFIG_MASS_BIND_ORDER(126),
+   INPUT_CONFIG_MASS_BIND_ORDER(127),
+
+   /* Light gun order, this is here because there has been mix and match
+    * between buttons, analogs, etc. */
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+   RARCH_UNMAPPED,
+
+   /* Same goes for turbo. */
+   RARCH_UNMAPPED,
 };
+
+#undef INPUT_CONFIG_MASS_BIND_ORDER
+#undef INPUT_CONFIG_MASS_BIND_ORDER_TEN
 
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
@@ -6158,32 +6215,46 @@ void input_remapping_deinit(bool save_remap)
 
 void input_remapping_set_defaults(bool clear_cache)
 {
-   unsigned i, j;
+   unsigned usernum, logical;
    settings_t *settings        = config_get_ptr();
+   const struct retro_keybind *keybind;
+   bool is_ext;
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (usernum = 0; usernum < MAX_USERS; usernum++)
    {
       /* Button/keyboard remaps */
-      for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+      for (logical = 0; logical < rarch_num_bind_game_controller(); logical++)
       {
-         const struct retro_keybind *keybind = &input_config_binds[i][j];
+         /* Ignore the analog/gun binds. */
+         if (!rarch_logical_bind_is_basic(logical))
+            continue;
+
+          is_ext = rarch_logical_bind_is_extended_basic(logical);
+
+         keybind = &input_config_binds[usernum][logical];
+
+         /* Debug. */
+         RARCH_LOG("Keybind user %d log %d -> %p %d\n",
+            usernum, logical, keybind, (keybind != NULL ? keybind->id : -1));
+
+         /* Force defaults for extended keys to be unmapped by default. */
+         configuration_set_uint(settings,
+               settings->uints.input_remap_ids[usernum][logical],
+               (/*!rarch_logical_bind_is_extended_basic(logical) &&*/ keybind) ?
+                    keybind->id : RARCH_UNMAPPED);
 
          configuration_set_uint(settings,
-               settings->uints.input_remap_ids[i][j],
-                     keybind ? keybind->id : RARCH_UNMAPPED);
-
-         configuration_set_uint(settings,
-               settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
+                                settings->uints.input_keymapper_ids[usernum][logical], RETROK_UNKNOWN);
       }
 
-      /* Analog stick remaps */
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      /* Analog stick remaps, use +8 still here for compatibility purposes. */
+      for (logical = RARCH_FIRST_CUSTOM_BIND; logical < (RARCH_FIRST_CUSTOM_BIND + 8); logical++)
          configuration_set_uint(settings,
-               settings->uints.input_remap_ids[i][j], j);
+                                settings->uints.input_remap_ids[usernum][logical], logical);
 
       /* Controller port remaps */
       configuration_set_uint(settings,
-            settings->uints.input_remap_ports[i], i);
+                             settings->uints.input_remap_ports[usernum], usernum);
    }
 
    /* Need to call 'input_remapping_update_port_map()'

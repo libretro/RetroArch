@@ -224,9 +224,9 @@
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_hex(a, b, c, d, e, f, g, h, i, j, k, l)
 
-#define CONFIG_BIND_ALT(a, b, c, d, e, f, g, h, i, j, k) \
-   if (SETTINGS_LIST_APPEND(a, b)) \
-      config_bind_alt(a, b, c, d, e, f, g, h, i, j, k)
+#define CONFIG_BIND_ALT(list, list_info, target, player, player_offset, name, SHORT, default_value, group_info, subgroup_info, parent_group) \
+   if (SETTINGS_LIST_APPEND(list, list_info)) \
+      config_bind_alt(list, list_info, target, player, player_offset, name, SHORT, default_value, group_info, subgroup_info, parent_group)
 
 #define CONFIG_BIND(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
@@ -9155,7 +9155,7 @@ static bool setting_append_list_input_player_options(
     */
    static char buffer[MAX_USERS][13+2+1];
    static char group_label[MAX_USERS][255];
-   unsigned i, j;
+   unsigned bindish, bindid;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -9388,16 +9388,41 @@ static bool setting_append_list_input_player_options(
    {
       const char *value_na =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+
+      RARCH_LOG("Filling in bind menu for user %d.\n", user);
+
+      for (bindid = 0; bindid < RARCH_BIND_LIST_END; bindid++)
       {
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
+         bool is_game;
+         rarch_logical_bind_id logical_bind;
          size_t _len = 0;
-         i           =  (j < RARCH_ANALOG_BIND_LIST_END)
-            ? input_config_bind_order[j]
-            : j;
 
-         if (input_config_bind_map_get_meta(i))
+         /* Is this a game button or similar? */
+         is_game = rarch_bind_is_game_controller(bindid);
+
+         /* Which button does this belong to? */
+         if (is_game)
+         {
+            logical_bind = rarch_bind_to_logical_game_controller(bindid);
+
+            /* For extended basic buttons we go really deep into the actual bind
+             * map as it is not at the start which @c input_config_bind_order
+             * assumes, so effectively use the real bind id for its position. */
+            if (rarch_logical_bind_is_extended_basic(logical_bind))
+                bindish = bindid;
+            else
+                bindish = input_config_bind_order[logical_bind];
+         }
+         else
+         {
+            logical_bind = (rarch_logical_bind_id)-1;
+            bindish = bindid;
+         }
+
+         /* Checks keybind->meta, where 0 is for game controllers. */
+         if (0 != input_config_bind_map_get_meta(bindish))
             continue;
 
          name[0]          = '\0';
@@ -9413,20 +9438,35 @@ static bool setting_append_list_input_player_options(
 
          if (
                settings->bools.input_descriptor_label_show
-               && (i < RARCH_FIRST_META_KEY)
-               && core_has_set_input_descriptor()
-               && (i != RARCH_TURBO_ENABLE)
+               && is_game
+               && (core_has_set_input_descriptor())
+               && (bindish != RARCH_TURBO_ENABLE)
             )
          {
-            if (sys_info->input_desc_btn[user][i])
+            /* For core defined keys, we use the label provided by the core... if any. */
+            if (sys_info->input_desc_btn[user][logical_bind])
+            {
                strlcpy(label       + _len,
-                     sys_info->input_desc_btn[user][i],
+                     sys_info->input_desc_btn[user][logical_bind],
                      sizeof(label) - _len);
+            }
+
+            /* Otherwise we just label it with the description of the key. */
             else
             {
-               snprintf(label, sizeof(label), "%s (%s)",
-                     input_config_bind_map_get_desc(i),
-                     value_na);
+               /* For logical keys they have no true label, so use a generic name for them. */
+               if (rarch_logical_bind_is_extended_basic(logical_bind))
+               {
+                   snprintf(label, sizeof(label), "Logical %d (%s)",
+                            rarch_logical_bind_get_extended_index(logical_bind),
+                            value_na);
+               }
+               else
+               {
+                   snprintf(label, sizeof(label), "%s (%s)",
+                         input_config_bind_map_get_desc(bindish),
+                         value_na);
+               }
 
                if (settings->bools.input_descriptor_hide_unbound)
                   continue;
@@ -9434,23 +9474,25 @@ static bool setting_append_list_input_player_options(
          }
          else
             strlcpy(label       + _len,
-                  input_config_bind_map_get_desc(i),
+                  input_config_bind_map_get_desc(bindish),
                   sizeof(label) - _len);
 
-         snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
+         /* Essentially p1_y. */
+         snprintf(name, sizeof(name), "p%u_%s",
+            user + 1, input_config_bind_map_get_base(bindish));
 
          CONFIG_BIND_ALT(
                list, list_info,
-               &input_config_binds[user][i],
+               &input_config_binds[user][bindish],
                user + 1,
                user,
                strdup(name),
                strdup(label),
-               &defaults[i],
+               &defaults[bindish],
                &group_info,
                &subgroup_info,
                parent_group);
-         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+         (*list)[list_info->index - 1].bind_type = bindish + MENU_SETTINGS_BIND_BEGIN;
       }
    }
 

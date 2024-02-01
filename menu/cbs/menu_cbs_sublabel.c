@@ -1602,7 +1602,7 @@ static int action_bind_sublabel_remap_sublabel(
 {
    settings_t *settings = config_get_ptr();
    unsigned port        = (type - MENU_SETTINGS_INPUT_DESC_BEGIN)
-         / (RARCH_FIRST_CUSTOM_BIND + 8);
+         / (rarch_num_bind_game_controller());
 
    if (settings && (port < MAX_USERS))
    {

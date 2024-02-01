@@ -549,7 +549,7 @@ static int action_get_title_dropdown_input_description(
       const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
    unsigned port = (menu_type - MENU_SETTINGS_INPUT_DESC_BEGIN) /
-         (RARCH_FIRST_CUSTOM_BIND + 8);
+         (rarch_num_bind_game_controller());
 
    return action_get_title_dropdown_input_description_common(
       path, port, s, len);

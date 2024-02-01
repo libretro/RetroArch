@@ -4151,6 +4151,9 @@ enum msg_hash_enums
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
 
+   /* Logical menu input. */
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LOGICAL,
+
    MSG_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */

@@ -202,6 +202,18 @@ extern "C" {
 #define RETRO_DEVICE_ID_JOYPAD_L3      14
 #define RETRO_DEVICE_ID_JOYPAD_R3      15
 
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_L_RIGHT   16
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_L_LEFT    17
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_L_DOWN    18
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_L_UP      19
+
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_R_RIGHT   20
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_R_LEFT    21
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_R_DOWN    22
+#define RETRO_DEVICE_ID_JOYPAD_ANALOG_R_UP      23
+
+#define RETRO_DEVICE_ID_JOYPAD_MAX_BUTTONS 24
+
 #define RETRO_DEVICE_ID_JOYPAD_MASK    256
 
 /* Index / Id values for ANALOG device. */
@@ -1852,6 +1864,12 @@ enum retro_mod
                                             * multiplayer, where a deterministic core supporting multiple
                                             * input devices does not need to take any action on its own.
                                             */
+#define RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD (79 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_core_extended_retropad* --
+                                            * Similar to the setting of controls, this allows for
+                                            * the addition of additional button inputs which are not
+                                            * bound to anything.
+                                            */
 
 #define RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY 79
                                            /* const char ** --
@@ -3369,6 +3387,50 @@ struct retro_input_descriptor
     * The pointer must remain valid until
     * retro_unload_game() is called. */
    const char *description;
+};
+
+/** Used with @c retro_core_extended_retropad , similar to @c retro_input_descriptor. */
+struct retro_core_extended_retropad_button
+{
+    /** The controller port or player this is attached to. */
+    unsigned port;
+
+    /** The device that this is associated with, either @c RETRO_DEVICE_JOYPAD or @c RETRO_DEVICE_ANALOG. */
+    unsigned device;
+
+    /** The index of the device. */
+    unsigned index;
+
+    /**
+     * The logical bind ID number of the specific command.
+     * The value will be between @c 0 and @c out_num_extra .
+     */
+    unsigned logical_id;
+
+    /** The description of the command, @c NULL terminates the list.
+     * Must remain allocated until retro_unload_game() is called. */
+    const char* description;
+
+    /** The glyph to use for this command, it is up to the front end to provide a picture.
+     * Must remain allocated until retro_unload_game() is called.*/
+    const char* glyph;
+};
+
+/** Used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD to set extra core buttons. */
+struct retro_core_extended_retropad_info
+{
+    /** Output: The number of extra buttons which are available. */
+    unsigned out_num_extra;
+};
+
+/** Used with @c RETRO_ENVIRONMENT_SET_EXTENDED_RETROPAD to set extra core buttons. */
+struct retro_core_extended_retropad
+{
+    /** The core commands that exist, NULL description ends. */
+    const struct retro_core_extended_retropad_button* actions;
+
+    /** Extended RetroPad information output. */
+    struct retro_core_extended_retropad_info* out_info;
 };
 
 struct retro_system_info

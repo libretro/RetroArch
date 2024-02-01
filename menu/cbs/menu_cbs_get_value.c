@@ -828,8 +828,8 @@ static void menu_action_setting_disp_set_label_input_desc(
 {
    unsigned remap_idx;
    settings_t *settings   = config_get_ptr();
-   unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+   unsigned user_idx      = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (rarch_num_bind_game_controller());
+   unsigned btn_idx       = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (rarch_num_bind_game_controller()) * user_idx;
 
    if (!settings)
       return;
@@ -845,7 +845,7 @@ static void menu_action_setting_disp_set_label_input_desc(
       if (!string_is_empty(descriptor))
       {
          size_t _len = strlcpy(s, descriptor, len);
-         if (remap_idx < RARCH_FIRST_CUSTOM_BIND) { }
+         if (rarch_logical_bind_is_basic(remap_idx)) { }
          else if (remap_idx % 2 == 0)
          {
             s[  _len] = ' ';
