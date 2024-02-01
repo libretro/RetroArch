@@ -1981,15 +1981,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   strlcpy(tmp_path, fullpath, sizeof(tmp_path));
                   path_basedir(tmp_path);
 
-                  /* Removes trailing slash */
+                  /* Removes trailing slash (unless root dir) */
                   len = strlen(tmp_path);
-                  if (tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
+                  if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
+                        && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
                      tmp_path[len - 1] = '\0';
 
                   dir_set(RARCH_DIR_SYSTEM, tmp_path);
+                  *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
                }
+               else /* If content path is empty, fall back to global system dir path */
+                  *(const char**)data = dir_system;
 
-               *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
                RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
                      *(const char**)data);
             }
