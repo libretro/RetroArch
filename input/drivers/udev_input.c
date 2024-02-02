@@ -100,7 +100,8 @@
 /*#define UDEV_TOUCH_DEEP_DEBUG*/
 
 /* TODO - Temporary debugging using direct printf */
-#ifdef UDEV_TOUCH_PRINTF_DEBUG
+#include <verbosity.h>
+#if 0
 #define RARCH_ERR(...) do{ \
     printf("[ERR]" __VA_ARGS__); \
 } while (0)
@@ -116,7 +117,6 @@
 #define RARCH_DBG(...) do{ \
     printf("[DBG]" __VA_ARGS__); \
 } while (0)
-#endif
 /* UDEV_TOUCH_PRINTF_DEBUG */
 
 #ifdef UDEV_TOUCH_DEEP_DEBUG
@@ -126,6 +126,9 @@
 #else
 #define RARCH_DDBG(msg, ...)
 #endif
+
+#endif
+#define RARCH_DDBG RARCH_DBG
 /* UDEV_TOUCH_DEEP_DEBUG */
 
 /* Helper macro for declaring things as unused - use sparingly. */
