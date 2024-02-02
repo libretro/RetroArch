@@ -6062,7 +6062,7 @@ void input_remapping_cache_global_config(void)
                     | INP_FLAG_OLD_LIBRETRO_DEVICE_SET;
 }
 
-void input_remapping_restore_global_config(bool clear_cache)
+void input_remapping_restore_global_config(bool clear_cache, bool restore_analog_dpad_mode)
 {
    unsigned i;
    settings_t *settings           = config_get_ptr();
@@ -6073,7 +6073,8 @@ void input_remapping_restore_global_config(bool clear_cache)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if ((input_st->flags & INP_FLAG_OLD_ANALOG_DPAD_MODE_SET)
+      if (   (input_st->flags & INP_FLAG_OLD_ANALOG_DPAD_MODE_SET)
+          &&  restore_analog_dpad_mode
           && (settings->uints.input_analog_dpad_mode[i] !=
                input_st->old_analog_dpad_mode[i]))
          configuration_set_uint(settings,
@@ -6195,7 +6196,7 @@ void input_remapping_set_defaults(bool clear_cache)
     * the last core init
     * > Prevents remap changes from 'bleeding through'
     *   into the main config file */
-   input_remapping_restore_global_config(clear_cache);
+   input_remapping_restore_global_config(clear_cache, true);
 }
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,

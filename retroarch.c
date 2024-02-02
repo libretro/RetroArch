@@ -3666,7 +3666,7 @@ bool command_event(enum event_command cmd, void *data)
                input_remapping_set_defaults(true);
             }
             else
-               input_remapping_restore_global_config(true);
+               input_remapping_restore_global_config(true, false);
 
 #ifdef HAVE_CONFIGFILE
             if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
@@ -7578,7 +7578,7 @@ bool retroarch_main_init(int argc, char *argv[])
             input_remapping_set_defaults(true);
          }
          else
-            input_remapping_restore_global_config(true);
+            input_remapping_restore_global_config(true, false);
 
 #ifdef HAVE_CONFIGFILE
          /* Reload the original config */
@@ -8155,15 +8155,6 @@ bool retroarch_main_quit(void)
    }
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
-      /* Save configs before quitting
-       * as for UWP depending on `OnSuspending` is not important as we can call it directly here
-       * specifically we need to get width,height which requires UI thread and it will not be available on exit
-       */
-#if defined(HAVE_DYNAMIC)
-      if (config_save_on_exit)
-         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-#endif
-
       if (settings->bools.savestate_auto_save &&
           runloop_st->current_core_type != CORE_TYPE_DUMMY)
          command_event_save_auto_state();
@@ -8183,7 +8174,7 @@ bool retroarch_main_quit(void)
          input_remapping_set_defaults(true);
       }
       else
-         input_remapping_restore_global_config(true);
+         input_remapping_restore_global_config(true, false);
 
 #ifdef HAVE_CONFIGFILE
       if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
@@ -8192,6 +8183,16 @@ bool retroarch_main_quit(void)
          config_unload_override();
       }
 #endif
+
+      /* Save configs before quitting
+       * as for UWP depending on `OnSuspending` is not important as we can call it directly here
+       * specifically we need to get width,height which requires UI thread and it will not be available on exit
+       */
+#if defined(HAVE_DYNAMIC)
+      if (config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+#endif
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif

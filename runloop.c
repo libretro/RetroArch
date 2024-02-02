@@ -4088,7 +4088,7 @@ void runloop_event_deinit_core(void)
       input_remapping_set_defaults(true);
    }
    else
-      input_remapping_restore_global_config(true);
+      input_remapping_restore_global_config(true, false);
 
    RARCH_LOG("[Core]: Unloading core symbols..\n");
    uninit_libretro_symbols(&runloop_st->current_core);
