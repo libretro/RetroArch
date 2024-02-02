@@ -49,13 +49,13 @@ enum SDL_AUXILIARY_DEVICE_TYPE{
    SDL_AUXILIARY_DEVICE_TYPE_TOUCHID,
    SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER
 };
+#ifdef HAVE_SDL2
 struct game_controller_data{
    SDL_GameController * ptr;
    bool has_accelerometer : 1;
    bool has_gyro : 1;
    unsigned num_touchpads:14;
 };
-
 typedef struct {
    union {
       SDL_Sensor * sensor;
@@ -64,7 +64,7 @@ typedef struct {
    } dev;
    enum SDL_AUXILIARY_DEVICE_TYPE type;
 } sdl_auxiliary_device;
-
+#endif
 typedef struct sdl_input
 {
    int mouse_x;
@@ -80,8 +80,10 @@ typedef struct sdl_input
    int mouse_wd;
    int mouse_wl;
    int mouse_wr;
+#ifdef HAVE_SDL2
    unsigned auxiliary_device_number;
    sdl_auxiliary_device * auxiliary_devices;
+#endif
 } sdl_input_t;
 
 #ifdef WEBOS
@@ -101,6 +103,8 @@ static void *sdl_input_init(const char *joypad_driver)
       return NULL;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_sdl);
+
+#ifdef HAVE_SDL2
    {
       int numJoysticks,numTouchDevices,numSensors;
       int i;
@@ -176,6 +180,7 @@ static void *sdl_input_init(const char *joypad_driver)
          }
       }
    }
+#endif
    return sdl;
 }
 
@@ -333,6 +338,8 @@ static int16_t sdl_input_state(
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
+
+#ifdef HAVE_SDL2
          if (sdl->auxiliary_devices[port].type == SDL_AUXILIARY_DEVICE_TYPE_TOUCHID ){
             SDL_Finger * finger=SDL_GetTouchFinger(
                sdl->auxiliary_devices[port].dev.touch_id,
@@ -374,7 +381,9 @@ static int16_t sdl_input_state(
 
             }
          }
-         else if (idx == 0)
+         else 
+#endif
+         if (idx == 0)
          {
             struct video_viewport vp;
             bool screen                 = device == 
@@ -461,10 +470,10 @@ static void sdl_input_free(void *data)
    /* Flush out all pending events. */
 #ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+   free(sdl->auxiliary_devices);
 #else
    while (SDL_PollEvent(&event));
 #endif
-   free(sdl->auxiliary_devices);
    free(data);
 }
 
@@ -594,6 +603,7 @@ static uint64_t sdl_get_capabilities(void *data)
          | (1 << RETRO_DEVICE_POINTER)
          | (1 << RETRO_DEVICE_ANALOG);
 }
+#ifdef HAVE_SDL2
 static bool sdl_input_set_sensor_state (void *data, unsigned port, enum retro_sensor_action action, unsigned rate) {
    return true;
 }
@@ -668,7 +678,7 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
    
 
 }
-
+#endif 
 
 
 input_driver_t input_sdl = {
