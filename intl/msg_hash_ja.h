@@ -2285,7 +2285,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "排他的フルスクリーンモードのカスタム幅サイズを設定します。未設定の場合、デスクトップの解像度を使用します。"
+   "排他的フルスクリーンモードのカスタム幅サイズを設定します。未設定のままにすると、デスクトップの解像度が使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -2293,7 +2293,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "排他的フルスクリーンモードのカスタム高さサイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
+   "排他的フルスクリーンモードのカスタム高さサイズを設定します。未設定のままにすると、デスクトップの解像度が使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -3209,7 +3209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "[アナログからデジタル] を使用しているときにボタンを押すために軸をどの程度傾ける必要があるかです。"
+   "[アナログデジタル変換] を使用している場合、ボタンの押下判定の発生に必要な軸の傾きです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -3329,7 +3329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "連射の設定を変更します。\n注意: 連射機能を使用するには、対応する [ポート X コントロール] メニューの入力デバイスにターボの有効化ボタンを割り当てる必要があります。"
+   "連射の設定を変更します。\n注意: 連射機能を使用するには、対応する [ポート X コントロール] メニューで入力デバイスにターボの有効化ボタンを割り当てる必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3419,11 +3419,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   "メニューコントロールを一元化"
+   "メニューコントロールを統一"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "メニューとゲームの両方に同じコントロールを使用します. キーボードに適用されます."
+   "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
@@ -3632,7 +3632,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "現在選択されているスロットから保存したステートをロードします。"
+   "現在選択されているスロットに保存したステートをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
