@@ -7225,7 +7225,13 @@ end:
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
-   if (runloop_st->frame_limit_minimum_time)
+   if (   (runloop_st->frame_limit_minimum_time)
+          && (   (vrr_runloop_enable)
+              || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
+#ifdef HAVE_MENU
+              || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE && !(settings->bools.video_vsync))
+#endif
+              || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
    {
       const retro_time_t end_frame_time  = cpu_features_get_time_usec();
       const retro_time_t to_sleep_ms     = (
