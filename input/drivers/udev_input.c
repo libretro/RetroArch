@@ -4409,9 +4409,10 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
    const udev_input_t *udev = (const udev_input_t *)data;
    const udev_input_device_t * device;
    const udev_input_sensor_t * sensor;
+   const float sensitivity=8.f; //Hardcode for now
    float sensor_value;
    udev_input_sensor_limits_t limits;
-   if (udev->devices == NULL) return 0.0f;
+   if (udev->devices == NULL) return 0.f;
    
    device = udev->devices[port];
    while(device->type != UDEV_INPUT_SENSOR){
@@ -4429,7 +4430,7 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
       limits=sensor->limits.a[id-RETRO_SENSOR_ACCELEROMETER_X];
    }
    else
-      return 0.0f;
+      return 0.f;
    
    
    RARCH_DBG(
@@ -4441,9 +4442,15 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
       sensor_value,
       limits.min,
       limits.max,
-      (((sensor_value-limits.min)/(limits.max-limits.min))-0.5f)*16.f
+      (((sensor_value-limits.min)/(limits.max-limits.min))-0.5f)*2.f*sensitivity
    );
-   return (((sensor_value-limits.min)/(limits.max-limits.min))-0.5f)*16.f;
+   return (
+      /*clamp it to the 0 to 1 range*/
+      ((sensor_value-limits.min)/(limits.max-limits.min))
+      /*convert to the -1 to 1 range*/
+      -0.5f)*2.f
+      /*multiply by sensitivity adjustment*/
+      *sensitivity;
    
 
 }
