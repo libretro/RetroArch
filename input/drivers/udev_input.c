@@ -228,9 +228,9 @@ typedef struct
    int32_t x_max, y_max;
    int32_t x_rel, y_rel;
    int32_t abs;
-   bool l, r, m, b4, b5;
-   bool wu, wd, whu, whd;
-   bool pp;
+   bool l : 1, r : 1, m : 1, b4 : 1, b5 : 1;
+   bool wu : 1, wd : 1, whu: 1, whd: 1;
+   bool pp : 1;
 } udev_input_mouse_t;
 enum udev_sensor_type
 {
@@ -920,6 +920,7 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
 static void udev_handle_mouse(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
+
    udev_input_mouse_t *mouse = &dev->MOUSE;
 
    switch (event->type)
@@ -3194,7 +3195,6 @@ static int16_t udev_input_touch_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          screen = (device == RARCH_DEVICE_MOUSE_SCREEN);
-         break;
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
@@ -4424,39 +4424,14 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
       }
    }
    sensor=&device->SENSOR;
-   switch (id)
-   {
-      case RETRO_SENSOR_ACCELEROMETER_X: 
-         sensor_value=(float)sensor->sensor_data.s.accelerometer_x;
-         limits=sensor->limits.s.accelerometer_x_limit;
-         break;
-      
-      case RETRO_SENSOR_ACCELEROMETER_Y: 
-         sensor_value=(float)sensor->sensor_data.s.accelerometer_y;
-         limits=sensor->limits.s.accelerometer_y_limit;
-         break;
-      
-      case RETRO_SENSOR_ACCELEROMETER_Z: 
-         sensor_value=(float)sensor->sensor_data.s.accelerometer_z;
-         limits=sensor->limits.s.accelerometer_z_limit;
-         break;
-      
-      case RETRO_SENSOR_GYROSCOPE_X: 
-         sensor_value=(float)sensor->sensor_data.s.gyro_x;
-         limits=sensor->limits.s.gyro_x_limit;
-         break;
-      case RETRO_SENSOR_GYROSCOPE_Y: 
-         sensor_value=(float)sensor->sensor_data.s.gyro_y;
-         limits=sensor->limits.s.gyro_x_limit;
-         break;
-      case RETRO_SENSOR_GYROSCOPE_Z:
-         sensor_value=(float)sensor->sensor_data.s.gyro_z;
-         limits=sensor->limits.s.gyro_x_limit;
-         break;
-      default:
-         return 0.0f;  
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z){
+      sensor_value=(float)sensor->sensor_data.a[id-RETRO_SENSOR_ACCELEROMETER_X];
+      limits=sensor->limits.a[id-RETRO_SENSOR_ACCELEROMETER_X];
    }
-
+   else
+      return 0.0f;
+   
+   
    RARCH_DBG(
       "[udev] sensor:\n"
       "\t%f\n"

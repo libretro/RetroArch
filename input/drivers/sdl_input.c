@@ -51,8 +51,8 @@ enum SDL_AUXILIARY_DEVICE_TYPE{
 };
 struct game_controller_data{
    SDL_GameController * ptr;
-   unsigned has_accelerometer : 1;
-   unsigned has_gyro : 1;
+   bool has_accelerometer : 1;
+   bool has_gyro : 1;
    unsigned num_touchpads:14;
 };
 
@@ -136,7 +136,7 @@ static void *sdl_input_init(const char *joypad_driver)
       }
       for (i=0; i<numJoysticks; i++){
          SDL_GameController * gamepad=SDL_GameControllerOpen(i);
-         int hassensor=0;
+         bool hassensor=false;
 
          RARCH_DBG(
             "[sdl]: Gamepad no %d (%s 0x%p)\n"
@@ -152,22 +152,24 @@ static void *sdl_input_init(const char *joypad_driver)
          if (SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL)){
             RARCH_DBG("[sdl]: Initializing Accelerometer\n");
             SDL_GameControllerSetSensorEnabled(gamepad,SDL_SENSOR_ACCEL,SDL_TRUE);
-            hassensor=1;
+            hassensor=true;
          }
          if (SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO)){
             RARCH_DBG("[sdl]: Initializing Gyroscope\n");
             SDL_GameControllerSetSensorEnabled(gamepad,SDL_SENSOR_GYRO,SDL_TRUE);
-            hassensor=1;
+            hassensor=true;
          } 
 
          if (hassensor){
             sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.game_controller=(struct game_controller_data){
-                  /*.ptr=*/ SDL_GameControllerOpen(i),
-                  /*.has_accelerometer=*/SDL_GameControllerIsSensorEnabled(gamepad,SDL_SENSOR_ACCEL),
-                  /*.has_gyro=*/SDL_GameControllerIsSensorEnabled(gamepad,SDL_SENSOR_GYRO),
-                  /*.num_touchpads*/SDL_GameControllerGetNumTouchpads(gamepad)
-               };
+               dev.game_controller.ptr=SDL_GameControllerOpen(i);
+            sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               dev.game_controller.has_accelerometer=SDL_GameControllerIsSensorEnabled(gamepad,SDL_SENSOR_ACCEL);
+            sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               dev.game_controller.has_gyro=SDL_GameControllerIsSensorEnabled(gamepad,SDL_SENSOR_GYRO);
+            sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               dev.game_controller.num_touchpads=SDL_GameControllerGetNumTouchpads(gamepad);
+              
             sdl->auxiliary_devices[sdl->auxiliary_device_number].
                type=SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER;
             sdl->auxiliary_device_number++;
@@ -228,7 +230,6 @@ static int16_t sdl_input_state(
 {
    int16_t      ret = 0;
    sdl_input_t *sdl = (sdl_input_t*)data;
-
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -332,7 +333,49 @@ static int16_t sdl_input_state(
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx == 0)
+         if (sdl->auxiliary_devices[port].type == SDL_AUXILIARY_DEVICE_TYPE_TOUCHID ){
+            SDL_Finger * finger=SDL_GetTouchFinger(
+               sdl->auxiliary_devices[port].dev.touch_id,
+               idx
+            );
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return (int16_t)((finger->x-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return (int16_t)((finger->y-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return finger->pressure>0.0f;
+
+            }
+         } else if (
+            sdl->auxiliary_devices[port].type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER && 
+            sdl->auxiliary_devices[port].dev.game_controller.num_touchpads
+         ){
+            float x,y,pressure;
+            
+            SDL_GameControllerGetTouchpadFinger(
+               sdl->auxiliary_devices[port].dev.game_controller.ptr,
+               0,/*Todo don't hard code*/
+               idx, 
+               NULL,
+               &x,&y,
+               &pressure
+            );
+            RARCH_DBG("[sdl] finger dump:\n\t%f\n\t%f\n\t%f\n\t%d\n", x,y,pressure,id);
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return (int16_t)((x-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return (int16_t)((y-0.5f)*65535);
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return pressure>0.0f;
+
+            }
+            //TODO
+         }
+         else if (idx == 0)
          {
             struct video_viewport vp;
             bool screen                 = device == 
@@ -444,7 +487,6 @@ static void sdl2_grab_mouse(void *data, bool state)
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
    Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
-
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
@@ -464,7 +506,6 @@ static void sdl_input_poll(void *data)
    sdl_input_t *sdl = (sdl_input_t*)data;
 
    SDL_PumpEvents();
-
    sdl_poll_mouse(sdl);
 
 #ifdef HAVE_SDL2
@@ -560,11 +601,20 @@ static bool sdl_input_set_sensor_state (void *data, unsigned port, enum retro_se
 static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
    sdl_input_t * sdl = (sdl_input_t *)data;
    SDL_GameController * gamepad=NULL;
+   SDL_Sensor * sensor=NULL;
+   SDL_SensorType sensor_type;
    int i;
    float sensor_data[3],sensor_value;
-
+   if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
+      (id == RETRO_SENSOR_ACCELEROMETER_Y) | 
+      (id == RETRO_SENSOR_ACCELEROMETER_Z)
+      ) sensor_type=SDL_SENSOR_ACCEL;
+      
+   else if ((id == RETRO_SENSOR_GYROSCOPE_X) |
+      (id == RETRO_SENSOR_GYROSCOPE_Y) | 
+      (id == RETRO_SENSOR_GYROSCOPE_Z)
+      ) sensor_type=SDL_SENSOR_GYRO;
    for (i=0; i<(int)sdl->auxiliary_device_number;i++){
-      RARCH_DBG("[sdl]: %d %d\n", i,sdl->auxiliary_devices[i].type);
       if (
          sdl->auxiliary_devices[i].type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER &&
          (sdl->auxiliary_devices[i].dev.game_controller.has_accelerometer || 
@@ -574,41 +624,33 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
             gamepad=sdl->auxiliary_devices[i].dev.game_controller.ptr;
             break;
          } else port--;
-      } else if(sdl->auxiliary_devices[i].type == SDL_AUXILIARY_DEVICE_TYPE_SENSOR){
-         //TODO
+      } else if(
+         sdl->auxiliary_devices[i].type == SDL_AUXILIARY_DEVICE_TYPE_SENSOR &&
+         SDL_SensorGetType(sdl->auxiliary_devices[i].dev.sensor) == sensor_type
+      ){
+         if (port==0){
+            sensor=sdl->auxiliary_devices[i].dev.sensor;
+            break;
+         } else port--;
       }
    }
-   if (!gamepad){
+   if (!gamepad && !sensor){
       RARCH_ERR("[sdl]: sdl_input_get_sensor_input recieved a "
       "device where none of it's children are sensors\n");
       return 0.0f;
    }
-   if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
-      (id == RETRO_SENSOR_ACCELEROMETER_Y) | 
-      (id == RETRO_SENSOR_ACCELEROMETER_Z)
-      )
-         SDL_GameControllerGetSensorData(gamepad, SDL_SENSOR_ACCEL, sensor_data,3);
-      
-   else if ((id == RETRO_SENSOR_GYROSCOPE_X) |
-      (id == RETRO_SENSOR_GYROSCOPE_Y) | 
-      (id == RETRO_SENSOR_GYROSCOPE_Z)
-      )
-         SDL_GameControllerGetSensorData(gamepad, SDL_SENSOR_GYRO, sensor_data,3);
-   switch (id){
-      case RETRO_SENSOR_ACCELEROMETER_X:
-      case RETRO_SENSOR_GYROSCOPE_X:
-      sensor_value=sensor_data[0];
-      break;
 
-      case RETRO_SENSOR_ACCELEROMETER_Y:
-      case RETRO_SENSOR_GYROSCOPE_Y:
-      sensor_value=sensor_data[1];
+   if (gamepad)
+      SDL_GameControllerGetSensorData(gamepad, sensor_type, sensor_data,3);
+   else /*if (sensor)*/ 
+      SDL_SensorGetData(sensor,sensor_data, 3);
 
-      break;
-      case RETRO_SENSOR_ACCELEROMETER_Z:
-      case RETRO_SENSOR_GYROSCOPE_Z:
-      sensor_value=sensor_data[2];
-      break;
+   if (id>=RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z){
+      sensor_value=sensor_data[id-RETRO_SENSOR_ACCELEROMETER_X];
+   } else if (id>=RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z){
+      sensor_value=sensor_data[id-RETRO_SENSOR_GYROSCOPE_X];
+   } else {
+      return 0.0f; //UNIMPLEMENTED
    }
    RARCH_DBG(
       "[udev] sensor:\n"
