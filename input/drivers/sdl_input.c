@@ -373,7 +373,6 @@ static int16_t sdl_input_state(
                   return pressure>0.0f;
 
             }
-            //TODO
          }
          else if (idx == 0)
          {
@@ -650,7 +649,7 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
    } else if (id>=RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z){
       sensor_value=sensor_data[id-RETRO_SENSOR_GYROSCOPE_X];
    } else {
-      return 0.0f; //UNIMPLEMENTED
+      return 0.0f; /*UNIMPLEMENTED*/
    }
    RARCH_DBG(
       "[udev] sensor:\n"
