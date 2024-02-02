@@ -867,7 +867,7 @@ static INLINE void android_input_poll_event_type_motion_stylus(
             android->mouse_l = 0;
          }
 
-         android_mouse_calculate_deltas(android,event,motion_ptr);
+         android_mouse_calculate_deltas(android,event,motion_ptr,source);
       }
 
       if (action == AMOTION_EVENT_ACTION_MOVE) {
@@ -910,7 +910,7 @@ static INLINE void android_input_poll_event_type_motion_stylus(
       {
          android->mouse_l        = 0;
 
-         android_mouse_calculate_deltas(android,event,motion_ptr);
+         android_mouse_calculate_deltas(android,event,motion_ptr,source);
       }
 
       // pointer was already released during AMOTION_EVENT_ACTION_HOVER_MOVE
