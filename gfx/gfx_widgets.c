@@ -1600,7 +1600,7 @@ void gfx_widgets_frame(void *data)
    /* AI Service overlay */
    if (p_dispwidget->ai_service_overlay_state > 0)
    {
-      int text_length = strlen(p_dispwidget->ai_service_text);
+      size_t text_length = strlen(p_dispwidget->ai_service_text);
       
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
@@ -1638,7 +1638,7 @@ void gfx_widgets_frame(void *data)
          
          if (text_width > (video_width * 0.9f - padding * 2))
          {
-            int text_half     = text_length / 2;
+            size_t text_half  = text_length / 2;
             char *extra_line  = (char*)malloc(sizeof(char) * text_length);
             for (; text_half > 0; text_half--)
             {

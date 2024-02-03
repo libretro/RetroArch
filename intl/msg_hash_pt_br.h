@@ -488,6 +488,10 @@ MSG_HASH(
    "Determinístico (salva/carrega, rebobina, execução antecipada, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Pesquisando em: \"%s\""
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Faltando, necessário:"
    )

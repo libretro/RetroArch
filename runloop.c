@@ -1981,15 +1981,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   strlcpy(tmp_path, fullpath, sizeof(tmp_path));
                   path_basedir(tmp_path);
 
-                  /* Removes trailing slash */
+                  /* Removes trailing slash (unless root dir) */
                   len = strlen(tmp_path);
-                  if (tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
+                  if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
+                        && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
                      tmp_path[len - 1] = '\0';
 
                   dir_set(RARCH_DIR_SYSTEM, tmp_path);
+                  *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
                }
+               else /* If content path is empty, fall back to global system dir path */
+                  *(const char**)data = dir_system;
 
-               *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
                RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
                      *(const char**)data);
             }
@@ -4085,7 +4088,7 @@ void runloop_event_deinit_core(void)
       input_remapping_set_defaults(true);
    }
    else
-      input_remapping_restore_global_config(true);
+      input_remapping_restore_global_config(true, false);
 
    RARCH_LOG("[Core]: Unloading core symbols..\n");
    uninit_libretro_symbols(&runloop_st->current_core);
@@ -4782,6 +4785,7 @@ void runloop_pause_checks(void)
    presence_userdata_t userdata;
 #endif
    video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    bool is_idle                   = (runloop_st->flags & RUNLOOP_FLAG_IDLE)   ? true : false;
@@ -4819,12 +4823,21 @@ void runloop_pause_checks(void)
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
+
+      /* Limit paused frames to video refresh. */
+      runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
+            ((video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : settings->floats.video_refresh_rate));
    }
    else
    {
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
+
+      /* Restore frame limit. */
+      runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -6958,12 +6971,6 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
          video_driver_cached_frame();
-
-         /* Limit paused video refresh. */
-         runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
-               ((video_st->video_refresh_rate_original)
-                  ? video_st->video_refresh_rate_original
-                  : settings->floats.video_refresh_rate));
          goto end;
       case RUNLOOP_STATE_MENU:
 #ifdef HAVE_NETWORKING
@@ -7218,7 +7225,13 @@ end:
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
-   if (runloop_st->frame_limit_minimum_time)
+   if (   (runloop_st->frame_limit_minimum_time)
+          && (   (vrr_runloop_enable)
+              || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
+#ifdef HAVE_MENU
+              || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE && !(settings->bools.video_vsync))
+#endif
+              || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
    {
       const retro_time_t end_frame_time  = cpu_features_get_time_usec();
       const retro_time_t to_sleep_ms     = (
