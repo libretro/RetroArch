@@ -2547,6 +2547,7 @@ static void video_shader_dir_init_shader(
    bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
+   video_driver_state_t *video_st                 = video_state_get_ptr();
 #if defined(HAVE_MENU)
    menu_handle_t *menu                            = (menu_handle_t*)menu_driver_data_;
    enum rarch_shader_type last_shader_preset_type = menu ? menu->last_shader_selection.preset_type : RARCH_SHADER_NONE;
@@ -2571,6 +2572,18 @@ static void video_shader_dir_init_shader(
           last_shader_preset_file_name,
           show_hidden_files))
       return;
+
+   /* Try directory of shader given as command line parameter */
+   if (!string_is_empty(video_st->cli_shader_path))
+   {
+     char cli_path[PATH_MAX_LENGTH];
+     fill_pathname_basedir(cli_path, video_st->cli_shader_path, sizeof(cli_path));
+     if (video_shader_dir_init_shader_internal(
+            video_shader_remember_last_dir,
+            dir_list,
+            cli_path, NULL, show_hidden_files))
+        return;
+   }
 
    /* Try video shaders directory */
    if (!string_is_empty(directory_video_shader) &&
