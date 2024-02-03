@@ -2232,6 +2232,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",        &settings->floats.input_analog_deadzone,    true, DEFAULT_ANALOG_DEADZONE, false);
    SETTING_FLOAT("input_analog_sensitivity",     &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_accelerometer_sensitivity",     &settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_gyroscope_sensitivity",         &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_osk_overlay_opacity",             &settings->floats.input_osk_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
@@ -2884,6 +2886,7 @@ void config_set_defaults(void *data)
 #endif
       input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = (unsigned)i;
+      settings->uints.input_sensor_index[i] = (unsigned)i;
    }
 
    custom_vp->width  = 0;
@@ -3687,6 +3690,9 @@ static bool config_load_file(global_t *global,
          snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
          _len2     = strlcpy(buf, prefix, sizeof(buf));
+
+         strlcpy(buf + _len2, "_sensor_index", sizeof(buf) - _len2);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_sensor_index[i], buf);
 
          strlcpy(buf + _len2, "_mouse_index", sizeof(buf) - _len2);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
@@ -5182,6 +5188,9 @@ bool config_save_file(const char *path)
 
       _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
       _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
+      
+      strlcpy(cfg + _len, "_sensor_index",       sizeof(cfg) - _len);
+      config_set_int(conf, cfg, settings->uints.input_sensor_index[i]);
 
       strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
@@ -5500,6 +5509,14 @@ int8_t config_save_overrides(enum override_type type,
 
          _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
          _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
+
+         if (settings->uints.input_sensor_index[i]
+               != overrides->uints.input_sensor_index[i])
+         {
+            strlcpy(cfg + _len, "_sensor_index",   sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_sensor_index[i]);
+            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_sensor_index[i]);
+         }
 
          if (settings->uints.input_mouse_index[i]
                != overrides->uints.input_mouse_index[i])

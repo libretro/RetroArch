@@ -145,6 +145,7 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
+      unsigned input_sensor_index[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
@@ -422,6 +423,8 @@ typedef struct settings
       float input_analog_deadzone;
       float input_axis_threshold;
       float input_analog_sensitivity;
+      float input_sensor_accelerometer_sensitivity;
+      float input_sensor_gyroscope_sensitivity;
 #ifdef _3DS
       float bottom_font_scale;
 #endif

@@ -7680,6 +7680,7 @@ static int setting_action_start_input_mouse_index(rarch_setting_t *setting)
    return 0;
 }
 
+
 /**
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
@@ -7929,7 +7930,37 @@ static void get_string_representation_input_mouse_index(
    if (string_is_empty(s))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
+static void get_string_representation_input_sensor_index(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned map              = 0;
 
+   if (!setting || !settings)
+      return;
+
+   map = settings->uints.input_sensor_index[setting->index_offset];
+
+   if (map < MAX_INPUT_DEVICES)
+   {
+      const char *device_name = input_config_get_sensor_display_name(map);
+
+      if (!string_is_empty(device_name))
+         strlcpy(s, device_name, len);
+      else if (map > 0)
+      {
+         size_t _len = strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               len);
+         snprintf(s + _len, len - _len, " (#%u)", map + 1);
+      }
+      else
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   }
+
+   if (string_is_empty(s))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+}
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -9189,6 +9220,7 @@ static bool setting_append_list_input_player_options(
 
       static char device_index[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
+      static char sensor_index[MAX_USERS][64];
       static char analog_to_digital[MAX_USERS][64];
       static char bind_all[MAX_USERS][64];
       static char bind_all_save_autoconfig[MAX_USERS][64];
@@ -9196,6 +9228,7 @@ static bool setting_append_list_input_player_options(
 
       static char label_device_index[MAX_USERS][64];
       static char label_mouse_index[MAX_USERS][64];
+      static char label_sensor_index[MAX_USERS][64];
       static char label_analog_to_digital[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
@@ -9214,6 +9247,8 @@ static bool setting_append_list_input_player_options(
             sizeof(device_index[user]));
       fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
             sizeof(mouse_index[user]));
+      fill_pathname_join_delim(sensor_index[user], tmp_string, "sensor_index", '_',
+            sizeof(sensor_index[user]));
       fill_pathname_join_delim(bind_all[user], tmp_string, "bind_all", '_',
             sizeof(bind_all[user]));
       fill_pathname_join_delim(bind_all_save_autoconfig[user],
@@ -9232,6 +9267,9 @@ static bool setting_append_list_input_player_options(
       strlcpy(label_mouse_index[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
             sizeof(label_mouse_index[user]));
+      strlcpy(label_sensor_index[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_INDEX),
+            sizeof(label_sensor_index[user]));
       strlcpy(label_bind_all[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
             sizeof(label_bind_all[user]));
@@ -9345,6 +9383,23 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_sensor_index[user],
+            sensor_index[user],
+            label_sensor_index[user],
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].get_string_representation =
+            &get_string_representation_input_sensor_index;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
 
       CONFIG_ACTION_ALT(
             list, list_info,
@@ -15231,6 +15286,36 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
                   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
                   DEFAULT_ANALOG_SENSITIVITY,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_sensor_accelerometer_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_sensor_gyroscope_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY,
                   "%.1f",
                   &group_info,
                   &subgroup_info,
