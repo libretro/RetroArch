@@ -709,7 +709,7 @@ static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_i,
       const void* buf, size_t len, uint16_t client_id);
 static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
       const void* buf, size_t len, uint16_t client_id);
-static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb();
+static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb(void);
 
 /*
  * netplay_init_socket_buffer
@@ -9555,7 +9555,7 @@ static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
    }
 }
 
-static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb()
+static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb(void)
 {
    net_driver_state_t *net_st = &networking_driver_st;
    netplay_t *netplay         = net_st->data;

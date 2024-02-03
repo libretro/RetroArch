@@ -528,6 +528,14 @@ MSG_HASH(
    "ファームウェア"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- 注意: [コンテンツディレクトリからシステムファイルを読み込む] が現在有効化されています。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- 検索中: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "不足, 必須:"
    )
@@ -1366,7 +1374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "ディスプレイオーバーレイ、キーボードオーバーレイおよび OSD 通知の設定を変更します。"
+   "OSD オーバーレイ、OSD キーボードオーバーレイおよび OSD 通知の設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1522,7 +1530,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
-   "低レベルのヒューマンインターフェースデバイスドライバです。"
+   "低レベルヒューマンインターフェースデバイスドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
@@ -1773,7 +1781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "使用するメニュードライバです。再起動が必要です。"
+   "使用するメニュードライバです。変更を適用するには再起動が必要です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2269,7 +2277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "フルスクリーンの場合は、表示モードの切り替えを防ぐためにフルスクリーンウィンドウを使用することをお勧めします。"
+   "フルスクリーンにする場合は、表示モードの切り替えを防ぐためにウィンドウフルスクリーンモードを使用することをお勧めします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -2277,7 +2285,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "非ウィンドウフルスクリーンモードのカスタム幅サイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
+   "排他的フルスクリーンモードのカスタム幅サイズを設定します。未設定のままにすると、デスクトップの解像度が使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
@@ -2285,7 +2293,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "非ウィンドウフルスクリーンモードのカスタム高さサイズを設定します。未設定の場合、デスクトップの解像度が使用されます。"
+   "排他的フルスクリーンモードのカスタム高さサイズを設定します。未設定のままにすると、デスクトップの解像度が使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
@@ -2407,7 +2415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "設定アスペクト比"
+   "小数点アスペクト比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -2415,7 +2423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "設定"
+   "小数点"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
@@ -3117,7 +3125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "入力バインドを現在のコアに設定されているリマップされたバインドで上書きします。"
+   "入力割り当てを現在のコアに設定されているリマップ設定で上書きします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3125,7 +3133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "プロファイルを持つコントローラーを自動的に設定します。プラグアンドプレイスタイルです。"
+   "プロファイルが存在するコントローラーを自動的に設定します。プラグアンドプレイスタイルです。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
@@ -3157,7 +3165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   "現在のハードウェアでサポートされている場合は、加速度センサー、ジャイロスコープ、明るさセンサーからの入力を有効にします。一部のプラットフォームでパフォーマンスに影響を与えたり、消費電力を増加させたりする可能性があります。"
+   "加速度センサー、ジャイロスコープ、明るさセンサーからの入力を有効にします。現在のハードウェアでサポートされていない場合は無視されます。一部のプラットフォームでパフォーマンスに影響を与えたり、消費電力を増加させたりする可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -3201,7 +3209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "[アナログからデジタル] を使用しているときにボタンを押すために軸をどの程度傾ける必要があるかです。"
+   "[アナログデジタル変換] を使用している場合、ボタンの押下判定の発生に必要な軸の傾きです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -3221,19 +3229,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-   "バインドのタイムアウト"
+   "割り当て時のタイムアウト時間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "次のバインドに進むまで待機する秒数です。"
+   "次の割り当てに進むまで待機する秒数です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-   "バインドの長押し"
+   "割り当て時の長押し時間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "入力をバインドするために長押しする秒数です。"
+   "入力を割り当てるために長押しする秒数です。"
    )
 MSG_HASH(
    MSG_INPUT_BIND_PRESS,
@@ -3261,11 +3269,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "ターボデューティサイクル"
+   "ターボ間隔中のボタン押下フレーム数"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "ターボ間隔中にボタンを押したままにしておくフレーム数です。この値がターボ間隔と同じかそれ以上であれば、ボタンは離されず押したままになります。"
+   "ターボ間隔中にボタンの押下状態を維持するフレーム数です。この値をターボ間隔と同じかそれ以上にすると、ボタンは離されず押されたままの状態になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3273,7 +3281,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "ターボモードの一般的な動作を選択します。"
+   "ターボモードの方式を選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -3289,15 +3297,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "2 ボタン操作のクラシックモードです。ボタンを押したままターボボタンをタップすると、連打シーケンスが有効になります。\nターボボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
+   "クラシックモードです。ターボの有効化ボタンと連射したいボタンを同時に押している間、連射したいボタンが連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "切り替えモードです。ターボボタンを一度押すと、選択されたデフォルトボタンの連打シーケンスが有効になり、もう一度押すとオフになります。\nターボボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
+   "切り替えモードです。ターボの有効化ボタンを一度押すと、次にターボの有効化ボタンを押すまで選択されたデフォルトボタンが押下せずとも自動で連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "長押しモードです。ターボボタンが押されている間、選択されたデフォルトボタンの連打シーケンスが有効になります。\nターボボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。\nホームコンピュータ時代の連射機能をエミュレートするには、ターボとデフォルトボタンをジョイスティックのファイアボタンと同じに設定します。"
+   "長押しモードです。ターボの有効化ボタンを押している間、選択されたデフォルトボタンが連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。\nホームコンピュータ時代の連射機能をエミュレートするには、ターボの有効化ボタンとデフォルトボタンをジョイスティックのファイアボタンと同じに設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
@@ -3305,7 +3313,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "ターボモード [シングルボタン] のデフォルトアクティブボタンです。"
+   "ターボモード [シングルボタン] で連射されるデフォルトのボタンです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
@@ -3321,7 +3329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "連射の設定を変更します。\n注意: 連射機能は、対応する「ポート X コントロール」メニューの入力デバイスにターボボタンを割り当てる必要があります。"
+   "連射の設定を変更します。\n注意: 連射機能を使用するには、対応する [ポート X コントロール] メニューで入力デバイスにターボの有効化ボタンを割り当てる必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3345,19 +3353,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "ゲームプレイ中にメニューを切り替えるなど、ホットキーの設定や割り当てを変更します。"
+   "ゲームプレイ中のメニュー切り替えなど、ホットキーの設定や割り当てを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
-   "レトロパッドのバインド"
+   "レトロパッドの割り当て"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "仮想レトロパッドが物理入力デバイスにどのようにマップされるかを変更します。入力デバイスが認識され、正しく自動設定されている場合は、おそらくこのメニューを使用する必要はありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用します。"
+   "仮想レトロパッドが物理入力デバイスにどのように割り当てられるかを変更します。入力デバイスの認識と自動設定が正しく行われている場合、このメニューを使用する必要はおそらくありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro は「レトロパッド」として知られる仮想ゲームパッドの抽象概念を使用して、(RetroArch のような) フロントエンドからコアへ、あるいはその逆の通信を行います。このメニューは、仮想レトロパッドがどのように物理入力デバイスにマッピングされ、どの仮想入力ポートにデバイスが割り当てられるかを決定します。\n物理入力デバイスが認識され、正しく自動設定[...]"
+   "Libretro はレトロパッドという名称の概念を使用し、RetroArch のようなフロントエンドとコア間で相互通信を行います。このメニューは、仮想レトロパッドと物理入力デバイスおよびそれらが使用する入力ポートの割り当て設定を変更します。\n物理入力デバイスの認識と自動設定が正しく行われている場合、このメニューを使用する必要はおそらくありません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3365,11 +3373,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "仮想レトロパッドがこの仮想ポートの物理入力デバイスにどのようにマップされるかを変更します。"
+   "仮想レトロパッドがこの仮想ポートの物理入力デバイスにどのように割り当てられるかを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "コア固有の入力マッピングを変更します。"
+   "コア固有の入力割り当てを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3411,11 +3419,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   "メニューコントロールを一元化"
+   "メニューコントロールを統一"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "メニューとゲームの両方に同じコントロールを使用します. キーボードに適用されます."
+   "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
@@ -3624,7 +3632,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "現在選択されているスロットから保存したステートをロードします。"
+   "現在選択されているスロットに保存したステートをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -3812,7 +3820,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "フルスクリーンとウィンドウ表示モードを切り替えます。"
+   "フルスクリーンモードとウィンドウモードを切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
@@ -3947,11 +3955,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
-   "エミュレートされたコントローラーの種類を指定します。"
+   "エミュレートされるコントローラーの種類を指定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "アナログからデジタルの種類"
+   "アナログデジタル変換の種類"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
@@ -3967,7 +3975,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
-   "マップされたポート"
+   "割り当てるポート"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
@@ -4131,7 +4139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "ターボ"
+   "ターボの有効化"
    )
 
 /* Settings > Latency */
@@ -4374,7 +4382,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   "自動的にコンテンツ固有のコアオプションをロード"
+   "自動的に優先コアオプションをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -4734,7 +4742,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "早送り中のコンテンツの最大フレームレートです。例えば、60fps コンテンツに対して 5x を指定すると、最大フレームレートは300fps になります。[0.0x] を指定した場合は無制限になります (FPS 制限なし)。"
+   "早送り中のコンテンツの最大フレームレートです。例えば、60fps コンテンツに対して 5x を指定すると、最大フレームレートは 300fps になります。[0.0x] を指定した場合は無制限になります (FPS 制限なし)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
@@ -4942,7 +4950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "OSD コントロールとベゼルを調整します。"
+   "OSD キーボードオーバーレイを含む様々な OSD オーバーレイの設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
@@ -4958,7 +4966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "OSD 通知を調整します。"
+   "OSD 通知の設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -4990,7 +4998,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   "メニューでオーバーレイを隠す"
+   "メニュー表示時にオーバーレイを隠す"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
@@ -4998,7 +5006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "コントローラーが接続されているときにオーバーレイを隠す"
+   "コントローラー接続時にオーバーレイを隠す"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
@@ -5028,7 +5036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "ポートからの入力を表示"
+   "入力を監視するポート"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
@@ -5048,7 +5056,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "現在のオーバーレイでサポートされている場合、画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。"
+   "画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。現在のオーバーレイでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
@@ -5088,7 +5096,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "オーバーレイのすべての UI 要素の不透明度です。"
+   "オーバーレイの全 UI 要素の不透明度です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -5104,7 +5112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
-   "横向きの表示方向を使用するときのすべての UI 要素の表示倍率です。"
+   "横向きの表示方向を使用するときの全 UI 要素の表示倍率です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
@@ -5120,7 +5128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "現在のプリセットでサポートされている場合、横向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "横向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
@@ -5128,7 +5136,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "現在のプリセットでサポートされている場合、横向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "横向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -5136,7 +5144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用しているときの水平オーバーレイオフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
+   "横向きの表示方向を使用しているときにオーバーレイに適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -5152,7 +5160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
-   "縦向きの表示方向を使用しているときのすべての UI 要素の表示倍率です。"
+   "縦向きの表示方向を使用しているときの全 UI 要素の表示倍率です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
@@ -5168,7 +5176,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "現在のプリセットでサポートされている場合、縦向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "縦向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
@@ -5176,7 +5184,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "現在のプリセットでサポートされている場合、縦向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "縦向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
@@ -5184,7 +5192,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
-   "横向きの表示方向を使用しているときの水平オーバーレイオフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
+   "縦向きの表示方向を使用しているときにオーバーレイに適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
@@ -5227,7 +5235,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
-   "キーボードオーバーレイのすべての UI 要素の不透明度です。"
+   "キーボードオーバーレイの全 UI 要素の不透明度です。"
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -6425,11 +6433,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "[OSD 表示] を表示"
+   "[OSD] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "[OSD 表示] 設定を表示します。"
+   "[OSD] 設定を表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -8599,7 +8607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "現在選択されているスロットから保存したステートをロードします。"
+   "現在選択されているスロットに保存したステートをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -8769,15 +8777,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "ゲームオプションを保存"
+   "ゲーム優先オプションを保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "現在のコンテンツにのみ適用されるコアオプションを保存します。"
+   "現在のコンテンツのみに適用されるコアオプションを保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "ゲームオプションを削除"
+   "ゲーム優先オプションを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
@@ -8785,7 +8793,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "コンテンツディレクトリオプションを保存"
+   "コンテンツディレクトリ優先オプションを保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
@@ -8793,7 +8801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "コンテンツディレクトリオプションを削除"
+   "コンテンツディレクトリ優先オプションを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
@@ -8827,11 +8835,11 @@ MSG_HASH(
 /* - Legacy (unused) */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "ゲームオプションファイルを作成"
+   "ゲーム優先オプションファイルを作成"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "ゲームオプションファイルを保存"
+   "ゲーム優先オプションファイルを保存"
    )
 
 /* Quick Menu > Controls */
@@ -8861,7 +8869,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
-   "リマップファイルをロードして現在の入力マッピングを置き換えます。"
+   "リマップファイルをロードして現在の入力割り当てを置き換えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
@@ -8869,7 +8877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
-   "現在の入力マッピングを新しいリマップファイルとして保存します。"
+   "現在の入力割り当てを新しいリマップファイルとして保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
@@ -8897,7 +8905,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "ゲームコンテンツディレクトリリマップファイルを削除"
+   "コンテンツディレクトリリマップファイルを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
@@ -8921,7 +8929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
-   "入力マッピングをリセット"
+   "入力割り当てをリセット"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
@@ -9603,7 +9611,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "現在のファイルと同じディレクトリからロードされたすべてのコンテンツに適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
+   "現在のファイルと同じディレクトリからロードされるすべてのコンテンツに適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9619,7 +9627,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "現在のコンテンツにのみ適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
+   "現在のコンテンツのみに適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9627,7 +9635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "現在のコンテンツにのみ適用される優先設定ファイルを削除します。"
+   "現在のコンテンツのみに適用される優先設定ファイルを削除します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
@@ -10015,7 +10023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
-   "アナログ付きレトロパッド"
+   "レトロパッド (アナログ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
@@ -12524,7 +12532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
-   "設定"
+   "小数点"
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
@@ -12714,7 +12722,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "ネットプレイポートのマッピングに成功"
+   "ネットプレイポートの割り当てに成功しました"
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
@@ -12722,7 +12730,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "ネットプレイ UPnP ポートのマッピングに失敗"
+   "ネットプレイ UPnP ポートの割り当てに失敗しました"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -13295,7 +13303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
-   "ソケットのバインドに失敗しました。"
+   "ソケットの割り当てに失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CREATE_THE_DIRECTORY,
@@ -14685,7 +14693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   "ガバナー, 周波数など, CPUの挙動詳細を手動で調整できます. 上級ユーザにのみお勧めします."
+   "ガバナーや周波数など、CPU の詳細な挙動を手動で調整します。上級ユーザーにのみお勧めします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
@@ -14705,19 +14713,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
-   "最大パフォーマンス"
+   "最高パフォーマンス"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
-   "最大のパフォーマンスを得るため, 常に最高周波数で動作します."
+   "最高のパフォーマンスを得るため、常に最大周波数で動作します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   "最小電力"
+   "最低消費電力"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   "電力を節約するため, 利用可能な最低周波数で動作します. バッテリー駆動のデバイスで役立ちますが, パフォーマンスは大幅に低下します."
+   "消費電力を節約するため、利用可能な最小周波数で動作します。バッテリー駆動のデバイスで役立ちますが、パフォーマンスが大幅に低下します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,

@@ -1079,7 +1079,7 @@ static uint32_t adler32 (uint32_t adler, const uint8_t *buf, usize_t len)
 {
     uint32_t s1 = adler & 0xffffU;
     uint32_t s2 = (adler >> 16) & 0xffffU;
-    int k;
+    usize_t k;
 
     while (len > 0)
       {

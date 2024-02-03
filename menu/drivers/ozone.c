@@ -8310,7 +8310,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             ozone->pending_cursor_in_sidebar = false;
             ozone->flags |= OZONE_FLAG_CURSOR_IN_SIDEBAR;
-            ozone_sidebar_goto(ozone, ozone->categories_selection_ptr);
+            ozone_sidebar_goto(ozone, (unsigned)ozone->categories_selection_ptr);
          }
          break;
 
