@@ -282,7 +282,7 @@ typedef struct
 {
    char display_name[256];
 } input_mouse_info_t;
-
+typedef input_mouse_info_t input_sensor_info_t;
 typedef struct input_remote input_remote_t;
 
 typedef struct input_remote_state
@@ -540,6 +540,7 @@ typedef struct
    input_mapper_t mapper;          /* uint32_t alignment */
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   input_sensor_info_t input_sensor_info[MAX_INPUT_DEVICES];
    unsigned old_analog_dpad_mode[MAX_USERS];
    unsigned old_libretro_device[MAX_USERS];
    unsigned osk_last_codepoint;
@@ -743,6 +744,7 @@ void input_config_set_device_name(unsigned port, const char *name);
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
 void input_config_set_mouse_display_name(unsigned port, const char *name);
+void input_config_set_sensor_display_name(unsigned port, const char *name);
 
 /**
  * Set the configuration name for the device in the specified port
@@ -830,6 +832,7 @@ unsigned input_config_get_device(unsigned port);
 const char *input_config_get_device_name(unsigned port);
 const char *input_config_get_device_display_name(unsigned port);
 const char *input_config_get_mouse_display_name(unsigned port);
+const char *input_config_get_sensor_display_name(unsigned port);
 const char *input_config_get_device_config_name(unsigned port);
 const char *input_config_get_device_joypad_driver(unsigned port);
 

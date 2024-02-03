@@ -3579,6 +3579,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    for (i = 0; i < MAX_USERS; i++)
    {
       input_config_set_mouse_display_name(i, "N/A");
+      input_config_set_sensor_display_name(i, "N/A");
       udev->pointers[i]  = -1;
       udev->keyboards[i] = -1;
    }
@@ -3588,7 +3589,9 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    {
       udev_input_device_t * cur_device=udev->devices[i];
       do {
-      if (cur_device->type == UDEV_INPUT_SENSOR);
+      if (cur_device->type == UDEV_INPUT_SENSOR){
+         input_config_set_sensor_display_name(mouse, cur_device->ident);
+      }
       else if (cur_device->type != UDEV_INPUT_KEYBOARD)
       {
          /* Pointers */
@@ -4330,6 +4333,7 @@ static void *udev_input_init(const char *joypad_driver)
             RARCH_LOG("[udev]: Sensor: \"%s\" %s.\n",
             curdevice->ident,
             curdevice->devnode);
+            input_config_set_sensor_display_name(mouse, curdevice->ident);
          }
          else if (curdevice->type != UDEV_INPUT_KEYBOARD)
          {

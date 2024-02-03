@@ -4239,7 +4239,13 @@ const char *input_config_get_mouse_display_name(unsigned port)
       return NULL;
    return input_st->input_mouse_info[port].display_name;
 }
-
+const char *input_config_get_sensor_display_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_sensor_info[port].display_name))
+      return NULL;
+   return input_st->input_sensor_info[port].display_name;
+}
 void input_config_set_mouse_display_name(unsigned port, const char *name)
 {
    char name_ascii[NAME_MAX_LENGTH];
@@ -4255,7 +4261,21 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
 }
+void input_config_set_sensor_display_name(unsigned port, const char *name)
+{
+   char name_ascii[NAME_MAX_LENGTH];
+   input_driver_state_t *input_st = &input_driver_st;
 
+   name_ascii[0] = '\0';
+
+   /* Strip non-ASCII characters */
+   if (!string_is_empty(name))
+      string_copy_only_ascii(name_ascii, name);
+
+   if (!string_is_empty(name_ascii))
+      strlcpy(input_st->input_sensor_info[port].display_name, name_ascii,
+            sizeof(input_st->input_sensor_info[port].display_name));
+}
 void input_keyboard_mapping_bits(unsigned mode, unsigned key)
 {
    input_driver_state_t *input_st = &input_driver_st;
