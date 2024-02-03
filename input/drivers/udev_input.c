@@ -588,16 +588,20 @@ typedef struct udev_input_device
       udev_input_touch_t _touch; /* State tracking for touch-type devices */
    #endif
       } _mouse;
-      udev_input_sensor_t _sensor;
+      struct {
+         udev_input_sensor_t _sensor;
+         struct udev_input_device * _wii_motion_plus;
+      } _sensor;
    } _u;
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
    char ident[255]; /* Identifier of the device */
 } udev_input_device_t;
 
-#define MOUSE _u._mouse._mouse
-#define TOUCH _u._mouse._touch
-#define SENSOR _u._sensor
+#define mouse_state _u._mouse._mouse
+#define touch_state _u._mouse._touch
+#define sensor_state _u._sensor._sensor
+#define wii_motion_plus_state _u._sensor._wii_motion_plus
 
 typedef void (*device_handle_cb)(void *data,
       const struct input_event *event, udev_input_device_t *dev);
@@ -775,14 +779,14 @@ static udev_input_sensor_t *udev_get_sensor(
       const struct udev_input *udev, unsigned port)
 {
    udev_input_device_t *input_device=udev_get_sensor_device(udev,port);
-   if (input_device) return &input_device->SENSOR;
+   if (input_device) return &input_device->sensor_state;
    else return NULL;
 }
 static udev_input_mouse_t *udev_get_pointer(
       const struct udev_input *udev, unsigned port)
 {
    udev_input_device_t *input_device=udev_get_pointer_device(udev,port);
-   if (input_device) return &input_device->MOUSE;
+   if (input_device) return &input_device->mouse_state;
    else return NULL;
 }
 static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
@@ -967,7 +971,7 @@ static void udev_handle_mouse(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
 
-   udev_input_mouse_t *mouse = &dev->MOUSE;
+   udev_input_mouse_t *mouse = &dev->mouse_state;
 
    switch (event->type)
    {
@@ -1420,8 +1424,8 @@ static void udev_dump_touch_device_slots(const char *indent, const udev_input_to
  */
 static void udev_dump_touch_dev(udev_input_device_t *dev)
 {
-   udev_input_mouse_t *mouse = &dev->MOUSE;
-   udev_input_touch_t *touch = &dev->TOUCH;
+   udev_input_mouse_t *mouse = &dev->mouse_state;
+   udev_input_touch_t *touch = &dev->touch_state;
 
    RARCH_DBG("[udev] === UDEV_INPUT_DEVICE INFO DUMP ===\n");
 
@@ -1472,7 +1476,7 @@ static void udev_dump_touch_dev(udev_input_device_t *dev)
  */
 static void udev_destroy_touch_dev(udev_input_device_t *dev)
 {
-   udev_input_touch_t *touch = &dev->TOUCH;
+   udev_input_touch_t *touch = &dev->touch_state;
 
    RARCH_DBG("[udev] Destroying touch device \"%s\"\n", dev->ident);
 
@@ -1521,35 +1525,35 @@ static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
    if (force || pointer_en_new != pointer_en)
    {
        pointer_en                 = pointer_en_new;
-       dev->TOUCH.pointer_enabled = pointer_en_new;
+       dev->touch_state.pointer_enabled = pointer_en_new;
    }
 
    mouse_en_new = UDEV_INPUT_TOUCH_MOUSE_EN;
    if (force || mouse_en_new != mouse_en)
    {
        mouse_en                 = mouse_en_new;
-       dev->TOUCH.mouse_enabled = mouse_en_new;
+       dev->touch_state.mouse_enabled = mouse_en_new;
    }
 
    touchpad_en_new = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
    if (force || touchpad_en_new != touchpad_en)
    {
        touchpad_en                 = touchpad_en_new;
-       dev->TOUCH.touchpad_enabled = touchpad_en_new;
+       dev->touch_state.touchpad_enabled = touchpad_en_new;
    }
 
    trackball_en_new = UDEV_INPUT_TOUCH_TRACKBALL_EN;
    if (force || trackball_en_new != trackball_en)
    {
        trackball_en                 = trackball_en_new;
-       dev->TOUCH.trackball_enabled = trackball_en_new;
+       dev->touch_state.trackball_enabled = trackball_en_new;
    }
 
    gest_en_new = UDEV_INPUT_TOUCH_GEST_EN;
    if (force || gest_en_new != gest_en)
    {
        gest_en                 = gest_en_new;
-       dev->TOUCH.gest_enabled = gest_en_new;
+       dev->touch_state.gest_enabled = gest_en_new;
    }
 }
 
@@ -1563,7 +1567,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    int iii, ret;
    struct input_absinfo abs_info;
    unsigned long xreq, yreq;
-   udev_input_touch_t *touch = &dev->TOUCH;
+   udev_input_touch_t *touch = &dev->touch_state;
    settings_t *settings      = config_get_ptr();
 
    RARCH_DBG("[udev] Initializing touch device \"%s\"\n", dev->ident);
@@ -1806,8 +1810,8 @@ static void udev_sync_touch(udev_input_device_t *dev)
    size_t mt_request_data_size;
    size_t slot_count;
    udev_touch_ts_t now;
-   udev_input_touch_t *touch = &dev->TOUCH;
-   udev_slot_state_t *staging = dev->TOUCH.staging;
+   udev_input_touch_t *touch = &dev->touch_state;
+   udev_slot_state_t *staging = dev->touch_state.staging;
 
    RARCH_DDBG("[udev] Synchronizing touch data...\n");
 
@@ -2370,7 +2374,7 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
 static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 {
    /* Touch state being modified. */
-   udev_input_touch_t *touch = &dev->TOUCH;
+   udev_input_touch_t *touch = &dev->touch_state;
 
    /* Helper variables. */
    int iii;
@@ -2735,8 +2739,8 @@ static void udev_handle_touch(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
    udev_input_t *udev        = (udev_input_t*)data;
-   udev_input_mouse_t *mouse = &dev->MOUSE;
-   udev_input_touch_t *touch = &dev->TOUCH;
+   udev_input_mouse_t *mouse = &dev->mouse_state;
+   udev_input_touch_t *touch = &dev->touch_state;
    /* struct input_event */
    /* { */
    /*   (pseudo) input_event_sec; */
@@ -2858,7 +2862,7 @@ static void udev_handle_touch(void *data,
       case EV_KEY:
          if (event->code == BTN_TOUCH)
          {
-            RARCH_DDBG("[udev] handle_touch: [%d] TOUCH %d\n", touch->current_slot, event->value);
+            RARCH_DDBG("[udev] handle_touch: [%d] touch_state %d\n", touch->current_slot, event->value);
             if (event->value > 0)
                touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_DOWN;
             else
@@ -3091,7 +3095,7 @@ static int16_t udev_input_touch_state(
 {
    int16_t ret = 0;
    bool screen = false;
-   udev_input_touch_t *touch = &dev->TOUCH;
+   udev_input_touch_t *touch = &dev->touch_state;
    udev_touch_ts_t now;
    
    /* Get current time for measurements */
@@ -3248,7 +3252,7 @@ static void udev_handle_sensor(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
    if (event->type == EV_ABS)
-      dev->SENSOR.sensor_data.a[event->code]=event->value;
+      dev->sensor_state.sensor_data.a[event->code]=event->value;
    
 }
 
@@ -3259,10 +3263,11 @@ static void udev_handle_sensor(void *data,
  */
 static void udev_init_sensor_dev(udev_input_device_t *dev)
 {
-   udev_input_sensor_t *sensor = &dev->SENSOR;
+   udev_input_sensor_t *sensor = &dev->sensor_state;
    int ret,i;
    struct input_absinfo abs_info;
 
+   dev->wii_motion_plus_state=NULL;
    RARCH_DBG("[udev] Initializing sensor device \"%s\"\n", dev->ident);
    for (i=ABS_X ; i<=ABS_RZ; i++){
       ret = ioctl(dev->fd, EVIOCGABS(i), &abs_info);
@@ -3360,23 +3365,23 @@ static int udev_input_add_device(udev_input_t *udev,
             if (test_bit(keycaps, BTN_TOUCH))
             {
                touch             = 1;
-               device->MOUSE.abs = 1;
+               device->mouse_state.abs = 1;
             }
             /* check for light gun or any other device that might not have a touch button */
             else
-               device->MOUSE.abs = 2;
+               device->mouse_state.abs = 2;
 
             if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
                RARCH_DBG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
          }
       }
 
-      device->MOUSE.x_min = 0;
-      device->MOUSE.y_min = 0;
-      device->MOUSE.x_max = 0;
-      device->MOUSE.y_max = 0;
+      device->mouse_state.x_min = 0;
+      device->mouse_state.y_min = 0;
+      device->mouse_state.x_max = 0;
+      device->mouse_state.y_max = 0;
 
-      if (device->MOUSE.abs)
+      if (device->mouse_state.abs)
       {
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
          {
@@ -3384,16 +3389,16 @@ static int udev_input_add_device(udev_input_t *udev,
             goto end;
          }
 
-         device->MOUSE.x_min = absinfo.minimum;
-         device->MOUSE.x_max = absinfo.maximum;
+         device->mouse_state.x_min = absinfo.minimum;
+         device->mouse_state.x_max = absinfo.maximum;
 
          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
          {
             RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_Y parameters \n",device->ident);
             goto end;
          }
-         device->MOUSE.y_min = absinfo.minimum;
-         device->MOUSE.y_max = absinfo.maximum;
+         device->mouse_state.y_min = absinfo.minimum;
+         device->mouse_state.y_max = absinfo.maximum;
       }
 
       if (touch)
@@ -3667,7 +3672,7 @@ static void udev_input_poll(void *data)
             cur_device->type == UDEV_INPUT_SENSOR)
             continue;
 
-         mouse = &cur_device->MOUSE;
+         mouse = &cur_device->mouse_state;
    #ifdef HAVE_X11
          udev_input_adopt_rel_pointer_position_from_mouse(
                &udev->pointer_x, &udev->pointer_y, mouse);
@@ -3682,7 +3687,7 @@ static void udev_input_poll(void *data)
 
    #ifdef UDEV_TOUCH_SUPPORT
          /* Schedule touch state update. */
-         cur_device->TOUCH.run_state_update = true;
+         cur_device->touch_state.run_state_update = true;
    #endif
       
    }
@@ -4031,7 +4036,7 @@ static int16_t udev_input_state(
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
-         if (pointer_dev && pointer_dev->TOUCH.is_touch_device)
+         if (pointer_dev && pointer_dev->touch_state.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
@@ -4041,7 +4046,7 @@ static int16_t udev_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
-         if (pointer_dev && pointer_dev->TOUCH.is_touch_device)
+         if (pointer_dev && pointer_dev->touch_state.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
@@ -4052,7 +4057,7 @@ static int16_t udev_input_state(
 
       case RETRO_DEVICE_LIGHTGUN:
 #ifdef UDEV_TOUCH_SUPPORT
-         if (pointer_dev && pointer_dev->TOUCH.is_touch_device)
+         if (pointer_dev && pointer_dev->touch_state.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
@@ -4317,7 +4322,7 @@ static void *udev_input_init(const char *joypad_driver)
             RARCH_LOG("[udev]: Mouse/Touch #%u: \"%s\" (%s) %s.\n",
                mouse,
                curdevice->ident,
-               curdevice->MOUSE.abs ? "ABS" : "REL",
+               curdevice->mouse_state.abs ? "ABS" : "REL",
                curdevice->devnode);
 
             input_config_set_mouse_display_name(mouse, curdevice->ident);
@@ -4394,6 +4399,7 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
    if (udev->devices == NULL) return 0.f;
 
    sensor=udev_get_sensor(udev,port);
+   if (!sensor) return 0.f;
    if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z){
       sensor_value=(float)sensor->sensor_data.a[id-RETRO_SENSOR_ACCELEROMETER_X];
       limits=sensor->limits.a[id-RETRO_SENSOR_ACCELEROMETER_X];
