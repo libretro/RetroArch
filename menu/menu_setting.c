@@ -9394,10 +9394,12 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
       (*list)[list_info->index - 1].get_string_representation =
             &get_string_representation_input_sensor_index;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
-
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
 

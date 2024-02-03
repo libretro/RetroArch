@@ -1329,7 +1329,6 @@ ifeq ($(HAVE_DBUS), 1)
 endif
 
 ifeq ($(HAVE_UDEV), 1)
-   DEFINES += -DUDEV_TOUCH_SUPPORT
    DEF_FLAGS += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \

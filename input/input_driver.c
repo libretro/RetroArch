@@ -3780,7 +3780,7 @@ float input_get_sensor_state(unsigned port, unsigned id)
       sensitivity=settings->floats.input_sensor_gyroscope_sensitivity;
    else 
       sensitivity=1.f;
-   return input_driver_get_sensor(port, input_sensors_enable, id)*sensitivity;
+   return input_driver_get_sensor(port, input_sensors_enable, id)*((float)pow(2,sensitivity));
 }
 
 /**
