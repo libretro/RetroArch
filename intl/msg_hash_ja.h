@@ -1374,7 +1374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "ディスプレイオーバーレイ、キーボードオーバーレイおよび OSD 通知の設定を変更します。"
+   "OSD オーバーレイ、OSD キーボードオーバーレイおよび OSD 通知の設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1781,7 +1781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "使用するメニュードライバです。再起動が必要です。"
+   "使用するメニュードライバです。変更を適用するには再起動が必要です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2415,7 +2415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "設定アスペクト比"
+   "小数点アスペクト比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -2423,7 +2423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "設定"
+   "小数点"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
@@ -3165,7 +3165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   "現在のハードウェアでサポートされている場合は、加速度センサー、ジャイロスコープ、明るさセンサーからの入力を有効にします。一部のプラットフォームでパフォーマンスに影響を与えたり、消費電力を増加させたりする可能性があります。"
+   "加速度センサー、ジャイロスコープ、明るさセンサーからの入力を有効にします。現在のハードウェアでサポートされていない場合は無視されます。一部のプラットフォームでパフォーマンスに影響を与えたり、消費電力を増加させたりする可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -3353,7 +3353,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "ゲームプレイ中にメニューを切り替えるなど、ホットキーの設定や割り当てを変更します。"
+   "ゲームプレイ中のメニュー切り替えなど、ホットキーの設定や割り当てを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -3361,11 +3361,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "仮想レトロパッドが物理入力デバイスにどのように割り当てられるかを変更します。入力デバイスが認識され、正しく自動設定されている場合は、おそらくこのメニューを使用する必要はありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用します。"
+   "仮想レトロパッドが物理入力デバイスにどのように割り当てられるかを変更します。入力デバイスの認識と自動設定が正しく行われている場合、このメニューを使用する必要はおそらくありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro は「レトロパッド」として知られる仮想ゲームパッドの抽象概念を使用して、(RetroArch のような) フロントエンドからコアへ、あるいはその逆の通信を行います。このメニューは、仮想レトロパッドがどのように物理入力デバイスにマッピングされ、どの仮想入力ポートにデバイスが割り当てられるかを決定します。\n物理入力デバイスが認識され、正しく自動設定[...]"
+   "Libretro はレトロパッドという名称の概念を使用し、RetroArch のようなフロントエンドとコア間で相互通信を行います。このメニューは、仮想レトロパッドと物理入力デバイスおよびそれらが使用する入力ポートの割り当て設定を変更します。\n物理入力デバイスの認識と自動設定が正しく行われている場合、このメニューを使用する必要はおそらくありません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -4382,7 +4382,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   "自動的にコンテンツ固有のコアオプションをロード"
+   "自動的に優先コアオプションをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -4742,7 +4742,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "早送り中のコンテンツの最大フレームレートです。例えば、60fps コンテンツに対して 5x を指定すると、最大フレームレートは300fps になります。[0.0x] を指定した場合は無制限になります (FPS 制限なし)。"
+   "早送り中のコンテンツの最大フレームレートです。例えば、60fps コンテンツに対して 5x を指定すると、最大フレームレートは 300fps になります。[0.0x] を指定した場合は無制限になります (FPS 制限なし)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
@@ -4950,7 +4950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "OSD コントロールとベゼルを調整します。"
+   "OSD キーボードオーバーレイを含む様々な OSD オーバーレイの設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
@@ -4966,7 +4966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "OSD 通知を調整します。"
+   "OSD 通知の設定を変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -5056,7 +5056,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "現在のオーバーレイでサポートされている場合、画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。"
+   "画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。現在のオーバーレイでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
@@ -5128,7 +5128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "現在のプリセットでサポートされている場合、横向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "横向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
@@ -5136,7 +5136,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "現在のプリセットでサポートされている場合、横向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "横向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -5144,7 +5144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用しているときの水平オーバーレイオフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
+   "横向きの表示方向を使用しているときにオーバーレイに適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -5176,7 +5176,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "現在のプリセットでサポートされている場合、縦向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "縦向きの表示方向を使用しているときにオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
@@ -5184,7 +5184,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "現在のプリセットでサポートされている場合、縦向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
+   "縦向きの表示方向を使用しているときにオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
@@ -5192,7 +5192,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
-   "横向きの表示方向を使用しているときの水平オーバーレイオフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
+   "縦向きの表示方向を使用しているときにオーバーレイに適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
@@ -6433,11 +6433,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "[OSD 表示] を表示"
+   "[OSD] を表示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "[OSD 表示] 設定を表示します。"
+   "[OSD] 設定を表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -8607,7 +8607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "現在選択されているスロットから保存したステートをロードします。"
+   "現在選択されているスロットに保存したステートをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -8777,15 +8777,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "ゲームオプションを保存"
+   "ゲーム優先オプションを保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "現在のコンテンツにのみ適用されるコアオプションを保存します。"
+   "現在のコンテンツのみに適用されるコアオプションを保存します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "ゲームオプションを削除"
+   "ゲーム優先オプションを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
@@ -8793,7 +8793,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "コンテンツディレクトリオプションを保存"
+   "コンテンツディレクトリ優先オプションを保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
@@ -8801,7 +8801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "コンテンツディレクトリオプションを削除"
+   "コンテンツディレクトリ優先オプションを削除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
@@ -8835,11 +8835,11 @@ MSG_HASH(
 /* - Legacy (unused) */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "ゲームオプションファイルを作成"
+   "ゲーム優先オプションファイルを作成"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "ゲームオプションファイルを保存"
+   "ゲーム優先オプションファイルを保存"
    )
 
 /* Quick Menu > Controls */
@@ -9627,7 +9627,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "現在のコンテンツにのみ適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
+   "現在のコンテンツのみに適用される優先設定ファイルを保存します。メイン設定よりも優先されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -9635,7 +9635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "現在のコンテンツにのみ適用される優先設定ファイルを削除します。"
+   "現在のコンテンツのみに適用される優先設定ファイルを削除します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
@@ -10023,7 +10023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
-   "アナログ付きレトロパッド"
+   "レトロパッド (アナログ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
@@ -12532,7 +12532,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG,
-   "設定"
+   "小数点"
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
