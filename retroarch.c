@@ -5315,7 +5315,8 @@ bool command_event(enum event_command cmd, void *data)
                   accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
-                        "stopped.", 10);
+                        (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
+                        10);
 #endif
             }
             else
@@ -5329,7 +5330,8 @@ bool command_event(enum event_command cmd, void *data)
                accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
-                     "stopped.", 10);
+                     (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
+                     10);
             else
 #endif
             {
@@ -7387,7 +7389,7 @@ bool retroarch_main_init(int argc, char *argv[])
       accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
-            "RetroArch accessibility on.  Main Menu Load Core.",
+            (char*)msg_hash_to_str(MSG_ACCESSIBILITY_STARTUP),
             10);
 #endif
 
