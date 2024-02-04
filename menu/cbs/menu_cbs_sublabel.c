@@ -958,6 +958,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_filebrowser_settings,          
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_filebrowser_open_uwp_permissions, MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_filebrowser_open_picker,          MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_auto_remaps_enable,                    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_initial_disk_change_enable,            MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_specific_options,                 MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_global_core_options,                   MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS)
@@ -3439,6 +3440,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_auto_remaps_enable);
+            break;
+         case MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_initial_disk_change_enable);
             break;
          case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_filebrowser_settings);
