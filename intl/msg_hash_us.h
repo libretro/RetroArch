@@ -16086,3 +16086,11 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Touch mouse is disabled"
    )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "RetroArch accessibility on.  Main Menu Load Core."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "stopped."
+   )
