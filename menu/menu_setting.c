@@ -10859,7 +10859,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CONFIGURATION:
          {
             uint8_t i, listing = 0;
-            struct bool_entry bool_entries[8];
+            struct bool_entry bool_entries[9];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
@@ -10900,6 +10900,13 @@ static bool setting_append_list(
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
             bool_entries[listing].default_value  = DEFAULT_AUTO_REMAPS_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.initial_disk_change_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_INITIAL_DISK_CHANGE_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 

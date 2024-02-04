@@ -402,6 +402,10 @@ MSG_HASH(
    "auto_remaps_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "initial_disk_change_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,
    "global_core_options"
    )

@@ -10785,12 +10785,13 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,      PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,      PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,        PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
