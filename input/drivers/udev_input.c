@@ -3564,6 +3564,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    for (i=0;i<(int)udev->num_devices;i++){
       udev_input_device_t * cur_device=udev->devices[i];
       if (cur_device->type == UDEV_INPUT_SENSOR){
+         /* Sensors */
          input_config_set_sensor_display_name(sensor, cur_device->ident);
          udev->sensors[sensor] = i;
          sensor++;
