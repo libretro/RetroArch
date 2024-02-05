@@ -720,7 +720,7 @@ input_driver_t input_sdl = {
    sdl_input_poll,
    sdl_input_state,
    sdl_input_free,
-#ifdef SDL_SUPPORT_SENSORS
+#if SDL_SUPPORT_SENSORS
    sdl_input_set_sensor_state,
    sdl_input_get_sensor_input,
 #else
