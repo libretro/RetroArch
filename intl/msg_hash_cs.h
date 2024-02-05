@@ -14062,10 +14062,6 @@ MSG_HASH(
    "Nepodařilo se nastavit disk"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Nepodařilo se nastavit naposledy použitý disk..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Nepodařilo se připojit k klientovi"
    )

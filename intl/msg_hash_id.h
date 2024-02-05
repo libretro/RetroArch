@@ -4010,10 +4010,6 @@ MSG_HASH(
    "Memindai jejaring nirkabel..."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Gagal mengatur cakram terakhir pakai..."
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Mengambil data cakram..."
    )

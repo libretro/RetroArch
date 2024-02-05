@@ -14094,10 +14094,6 @@ MSG_HASH(
    "Impostazione del disco non riuscita"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Impossibile impostare l'ultimo disco usato..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Impossibile connettersi al client"
    )

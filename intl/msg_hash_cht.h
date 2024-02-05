@@ -13978,10 +13978,6 @@ MSG_HASH(
    "無法放入映像檔"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "無法套用上次使用的映像檔..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "無法連線到用戶端"
    )

@@ -14270,10 +14270,6 @@ MSG_HASH(
    "Error al asignar disco"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Error al asignar el último disco usado..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Error al conectarse al cliente"
    )

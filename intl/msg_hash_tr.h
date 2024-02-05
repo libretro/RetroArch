@@ -14370,10 +14370,6 @@ MSG_HASH(
    "Disk ayarlanamadı"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Son kullanılan disk ayarlanamadı..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "İstemciye bağlanılamadı"
    )
