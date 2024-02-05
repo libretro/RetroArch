@@ -13934,10 +13934,6 @@ MSG_HASH(
    "Fehler beim Einsetzen der Disc"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Fehler beim Einsetzen der zuletzt benutzten Disc..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Verbindung zum Client fehlgeschlagen"
    )

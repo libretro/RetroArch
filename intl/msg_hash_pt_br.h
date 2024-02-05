@@ -12498,10 +12498,6 @@ MSG_HASH(
    "Falha ao definir o disco"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Falha ao definir o disco usado pela última vez..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Falha ao conectar com o cliente"
    )
