@@ -203,8 +203,8 @@ static void *sdl_input_init(const char *joypad_driver)
             input_config_set_sensor_display_name(sensor_count++,SDL_GameControllerName(gamepad));
          }
       }
-   }
 #endif
+   }
 #endif
    return sdl;
 }
