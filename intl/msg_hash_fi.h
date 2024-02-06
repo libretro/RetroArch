@@ -1500,6 +1500,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Käytettävä ohjainajuri."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "SDL-kirjastoihin pohjautuva ohjainajuri."
+   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -5013,6 +5017,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Muuta valikon ulkoasun asetuksia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Sovelluksen kuvake"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Vaihda sovelluksen kuvake."
    )
 #ifdef _3DS
 MSG_HASH(

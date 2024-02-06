@@ -4389,6 +4389,14 @@ MSG_HASH(
    "Carga los controles personalizados al arrancar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Cargar archivos de índices de disco iniciales automáticamente"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Al ejecutar un contenido de varios discos, se cargará el último disco utilizado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Cargar preajustes de shaders automáticamente"
    )
@@ -14270,6 +14278,10 @@ MSG_HASH(
    "Error al asignar disco"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Error al establecer el último disco usado."
+   )
+MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Error al conectarse al cliente"
    )
@@ -15245,4 +15257,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Uso del ratón con la pantalla táctil desactivado"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "La accesibilidad de RetroArch está activada. Menú principal, cargar núcleo."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "detenido."
    )

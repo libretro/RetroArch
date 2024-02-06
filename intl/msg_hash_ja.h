@@ -304,7 +304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "カテゴリー化された検索インターフェイスを介してデータベースに一致するすべてのコンテンツを参照します。"
+   "カテゴリー検索インターフェイスを使用してデータベースに一致するすべてのコンテンツを閲覧します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
@@ -2415,7 +2415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "設定アスペクト比"
+   "構成アスペクト比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -2423,7 +2423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "設定"
+   "構成"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
@@ -3423,7 +3423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。"
+   "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。PageUp/PageDown などの割り当ても、レトロパッドの割り当てに準じて変更されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
@@ -4405,6 +4405,14 @@ MSG_HASH(
    "起動時にカスタマイズされたコントロールをロードします。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "自動的に初期ディスクインデックスファイルをロード"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "ディスクが 2 枚以上あるコンテンツの開始時に、最後に使用したディスクをロードします。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "自動的にシェーダープリセットをロード"
    )
@@ -5152,7 +5160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用する際に適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
+   "横向きの表示方向を使用する際にオーバーレイに適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
@@ -5200,7 +5208,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   "縦向きの表示方向を使用する際に適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
+   "縦向きの表示方向を使用する際にオーバーレイに適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
@@ -5417,7 +5425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "M3U プレイリストを介してロードされた複数ディスクコンテンツの最後に使用されたディスクを起動時に自動的に復元したときに OSD メッセージを表示します。"
+   "ディスクが 2 枚以上あるコンテンツを M3U プレイリストを使用してロードし、最後に使用したディスクが自動的に復元される際に OSD メッセージを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -7287,7 +7295,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   "履歴のサイズ"
+   "履歴の上限"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
@@ -7295,7 +7303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   "お気に入りのサイズ"
+   "お気に入りの上限"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
@@ -14238,6 +14246,10 @@ MSG_HASH(
    "ディスクのセットに失敗しました"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "最後に使用したディスクを設定できませんでした。"
+   )
+MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "クライアントへの接続に失敗しました"
    )
@@ -15213,4 +15225,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "タッチマウスが無効になりました"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "RetroArch ユーザー補助が有効化されています。メインメニューのコアをロードです。"
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "停止しました。"
    )
