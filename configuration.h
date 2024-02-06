@@ -574,6 +574,7 @@ typedef struct settings
       bool placeholder;
 
       /* Video */
+      bool video_top_portrait_viewport;
       bool video_fullscreen;
       bool video_windowed_fullscreen;
       bool video_vsync;

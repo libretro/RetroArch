@@ -24,6 +24,8 @@
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
 
+#define DEFAULT_TOP_PORTRAIT_VIEWPORT false
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

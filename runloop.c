@@ -5452,6 +5452,12 @@ static void runloop_pause_toggle(
       command_event(CMD_EVENT_PAUSE, NULL);
 }
 
+#ifdef EMULATORJS
+bool EJS_IS_FASTFORWARD();
+bool EJS_IS_SLOWMOTION();
+bool EJS_IS_REWIND();
+#endif
+
 static enum runloop_state_enum runloop_check_state(
       bool error_on_init,
       settings_t *settings,
@@ -6149,7 +6155,11 @@ static enum runloop_state_enum runloop_check_state(
          char s[128];
          bool rewinding      = false;
          static bool old_rewind_pressed = false;
+#ifdef EMULATORJS
+         bool rewind_pressed = EJS_IS_REWIND();
+#else
          bool rewind_pressed = BIT256_GET(current_bits, RARCH_REWIND);
+#endif
          unsigned t          = 0;
 
          s[0]                = '\0';
@@ -6418,10 +6428,15 @@ static enum runloop_state_enum runloop_check_state(
    {
       static bool old_button_state            = false;
       static bool old_hold_button_state       = false;
+#ifdef EMULATORJS
+      bool new_button_state = EJS_IS_FASTFORWARD();
+      bool new_hold_button_state = EJS_IS_FASTFORWARD();
+#else
       bool new_button_state                   = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state              = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
+#endif
       bool check2                             = new_button_state
          && !old_button_state;
 
@@ -6514,10 +6529,16 @@ static enum runloop_state_enum runloop_check_state(
          /* Check slowmotion hotkeys */
          static bool old_slowmotion_button_state      = false;
          static bool old_slowmotion_hold_button_state = false;
+
+#ifdef EMULATORJS
+         bool new_slowmotion_button_state = EJS_IS_SLOWMOTION();
+         bool new_slowmotion_hold_button_state = EJS_IS_SLOWMOTION();
+#else
          bool new_slowmotion_button_state             = BIT256_GET(
                current_bits, RARCH_SLOWMOTION_KEY);
          bool new_slowmotion_hold_button_state        = BIT256_GET(
                current_bits, RARCH_SLOWMOTION_HOLD_KEY);
+#endif
 
          /* Don't allow slowmotion while paused */
          if (runloop_paused)
@@ -8221,3 +8242,87 @@ void runloop_path_set_special(char **argv, unsigned num_content)
             runloop_st->name.savestate);
    }
 }
+
+#ifdef EMULATORJS
+void ejs_set_variable(char key[], char value[])
+{
+    if (strcmp(key, "fps") == 0) {
+        settings_t *settings = config_get_ptr();
+        if (strcmp(value, "show") == 0) {
+            settings->bools.video_fps_show = true;
+        } else {
+            settings->bools.video_fps_show = false;
+        }
+        return;
+    }
+   runloop_state_t *runloop_st  = &runloop_state;
+   size_t opt_idx;
+   size_t val_idx;
+    if (!core_option_manager_get_idx(runloop_st->core_options, key, &opt_idx)) {
+       printf("invalid core option %s. This is not an error.\n", key);
+       return;
+    }
+    if (!core_option_manager_get_val_idx(runloop_st->core_options, opt_idx, value, &val_idx)) {
+       printf("invalid core value %s for %s\n", value, key);
+       return;
+    }
+    if (val_idx != runloop_st->core_options->opts[opt_idx].index) {
+        core_option_manager_set_val(runloop_st->core_options, opt_idx, val_idx, true);
+    }
+}
+
+char* get_core_options(void)
+{
+    int size = 10;
+    runloop_state_t *runloop_st  = &runloop_state;
+    int o = 0;
+    for (int i=0; i<runloop_st->core_options->size; i++) {
+        size_t opt_idx;
+        size_t val_idx1;
+        struct core_option *option = (struct core_option*)&runloop_st->core_options->opts[i];
+        if (core_option_manager_get_idx(runloop_st->core_options, runloop_st->core_options->opts[i].key, &opt_idx) && core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data, &val_idx1)) {
+            if (o>0) size++;
+            o++;
+            size += 3;
+            size += strlen(runloop_st->core_options->opts[i].key);
+            size += strlen(option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data);
+            int w = 0;
+            for (int j=0; j<option->val_labels->size; j++) {
+                size_t val_idx;
+                if (core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[j].data, &val_idx)) {
+                    if (w>0) size++;
+                    size += strlen(option->val_labels->elems[j].data);
+                    w++;
+                }
+            }
+        }
+    }
+    o = 0;
+    char rv[size];
+    memset(rv, '\0', sizeof(rv));
+
+    for (int i=0; i<runloop_st->core_options->size; i++) {
+        size_t opt_idx;
+        size_t val_idx1;
+        struct core_option *option = (struct core_option*)&runloop_st->core_options->opts[i];
+        if (core_option_manager_get_idx(runloop_st->core_options, runloop_st->core_options->opts[i].key, &opt_idx) && core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data, &val_idx1)) {
+            if (o>0) strcat(rv, "\n");
+            o++;
+            strcat(rv, runloop_st->core_options->opts[i].key);
+            strcat(rv, "|");
+            strcat(rv, option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data);
+            strcat(rv, "; ");
+            int w = 0;
+            for (int j=0; j<option->val_labels->size; j++) {
+                size_t val_idx;
+                if (core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[j].data, &val_idx)) {
+                    if (w>0) strcat(rv, "|");
+                    strcat(rv, option->val_labels->elems[j].data);
+                    w++;
+                }
+            }
+        }
+    }
+    return rv;
+}
+#endif

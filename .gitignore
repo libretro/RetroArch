@@ -249,3 +249,9 @@ param.sfo
 
 # Visual Studio Code
 .vscode/
+
+*.wasm.*
+*.tmp*
+*.tmp
+obj-emscripten/*
+obj-emscripten/

@@ -3011,7 +3011,7 @@ bool video_shader_apply_shader(
                      sizeof(msg) - _len);
             }
 
-#ifdef HAVE_GFX_WIDGETS
+#if defined(HAVE_GFX_WIDGETS) && !defined(EMULATORJS)
             if (dispwidget_get_ptr()->active)
                gfx_widget_set_generic_message(msg, 2000);
             else

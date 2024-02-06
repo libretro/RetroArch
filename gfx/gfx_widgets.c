@@ -765,7 +765,10 @@ static void gfx_widgets_font_init(
       bool is_threaded, char *font_path, float font_size)
 {
    int                glyph_width   = 0;
-   float                scaled_size = font_size *
+   float                scaled_size = font_size * 
+#ifdef EMULATORJS
+     1.25 *
+#endif
       p_dispwidget->last_scale_factor;
 
    /* Free existing font */
@@ -1679,13 +1682,18 @@ void gfx_widgets_frame(void *data)
          || core_status_msg_show
          )
    {
-      const char *txt      = *p_dispwidget->gfx_widgets_status_text == '\0'
+      const char *text      = *p_dispwidget->gfx_widgets_status_text == '\0'
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
          : p_dispwidget->gfx_widgets_status_text;
 
       int txt_width        = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            txt, strlen(txt), 1.0f);
+            text,
+#ifdef EMULATORJS
+            strlen(text), 1.5f);
+#else
+            strlen(text), 1.0f);
+#endif
       int total_width       = txt_width
          + p_dispwidget->simple_widget_padding * 2;
 
@@ -1714,7 +1722,7 @@ void gfx_widgets_frame(void *data)
             );
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
-            txt,
+            text,
             status_txt_x,
             p_dispwidget->simple_widget_height / 2.0f
             + p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
@@ -1794,6 +1802,7 @@ void gfx_widgets_frame(void *data)
          widget->frame(data, p_dispwidget);
    }
 
+#ifndef EMULATORJS
    /* Draw all messages */
    if (p_dispwidget->current_msgs_size)
    {
@@ -1828,6 +1837,7 @@ void gfx_widgets_frame(void *data)
       slock_unlock(p_dispwidget->current_msgs_lock);
 #endif
    }
+#endif
 
    /* Ensure all text is flushed */
    gfx_widgets_flush_text(video_width, video_height,

@@ -1722,6 +1722,18 @@ bool command_set_shader(command_t *cmd, const char *arg)
 }
 #endif
 
+#ifdef EMULATORJS
+void shader_enable(int enabled)
+{
+    if (enabled) {
+        command_set_shader(NULL, "/shader/shader.glslp");
+    } else {
+        command_set_shader(NULL, "");
+    }
+}
+#endif
+
+
 #ifdef HAVE_CONFIGFILE
 bool command_event_save_core_config(
       const char *dir_menu_config,

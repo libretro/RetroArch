@@ -1087,6 +1087,7 @@ extern input_driver_t input_udev;
 extern input_driver_t input_cocoa;
 extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
+extern input_driver_t input_emulatorjs;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;

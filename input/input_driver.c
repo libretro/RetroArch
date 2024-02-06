@@ -278,7 +278,7 @@ input_device_driver_t *joypad_drivers[] = {
 #if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) && !defined(EMULATORJS)
    &rwebpad_joypad,
 #endif
    &null_joypad,
@@ -356,7 +356,11 @@ input_driver_t *input_drivers[] = {
    &input_qnx,
 #endif
 #ifdef EMSCRIPTEN
+#ifdef EMULATORJS
+   &input_emulatorjs,
+#else
    &input_rwebinput,
+#endif
 #endif
 #ifdef DJGPP
    &input_dos,

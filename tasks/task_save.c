@@ -30,6 +30,10 @@
 #include <string/stdstring.h>
 #include <time/rtime.h>
 
+#ifdef EMSCRIPTEN
+#include <emscripten/emscripten.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -1306,6 +1310,62 @@ static void task_push_load_and_save_state(const char *path, void *data,
       free(state);
    }
 }
+
+#ifdef EMULATORJS
+void* state_data;
+char myString[1000];
+
+void save_state_ejs(void)
+{
+    memset(myString, '\0', sizeof(myString));
+    if (state_data)
+        free(state_data);
+    if (!core_info_current_supports_savestate()) {
+        strcpy(myString, "Not Supported||0");
+        return;
+    }
+    size_t serial_size = core_serialize_size();
+    if (serial_size == 0) {
+        strcpy(myString, "Size is zero||0");
+        return;
+    }
+    state_data = content_get_serialized_data(&serial_size);
+    if (!state_data) {
+        strcpy(myString, "Error writing data||0");
+        return;
+    }
+    sprintf(myString, "%zu|%zu|1", serial_size, (unsigned long)state_data);
+}
+
+char* get_state_info(void) {
+    return myString;
+}
+
+bool ejs_pending_save = false;
+
+void save_state_info(void)
+{
+    emscripten_resume_main_loop();
+    ejs_pending_save = true;
+}
+void ejs_check_save(void)
+{
+    if (!ejs_pending_save) return;
+    save_state_ejs();
+    ejs_pending_save = false;
+}
+
+bool supports_states(void)
+{
+    return core_info_current_supports_savestate();
+}
+void refresh_save_files(void)
+{
+    event_load_save_files(false);
+}
+
+#endif
+
 
 /**
  * content_auto_save_state:

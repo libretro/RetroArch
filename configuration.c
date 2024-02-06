@@ -189,6 +189,9 @@ enum input_driver_enum
    INPUT_COCOA,
    INPUT_QNX,
    INPUT_RWEBINPUT,
+#ifdef EMULATORJS
+   INPUT_EMULATORJS,
+#endif
    INPUT_DOS,
    INPUT_WINRAW,
    INPUT_NULL
@@ -600,7 +603,11 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(WEBOS) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(EMSCRIPTEN)
+#ifdef EMULATORJS
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_EMULATORJS;
+#else
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
+#endif
 #elif defined(_WIN32) && defined(HAVE_DINPUT)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 #elif defined(_WIN32) && !defined(HAVE_DINPUT) && _WIN32_WINNT >= 0x0501
@@ -1177,6 +1184,10 @@ const char *config_get_default_input(void)
           return "qnx_input";
       case INPUT_RWEBINPUT:
           return "rwebinput";
+#ifdef EMULATORJS
+      case INPUT_EMULATORJS:
+          return "emulatorjs";
+#endif
       case INPUT_DOS:
          return "dos";
       case INPUT_NULL:
@@ -1659,6 +1670,7 @@ static struct config_bool_setting *populate_settings_bool(
    struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
+   SETTING_BOOL("video_top_portrait_viewport",   &settings->bools.video_top_portrait_viewport, true, DEFAULT_TOP_PORTRAIT_VIEWPORT, false);
    SETTING_BOOL("accessibility_enable",          &settings->bools.accessibility_enable, true, DEFAULT_ACCESSIBILITY_ENABLE, false);
    SETTING_BOOL("driver_switch_enable",          &settings->bools.driver_switch_enable, true, DEFAULT_DRIVER_SWITCH_ENABLE, false);
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, DEFAULT_UI_COMPANION_START_ON_BOOT, false);

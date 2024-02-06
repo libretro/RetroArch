@@ -1277,6 +1277,7 @@ static void gl2_set_viewport(gl2_t *gl,
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
+   bool video_top_portrait_viewport = settings->bools.video_top_portrait_viewport;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
@@ -1345,9 +1346,10 @@ static void gl2_set_viewport(gl2_t *gl,
 
 #if defined(RARCH_MOBILE)
    /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl->vp.y *= 2;
+   video_top_portrait_viewport = true;
 #endif
+   if (video_top_portrait_viewport && device_aspect < 1.0f)
+      gl->vp.y *= 2;
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl2_set_projection(gl, &default_ortho, allow_rotate);

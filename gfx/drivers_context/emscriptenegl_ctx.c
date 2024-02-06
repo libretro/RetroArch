@@ -46,10 +46,7 @@ typedef struct
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
-   if (interval == 0)
-      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
-   else
-      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
+   emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
 }
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
@@ -58,6 +55,7 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
    bool  is_fullscreen = false;
    EMSCRIPTEN_RESULT r = emscripten_get_fullscreen_status(&fullscreen_status);
 
+#ifndef NO_CANVAS_FULLSCREEN
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
    {
       if (fullscreen_status.isFullscreen)
@@ -67,6 +65,7 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
          *height = fullscreen_status.screenHeight;
       }
    }
+#endif
 
    if (!is_fullscreen)
    {
@@ -84,7 +83,6 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
-   EMSCRIPTEN_RESULT r;
    int input_width;
    int input_height;
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
@@ -102,6 +100,7 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *height                           = (unsigned)input_height;
    *resize                           = false;
 
+#ifndef NO_AUTO_CANVAS_RESIZE
    if (  (input_width  != emscripten->fb_width)
       || (input_height != emscripten->fb_height))
    {
@@ -120,16 +119,22 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
       *resize  = true;
    }
-
+#endif
+#ifdef WEB_SCALING
+   double dpr = emscripten_get_device_pixel_ratio();
+   emscripten->fb_width  = (unsigned)(input_width * dpr);
+   emscripten->fb_height = (unsigned)(input_height * dpr);
+#else
    emscripten->fb_width  = (unsigned)input_width;
    emscripten->fb_height = (unsigned)input_height;
+#endif
    *quit                 = false;
 }
 
 static void gfx_ctx_emscripten_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   /* Doesn't really do anything in WebGL, but it might 
+   /* Doesn't really do anything in WebGL, but it might
     * if we use WebGL workers in the future */
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
    egl_swap_buffers(&emscripten->egl);
@@ -262,9 +267,15 @@ static void gfx_ctx_emscripten_input_driver(void *data,
       const char *name,
       input_driver_t **input, void **input_data)
 {
+#ifdef EMULATORJS
+   void *emulatorjs = input_driver_init_wrap(&input_emulatorjs, name);
+   *input          = emulatorjs ? &input_emulatorjs : NULL;
+   *input_data     = emulatorjs;
+#else
    void *rwebinput = input_driver_init_wrap(&input_rwebinput, name);
    *input          = rwebinput ? &input_rwebinput : NULL;
    *input_data     = rwebinput;
+#endif
 }
 
 static bool gfx_ctx_emscripten_has_focus(void *data) { return g_egl_inited; }

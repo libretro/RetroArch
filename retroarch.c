@@ -5859,11 +5859,35 @@ int rarch_main(int argc, char *argv[], void *data)
 #ifdef HAVE_RWEBAUDIO
 void RWebAudioRecalibrateTime(void);
 #endif
+#ifdef EMULATORJS
+bool EJS_PAUSED = false;
+bool EJS_MAINLOOP_PAUSED = false;
+bool EJS_PENDING_SCREENSHOT = false;
+void ejs_check_save(void);
+#endif
+static unsigned emscripten_frame_count = 0;
 
 void emscripten_mainloop(void)
 {
+#ifdef EMULATORJS
+   ejs_check_save();
+   if (EJS_PENDING_SCREENSHOT) {
+      const char *path = "/screenshot.png";
+      video_driver_state_t *video_st = video_state_get_ptr();
+      if (!take_screenshot(NULL,
+             path, true,
+             video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID), true, false)) {
+         printf("Error taking screenshot");
+      }
+      EJS_PENDING_SCREENSHOT = false;
+   }
+   if (EJS_PAUSED && !EJS_MAINLOOP_PAUSED) {
+      emscripten_pause_main_loop();
+      EJS_MAINLOOP_PAUSED = true;
+      return;
+   }
+#endif
    int ret;
-   static unsigned emscripten_frame_count = 0;
    video_driver_state_t *video_st         = video_state_get_ptr();
    settings_t        *settings            = config_get_ptr();
    input_driver_state_t *input_st         = input_state_get_ptr();
@@ -5908,6 +5932,136 @@ void emscripten_mainloop(void)
    main_exit(NULL);
    emscripten_force_exit(0);
 }
+
+#ifdef EMULATORJS
+
+void cmd_take_screenshot(void)
+{
+   EJS_PENDING_SCREENSHOT = true;
+}
+
+double get_current_frame_count(void) {
+    return emscripten_frame_count;
+}
+
+char* save_file_path() {
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   return runloop_st->name.savefile;
+}
+
+void toggleMainLoop(int running) {
+    if (running == 1 && EJS_MAINLOOP_PAUSED) {
+        emscripten_resume_main_loop();
+        EJS_MAINLOOP_PAUSED = false;
+    }
+    EJS_PAUSED = (running == 0);
+}
+
+void cmd_load_state(void)
+{
+   command_event(CMD_EVENT_LOAD_STATE, NULL);
+}
+
+int load_state(char *path, int rv)
+{
+    content_load_state(path, false, false);
+    return rv;
+}
+
+void system_restart(void)
+{
+    command_event(CMD_EVENT_RESET, NULL);
+}
+
+int get_disk_count(void)
+{
+    runloop_state_t *runloop_st     = runloop_state_get_ptr();
+    rarch_system_info_t *sys_info = &runloop_st->system;
+    
+    if (!sys_info)
+       return -1;
+    
+    if (!disk_control_enabled(&sys_info->disk_control)) return -1;
+    
+    return (&sys_info->disk_control)->cb.get_num_images();
+}
+
+void set_current_disk(int index)
+{
+    runloop_state_t *runloop_st     = runloop_state_get_ptr();
+    rarch_system_info_t *sys_info = &runloop_st->system;
+    
+    if (!sys_info)
+       return;
+    
+    if (!disk_control_enabled(&sys_info->disk_control)) return;
+    
+    if (!disk_control_get_eject_state(&sys_info->disk_control)) {
+        disk_control_set_eject_state(&sys_info->disk_control, true, false);
+    }
+    disk_control_set_index(&sys_info->disk_control, index, false);
+    if (disk_control_get_eject_state(&sys_info->disk_control)) {
+        disk_control_set_eject_state(&sys_info->disk_control, false, false);
+    }
+}
+
+int get_current_disk(void)
+{
+    runloop_state_t *runloop_st     = runloop_state_get_ptr();
+    rarch_system_info_t *sys_info = &runloop_st->system;
+    
+    if (!sys_info)
+       return -1;
+    
+    if (!disk_control_enabled(&sys_info->disk_control)) return -1;
+    
+    return (&sys_info->disk_control)->cb.get_image_index();
+}
+bool FF_ACTIVE;
+void toggle_fastforward(bool enabled)
+{
+    FF_ACTIVE = enabled;
+}
+bool EJS_IS_FASTFORWARD()
+{
+   return FF_ACTIVE;
+}
+void set_ff_ratio(float ratio) {
+    settings_t *settings = config_get_ptr();
+    settings->floats.fastforward_ratio = ratio;
+}
+
+bool SM_ACTIVE;
+void toggle_slow_motion(bool enabled)
+{
+   SM_ACTIVE = enabled;
+}
+bool EJS_IS_SLOWMOTION()
+{
+   return SM_ACTIVE;
+}
+void set_sm_ratio(float ratio)
+{
+   settings_t *settings = config_get_ptr();
+   settings->floats.slowmotion_ratio = ratio;
+}
+
+bool REWIND_ACTIVE;
+void toggle_rewind(bool enabled)
+{
+   REWIND_ACTIVE = enabled;
+}
+bool EJS_IS_REWIND()
+{
+   return REWIND_ACTIVE;
+}
+void set_rewind_granularity(uint granularity)
+{
+   settings_t *settings = config_get_ptr();
+   settings->uints.rewind_granularity = granularity;
+}
+#endif
+
 #endif
 
 #ifndef HAVE_MAIN
