@@ -884,8 +884,8 @@ static bool is_narrator_running_macos(void)
    return (kill(speak_pid, 0) == 0);
 }
 
-static bool accessibility_speak_macos(const char* voice, int speed,
-      const char* speak_text, int priority)
+static bool accessibility_speak_macos(int speed,
+      const char* speak_text, int priority, const char* voice)
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);

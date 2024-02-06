@@ -1034,8 +1034,8 @@ static bool is_narrator_running_windows(void)
    return false;
 }
 
-static bool accessibility_speak_windows(const char* voice, int speed,
-      const char* speak_text, int priority)
+static bool accessibility_speak_windows(int speed,
+      const char* speak_text, int priority, const char* voice)
 {
    char cmd[512];
    const char *language   = accessibility_win_language_code(voice);
@@ -1086,7 +1086,7 @@ static bool accessibility_speak_windows(const char* voice, int speed,
          g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;
          if (wc)
             free(wc);
-         return accessibility_speak_windows(voice, speed, speak_text, priority);
+         return accessibility_speak_windows(speed, speak_text, priority, voice);
       }
 
       nvdaController_cancelSpeech_func();

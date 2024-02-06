@@ -303,7 +303,7 @@ static void accessibility_speak(const char *text)
    bool narrator_on     = settings->bools.accessibility_enable;
    const char* voice    = ai_service_get_str(settings->uints.ai_service_target_lang);
 
-   narrator_speak_priority(narrator_on, voice, speed, text, 10);
+   navigation_say(narrator_on, speed, text, 10);
 #endif
 }
 
@@ -325,7 +325,7 @@ static void translation_speak(const char *text)
 
    /* Force the use of the narrator in Narrator modes (TTS) */
    if (mode == 2 || mode == 4 || mode == 5 || narrator_on || access_st->enabled)
-     narrator_speak_priority(true, voice, speed, text, 10);
+      accessibility_speak_priority(speed, text, 10, voice);
 #endif
 }
 

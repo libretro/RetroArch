@@ -812,7 +812,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       buf = NULL;
    }
 
-status:     
+status:
    fill_pathname_join_special(path, basenode, "status", sizeof(path));
 
    if (!filestream_exists(path))
@@ -2883,8 +2883,8 @@ static const char* accessibility_unix_language_code(const char* language)
    return "en";
 }
 
-static bool accessibility_speak_unix(const char* voice, int speed,
-      const char* speak_text, int priority)
+static bool accessibility_speak_unix(int speed,
+      const char* speak_text, int priority, const char* voice)
 {
    int pid;
    const char* language   = accessibility_unix_language_code(voice);
