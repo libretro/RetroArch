@@ -512,6 +512,14 @@ MSG_HASH(
    "Deterministisch (Speichern/Laden, Zurückspulen, Run-Ahead, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Hinweis: 'Systemdateien befinden sich im Verzeichnis des Inhalts' ist derzeit aktiviert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Schaut in: '%s'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Fehlt, erforderlich:"
    )
@@ -3373,6 +3381,14 @@ MSG_HASH(
    "Eine Verzögerung in Frames hinzufügen, bevor die normale Eingabe nach Drücken der zugewiesenen Taste \"Hotkeys aktivieren\" blockiert wird. Ermöglicht die normale Eingabe der \"Hotkeys aktivieren\"-Taste, wenn sie einer anderen Aktion zugeordnet ist (z. B. RetroPad \"Select\")."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Hotkey-Gerätetyp zusammenführen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Blockiert alle Hotkeys von Tastatur- und Controller-Gerätetypen, wenn für einen der Typen „Hotkeys aktivieren“ festgelegt ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Menü (Controller-Kombination)"
    )
@@ -4271,6 +4287,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    "Benutzerdefinierte Tastenbelegungen beim Start automatisch laden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Disc-Index-Dateien automatisch laden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Wechselt beim Starten von Multi-Disc-Inhalten zur zuletzt verwendeten Disc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -13934,6 +13958,10 @@ MSG_HASH(
    "Fehler beim Einsetzen der Disc"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Fehler beim Einsetzen der zuletzt verwendeten Disc."
+   )
+MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Verbindung zum Client fehlgeschlagen"
    )
@@ -14909,4 +14937,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Mauseingabe per Touchscreen ist deaktiviert"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "RetroArch Bedienungshilfe an. Hauptmenü, Core laden."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "gestoppt."
    )

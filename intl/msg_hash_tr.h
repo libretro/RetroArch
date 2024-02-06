@@ -4389,6 +4389,14 @@ MSG_HASH(
    "Özelleştirilmiş kontrolcüleri başlangıçta yükleyin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "İlk Disk Dizini Dosyalarını Otomatik Olarak Yükle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Çoklu disk içeriğini başlatırken son kullanılan diske geçin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Gölgelendirici Hazır Ayarlarını Otomatik Olarak Yükle"
    )
@@ -14370,6 +14378,10 @@ MSG_HASH(
    "Disk ayarlanamadı"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Son kullanılan disk ayarlanamadı."
+   )
+MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "İstemciye bağlanılamadı"
    )
@@ -15341,4 +15353,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Dokunmatik fare devre dışı"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "RetroArch erişilebilirliği açık. Ana Menü Çekirdek Yükle."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "durduruldu."
    )
