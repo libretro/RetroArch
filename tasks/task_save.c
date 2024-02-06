@@ -1312,47 +1312,32 @@ static void task_push_load_and_save_state(const char *path, void *data,
 }
 
 #ifdef EMULATORJS
-void* state_data;
-char myString[1000];
-
-void save_state_ejs(void)
-{
-    memset(myString, '\0', sizeof(myString));
-    if (state_data)
-        free(state_data);
-    if (!core_info_current_supports_savestate()) {
-        strcpy(myString, "Not Supported||0");
-        return;
-    }
-    size_t serial_size = core_serialize_size();
-    if (serial_size == 0) {
-        strcpy(myString, "Size is zero||0");
-        return;
-    }
-    state_data = content_get_serialized_data(&serial_size);
-    if (!state_data) {
-        strcpy(myString, "Error writing data||0");
-        return;
-    }
-    sprintf(myString, "%zu|%zu|1", serial_size, (unsigned long)state_data);
-}
-
-char* get_state_info(void) {
-    return myString;
-}
-
-bool ejs_pending_save = false;
 
 void save_state_info(void)
 {
-    emscripten_resume_main_loop();
-    ejs_pending_save = true;
-}
-void ejs_check_save(void)
-{
-    if (!ejs_pending_save) return;
-    save_state_ejs();
-    ejs_pending_save = false;
+   size_t serial_size;
+   void *data  = NULL;
+
+   if (!core_info_current_supports_savestate()) {
+      return;
+   }
+
+   serial_size = core_serialize_size();
+   if (serial_size == 0) {
+      return;
+   }
+
+   data = content_get_serialized_data(&serial_size);
+   if (!data) {
+      return;
+   }
+   remove("/current.state");
+   FILE *f = fopen("/current.state", "wb");
+   if (f == NULL) {
+      return;
+   }
+   fwrite(data, 1, serial_size, f);
+   fclose(f);
 }
 
 bool supports_states(void)
@@ -1451,6 +1436,9 @@ bool content_auto_save_state(const char *path)
  **/
 bool content_save_state(const char *path, bool save_to_disk)
 {
+#ifdef EMULATORJS
+   return false;
+#endif
    size_t serial_size;
    void *data  = NULL;
 

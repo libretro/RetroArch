@@ -5870,7 +5870,6 @@ static unsigned emscripten_frame_count = 0;
 void emscripten_mainloop(void)
 {
 #ifdef EMULATORJS
-   ejs_check_save();
    if (EJS_PENDING_SCREENSHOT) {
       const char *path = "/screenshot.png";
       video_driver_state_t *video_st = video_state_get_ptr();
