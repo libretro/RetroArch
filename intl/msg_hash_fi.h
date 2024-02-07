@@ -3921,6 +3921,14 @@ MSG_HASH(
    "Lataa mukautetut kontrollit käynnistyksessä."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Lataa alkuperäisen kevyn indeksitiedostot automaattisesti"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Vaihda viimeksi käytettyyn levyyn, kun suoritetaan usealevyistä sisältöä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Lataa varjostimen esiasetukset automaattisesti"
    )
@@ -13316,6 +13324,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
    "Levyn asettaminen epäonnistui"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Viimeksi käytetyn levyn asetus epäonnistui."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
