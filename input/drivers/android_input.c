@@ -150,6 +150,7 @@ typedef struct android_input
 {
    int64_t quick_tap_time;
    state_device_t pad_states[MAX_USERS];        /* int alignment */
+   int mouse_x, mouse_y;
    int mouse_x_delta, mouse_y_delta;
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
    unsigned pads_connected;
@@ -702,6 +703,9 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
 
    android->mouse_x_delta = ceil(x) * x_scale;
    android->mouse_y_delta = ceil(y) * y_scale;
+
+   android->mouse_x += android->mouse_x_delta;
+   android->mouse_y += android->mouse_y_delta;
 }
 
 static INLINE void android_input_poll_event_type_motion(
@@ -1794,6 +1798,7 @@ static int16_t android_input_state(
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_MOUSE:
+      case RARCH_DEVICE_MOUSE_SCREEN:
          {
             int val = 0;
             if (port > 0)
@@ -1808,11 +1813,17 @@ static int16_t android_input_state(
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return android->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_X:
+                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                     return android->mouse_x;
+
                   val = android->mouse_x_delta;
                   android->mouse_x_delta = 0;
                   /* flush delta after it has been read */
                   return val;
                case RETRO_DEVICE_ID_MOUSE_Y:
+                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
+                     return android->mouse_y;
+
                   val = android->mouse_y_delta;
                   android->mouse_y_delta = 0;
                   /* flush delta after it has been read */
