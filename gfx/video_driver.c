@@ -1240,6 +1240,7 @@ void video_switch_refresh_rate_maybe(
    unsigned video_swap_interval       = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
+   unsigned shader_subframes          = settings->uints.video_shader_subframes;
    bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
    bool exclusive_fullscreen          = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
    bool windowed_fullscreen           = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
@@ -1254,7 +1255,7 @@ void video_switch_refresh_rate_maybe(
       refresh_rate       = 60.00f;
 
    /* Black frame insertion + swap interval multiplier */
-   refresh_rate          = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
+   refresh_rate          = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval * shader_subframes);
 
    /* Fallback when target refresh rate is not exposed or when below standards */
    if (!video_display_server_has_refresh_rate(refresh_rate) || refresh_rate < 50)
@@ -2552,6 +2553,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
+   video_info->shader_subframes            = settings->uints.video_shader_subframes;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->runahead                    = settings->bools.run_ahead_enabled;
@@ -4044,6 +4046,7 @@ void video_frame_delay(video_driver_state_t *video_st,
       uint8_t video_swap_interval = runloop_get_video_swap_interval(
             settings->uints.video_swap_interval);
       uint8_t video_bfi           = settings->uints.video_black_frame_insertion;
+      uint8_t shader_subframes    = settings->uints.video_shader_subframes;
       uint8_t frame_time_interval = 8;
       static uint8_t skip_update  = 0;
       static bool skip_delay_prev = false;
@@ -4075,7 +4078,7 @@ void video_frame_delay(video_driver_state_t *video_st,
          frame_time_update = false;
 
       /* Black frame insertion + swap interval multiplier */
-      refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
+      refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
 
       /* Set target moderately as half frame time with 0 (Auto) delay */
       if (video_frame_delay == 0)

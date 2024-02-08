@@ -546,6 +546,8 @@ class Pass
       void notify_sync_index(unsigned index) { sync_index = index; }
       void set_frame_count(uint64_t count) { frame_count = count; }
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
+      void set_shader_subframes(uint32_t ts) { total_subframes = ts; }
+      void set_current_shader_subframe(uint32_t cs) { current_subframe = cs; }
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_name(const char *name) { pass_name = name; }
@@ -636,6 +638,8 @@ class Pass
       uint32_t rotation           = 0;
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
+      uint32_t total_subframes    = 1;
+      uint32_t current_subframe   = 1;
 
       size_t ubo_offset           = 0;
       std::string pass_name;
@@ -693,6 +697,8 @@ struct vulkan_filter_chain
 
       void set_frame_count(uint64_t count);
       void set_frame_count_period(unsigned pass, unsigned period);
+      void set_shader_subframes(uint32_t total_subframes);
+      void set_current_shader_subframe(uint32_t current_subframe);
       void set_frame_direction(int32_t direction);
       void set_rotation(uint32_t rot);
       void set_pass_name(unsigned pass, const char *name);
@@ -1687,6 +1693,20 @@ void vulkan_filter_chain::set_frame_count_period(
    passes[pass]->set_frame_count_period(period);
 }
 
+void vulkan_filter_chain::set_shader_subframes(uint32_t total_subframes)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_shader_subframes(total_subframes);
+}
+
+void vulkan_filter_chain::set_current_shader_subframe(uint32_t current_subframe)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_current_shader_subframe(current_subframe);
+}
+
 void vulkan_filter_chain::set_frame_direction(int32_t direction)
 {
    unsigned i;
@@ -2595,6 +2615,12 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      total_subframes);
+
+   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      current_subframe);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
 
@@ -3361,6 +3387,20 @@ void vulkan_filter_chain_set_frame_count_period(
       unsigned period)
 {
    chain->set_frame_count_period(pass, period);
+}
+
+void vulkan_filter_chain_set_shader_subframes(
+      vulkan_filter_chain_t *chain,
+      uint32_t tot_subframes)
+{
+   chain->set_shader_subframes(tot_subframes);
+}
+
+void vulkan_filter_chain_set_current_shader_subframe(
+      vulkan_filter_chain_t *chain,
+      uint32_t cur_subframe)
+{
+   chain->set_current_shader_subframe(cur_subframe);
 }
 
 void vulkan_filter_chain_set_frame_direction(

@@ -4051,7 +4051,7 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   int i;
+   int i, j, k;
    VkSubmitInfo submit_info;
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
@@ -4212,6 +4212,26 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count(
          (vulkan_filter_chain_t*)vk->filter_chain, frame_count);
+
+   /* Sub-frame info for multiframe shaders (per real content frame). 
+      Should always be 1 for non-use of subframes*/
+   if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
+   {
+     if (     black_frame_insertion
+           || input_driver_nonblock_state
+           || runloop_is_slowmotion
+           || runloop_is_paused
+           || (vk->context->swap_interval > 1)
+           || (vk->flags & VK_FLAG_MENU_ENABLE))
+        vulkan_filter_chain_set_shader_subframes(
+           (vulkan_filter_chain_t*)vk->filter_chain, 1);
+     else
+        vulkan_filter_chain_set_shader_subframes(
+           (vulkan_filter_chain_t*)vk->filter_chain, video_info->shader_subframes);
+
+     vulkan_filter_chain_set_current_shader_subframe(
+           (vulkan_filter_chain_t*)vk->filter_chain, 1);
+   }
 #ifdef HAVE_REWIND
    vulkan_filter_chain_set_frame_direction(
          (vulkan_filter_chain_t*)vk->filter_chain,
@@ -4880,6 +4900,8 @@ static bool vulkan_frame(void *data, const void *frame,
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
          && !runloop_is_paused
+         && !(vk->context->swap_interval > 1)
+         && !(video_info->shader_subframes > 1)
          && (!(vk->flags & VK_FLAG_MENU_ENABLE)))
    {
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
@@ -4916,14 +4938,50 @@ static bool vulkan_frame(void *data, const void *frame,
       }
    }
 
-   /* Vulkan doesn't directly support swap_interval > 1,
-    * so we fake it by duping out more frames. */
-   if (      (vk->context->swap_interval > 1)
-         && (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  (backbuffer->image != VK_NULL_HANDLE)
+         &&  (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         &&  !black_frame_insertion
+         &&  !input_driver_nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(vk->flags & VK_FLAG_MENU_ENABLE))
+         &&  !(vk->context->swap_interval > 1)
+         &&  (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
    {
-      int i;
       vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
-      for (i = 1; i < (int) vk->context->swap_interval; i++)
+      for (j = 1; j < (int) video_info->shader_subframes; j++)
+      {
+         vulkan_filter_chain_set_shader_subframes(
+               (vulkan_filter_chain_t*)vk->filter_chain, video_info->shader_subframes);
+         vulkan_filter_chain_set_current_shader_subframe(
+               (vulkan_filter_chain_t*)vk->filter_chain, j+1);
+         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+            return false;
+         }
+      }
+      vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+   }
+
+
+   /* Vulkan doesn't directly support swap_interval > 1,
+    * so we fake it by duping out more frames. Shader subframes
+      uses same concept but split above so sub_frame logic the
+      same as the other apis that do support real swap_interval  */
+   if (      (vk->context->swap_interval > 1)
+         &&  !(video_info->shader_subframes > 1)
+         &&  !black_frame_insertion
+         &&  (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
+   {
+      vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+      for (k = 1; k < (int) vk->context->swap_interval; k++)
       {
          if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
                   video_info))
@@ -5249,6 +5307,7 @@ static uint32_t vulkan_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 
    return flags;
 }

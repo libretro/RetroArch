@@ -120,6 +120,12 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
+void vulkan_filter_chain_set_shader_subframes(vulkan_filter_chain_t *chain,
+      uint32_t tot_subframes);
+
+void vulkan_filter_chain_set_current_shader_subframe(vulkan_filter_chain_t *chain,
+      uint32_t cur_subframe);
+
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
 
