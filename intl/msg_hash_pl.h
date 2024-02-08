@@ -12810,10 +12810,6 @@ MSG_HASH(
    "Nie udało się ustawić dysku"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Nie udało się ustawić ostatnio używanego dysku..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Nie udało się połączyć z klientem"
    )
@@ -13589,4 +13585,8 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Mysz dotykowa jest wyłączona"
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "zatrzymano."
    )

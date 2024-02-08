@@ -3923,7 +3923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Режим наблюдателя для Netplay (переключение)"
+   "Сетевая игра/режим наблюдателя (переключение)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
@@ -4411,6 +4411,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    "Загружать пользовательские привязки ввода при запуске."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Автозагрузка файлов индекса начального диска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Выбирать последний загруженный диск при запуске мультидискового контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -6989,7 +6997,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Публично анонсировать Netplay"
+   "Публично анонсировать сетевую игру"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
@@ -7001,7 +7009,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Переадресация соединений через промежуточный сервер. Помогает, если хост находится за брандмауэром или имеет проблемы с NAT/UPnP."
+   "Переадресация соединений через промежуточный сервер. Полезно в тех случаях, когда хост использует брандмауэр или имеются проблемы с NAT/UPnP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -7053,7 +7061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-   "Порт IP-адреса хоста. Может быть TCP- или UDP-портом."
+   "Порт IP-адреса хоста. Может быть портом TCP или UDP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
@@ -7069,7 +7077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "Макс. запаздывание соединения (пинг), приемлемое для хоста. Значение 0 снимает ограничение."
+   "Максимальная сетевая задержка (пинг), приемлемая для хоста. Значение 0 снимает ограничение."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -7081,19 +7089,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   "Пароль сервера для режима наблюдателя"
+   "Пароль сервера в режиме наблюдателя"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "Пароль для подключения клиентов к хосту в режиме наблюдателя."
+   "Пароль для клиентов, подключающихся к хосту в режиме наблюдателя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Режим наблюдателя для Netplay"
+   "Режим наблюдателя для сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "Запускать сетевую игру в режиме наблюдателя."
+   "Запуск сеанса сетевой игры в режиме наблюдателя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
@@ -7137,7 +7145,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Разрешать подключения в slave-режиме. Slave-клиентам требуется крайне мало вычислительной мощности, но запаздывание сети для них значительно выше."
+   "Разрешать подключения в slave-режиме. Slave-клиенты требуют крайне мало вычислительной мощности, но сетевая задержка для них существенно выше."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
@@ -7149,7 +7157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Кадры проверки Netplay"
+   "Кадры проверки сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
@@ -7177,11 +7185,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Диапазон кадров задержки ввода для сетевой игры для маскировки запаздывания сети. Сглаживает отклонения и снижает требования Netplay к производительности за счёт плавающей задержки ввода."
+   "Диапазон кадров задержки ввода для сглаживания запаздывания сети. Снижает рассинхронизации и требования сетевой игры к производительности за счёт непредсказуемой задержки ввода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Диапазон задержки ввода, используемой для маскировки запаздывания сети. Если вкл., netplay динамически подстраивает количество кадров задержки ввода для баланса между процессорным временем, задержкой ввода и запаздыванием сети. Повышает плавность и снижает нагрузку на CPU, н[...]"
+   "Диапазон задержки ввода для сглаживания запаздывания сети. Динамически подстраивает кадры задержки ввода для баланса между процессорным временем, задержкой ввода и запаздыванием сети. Повышает плавность и снижает нагрузку на CPU, но непредсказуемо влияет на задержку вво[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -7252,19 +7260,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "URL ядер на билдботе"
+   "Ссылка для загрузки ядер с билдбота"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-   "Ссылка для обновления ядер с билдбота Libretro."
+   "Сетевой адрес папки с обновлениями ядер на билдботе Libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "URL ресурсов на билдботе"
+   "Ссылка для загрузки ресурсов с билдбота"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   "Ссылка для обновления ресурсов с билдбота Libretro."
+   "Сетевой адрес папки с обновлениями ресурсов на билдботе Libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -8065,7 +8073,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Ввести сетевой адрес сервера Netplay и подключиться в качестве клиента."
+   "Ввести адрес сервера и подключиться к сетевой игре в режиме клиента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
@@ -12778,7 +12786,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Неизвестная команда netplay"
+   "Получена неизвестная команда netplay"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -14315,7 +14323,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Не удалось добавить последний загруженный диск..."
+   "Не удалось установить последний загруженный диск."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
@@ -15297,4 +15305,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Отключено управление мышью с тачскрина"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Включены специальные возможности RetroArch. Главное меню загрузить ядро."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "остановлен."
    )

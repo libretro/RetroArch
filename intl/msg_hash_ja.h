@@ -304,7 +304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "カテゴリー化された検索インターフェイスを介してデータベースに一致するすべてのコンテンツを参照します。"
+   "カテゴリー検索インターフェイスを使用してデータベースに一致するすべてのコンテンツを閲覧します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
@@ -1880,7 +1880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "ビデオをスレッド化"
+   "ビデオのスレッド化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -2344,7 +2344,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "[ウィンドウの幅] と [ウィンドウの高さ] で指定された寸法の固定サイズウィンドウにすべてのコンテンツを表示し、RetroArch を閉じたときに現在のウィンドウのサイズと位置を保存します。無効にすると、ウィンドウのサイズは [ウィンドウ表示倍率] に基づいて動的に設定されます。"
+   "すべてのコンテンツを [ウィンドウの幅] と [ウィンドウの高さ] で指定した寸法の固定サイズウィンドウに表示し、RetroArch を閉じたときに現在のウィンドウの位置とサイズを保存します。無効にすると、ウィンドウのサイズは [ウィンドウ表示倍率] に基づいて動的に設定されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
@@ -2352,7 +2352,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "[ウィンドウの幅] と [ウィンドウの高さ] で指定された寸法の固定サイズウィンドウにすべてのコンテンツを表示します。無効にすると、ウィンドウのサイズは [ウィンドウ表示倍率] に基づいて動的に設定されます。"
+   "すべてのコンテンツを [ウィンドウの幅] と [ウィンドウの高さ] で指定した寸法の固定サイズウィンドウに表示します。無効にすると、ウィンドウのサイズは [ウィンドウ表示倍率] に基づいて動的に設定されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -2415,7 +2415,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "設定アスペクト比"
+   "構成アスペクト比"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -2423,7 +2423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "設定"
+   "構成"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
@@ -3105,7 +3105,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "RetroArch が対応するユーザーの最大数です。"
+   "RetroArch が対応する最大ユーザー数です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3361,7 +3361,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "仮想レトロパッドが物理入力デバイスにどのように割り当てられるかを変更します。入力デバイスの認識と自動設定が正しく行われている場合、このメニューを使用する必要はおそらくありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用してください。"
+   "仮想レトロパッドが物理入力デバイスに対してどのように割り当てられるかを変更します。入力デバイスの認識と自動設定が正しく行われている場合、このメニューを使用する必要はおそらくありません。\n注意: コア固有の入力を変更するには、代わりにクイックメニューの [コントロール] サブメニューを使用してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
@@ -3373,7 +3373,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "仮想レトロパッドがこの仮想ポートの物理入力デバイスにどのように割り当てられるかを変更します。"
+   "仮想レトロパッドがこの仮想ポートの物理入力デバイスに対してどのように割り当てられるかを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
@@ -3423,7 +3423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。"
+   "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。PageUp/PageDown などの割り当ても、レトロパッドの割り当てに準じて変更されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
@@ -4269,7 +4269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "コアがカテゴリーベースのサブメニューでオプションを提示できるようにします。注意: 変更を適用するにはコアの再ロードが必要です。"
+   "コアオプションを表示する際に、オプションをカテゴリー別に分類してサブメニュー化します。注意: 変更を適用するにはコアの再ロードが必要です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -4281,11 +4281,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "コア情報のステートセーブ機能を無視"
+   "コア情報のステートセーブ機能の対応有無を無視"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "コア情報のステートセーブ機能の対応の有無を無視するかどうかを指定し、関連する機能 (先行実行、巻き戻しなど) を試すことができます。"
+   "コア情報のステートセーブ機能の対応有無を無視するかどうかを指定し、関連する機能 (先行実行、巻き戻しなど) を試すことができます。"
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4386,7 +4386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   "起動時にカスタマイズされたコアオプションをデフォルトでロードします。"
+   "起動時にカスタマイズされたコアオプションをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -4403,6 +4403,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    "起動時にカスタマイズされたコントロールをロードします。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "自動的に初期ディスクインデックスファイルをロード"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "ディスクが 2 枚以上あるコンテンツの開始時に、最後に使用したディスクをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -4597,7 +4605,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   "プレイ記録を保存 (コアごと)"
+   "プレイ時間を保存 (コアごと)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
@@ -4605,7 +4613,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "プレイ記録を保存 (総計)"
+   "プレイ時間を保存 (総計)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
@@ -4734,7 +4742,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "フレームタイムカウンターに影響する設定を変更します。\nビデオをスレッド化が無効になっている場合にのみ有効です。"
+   "フレームタイムカウンターに影響する設定を変更します。\nビデオのスレッド化が無効化されている場合にのみ有効になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -4742,11 +4750,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "早送り中のコンテンツの最大フレームレートです。例えば、60fps コンテンツに対して 5x を指定すると、最大フレームレートは 300fps になります。[0.0x] を指定した場合は無制限になります (FPS 制限なし)。"
+   "コンテンツを早送りする際の最大フレームレートです。例えば、60fps コンテンツに対して 5.0x を指定すると、最大フレームレートは 300fps 以下に制限されます。0.0x を指定すると、最大フレームレートは無制限になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   "早送りを使用している時のコンテンツの最大レート (例: 60fps コンテンツ に 5.0 を設定すると 300 fps で制限) です。\nRetroArch は最大レートを超えないようにスリープ状態に入ります。この上限が完全に正確であることを信頼しないでください。"
+   "コンテンツを早送りする際の最大フレームレートです。例えば、60fps コンテンツに対して 5.0x を指定すると、最大フレームレートは 300fps 以下に制限されます。\nRetroArch は制限値を超えないように挙動を制御しますが、制限値を超過しないことを完全に保証するものではありません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -5056,7 +5064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。現在のオーバーレイでサポートされていない場合は無視されます。"
+   "現在のオーバーレイでサポートされている場合、画面の向き/アスペクト比に合わせてレイアウトを自動的に回転させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
@@ -5120,7 +5128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "横向きの表示方向を使用する際に適用されるアスペクト比補正係数です。正の値はオーバーレイの幅を実質的に増加させ、負の値は幅を減少させます。"
+   "横向きの表示方向を使用する際にオーバーレイに適用されるアスペクト比補正係数です。正の値はオーバーレイの幅を実質的に増加させ、負の値は幅を減少させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
@@ -5128,7 +5136,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "横向きの表示方向を使用する際にオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます"
+   "現在のプリセットでサポートされている場合、横向きの表示方向を使用する際にオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
@@ -5136,7 +5144,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "横向きの表示方向を使用する際にオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
+   "現在のプリセットでサポートされている場合、横向きの表示方向を使用する際にオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -5144,7 +5152,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用する際に適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
+   "横向きの表示方向を使用する際にオーバーレイに適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
@@ -5152,7 +5160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "横向きの表示方向を使用する際に適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
+   "横向きの表示方向を使用する際にオーバーレイに適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
@@ -5168,7 +5176,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "縦向きの表示方向を使用する際に適用されるアスペクト比補正係数です。正の値はオーバーレイの高さを実質的に増加させ、負の値は高さを減少させます。"
+   "縦向きの表示方向を使用する際にオーバーレイに適用されるアスペクト比補正係数です。正の値はオーバーレイの高さを実質的に増加させ、負の値は高さを減少させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
@@ -5176,7 +5184,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "縦向きの表示方向を使用する際にオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
+   "現在のプリセットでサポートされている場合、縦向きの表示方向を使用する際にオーバーレイの左半分と右半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
@@ -5184,7 +5192,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "縦向きの表示方向を使用する際にオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。現在のプリセットでサポートされていない場合は無視されます。"
+   "現在のプリセットでサポートされている場合、縦向きの表示方向を使用する際にオーバーレイの上半分と下半分にある UI 要素間の間隔を調整します。正の値は分離距離を増加させ、負の値は減少させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
@@ -5192,7 +5200,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
-   "縦向きの表示方向を使用する際に適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
+   "縦向きの表示方向を使用する際にオーバーレイに適用される水平オフセットです。正の値はオーバーレイを右方向に移動させ、負の値は左方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
@@ -5200,7 +5208,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   "縦向きの表示方向を使用する際に適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
+   "縦向きの表示方向を使用する際にオーバーレイに適用される垂直オフセットです。正の値はオーバーレイを上方向に移動させ、負の値は下方向に移動させます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
@@ -5317,7 +5325,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   "フレームレートの更新間隔(フレーム数)"
+   "フレームレートの更新間隔 (フレーム数)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
@@ -5417,7 +5425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "M3U プレイリストを介してロードされた複数ディスクコンテンツの最後に使用されたディスクを起動時に自動的に復元したときに OSD メッセージを表示します。"
+   "ディスクが 2 枚以上あるコンテンツを M3U プレイリストを使用してロードし、最後に使用したディスクが自動的に復元される際に OSD メッセージを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -5746,7 +5754,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "タスクをスレッド化"
+   "タスクのスレッド化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
@@ -6011,7 +6019,7 @@ MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_A
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "メインメニューとプレイリストのサブメニューに、[コンテンツをインポート] メニューを表示します。"
+   "メインメニューとプレイリストのサブメニューに [コンテンツをインポート] メニューを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -7287,7 +7295,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   "履歴のサイズ"
+   "履歴の上限"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
@@ -7295,11 +7303,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   "お気に入りのサイズ"
+   "お気に入りの上限"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "[お気に入り] プレイリストのエントリーの数を制限します。制限に達すると、古いエントリーが削除されるまで新しいエントリーが追加されなくなります。値を -1 に設定すると [無制限] を許可します。\n警告: 値を減らすと既存のエントリーが削除されます!"
+   "[お気に入り] プレイリストの最大エントリー数です。上限に達すると、古いエントリーが削除されるまで新しいエントリーが追加されなくなります。値を [-1] に設定すると [無制限] を許可します。\n警告: 値を減らすと既存のエントリーが削除されます!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -7355,7 +7363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
-   "現在のコアの関連付けや実行時間など、各プレイリストエントリーの追加情報を表示します (利用可能な場合)。パフォーマンスに影響します。"
+   "現在のコアの関連付けやプレイ時間など、各プレイリストエントリーの追加情報を表示します (利用可能な場合)。パフォーマンスに影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
@@ -7447,11 +7455,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "プレイリストのサブラベルの実行時間"
+   "プレイリストのサブラベルのプレイ時間"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-   "サブラベルに表示するプレイ記録の種類を選択します。\n対応するプレイ記録を [保存] オプションメニューで有効にする必要があります。"
+   "サブラベルに表示するプレイ時間の種類を選択します。\n対応するプレイ時間を [保存] オプションメニューで有効にする必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -7609,7 +7617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
-   "ここで選択された言語に応じて、メニューと画面上のすべてのメッセージをローカライズします。変更を有効にするには再起動が必要です。\n各オプションの横に翻訳の達成度が表示されます。メニュー項目に言語が実装されていない場合は、英語にフォールバックします。"
+   "ここで選択された言語に応じて、メニューと画面上のすべてのメッセージをローカライズします。変更を適用するには再起動が必要です。\n各オプションの横に翻訳の達成度が表示されます。メニュー項目に言語が実装されていない場合は、英語にフォールバックします。"
    )
 
 /* Settings > User > Privacy */
@@ -11863,7 +11871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
-   "RetroArch の更新に成功しました。変更を適用にするには RetroArch を再起動してください。"
+   "RetroArch の更新に成功しました。変更を適用するには RetroArch を再起動してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
@@ -14239,7 +14247,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
-   "最後に使用したディスクをセットできませんでした..."
+   "最後に使用したディスクを設定できませんでした。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
@@ -15217,4 +15225,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "タッチマウスが無効になりました"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "RetroArch ユーザー補助が有効化されています。メインメニューのコアをロードです。"
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "停止しました。"
    )

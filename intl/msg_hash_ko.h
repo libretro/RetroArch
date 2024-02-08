@@ -14374,10 +14374,6 @@ MSG_HASH(
    "디스크 설정 실패"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "최근 실행 디스크 설정 실패..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "클라이언트에 연결할 수 없음"
    )

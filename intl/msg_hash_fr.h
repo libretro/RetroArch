@@ -14210,10 +14210,6 @@ MSG_HASH(
    "Impossible de sélectionner le disque"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Impossible de sélectionner le dernier disque utilisé..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Échec de la connexion au client"
    )

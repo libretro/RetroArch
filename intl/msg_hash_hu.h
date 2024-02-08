@@ -14038,10 +14038,6 @@ MSG_HASH(
    "Lemez behelyezése sikertelen"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Utoljára használt lemez behelyezése sikertelen..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Klienshez csatlakozás sikertelen"
    )

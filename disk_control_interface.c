@@ -754,7 +754,8 @@ error:
  **/
 bool disk_control_verify_initial_index(
       disk_control_interface_t *disk_control,
-      bool verbosity)
+      bool verbosity,
+      bool enabled)
 {
    bool success         = false;
    unsigned image_index = 0;
@@ -766,7 +767,7 @@ bool disk_control_verify_initial_index(
       return false;
 
    /* If index record is disabled, can return immediately */
-   if (!disk_control->record_enabled)
+   if (!disk_control->record_enabled && enabled)
       return false;
 
    /* Check that 'initial index' functionality is enabled */
@@ -803,10 +804,10 @@ bool disk_control_verify_initial_index(
    }
 
    /* If current disk is incorrect, notify user */
-   if (!success)
+   if (!success && enabled)
    {
       RARCH_ERR(
-               "[Disc]: Failed to set initial disk index:\n> Expected"
+               "[Disc]: Failed to set initial disc index:\n> Expected"
                " [%u] %s\n> Detected [%u] %s\n",
                disk_control->index_record.image_index + 1,
                disk_control->index_record.image_path,
@@ -830,6 +831,11 @@ bool disk_control_verify_initial_index(
       disk_index_file_set(&disk_control->index_record, 0, NULL);
       disk_index_file_save(&disk_control->index_record);
    }
+   else if (!enabled)
+   {
+      RARCH_LOG("[Disc]: Initial disc index setting disabled.");
+   }
+
    /* If current disk is correct and recorded image
     * path is empty (i.e. first run), need to register
     * current image path */

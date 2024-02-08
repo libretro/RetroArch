@@ -13662,10 +13662,6 @@ MSG_HASH(
    "放置光盘失败"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "无法放置上次使用的光盘..."
-   )
-MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "无法连接到客户端"
    )

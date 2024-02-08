@@ -1142,7 +1142,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Altere as configurações para o narrador de Acessibilidade."
+   "Alterar as definições do narrador de Acessibilidade."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -1150,7 +1150,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Alterar configurações da gestão de energia."
+   "Alterar as definições de gestão de energia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -2413,6 +2413,14 @@ MSG_HASH(
    "Ativar teclas personalizadas no arranque, por defeito."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Carregar automaticamente os ficheiros de índice do disco inicial"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Mudar para o último disco utilizado ao iniciar um conteúdo multi-disco."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Carregar os shaders automaticamente"
    )
@@ -2743,6 +2751,14 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   "Mostrar 'Acessibilidade'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "Mostrar definições de \"Acessibilidade\"."
+   )
 
 
 /* Settings > User Interface > Appearance */
@@ -2761,6 +2777,22 @@ MSG_HASH(
 
 /* Settings > Accessibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   "Ativar Acessibilidade"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "Ativar a conversão de texto em voz para ajudar na navegação no menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "Velocidade de conversão de texto em voz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "A velocidade da voz de conversão de texto em voz."
+   )
 
 /* Settings > Power Management */
 
@@ -5266,6 +5298,10 @@ MSG_HASH(
    "Leitura do ficheiro terminada"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Ocorreu um erro ao definir o último disco utilizado."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Verificando: "
    )
@@ -5406,3 +5442,11 @@ MSG_HASH(
 #endif
 #ifdef HAVE_QT
 #endif
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Acessibilidade RetroArch ativa.  Menu principal, Carregar núcleo."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "parado."
+   )
