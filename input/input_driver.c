@@ -764,12 +764,14 @@ static int32_t input_state_wrap(
          }
       }
    }
+#ifndef EMULATORJS
    else if (device == RETRO_DEVICE_KEYBOARD)
    {
       /* Always ignore null key. */
       if (id == RETROK_UNKNOWN)
          return ret;
    }
+#endif
 
    if (current_input && current_input->input_state)
       ret |= current_input->input_state(
@@ -799,6 +801,7 @@ static int32_t input_state_wrap(
          return ret;
       }
 
+#ifndef EMULATORJS
       /* No binds, no input. This is for ignoring RETROK_UNKNOWN
        * if the driver allows setting the key down somehow.
        * Otherwise all hotkeys and inputs with null bind get triggered. */
@@ -812,6 +815,7 @@ static int32_t input_state_wrap(
                )
          )
          return 0;
+#endif
    }
 
    return ret;
@@ -6383,7 +6387,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
+#ifndef EMULATORJS
+            if (current_input->input_state(
+#else
             if (ids[i][0] && current_input->input_state(
+#endif
                      input_st->current_data,
                      joypad,
                      sec_joypad,
