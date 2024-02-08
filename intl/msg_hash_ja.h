@@ -4269,7 +4269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "コアがカテゴリーベースのサブメニューでオプションを提示できるようにします。注意: 変更を適用するにはコアの再ロードが必要です。"
+   "コアオプションを表示する際に、オプションをカテゴリー別に分類してサブメニュー化します。注意: 変更を適用するにはコアの再ロードが必要です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -7617,7 +7617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
-   "ここで選択された言語に応じて、メニューと画面上のすべてのメッセージをローカライズします。変更を有効にするには再起動が必要です。\n各オプションの横に翻訳の達成度が表示されます。メニュー項目に言語が実装されていない場合は、英語にフォールバックします。"
+   "ここで選択された言語に応じて、メニューと画面上のすべてのメッセージをローカライズします。変更を適用するには再起動が必要です。\n各オプションの横に翻訳の達成度が表示されます。メニュー項目に言語が実装されていない場合は、英語にフォールバックします。"
    )
 
 /* Settings > User > Privacy */
@@ -11871,7 +11871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
-   "RetroArch の更新に成功しました。変更を適用にするには RetroArch を再起動してください。"
+   "RetroArch の更新に成功しました。変更を適用するには RetroArch を再起動してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
