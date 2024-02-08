@@ -4413,6 +4413,10 @@ MSG_HASH(
    "Загружать пользовательские привязки ввода при запуске."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Автозагрузка файлов индекса начального диска"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
    "Выбирать последний загруженный диск при запуске мультидискового контента."
    )
@@ -12782,7 +12786,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Неизвестная команда netplay"
+   "Получена неизвестная команда netplay"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
