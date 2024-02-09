@@ -6451,6 +6451,65 @@ static void setting_get_string_representation_black_frame_insertion(rarch_settin
    }
 }
 
+static void setting_get_string_representation_shader_subframes(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 1:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF), len);
+         break;
+      case 2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120), len);
+         break;
+      case 3:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180), len);
+         break;
+      case 4:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240), len);
+         break;
+      case 5:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300), len);
+         break;
+      case 6:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360), len);
+         break;
+      case 7:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420), len);
+         break;
+      case 8:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480), len);
+         break;
+      case 9:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540), len);
+         break;
+      case 10:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600), len);
+         break;
+      case 11:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660), len);
+         break;
+      case 12:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720), len);
+         break;
+      case 13:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780), len);
+         break;
+      case 14:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840), len);
+         break;
+      case 15:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900), len);
+         break;
+      case 16:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_video_frame_delay(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -8181,6 +8240,9 @@ static void general_write_handler(rarch_setting_t *setting)
             configuration_set_bool(settings,
                settings->bools.vrr_runloop_enable,
                0);
+            configuration_set_uint(settings,
+               settings->uints.video_shader_subframes,
+               1);
 
              /* Set reasonable default for dark frames for current BFI value.
                 Even results OR odd 60hz multiples should be mostly immune to lcd voltage retention.
@@ -8217,6 +8279,31 @@ static void general_write_handler(rarch_setting_t *setting)
          rcheevos_validate_config_settings();
 #endif
          break;
+      case MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES:
+         /* If enabling BFI, auto disable other sync settings 
+            that do not work together with subframes */
+         if (*setting->value.target.unsigned_integer > 1)
+         {
+            configuration_set_uint(settings,
+               settings->uints.video_swap_interval,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_frame_delay,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.video_frame_delay_auto,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.vrr_runloop_enable,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_black_frame_insertion,
+               0);
+         }
+#ifdef HAVE_CHEEVOS
+         rcheevos_validate_config_settings();
+#endif
+         break;
       case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
          /* Limit choice to max possible for current BFI Hz Setting */
          if (*setting->value.target.unsigned_integer > settings->uints.video_black_frame_insertion)
@@ -8228,10 +8315,13 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
       case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
-         /* BFI doesn't play nice with any of these */
+         /* BFI or shader subframes doesn't play nice with any of these */
          configuration_set_bool(settings,
             settings->uints.video_black_frame_insertion,
             0);
+         configuration_set_uint(settings,
+            settings->uints.video_shader_subframes,
+            1);
 #ifdef HAVE_CHEEVOS
          rcheevos_validate_config_settings();
 #endif
@@ -13359,6 +13449,26 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.video_shader_subframes,
+                  MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+                  DEFAULT_SHADER_SUBFRAMES,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_shader_subframes;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, 1, 16, 1, true, true);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.video_max_swapchain_images,
                   MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
                   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -15753,6 +15863,8 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_BOOL(
                list, list_info,

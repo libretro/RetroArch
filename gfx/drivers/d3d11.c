@@ -1000,6 +1000,7 @@ static uint32_t d3d11_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 #endif
 
    return flags;
@@ -1534,6 +1535,8 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->pass[i].frame_count,     /* FrameCount */
             &d3d11->pass[i].frame_direction, /* FrameDirection */
             &d3d11->pass[i].rotation,        /* Rotation */
+            &d3d11->pass[i].total_subframes, /* TotalSubFrames */
+            &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
          }
       };
       /* clang-format on */
@@ -2778,7 +2781,7 @@ static bool d3d11_gfx_frame(
       const char*         msg,
       video_frame_info_t* video_info)
 {
-   unsigned i;
+   unsigned i, k, m;
    d3d11_texture_t* texture       = NULL;
    D3D11RenderTargetView rtv      = NULL;
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
@@ -3073,6 +3076,22 @@ static bool d3d11_gfx_frame(
 #endif
 
          d3d11->pass[i].rotation = retroarch_get_rotation();
+
+         /* Sub-frame info for multiframe shaders (per real content frame). 
+            Should always be 1 for non-use of subframes */
+         if (!(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK))
+         {
+           if (     black_frame_insertion
+                 || nonblock_state
+                 || runloop_is_slowmotion
+                 || runloop_is_paused
+                 || (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
+              d3d11->pass[i].total_subframes = 1;
+           else
+              d3d11->pass[i].total_subframes = video_info->shader_subframes;
+
+           d3d11->pass[i].current_subframe = 1;
+         }
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
@@ -3387,7 +3406,8 @@ static bool d3d11_gfx_frame(
         && !(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
         && !nonblock_state
         && !runloop_is_slowmotion
-        && !runloop_is_paused)
+        && !runloop_is_paused
+        && (!(video_info->shader_subframes > 1)))
    {
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
          video_info->bfi_dark_frames = video_info->black_frame_insertion;
@@ -3421,6 +3441,37 @@ static bool d3d11_gfx_frame(
             DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
          }
       } 
+   }
+
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  !black_frame_insertion
+         &&  !nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
+         &&  (!(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK)))
+   {
+      d3d11->flags |= D3D11_ST_FLAG_FRAME_DUPE_LOCK;
+      for (k = 1; k < video_info->shader_subframes; k++)
+      {
+         if (d3d11->shader_preset)
+            for (m = 0; m < d3d11->shader_preset->passes; m++)
+            {
+               d3d11->pass[m].total_subframes = video_info->shader_subframes;
+               d3d11->pass[m].current_subframe = k+1;
+            }
+         if (!d3d11_gfx_frame(d3d11, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            d3d11->flags &= ~D3D11_ST_FLAG_FRAME_DUPE_LOCK;
+            return false;
+         }
+      }
+      d3d11->flags &= ~D3D11_ST_FLAG_FRAME_DUPE_LOCK;
    }
 
    Release(rtv);

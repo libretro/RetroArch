@@ -1380,6 +1380,7 @@ static float audio_driver_monitor_adjust_system_rates(
       float video_refresh_rate,
       unsigned video_swap_interval,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       float audio_max_timing_skew)
 {
    float inp_sample_rate        = input_sample_rate;
@@ -1394,7 +1395,7 @@ static float audio_driver_monitor_adjust_system_rates(
    float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
 
    timing_skew            =
       fabs(1.0f - input_fps / target_video_sync_rate);
@@ -1411,6 +1412,7 @@ static bool video_driver_monitor_adjust_system_rates(
       float audio_max_timing_skew,
       unsigned video_swap_interval,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       double input_fps)
 {
    float target_video_sync_rate = timing_skew_hz;
@@ -1421,7 +1423,7 @@ static bool video_driver_monitor_adjust_system_rates(
    float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
 
    if (!vrr_runloop_enable)
    {
@@ -1448,7 +1450,8 @@ static void driver_adjust_system_rates(
       float audio_max_timing_skew,
       bool video_adaptive_vsync,
       unsigned video_swap_interval,
-      unsigned black_frame_insertion)
+      unsigned black_frame_insertion,
+      unsigned shader_subframes)
 {
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
@@ -1463,6 +1466,7 @@ static void driver_adjust_system_rates(
          (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
          video_swap_interval,
          black_frame_insertion,
+         shader_subframes,
          audio_max_timing_skew,
          video_refresh_rate,
          input_fps);
@@ -1482,6 +1486,7 @@ static void driver_adjust_system_rates(
                   video_refresh_rate,
                   video_swap_interval,
                   black_frame_insertion,
+                  shader_subframes,
                   audio_max_timing_skew);
 
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
@@ -1506,6 +1511,7 @@ static void driver_adjust_system_rates(
                audio_max_timing_skew,
                video_swap_interval,
                black_frame_insertion,
+               shader_subframes,
                input_fps))
       {
          /* We won't be able to do VSync reliably
@@ -1626,7 +1632,8 @@ void drivers_init(
                                  settings->floats.audio_max_timing_skew,
                                  settings->bools.video_adaptive_vsync,
                                  settings->uints.video_swap_interval,
-                                 settings->uints.video_black_frame_insertion
+                                 settings->uints.video_black_frame_insertion,
+                                 settings->uints.video_shader_subframes
                                  );
 
    /* Initialize video driver */
@@ -2063,6 +2070,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             unsigned video_swap_interval  = settings->uints.video_swap_interval;
             unsigned
                black_frame_insertion      = settings->uints.video_black_frame_insertion;
+            unsigned shader_subframes     = settings->uints.video_shader_subframes;
 
             video_monitor_set_refresh_rate(*hz);
 
@@ -2077,7 +2085,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                                        audio_max_timing_skew,
                                        video_adaptive_vsync,
                                        video_swap_interval,
-                                       black_frame_insertion
+                                       black_frame_insertion,
+                                       shader_subframes
                                        );
          }
          break;

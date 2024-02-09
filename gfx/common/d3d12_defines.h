@@ -329,6 +329,8 @@ typedef struct
       uint32_t                        frame_count;
       int32_t                         frame_direction;
       uint32_t                        rotation;
+      uint32_t                        total_subframes;
+      uint32_t                        current_subframe;
       D3D12_GPU_DESCRIPTOR_HANDLE     textures;
       D3D12_GPU_DESCRIPTOR_HANDLE     samplers;
    } pass[GFX_MAX_SHADERS];

@@ -2345,10 +2345,21 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float video_refresh    = settings->floats.video_refresh_rate;
+      float refresh_rate     = settings->floats.video_refresh_rate;
       unsigned bfi           = settings->uints.video_black_frame_insertion;
-      float refresh_mod      = bfi + 1.0f;
-      float refresh_rate     = video_refresh * refresh_mod;
+      unsigned swap_interval = settings->uints.video_swap_interval;
+      unsigned
+         shader_subframes    = settings->uints.video_shader_subframes;
+
+      /* if refresh_rate is <=60hz, adjust for modifiers, if it is higher
+         assume modifiers already factored into setting. Multiplying by
+         modifiers will still leave result at original value when they
+         are not set. Swap interval 0 is automatic, but at automatic
+         we should default to checking for normal SI 1 for rate change*/
+      if (swap_interval == 0)
+        ++swap_interval;
+      if ((int)refresh_rate <= 60)
+         refresh_rate     = refresh_rate * (bfi + 1) * swap_interval * shader_subframes;
 
       if (windowed_full)
       {

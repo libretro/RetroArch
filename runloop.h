@@ -397,6 +397,7 @@ void runloop_set_video_swap_interval(
       bool crt_switching_active,
       unsigned swap_interval_config,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       float audio_max_timing_skew,
       float video_refresh_rate,
       double input_fps);

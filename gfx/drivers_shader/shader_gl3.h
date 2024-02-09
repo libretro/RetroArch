@@ -117,6 +117,14 @@ void gl3_filter_chain_set_rotation(
       gl3_filter_chain_t *chain,
       uint32_t rotation);
 
+void gl3_filter_chain_set_shader_subframes(
+      gl3_filter_chain_t *chain,
+      uint32_t tot_subframes);
+
+void gl3_filter_chain_set_current_shader_subframe(
+      gl3_filter_chain_t *chain,
+      uint32_t cur_subframe);
+
 void gl3_filter_chain_set_pass_name(
       gl3_filter_chain_t *chain,
       unsigned pass,

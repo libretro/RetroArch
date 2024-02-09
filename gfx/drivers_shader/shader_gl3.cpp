@@ -925,6 +925,16 @@ public:
       rotation = rot;
    }
 
+   void set_shader_subframes(uint32_t tot_subframes)
+   {
+      total_subframes = tot_subframes;
+   }
+
+   void set_current_shader_subframe(uint32_t cur_subframe)
+   {
+      current_subframe = cur_subframe;
+   }
+
    void set_name(const char *name)
    {
       pass_name = name;
@@ -1024,6 +1034,8 @@ private:
    int32_t frame_direction = 1;
    uint32_t rotation = 0;
    unsigned pass_number = 0;
+   uint32_t total_subframes = 1;
+   uint32_t current_subframe = 1;
 
    size_t ubo_offset = 0;
    std::string pass_name;
@@ -1221,6 +1233,8 @@ bool Pass::init_pipeline()
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
+   reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
+   reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1654,6 +1668,11 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      total_subframes);
+   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      current_subframe);
+
    /* Standard inputs */
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -1849,6 +1868,8 @@ public:
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
    void set_rotation(uint32_t rot);
+   void set_shader_subframes(uint32_t tot_subframes);
+   void set_current_shader_subframe(uint32_t cur_subframe);
    void set_pass_name(unsigned pass, const char *name);
 
    void add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture);
@@ -2338,6 +2359,20 @@ void gl3_filter_chain::set_rotation(uint32_t rot)
       passes[i]->set_rotation(rot);
 }
 
+void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_shader_subframes(tot_subframes);
+}
+
+void gl3_filter_chain::set_current_shader_subframe(uint32_t cur_subframe)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_current_shader_subframe(cur_subframe);
+}
+
 void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
@@ -2756,6 +2791,20 @@ void gl3_filter_chain_set_rotation(
       uint32_t rot)
 {
    chain->set_rotation(rot);
+}
+
+void gl3_filter_chain_set_shader_subframes(
+      gl3_filter_chain_t *chain,
+      uint32_t tot_subframes)
+{
+   chain->set_shader_subframes(tot_subframes);
+}
+
+void gl3_filter_chain_set_current_shader_subframe(
+      gl3_filter_chain_t *chain,
+      uint32_t cur_subframe)
+{
+   chain->set_current_shader_subframe(cur_subframe);
 }
 
 void gl3_filter_chain_set_frame_count_period(

@@ -394,6 +394,13 @@
 /* Try to sleep the spare time after frame is presented in order to reduce vsync CPU usage. */
 #define DEFAULT_FRAME_REST false
 
+/* Duplicates frames for the purposes of running Shaders at a higher framerate
+ * than content framerate. Requires running screen at multiple of 60hz, and
+ * don't combine with Swap_interval > 1, or BFI. (Though BFI can be done in a shader
+ * with multi-frame shaders.)
+ */
+#define DEFAULT_SHADER_SUBFRAMES 1
+
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
  * material with CRT-like motion clarity.

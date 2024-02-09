@@ -4424,6 +4424,7 @@ void runloop_set_video_swap_interval(
       bool crt_switching_active,
       unsigned swap_interval_config,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       float audio_max_timing_skew,
       float video_refresh_rate,
       double input_fps)
@@ -4451,12 +4452,14 @@ void runloop_set_video_swap_interval(
     *   set swap interval to 1
     * > If core fps or display refresh rate are zero,
     *   set swap interval to 1
-    * > If BFI is active set swap interval to 1 */
+    * > If BFI is active set swap interval to 1
+    * > If Shader Subframes active, set swap interval to 1 */
    if (   (vrr_runloop_enable)
        || (core_hz    > timing_hz)
        || (core_hz   <= 0.0f)
        || (timing_hz <= 0.0f)
-       || (black_frame_insertion))
+       || (black_frame_insertion)
+       || (shader_subframes > 1))
    {
       runloop_st->video_swap_interval_auto = 1;
       return;

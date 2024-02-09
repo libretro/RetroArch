@@ -2504,6 +2504,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool msg_bgcolor_enable                 = video_info->msg_bgcolor_enable;
 #endif
    int bfi_light_frames;
+   int i;
    unsigned n;
    unsigned hard_sync_frames               = video_info->hard_sync_frames;
    bool input_driver_nonblock_state        = video_info->input_driver_nonblock_state;
@@ -2583,6 +2584,26 @@ static bool gl3_frame(void *data, const void *frame,
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
+
+   /* Sub-frame info for multiframe shaders (per real content frame). 
+      Should always be 1 for non-use of subframes*/
+   if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+   {
+     if (     video_info->black_frame_insertion
+           || video_info->input_driver_nonblock_state
+           || video_info->runloop_is_slowmotion
+           || video_info->runloop_is_paused
+           || (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+        gl3_filter_chain_set_shader_subframes(
+           gl->filter_chain, 1);
+     else
+        gl3_filter_chain_set_shader_subframes(
+           gl->filter_chain, video_info->shader_subframes);
+
+     gl3_filter_chain_set_current_shader_subframe(
+           gl->filter_chain, 1);
+   }
+
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
          &gl->filter_chain_vp);
@@ -2716,6 +2737,36 @@ static bool gl3_frame(void *data, const void *frame,
    }
 #endif
 
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  !video_info->black_frame_insertion
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+         &&  (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK)))
+   {
+      gl->flags |= GL3_FLAG_FRAME_DUPE_LOCK;
+      for (i = 1; i < (int) video_info->shader_subframes; i++)
+      {
+         gl3_filter_chain_set_shader_subframes(
+            gl->filter_chain, video_info->shader_subframes);
+         gl3_filter_chain_set_current_shader_subframe(
+            gl->filter_chain, i+1);
+
+         if (!gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+            return false;
+         }
+      }
+      gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+   }
+
    if (    hard_sync
        && !input_driver_nonblock_state
        )
@@ -2736,6 +2787,7 @@ static uint32_t gl3_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 
    return flags;
 }
