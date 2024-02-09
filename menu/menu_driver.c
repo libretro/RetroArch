@@ -7016,7 +7016,7 @@ static int generic_menu_iterate(
                && is_accessibility_enabled(
                   accessibility_enable,
                   access_st->enabled))
-            accessibility_speak_priority(
+            navigation_say(
                   accessibility_enable,
                   accessibility_narrator_speech_speed,
                   menu->menu_state_msg, 10);
@@ -7148,18 +7148,18 @@ static int generic_menu_iterate(
                            menu_st,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak_priority(
+                        navigation_say(
                               accessibility_enable,
                               accessibility_narrator_speech_speed,
                               menu->menu_state_msg, 10);
                      else
-                        accessibility_speak_priority(
+                        navigation_say(
                               accessibility_enable,
                               accessibility_narrator_speech_speed,
                               current_sublabel, 10);
                   }
                   else
-                     accessibility_speak_priority(
+                     navigation_say(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            menu->menu_state_msg, 10);
@@ -7321,7 +7321,7 @@ static int generic_menu_iterate(
          && is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      accessibility_speak_priority(
+      navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             "Closed dialog.", 10);
@@ -7759,7 +7759,7 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_empty(speak_string))
-         accessibility_speak_priority(
+         navigation_say(
                accessibility_enable,
                accessibility_narrator_speech_speed,
                speak_string, 10);
@@ -7892,7 +7892,7 @@ bool menu_input_dialog_start_search(void)
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-         accessibility_speak_priority(
+         navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
@@ -7946,7 +7946,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      accessibility_speak_priority(
+      navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             "Keyboard input:", 10);

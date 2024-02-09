@@ -41,10 +41,10 @@ typedef struct
 {
    /* The last request task, used to prepare and send the translation */
    retro_task_t *request_task;
-   
+
    /* The last response task, used to parse costly translation data */
    retro_task_t *response_task;
-   
+
    /* Timestamp of the last translation request */
    retro_time_t last_call;
 
@@ -59,7 +59,7 @@ typedef struct
 
    /* 1 if the automatic mode has been enabled, 0 otherwise */
    int ai_service_auto;
-   
+
    /* Text-to-speech narrator override flag */
    bool enabled;
 } access_state_t;
@@ -71,26 +71,26 @@ bool is_narrator_running(bool accessibility_enable);
 #endif
 
 /*
-   Invoke this method to send a request to the AI service. 
+   Invoke this method to send a request to the AI service.
    It makes the following POST request using URL params:
       – source_lang (optional): language code of the content currently running.
       – target_lang (optional): language of the content to return.
       – output: comma-separated list of formats that must be provided by the
          service. Also lists supported sub-formats.
-         
+
    The currently supported formats are:
       – sound: raw audio to playback. (wav)
       – text: text to be read through internal text-to-speech capabilities.
          'subs' can be specified on top of that to explain that we are looking
          for short text response in the manner of subtitles.
       – image: image to display on top of the video feed. Widgets will be used
-         first if possible, otherwise we'll try to draw it directly on the 
+         first if possible, otherwise we'll try to draw it directly on the
          video buffer. (bmp, png, png-a) [All in 24-bits BGR formats]
-         
+
    In addition, the request contains a JSON payload, formatted as such:
       – image: captured frame from the currently running content (in base64).
       – format: format of the captured frame ("png", or "bmp").
-      – coords: array describing the coordinates of the image within the 
+      – coords: array describing the coordinates of the image within the
          viewport space (x, y, width, height).
       – viewport: array describing the size of the viewport (width, height).
       – label: a text string describing the content (<system id>__<content id>).
@@ -99,7 +99,7 @@ bool is_narrator_running(bool accessibility_enable);
          – <key>: the name of a retropad input, valued 1 if pressed.
             (a, b, x, y, l, r, l2, r2, l3, r3)
             (up, down, left, right, start, select)
-            
+
    The translation component then expects a response from the AI service in the
    form of a JSON payload, formatted as such:
       – image: base64 representation of an image in a supported format.
@@ -108,40 +108,49 @@ bool is_narrator_running(bool accessibility_enable);
       – text_position: hint for the position of the text when the service is
          running in text mode (ie subtitles). Position is a number,
          1 for Bottom or 2 for Top (defaults to bottom).
-      – press: a list of retropad input to forcibly press. On top of the 
+      – press: a list of retropad input to forcibly press. On top of the
          expected keys (cf. 'state' above) values 'pause' and 'unpause' can be
          specified to control the flow of the content.
       – error: any error encountered with the request.
       – auto: either 'auto' or 'continue' to control automatic requests.
-      
+
    All fields are optional, but at least one of them must be present.
    If 'error' is set, the error is shown to the user and everything else is
    ignored, even 'auto' settings.
-   
+
    With 'auto' on 'auto', RetroArch will automatically send a new request
    (with a minimum delay enforced by uints.ai_service_poll_delay), with a value
-   of 'continue', RetroArch will ignore the returned content and skip to the 
+   of 'continue', RetroArch will ignore the returned content and skip to the
    next automatic request. This allows the service to specify that the returned
    content is the same as the one previously sent, so RetroArch does not need to
-   update its display unless necessary. With 'continue' the service *must* 
-   still send the content, as we may need to display it if the user paused the 
+   update its display unless necessary. With 'continue' the service *must*
+   still send the content, as we may need to display it if the user paused the
    AI service for instance.
 
-   {paused} boolean is passed in to indicate if the current call was made 
-   during a paused frame. Due to how the menu widgets work, if the AI service 
-   is called in 'auto' mode, then this call will be made while the menu widgets 
+   {paused} boolean is passed in to indicate if the current call was made
+   during a paused frame. Due to how the menu widgets work, if the AI service
+   is called in 'auto' mode, then this call will be made while the menu widgets
    unpause the core for a frame to update the on-screen widgets. To tell the AI
-   service what the pause mode is honestly, we store the runloop_paused 
+   service what the pause mode is honestly, we store the runloop_paused
    variable from before the service wipes the widgets, and pass that in here.
 */
 bool run_translation_service(settings_t *settings, bool paused);
 
 void translation_release(bool inform);
 
-bool accessibility_speak_priority(
+/* Proxy for calls related to menu navigation */
+bool navigation_say(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
-      const char* speak_text, int priority);
+      const char* speak_text,
+      int priority);
+
+/* Local platform-specific TTS  */
+bool accessibility_speak_priority(
+      unsigned accessibility_narrator_speech_speed,
+      const char *speak_text,
+      int priority,
+      const char* voice);
 
 access_state_t *access_state_get_ptr(void);
 

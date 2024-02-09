@@ -831,7 +831,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "401";
    else if (string_is_equal(language,"hu"))
       return "040e";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+   else if (string_is_equal(language, "zh_tw") || string_is_equal(language,"zh"))
       return "804";
    else if (string_is_equal(language,"el"))
       return "408";
@@ -896,13 +896,15 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Naayf Desktop";
    else if (string_is_equal(language,"hu"))
       return "Microsoft Szabolcs Desktop";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+   else if (string_is_equal(language, "zh_tw")
+            || string_is_equal(language,"zh-TW")
+            || string_is_equal(language,"zh"))
       return "Microsoft Zhiwei Desktop";
    else if (string_is_equal(language,"el"))
       return "Microsoft Stefanos Desktop";
    else if (string_is_equal(language,"ru"))
       return "Microsoft Pavel Desktop";
-   else if (string_is_equal(language,"nb"))
+   else if (string_is_equal(language,"no") || string_is_equal(language,"nb"))
       return "Microsoft Jon Desktop";
    else if (string_is_equal(language,"da"))
       return "Microsoft Helle Desktop";
@@ -910,7 +912,7 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Heidi Desktop";
    else if (string_is_equal(language,"zh_hk"))
       return "Microsoft Danny Desktop";
-   else if (string_is_equal(language,"zh_cn"))
+   else if (string_is_equal(language,"zh_cn") || string_is_equal(language,"zh-CN"))
       return "Microsoft Kangkang Desktop";
    else if (string_is_equal(language,"tr"))
       return "Microsoft Tolga Desktop";
@@ -918,8 +920,24 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Heami Desktop";
    else if (string_is_equal(language,"pl"))
       return "Microsoft Adam Desktop";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "Microsoft Jakub Desktop";
+   else if (string_is_equal(language,"vi"))
+      return "Microsoft An Desktop";
+   else if (string_is_equal(language,"hr"))
+      return "Microsoft Matej Desktop";
+   else if (string_is_equal(language,"bg"))
+      return "Microsoft Ivan Desktop";
+   else if (string_is_equal(language,"ms"))
+      return "Microsoft Rizwan Desktop";
+   else if (string_is_equal(language,"sl"))
+      return "Microsoft Lado Desktop";
+   else if (string_is_equal(language,"ta"))
+      return "Microsoft Valluvar Desktop";
+   else if (string_is_equal(language,"en_gb"))
+      return "Microsoft George Desktop";
+   else if (string_is_equal(language,"ca") || string_is_equal(language,"ca_ES@valencia"))
+      return "Microsoft Herena Desktop";
    return "";
 }
 
@@ -1017,10 +1035,9 @@ static bool is_narrator_running_windows(void)
 }
 
 static bool accessibility_speak_windows(int speed,
-      const char* speak_text, int priority)
+      const char* speak_text, int priority, const char* voice)
 {
    char cmd[512];
-   const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
    const char *langid     = accessibility_win_language_id(voice);
    bool res               = false;
@@ -1069,7 +1086,7 @@ static bool accessibility_speak_windows(int speed,
          g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;
          if (wc)
             free(wc);
-         return accessibility_speak_windows(speed, speak_text, priority);
+         return accessibility_speak_windows(speed, speak_text, priority, voice);
       }
 
       nvdaController_cancelSpeech_func();

@@ -3169,7 +3169,7 @@ bool command_event(enum event_command cmd, void *data)
                   if (is_accessibility_enabled(
                            accessibility_enable,
                            access_st->enabled))
-                     accessibility_speak_priority(
+                     navigation_say(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -4559,12 +4559,12 @@ bool command_event(enum event_command cmd, void *data)
                   access_st->enabled))
             {
                if (paused)
-                  accessibility_speak_priority(
+                  navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_PAUSED), 10);
                else
-                  accessibility_speak_priority(
+                  navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -5312,7 +5312,7 @@ bool command_event(enum event_command cmd, void *data)
                if (is_accessibility_enabled(
                         accessibility_enable,
                         access_st->enabled))
-                  accessibility_speak_priority(
+                  navigation_say(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
@@ -5327,7 +5327,7 @@ bool command_event(enum event_command cmd, void *data)
                      access_st->enabled)
                   && (ai_service_mode == 2)
                   && is_narrator_running(accessibility_enable))
-               accessibility_speak_priority(
+               navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
@@ -7386,7 +7386,7 @@ bool retroarch_main_init(int argc, char *argv[])
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      accessibility_speak_priority(
+      navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*)msg_hash_to_str(MSG_ACCESSIBILITY_STARTUP),
@@ -8337,7 +8337,7 @@ void retroarch_favorites_deinit(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-bool accessibility_speak_priority(
+bool navigation_say(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
@@ -8347,29 +8347,48 @@ bool accessibility_speak_priority(
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend =
-         frontend_state_get_ptr()->current_frontend_ctx;
+      const char *voice    = get_user_language_iso639_1(false);
+      bool native_narrator = accessibility_speak_priority(accessibility_narrator_speech_speed,
+         speak_text, priority, voice);
 
-      RARCH_LOG("Spoke: %s\n", speak_text);
-
-      if (frontend && frontend->accessibility_speak)
-         return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
-               priority);
-
-      RARCH_LOG("Platform not supported for accessibility.\n");
-      /* The following method is a fallback for other platforms to use the
-         AI Service url to do the TTS.  However, since the playback is done
-         via the audio mixer, which only processes the audio while the
-         core is running, this playback method won't work.  When the audio
-         mixer can handle playing streams while the core is paused, then
-         we can use this. */
+      if (!native_narrator)
+      {
+         /*
+          * The following method is a fallback for other platforms to use the
+          * AI Service url to do the TTS.  However, since the playback is done
+          * via the audio mixer, which only processes the audio while the
+          * core is running, this playback method won't work.  When the audio
+          * mixer can handle playing streams while the core is paused, then
+          * we can use this.
+          */
 #if 0
 #if defined(HAVE_NETWORKING)
-      return accessibility_speak_ai_service(speak_text, voice, priority);
+         return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
 #endif
+      }
    }
 
    return true;
+}
+
+bool accessibility_speak_priority(
+      unsigned accessibility_narrator_speech_speed,
+      const char *speak_text,
+      int priority,
+      const char *voice)
+{
+   frontend_ctx_driver_t *frontend =
+      frontend_state_get_ptr()->current_frontend_ctx;
+
+   RARCH_LOG("Spoke: %s\n", speak_text);
+
+   if (frontend && frontend->accessibility_speak)
+      return frontend->accessibility_speak(accessibility_narrator_speech_speed,
+            speak_text, priority, voice);
+
+   RARCH_LOG("Platform not supported for accessibility.\n");
+
+   return false;
 }
 #endif
