@@ -257,11 +257,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "アーカイブを閲覧"
+   "圧縮ファイルを閲覧"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "アーカイブをロード"
+   "圧縮ファイルをロード"
    )
 
 /* Main Menu > Load Content > Playlists */
@@ -581,7 +581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "現在インストールされているコアのアーカイブバックアップを作成します。"
+   "現在インストールされているコアの圧縮バックアップを作成します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
@@ -589,7 +589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "アーカイブされたバックアップのリストから以前のバージョンのコアをインストールします。"
+   "圧縮バックアップの一覧から以前のバージョンのコアをインストールします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
@@ -597,7 +597,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "アーカイブされたバックアップのリストからファイルを削除します。"
+   "圧縮バックアップの一覧からファイルを削除します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
@@ -1278,7 +1278,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   "圧縮されたアーカイブファイルです。"
+   "圧縮ファイルです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
@@ -1330,7 +1330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
-   "音楽です。選択して音楽プレイヤーでこのファイルを開きます。"
+   "音楽です。選択してこのファイルを音楽プレイヤーで開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
@@ -1338,7 +1338,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   "画像です。選択して画像ビューアでこのファイルを開きます。"
+   "画像です。選択してこのファイルを画像ビューアで開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
@@ -3169,15 +3169,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   "ウィンドウ内にマウスカーソルを維持する"
+   "自動的にマウスの移動範囲をウィンドウ内に制限する"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   "アプリのフォーカス時にマウスをウィンドウから出ないようにします。"
+   "ウィンドウがアクティブである場合、マウスの移動範囲をウィンドウ内に制限します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   "[ゲームフォーカス] モードを自動で有効にする"
+   "自動的に [ゲームフォーカス] モードを有効にする"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
@@ -3800,11 +3800,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "マウスを占有 (切り替え)"
+   "マウスの移動範囲をウィンドウ内に制限 (切り替え)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "マウスを占有または開放します. 占有した場合, システムカーソルは非表示となり, RetroArchのディスプレイウィンドウ内に限定されます. それにより, 相対的なマウス入力が向上します."
+   "マウスの移動範囲をウィンドウ内に制限するかどうかを切り替えます。制限した場合、システムカーソルは非表示になり、移動範囲が RetroArch の表示ウィンドウ内に制限されます。マウス操作を行うゲームでの入力性が向上します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
@@ -4237,15 +4237,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   "コア終了時にダミーをロード"
+   "コアの終了時にダミーをロード"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "一部のコアにはシャットダウン機能があり、ダミーコアをロードすることで RetroArch の終了を防止できます。"
+   "一部のコアに実装されているシャットダウン機能の実行を、コアの終了時にダミーコアをロードすることで回避します。RetroArch の終了を防止できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   "一部のコアにはシャットダウン機能があります。このオプションを無効のままにすると、終了の手続きを選択したときに RetroArch の終了を引き起こします。\nこのオプションを有効にすることで代わりにダミーコアがロードされ、RetroArch の終了を防止し、メニュー内に留まることができます。"
+   "一部のコアにはシャットダウン機能が実装されています。このオプションを無効のままにすると、終了の手続きを選択したときに RetroArch の終了を引き起こします。\nこのオプションを有効にすることで、代わりにダミーコアがロードされ、RetroArch の終了を防止し、メニュー内に留まることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -4553,7 +4553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "不揮発性 SaveRAM ファイルをアーカイブ形式で書き込みます。保存/読み込み時間が長くなる代わりに、ファイルのサイズを大幅に削減します。\n標準 libretro SaveRAM インターフェースを介して保存を行うコアにのみ適用されます。"
+   "不揮発性 SaveRAM ファイルを圧縮ファイル形式で書き込みます。保存/読み込み時間が増加する代わりに、ファイルサイズを大幅に削減します。\n標準 libretro SaveRAM インターフェースを介して保存を行うコアにのみ適用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -4561,7 +4561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "ステートセーブファイルをアーカイブ形式で書き込みます。保存/読み込み時間が増加する代わりにファイルサイズを劇的に削減します。"
+   "ステートセーブファイルを圧縮ファイル形式で書き込みます。保存/読み込み時間が増加する代わりに、ファイルサイズを大幅に削減します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -7252,11 +7252,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "ダウンロードしたアーカイブを自動的に展開"
+   "ダウンロードした圧縮ファイルを自動的に展開"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "ダウンロード後、ダウンロードしたアーカイブに含まれるファイルを自動的に展開します。"
+   "ダウンロード後、ダウンロードした圧縮ファイルに含まれるファイルを自動的に展開します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
@@ -7276,7 +7276,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "コアバックアップ履歴のサイズ"
+   "コアバックアップ履歴の上限"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -7347,7 +7347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   "ディスクに書き込むときにプレイリストデータをアーカイブします。CPU 使用率が (わずかに) 上昇する代わりに、ファイルサイズと読み込み時間を削減します。プレイリストの形式 (古い, 新しい) を問わず使用できます。"
+   "ディスクへ書き込む際にプレイリストデータを圧縮します。CPU 使用率が (わずかに) 上昇する代わりに、ファイルサイズと読み込み時間を削減します。プレイリストの形式 (古い, 新しい) を問わず使用できます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
@@ -7471,11 +7471,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "アーカイブのあいまいマッチング"
+   "圧縮ファイルのあいまいマッチング"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "圧縮ファイルに関連付けられたエントリーをプレイリストで検索する際、[ファイル名] + [コンテンツ] の代わりにアーカイブファイル名のみを一致させます。有効にすると、圧縮ファイルをロードするときにコンテンツ履歴のエントリーの重複を回避することができます。"
+   "圧縮ファイルに関連付けられたエントリーをプレイリストで検索する際、[ファイル名] + [コンテンツ] の代わりに圧縮ファイル名のみを一致させます。有効にすると、圧縮ファイルをロードする際にコンテンツ履歴のエントリーの重複を回避することができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -7954,7 +7954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-   "アーカイブされたコンテンツは一時的にこのディレクトリに展開されます。"
+   "圧縮ファイル内のコンテンツは一時的にこのディレクトリに展開されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_DIR,
@@ -8221,11 +8221,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "アーカイブの内部をスキャン"
+   "圧縮ファイルの内部をスキャン"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "有効にすると、アーカイブファイル (.zip, .7z など) で有効な/対応されているコンテンツを検索します。スキャンのパフォーマンスに大きな影響を与える可能性があります。"
+   "有効にすると、圧縮ファイル (.zip, .7z など) で有効な/対応されているコンテンツを検索します。スキャンのパフォーマンスに大きな影響を与える可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
@@ -10151,27 +10151,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
-   "1ビット, 最大値 = 0x01"
+   "1 ビット, 最大値 = 0x01"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
-   "2ビット, 最大値 = 0x03"
+   "2 ビット, 最大値 = 0x03"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
-   "4ビット, 最大値 = 0x0F"
+   "4 ビット, 最大値 = 0x0F"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
-   "8ビット, 最大値 = 0xFF"
+   "8 ビット, 最大値 = 0xFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
-   "16ビット, 最大値 0xFFFF"
+   "16 ビット, 最大値 0xFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
-   "32ビット, 最大値 = 0xFFFFFFFF"
+   "32 ビット, 最大値 = 0xFFFFFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
@@ -11811,7 +11811,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
-   "アーカイブの中に絞り込み"
+   "圧縮ファイル内フィルター"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
@@ -13503,7 +13503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GRAB_MOUSE_STATE,
-   "マウスステートをグラブする"
+   "マウスの移動範囲の制限"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_ON,
@@ -14407,7 +14407,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRUNING_CORE_BACKUP_HISTORY,
-   "古いバックアップの削除中: "
+   "古いバックアップを削除中: "
    )
 MSG_HASH(
    MSG_CORE_BACKUP_COMPLETE,
