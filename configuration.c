@@ -33,6 +33,7 @@
 #endif
 
 #include "file_path_special.h"
+#include "command.h"
 #include "configuration.h"
 #include "content.h"
 #include "config.def.h"
@@ -4451,6 +4452,10 @@ bool config_load_override_file(const char *config_path)
  */
 bool config_unload_override(void)
 {
+   settings_t *settings = config_st;
+   bool fullscreen_prev = settings->bools.video_fullscreen;
+   uint32_t flags       = runloop_get_flags();
+
    runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
@@ -4461,6 +4466,20 @@ bool config_unload_override(void)
    if (!config_load_file(global_get_ptr(),
             path_get(RARCH_PATH_CONFIG), config_st))
       return false;
+
+   if (settings->bools.video_fullscreen != fullscreen_prev)
+   {
+      /* This is for 'win32_common.c', so we don't save
+       * fullscreen size and position if we're switching
+       * back to windowed mode. 
+       * Might be useful for other devices as well? */
+      if (      settings->bools.video_window_save_positions
+            && !settings->bools.video_fullscreen)
+         settings->skip_window_positions = true;
+
+      if (flags & RUNLOOP_FLAG_CORE_RUNNING)
+         command_event(CMD_EVENT_REINIT, NULL);
+   }
 
    RARCH_LOG("[Overrides]: Configuration overrides unloaded, original configuration restored.\n");
 
