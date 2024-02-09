@@ -110,11 +110,16 @@ bool fill_pathname_application_data(char *s, size_t len)
    portable = true;
 #else
    CFStringRef key = CFStringCreateWithCString(NULL, "RAPortableInstall", kCFStringEncodingUTF8);
-   CFBooleanRef val = CFBundleGetValueForInfoDictionaryKey(bundle, key);
-   if (val)
-       portable = CFBooleanGetValue(val);
-   CFRelease(val);
-   CFRelease(key);
+   if (key)
+   {
+      CFBooleanRef val = CFBundleGetValueForInfoDictionaryKey(bundle, key);
+      if (val)
+      {
+         portable = CFBooleanGetValue(val);
+         CFRelease(val);
+      }
+      CFRelease(key);
+   }
 #endif
    if (portable)
    {
