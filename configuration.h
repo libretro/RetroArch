@@ -569,6 +569,7 @@ typedef struct settings
    } paths;
 
    bool modified;
+   bool skip_window_positions;
 
    struct
    {
