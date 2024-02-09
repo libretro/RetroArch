@@ -5083,7 +5083,7 @@ static void input_keys_pressed(
 void bsv_movie_free(bsv_movie_t*);
 
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t * state, enum bsv_flags flags)
-{ 
+{
    if (input_st->bsv_movie_state_next_handle)
       bsv_movie_free(input_st->bsv_movie_state_next_handle);
    input_st->bsv_movie_state_next_handle    = state;
@@ -6614,7 +6614,7 @@ void input_keyboard_event(bool down, unsigned code,
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)
-               accessibility_speak_priority(
+               navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      "backspace", 10);
@@ -6622,12 +6622,12 @@ void input_keyboard_event(bool down, unsigned code,
             {
                const char *lut_name = accessibility_lut_name(c);
                if (lut_name)
-                  accessibility_speak_priority(
+                  navigation_say(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         lut_name, 10);
                else if (character != 0)
-                  accessibility_speak_priority(
+                  navigation_say(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         say_char, 10);

@@ -5311,7 +5311,7 @@ void runloop_msg_queue_push(const char *msg,
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      accessibility_speak_priority(
+      navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*) msg, 0);
@@ -7336,7 +7336,7 @@ void runloop_task_msg_queue_push(
       if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-         accessibility_speak_priority(
+         navigation_say(
                accessibility_enable,
                accessibility_narrator_speech_speed,
                (char*)msg, 0);
