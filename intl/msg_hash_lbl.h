@@ -4044,6 +4044,10 @@ MSG_HASH(
    "video_bfi_dark_frames"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+   "video_shader_subframes"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
    "video_crop_overscan"
    )

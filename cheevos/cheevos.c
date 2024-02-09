@@ -1715,7 +1715,7 @@ void rcheevos_validate_config_settings(void)
    }
 
    /* this causes N blank frames to be rendered between real frames, thus
-    * slowing down the actual number of rendered frames per second. */
+    * can slow down the actual number of rendered frames per second. */
    if (settings->uints.video_black_frame_insertion > 0) {
       const char* error = "Hardcore paused. Black frame insertion not allowed.";
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
@@ -1725,6 +1725,20 @@ void rcheevos_validate_config_settings(void)
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return;
    }
+
+   /* this causes N dupe frames to be rendered between real frames, for
+      the purposes of shaders that update faster than content. Thus
+    * can slow down the actual number of rendered frames per second. */
+   if (settings->uints.video_shader_subframes > 1) {
+      const char* error = "Hardcore paused. Shader subframes not allowed.";
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      rcheevos_pause_hardcore();
+
+      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return;
+   }
+
 
    if (!(disallowed_settings
             = rc_libretro_get_disallowed_settings(sysinfo->library_name)))

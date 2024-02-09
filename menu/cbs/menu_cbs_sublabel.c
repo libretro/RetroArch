@@ -495,6 +495,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_frame_delay_auto,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_delay,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_bfi_dark_frames,         MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_shader_subframes,        MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_toggle_gamepad_combo,          MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_gamepad_combo,            MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_hidden_files,             MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES)
@@ -4760,6 +4761,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_bfi_dark_frames);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shader_subframes);
             break;
          case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_delay);

@@ -9384,6 +9384,13 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+               if (video_driver_test_all_flags(GFX_CTX_FLAGS_SUBFRAME_SHADERS))
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                         PARSE_ONLY_UINT, false) == 0)
