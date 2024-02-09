@@ -647,65 +647,68 @@ static int android_check_quick_tap(android_input_t *android)
 static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       AInputEvent *event,size_t motion_ptr,int source)
 {
-   /* Adjust mouse speed based on ratio
-    * between core resolution and system resolution */
-   float x = 0, y = 0;
-   float                        x_scale      = 1;
-   float                        y_scale      = 1;
-   settings_t *settings                      = config_get_ptr();
-   video_driver_state_t *video_st            = video_state_get_ptr();
-   struct retro_system_av_info *av_info      = &video_st->av_info;
+   settings_t *settings        = config_get_ptr();
+   video_viewport_t *custom_vp = &settings->video_viewport_custom;
 
-   if (av_info)
-   {
-      video_viewport_t *custom_vp            = &settings->video_viewport_custom;
-      const struct retro_game_geometry *geom = (const struct retro_game_geometry*)&av_info->geometry;
-      x_scale = 2 * (float)geom->base_width  / (float)custom_vp->width;
-      y_scale = 2 * (float)geom->base_height / (float)custom_vp->height;
-   }
+   float x       = 0;
+   float x_delta = 0;
+   float x_min   = 0;
+   float x_max   = custom_vp->width;
+
+   float y       = 0;
+   float y_delta = 0;
+   float y_min   = 0;
+   float y_max   = custom_vp->height;
 
    /* AINPUT_SOURCE_MOUSE_RELATIVE is available on Oreo (SDK 26) and newer,
     * it passes the relative coordinates in the regular X and Y parts.
     * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check */
    if ((source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
    {
-      x = AMotionEvent_getX(event, motion_ptr);
-      y = AMotionEvent_getY(event, motion_ptr);
+      x_delta = AMotionEvent_getX(event, motion_ptr);
+      y_delta = AMotionEvent_getY(event, motion_ptr);
    }
    else
    {
-      /* This axis is only available on Android Nougat and on 
+      /* This axis is only available on Android Nougat or on
       * Android devices with NVIDIA extensions */
       if (p_AMotionEvent_getAxisValue)
       {
-         x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X,
+         x_delta = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X,
                motion_ptr);
-         y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y,
+         y_delta = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y,
                motion_ptr);
       }
 
-      /* If AXIS_RELATIVE had 0 values it might be because we're not 
+      /* If AXIS_RELATIVE had 0 values it might be because we're not
       * running Android Nougat or on a device
-      * with NVIDIA extension, so re-calculate deltas based on 
+      * with NVIDIA extension, so re-calculate deltas based on
       * AXIS_X and AXIS_Y. This has limitations
-      * compared to AXIS_RELATIVE because once the Android mouse cursor 
+      * compared to AXIS_RELATIVE because once the Android mouse cursor
       * hits the edge of the screen it is
       * not possible to move the in-game mouse any further in that direction.
       */
-      if (!x && !y)
+      if (!x_delta && !y_delta)
       {
-         x = (AMotionEvent_getX(event, motion_ptr) - android->mouse_x_prev);
-         y = (AMotionEvent_getY(event, motion_ptr) - android->mouse_y_prev);
-         android->mouse_x_prev = AMotionEvent_getX(event, motion_ptr);
-         android->mouse_y_prev = AMotionEvent_getY(event, motion_ptr);
+         x = AMotionEvent_getX(event, motion_ptr);
+         y = AMotionEvent_getY(event, motion_ptr);
+
+         x_delta = (x_delta - android->mouse_x_prev);
+         y_delta = (y_delta - android->mouse_y_prev);
+
+         android->mouse_x_prev = x;
+         android->mouse_y_prev = y;
       }
    }
 
-   android->mouse_x_delta = ceil(x) * x_scale;
-   android->mouse_y_delta = ceil(y) * y_scale;
+   android->mouse_x_delta = x_delta;
+   android->mouse_y_delta = y_delta;
 
-   android->mouse_x += android->mouse_x_delta;
-   android->mouse_y += android->mouse_y_delta;
+   if (!x) x = android->mouse_x + android->mouse_x_delta;
+   if (!y) y = android->mouse_y + android->mouse_y_delta;
+
+   android->mouse_x = x;
+   android->mouse_y = y;
 }
 
 static INLINE void android_input_poll_event_type_motion(
