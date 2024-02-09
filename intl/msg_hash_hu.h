@@ -4385,6 +4385,14 @@ MSG_HASH(
    "Testreszabott irányítás betöltése indításkor."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Kezdeti lemez mutató fájlok automatikus betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Többlemezes tartalom indítása esetén átváltás az utoljára használt lemezre."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Shaderek automatikus betöltése"
    )
@@ -14038,6 +14046,10 @@ MSG_HASH(
    "Lemez behelyezése sikertelen"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Utoljára használt lemez behelyezése sikertelen."
+   )
+MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
    "Klienshez csatlakozás sikertelen"
    )
@@ -15009,4 +15021,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Érintőképernyős egér letiltva"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "RetroArch kisegítő lehetőségek bekapcsolva. Főmenü, Mag betöltése."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "leállítva."
    )
