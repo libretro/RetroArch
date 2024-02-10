@@ -1871,14 +1871,6 @@ MSG_HASH(
    "Fekete képkocka beszúrása"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Egy vagy több fekete képkocka beszúrása a képkockák közé. A mozgási elmosódást nagymértékben csökkentheti a CRT hatás emulálásával, a fényerő kárára. Nem kombinálható az 1-nél nagyobb váltóperiódussal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Egy vagy több fekete képkocka beszúrása a mozgás tisztább visszaadásáért. Csak az aktuális képernyőfrissítéshez igazodó opció használható. Nem alkalmas olyan frissítési frekvenciához, ami nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással. Átmeneti képbeégés esetén 120 Hz-en kikapcsolandó, magasabb Hz-en pedig a lentebbi sötét képk[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
    "Ki"
    )
@@ -1953,6 +1945,70 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "A fekete képkockák darabszáma a képkocka beszúrás szekvenciában. Nagyobb értéknél pontosabb a mozgásvisszaadás, kisebb értéknél nagyobb a fényerő. 120 Hz-nél csak 1 képkocka beszúrása lehetséges, így annak mindenképp feketének kell lennie, ha a BFI aktiválva van."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Ki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - 120 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - 180 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - 240 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - 300 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - 360 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - 420 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - 480 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - 540 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - 600 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - 660 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - 720 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - 780 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - 840 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - 900 Hz-es képfrissítési frekvenciához"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - 960 Hz-es képfrissítési frekvenciához"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

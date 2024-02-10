@@ -1395,14 +1395,6 @@ MSG_HASH(
    "Inserção de frame preto"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas. Pode reduzir bastante a desfocagem de movimento ao emular a varrimento CRT, mas à custa do brilho. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas para melhorar a nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo. Deixar o VRR (Taxa de atualização variável) do sistema ativado é a[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
    "Desligado"
    )
@@ -1477,6 +1469,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "Ajusta o número de fotogramas apresentados na sequência BFI que são pretos. Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. Não é aplicável a 120hz, uma vez que existe apenas um fotograma extra total a 60hz, pelo que tem de ser preto, caso contrário a BFI não estaria ativa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Desligado"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,

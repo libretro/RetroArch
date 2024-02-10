@@ -1475,6 +1475,10 @@ MSG_HASH(
    "Sisipan Bingkai Hitam - Bingkai Gelap"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Mati"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Cuplikan Layar GPU"
    )
