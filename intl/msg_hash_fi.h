@@ -1871,6 +1871,10 @@ MSG_HASH(
    "15 - Näytön 960 Hz:n virkistystaajuudelle"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Ei käytössä"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Näytönohjaimen kuvakaappaus"
    )

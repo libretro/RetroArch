@@ -1899,14 +1899,6 @@ MSG_HASH(
    "검은 프레임 삽입"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "프레임 사이에 검정색 프레임을 삽입합니다. CRT 스캔을 에뮬레이션하여 모션 블러를 크게 줄일 수 있지만 밝기는 저하됩니다. 교환 간격 > 1 (자동은 괜찮음), 프레임 지연 또는 정확한 콘텐츠 프레임 속도로 동기화와 결합하지 마십시오."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "향상된 모션 선명도를 위해 프레임 사이에 검정색 프레임을 삽입합니다. 현재 디스플레이 새로 고침 빈도에 지정된 옵션만 사용하십시오. 144Hz, 165Hz 등과 같이 60Hz의 배수가 아닌 새로 고침 빈도에서는 사용하지 마십시오. 스왑과 결합하지 마십시오. 간격 > 1 (자동은 괜찮음), 프레임 지연 또는 정확한 콘텐츠 프레임 속도로 동기화 시스템 VRR을 켜두는 것은 괜찮지만 해당 설정[...]"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
    "끔"
    )
@@ -1981,6 +1973,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "검은색인 BFI 시퀀스에 표시되는 프레임 수를 조정합니다. 검은색 프레임이 많을수록 모션 선명도는 높아지지만 밝기는 감소합니다. 총 1개의 추가 60hz 프레임만 있으므로 120hz에서는 적용할 수 없습니다. 따라서 검정색이어야 합니다. 그렇지 않으면 BFI가 전혀 활성화되지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "끔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
