@@ -647,18 +647,18 @@ static int android_check_quick_tap(android_input_t *android)
 static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       AInputEvent *event,size_t motion_ptr,int source)
 {
-   settings_t *settings        = config_get_ptr();
-   video_viewport_t *custom_vp = &settings->video_viewport_custom;
+   unsigned video_width, video_height;
+   video_driver_get_size(&video_width, &video_height);
 
    float x       = 0;
    float x_delta = 0;
    float x_min   = 0;
-   float x_max   = custom_vp->width;
+   float x_max   = (float)video_width;
 
    float y       = 0;
    float y_delta = 0;
    float y_min   = 0;
-   float y_max   = custom_vp->height;
+   float y_max   = (float)video_height;
 
    /* AINPUT_SOURCE_MOUSE_RELATIVE is available on Oreo (SDK 26) and newer,
     * it passes the relative coordinates in the regular X and Y parts.
