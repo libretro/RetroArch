@@ -707,6 +707,13 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (!x) x = android->mouse_x + android->mouse_x_delta;
    if (!y) y = android->mouse_y + android->mouse_y_delta;
 
+   /* x and y are used for the screen mouse, so we want
+    * to avoid values outside of the viewport resolution */
+   if (x < x_min) x = x_min;
+   else if (x > x_max) x = x_max;
+   if (y < y_min) y = y_min;
+   else if (y > y_max) y = y_max;
+
    android->mouse_x = x;
    android->mouse_y = y;
 }
