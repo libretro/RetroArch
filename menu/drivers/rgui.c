@@ -748,12 +748,12 @@ static const rgui_theme_t rgui_theme_dracula = {
    0xFFFF79C6, /* hover_color */
    0xFFF8F8F2, /* normal_color */
    0xFFBD93F9, /* title_color */
-   0xFF282A36, /* bg_dark_color */
-   0xFF282A36, /* bg_light_color */
-   0xA044475A, /* border_dark_color */
-   0xA044475A, /* border_light_color */
-   0xA022212C, /* shadow_color */
-   0xA0525F88  /* particle_color */
+   0xE6282A36, /* bg_dark_color */
+   0xE6282A36, /* bg_light_color */
+   0xE644475A, /* border_dark_color */
+   0xE644475A, /* border_light_color */
+   0xFF22212C, /* shadow_color */
+   0xE6525F88  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_opaque_dracula = {
