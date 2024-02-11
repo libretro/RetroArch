@@ -785,11 +785,13 @@ static int32_t input_state_wrap(
       /* Drivers can overflow when sending too many keys at once.. */
       if (id == RETRO_DEVICE_ID_JOYPAD_MASK && ret)
       {
-         /* Deal with menu toggle combo buttons that won't stay inside +32767. */
-         if (ret == -0x8000) /* R3 */
-            ret = 0x8000;
-         else if (ret == -0x4000) /* LR+R3 */
-            ret = 0x8000 + 0x4000;
+         /* Deal with R3 + possible combo buttons that won't stay inside +32767. */
+         if (ret < 0 && ret >= -0x8000) /* R3 */
+         {
+            /* Undo the int16_t conversion effects to int32_t   *
+             * Example: -32752 / 0xffff8010  to  32784 / 0x8010 */
+            ret += 0x10000;
+         }
          else if (ret < 0)
             ret = 0;
          return ret;
