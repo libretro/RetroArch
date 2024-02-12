@@ -3512,7 +3512,7 @@ MSG_HASH(
    "Android disconnect workaround"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Workaround for controllers disconnecting and reconnecting. Impedes 2 players with the identical controllers."
    )
 MSG_HASH(

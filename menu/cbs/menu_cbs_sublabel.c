@@ -793,6 +793,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_
 #endif
 #ifdef ANDROID
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_select_physical_keyboard,   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_android_input_disconnect_workaround, MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sensors_enable,          MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_mouse_grab,         MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB)
@@ -3876,6 +3877,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef ANDROID
          case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_select_physical_keyboard);
+            break;
+         case MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_android_input_disconnect_workaround);
             break;
 #endif
          case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
