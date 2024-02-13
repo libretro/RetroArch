@@ -336,7 +336,7 @@ static void rcheevos_client_http_task_callback(retro_task_t* task,
    rc_api_server_response_t server_response;
    memset(&server_response, 0, sizeof(server_response));
 
-   if (!http_data)
+   if (!http_data || http_data->status < 0)
    {
       callback_data->callback(&server_response, callback_data->callback_data);
    }

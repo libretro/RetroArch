@@ -266,16 +266,6 @@ void rc_client_update_active_leaderboards(rc_client_game_info_t* game);
 \*****************************************************************************/
 
 enum {
-  RC_CLIENT_LOAD_STATE_NONE,
-  RC_CLIENT_LOAD_STATE_IDENTIFYING_GAME,
-  RC_CLIENT_LOAD_STATE_AWAIT_LOGIN,
-  RC_CLIENT_LOAD_STATE_FETCHING_GAME_DATA,
-  RC_CLIENT_LOAD_STATE_STARTING_SESSION,
-  RC_CLIENT_LOAD_STATE_DONE,
-  RC_CLIENT_LOAD_STATE_UNKNOWN_GAME
-};
-
-enum {
   RC_CLIENT_USER_STATE_NONE,
   RC_CLIENT_USER_STATE_LOGIN_REQUESTED,
   RC_CLIENT_USER_STATE_LOGGED_IN

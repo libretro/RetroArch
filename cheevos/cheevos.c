@@ -2443,6 +2443,10 @@ static void rcheevos_client_load_game_callback(int result,
    const rc_client_game_t* game = rc_client_get_game_info(client);
    char msg[256];
 
+#if defined(HAVE_GFX_WIDGETS)
+   gfx_widget_set_cheevos_disconnect(false);
+#endif
+
    if (result != RC_OK || !game)
    {
       if (result == RC_NO_GAME_LOADED)
@@ -3258,6 +3262,10 @@ bool rcheevos_load(const void *data)
 
    /* provide hooks for reading files */
    rc_hash_reset_cdreader_hooks();
+
+#if defined(HAVE_GFX_WIDGETS)
+   gfx_widget_set_cheevos_disconnect(true);
+#endif
 
    rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
       info->path, info->data, info->size, rcheevos_client_load_game_callback, NULL);

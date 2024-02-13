@@ -236,6 +236,20 @@ RC_EXPORT rc_client_async_handle_t* RC_CCONV rc_client_begin_load_game(rc_client
     rc_client_callback_t callback, void* callback_userdata);
 
 /**
+ * Gets the current progress of the asynchronous load game process.
+ */
+RC_EXPORT int RC_CCONV rc_client_get_load_game_state(const rc_client_t* client);
+enum {
+  RC_CLIENT_LOAD_GAME_STATE_NONE,
+  RC_CLIENT_LOAD_GAME_STATE_IDENTIFYING_GAME,
+  RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN,
+  RC_CLIENT_LOAD_GAME_STATE_FETCHING_GAME_DATA,
+  RC_CLIENT_LOAD_GAME_STATE_STARTING_SESSION,
+  RC_CLIENT_LOAD_GAME_STATE_DONE,
+  RC_CLIENT_LOAD_GAME_STATE_ABORTED
+};
+
+/**
  * Unloads the current game.
  */
 RC_EXPORT void RC_CCONV rc_client_unload_game(rc_client_t* client);

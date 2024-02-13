@@ -612,7 +612,7 @@ static void rc_client_login_callback(const rc_api_server_response_t* server_resp
     if (login_callback_data->callback)
       login_callback_data->callback(result, error_message, client, login_callback_data->callback_userdata);
 
-    if (load_state && load_state->progress == RC_CLIENT_LOAD_STATE_AWAIT_LOGIN)
+    if (load_state && load_state->progress == RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN)
       rc_client_begin_fetch_game_data(load_state);
   }
   else {
@@ -635,7 +635,7 @@ static void rc_client_login_callback(const rc_api_server_response_t* server_resp
 
     RC_CLIENT_LOG_INFO_FORMATTED(client, "%s logged in successfully", login_response.display_name);
 
-    if (load_state && load_state->progress == RC_CLIENT_LOAD_STATE_AWAIT_LOGIN)
+    if (load_state && load_state->progress == RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN)
       rc_client_begin_fetch_game_data(load_state);
 
     if (login_callback_data->callback)
@@ -796,7 +796,7 @@ void rc_client_logout(rc_client_t* client)
 
   rc_client_unload_game(client);
 
-  if (load_state && load_state->progress == RC_CLIENT_LOAD_STATE_AWAIT_LOGIN)
+  if (load_state && load_state->progress == RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN)
     rc_client_load_error(load_state, RC_ABORTED, "Login aborted");
 }
 
@@ -937,9 +937,9 @@ static int rc_client_end_load_state(rc_client_load_state_t* load_state)
      * the outstanding_requests count will reach zero and the memory will be free'd then. */
     if (remaining_requests == 0) {
       /* if one of the callbacks called rc_client_load_error, progress will be set to
-       * RC_CLIENT_LOAD_STATE_UNKNOWN. There's no need to call the callback with RC_ABORTED
+       * RC_CLIENT_LOAD_STATE_ABORTED. There's no need to call the callback with RC_ABORTED
        * in that case, as it will have already been called with something more appropriate. */
-      if (load_state->progress != RC_CLIENT_LOAD_STATE_UNKNOWN_GAME && load_state->callback)
+      if (load_state->progress != RC_CLIENT_LOAD_GAME_STATE_ABORTED && load_state->callback)
         load_state->callback(RC_ABORTED, "The requested game is no longer active", load_state->client, load_state->callback_userdata);
 
       rc_client_free_load_state(load_state);
@@ -957,7 +957,7 @@ static void rc_client_load_error(rc_client_load_state_t* load_state, int result,
 
   rc_mutex_lock(&load_state->client->state.mutex);
 
-  load_state->progress = RC_CLIENT_LOAD_STATE_UNKNOWN_GAME;
+  load_state->progress = RC_CLIENT_LOAD_GAME_STATE_ABORTED;
   if (load_state->client->state.load == load_state)
     load_state->client->state.load = NULL;
 
@@ -1407,11 +1407,11 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
 
   rc_mutex_lock(&client->state.mutex);
   load_state->progress = (client->state.load == load_state) ?
-      RC_CLIENT_LOAD_STATE_DONE : RC_CLIENT_LOAD_STATE_UNKNOWN_GAME;
+      RC_CLIENT_LOAD_GAME_STATE_DONE : RC_CLIENT_LOAD_GAME_STATE_ABORTED;
   client->state.load = NULL;
   rc_mutex_unlock(&client->state.mutex);
 
-  if (load_state->progress != RC_CLIENT_LOAD_STATE_DONE) {
+  if (load_state->progress != RC_CLIENT_LOAD_GAME_STATE_DONE) {
     /* previous load state was aborted */
     if (load_state->callback)
       load_state->callback(RC_ABORTED, "The requested game is no longer active", client, load_state->callback_userdata);
@@ -1561,7 +1561,7 @@ static void rc_client_begin_start_session(rc_client_load_state_t* load_state)
     rc_client_load_error(load_state, result, rc_error_str(result));
   }
   else {
-    rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_STATE_STARTING_SESSION, 1);
+    rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_GAME_STATE_STARTING_SESSION, 1);
     RC_CLIENT_LOG_VERBOSE_FORMATTED(client, "Starting session for game %u", start_session_params.game_id);
     rc_client_begin_async(client, &load_state->async_handle);
     client->callbacks.server_call(&start_session_request, rc_client_start_session_callback, load_state, client);
@@ -1876,7 +1876,7 @@ static void rc_client_fetch_game_data_callback(const rc_api_server_response_t* s
     }
 
     /* kick off the start session request while we process the game data */
-    rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_STATE_STARTING_SESSION, 1);
+    rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_GAME_STATE_STARTING_SESSION, 1);
     if (load_state->client->state.spectator_mode != RC_CLIENT_SPECTATOR_MODE_OFF) {
       /* we can't unlock achievements without a session, lock spectator mode for the game */
       load_state->client->state.spectator_mode = RC_CLIENT_SPECTATOR_MODE_LOCKED;
@@ -2032,7 +2032,7 @@ static void rc_client_begin_fetch_game_data(rc_client_load_state_t* load_state)
   rc_mutex_lock(&client->state.mutex);
   result = client->state.user;
   if (result == RC_CLIENT_USER_STATE_LOGIN_REQUESTED)
-    load_state->progress = RC_CLIENT_LOAD_STATE_AWAIT_LOGIN;
+    load_state->progress = RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN;
   rc_mutex_unlock(&client->state.mutex);
 
   switch (result) {
@@ -2059,7 +2059,7 @@ static void rc_client_begin_fetch_game_data(rc_client_load_state_t* load_state)
     return;
   }
 
-  rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_STATE_FETCHING_GAME_DATA, 1);
+  rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_GAME_STATE_FETCHING_GAME_DATA, 1);
 
   RC_CLIENT_LOG_VERBOSE_FORMATTED(client, "Fetching data for game %u", fetch_game_data_request.game_id);
   rc_client_begin_async(client, &load_state->async_handle);
@@ -2201,7 +2201,7 @@ static rc_client_async_handle_t* rc_client_load_game(rc_client_load_state_t* loa
       return NULL;
     }
 
-    rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_STATE_IDENTIFYING_GAME, 1);
+    rc_client_begin_load_state(load_state, RC_CLIENT_LOAD_GAME_STATE_IDENTIFYING_GAME, 1);
 
     rc_client_begin_async(client, &load_state->async_handle);
     client->callbacks.server_call(&request, rc_client_identify_game_callback, load_state, client);
@@ -2338,6 +2338,20 @@ rc_client_async_handle_t* rc_client_begin_identify_and_load_game(rc_client_t* cl
   }
 
   return rc_client_load_game(load_state, hash, file_path);
+}
+
+int rc_client_get_load_game_state(const rc_client_t* client)
+{
+  int state = RC_CLIENT_LOAD_GAME_STATE_NONE;
+  if (client) {
+    const rc_client_load_state_t* load_state = client->state.load;
+    if (load_state)
+      state = load_state->progress;
+    else if (client->game)
+      state = RC_CLIENT_LOAD_GAME_STATE_DONE;
+  }
+
+  return state;
 }
 
 static void rc_client_game_mark_ui_to_be_hidden(rc_client_t* client, rc_client_game_info_t* game)
