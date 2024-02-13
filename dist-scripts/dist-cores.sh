@@ -259,7 +259,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       async=1
       heap_mem=536870912
    elif [ $name = "ppsspp" ] ; then
-      gles3=1
+      gles3=0
       pthread=12
       heap_mem=536870912
    elif [ $name = "scummvm" ] ; then
