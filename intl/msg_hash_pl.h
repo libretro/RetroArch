@@ -3144,10 +3144,6 @@ MSG_HASH(
    "Obejście rozłączania systemu Android"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Obejście problemu rozłączania i ponownego łączenia kontrolerów. Uniemożliwia grę 2 graczom z identycznymi kontrolerami."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Potwierdź wyjście"
    )

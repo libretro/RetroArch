@@ -3260,10 +3260,6 @@ MSG_HASH(
    "控制器斷開解決方法 (Android)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "控制器斷開後重新連接的解決方法, 請使用兩個相同的控制器中斷。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "結束前再確認"
    )
