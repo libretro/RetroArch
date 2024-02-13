@@ -91,6 +91,18 @@
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
+/* Checks if hotkey or RetroPad has any bindings at all. */
+#define CHECK_INPUT_DRIVER_EMPTY_BIND(port, i) \
+( \
+         (binds[port][i].key     == RETROK_UNKNOWN) \
+      && (binds[port][i].mbutton == NO_BTN) \
+      && (  (  binds[port][i].joykey  == NO_BTN \
+            && binds[port][i].joyaxis == AXIS_NONE) \
+         || (  joypad_info->auto_binds[i].joykey  == NO_BTN \
+            && joypad_info->auto_binds[i].joyaxis == AXIS_NONE) \
+         ) \
+)
+
 /* Human readable order of input binds */
 const unsigned input_config_bind_order[24] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
@@ -782,31 +794,21 @@ static int32_t input_state_wrap(
 
    if (device == RETRO_DEVICE_JOYPAD)
    {
-      /* Drivers can overflow when sending too many keys at once.. */
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK && ret)
-      {
-         /* Deal with menu toggle combo buttons that won't stay inside +32767. */
-         if (ret == -0x8000) /* R3 */
-            ret = 0x8000;
-         else if (ret == -0x4000) /* LR+R3 */
-            ret = 0x8000 + 0x4000;
-         else if (ret < 0)
-            ret = 0;
-         return ret;
-      }
-
       /* No binds, no input. This is for ignoring RETROK_UNKNOWN
        * if the driver allows setting the key down somehow.
        * Otherwise all hotkeys and inputs with null bind get triggered. */
-      if (     id != RETRO_DEVICE_ID_JOYPAD_MASK && ret
-            && binds[_port][id].key     == RETROK_UNKNOWN
-            && binds[_port][id].mbutton == NO_BTN
-            && (  (  binds[_port][id].joykey  == NO_BTN
-                  && binds[_port][id].joyaxis == AXIS_NONE)
-               || (  joypad_info->auto_binds[id].joykey  == NO_BTN
-                  && joypad_info->auto_binds[id].joyaxis == AXIS_NONE)
-               )
-         )
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+      {
+         int i;
+         for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+         {
+            if (CHECK_INPUT_DRIVER_EMPTY_BIND(_port, i))
+               ret &= ~(UINT64_C(1) << i);
+         }
+         return ret;
+      }
+      else if (id != RETRO_DEVICE_ID_JOYPAD_MASK
+            && CHECK_INPUT_DRIVER_EMPTY_BIND(_port, id))
          return 0;
    }
 
