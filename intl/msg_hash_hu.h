@@ -3420,8 +3420,8 @@ MSG_HASH(
    "Kerülő megoldás az Androidos lecsatlakozásra"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Kerülő megoldás a le- és visszacsatlakozó kontrollerekre, amikor két játékos ugyanolyan kontrollert használ."
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Kerülő megoldás a le- és visszacsatlakozó kontrollerekre. Ha két játékos ugyanolyan kontrollert használ, ez gondot okozhat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,

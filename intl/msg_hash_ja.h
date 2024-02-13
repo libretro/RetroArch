@@ -3444,10 +3444,6 @@ MSG_HASH(
    "Android 切断対策"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "コントローラーの切断と再接続を回避するための回避策です。同じコントローラーを持つ 2 人のプレイヤーに影響を与えます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "終了時に確認"
    )

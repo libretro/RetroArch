@@ -3044,10 +3044,6 @@ MSG_HASH(
    "Åtgärd för Android kopplas från"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Åtgärd för spelkontroller son kopplar från och återansluter. Hindrar 2 spelare med identiska kontroller."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Bekräfta Avsluta"
    )
