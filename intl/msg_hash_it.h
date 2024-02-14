@@ -3372,6 +3372,10 @@ MSG_HASH(
    "Disconnetti Android workaround"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Workaround per i controller che si disconnettono e si riconnettono. Impedisci 2 giocatori con i controller identici."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Conferma Esci"
    )
