@@ -527,7 +527,7 @@ static int16_t rwebinput_input_state(
             vp.full_height              = 0;
 
             if (!(video_driver_translate_coord_viewport_wrap(
-                        &vp, mouse->x, mouse->x,
+                        &vp, mouse->x, mouse->y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y)))
                return 0;
 
