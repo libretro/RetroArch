@@ -3272,6 +3272,10 @@ MSG_HASH(
    "Problemumgehung für Verbindungstrennung auf Android"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Problembehebung für Controller, die die Verbindung trennen und wiederherstellen. Betrifft 2 Spieler mit den gleichen Controllern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Beenden bestätigen"
    )
