@@ -1141,26 +1141,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, size_t lbl_len, const char *menu_lbl, size_t menu_lbl_len)
 {
 
-   if (     string_starts_with_size(label, "input_player", STRLEN_CONST("input_player"))
-         && string_ends_with_size(label, "_joypad_index", lbl_len,
-            STRLEN_CONST("_joypad_index")))
-   {
-      unsigned i;
-      char lbl_setting[128];
-      size_t _len = strlcpy(lbl_setting, "input_player", sizeof(lbl_setting));
-      for (i = 0; i < MAX_USERS; i++)
-      {
-         _len += snprintf(lbl_setting + _len, sizeof(lbl_setting) - _len, "%d", i + 1);
-         strlcpy(lbl_setting + _len, "_joypad_index", sizeof(lbl_setting) - _len);
-
-         if (!string_is_equal(label, lbl_setting))
-            continue;
-
-         BIND_ACTION_RIGHT(cbs, bind_right_generic);
-         return 0;
-      }
-   }
-
    if (string_is_equal(menu_lbl, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
       BIND_ACTION_RIGHT(cbs, action_right_mainmenu);

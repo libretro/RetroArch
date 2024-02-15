@@ -2211,9 +2211,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       }
    }
 
-
-
-   /* Quick Menu Port Controls require special handling */
    if (type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_device_type);
@@ -5565,6 +5562,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             char *s, size_t len);
       } info_single_list_t;
 
+      /* Entries with %u player index placeholder. */
       info_single_list_t info_list[] = {
 /*         {
             MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE,
