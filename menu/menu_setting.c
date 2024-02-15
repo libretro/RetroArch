@@ -9300,18 +9300,16 @@ static bool setting_append_list_input_player_options(
 
       snprintf(analog_to_digital[user], sizeof(analog_to_digital[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), user + 1);
-      fill_pathname_join_delim(device_index[user], tmp_string, "joypad_index", '_',
-            sizeof(device_index[user]));
-      fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
-            sizeof(mouse_index[user]));
-      fill_pathname_join_delim(bind_all[user], tmp_string, "bind_all", '_',
-            sizeof(bind_all[user]));
-      fill_pathname_join_delim(bind_all_save_autoconfig[user],
-            tmp_string, "bind_all_save_autoconfig", '_',
-            sizeof(bind_all_save_autoconfig[user]));
-      fill_pathname_join_delim(bind_defaults[user],
-            tmp_string, "bind_defaults", '_',
-            sizeof(bind_defaults[user]));
+      snprintf(device_index[user], sizeof(device_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),            user + 1);
+      snprintf(mouse_index[user], sizeof(mouse_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),             user + 1);
+      snprintf(bind_all[user], sizeof(bind_all[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),          user + 1);
+      snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),   user + 1);
+      snprintf(bind_defaults[user], sizeof(bind_defaults[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),     user + 1);
 
       strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
