@@ -1976,6 +1976,22 @@ MSG_HASH(
    "input_player%u_mouse_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
+   "input_player%u_joypad_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX,
+   "input_player%u_bind_all"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX,
+   "input_player%u_bind_all_save_autoconfig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX,
+   "input_player%u_bind_all_bind_defaults"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_PORT,
    "input_remap_port_p%u"
    )

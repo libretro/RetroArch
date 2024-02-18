@@ -8024,13 +8024,6 @@ static void general_read_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          *setting->value.target.fraction = settings->floats.video_refresh_rate;
          break;
-      case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX];
-         break;
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
            setting->value.target.string = settings->arrays.input_android_physical_keyboard;
@@ -8438,14 +8431,6 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-         break;
-      case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         settings->modified           = true;
-         settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
          break;
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
@@ -9275,8 +9260,6 @@ static bool setting_append_list_input_player_options(
          parent_group);
 
    {
-      char tmp_string[32];
-
       static char device_index[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
       static char analog_to_digital[MAX_USERS][64];
@@ -9295,23 +9278,19 @@ static bool setting_append_list_input_player_options(
       static char split_joycon[MAX_USERS][64];
       static char label_split_joycon[MAX_USERS][64];
 #endif
-      size_t _len = strlcpy(tmp_string, "input_player", sizeof(tmp_string));
-      snprintf(tmp_string + _len, sizeof(tmp_string) - _len, "%u", user + 1);
 
-      snprintf(analog_to_digital[user], sizeof(analog_to_digital[user]),
+      snprintf(analog_to_digital[user],        sizeof(analog_to_digital[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), user + 1);
-      fill_pathname_join_delim(device_index[user], tmp_string, "joypad_index", '_',
-            sizeof(device_index[user]));
-      fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
-            sizeof(mouse_index[user]));
-      fill_pathname_join_delim(bind_all[user], tmp_string, "bind_all", '_',
-            sizeof(bind_all[user]));
-      fill_pathname_join_delim(bind_all_save_autoconfig[user],
-            tmp_string, "bind_all_save_autoconfig", '_',
-            sizeof(bind_all_save_autoconfig[user]));
-      fill_pathname_join_delim(bind_defaults[user],
-            tmp_string, "bind_defaults", '_',
-            sizeof(bind_defaults[user]));
+      snprintf(device_index[user],             sizeof(device_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),            user + 1);
+      snprintf(mouse_index[user],              sizeof(mouse_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),             user + 1);
+      snprintf(bind_all[user],                 sizeof(bind_all[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),          user + 1);
+      snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),   user + 1);
+      snprintf(bind_defaults[user],            sizeof(bind_defaults[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),     user + 1);
 
       strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),

@@ -478,7 +478,11 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_fade_chat_toggle,
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_device_merge,        MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_index,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_all,                   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_save_autoconfig,            MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_defaults,              MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS)
 #ifdef HAVE_MATERIALUI
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_icons_enable,        MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_materialui_switch_icons,        MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS)
@@ -2180,6 +2184,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          action_bind_sublabel_cheat_desc
       },
 #endif
+      {
+         MENU_SETTINGS_CORE_OPTION_START,
+         MENU_SETTINGS_CHEEVOS_START - 1,
+         action_bind_sublabel_core_option
+      },
+      {
+         MENU_SETTINGS_REMAPPING_PORT_BEGIN,
+         MENU_SETTINGS_REMAPPING_PORT_END,
+         action_bind_sublabel_user_remap_settings
+      },
+
    };
 
    if (!cbs)
@@ -2196,28 +2211,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
-       (type < MENU_SETTINGS_CHEEVOS_START))
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option);
-      return 0;
-   }
-
-   /* Quick Menu Port Controls require special handling */
-   if (     type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
-         && type <= MENU_SETTINGS_REMAPPING_PORT_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_remap_settings);
-      return 0;
-   }
-   else if (type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE)
+   if (type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_device_type);
-      return 0;
-   }
-   else if (type == MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
       return 0;
    }
    else if (type == MENU_SETTINGS_INPUT_INPUT_REMAP_PORT)
@@ -5555,26 +5551,72 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    }
    else
    {
-      /* Per-port 'Analog to Digital Type' entries
-       * require special handling */
-      if (  string_starts_with_size(label, "input_player",
-            STRLEN_CONST("input_player"))
-         && string_ends_with_size(label, "_analog_dpad_mode",
-               lbl_len, STRLEN_CONST("_analog_dpad_mode")))
+      /* Per-port entries require string match against label. 
+       * Some cases may be detected above by "type", but not all. */
+      typedef struct info_single_list
       {
-         unsigned i;
-         char key_input_adc_type[64];
-         size_t _len = strlcpy(key_input_adc_type, "input_player", sizeof(key_input_adc_type));
-         for (i = 0; i < MAX_USERS; i++)
+         unsigned label_idx;
+         int (*cb)(file_list_t *list,
+            unsigned type, unsigned i,
+            const char *label, const char *path,
+            char *s, size_t len);
+      } info_single_list_t;
+
+      /* Entries with %u player index placeholder. */
+      info_single_list_t info_list[] = {
+/*         {
+            MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE,
+            NULL
+         },*/
          {
-            size_t _len2 = snprintf(key_input_adc_type      + _len,
-                  sizeof(key_input_adc_type) - _len, "%u", i + 1);
-            strlcpy(key_input_adc_type       + _len2,
-                  "_analog_dpad_mode",
-                  sizeof(key_input_adc_type) - _len2);
-            if (!string_is_equal(label, key_input_adc_type))
-               continue;
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_adc_type);
+            MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
+            action_bind_sublabel_input_adc_type
+         },
+/*         {
+            MENU_ENUM_LABEL_INPUT_DEVICE_INDEX,
+            NULL
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
+            NULL
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_REMAP_PORT,
+            NULL
+         },*/
+         {
+            MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
+            action_bind_sublabel_input_device_index
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX,
+            action_bind_sublabel_input_bind_all
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX,
+            action_bind_sublabel_input_save_autoconfig
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX,
+            action_bind_sublabel_input_bind_defaults
+         },         
+      };
+
+      const char* idx_placeholder = "%u";
+      for (i = 0; i < ARRAY_SIZE(info_list); i++)
+      {
+         int idxpos = -1;
+         idxpos = string_find_index_substring_string(msg_hash_to_str(info_list[i].label_idx), idx_placeholder);
+         if ( idxpos > 0 && 
+              string_starts_with_size(label, msg_hash_to_str(info_list[i].label_idx), idxpos) && 
+              (( (size_t) idxpos == strlen(msg_hash_to_str(info_list[i].label_idx)) - 2) || 
+               ( (size_t) idxpos <  strlen(msg_hash_to_str(info_list[i].label_idx)) - 2  && 
+                          string_ends_with_size(label, 
+                                          msg_hash_to_str(info_list[i].label_idx)+idxpos+2,
+                                          lbl_len, 
+                                          strlen(msg_hash_to_str(info_list[i].label_idx))-idxpos-2))))
+         {
+            BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
             return 0;
          }
       }
