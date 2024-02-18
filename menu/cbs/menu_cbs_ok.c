@@ -5941,6 +5941,9 @@ static int action_ok_delete_entry(const char *path,
    {
       playlist_delete_index(playlist, menu->rpl_entry_selection_ptr);
       playlist_write_file(playlist);
+#if TARGET_OS_TV
+      update_topshelf();
+#endif
    }
 
    new_selection_ptr      = menu_st->selection_ptr;

@@ -27,6 +27,10 @@
 #ifdef HAVE_IOS_SWIFT
 #import "RetroArch-Swift.h"
 #endif
+#if TARGET_OS_TV
+#import <TVServices/TVServices.h>
+#import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
+#endif
 #endif
 
 #include "../../../configuration.h"
@@ -895,3 +899,74 @@ void write_userdefaults_config_file(void)
    if (conf)
       [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
 }
+
+#if TARGET_OS_TV
+static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gfx_thumbnail_path_data_t *path_data)
+{
+   NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
+      @"id": [NSString stringWithUTF8String:entry->path],
+      @"title": [NSString stringWithUTF8String:entry->label],
+   }];
+   if (!string_is_empty(path_data->content_db_name))
+   {
+      const char *img_name = NULL;
+      if (gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
+         dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
+                         path_data->content_db_name, img_name];
+   }
+   NSURLComponents *play = [[NSURLComponents alloc] initWithString:@"retroarch://topshelf"];
+   [play setQueryItems:@[
+      [[NSURLQueryItem alloc] initWithName:@"path" value:[NSString stringWithUTF8String:entry->path]],
+      [[NSURLQueryItem alloc] initWithName:@"core_path" value:[NSString stringWithUTF8String:entry->core_path]],
+   ]];
+   dict[@"play"] = [play string];
+   return dict;
+}
+
+void update_topshelf(void)
+{
+   if (@available(tvOS 13.0, *))
+   {
+      NSUserDefaults *ud = [[NSUserDefaults alloc] initWithSuiteName:kRetroArchAppGroup];
+      if (!ud)
+         return;
+
+      NSMutableDictionary *contentDict = [NSMutableDictionary dictionaryWithCapacity:2];
+      const struct playlist_entry *entry;
+      gfx_thumbnail_path_data_t *thumbnail_path_data = gfx_thumbnail_path_init();
+
+      settings_t *settings     = config_get_ptr();
+      bool history_list_enable = settings->bools.history_list_enable;
+      if (history_list_enable && playlist_size(g_defaults.content_history) > 0)
+      {
+         NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_history)];
+         NSString *key = [NSString stringWithUTF8String:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)];
+         for (size_t i = 0; i < 5 && i < playlist_size(g_defaults.content_history); i++)
+         {
+            gfx_thumbnail_path_reset(thumbnail_path_data);
+            gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_history, i);
+            playlist_get_index(g_defaults.content_history, i, &entry);
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data)];
+         }
+         contentDict[key] = array;
+      }
+
+      if (playlist_size(g_defaults.content_favorites) > 0)
+      {
+         NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_favorites)];
+         NSString *key = [NSString stringWithUTF8String:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)];
+         for (size_t i = 0; i < 5 && i < playlist_size(g_defaults.content_favorites); i++)
+         {
+            gfx_thumbnail_path_reset(thumbnail_path_data);
+            gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_favorites, i);
+            playlist_get_index(g_defaults.content_favorites, i, &entry);
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data)];
+         }
+         contentDict[key] = array;
+      }
+
+      [ud setObject:contentDict forKey:@"topshelf"];
+      [TVTopShelfContentProvider topShelfContentDidChange];
+   }
+}
+#endif
