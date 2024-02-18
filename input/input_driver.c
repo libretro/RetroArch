@@ -1280,7 +1280,7 @@ static int16_t input_state_device(
                 */
                unsigned turbo_mode = settings->uints.input_turbo_mode;
 
-               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
+               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
                {
                   /* Pressing turbo button toggles turbo mode on or off.
                    * Holding the button will
@@ -1350,7 +1350,7 @@ static int16_t input_state_device(
                            < settings->uints.input_turbo_duty_cycle);
                   }
                }
-               else
+               else if (turbo_mode == INPUT_TURBO_MODE_CLASSIC)
                {
                   /* If turbo button is held, all buttons pressed except
                    * for D-pad will go into a turbo mode. Until the button is
@@ -1370,6 +1370,30 @@ static int16_t input_state_device(
                   }
                   else
                      input_st->turbo_btns.enable[port] &= ~(1 << id);
+               }
+               else /* Classic toggle mode */
+               {
+                  /* Works pretty much the same as classic mode above
+                   * but with a toggle mechanic */
+                  if (res)
+                  {
+                     /* Check if it's a new press, if we're still holding
+                      * the button from previous toggle then ignore */
+                     if (     input_st->turbo_btns.frame_enable[port]
+                           && !(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
+                        input_st->turbo_btns.enable[port] ^= (1 << id);
+
+                     if (input_st->turbo_btns.enable[port] & (1 << id))
+                        /* If turbo button is enabled for this key ID */
+                        res = ((   input_st->turbo_btns.count
+                                 % settings->uints.input_turbo_period)
+                              < settings->uints.input_turbo_duty_cycle);
+                  }
+                  /* Remember for the toggle check */
+                  if (input_st->turbo_btns.frame_enable[port])
+                     input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
+                  else
+                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
                }
             }
          }
