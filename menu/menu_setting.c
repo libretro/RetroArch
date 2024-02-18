@@ -6912,6 +6912,9 @@ static void setting_get_string_representation_turbo_mode(
       case INPUT_TURBO_MODE_CLASSIC:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC), len);
          break;
+      case INPUT_TURBO_MODE_CLASSIC_TOGGLE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE), len);
+         break;
       case INPUT_TURBO_MODE_SINGLEBUTTON:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON), len);
          break;
