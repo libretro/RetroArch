@@ -91,18 +91,6 @@
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
-/* Checks if hotkey or RetroPad has any bindings at all. */
-#define CHECK_INPUT_DRIVER_EMPTY_BIND(port, i) \
-( \
-         (binds[port][i].key     == RETROK_UNKNOWN) \
-      && (binds[port][i].mbutton == NO_BTN) \
-      && (  (  binds[port][i].joykey  == NO_BTN \
-            && binds[port][i].joyaxis == AXIS_NONE) \
-         || (  joypad_info->auto_binds[i].joykey  == NO_BTN \
-            && joypad_info->auto_binds[i].joyaxis == AXIS_NONE) \
-         ) \
-)
-
 /* Human readable order of input binds */
 const unsigned input_config_bind_order[24] = {
    RETRO_DEVICE_ID_JOYPAD_UP,
@@ -791,26 +779,6 @@ static int32_t input_state_wrap(
             device,
             idx,
             id);
-
-   if (device == RETRO_DEVICE_JOYPAD)
-   {
-      /* No binds, no input. This is for ignoring RETROK_UNKNOWN
-       * if the driver allows setting the key down somehow.
-       * Otherwise all hotkeys and inputs with null bind get triggered. */
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-      {
-         int i;
-         for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-         {
-            if (CHECK_INPUT_DRIVER_EMPTY_BIND(_port, i))
-               ret &= ~(UINT64_C(1) << i);
-         }
-         return ret;
-      }
-      else if (id != RETRO_DEVICE_ID_JOYPAD_MASK
-            && CHECK_INPUT_DRIVER_EMPTY_BIND(_port, id))
-         return 0;
-   }
 
    return ret;
 }
@@ -4868,7 +4836,7 @@ static void input_keys_pressed(
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
 
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          if (     (ret & (UINT64_C(1) << i))
                || input_keys_pressed_other_sources(input_st, i, p_new_state))
