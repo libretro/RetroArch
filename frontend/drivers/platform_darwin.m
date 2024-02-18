@@ -344,7 +344,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    char documents_dir_buf[PATH_MAX_LENGTH] = {0};
    char application_data[PATH_MAX_LENGTH]  = {0};
    CFBundleRef bundle                      = CFBundleGetMainBundle();
-   BOOL portable;
 
    if (!bundle)
       return;
@@ -354,36 +353,36 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    CFRelease(bundle_path);
    CFRelease(bundle_url);
+   path_resolve_realpath(bundle_path_buf, sizeof(bundle_path_buf), true);
 
+#if defined(OSX)
+   fill_pathname_application_data(application_data, sizeof(application_data));
+
+   BOOL portable; /* steam || RAPortableInstall || portable.txt */
 #if HAVE_STEAM
    /* For Steam, we're going to put everything next to the .app */
    portable = YES;
 #else
    portable = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"RAPortableInstall"] boolValue];
+   if (!portable)
+   {
+      char portable_buf[PATH_MAX_LENGTH] = {0};
+      fill_pathname_join(portable_buf, application_data, "portable.txt", sizeof(portable_buf));
+      portable = path_is_valid(portable_buf);
+   }
 #endif
    if (portable)
-      fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
+      strncpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
    else
    {
       CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
-#if TARGET_OS_IPHONE
-      char resolved_documents_dir_buf[PATH_MAX_LENGTH] = {0};
-      char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
-      if (realpath(documents_dir_buf, resolved_documents_dir_buf))
-         strlcpy(documents_dir_buf,
-                 resolved_documents_dir_buf,
-                 sizeof(documents_dir_buf));
-      if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
-         strlcpy(bundle_path_buf,
-                 resolved_bundle_dir_buf,
-                 sizeof(bundle_path_buf));
-#endif
+      path_resolve_realpath(documents_dir_buf, sizeof(documents_dir_buf), true);
       strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
    }
-
-#if defined(OSX)
-   fill_pathname_application_data(application_data, sizeof(application_data));
 #else
+   CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
+   path_resolve_realpath(documents_dir_buf, sizeof(documents_dir_buf), true);
+   strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
    /* iOS and tvOS are going to put everything in the documents dir */
    strncpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
