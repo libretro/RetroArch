@@ -722,8 +722,6 @@ static int menu_displaylist_parse_core_info(
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         size_t len;
-
          strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
          path_basedir(tmp_path);
 
@@ -775,7 +773,7 @@ static int menu_displaylist_parse_core_info(
          /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
          if (systemfiles_in_content_dir)
          {
-            len = strlcpy(tmp,
+            strlcpy(tmp,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY), 
                   sizeof(tmp));
             if (menu_entries_append(list, tmp, "",
@@ -784,7 +782,7 @@ static int menu_displaylist_parse_core_info(
          }
 
          /* Show the path that was checked */
-         len = snprintf(tmp, sizeof(tmp),
+         snprintf(tmp, sizeof(tmp),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
                firmware_info.directory.system);
          if (menu_entries_append(list, tmp, "",
