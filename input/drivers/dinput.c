@@ -583,9 +583,7 @@ static int16_t dinput_input_state(
                      {
                         if (binds[port][i].valid)
                         {
-                           if (dinput_mouse_button_pressed(
-                                    di, port, binds[port][i].mbutton)
-                              )
+                           if (dinput_mouse_button_pressed(di, port, binds[port][i].mbutton))
                               ret |= (1 << i);
                         }
                      }
@@ -597,13 +595,13 @@ static int16_t dinput_input_state(
                      {
                         if (binds[port][i].valid)
                         {
-                           if ((binds[port][i].key < RETROK_LAST) &&
-                                 di->state[rarch_keysym_lut
-                                 [(enum retro_key)binds[port][i].key]] & 0x80)
+                           if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                                 && di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
                               ret |= (1 << i);
                         }
                      }
                   }
+
                   return ret;
                }
 
@@ -611,26 +609,22 @@ static int16_t dinput_input_state(
                {
                   if (binds[port][id].valid)
                   {
-                     if  (binds[port][id].key < RETROK_LAST
-                           && (di->state[rarch_keysym_lut
-                              [(enum retro_key)binds[port][id].key]] & 0x80)
-                           && (   (id == RARCH_GAME_FOCUS_TOGGLE)
-                              || !keyboard_mapping_blocked)
-                         )
+                     if (     binds[port][id].key && binds[port][id].key < RETROK_LAST
+                           && (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
+                           && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                        )
                         return 1;
-                     else if (
-                           settings->uints.input_mouse_index[port] == 0
-                           && dinput_mouse_button_pressed(
-                              di, port, binds[port][id].mbutton)
-                           )
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
+                           return 1;
+                     }
                   }
                }
             }
             break;
          case RETRO_DEVICE_KEYBOARD:
-            return (id < RETROK_LAST) &&
-               di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
+            return (id && id < RETROK_LAST) && di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
          case RETRO_DEVICE_ANALOG:
             {
                int16_t ret           = 0;
@@ -648,13 +642,13 @@ static int16_t dinput_input_state(
                id_minus_key          = binds[port][id_minus].key;
                id_plus_key           = binds[port][id_plus].key;
 
-               if (id_plus_valid && id_plus_key < RETROK_LAST)
+               if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
                   unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                   if (di->state[sym] & 0x80)
                      ret = 0x7fff;
                }
-               if (id_minus_valid && id_minus_key < RETROK_LAST)
+               if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
                {
                   unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                   if (di->state[sym] & 0x80)
@@ -832,6 +826,7 @@ static int16_t dinput_input_state(
                         ? bind_joykey  : autobind_joykey;
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
+
                      if (binds[port][new_id].valid)
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -841,22 +836,18 @@ static int16_t dinput_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if (
-                              binds[port][new_id].key < RETROK_LAST
+                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && di->state[rarch_keysym_lut
-                              [(enum retro_key)binds[port][new_id].key]] & 0x80
-                              )
+                              && di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
                            return 1;
                         else
                         {
                            settings = config_get_ptr();
-                           if (
-                                 settings->uints.input_mouse_index[port] == 0
-                                 && dinput_mouse_button_pressed(
-                                    di, port, binds[port][new_id].mbutton)
-                              )
-                              return 1;
+                           if (settings->uints.input_mouse_index[port] == 0)
+                           {
+                              if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
+                                 return 1;
+                           }
                         }
                      }
                   }

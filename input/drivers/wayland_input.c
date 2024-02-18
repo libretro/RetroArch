@@ -191,8 +191,8 @@ static int16_t input_wl_state(
                {
                   if (binds[port][i].valid)
                   {
-                     if (BIT_GET(wl->key_state,
-                              rarch_keysym_lut[binds[port][i].key]) )
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][i].key]))
                         ret |= (1 << i);
                   }
                }
@@ -203,18 +203,13 @@ static int16_t input_wl_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid && binds[port][id].key < RETROK_LAST)
+            if (binds[port][id].valid)
             {
-               if (id != RARCH_GAME_FOCUS_TOGGLE && !keyboard_mapping_blocked)
-               {
-                  if (BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
-                     return 1;
-               }
-               else if (id == RARCH_GAME_FOCUS_TOGGLE)
-               {
-                  if (BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key]))
-                     return 1;
-               }
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && BIT_GET(wl->key_state, rarch_keysym_lut[binds[port][id].key])
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
+                  return 1;
 
                /* TODO: support default mouse-to-retropad bindings */
                /* else if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
@@ -241,13 +236,13 @@ static int16_t input_wl_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                if (BIT_GET(wl->key_state, sym))
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                if (BIT_GET(wl->key_state, sym))
@@ -258,8 +253,7 @@ static int16_t input_wl_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return id < RETROK_LAST &&
-            BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id]);
+         return (id && id < RETROK_LAST) && BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id]);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (port == 0) /* TODO/FIXME: support mouse on additional ports */

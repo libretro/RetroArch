@@ -780,8 +780,7 @@ static int16_t winraw_input_state(
                   {
                      if (binds[port][i].valid)
                      {
-                        if (winraw_mouse_button_pressed(wr,
-                                 mouse, port, binds[port][i].mbutton))
+                        if (winraw_mouse_button_pressed(wr, mouse, port, binds[port][i].mbutton))
                            ret |= (1 << i);
                      }
                   }
@@ -793,8 +792,8 @@ static int16_t winraw_input_state(
                   {
                      if (binds[port][i].valid)
                      {
-                        if ((binds[port][i].key < RETROK_LAST) &&
-                              WINRAW_KEYBOARD_PRESSED(wr, binds[port][i].key))
+                        if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                              && WINRAW_KEYBOARD_PRESSED(wr, binds[port][i].key))
                            ret |= (1 << i);
                      }
                   }
@@ -807,15 +806,12 @@ static int16_t winraw_input_state(
             {
                if (binds[port][id].valid)
                {
-                  if (
-                        (binds[port][id].key < RETROK_LAST)
+                  if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
                         && WINRAW_KEYBOARD_PRESSED(wr, binds[port][id].key)
-                        && ((    id == RARCH_GAME_FOCUS_TOGGLE)
-                           || !keyboard_mapping_blocked)
+                        && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
-                  else if (mouse && winraw_mouse_button_pressed(wr,
-                           mouse, port, binds[port][id].mbutton))
+                  else if (mouse && winraw_mouse_button_pressed(wr, mouse, port, binds[port][id].mbutton))
                      return 1;
                }
             }
@@ -836,12 +832,12 @@ static int16_t winraw_input_state(
                id_minus_key          = binds[port][id_minus].key;
                id_plus_key           = binds[port][id_plus].key;
 
-               if (id_plus_valid && id_plus_key < RETROK_LAST)
+               if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
                   if (WINRAW_KEYBOARD_PRESSED(wr, id_plus_key))
                      ret = 0x7fff;
                }
-               if (id_minus_valid && id_minus_key < RETROK_LAST)
+               if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
                {
                   if (WINRAW_KEYBOARD_PRESSED(wr, id_minus_key))
                      ret += -0x7fff;
@@ -849,7 +845,7 @@ static int16_t winraw_input_state(
             }
             return ret;
          case RETRO_DEVICE_KEYBOARD:
-            return (id < RETROK_LAST) && WINRAW_KEYBOARD_PRESSED(wr, id);
+            return (id && id < RETROK_LAST) && WINRAW_KEYBOARD_PRESSED(wr, id);
          case RETRO_DEVICE_MOUSE:
          case RARCH_DEVICE_MOUSE_SCREEN:
             if (mouse)
@@ -996,6 +992,7 @@ static int16_t winraw_input_state(
                         ? bind_joykey  : autobind_joykey;
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
+
                      if (binds[port][new_id].valid)
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -1005,19 +1002,14 @@ static int16_t winraw_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if (
-                              binds[port][new_id].key < RETROK_LAST
+                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && WINRAW_KEYBOARD_PRESSED(wr, binds[port]
-                                 [new_id].key)
-                              )
+                              && WINRAW_KEYBOARD_PRESSED(wr, binds[port][new_id].key)
+                           )
                            return 1;
-                        else
+                        else if (mouse)
                         {
-                           if (
-                                 mouse && winraw_mouse_button_pressed(wr,
-                                    mouse, port, binds[port][new_id].mbutton)
-                              )
+                           if (winraw_mouse_button_pressed(wr, mouse, port, binds[port][new_id].mbutton))
                               return 1;
                         }
                      }

@@ -222,12 +222,12 @@ static void switch_input_poll(void *data)
       key_sym     = rarch_key_map_switch[i].sym;
       key_code    = input_keymaps_translate_keysym_to_rk(key_sym);
       key_pressed = hidKeyboardStateGetKey(&kbd_state, key_sym);
-      if (key_pressed && !(sw->keyboard_state[key_sym]))
+      if (key_sym && key_pressed && !(sw->keyboard_state[key_sym]))
       {
          sw->keyboard_state[key_sym] = true;
          input_keyboard_event(true, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
       }
-      else if (!key_pressed && sw->keyboard_state[key_sym])
+      else if (key_sym && !key_pressed && sw->keyboard_state[key_sym])
       {
          sw->keyboard_state[key_sym] = false;
          input_keyboard_event(false, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
@@ -317,8 +317,7 @@ static int16_t switch_input_state(
          break;
 #ifdef HAVE_LIBNX
       case RETRO_DEVICE_KEYBOARD:
-         return ((id < RETROK_LAST) && 
-               sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
+         return (id && id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {

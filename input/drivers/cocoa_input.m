@@ -82,6 +82,10 @@ void apple_direct_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
     int apple_key              = rarch_keysym_lut[code];
+
+    if (!apple_key)
+       return;
+
     apple_key_state[apple_key] = down;
     input_keyboard_event(down,
           code,
@@ -435,7 +439,7 @@ static int16_t cocoa_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if ((binds[port][i].key < RETROK_LAST) 
+                  if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
                         && apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                      ret |= (1 << i);
                }
@@ -446,10 +450,13 @@ static int16_t cocoa_input_state(
          if (binds[port][id].valid)
          {
             if (id < RARCH_BIND_LIST_END)
-               if (!keyboard_mapping_blocked || (id == RARCH_GAME_FOCUS_TOGGLE))
-                  if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
-                     return 1;
-
+            {
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && apple_key_state[rarch_keysym_lut[binds[port][id].key]]
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -469,12 +476,12 @@ static int16_t cocoa_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_plus_key]])
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_minus_key]])
                   ret += -0x7fff;
@@ -484,7 +491,7 @@ static int16_t cocoa_input_state(
          break;
 
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
+         return (id && id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {

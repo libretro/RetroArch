@@ -1510,6 +1510,9 @@ static void android_input_poll_input_gingerbread(
             {
                int keycode = AKeyEvent_getKeyCode(event);
 
+               if (!keycode)
+                  break;
+
                if (android_is_keyboard_id(id))
                {
                   android_input_poll_event_type_keyboard(
@@ -1571,6 +1574,9 @@ static void android_input_poll_input_default(android_input_t *android)
             case AINPUT_EVENT_TYPE_KEY:
                {
                   int keycode = AKeyEvent_getKeyCode(event);
+
+                  if (!keycode)
+                     break;
 
                   if (android_is_keyboard_id(id))
                   {
@@ -1736,27 +1742,37 @@ static int16_t android_input_state(
          {
             unsigned i;
             int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+
+            if (!keyboard_mapping_blocked)
             {
-               if (binds[port][i].valid)
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
-                     ret |= (1 << i);
+                  if (binds[port][i].valid)
+                  {
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
+                        ret |= (1 << i);
+                  }
                }
             }
+
             return ret;
          }
 
-         if (binds[port][id].valid)
-            if (ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
-               return 1;
+         if (id < RARCH_BIND_LIST_END)
+         {
+            if (binds[port][id].valid)
+            {
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
+                  return 1;
+            }
+         }
          break;
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) 
-            && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT],
-                  rarch_keysym_lut[id]);
+         return (id && id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
       case RETRO_DEVICE_MOUSE:
          {
             int val = 0;
