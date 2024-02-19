@@ -1871,6 +1871,14 @@ MSG_HASH(
    "Fekete képkocka beszúrása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Egy vagy több fekete képkocka beszúrása a képkockák közé. A mozgási elmosódást nagymértékben csökkentheti a CRT hatás emulálásával, a fényerő kárára. Nem kombinálható az 1-nél nagyobb váltóperiódussal, az alképkockákkal, képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Egy vagy több fekete képkocka beszúrása a mozgás tisztább visszaadásáért. Csak az aktuális képernyőfrissítéshez igazodó opció használható. Nem alkalmas olyan frissítési frekvenciához, ami nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, az alképkockákkal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással. Átmeneti képbeégés esetén 120 Hz-en kikapcsolandó, magasabb Hz-en pedig a l[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
    "Ki"
    )
@@ -1945,6 +1953,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "A fekete képkockák darabszáma a képkocka beszúrás szekvenciában. Nagyobb értéknél pontosabb a mozgásvisszaadás, kisebb értéknél nagyobb a fényerő. 120 Hz-nél csak 1 képkocka beszúrása lehetséges, így annak mindenképp feketének kell lennie, ha a BFI aktiválva van."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Alképkockák a shaderekhez"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "További képkockák előállítása a shaderek számára a képkockák közt, így a shaderek a tartalomnál magasabb frissítésű effekteket is használhatnak. Ajánlott a képernyő frissítési frekvenciájára állítani. Nem kombinálható az 1-nél nagyobb váltóperiódussal, a fekete képkocka beszúrással, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazodással."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Egy vagy több plusz képkocka beszúrása olyan shader effektekhez, amelyek a tartalom frissítésénél gyorsabban kell fussanak. Csak a képernyő aktuális frissítési gyakoriságának megfelelő érték használható. Nem alkalmazható, ha ez nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, a fekete képkocka beszúrással, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazításával."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
@@ -3324,6 +3344,10 @@ MSG_HASH(
    "Klasszikus"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasszikus (váltógomb)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Egygombos (átkapcsolás)"
    )
@@ -3334,6 +3358,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Klasszikus mód, kétgombos működés. Egy gombot nyomva tartva és a Turbo gombot megnyomva aktiválódik a megnyomás-elengedés szekvencia.\nA Turbo gomb a Beállítások / Bemenet / 1. csatlakozó beállításai alatt adható meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasszikus váltókapcsoló mód, kétgombos működés. Egy gombot nyomva tartva és a Turbo gombot megnyomva aktiválódik a megnyomás-elengedés szekvencia. Kikapcsoláshoz nyomva kell tartani a gombot és ismét megnyomni a Turbo gombot.\nA Turbo gomb a Beállítások / Bemenet / 1. csatlakozó beállításai alatt adható meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -4010,6 +4038,10 @@ MSG_HASH(
    "Eszköz sorszáma"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "A RetroArch által felismert tényleges kontroller."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Hozzárendelt csatlakozó"
    )
@@ -4022,12 +4054,24 @@ MSG_HASH(
    "Az összes irányítás beállítása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Minden irány és gomb hozzárendelése egyesével, amilyen sorrendben ebben a menüben megjelennek."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Visszaállítás az alapértelmezett irányításra"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "A hozzárendelések visszaállítása az alapértelmezett értékekre."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Kontrollerprofil mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Automatikus konfigurációs fájl mentése, amely ugyanezen kontroller legközelebbi felismerésekor automatikusan aktiválódik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
