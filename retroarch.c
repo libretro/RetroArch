@@ -8156,14 +8156,8 @@ bool retroarch_main_quit(void)
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
-   {
-      RARCH_DBG("[Video]: Restoring original refresh rate: %f Hz\n", video_st->video_refresh_rate_original);
-      /* Set the av_info fps also to the original refresh rate */
-      /* to avoid re-initialization problems */
-      av_info->timing.fps = video_st->video_refresh_rate_original;
-
       video_display_server_restore_refresh_rate();
-   }
+
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
       if (settings->bools.savestate_auto_save &&
