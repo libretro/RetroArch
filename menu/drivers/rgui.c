@@ -745,26 +745,26 @@ static const rgui_theme_t rgui_theme_opaque_brogrammer = {
 };
 
 static const rgui_theme_t rgui_theme_dracula = {
-   0xFFBD93F9, /* hover_color */
+   0xFFFF79C6, /* hover_color */
    0xFFF8F8F2, /* normal_color */
-   0xFFFF79C6, /* title_color */
-   0xC02F3240, /* bg_dark_color */
-   0xC02F3240, /* bg_light_color */
-   0xC06272A4, /* border_dark_color */
-   0xC06272A4, /* border_light_color */
-   0xC00F0F0F, /* shadow_color */
-   0xC06272A4  /* particle_color */
+   0xFFBD93F9, /* title_color */
+   0xE6282A36, /* bg_dark_color */
+   0xE6282A36, /* bg_light_color */
+   0xE644475A, /* border_dark_color */
+   0xE644475A, /* border_light_color */
+   0xFF22212C, /* shadow_color */
+   0xE6525F88  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_opaque_dracula = {
-   0xFFBD93F9, /* hover_color */
+   0xFFFF79C6, /* hover_color */
    0xFFF8F8F2, /* normal_color */
-   0xFFFF79C6, /* title_color */
-   0xFF1B2936, /* bg_dark_color */
-   0xFF1B2936, /* bg_light_color */
-   0xFF525F88, /* border_dark_color */
-   0xFF525F88, /* border_light_color */
-   0xFF000000, /* shadow_color */
+   0xFFBD93F9, /* title_color */
+   0xFF282A36, /* bg_dark_color */
+   0xFF282A36, /* bg_light_color */
+   0xFF44475A, /* border_dark_color */
+   0xFF44475A, /* border_light_color */
+   0xFF22212C, /* shadow_color */
    0xFF525F88  /* particle_color */
 };
 

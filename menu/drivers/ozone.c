@@ -1255,11 +1255,11 @@ static ozone_theme_t ozone_theme_dracula = {
    ozone_background_libretro_running_dracula,            /* background_libretro_running */
 
    /* Float colors for quads and icons */
-   COLOR_HEX_TO_FLOAT(0x282A36, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0x282A36, 0.0f),                   /* header_footer_separator */
    COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* text */
-   COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f),                   /* selection */
-   COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f),                   /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x282A36, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x44475A, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x44475A, 0.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x282A36, 0.0f),                   /* entries_border */
    COLOR_HEX_TO_FLOAT(0xF8F8F2, 1.0f),                   /* entries_icon */
    COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f),                   /* text_selected */
    COLOR_HEX_TO_FLOAT(0x6272A4, 1.0f),                   /* message_background */
