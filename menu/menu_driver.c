@@ -1556,7 +1556,8 @@ static bool menu_input_key_bind_poll_find_hold_pad(
    /* Axes are a bit tricky ... */
    for (a = 0; a < MENU_MAX_AXES; a++)
    {
-      if (abs(n->axes[a]) >= 20000)
+      if (     abs(n->axes[a]) >= 20000
+            && n->axes[a] != new_state->axis_state[p].rested_axes[a])
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
