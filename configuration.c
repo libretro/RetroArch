@@ -1508,7 +1508,23 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("input_joypad_driver",          settings->arrays.input_joypad_driver, false, NULL, true);
    SETTING_ARRAY("input_keyboard_layout",        settings->arrays.input_keyboard_layout, false, NULL, true);
 #ifdef ANDROID
-   SETTING_ARRAY("input_android_physical_keyboard", settings->arrays.input_android_physical_keyboard, false, NULL, true);
+   SETTING_ARRAY("input_android_physical_keyboard",        settings->arrays.input_android_physical_keyboard,        false, NULL, true);
+   SETTING_ARRAY("input_android_player1_reserved_device",  settings->arrays.input_android_player1_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player2_reserved_device",  settings->arrays.input_android_player2_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player3_reserved_device",  settings->arrays.input_android_player3_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player4_reserved_device",  settings->arrays.input_android_player4_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player5_reserved_device",  settings->arrays.input_android_player5_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player6_reserved_device",  settings->arrays.input_android_player6_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player7_reserved_device",  settings->arrays.input_android_player7_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player8_reserved_device",  settings->arrays.input_android_player8_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player9_reserved_device",  settings->arrays.input_android_player9_reserved_device,  false, NULL, true);
+   SETTING_ARRAY("input_android_player10_reserved_device", settings->arrays.input_android_player10_reserved_device, false, NULL, true);
+   SETTING_ARRAY("input_android_player11_reserved_device", settings->arrays.input_android_player11_reserved_device, false, NULL, true);
+   SETTING_ARRAY("input_android_player12_reserved_device", settings->arrays.input_android_player12_reserved_device, false, NULL, true);
+   SETTING_ARRAY("input_android_player13_reserved_device", settings->arrays.input_android_player13_reserved_device, false, NULL, true);
+   SETTING_ARRAY("input_android_player14_reserved_device", settings->arrays.input_android_player14_reserved_device, false, NULL, true);
+   SETTING_ARRAY("input_android_player15_reserved_device", settings->arrays.input_android_player15_reserved_device, false, NULL, true);
+   SETTING_ARRAY("input_android_player16_reserved_device", settings->arrays.input_android_player16_reserved_device, false, NULL, true);
 #endif
 
 #ifdef HAVE_MENU

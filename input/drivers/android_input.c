@@ -1045,6 +1045,58 @@ static int android_input_recover_port(android_input_t *android, int id)
    return ret;
 }
 
+static int android_input_get_reserved_device_port(int vendor_id, int product_id, const char *device_name)
+{
+   settings_t *settings = config_get_ptr();
+
+   int  i;
+   bool is_reserved;
+   char settings_key[256];
+   char settings_value[256];
+   int  settings_value_vendor_id;
+   int  settings_value_product_id;
+   char settings_value_device_name[256];
+   char *settings_values[MAX_USERS] = {
+      settings->arrays.input_android_player1_reserved_device,
+      settings->arrays.input_android_player2_reserved_device,
+      settings->arrays.input_android_player3_reserved_device,
+      settings->arrays.input_android_player4_reserved_device,
+      settings->arrays.input_android_player5_reserved_device,
+      settings->arrays.input_android_player6_reserved_device,
+      settings->arrays.input_android_player7_reserved_device,
+      settings->arrays.input_android_player8_reserved_device,
+      settings->arrays.input_android_player9_reserved_device,
+      settings->arrays.input_android_player10_reserved_device,
+      settings->arrays.input_android_player11_reserved_device,
+      settings->arrays.input_android_player12_reserved_device,
+      settings->arrays.input_android_player13_reserved_device,
+      settings->arrays.input_android_player14_reserved_device,
+      settings->arrays.input_android_player15_reserved_device,
+      settings->arrays.input_android_player16_reserved_device,
+   };
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      strlcpy(settings_value, settings_values[i], sizeof(settings_value));
+
+      if (!string_is_empty(settings_value))
+      {
+         if (sscanf(settings_value, "%04x:%04x ", &settings_value_vendor_id, &settings_value_product_id) != 2)
+         {
+            strlcpy(settings_value_device_name, settings_value, sizeof(settings_value_device_name));
+            is_reserved = string_is_equal(device_name, settings_value_device_name);
+         }
+         else
+         {
+            is_reserved = (vendor_id == settings_value_vendor_id && product_id == settings_value_product_id);
+         }
+
+         if (is_reserved) return i;
+      }
+   }
+
+   return -1;
+}
 
 static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, const char *device_name)
 {
@@ -1103,6 +1155,7 @@ static void handle_hotplug(android_input_t *android,
    char name_buf[256];
    int vendorId                 = 0;
    int productId                = 0;
+   int reserved_port            = -1;
    const char *device_model     = android->device_model;
 
    device_name[0] = name_buf[0] = '\0';
@@ -1397,6 +1450,14 @@ static void handle_hotplug(android_input_t *android,
       strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
       strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
+
+   reserved_port = android_input_get_reserved_device_port(
+      vendorId, productId, device_name);
+
+   if (reserved_port > -1) {
+      android->pads_connected = reserved_port;
+      *port = reserved_port;
+   }
 
    if (*port < 0)
       *port = android->pads_connected;
