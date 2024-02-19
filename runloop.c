@@ -4097,13 +4097,7 @@ void runloop_event_deinit_core(void)
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
-   {
-      /* Set the av_info fps also to the original refresh rate */
-      /* to avoid re-initialization problems */
-      struct retro_system_av_info *av_info = &video_st->av_info;
-      av_info->timing.fps = video_st->video_refresh_rate_original;
       video_display_server_restore_refresh_rate();
-   }
 
    /* Recalibrate frame delay target */
    if (settings->bools.video_frame_delay_auto)
