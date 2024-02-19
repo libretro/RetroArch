@@ -6334,16 +6334,6 @@ void menu_driver_toggle(
 
       menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Always disable FF & SM when entering menu. */
-      runloop_st->flags            &= ~RUNLOOP_FLAG_FASTMOTION;
-      runloop_st->flags            &= ~RUNLOOP_FLAG_SLOWMOTION;
-#if defined(HAVE_GFX_WIDGETS)
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
-#endif
-      input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
-      driver_set_nonblock_state();
-
       /* Menu should always run with swap interval 1 if vsync is on. */
       if (     settings->bools.video_vsync
             && current_video->set_nonblock_state)
