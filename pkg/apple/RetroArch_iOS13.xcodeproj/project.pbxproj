@@ -6,6 +6,20 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		0795205D2B839A99000698BB /* Rebuild assets.zip */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 079520602B839A99000698BB /* Build configuration list for PBXAggregateTarget "Rebuild assets.zip" */;
+			buildPhases = (
+				079520612B839AB0000698BB /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = "Rebuild assets.zip";
+			productName = "Rebuild assets.zip";
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A88422A4E7AA9003161C0 /* OpenAL.framework */; };
 		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -1360,6 +1374,7 @@
 				9204BE091D319EF300BD49DB /* RetroArchiOS */,
 				926C77D621FD1E6500103EDE /* RetroArchTV */,
 				9292D6E028F549D000E47A75 /* RetroArchWidgetExtensionExtension */,
+				0795205D2B839A99000698BB /* Rebuild assets.zip */,
 			);
 		};
 /* End PBXProject section */
@@ -1441,6 +1456,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "cd \"$SRCBASE\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h \"${DERIVED_FILE_DIR}\"/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > \"${DERIVED_FILE_DIR}\"/git_version.h\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		079520612B839AB0000698BB /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/assets.zip",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "$SRCROOT/rebuild-assets.sh -o\n";
 			showEnvVarsInLog = 0;
 		};
 		9204BE271D319EF300BD49DB /* ShellScript */ = {
@@ -1581,6 +1616,25 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		0732B0982B83D5CD00CA82CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = "Rebuild assets.zip";
+			};
+			name = Debug;
+		};
+		0732B0992B83D5CD00CA82CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				PRODUCT_NAME = "Rebuild assets.zip";
+			};
+			name = Release;
+		};
 		9204BE291D319EF300BD49DB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2304,6 +2358,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		079520602B839A99000698BB /* Build configuration list for PBXAggregateTarget "Rebuild assets.zip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0732B0982B83D5CD00CA82CD /* Debug */,
+				0732B0992B83D5CD00CA82CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		9204BE281D319EF300BD49DB /* Build configuration list for PBXNativeTarget "RetroArchiOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

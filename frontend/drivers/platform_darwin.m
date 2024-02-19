@@ -432,18 +432,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], application_data, "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], application_data, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
-#if TARGET_OS_IOS
-    {
-       int major, minor;
-       get_ios_version(&major, &minor);
-       if (major > 8)
-          strlcpy(g_defaults.path_buildbot_server_url,
-                "http://buildbot.libretro.com/nightly/apple/ios9/latest/",
-                sizeof(g_defaults.path_buildbot_server_url));
-    }
-#endif
-
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE
     fill_pathname_join_special(assets_zip_path,
           bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
