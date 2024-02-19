@@ -4086,7 +4086,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            if (!history_list_enable)
+            if (!history_list_enable || !playlist_config.capacity)
                return false;
 
             _msg = msg_hash_to_str(MSG_LOADING_HISTORY_FILE);
@@ -8318,6 +8318,9 @@ void retroarch_favorites_init(void)
       playlist_config.capacity = (size_t)content_favorites_size;
 
    retroarch_favorites_deinit();
+
+   if (!playlist_config.capacity)
+      return;
 
    RARCH_LOG("[Playlist]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
