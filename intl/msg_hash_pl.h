@@ -3056,6 +3056,10 @@ MSG_HASH(
    "Klasyczny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasyczny (Przełącz)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Pojedynczy przycisk (Przełącznik)"
    )
@@ -3618,6 +3622,10 @@ MSG_HASH(
    "Indeks urządzenia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "Fizyczny kontroler rozpoznany przez RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Zmapowany Port"
    )
@@ -3626,12 +3634,24 @@ MSG_HASH(
    "Ustaw wszystkie elementy sterujące"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Przypisz wszystkie kierunki i przyciski, jeden po drugim, w kolejności, w jakiej pojawiają się w tym menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Przywróć domyślne elementy sterujące"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Wyczyść ustawienia wejścia z ich domyślnymi wartościami."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Zapisz profil kontrolera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Zapisz plik automatycznej konfiguracji, który będzie stosowany automatycznie za każdym razem, gdy ten kontroler zostanie ponownie wykryty."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,

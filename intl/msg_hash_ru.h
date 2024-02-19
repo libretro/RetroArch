@@ -3372,6 +3372,10 @@ MSG_HASH(
    "Классический"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Классический (переключение)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Одна кнопка (переключение)"
    )
@@ -3382,6 +3386,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Классический режим, две кнопки для срабатывания. Удерживая кнопку действия однократно нажмите кнопку Турбо, чтобы активировать цикл нажать-отпустить.\nКнопку Турбо можно назначить в Настройки/Ввод/Привязки порта 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Классический режим переключения с двумя кнопками. Для включения турборежима однократно нажмите кнопку Турбо удерживая кнопку действия. Для отключения турбо: снова нажмите кнопку Турбо удерживая кнопку действия. Кнопку Турбо можно назначить в Настройки/Ввод/Привязки пор[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -4058,6 +4066,10 @@ MSG_HASH(
    "Индекс устройства"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "Физический контроллер, идентифицированный RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Порт привязки"
    )
@@ -4070,12 +4082,24 @@ MSG_HASH(
    "Назначить все элементы управления"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Поочерёдно назначьте все кнопки и оси в порядке их представления в данном меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Сброс к настройкам по умолчанию"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Возврат привязок ввода к стандартным значениям."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Сохранить профиль контроллера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Создать файл автоконфигурации, который будет автоматически применяться при каждом подключении контроллера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
