@@ -3260,6 +3260,10 @@ MSG_HASH(
    "Klassisch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klassisch (Umschalten)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Einzeltaste (Umschalten)"
    )
@@ -3270,6 +3274,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Klassischer Modus, Zwei-Tasten-Bedienung. Eine Taste halten und die Turbotaste antippen, um die Drücken-Loslassen-Sequenz zu aktivieren.\nDie Turbotaste kann unter Einstellungen/Eingabe/Port-1-Steuerung zugewiesen werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klassischer Umschalt-Modus, Zwei-Tasten-Vorgang. Eine Taste gedrückt halten und auf die Turbotaste tippen, um Turbo für diesen Taste zu aktivieren. Um Turbo zu deaktivieren: Den Knopf gedrückt halten und die Turbotaste erneut drücken.\nDie Turbotaste kann in den Einstellungen/Eingabe/Port-1-Steuerung zugewiesen werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -3938,6 +3946,10 @@ MSG_HASH(
    "Geräteindex"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "Der physische Controller, wie von RetroArc erkannt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Zugeordneter Port"
    )
@@ -3950,12 +3962,24 @@ MSG_HASH(
    "Alle Belegungen festlegen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Alle Richtungen und Schaltflächen nacheinander in der Reihenfolge zuordnen, in der sie in diesem Menü erscheinen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Eingabebelegungen zurücksetzen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Die Einstellungen für die Zuordnung auf ihre Standardwerte setzen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Controller-Profil speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Eine automatische Konfigurationsdatei speichern, die automatisch angewendet wird, wenn dieser Controller erneut erkannt wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,

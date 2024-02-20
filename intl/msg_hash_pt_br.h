@@ -497,19 +497,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "Faltando, necessário:"
+   "Arquivo faltando (obrigatório):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   "Faltando, opcional:"
+   "Arquivo faltando (opcional):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "Presente, necessário:"
+   "Arquivo presente (obrigatório):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   "Presente, opcional:"
+   "Arquivo presente (opcional):"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
@@ -11535,7 +11535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
-   "Erro ao salvar as configurações do núcleo em:"
+   "Houve um erro ao salvar as configurações do núcleo em:"
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -11799,7 +11799,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
-   "Falha em iniciar a gravação."
+   "Houve um erro ao tentar iniciar a gravação."
    )
 MSG_HASH(
    MSG_FAILED_TO_TAKE_SCREENSHOT,
