@@ -4150,6 +4150,10 @@ MSG_HASH(
    "Mouse Index"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "The physical mouse as recognized by RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "B Button (Down)"
    )
