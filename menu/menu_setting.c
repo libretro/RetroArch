@@ -2528,9 +2528,15 @@ static int setting_action_ok_bind_all_save_autoconfig(
 
    if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
+   {
+      char buf[PATH_MAX_LENGTH];
+      char msg[PATH_MAX_LENGTH];
+      config_get_autoconf_profile_filename(name, index_offset, buf, sizeof(buf));
+      snprintf(msg, sizeof(msg),msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED),buf);
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
+            msg, 1, 180, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true,
