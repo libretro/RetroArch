@@ -1210,6 +1210,16 @@ bool config_load_remap(const char *directory_input_remapping,
       void *data);
 
 /**
+ * config_get_autoconf_profile_filename:
+ * @device_name       : Input device name
+ * @user              : Controller number to save
+ * Fills buf with the autoconf profile file name (including driver dir if needed).
+ **/
+
+void config_get_autoconf_profile_filename(
+      const char *device_name, unsigned user, 
+      char *buf, size_t len_buf);
+/**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
  * @user              : Controller number to save

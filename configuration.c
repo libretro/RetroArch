@@ -4929,14 +4929,9 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
    }
 }
 
-/**
- * config_save_autoconf_profile:
- * @device_name       : Input device name
- * @user              : Controller number to save
- * Writes a controller autoconf file to disk.
- **/
-bool config_save_autoconf_profile(const
-      char *device_name, unsigned user)
+void config_get_autoconf_profile_filename(
+      const char *device_name, unsigned user, 
+      char *buf, size_t len_buf)
 {
    static const char* invalid_filename_chars[] = {
       /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
@@ -4945,12 +4940,7 @@ bool config_save_autoconf_profile(const
    };
    size_t len;
    unsigned i;
-   char buf[PATH_MAX_LENGTH];
-   char autoconf_file[PATH_MAX_LENGTH];
-   config_file_t *conf                  = NULL;
-   int32_t pid_user                     = 0;
-   int32_t vid_user                     = 0;
-   bool ret                             = false;
+
    settings_t *settings                 = config_st;
    const char *autoconf_dir             = settings->paths.directory_autoconfig;
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
@@ -4993,15 +4983,66 @@ bool config_save_autoconf_profile(const
    }
 
    /* Generate autoconfig file path */
-   fill_pathname_join_special(buf, autoconf_dir, joypad_driver, sizeof(buf));
+   fill_pathname_join_special(buf, autoconf_dir, joypad_driver, len_buf);
 
-   if (path_is_directory(buf))
-      len = fill_pathname_join_special(autoconf_file, buf,
-            sanitised_name, sizeof(autoconf_file));
+   /* Driver specific autoconf dir may not exist, if autoconfs are not downloaded. */
+   if (!path_is_directory(buf))
+   {
+      len = strlcpy(buf, sanitised_name, len_buf);
+   }
    else
-      len = fill_pathname_join_special(autoconf_file, autoconf_dir,
-            sanitised_name, sizeof(autoconf_file));
-   strlcpy(autoconf_file + len, ".cfg", sizeof(autoconf_file) - len);
+   {
+      len = fill_pathname_join_special(buf, joypad_driver, sanitised_name, len_buf);
+   }
+   strlcpy(buf + len, ".cfg", len_buf - len);
+
+end:
+   if (sanitised_name)
+      free(sanitised_name);
+
+}
+/**
+ * config_save_autoconf_profile:
+ * @device_name       : Input device name
+ * @user              : Controller number to save
+ * Writes a controller autoconf file to disk.
+ **/
+bool config_save_autoconf_profile(const
+      char *device_name, unsigned user)
+{
+   size_t len;
+   unsigned i;
+   char buf[PATH_MAX_LENGTH];
+   char autoconf_file[PATH_MAX_LENGTH];
+   config_file_t *conf                  = NULL;
+   int32_t pid_user                     = 0;
+   int32_t vid_user                     = 0;
+   bool ret                             = false;
+   settings_t *settings                 = config_st;
+   const char *autoconf_dir             = settings->paths.directory_autoconfig;
+   const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
+   const char *joypad_driver            = NULL;
+
+   if (string_is_empty(device_name))
+      goto end;
+
+   /* Get currently set joypad driver */
+   joypad_driver = input_config_get_device_joypad_driver(user);
+   if (string_is_empty(joypad_driver))
+   {
+      /* This cannot happen, but if we reach this
+       * point without a driver being set for the
+       * current input device then use the value
+       * from the settings struct as a fallback */
+      joypad_driver = joypad_driver_fallback;
+
+      if (string_is_empty(joypad_driver))
+         goto end;
+   }
+
+   /* Generate autoconfig file path */
+   config_get_autoconf_profile_filename(device_name, user, buf, sizeof(buf));
+   fill_pathname_join_special(autoconf_file, autoconf_dir, buf, sizeof(autoconf_file));
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
@@ -5043,9 +5084,6 @@ bool config_save_autoconf_profile(const
    ret = config_file_write(conf, autoconf_file, false);
 
 end:
-   if (sanitised_name)
-      free(sanitised_name);
-
    if (conf)
       config_file_free(conf);
 
