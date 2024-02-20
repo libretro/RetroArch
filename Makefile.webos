@@ -128,7 +128,7 @@ LIBS := -ldl -lz -lrt -pthread
 CFLAGS :=
 CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS :=
-LDFLAGS := -Wl,--gc-sections
+LDFLAGS := -Wl,--rpath $ORIGIN/lib,--gc-sections
 INCLUDE_DIRS = -I$(WEBOS_INC_DIR)
 LIBRARY_DIRS = -L$(WEBOS_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
@@ -140,10 +140,12 @@ DEFINES += -DHAVE_PULSE
 DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES
 DEFINES += -DHAVE_UPDATE_CORE_INFO
 
-SDL2_CFLAGS := $(shell pkg-config --cflags sdl2)
-SDL2_LIBS := $(shell pkg-config --libs sdl2)
+PKG_CONFIG=$(SDKTARGETSYSROOT)/../../bin/pkg-config
+
+SDL2_CFLAGS := $(shell $(PKG_CONFIG) --cflags sdl2)
+SDL2_LIBS := $(shell $(PKG_CONFIG) --libs sdl2)
 OPENGLES_LIBS = -lGLESv2
-PULSE_LIBS = $(shell pkg-config --libs libpulse)
+PULSE_LIBS = $(shell $(PKG_CONFIG) --libs libpulse)
 MMAP_LIBS = -lc
 NEON_CFLAGS = -mfpu=neon
 NEON_ASFLAGS = -mfpu=neon
@@ -230,6 +232,7 @@ ipk: $(TARGET)
 	echo "$$APPINFO" > webos/dist/appinfo.json
 	cp -t webos/dist -vf $(TARGET) webos/icon160.png
 	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libstdc++.so.6
+	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libSDL2-2.0.so.0
 	$(STRIP) webos/dist/$(TARGET)
 	cd webos && ares-package dist
 
