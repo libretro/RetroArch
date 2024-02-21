@@ -3348,6 +3348,10 @@ MSG_HASH(
    "Klasik"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasik (Değiştir)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Tek Düğme (Değiştir)"
    )
@@ -3358,6 +3362,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Klasik mod, iki düğmeli işlem. Basın-bırakın dizisini etkinleştirmek için bir düğmeyi basılı tutun ve Turbo düğmesine dokunun.\nTurbo düğmesi Ayarlar/Giriş/Port 1 Kontrollerinde atanabilir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasik geçiş, iki düğmeli işlem. Bir düğmeyi basılı tutun ve o düğme için turboyu etkinleştirmek için Turbo düğmesine dokunun. Turboyu devre dışı bırakmak için: düğmeyi basılı tutun ve Turbo düğmesine tekrar basın.\nTurbo düğmesi Ayarlar/Giriş/Bağlantı Noktası 1 Kontrolleri'nden atanabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -4034,6 +4042,10 @@ MSG_HASH(
    "Cihaz İndeksi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "RetroArch tarafından tanınan fiziksel kontrolcü."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Eşlenmiş Port"
    )
@@ -4046,16 +4058,32 @@ MSG_HASH(
    "Tüm Kontrolcüleri Ayarla"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Tüm yönleri ve düğmeleri bu menüde göründükleri sıraya göre arka arkaya atayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Varsayılan Kontrolcülere Sıfırla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Girdi bağlama ayarlarını varsayılan değerlerine temizleyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Kontrolcü Profilini Kaydet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Bu kontrolcü yeniden algılandığında otomatik olarak uygulanacak bir otomatik yapılandırma dosyasını kaydedin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
    "Fare İndeksi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "RetroArch tarafından tanınan fiziksel fare."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -13280,6 +13308,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "Kontrolcü profili başarıyla kaydedildi."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Kontrolcü profili, Kontrolcü Profilleri dizinine şu şekilde kaydedildi:\n\"%s\""
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
