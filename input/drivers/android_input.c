@@ -1322,14 +1322,12 @@ static void handle_hotplug(android_input_t *android,
          /* always map remote to port #0 */
          if (strstr(device_name, "Amazon Fire TV Remote"))
          {
-            android->pads_connected = 0;
             *port = 0;
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
          /* remove the remote when a gamepad enters */
          else if (strstr(android->pad_states[0].name,"Amazon Fire TV Remote"))
          {
-            android->pads_connected = 0;
             *port = 0;
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
@@ -1346,7 +1344,6 @@ static void handle_hotplug(android_input_t *android,
          || strstr(device_name, "Nexus Remote")
          || strstr(device_name, "SHIELD Remote"))
    {
-      android->pads_connected = 0;
       *port = 0;
       strlcpy(name_buf, device_name, sizeof(name_buf));
    }
@@ -1402,7 +1399,6 @@ static void handle_hotplug(android_input_t *android,
       vendorId, productId, device_name);
 
    if (reserved_port > -1) {
-      android->pads_connected = reserved_port;
       *port = reserved_port;
    }
 
@@ -1417,9 +1413,8 @@ static void handle_hotplug(android_input_t *android,
          vendorId,
          productId);
 
-   android->pad_states[android->pads_connected].id   = 
-      g_android->id[android->pads_connected]         = id;
-   android->pad_states[android->pads_connected].port = *port;
+   android->pad_states[*port].id = g_android->id[*port] = id;
+   android->pad_states[*port].port = *port;
 
    strlcpy(android->pad_states[*port].name, name_buf,
          sizeof(android->pad_states[*port].name));
