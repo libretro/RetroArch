@@ -2548,14 +2548,6 @@ enum retro_sensor_action
    RETRO_SENSOR_DUMMY = INT_MAX
 };
 
-/* Id values for SENSOR types. */
-#define RETRO_SENSOR_ACCELEROMETER_X 0
-#define RETRO_SENSOR_ACCELEROMETER_Y 1
-#define RETRO_SENSOR_ACCELEROMETER_Z 2
-#define RETRO_SENSOR_GYROSCOPE_X 3
-#define RETRO_SENSOR_GYROSCOPE_Y 4
-#define RETRO_SENSOR_GYROSCOPE_Z 5
-#define RETRO_SENSOR_ILLUMINANCE 6
 
 typedef bool (RETRO_CALLCONV *retro_set_sensor_state_t)(unsigned port,
       enum retro_sensor_action action, unsigned rate);

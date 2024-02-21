@@ -3331,7 +3331,7 @@ static int udev_input_add_device(udev_input_t *udev,
 
 
    
-
+   RARCH_DBG("device->ident %s\n", device->ident);
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (udev_is_mouse(type))
    {

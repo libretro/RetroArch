@@ -5712,7 +5712,7 @@ bool input_remapping_load_file(void *data, const char *path)
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
    runloop_state_t *runloop_st                      = runloop_state_get_ptr();
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
+   static const char *  key_strings[RARCH_FIRST_CUSTOM_BIND + 8] = {
       "b", "y", "select", "start",
       "up", "down", "left", "right",
       "a", "x", "l", "r", "l2", "r2",
@@ -5817,7 +5817,40 @@ bool input_remapping_load_file(void *data, const char *path)
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
-   }
+      {
+      static const char * sensor_strings[RETRO_SENSOR_MAX] =
+      {
+         "accel_x","accel_y", "accel_z",
+         "gyro_x","gyro_y","gyro_z",
+         "light"
+      };
+      static const char * sensor_strings_flip[RETRO_SENSOR_MAX] =
+      {
+         "accel_x_flip","accel_y_flip", "accel_z_flip",
+         "gyro_x_flip","gyro_y_flip","gyro_z_flip",
+         "light_flip"
+      };
+      for (j = 0; j < RETRO_SENSOR_MAX; j++){
+
+         int sensor_remap = -1;
+         bool sensor_flip_remap = false;
+         char sensor_ident[128];
+         char sensor_flip_ident[128];
+         fill_pathname_join_delim(sensor_ident, s1,
+               sensor_strings[j], '_', sizeof(sensor_ident));
+         fill_pathname_join_delim(sensor_flip_ident, s1,
+               sensor_strings_flip[j], '_', sizeof(sensor_flip_ident));
+         if(!config_get_int(conf, sensor_ident, &sensor_remap))
+            sensor_remap=RETROK_UNKNOWN;
+         configuration_set_uint(settings,
+            settings->uints.input_sensor_ids[i][j], sensor_remap);
+         config_get_bool(conf, sensor_flip_ident, &sensor_flip_remap);
+         configuration_set_bool(settings,
+            settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
+
+      }
+      }
+   } 
 
    input_remapping_update_port_map();
 
@@ -5843,7 +5876,7 @@ bool input_remapping_save_file(const char *path)
    bool ret;
    unsigned i, j;
    char remap_file_dir[PATH_MAX_LENGTH];
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   static const char * key_strings[RARCH_FIRST_CUSTOM_BIND + 8] =
    {
       "b",      "y",      "select", "start",
       "up",     "down",   "left",   "right",
@@ -5851,6 +5884,18 @@ bool input_remapping_save_file(const char *path)
       "l2",     "r2",     "l3",     "r3",
       "l_x+",   "l_x-",   "l_y+",   "l_y-",
       "r_x+",   "r_x-",   "r_y+",   "r_y-"
+   };
+   static const char * sensor_strings[RETRO_SENSOR_MAX] =
+   {
+      "accel_x","accel_y", "accel_z",
+      "gyro_x","gyro_y","gyro_z",
+      "light"
+   };
+   static const char * sensor_strings_flip[RETRO_SENSOR_MAX] =
+   {
+      "accel_x_flip","accel_y_flip", "accel_z_flip",
+      "gyro_x_flip","gyro_y_flip","gyro_z_flip",
+      "light_flip"
    };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -5993,6 +6038,29 @@ bool input_remapping_save_file(const char *path)
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      for (j = 0; j < RETRO_SENSOR_MAX; j++){
+         int sensor_remap = -1;
+         bool sensor_flip_remap=false;
+         char sensor_ident[128];
+         char sensor_ident_flip[128];
+         fill_pathname_join_delim(sensor_ident, s1,
+               sensor_strings[j], '_', sizeof(sensor_ident));
+         fill_pathname_join_delim(sensor_ident_flip, s1,
+            sensor_flip_strings[j], '_', sizeof(sensor_ident_flip));
+         #if 0
+         /* Only save modified button values */
+         if (remap_id == j)
+            config_unset(conf, sensor_ident);
+         else
+         {
+            if (remap_id == RARCH_UNMAPPED)
+               config_set_int(conf, sensor_ident, -1);
+            else
+               config_set_int(conf, sensor_ident,
+                     settings->uints.input_sensor_ids[i][j]);
+         }
+         #endif
+      }
    }
 
    ret = config_file_write(conf, path, true);
