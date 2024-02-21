@@ -3434,10 +3434,10 @@ static void *vulkan_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_VULKAN_API);
 
-#if OSX || IOS
-   // The MoltenVK driver needs this, particularly after driver reinit
+   /* The MoltenVK driver needs this, particularly after driver reinit
+      Also it is required for HDR to not break during reinit, while not ideal it
+      is the simplest solution unless reinit tracking is done */
    vk->flags |= VK_FLAG_SHOULD_RESIZE;
-#endif
 
    vulkan_init_readback(vk, settings);
    return vk;
