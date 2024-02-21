@@ -3947,7 +3947,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
-   "Der physische Controller, wie von RetroArc erkannt."
+   "Der physische Controller, wie von RetroArch erkannt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
