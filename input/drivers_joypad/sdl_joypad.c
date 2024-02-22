@@ -24,6 +24,7 @@
 
 #include "../input_driver.h"
 
+#include "../../gfx/video_driver.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
@@ -422,7 +423,7 @@ static int16_t sdl_joypad_state(
    uint16_t port_idx                    = joypad_info->joy_idx;
    sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port_idx];
 
-   if (!pad || !pad->joypad)
+   if (!pad || !pad->joypad || !video_driver_has_focus())
       return 0;
    if (port_idx >= MAX_USERS)
       return 0;
