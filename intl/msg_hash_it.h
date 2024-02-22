@@ -4010,6 +4010,10 @@ MSG_HASH(
    "Indice del mouse"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "Il mouse fisico riconosciuto da RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "Pulsante B (giù)"
    )
@@ -13032,6 +13036,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "Profilo controller salvato con successo."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Profilo controller salvato nella directory dei profili Controller come\n\"%s\""
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
