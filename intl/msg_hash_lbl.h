@@ -2046,6 +2046,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_LIGHT_FLIP,
    "input_player%u_light_flip"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
    "input_player%u_joypad_index"
