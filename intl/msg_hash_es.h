@@ -4086,6 +4086,10 @@ MSG_HASH(
    "Índice de ratón"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "El ratón físico tal y como lo reconoce RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "Botón B (abajo)"
    )
@@ -13220,6 +13224,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "Se ha guardado el perfil del mando."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Perfil de mando guardado en el directorio correspondiente como:\n«%s»"
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

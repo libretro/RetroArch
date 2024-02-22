@@ -4098,6 +4098,10 @@ MSG_HASH(
    "マウス番号"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "RetroArch によって認識された物理マウスです。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "B ボタン (下)"
    )
@@ -13180,6 +13184,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "コントローラープロファイルを正常に保存しました。"
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "コントローラープロファイルがコントローラープロファイルディレクトリに次の名前で保存されました\n\"%s\""
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
