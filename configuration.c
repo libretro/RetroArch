@@ -6105,7 +6105,7 @@ bool input_remapping_save_file(const char *path)
          fill_pathname_join_delim(sensor_ident, s1,
                sensor_strings[j], '_', sizeof(sensor_ident));
          fill_pathname_join_delim(sensor_ident_flip, s1,
-            sensor_flip_strings[j], '_', sizeof(sensor_ident_flip));
+            sensor_strings_flip[j], '_', sizeof(sensor_ident_flip));
          #if 0
          /* Only save modified button values */
          if (remap_id == j)
