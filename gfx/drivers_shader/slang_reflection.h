@@ -61,24 +61,28 @@ enum slang_texture_semantic
 enum slang_semantic
 {
    /* mat4, MVP */
-   SLANG_SEMANTIC_MVP             = 0,
+   SLANG_SEMANTIC_MVP              = 0,
    /* vec4, viewport size of current pass */
-   SLANG_SEMANTIC_OUTPUT          = 1,
+   SLANG_SEMANTIC_OUTPUT           = 1,
    /* vec4, viewport size of final pass */
-   SLANG_SEMANTIC_FINAL_VIEWPORT  = 2,
+   SLANG_SEMANTIC_FINAL_VIEWPORT   = 2,
    /* uint, frame count with modulo */
-   SLANG_SEMANTIC_FRAME_COUNT     = 3,
+   SLANG_SEMANTIC_FRAME_COUNT      = 3,
    /* int, frame direction */
-   SLANG_SEMANTIC_FRAME_DIRECTION = 4,
+   SLANG_SEMANTIC_FRAME_DIRECTION  = 4,
    /* uint, rotation */
-   SLANG_SEMANTIC_ROTATION        = 5,
+   SLANG_SEMANTIC_ROTATION         = 5,
+   /* uint, sub frames per content frame */
+   SLANG_SEMANTIC_TOTAL_SUBFRAMES  = 6,
+   /* uint, current sub frame */
+   SLANG_SEMANTIC_CURRENT_SUBFRAME = 7,
    SLANG_NUM_BASE_SEMANTICS,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER = 6,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 8,
 
    SLANG_NUM_SEMANTICS,
-   SLANG_INVALID_SEMANTIC         = -1
+   SLANG_INVALID_SEMANTIC          = -1
 };
 
 enum slang_stage

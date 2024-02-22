@@ -722,8 +722,6 @@ static int menu_displaylist_parse_core_info(
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         size_t len;
-
          strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
          path_basedir(tmp_path);
 
@@ -775,7 +773,7 @@ static int menu_displaylist_parse_core_info(
          /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
          if (systemfiles_in_content_dir)
          {
-            len = strlcpy(tmp,
+            strlcpy(tmp,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY), 
                   sizeof(tmp));
             if (menu_entries_append(list, tmp, "",
@@ -784,7 +782,7 @@ static int menu_displaylist_parse_core_info(
          }
 
          /* Show the path that was checked */
-         len = snprintf(tmp, sizeof(tmp),
+         snprintf(tmp, sizeof(tmp),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
                firmware_info.directory.system);
          if (menu_entries_append(list, tmp, "",
@@ -9386,6 +9384,13 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+               if (video_driver_test_all_flags(GFX_CTX_FLAGS_SUBFRAME_SHADERS))
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
                         PARSE_ONLY_UINT, false) == 0)
@@ -10787,12 +10792,13 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,   PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,      PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,      PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,         PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,        PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

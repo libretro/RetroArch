@@ -1475,6 +1475,10 @@ MSG_HASH(
    "Sisipan Bingkai Hitam - Bingkai Gelap"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Mati"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Cuplikan Layar GPU"
    )
@@ -4008,10 +4012,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
    "Memindai jejaring nirkabel..."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Gagal mengatur cakram terakhir pakai..."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,

@@ -1835,6 +1835,10 @@ MSG_HASH(
    "Устаўлянне чорнага кадра - зацямнёныя кадры"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Выкл"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Здымак экрана GPU"
    )

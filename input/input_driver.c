@@ -780,36 +780,6 @@ static int32_t input_state_wrap(
             idx,
             id);
 
-   if (device == RETRO_DEVICE_JOYPAD)
-   {
-      /* Drivers can overflow when sending too many keys at once.. */
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK && ret)
-      {
-         /* Deal with menu toggle combo buttons that won't stay inside +32767. */
-         if (ret == -0x8000) /* R3 */
-            ret = 0x8000;
-         else if (ret == -0x4000) /* LR+R3 */
-            ret = 0x8000 + 0x4000;
-         else if (ret < 0)
-            ret = 0;
-         return ret;
-      }
-
-      /* No binds, no input. This is for ignoring RETROK_UNKNOWN
-       * if the driver allows setting the key down somehow.
-       * Otherwise all hotkeys and inputs with null bind get triggered. */
-      if (     id != RETRO_DEVICE_ID_JOYPAD_MASK && ret
-            && binds[_port][id].key     == RETROK_UNKNOWN
-            && binds[_port][id].mbutton == NO_BTN
-            && (  (  binds[_port][id].joykey  == NO_BTN
-                  && binds[_port][id].joyaxis == AXIS_NONE)
-               || (  joypad_info->auto_binds[id].joykey  == NO_BTN
-                  && joypad_info->auto_binds[id].joyaxis == AXIS_NONE)
-               )
-         )
-         return 0;
-   }
-
    return ret;
 }
 
@@ -1310,7 +1280,7 @@ static int16_t input_state_device(
                 */
                unsigned turbo_mode = settings->uints.input_turbo_mode;
 
-               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
+               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
                {
                   /* Pressing turbo button toggles turbo mode on or off.
                    * Holding the button will
@@ -1380,7 +1350,7 @@ static int16_t input_state_device(
                            < settings->uints.input_turbo_duty_cycle);
                   }
                }
-               else
+               else if (turbo_mode == INPUT_TURBO_MODE_CLASSIC)
                {
                   /* If turbo button is held, all buttons pressed except
                    * for D-pad will go into a turbo mode. Until the button is
@@ -1400,6 +1370,30 @@ static int16_t input_state_device(
                   }
                   else
                      input_st->turbo_btns.enable[port] &= ~(1 << id);
+               }
+               else /* Classic toggle mode */
+               {
+                  /* Works pretty much the same as classic mode above
+                   * but with a toggle mechanic */
+                  if (res)
+                  {
+                     /* Check if it's a new press, if we're still holding
+                      * the button from previous toggle then ignore */
+                     if (     input_st->turbo_btns.frame_enable[port]
+                           && !(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
+                        input_st->turbo_btns.enable[port] ^= (1 << id);
+
+                     if (input_st->turbo_btns.enable[port] & (1 << id))
+                        /* If turbo button is enabled for this key ID */
+                        res = ((   input_st->turbo_btns.count
+                                 % settings->uints.input_turbo_period)
+                              < settings->uints.input_turbo_duty_cycle);
+                  }
+                  /* Remember for the toggle check */
+                  if (input_st->turbo_btns.frame_enable[port])
+                     input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
+                  else
+                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
                }
             }
          }
@@ -4894,7 +4888,7 @@ static void input_keys_pressed(
                port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
 
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          if (     (ret & (UINT64_C(1) << i))
                || input_keys_pressed_other_sources(input_st, i, p_new_state))
@@ -5111,7 +5105,7 @@ static void input_keys_pressed(
 void bsv_movie_free(bsv_movie_t*);
 
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t * state, enum bsv_flags flags)
-{ 
+{
    if (input_st->bsv_movie_state_next_handle)
       bsv_movie_free(input_st->bsv_movie_state_next_handle);
    input_st->bsv_movie_state_next_handle    = state;
@@ -6642,7 +6636,7 @@ void input_keyboard_event(bool down, unsigned code,
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)
-               accessibility_speak_priority(
+               navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      "backspace", 10);
@@ -6650,12 +6644,12 @@ void input_keyboard_event(bool down, unsigned code,
             {
                const char *lut_name = accessibility_lut_name(c);
                if (lut_name)
-                  accessibility_speak_priority(
+                  navigation_say(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         lut_name, 10);
                else if (character != 0)
-                  accessibility_speak_priority(
+                  navigation_say(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         say_char, 10);

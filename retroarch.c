@@ -1380,6 +1380,7 @@ static float audio_driver_monitor_adjust_system_rates(
       float video_refresh_rate,
       unsigned video_swap_interval,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       float audio_max_timing_skew)
 {
    float inp_sample_rate        = input_sample_rate;
@@ -1394,7 +1395,7 @@ static float audio_driver_monitor_adjust_system_rates(
    float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
 
    timing_skew            =
       fabs(1.0f - input_fps / target_video_sync_rate);
@@ -1411,6 +1412,7 @@ static bool video_driver_monitor_adjust_system_rates(
       float audio_max_timing_skew,
       unsigned video_swap_interval,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       double input_fps)
 {
    float target_video_sync_rate = timing_skew_hz;
@@ -1421,7 +1423,7 @@ static bool video_driver_monitor_adjust_system_rates(
    float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
 
    if (!vrr_runloop_enable)
    {
@@ -1448,7 +1450,8 @@ static void driver_adjust_system_rates(
       float audio_max_timing_skew,
       bool video_adaptive_vsync,
       unsigned video_swap_interval,
-      unsigned black_frame_insertion)
+      unsigned black_frame_insertion,
+      unsigned shader_subframes)
 {
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
@@ -1463,6 +1466,7 @@ static void driver_adjust_system_rates(
          (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
          video_swap_interval,
          black_frame_insertion,
+         shader_subframes,
          audio_max_timing_skew,
          video_refresh_rate,
          input_fps);
@@ -1482,6 +1486,7 @@ static void driver_adjust_system_rates(
                   video_refresh_rate,
                   video_swap_interval,
                   black_frame_insertion,
+                  shader_subframes,
                   audio_max_timing_skew);
 
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
@@ -1506,6 +1511,7 @@ static void driver_adjust_system_rates(
                audio_max_timing_skew,
                video_swap_interval,
                black_frame_insertion,
+               shader_subframes,
                input_fps))
       {
          /* We won't be able to do VSync reliably
@@ -1626,7 +1632,8 @@ void drivers_init(
                                  settings->floats.audio_max_timing_skew,
                                  settings->bools.video_adaptive_vsync,
                                  settings->uints.video_swap_interval,
-                                 settings->uints.video_black_frame_insertion
+                                 settings->uints.video_black_frame_insertion,
+                                 settings->uints.video_shader_subframes
                                  );
 
    /* Initialize video driver */
@@ -2063,6 +2070,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             unsigned video_swap_interval  = settings->uints.video_swap_interval;
             unsigned
                black_frame_insertion      = settings->uints.video_black_frame_insertion;
+            unsigned shader_subframes     = settings->uints.video_shader_subframes;
 
             video_monitor_set_refresh_rate(*hz);
 
@@ -2077,7 +2085,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                                        audio_max_timing_skew,
                                        video_adaptive_vsync,
                                        video_swap_interval,
-                                       black_frame_insertion
+                                       black_frame_insertion,
+                                       shader_subframes
                                        );
          }
          break;
@@ -3169,7 +3178,7 @@ bool command_event(enum event_command cmd, void *data)
                   if (is_accessibility_enabled(
                            accessibility_enable,
                            access_st->enabled))
-                     accessibility_speak_priority(
+                     navigation_say(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -4077,7 +4086,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            if (!history_list_enable)
+            if (!history_list_enable || !playlist_config.capacity)
                return false;
 
             _msg = msg_hash_to_str(MSG_LOADING_HISTORY_FILE);
@@ -4559,12 +4568,12 @@ bool command_event(enum event_command cmd, void *data)
                   access_st->enabled))
             {
                if (paused)
-                  accessibility_speak_priority(
+                  navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_PAUSED), 10);
                else
-                  accessibility_speak_priority(
+                  navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -5312,10 +5321,11 @@ bool command_event(enum event_command cmd, void *data)
                if (is_accessibility_enabled(
                         accessibility_enable,
                         access_st->enabled))
-                  accessibility_speak_priority(
+                  navigation_say(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
-                        "stopped.", 10);
+                        (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
+                        10);
 #endif
             }
             else
@@ -5326,10 +5336,11 @@ bool command_event(enum event_command cmd, void *data)
                      access_st->enabled)
                   && (ai_service_mode == 2)
                   && is_narrator_running(accessibility_enable))
-               accessibility_speak_priority(
+               navigation_say(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
-                     "stopped.", 10);
+                     (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
+                     10);
             else
 #endif
             {
@@ -7384,10 +7395,10 @@ bool retroarch_main_init(int argc, char *argv[])
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      accessibility_speak_priority(
+      navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
-            "RetroArch accessibility on.  Main Menu Load Core.",
+            (char*)msg_hash_to_str(MSG_ACCESSIBILITY_STARTUP),
             10);
 #endif
 
@@ -8145,14 +8156,8 @@ bool retroarch_main_quit(void)
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
-   {
-      RARCH_DBG("[Video]: Restoring original refresh rate: %f Hz\n", video_st->video_refresh_rate_original);
-      /* Set the av_info fps also to the original refresh rate */
-      /* to avoid re-initialization problems */
-      av_info->timing.fps = video_st->video_refresh_rate_original;
-
       video_display_server_restore_refresh_rate();
-   }
+
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
       if (settings->bools.savestate_auto_save &&
@@ -8308,6 +8313,9 @@ void retroarch_favorites_init(void)
 
    retroarch_favorites_deinit();
 
+   if (!playlist_config.capacity)
+      return;
+
    RARCH_LOG("[Playlist]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
          path_content_favorites);
@@ -8335,7 +8343,7 @@ void retroarch_favorites_deinit(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-bool accessibility_speak_priority(
+bool navigation_say(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
@@ -8345,29 +8353,48 @@ bool accessibility_speak_priority(
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend =
-         frontend_state_get_ptr()->current_frontend_ctx;
+      const char *voice    = get_user_language_iso639_1(false);
+      bool native_narrator = accessibility_speak_priority(accessibility_narrator_speech_speed,
+         speak_text, priority, voice);
 
-      RARCH_LOG("Spoke: %s\n", speak_text);
-
-      if (frontend && frontend->accessibility_speak)
-         return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
-               priority);
-
-      RARCH_LOG("Platform not supported for accessibility.\n");
-      /* The following method is a fallback for other platforms to use the
-         AI Service url to do the TTS.  However, since the playback is done
-         via the audio mixer, which only processes the audio while the
-         core is running, this playback method won't work.  When the audio
-         mixer can handle playing streams while the core is paused, then
-         we can use this. */
+      if (!native_narrator)
+      {
+         /*
+          * The following method is a fallback for other platforms to use the
+          * AI Service url to do the TTS.  However, since the playback is done
+          * via the audio mixer, which only processes the audio while the
+          * core is running, this playback method won't work.  When the audio
+          * mixer can handle playing streams while the core is paused, then
+          * we can use this.
+          */
 #if 0
 #if defined(HAVE_NETWORKING)
-      return accessibility_speak_ai_service(speak_text, voice, priority);
+         return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
 #endif
+      }
    }
 
    return true;
+}
+
+bool accessibility_speak_priority(
+      unsigned accessibility_narrator_speech_speed,
+      const char *speak_text,
+      int priority,
+      const char *voice)
+{
+   frontend_ctx_driver_t *frontend =
+      frontend_state_get_ptr()->current_frontend_ctx;
+
+   RARCH_LOG("Spoke: %s\n", speak_text);
+
+   if (frontend && frontend->accessibility_speak)
+      return frontend->accessibility_speak(accessibility_narrator_speech_speed,
+            speak_text, priority, voice);
+
+   RARCH_LOG("Platform not supported for accessibility.\n");
+
+   return false;
 }
 #endif

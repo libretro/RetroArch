@@ -1142,7 +1142,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Altere as configurações para o narrador de Acessibilidade."
+   "Alterar as definições do narrador de Acessibilidade."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -1150,7 +1150,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Alterar configurações da gestão de energia."
+   "Alterar as definições de gestão de energia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1396,11 +1396,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas. Pode reduzir bastante a desfocagem de movimento ao emular a varrimento CRT, mas à custa do brilho. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo."
+   "Inserir fotograma(s) preto(s) entre fotogramas. Pode reduzir significativamente a desfocagem de movimento ao emular a varrimento CRT, mas à custa do brilho. Não combinar com Intervalo de troca > 1, subfotogramas, Atraso de fotogramas ou Sincronizar com a frequência exata do conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas para melhorar a nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo. Deixar o VRR (Taxa de atualização variável) do sistema ativado é a[...]"
+   "Insere fotograma(s) preto(s) entre os fotogramas para maior nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Não combinar com Intervalo de troca > 1, subfotogramas, Atraso de fotogramas, ou Sincronizar com a frequência de fotogramas exata do conteúdo. Deixar o VRR do sistema ligado é aceitável, mas não esta definição. Se [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
@@ -1408,63 +1408,63 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
-   "1 - Para uma taxa de atualização do ecrã de 120Hz"
+   "1 - Para uma taxa de atualização do ecrã de 120 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
-   "2 - Para uma taxa de atualização do ecrã de 180Hz"
+   "2 - Para uma taxa de atualização do ecrã de 180 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
-   "3 - Para uma taxa de atualização do ecrã de 240Hz"
+   "3 - Para uma taxa de atualização do ecrã de 240 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
-   "4 - Para uma taxa de atualização do ecrã de 300Hz"
+   "4 - Para uma taxa de atualização do ecrã de 300 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
-   "5 - Para uma taxa de atualização do ecrã de 360Hz"
+   "5 - Para uma taxa de atualização do ecrã de 360 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
-   "6 - Para uma taxa de atualização do ecrã de 420Hz"
+   "6 - Para uma taxa de atualização do ecrã de 420 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
-   "7 - Para uma taxa de atualização do ecrã de 480Hz"
+   "7 - Para uma taxa de atualização do ecrã de 480 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
-   "8 - Para uma taxa de atualização do ecrã de 540Hz"
+   "8 - Para uma taxa de atualização do ecrã de 540 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
-   "9 - Para uma taxa de atualização do ecrã de 600Hz"
+   "9 - Para uma taxa de atualização do ecrã de 600 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
-   "10 - Para uma taxa de atualização do ecrã de 660Hz"
+   "10 - Para uma taxa de atualização do ecrã de 660 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
-   "11 - Para uma taxa de atualização do ecrã de 720Hz"
+   "11 - Para uma taxa de atualização do ecrã de 720 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
-   "12 - Para uma taxa de atualização do ecrã de 780Hz"
+   "12 - Para uma taxa de atualização do ecrã de 780 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
-   "13 - Para uma taxa de atualização do ecrã de 840Hz"
+   "13 - Para uma taxa de atualização do ecrã de 840 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
-   "14 - Para uma taxa de atualização do ecrã de 900Hz"
+   "14 - Para uma taxa de atualização do ecrã de 900 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
-   "15 - Para uma taxa de atualização do ecrã de 960Hz"
+   "15 - Para uma taxa de atualização do ecrã de 960 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
@@ -1472,11 +1472,87 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
-   "Ajusta o número de fotogramas pretos na sequência total de digitalização BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. Não é aplicável a 120hz, uma vez que só existe 1 fotograma BFI para trabalhar no total. As definições superiores ao possível limitam-no ao máximo possível para a taxa de atualização escolhida."
+   "Ajusta o número de fotogramas pretos na sequência total de digitalização BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. Não é aplicável a 120 hz, uma vez que só existe 1 fotograma BFI para trabalhar no total. As definições superiores ao possível limitam-no ao máximo possível para a taxa de atualização escolhida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   "Ajusta o número de fotogramas apresentados na sequência BFI que são pretos. Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. Não é aplicável a 120hz, uma vez que existe apenas um fotograma extra total a 60hz, pelo que tem de ser preto, caso contrário a BFI não estaria ativa."
+   "Ajusta o número de fotogramas apresentados na sequência BFI que são pretos. Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. Não é aplicável a 120 hz, uma vez que existe apenas um fotograma extra total a 60 hz, pelo que tem de ser preto, caso contrário a BFI não estaria ativa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Subfotogramas de sombreamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Insere fotograma(s) de sombreador extra entre fotogramas. Permite que os sombreadores façam efeitos que funcionem a um fps mais elevado do que a taxa de conteúdo atual. Deve ser definido para o Hz do ecrã atual. Não combinar com Intervalo de troca > 1, BFI, Atraso de fotogramas ou Sincronizar com a frequência de fotogramas exata do conteúdo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Insere fotograma(s) de sombreador extra entre fotogramas para quaisquer efeitos de sombreador possíveis que tenham sido concebidos para serem executados mais rapidamente do que a taxa de conteúdo. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser usada em taxas de atualização que não sejam múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Não combinar com Intervalo de troca > 1, BFI, Atraso de fotogramas ou Sincronizar com a frequência de fotog[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "Desligado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - Para uma taxa de atualização do ecrã de 120 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - Para uma taxa de atualização do ecrã de 180 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - Para uma taxa de atualização do ecrã de 240 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - Para uma taxa de atualização do ecrã de 300 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - Para uma taxa de atualização do ecrã de 360 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - Para uma taxa de atualização do ecrã de 420 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - Para uma taxa de atualização do ecrã de 480 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - Para uma taxa de atualização do ecrã de 540 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - Para uma taxa de atualização do ecrã de 600 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - Para uma taxa de atualização do ecrã de 660 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - Para uma taxa de atualização do ecrã de 720 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - Para uma taxa de atualização do ecrã de 780 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - Para uma taxa de atualização do ecrã de 840 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - Para uma taxa de atualização do ecrã de 900 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - Para uma taxa de atualização do ecrã de 960 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1881,6 +1957,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
    "Sincronização sólida de fotogramas na GPU"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Sincronização com a frequência de fotogramas exata do conteúdo (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Sincronização com a frequência de fotogramas exata do conteúdo. Esta opção é o equivalente a forçar a velocidade x1, permitindo ainda o avanço rápido. Não há desvio da taxa de atualização solicitada pelo núcleo, nem controlo da taxa dinâmica de som."
+   )
 
 /* Settings > Audio */
 
@@ -2175,6 +2259,10 @@ MSG_HASH(
    "Gravação de estado"
    )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "Se o suporte do disco virtual estiver fechado, abra-o e retire o disco carregado. Caso contrário, insira o disco selecionado e feche o suporte do disco."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -2191,6 +2279,14 @@ MSG_HASH(
    "Captura de ecrã"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Sincronizar com a velocidade de fotogramas exacta do conteúdo (ativar/desativar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Ativa/desativa a sincronização com a frequência de fotogramas exata do conteúdo."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -2411,6 +2507,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    "Ativar teclas personalizadas no arranque, por defeito."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Carregar automaticamente os ficheiros de índice do disco inicial"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Mudar para o último disco utilizado ao iniciar um conteúdo multi-disco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -2743,6 +2847,14 @@ MSG_HASH( /* FIXME Not RGUI specific */
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   "Mostrar 'Acessibilidade'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "Mostrar definições de \"Acessibilidade\"."
+   )
 
 
 /* Settings > User Interface > Appearance */
@@ -2761,6 +2873,22 @@ MSG_HASH(
 
 /* Settings > Accessibility */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   "Ativar Acessibilidade"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "Ativar a conversão de texto em voz para ajudar na navegação no menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "Velocidade de conversão de texto em voz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   "A velocidade da voz de conversão de texto em voz."
+   )
 
 /* Settings > Power Management */
 
@@ -5266,8 +5394,20 @@ MSG_HASH(
    "Leitura do ficheiro terminada"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Ocorreu um erro ao definir o último disco utilizado."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Verificando: "
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_ENABLED,
+   "Sincronização com a frequência de fotogramas exata do conteúdo ativada."
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_DISABLED,
+   "Sincronização com a frequência de fotogramas exata do conteúdo desativada."
    )
 
 /* Lakka */
@@ -5406,3 +5546,11 @@ MSG_HASH(
 #endif
 #ifdef HAVE_QT
 #endif
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Acessibilidade RetroArch ativa.  Menu principal, Carregar núcleo."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "parado."
+   )

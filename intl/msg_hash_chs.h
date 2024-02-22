@@ -3168,10 +3168,6 @@ MSG_HASH(
    "Android断开连接解决方法"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "处理控制器断开连接和重新连接，防止2名玩家使用相同的控制器。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "确认退出"
    )
@@ -13660,10 +13656,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
    "放置光盘失败"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "无法放置上次使用的光盘..."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,

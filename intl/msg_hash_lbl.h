@@ -402,6 +402,10 @@ MSG_HASH(
    "auto_remaps_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "initial_disk_change_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,
    "global_core_options"
    )
@@ -2042,6 +2046,21 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_LIGHT_FLIP,
    "input_player%u_light_flip"
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
+   "input_player%u_joypad_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX,
+   "input_player%u_bind_all"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX,
+   "input_player%u_bind_all_save_autoconfig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX,
+   "input_player%u_bind_all_bind_defaults"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_PORT,
@@ -4110,6 +4129,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
    "video_bfi_dark_frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+   "video_shader_subframes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,

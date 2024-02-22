@@ -4097,13 +4097,7 @@ void runloop_event_deinit_core(void)
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
-   {
-      /* Set the av_info fps also to the original refresh rate */
-      /* to avoid re-initialization problems */
-      struct retro_system_av_info *av_info = &video_st->av_info;
-      av_info->timing.fps = video_st->video_refresh_rate_original;
       video_display_server_restore_refresh_rate();
-   }
 
    /* Recalibrate frame delay target */
    if (settings->bools.video_frame_delay_auto)
@@ -4424,6 +4418,7 @@ void runloop_set_video_swap_interval(
       bool crt_switching_active,
       unsigned swap_interval_config,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       float audio_max_timing_skew,
       float video_refresh_rate,
       double input_fps)
@@ -4451,12 +4446,14 @@ void runloop_set_video_swap_interval(
     *   set swap interval to 1
     * > If core fps or display refresh rate are zero,
     *   set swap interval to 1
-    * > If BFI is active set swap interval to 1 */
+    * > If BFI is active set swap interval to 1
+    * > If Shader Subframes active, set swap interval to 1 */
    if (   (vrr_runloop_enable)
        || (core_hz    > timing_hz)
        || (core_hz   <= 0.0f)
        || (timing_hz <= 0.0f)
-       || (black_frame_insertion))
+       || (black_frame_insertion)
+       || (shader_subframes > 1))
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
@@ -4634,6 +4631,7 @@ bool runloop_event_init_core(
    bool auto_remaps_enable         = false;
    const char *dir_input_remapping = NULL;
 #endif
+   bool initial_disk_change_enable = true;
    bool show_set_initial_disk_msg  = false;
    unsigned poll_type_behavior     = 0;
    float fastforward_ratio         = 0.0f;
@@ -4705,12 +4703,13 @@ bool runloop_event_init_core(
    /* Cannot access these settings-related parameters
     * until *after* config overrides have been loaded */
 #ifdef HAVE_CONFIGFILE
-   auto_remaps_enable        = settings->bools.auto_remaps_enable;
-   dir_input_remapping       = settings->paths.directory_input_remapping;
+   auto_remaps_enable         = settings->bools.auto_remaps_enable;
+   dir_input_remapping        = settings->paths.directory_input_remapping;
 #endif
-   show_set_initial_disk_msg = settings->bools.notification_show_set_initial_disk;
-   poll_type_behavior        = settings->uints.input_poll_type_behavior;
-   fastforward_ratio         = runloop_get_fastforward_ratio(
+   initial_disk_change_enable = settings->bools.initial_disk_change_enable;
+   show_set_initial_disk_msg  = settings->bools.notification_show_set_initial_disk;
+   poll_type_behavior         = settings->uints.input_poll_type_behavior;
+   fastforward_ratio          = runloop_get_fastforward_ratio(
          settings, &runloop_st->fastmotion_override.current);
 
 #ifdef HAVE_CHEEVOS
@@ -4754,7 +4753,8 @@ bool runloop_event_init_core(
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_INITED;
 
    /* Attempt to set initial disk index */
-   disk_control_set_initial_index(
+   if (initial_disk_change_enable)
+      disk_control_set_initial_index(
          &sys_info->disk_control,
          path_get(RARCH_PATH_CONTENT),
          runloop_st->savefile_dir);
@@ -4767,7 +4767,7 @@ bool runloop_event_init_core(
 
    /* Verify that initial disk index was set correctly */
    disk_control_verify_initial_index(&sys_info->disk_control,
-         show_set_initial_disk_msg);
+         show_set_initial_disk_msg, initial_disk_change_enable);
 
    if (!runloop_event_load_core(runloop_st, poll_type_behavior))
       return false;
@@ -5308,7 +5308,7 @@ void runloop_msg_queue_push(const char *msg,
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      accessibility_speak_priority(
+      navigation_say(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*) msg, 0);
@@ -7333,7 +7333,7 @@ void runloop_task_msg_queue_push(
       if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-         accessibility_speak_priority(
+         navigation_say(
                accessibility_enable,
                accessibility_narrator_speech_speed,
                (char*)msg, 0);

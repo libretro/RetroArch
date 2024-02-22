@@ -1896,11 +1896,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Вставка чёрного кадра(ов) между кадрами. Может существенно уменьшить размытие движения путём эмуляции развёртки ЭЛТ, но ценой снижения яркости. Не используйте вместе с интервалом обновления > 1 (допускается значение 'Автоматически'), задержкой кадра или синхронизацией с ка[...]"
+   "Вставляет чёрный кадр(ы) между кадрами. Может существенно уменьшить размытие путём эмуляции развёртки ЭЛТ, но снижает яркость. Не включайте одновременно с интервалом обновления > 1, подкадрами, задержкой кадра или синхронизацией с кадровой частотой контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Вставляет между кадрами кадр(ы) чёрного цвета для повышения чёткости движения. Используйте значение только для текущей частоты обновления. Не предназначено для частот обновления не кратных 60 Гц, например 144 Гц, 165 Гц и т.д. Не используйте вместе с интервалом обновления > 1 (до[...]"
+   "Вставляет между кадрами кадр(ы) чёрного цвета для повышения чёткости движения. Используйте значение только для текущей частоты обновления. Не применимо с частотой обновления не кратной 60 Гц, например 144 Гц, 165 Гц и т.д. Не включайте одновременно с интервалом обновления > 1, по[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
@@ -1977,6 +1977,82 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "Регулирует количество кадров, которые отображаются чёрными в последовательности BFI. Большее количество чёрных кадров повышает чёткость движения, но снижает яркость. Не применимо для 120 Гц из-за наличия только одного лишнего кадра в 60 Гц, который должен быть чёрным, иначе BFI[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Подкадры шейдера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Вставляет между кадрами дополнительный кадр(ы) шейдера. Позволяет шейдерам выводить эффекты с кадровой частотой выше исходной частоты контента. Значение должно соответствовать действующей частоте экрана. Не включайте одновременно с интервалом обновления > 1, вставкой чё[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Вставляет между кадрами дополнительный кадр(ы) шейдера для всех шейдерных эффектов с частотой выше частоты контента. Используйте значение только для текущей частоты обновления. Не применимо с частотой обновления не кратной 60 Гц, например 144 Гц, 165 Гц и т.д. Не включайте одно[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
+   "ВЫКЛ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - для частоты обновления экрана 120 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - для частоты обновления экрана 180 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - для частоты обновления экрана 240 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - для частоты обновления экрана 300 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - для частоты обновления экрана 360 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - для частоты обновления экрана 420 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - для частоты обновления экрана 480 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - для частоты обновления экрана 540 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - для частоты обновления экрана 600 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - для частоты обновления экрана 660 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - для частоты обновления экрана 720 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - для частоты обновления экрана 780 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - для частоты обновления экрана 840 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - для частоты обновления экрана 900 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - для частоты обновления экрана 960 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -3296,6 +3372,10 @@ MSG_HASH(
    "Классический"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Классический (переключение)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Одна кнопка (переключение)"
    )
@@ -3306,6 +3386,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Классический режим, две кнопки для срабатывания. Удерживая кнопку действия однократно нажмите кнопку Турбо, чтобы активировать цикл нажать-отпустить.\nКнопку Турбо можно назначить в Настройки/Ввод/Привязки порта 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Классический режим переключения с двумя кнопками. Для включения турборежима однократно нажмите кнопку Турбо удерживая кнопку действия. Для отключения турбо: снова нажмите кнопку Турбо удерживая кнопку действия. Кнопку Турбо можно назначить в Настройки/Ввод/Привязки пор[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -3392,7 +3476,7 @@ MSG_HASH(
    "Исправление потери связи на Android"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Решение проблемы с отключением и переподключением контроллеров. Препятствует назначению одинаковых контроллеров для обоих игроков."
    )
 MSG_HASH(
@@ -3923,7 +4007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Режим наблюдателя для Netplay (переключение)"
+   "Сетевая игра/режим наблюдателя (переключение)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
@@ -3982,6 +4066,10 @@ MSG_HASH(
    "Индекс устройства"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "Физический контроллер, идентифицированный RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Порт привязки"
    )
@@ -3994,12 +4082,24 @@ MSG_HASH(
    "Назначить все элементы управления"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Поочерёдно назначьте все кнопки и оси в порядке их представления в данном меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Сброс к настройкам по умолчанию"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Возврат привязок ввода к стандартным значениям."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Сохранить профиль контроллера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Создать файл автоконфигурации, который будет автоматически применяться при каждом подключении контроллера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
@@ -4411,6 +4511,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    "Загружать пользовательские привязки ввода при запуске."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Автозагрузка файлов индекса начального диска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Выбирать последний загруженный диск при запуске мультидискового контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -6989,7 +7097,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Публично анонсировать Netplay"
+   "Публично анонсировать сетевую игру"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
@@ -7001,7 +7109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Переадресация соединений через промежуточный сервер. Помогает, если хост находится за брандмауэром или имеет проблемы с NAT/UPnP."
+   "Переадресация соединений через промежуточный сервер. Полезно в тех случаях, когда хост использует брандмауэр или имеются проблемы с NAT/UPnP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -7053,7 +7161,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-   "Порт IP-адреса хоста. Может быть TCP- или UDP-портом."
+   "Порт IP-адреса хоста. Может быть портом TCP или UDP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
@@ -7069,7 +7177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "Макс. запаздывание соединения (пинг), приемлемое для хоста. Значение 0 снимает ограничение."
+   "Максимальная сетевая задержка (пинг), приемлемая для хоста. Значение 0 снимает ограничение."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -7081,19 +7189,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   "Пароль сервера для режима наблюдателя"
+   "Пароль сервера в режиме наблюдателя"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "Пароль для подключения клиентов к хосту в режиме наблюдателя."
+   "Пароль для клиентов, подключающихся к хосту в режиме наблюдателя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Режим наблюдателя для Netplay"
+   "Режим наблюдателя для сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "Запускать сетевую игру в режиме наблюдателя."
+   "Запуск сеанса сетевой игры в режиме наблюдателя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
@@ -7137,7 +7245,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Разрешать подключения в slave-режиме. Slave-клиентам требуется крайне мало вычислительной мощности, но запаздывание сети для них значительно выше."
+   "Разрешать подключения в slave-режиме. Slave-клиенты требуют крайне мало вычислительной мощности, но сетевая задержка для них существенно выше."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
@@ -7149,7 +7257,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Кадры проверки Netplay"
+   "Кадры проверки сетевой игры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
@@ -7177,11 +7285,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Диапазон кадров задержки ввода для сетевой игры для маскировки запаздывания сети. Сглаживает отклонения и снижает требования Netplay к производительности за счёт плавающей задержки ввода."
+   "Диапазон кадров задержки ввода для сглаживания запаздывания сети. Снижает рассинхронизации и требования сетевой игры к производительности за счёт непредсказуемой задержки ввода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Диапазон задержки ввода, используемой для маскировки запаздывания сети. Если вкл., netplay динамически подстраивает количество кадров задержки ввода для баланса между процессорным временем, задержкой ввода и запаздыванием сети. Повышает плавность и снижает нагрузку на CPU, н[...]"
+   "Диапазон задержки ввода для сглаживания запаздывания сети. Динамически подстраивает кадры задержки ввода для баланса между процессорным временем, задержкой ввода и запаздыванием сети. Повышает плавность и снижает нагрузку на CPU, но непредсказуемо влияет на задержку вво[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -7252,19 +7360,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "URL ядер на билдботе"
+   "Ссылка для загрузки ядер с билдбота"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-   "Ссылка для обновления ядер с билдбота Libretro."
+   "Сетевой адрес папки с обновлениями ядер на билдботе Libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "URL ресурсов на билдботе"
+   "Ссылка для загрузки ресурсов с билдбота"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   "Ссылка для обновления ресурсов с билдбота Libretro."
+   "Сетевой адрес папки с обновлениями ресурсов на билдботе Libretro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -8065,7 +8173,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Ввести сетевой адрес сервера Netplay и подключиться в качестве клиента."
+   "Ввести адрес сервера и подключиться к сетевой игре в режиме клиента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
@@ -12778,7 +12886,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Неизвестная команда netplay"
+   "Получена неизвестная команда netplay"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -14315,7 +14423,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Не удалось добавить последний загруженный диск..."
+   "Не удалось установить последний загруженный диск."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
@@ -15297,4 +15405,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Отключено управление мышью с тачскрина"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Включены специальные возможности RetroArch. Главное меню загрузить ядро."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "остановлен."
    )
