@@ -4078,6 +4078,10 @@ MSG_HASH(
    "Egér sorszáma"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "A RetroArch által felismert tényleges egér."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "B gomb (lent)"
    )
@@ -12984,6 +12988,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "Kontrollerprofil mentése sikeres."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Kontroller profil elmentve a Kontrollerprofilok könyvtárba, ezen a néven:\n\"%s\""
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
