@@ -583,6 +583,7 @@ enum
 - (void)applicationWillResignActive:(UIApplication *)application
 {
    self.bgDate = [NSDate date];
+   rarch_stop_draw_observer();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
