@@ -213,7 +213,7 @@ static uint32_t gl3_get_cross_compiler_target_version(void)
 #ifdef HAVE_OPENGLES3
    if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
       return 300;
-   
+
    if (major == 2 && minor == 0)
       return 100;
 #else
@@ -2153,7 +2153,7 @@ bool gl3_filter_chain::init_feedback()
 bool gl3_filter_chain::init_alias()
 {
    int i;
-    
+
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
@@ -2517,7 +2517,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
-      if (!glslang_compile_shader(pass->source.path, &output))
+      if (!glslang_compile_shader(pass->source.path, &output, path))
       {
          RARCH_ERR("[GLCore]: Failed to compile shader: \"%s\".\n",
                pass->source.path);

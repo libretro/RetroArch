@@ -210,17 +210,17 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
    return true;
 }
 
-bool glslang_compile_shader(const char *shader_path, glslang_output *output)
+bool glslang_compile_shader(const char *shader_path, glslang_output *output, const char *preset_path)
 {
 #if defined(HAVE_GLSLANG)
    struct string_list lines;
-   
+
    if (!string_list_initialize(&lines))
       return false;
 
    RARCH_LOG("[slang]: Compiling shader: \"%s\".\n", shader_path);
 
-   if (!glslang_read_shader_file(shader_path, &lines, true))
+   if (!glslang_read_shader_file(shader_path, &lines, true, preset_path))
       goto error;
    output->meta = glslang_meta{};
    if (!glslang_parse_meta(&lines, &output->meta))

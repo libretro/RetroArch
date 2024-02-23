@@ -98,7 +98,7 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 }
 
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file)
+      struct string_list *output, bool root_file, const char *preset_path)
 {
    size_t i;
    char tmp[PATH_MAX_LENGTH];
@@ -187,6 +187,43 @@ bool glslang_read_shader_file(const char *path,
    {
       const char *line   = lines.elems[i].data;
 
+
+      //Support for "#pragma include_preset_defines" directive.
+         const char preset_defines_keyword[] = "#pragma inject_preset_code";
+
+         //directive found, preset file path known?
+         if (!strncmp(preset_defines_keyword, line, STRLEN_CONST(preset_defines_keyword)) &&
+            preset_path != NULL )
+         {
+            //Strip existing extension and append .inc
+            char *defines_path = strdup(preset_path);
+            char *p_ptr = strrchr(defines_path, '.');
+            if (p_ptr != NULL)
+               *p_ptr = '\0';
+            strcat(defines_path, ".inc");
+
+            //if the define file for the preset is found
+            if (filestream_exists(defines_path))
+            {
+               //insert it
+               RARCH_LOG("[Slang]: Inject preset specific code from: \"%s\".\n", defines_path);
+               //pass a null preset_path to avoid recursion.
+               glslang_read_shader_file(defines_path, output, false, NULL);
+               /* After including a file, use line directive
+               * to pull it back to current file. */
+               snprintf(tmp, sizeof(tmp), "#line %u \"%s\"",
+                     (unsigned)(i + 1), basename);
+               if (!string_list_append(output, tmp, attr))
+                  goto error;
+            }
+            else
+            {
+               //If not found, just emit a debug message.
+               RARCH_DBG("[Slang]: Koko: No defines file found for preset. \"%s\".\n", defines_path);
+            }
+         }
+
+
       /* Check for 'include' statements */
       if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
       {
@@ -209,7 +246,7 @@ bool glslang_read_shader_file(const char *path,
                include_path, path, include_file, sizeof(include_path));
 
          /* Parse include file */
-         if (!glslang_read_shader_file(include_path, output, false))
+         if (!glslang_read_shader_file(include_path, output, false, preset_path))
             goto error;
 
          /* After including a file, use line directive
