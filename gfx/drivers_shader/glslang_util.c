@@ -219,7 +219,7 @@ bool glslang_read_shader_file(const char *path,
             else
             {
                //If not found, just emit a debug message.
-               RARCH_DBG("[Slang]: Koko: No defines file found for preset. \"%s\".\n", defines_path);
+               RARCH_DBG("[Slang]: No defines file found for preset. \"%s\".\n", defines_path);
             }
          }
 
