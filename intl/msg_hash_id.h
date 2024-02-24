@@ -126,10 +126,6 @@ MSG_HASH(
    "Buka menu desktop tradisional."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Nonaktifkan Kiosk Mode (Restart Diperlukan)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Tampilkan semua pengaturan terkait konfigurasi."
    )
@@ -1113,10 +1109,6 @@ MSG_HASH(
    "Peramban Berkas"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Ubah pengaturan peramban berkas."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
    "Berkas arsip terpampat."
    )
@@ -1276,10 +1268,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Stik Kendali"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Pengandar stik kendali yang digunakan."
-   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -1322,10 +1310,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    "Driver Lokasi yang digunakan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Kandar menu yang dipilih. Perlu mulai ulang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1601,10 +1585,6 @@ MSG_HASH(
    "Pilih layar tampilan mana yang akan digunakan."
    )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Mengoptimalkan Wii U GamePad (perlu dimulai ulang)"
-   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1870,10 +1850,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Crop Overscan (Perlu Dimulai-ulang)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2320,10 +2296,6 @@ MSG_HASH(
    "Otomatis menyetel stik kendali yang ada profil, agar jadi Pasang-dan-Pakai."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Matikan tombol Hotkey Windows (Membutuhkan Restart)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Kombinasi tombil Win-key hanya tersedia di aplikasi."
@@ -2810,16 +2782,8 @@ MSG_HASH(
    "Tampilkan 'Kesukaan'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Menampilkan menu 'Kesukaan'. (di Ozone/XMB perlu dimulai ulang)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Tampilkan 'Riwayat'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Menampilkan menu riwayat terkini. (di Ozone/XMB perlu dimulai ulang)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

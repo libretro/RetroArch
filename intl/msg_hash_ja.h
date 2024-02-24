@@ -138,10 +138,6 @@ MSG_HASH(
    "従来のデスクトップメニューを開きます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "キオスクモードを無効にする (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "設定に関係するすべての設定を表示します。"
    )
@@ -1269,10 +1265,6 @@ MSG_HASH(
    "ファイルブラウザ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "ファイルブラウザの設定を変更します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "設定ファイルです。"
    )
@@ -1519,10 +1511,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "コントローラー"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "使用するコントローラーのドライバです。 "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1778,10 +1766,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "メニュー"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "使用するメニュードライバです。変更を適用するには再起動が必要です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2214,10 +2198,6 @@ MSG_HASH(
    )
 #if defined (WIIU)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Wii U ゲームパッドに最適化 (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "ビューポートとしてGamePadの正確な2倍のスケールを使用します。無効にするとテレビのネイティブ解像度で表示されます。"
    )
@@ -2554,10 +2534,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "アスペクト比が [カスタムアスペクト比] に設定されているときに使用されるカスタム表示領域の高さです。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "オーバースキャンをトリミング (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3184,10 +3160,6 @@ MSG_HASH(
    "RetroArch が対応する最大ユーザー数です。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "ポーリングの動作 (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "RetroArch の入力ポーリングに影響します。設定によっては、[早い] や [遅い] に設定することで遅延が少なくなります。"
    )
@@ -3212,10 +3184,6 @@ MSG_HASH(
    "プロファイルが存在するコントローラーを自動的に設定します。プラグアンドプレイスタイルです。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Windows ホットキーを無効にする (再起動が必要)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Win キーの組み合わせをアプリケーション内に保持します。"
@@ -4802,16 +4770,8 @@ MSG_HASH(
    "隠しファイルとディレクトリを表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "隠しファイルとディレクトリをファイルブラウザに表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "不明な拡張子を隠す"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "ファイルブラウザに表示されるファイルを対応している拡張子でフィルタリングします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4824,10 +4784,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "最後に使用した開始ディレクトリを記憶"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "コンテンツをロードするとき、最後に使用したディレクトリでファイルブラウザを開きます。注意: 再起動すると場所はデフォルトにリセットされます。"
    )
 
 /* Settings > Frame Throttle */
@@ -5215,10 +5171,6 @@ MSG_HASH(
    "オーバーレイプリセット"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "ファイルブラウザからオーバーレイを選択します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(横向き) オーバーレイ表示倍率"
    )
@@ -5330,10 +5282,6 @@ MSG_HASH(
    "キーボードオーバーレイプリセット"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "ファイルブラウザからキーボードオーバーレイを選択します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "キーボードオーバーレイの自動スケーリング"
    )
@@ -5363,10 +5311,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "ビデオレイアウトのパス"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "ファイルブラウザからビデオレイアウトを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5913,10 +5857,6 @@ MSG_HASH(
    "起動時にユーザーインターフェースコンパニオンドライバを開始します (利用可能な場合)。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "デスクトップメニュー (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "起動時にデスクトップメニューを開く"
    )
@@ -6050,10 +5990,6 @@ MSG_HASH(
    "[設定] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "[設定] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "[設定] を有効にするためのパスワードを設定"
    )
@@ -6066,56 +6002,28 @@ MSG_HASH(
    "[お気に入り] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "[お気に入り] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "[画像] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "[画像] メニューを表示します。 (Ozone/XMB で再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "[音楽] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "[音楽] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "[動画] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "[動画] メニューを表示します。 (Ozone/XMB で再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "[ネットプレイ] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "[ネットプレイ] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "[履歴] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "[履歴] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "[コンテンツをインポート] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "[コンテンツをインポート] メニューを表示します。 (Ozone/XMB で再起動が必要)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6138,24 +6046,12 @@ MSG_HASH(
    "[プレイリスト] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "[プレイリスト] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "[エクスプローラー] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "[エクスプローラー] メニューを表示します。 (Ozone/XMB で再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "[コンテンツレスコア] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "[コンテンツレスコア] メニューに表示するコアの種類を指定します。「カスタム」に設定すると、[コアの管理] メニューから個々のコアの表示/非表示を切り替えることができます。 (Ozone/XMB で再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -9472,10 +9368,6 @@ MSG_HASH(
    "最後に使用したシェーダーディレクトリを記憶"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "シェーダープリセットとパスをロードするとき、最後に使用したディレクトリでファイルブラウザを開きます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "プリセットをロード"
    )
@@ -10705,10 +10597,6 @@ MSG_HASH(
    "カスタムテーマプリセット"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "ファイルブラウザからメニューテーマプリセットを選択します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "透明度"
    )
@@ -11135,10 +11023,6 @@ MSG_HASH(
    "タイトル余白の水平オフセット"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "設定タブを有効にする (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "プログラムの設定を含む設定タブを表示します。"
    )
@@ -11265,16 +11149,8 @@ MSG_HASH(
    "左サイドバーを常に折りたたみます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "プレイリスト名を切り詰める (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "プレイリストからメーカー名を削除します。たとえば [Sony - PlayStation] は [PlayStation] になります。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "プレイリスト名を切り詰め後に並べ替える (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -11350,10 +11226,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "オン/オフテキストの代わりにアイコンを使用して [切り替えスイッチ] メニュー設定エントリーを表します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "プレイリストアイコン (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,

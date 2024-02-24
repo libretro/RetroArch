@@ -138,10 +138,6 @@ MSG_HASH(
    "데스크탑 메뉴를 불러옵니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "키오스크 모드를 비활성화합니다. (재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "모든 구성 관련 설정을 표시합니다."
    )
@@ -1265,10 +1261,6 @@ MSG_HASH(
    "파일 탐색기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "파일 탐색기 설정을 변경합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "구성 파일입니다."
    )
@@ -1515,10 +1507,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "컨트롤러 드라이버"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "사용할 컨트롤러 드라이버입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1782,10 +1770,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "메뉴 드라이버"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "사용할 메뉴 드라이버입니다. 다시 시작해야 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2138,10 +2122,6 @@ MSG_HASH(
    )
 #if defined (WIIU)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Wii U GamePad에 알맞게 표시 (재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "GamePad의 정확히 2배 크기를 뷰포트로 사용합니다. 비활성화할 경우 TV의 기본 해상도로 출력됩니다."
    )
@@ -2482,10 +2462,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "화면비가 '사용자 설정'으로 되어있을 시 사용할 사용자 뷰포트 높이입니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "오버스캔 잘라내기 (재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3116,10 +3092,6 @@ MSG_HASH(
    "RetroArch에서 지원할 최대 사용자 수를 설정합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "폴링 방식 (재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "RetroArch에서 입력 폴링이 수행되는 방식을 설정합니다. 시스템 구성에 따라 '일찍' 또는 '늦게'로 설정 시 지연시간이 줄어들 수 있습니다."
    )
@@ -3144,10 +3116,6 @@ MSG_HASH(
    "프로필, 플러그 앤 플레이 스타일을 가진 컨트롤러를 자동으로 구성합니다."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Windows 핫키 비활성화 (재시작 필요)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "윈도우 키와 함께 입력되는 핫키들을 비활성화합니다."
@@ -4694,16 +4662,8 @@ MSG_HASH(
    "숨겨진 파일 및 폴더 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "파일 탐색기에 숨김 파일 및 폴더를 보입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "알 수 없는 확장자 숨김"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "파일 탐색기에 지원되는 확장자만 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4716,10 +4676,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "최근 사용한 시작 디렉토리 기억"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "시작 디렉토리에서 콘텐츠를 불러올 경우 최근 사용한 위치에서 파일 탐색기를 시작합니다. 참고: RetroArch를 재시작하면 기본 위치로 초기화 됩니다."
    )
 
 /* Settings > Frame Throttle */
@@ -5107,10 +5063,6 @@ MSG_HASH(
    "오버레이 프리셋"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "파일 탐색기에서 오버레이를 선택하십시오."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(가로) 오버레이 크기 조절"
    )
@@ -5222,10 +5174,6 @@ MSG_HASH(
    "키보드 오버레이 사전 설정"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "파일 브라우저에서 키보드 오버레이를 선택합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "자동 크기 조정 키보드 오버레이"
    )
@@ -5255,10 +5203,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "비디오 레이아웃 경로"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "비디오 레이아웃을 파일 탐색기에서 선택하십시오."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5817,10 +5761,6 @@ MSG_HASH(
    "시작 시 사용자 인터페이스 컴패니언 드라이버를 실행합니다.(사용 가능 시)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "데스크탑 메뉴 (재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "시작시 데스크탑 메뉴 열기"
    )
@@ -5954,10 +5894,6 @@ MSG_HASH(
    "'설정' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "'설정' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "'설정' 항목에 비밀번호 설정"
    )
@@ -5970,56 +5906,28 @@ MSG_HASH(
    "'즐겨찾기' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "'즐겨찾기' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "'이미지' 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "'이미지' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "'음악' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "'음악' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "'비디오' 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "'비디오' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "'넷플레이' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "'넷플레이' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "'최근 실행' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "최근 실행 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "'콘텐츠 가져오기' 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "'콘텐츠 가져오기' 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6042,24 +5950,12 @@ MSG_HASH(
    "'실행목록' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "실행목록을 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "'탐색' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "콘텐츠 탐색 메뉴를 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "'단독 실행 코어' 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "'단독 실행 코어' 메뉴에 표시할 코어의 종류를 선택합니다. '사용자 정의'로 설정할 경우, '코어 관리' 메뉴에서 개별 코어의 표시 여부를 설정할 수 있습니다. (Ozone/XMB에서 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -9380,10 +9276,6 @@ MSG_HASH(
    "최근 사용한 셰이더 디렉토리 기억"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "세이더 프리셋 및 패스를 불러올때 파일 브라우저에서 최근 사용한 디렉토리를 엽니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "사전 설정 불러오기"
    )
@@ -10509,10 +10401,6 @@ MSG_HASH(
    "사용자 테마 프리셋"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "파일 탐색기에서 테마 프리셋을 선택하십시오."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "투명도"
    )
@@ -11007,10 +10895,6 @@ MSG_HASH(
    "제목 마진 가로 오프셋"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "설정 탭 사용 (재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "프로그램 설정이 담긴 설정 탭을 표시합니다."
    )
@@ -11185,16 +11069,8 @@ MSG_HASH(
    "왼쪽 사이드바를 항상 작게 표시합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "실행목록 이름 단축 (재시작 필요)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "실행목록에서 제조사 이름을 삭제합니다. 예를 들어 'Sony - PlayStation'은 'PlayStation'이 됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "이름 축소 후 실행목록 정렬 (재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -11302,10 +11178,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "메뉴 설정 항목에서 '켬/끔' 글자 표기 대신에 아이콘을 사용합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "실행목록 아이콘 (재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,

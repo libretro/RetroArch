@@ -122,10 +122,6 @@ MSG_HASH(
    "Abre o menu tradicional do desktop."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desativar o Modo Kiosk (Reinício necessário)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Mostrar todas as definições relacionadas às configurações."
    )
@@ -1089,10 +1085,6 @@ MSG_HASH(
    "Explorador de ficheiros"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Alterar definições do explorador de ficheiros."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
    "Ficheiro simples."
    )
@@ -1219,10 +1211,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Comando"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Driver de comando a ser usado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -2689,10 +2677,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "Overlay pré-definido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Seleciona uma camada de sobreposição do explorador de ficheiros."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
