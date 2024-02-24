@@ -401,6 +401,11 @@
  */
 #define DEFAULT_SHADER_SUBFRAMES 1
 
+/* Divides implements basic rolling scanning of sub frames - does this simply by scrolling a 
+ * a scissor rect down the screen according to how many sub frames there are  
+ */
+#define DEFAULT_SCAN_SUBFRAMES false
+
 /* Inserts black frame(s) inbetween frames.
  * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
  * material with CRT-like motion clarity.
