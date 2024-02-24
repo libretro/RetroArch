@@ -122,10 +122,6 @@ MSG_HASH(
    "Otvori tradicionalni izbornik za radnu površinu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Isključi način rada kioska (Potrebno ponovno pokretanje)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Prikaži sve postavke povezane s konfiguracijom."
    )

@@ -126,10 +126,6 @@ MSG_HASH(
    "منوی دسکتاپ مرسوم را باز کن."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "غیر فعال کردن حالت کیوسک (احتیاج به ریستارت دارد)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "تمام تنظیمات مربوط به پیکربندی را نمایش بده."
    )
@@ -1017,10 +1013,6 @@ MSG_HASH(
    "مرورگر فایل"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "تنظیمات مرورگر فایل را تغییر دهید."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    "تنظیمات برگرداندن تصویر، جلو کشیدن تصویر و تصویر آهسته را تغییر دهید."
    )
@@ -1155,10 +1147,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "دستهٔ بازی"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "درایور دستهٔ بازی برای استفاده."
    )
 
 MSG_HASH(
@@ -1357,10 +1345,6 @@ MSG_HASH(
    "یکی از نمایشگرها را برای استفاده برگزینید."
    )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "بهینه‌سازی برای دسته‌بازی Wii U (نیازمند بازآغاز)"
-   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1968,10 +1952,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
    "نمایش «موارد دلخواه»"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "نمایش گزینگان «موارد دلخواه» (در Ozone/XMB نیازمند بازآغاز است)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

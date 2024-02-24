@@ -134,10 +134,6 @@ MSG_HASH(
    "Das traditionelle Desktop-Menü öffnen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Kiosk-Modus deaktivieren (Neustart erforderlich)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Alle Konfigurationseinstellungen anzeigen."
    )
@@ -1201,10 +1197,6 @@ MSG_HASH(
    "Dateibrowser"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Dateibrowsereinstellungen ändern."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "Konfigurationsdatei."
    )
@@ -1435,10 +1427,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Controllertreiber"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Zu verwendender Controllertreiber."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1702,10 +1690,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Menütreiber"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Zu verwendender Menütreiber. Neustart erforderlich."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2130,10 +2114,6 @@ MSG_HASH(
    )
 #if defined (WIIU)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Für Wii U GamePad optimieren (Neustart erforderlich)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Eine exakte zweifache Skalierung des GamePads als Ansichtsfenster verwenden. Deaktivieren, um mit der nativen TV-Auflösung anzuzeigen."
    )
@@ -2470,10 +2450,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Benutzerdefinierte Ansichtsfensterhöhe, die verwendet wird, wenn das Bildseitenverhältnis auf \"Benutzerdefiniertes Seitenverhältnis\" eingestellt ist."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Overscan abschneiden (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3080,10 +3056,6 @@ MSG_HASH(
    "Maximale Anzahl von Benutzern, die von RetroArch unterstützt werden."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Abfrageverhalten (Neustart erforderlich)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "Beeinflusst, wie die Eingangsabfrage in RetroArch abgearbeitet wird. Wird dieser Wert auf „Früh“ oder „Spät“ gesetzt, kann sich je nach Konfiguration die Latenz verringern."
    )
@@ -3108,10 +3080,6 @@ MSG_HASH(
    "Konfiguriert automatisch Controller mit einem Profil im Plug-and-Play-Stil."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Windows Hotkeys deaktivieren (Neustart erforderlich)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Windows-Tastenkombinationen innerhalb der Anwendung behalten."
@@ -4678,16 +4646,8 @@ MSG_HASH(
    "Versteckte Dateien und Ordner zeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Versteckte Dateien und Ordner im Dateimanager anzeigen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Unbekannte Dateierweiterungen filtern"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Zeige nur Dateien mit unterstützten Erweiterungen im Dateibrowser an."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4700,10 +4660,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "Letztes Startverzeichnis merken"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "Den Dateibrowser im zuletzt benutzten Verzeichnis öffnen, wenn Inhalte aus dem Startverzeichnis geladen werden. Hinweis: Das Verzeichnis wird beim Neustart von RetroArch zurückgesetzt."
    )
 
 /* Settings > Frame Throttle */
@@ -5083,10 +5039,6 @@ MSG_HASH(
    "Overlay-Voreinstellung"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Im Dateibrowser ein Overlay auswählen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(Querformat) Overlay-Skalierungsfaktor"
    )
@@ -5198,10 +5150,6 @@ MSG_HASH(
    "Tastatur-Overlay-Voreinstellung"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "Bitte ein Tastatur-Overlay im Dateibrowser auswählen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "Größe von Tastatur-Overlay automatisch anpassen"
    )
@@ -5231,10 +5179,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "Video-Layout-Pfad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Im Dateibrowser ein Video-Layout auswählen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5785,10 +5729,6 @@ MSG_HASH(
    "Begleitenden Treiber für die Benutzeroberfläche beim Booten starten (wenn verfügbar)."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "Desktop-Menü (Neustart erforderlich)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Desktop-Menü beim Start öffnen"
    )
@@ -5922,10 +5862,6 @@ MSG_HASH(
    "\"Einstellungen\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Das \"Einstellungen\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Kennwort zum Wiederherstellen der \"Einstellungen\" festlegen"
    )
@@ -5938,56 +5874,28 @@ MSG_HASH(
    "\"Favoriten\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Das \"Favoriten\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "\"Bilder\" anzeigen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Das \"Bilder\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "\"Musik\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Das \"Musik\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "\"Videos\" anzeigen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Das \"Videos\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "\"Netzwerkspiel\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Das \"Netzwerkspiel\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "\"Verlauf\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Das \"Verlauf\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "\"Inhalte importieren\" anzeigen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Das \"Inhalte importieren\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6010,24 +5918,12 @@ MSG_HASH(
    "\"Wiedergabelisten\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Die Wiedergabelisten anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "\"Erkunden\" anzeigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Das \"Erkunden\"-Menü anzeigen. (Neustart erforderlich bei Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Zeige 'Inhaltslose Cores'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Den Typ der Cores angeben, der im Menü „Inhaltslose Cores“ angezeigt werden soll. Bei der Einstellung „Benutzerdefiniert“ kann die Sichtbarkeit einzelner Cores über das Menü „Cores verwalten“ umgeschaltet werden. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -9260,10 +9156,6 @@ MSG_HASH(
    "Das zuletzt verwendete Shader-Verzeichnis merken"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Dateibrowser beim Laden von Shader-Voreinstellungen im zuletzt verwendeten Verzeichnis öffnen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "Voreinstellung laden"
    )
@@ -10429,10 +10321,6 @@ MSG_HASH(
    "Eigene Designvorlage"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Im Dateibrowser ein voreingestelltes Menüthema auswählen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Transparenz"
    )
@@ -10871,10 +10759,6 @@ MSG_HASH(
    "Horizontaler Versatz der Randtitel"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Einstellungen-Tab aktivieren (Neustart erforderlich)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Tab mit Programmeinstellungen anzeigen."
    )
@@ -11001,16 +10885,8 @@ MSG_HASH(
    "Die linke Seitenleiste immer einklappen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Wiedergabelistennamen kürzen (Neustart erforderlich)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Die Anbieternamen aus den Wiedergabelistennamen entfernen. Zum Beispiel wird \"Sony - PlayStation\" zu \"PlayStation\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Wiedergabelisten nach Namenskürzung sortieren (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -11106,10 +10982,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "Symbole anstelle von EIN/AUS-Text verwenden, um „Umschalt“-Menüeinstellungen darzustellen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "Wiedergabelistensymbole (Neustart erforderlich)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
