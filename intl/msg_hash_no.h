@@ -130,10 +130,6 @@ MSG_HASH(
    "Åpne den tradisjonelle skrivebordsmenyen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Deaktiver Kiosk-modus (Omstart kreves)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vis alle konfigurasjonsrelaterte innstillinger."
    )
@@ -1113,10 +1109,6 @@ MSG_HASH(
    "Filutforsker"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Endre instillinger for filutforsker."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "Rammekvelning"
    )
@@ -1247,10 +1239,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Kontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Kontrollerdriveren som brukes."
    )
 
 MSG_HASH(
@@ -1517,10 +1505,6 @@ MSG_HASH(
    "Velg hvilken skjerm som skal brukes."
    )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimaliser for Wii U GamePad (Omstart påkrevd)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Bruk en eksakt 2x skala av GamePad som visningsregion. Deaktiver for å vise på den innebygde TV-oppløsningen."
@@ -1822,10 +1806,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Tilpasset visningsregionshøyde som er brukt hvis størrelsesforhold er satt til \"egendefinert størrelsesforhold\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Beskjær overskanning (omstart påkrevd)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,

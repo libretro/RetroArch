@@ -114,10 +114,6 @@ MSG_HASH(
    "Agor y dewislen bwrdd gwaith traddodiadol."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Analluogi mod Kiosk (Ailgychwyn yn angenrheidiol)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Dangoswch yr holl gosodiadau sy'n gysylltiedig â chyfluniad."
    )

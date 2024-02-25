@@ -1242,11 +1242,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Fájlkezelő"
+   "Fájlböngésző"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "A fájlkezelő beállításai."
+   "A Fájlböngésző beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -1498,7 +1498,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "A használt kontroller illesztő."
+   "A használt kontroller illesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1757,7 +1757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "A használt menüillesztő. Újraindítás szükséges."
+   "A használt menüillesztő (újraindítás szükséges)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -4078,6 +4078,10 @@ MSG_HASH(
    "Egér sorszáma"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "A RetroArch által felismert tényleges egér."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "B gomb (lent)"
    )
@@ -4779,7 +4783,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Rejtett fájlok és mappák megjelenítése a fájlböngészőben."
+   "Rejtett fájlok és mappák megjelenítése a Fájlböngészőben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -4787,7 +4791,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "A nem támogatott kiterjesztésű fájlok nem jelennek meg a fájlböngészőben."
+   "A nem támogatott kiterjesztésű fájlok nem jelennek meg a Fájlböngészőben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4803,7 +4807,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "A fájlböngésző az utoljára használt helyen nyílik meg a kezdő könyvtárból töltésnél. Figyelem: ez a hely visszaáll az alapállapotra a RetroArch újraindításakor."
+   "A Fájlböngésző az utoljára használt helyen nyílik meg a kezdő könyvtárból töltésnél. A RetroArch újraindításakor visszaáll az alapállapotra."
    )
 
 /* Settings > Frame Throttle */
@@ -5184,7 +5188,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Rátét kiválasztása a fájlböngészővel."
+   "Rátét kiválasztása a Fájlböngészővel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -5299,7 +5303,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "Billentyűzet rátét kiválasztása a fájlböngészővel."
+   "Billentyűzet rátét kiválasztása a Fájlböngészővel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
@@ -5334,7 +5338,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Képelrendezés kiválasztása a fájlböngészővel."
+   "Képelrendezés kiválasztása a Fájlböngészővel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -6501,7 +6505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
-   "A fájlböngésző beállításai jelenjenek meg."
+   "A Fájlböngésző beállításai jelenjenek meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
@@ -9449,7 +9453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Shader presetek és feldolgozók betöltésekor a fájlböngésző a legutóbb használt könyvtárat nyitja meg."
+   "Shader presetek és feldolgozók betöltésekor a Fájlböngésző a legutóbb használt könyvtárat nyitja meg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -10654,7 +10658,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Egyedi színösszeállítás fájl kiválasztása a fájlböngészővel."
+   "Egyedi színösszeállítás fájl kiválasztása a Fájlböngészővel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
@@ -11479,7 +11483,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Fájlkezelő"
+   "Fájlböngésző"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
@@ -12984,6 +12988,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "Kontrollerprofil mentése sikeres."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Kontroller profil elmentve a Kontrollerprofilok könyvtárba, ezen a néven:\n\"%s\""
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,

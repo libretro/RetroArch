@@ -135,7 +135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Kiosk Kipini Devre Dışı Bırak (Yeniden Başlatılmalı)"
+   "Kiosk Kipini Devre Dışı Bırak (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -1510,7 +1510,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Kullanılacak kontrolcü sürücüsü."
+   "Kullanılacak kontrolcğ sürücüsü. (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1765,7 +1765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Kullanılacak menü sürücüsü. Yeniden başlatılmalı."
+   "Kullanılacak menü sürücüsü. (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2195,7 +2195,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Wii U GamePad için Düzenleyin (Yeniden Başlatılmalı)"
+   "Wii U GamePad için Düzenleyin (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -2541,7 +2541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Aşırı Tarama (Yeniden Başlatılmalı)"
+   "Aşırı Tarama (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3169,7 +3169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Yoklama Davranışı (Yeniden Başlatılmalı)"
+   "Yoklama Davranışı (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3198,7 +3198,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Windows Kısayol Tuşu Devre Dışı (Yeniden Başlatılmalı)"
+   "Windows Kısayol Tuşu Devre Dışı (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -4783,7 +4783,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Dosya tarayıcıda gizli dosyaları ve dizinleri gösterin."
+   "Dosya tarayıcı üstünde gizli dosyaları ve dizinleri gösterin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -5196,7 +5196,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Dosya tarayıcısından bir kaplama seç."
+   "Dosya tarayıcısı üstünden bir kaplama seç."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -5311,7 +5311,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "Dosya tarayıcısından bir klavye kaplaması seçin."
+   "Dosya tarayıcısı üstünden bir klavye kaplaması seçin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
@@ -5902,7 +5902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "Masaüstü Menüsü (Yeniden Başlatılmalı)"
+   "Masaüstü Menüsü (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -6127,7 +6127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "'Oynatma Listesi' menüsünü gösterin. (Ozon/XMB'de Yeniden Başlatılmalı)"
+   "Oynatma listesini gösterin. (Ozon/XMB'de Yeniden Başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -10662,7 +10662,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Dosya tarayıcısından hazır bir menü teması seçin."
+   "Dosya tarayıcı üstünden hazır bir menü teması seçin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
@@ -11140,7 +11140,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Ayarlar Sekmesini Etkinleştir (Yeniden Başlatılmalı)"
+   "Ayarlar Sekmesini Etkinleştir (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -11314,7 +11314,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Oynatma Listesi Adlarını Kes (Yeniden Başlatılmalı)"
+   "Oynatma Listesi Adlarını Kes (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -11322,7 +11322,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Ad Kısaltmadan Sonra Oynatma Listelerini Sırala (Yeniden Başlatılmalı)"
+   "Ad Kısaltmadan Sonra Oynatma Listelerini Sırala (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -11433,7 +11433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "Oynatma Listesi Simgeleri (Yeniden Başlatılmalı)"
+   "Oynatma Listesi Simgeleri (Yeniden başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,

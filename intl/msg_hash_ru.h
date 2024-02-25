@@ -1522,7 +1522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Используемый драйвер контроллера."
+   "Используемый драйвер контроллера (требуется перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1781,7 +1781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Используемый драйвер меню. Требуется перезапуск."
+   "Используемый драйвер меню (требуется перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2215,7 +2215,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Оптимизация для Wii U GamePad (требуется перезапуск)"
+   "Оптимизировать для Wii U GamePad (требуется перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -4811,7 +4811,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Отображать в браузере скрытые файлы и папки."
+   "Показывать скрытые файлы и папки в браузере файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -4819,7 +4819,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Фильтровать файлы в браузере по поддерживаемым расширениям."
+   "Фильтровать файлы в браузере файлов по поддерживаемым расширениям."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4835,7 +4835,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "При загрузке контента открывать браузер файлов в последнем использованном каталоге. Путь будет сброшен к настройке по умолчанию при перезапуске RetroArch."
+   "При загрузке контента открывать браузер файлов в последнем использованном каталоге. Путь будет сброшен к стандартному значению при перезапуске RetroArch."
    )
 
 /* Settings > Frame Throttle */
@@ -5224,7 +5224,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Выбор оверлея из браузера файлов."
+   "Выбор оверлея в браузере файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -5374,7 +5374,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Выбор макета экрана из браузера файлов."
+   "Выбор макета экрана в браузере файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -6071,7 +6071,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Показывать меню 'Настройки' (требуется перезапуск на Ozone/XMB)."
+   "Показывать меню 'Настройки' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -6087,7 +6087,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Показывать вкладку 'Избранное' (требуется перезапуск в Ozone/XMB)."
+   "Показывать меню 'Избранное' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
@@ -6095,7 +6095,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Показывать вкладку 'Изображения' (требуется перезапуск в Ozone/XMB)."
+   "Показывать меню 'Изображения' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
@@ -6103,7 +6103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Показывать вкладку 'Музыка' (требуется перезапуск в Ozone/XMB)."
+   "Показывать меню 'Музыка' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
@@ -6111,7 +6111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Показывать вкладку 'Видео' (требуется перезапуск в Ozone/XMB)."
+   "Показывать меню 'Видео' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
@@ -6119,7 +6119,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Показывать вкладку 'Сетевая игра' (требуется перезапуск в Ozone/XMB)."
+   "Показывать меню 'Сетевая игра' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6127,7 +6127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Показывать вкладку истории запуска (требуется перезапуск для Ozone/XMB)."
+   "Показывать меню 'История запуска' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
@@ -6135,7 +6135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Показывать вкладку 'Импорт контента' (требуется перезапуск в Ozone/XMB)."
+   "Показывать меню 'Импорт контента' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6159,7 +6159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Показывать вкладку 'Плейлисты' (требуется перезапуск в Ozone/XMB)."
+   "Показывать плейлисты (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6167,7 +6167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Показывать опцию 'Обзор' (требуется перезапуск в Ozone/XMB)."
+   "Показывать опцию 'Обзор' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
@@ -6175,7 +6175,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Типы ядер (при наличии), отображаемые в меню 'Автономные ядра'. В режиме 'Вручную' видимость каждого ядра можно настроить в меню 'Управление ядрами'. Требуется перезапуск для Ozone/XMB."
+   "Типы ядер (при их наличии), отображаемые в меню 'Автономные ядра'. В режиме 'Вручную' видимость каждого ядра можно настроить в меню 'Управление ядрами' (требуется перезапуск для Ozone/XMB)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -9493,7 +9493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Открывать в браузере файлов последний использованный каталог при загрузке пресетов и проходов шейдера."
+   "Открывать браузер файлов в последнем использованном каталоге при загрузке пресетов и проходов шейдеров."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -10706,7 +10706,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Загрузка темы меню из браузера файлов."
+   "Выбор темы меню в браузере файлов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
