@@ -84,7 +84,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0.0f,                               /* text_y_end */
    0.0f,                               /* alpha */
 
-   COLOR_HEX_TO_FLOAT(0x909090, 1.0f), /* frame_color */
+   COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f), /* frame_color */
 
    0,                                  /* message_len */
 
@@ -224,10 +224,11 @@ static void gfx_widget_libretro_message_layout(
    state->text_padding = (unsigned)(((float)font_msg_queue->line_height * (2.0f / 3.0f)) + 0.5f);
    state->frame_width  = divider_width;
 
-   state->bg_x         = 0.0f;
+   /* X-alignment with other widget types */
+   state->bg_x         = (float)state->text_padding * 1.44f;
    state->bg_y_start   = (float)last_video_height + (float)state->frame_width;
    state->bg_y_end     = (float)last_video_height - (float)state->bg_height;
-   state->text_x       = (float)state->text_padding;
+   state->text_x       = state->bg_x + (float)state->text_padding;
    state->text_y_start = state->bg_y_start + ((float)state->bg_height * 0.5f) +
          (float)font_msg_queue->line_centre_offset;
    state->text_y_end   = state->bg_y_end + ((float)state->bg_height * 0.5f) +
@@ -419,6 +420,20 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                NULL);
 
          /* Frame */
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               state->bg_x,
+               bg_y,
+               state->frame_width,
+               state->bg_height,
+               video_width,
+               video_height,
+               state->frame_color,
+               NULL);
+
          gfx_display_draw_quad(
                p_disp,
                userdata,
