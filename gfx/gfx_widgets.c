@@ -45,7 +45,7 @@
 
 #define BASE_FONT_SIZE 32.0f
 
-#define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
+#define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.62f)
 
 /* Icons */
 static const char
@@ -466,8 +466,12 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
       if (!msg || (msg->flags & DISPWIDG_FLAG_DYING))
          continue;
 
-      y += p_dispwidget->msg_queue_height
-         / (msg->task_ptr ? 2 : 1) + p_dispwidget->msg_queue_spacing;
+      if (y == 0)
+         y += (p_dispwidget->simple_widget_padding * 2.0f);
+
+      y +=    (p_dispwidget->msg_queue_height / 2.0f / (msg->task_ptr ? 2.0f : 1.0f))
+            + (p_dispwidget->msg_queue_spacing * (msg->task_ptr ? 1.0f : 2.0f))
+            + (p_dispwidget->simple_widget_padding / 5.0f);
 
       if (!(msg->flags & DISPWIDG_FLAG_UNFOLDED))
          unfold = msg;
@@ -794,7 +798,6 @@ static void gfx_widgets_font_init(
    font_data->usage_count        = 0;
 }
 
-
 static void gfx_widgets_layout(
       gfx_display_t *p_disp,
       dispgfx_widget_t *p_dispwidget,
@@ -852,10 +855,10 @@ static void gfx_widgets_layout(
    }
 
    /* Calculate dimensions */
-   p_dispwidget->simple_widget_padding            = p_dispwidget->gfx_widget_fonts.regular.line_height * 2.0f/3.0f;
+   p_dispwidget->simple_widget_padding            = p_dispwidget->gfx_widget_fonts.regular.line_height * 2.0f / 3.0f;
    p_dispwidget->simple_widget_height             = p_dispwidget->gfx_widget_fonts.regular.line_height + p_dispwidget->simple_widget_padding;
 
-   p_dispwidget->msg_queue_height                 = p_dispwidget->gfx_widget_fonts.msg_queue.line_height * 2.5f * (BASE_FONT_SIZE / MSG_QUEUE_FONT_SIZE);
+   p_dispwidget->msg_queue_height                 = p_dispwidget->gfx_widget_fonts.msg_queue.line_height * 2.333f * (BASE_FONT_SIZE / MSG_QUEUE_FONT_SIZE);
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
    {
@@ -864,7 +867,7 @@ static void gfx_widgets_layout(
          * 1.2347826087f; /* original image is 280x284 */
       p_dispwidget->msg_queue_icon_size_x         = 0.98591549295f * p_dispwidget->msg_queue_icon_size_y;
 #else
-      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height * 1.2f;
+      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height;
       p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
 #endif
    }
@@ -874,8 +877,8 @@ static void gfx_widgets_layout(
       p_dispwidget->msg_queue_icon_size_y         = 0;
    }
 
-   p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 3.3f;
-   p_dispwidget->msg_queue_rect_start_x           = p_dispwidget->msg_queue_spacing + p_dispwidget->msg_queue_icon_size_x;
+   p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 4.0f;
+   p_dispwidget->msg_queue_rect_start_x           = p_dispwidget->msg_queue_spacing / 2.0f + p_dispwidget->msg_queue_icon_size_x + (p_dispwidget->simple_widget_padding / 4.0f);
    p_dispwidget->msg_queue_internal_icon_size     = p_dispwidget->msg_queue_icon_size_y;
    p_dispwidget->msg_queue_internal_icon_offset   = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_internal_icon_size) / 2;
    p_dispwidget->msg_queue_icon_offset_y          = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_height) / 2;
@@ -888,26 +891,25 @@ static void gfx_widgets_layout(
 
    p_dispwidget->msg_queue_task_rect_start_x      = p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x;
 
-   p_dispwidget->msg_queue_task_text_start_x      = p_dispwidget->msg_queue_task_rect_start_x + p_dispwidget->msg_queue_height / 2;
+   p_dispwidget->msg_queue_task_text_start_x      = p_dispwidget->msg_queue_task_rect_start_x + (p_dispwidget->msg_queue_height / 2.0f) + (p_dispwidget->simple_widget_padding / 2.0f);
 
    if (!p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS])
-      p_dispwidget->msg_queue_task_text_start_x         -=
-         p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
+      p_dispwidget->msg_queue_task_text_start_x  -= p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
 
-   p_dispwidget->msg_queue_regular_text_start            = p_dispwidget->msg_queue_rect_start_x;
+   p_dispwidget->msg_queue_regular_text_start     = p_dispwidget->msg_queue_rect_start_x + (p_dispwidget->simple_widget_padding / 1.5f);
 
-   p_dispwidget->msg_queue_task_hourglass_x              = p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x;
+   p_dispwidget->msg_queue_task_hourglass_x       = p_dispwidget->msg_queue_task_rect_start_x + (p_dispwidget->simple_widget_padding / 2.5f);
 
-   p_dispwidget->generic_message_height    = p_dispwidget->gfx_widget_fonts.regular.line_height * 2.0f;
+   p_dispwidget->generic_message_height           = p_dispwidget->gfx_widget_fonts.regular.line_height * 2.0f;
 
-   p_dispwidget->msg_queue_default_rect_width_menu_alive = p_dispwidget
-      ->gfx_widget_fonts.msg_queue.glyph_width * 40.0f;
-   p_dispwidget->msg_queue_default_rect_width            = p_dispwidget->last_video_width
-      - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
+   p_dispwidget->msg_queue_default_rect_width_menu_alive
+                                                  = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 40.0f;
+   p_dispwidget->msg_queue_default_rect_width     = p_dispwidget->last_video_width
+         - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
 
-   p_dispwidget->divider_width_1px    = 1;
+   p_dispwidget->divider_width_1px                = 1;
    if (p_dispwidget->last_scale_factor > 1.0f)
-      p_dispwidget->divider_width_1px = (unsigned)(p_dispwidget->last_scale_factor + 0.5f);
+      p_dispwidget->divider_width_1px             = (unsigned)(p_dispwidget->last_scale_factor + 0.5f);
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
@@ -918,7 +920,6 @@ static void gfx_widgets_layout(
                is_threaded, dir_assets, font_path);
    }
 }
-
 
 void gfx_widgets_iterate(
       void *data_disp,
@@ -1162,15 +1163,19 @@ static void gfx_widgets_draw_task_msg(
       unsigned video_height)
 {
    /* Color of first progress bar in a task message */
-   static float msg_queue_task_progress_1[16]               =
-      COLOR_HEX_TO_FLOAT(0x397869, 1.0f);
+   static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f);
    /* Color of second progress bar in a task message
     * (for multiple tasks with same message) */
-   static float msg_queue_task_progress_2[16]               =
-      COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
+   static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x1D5B1D, 1.0f);
+   /* Margin bar */
+   static float msg_queue_bar[16]             = COLOR_HEX_TO_FLOAT(0xCCCCCC, 1.0f);
+   /* Bright green icon */
+   static float msg_queue_task_done[16]       = COLOR_HEX_TO_FLOAT(0x00C80A, 1.0f);
+
    unsigned text_color;
    unsigned bar_width;
 
+   unsigned rect_margin;
    unsigned rect_x;
    unsigned rect_y;
    unsigned rect_width;
@@ -1194,6 +1199,7 @@ static void gfx_widgets_draw_task_msg(
 
    if (msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
    {
+      task_percentage_offset = p_dispwidget->simple_widget_padding * 2.0f;
       if (msg->flags & DISPWIDG_FLAG_TASK_ERROR) /* TODO/FIXME - localize */
          strlcpy(task_percentage, "Task failed", sizeof(task_percentage));
    }
@@ -1215,20 +1221,33 @@ static void gfx_widgets_draw_task_msg(
          msg_queue_current_background = msg_queue_task_progress_2;
    else
       if (msg->task_count == 1)
-         msg_queue_current_background = p_dispwidget->msg_queue_bg;
+         msg_queue_current_background = msg_queue_task_progress_1;
       else
          msg_queue_current_background = msg_queue_task_progress_1;
 
    rect_x      = p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x;
    rect_y      = video_height - msg->offset_y;
    rect_height = p_dispwidget->msg_queue_height / 2;
+   rect_margin = p_dispwidget->simple_widget_padding * 0.15f;
+
+   gfx_display_set_alpha(msg_queue_bar, msg->alpha);
+   gfx_display_draw_quad(
+         p_disp,
+         userdata,
+         video_width, video_height,
+         rect_x, rect_y,
+         rect_margin, rect_height,
+         video_width, video_height,
+         msg_queue_bar,
+         NULL
+         );
 
    gfx_display_set_alpha(msg_queue_current_background, msg->alpha);
    gfx_display_draw_quad(
          p_disp,
          userdata,
          video_width, video_height,
-         rect_x, rect_y,
+         rect_x + rect_margin, rect_y,
          rect_width, rect_height,
          video_width, video_height,
          msg_queue_current_background,
@@ -1250,7 +1269,8 @@ static void gfx_widgets_draw_task_msg(
             p_disp,
             userdata,
             video_width, video_height,
-            p_dispwidget->msg_queue_task_rect_start_x, video_height - msg->offset_y,
+            p_dispwidget->msg_queue_task_rect_start_x + rect_margin,
+            video_height - msg->offset_y,
             bar_width, rect_height,
             video_width, video_height,
             msg_queue_current_bar,
@@ -1260,6 +1280,7 @@ static void gfx_widgets_draw_task_msg(
 
    /* Icon */
    gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
+   gfx_display_set_alpha(msg_queue_task_done, msg->alpha);
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
    {
@@ -1277,14 +1298,14 @@ static void gfx_widgets_draw_task_msg(
             p_dispwidget->msg_queue_height / 2,
             p_dispwidget->gfx_widgets_icons_textures[
             (msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
-            ? MENU_WIDGETS_ICON_CHECK
-            : MENU_WIDGETS_ICON_HOURGLASS],
+                  ? MENU_WIDGETS_ICON_CHECK : MENU_WIDGETS_ICON_HOURGLASS],
             p_dispwidget->msg_queue_task_hourglass_x,
             video_height - msg->offset_y,
             radians,
             cosine,
             sine,
-            p_dispwidget->pure_white);
+            (msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
+                  ? msg_queue_task_done : p_dispwidget->pure_white);
    }
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(userdata);
@@ -1308,9 +1329,7 @@ static void gfx_widgets_draw_task_msg(
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
             msg->msg_new,
             p_dispwidget->msg_queue_task_text_start_x,
-            text_y_base
-            - p_dispwidget->msg_queue_height / 2.0f
-            + msg->msg_transition_animation,
+            text_y_base - p_dispwidget->msg_queue_height / 2.0f + msg->msg_transition_animation,
             video_width, video_height,
             text_color,
             TEXT_ALIGN_LEFT,
@@ -1339,8 +1358,8 @@ static void gfx_widgets_draw_task_msg(
    text_color = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha/2*255.0f));
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       task_percentage,
-      p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x + rect_width -
-      p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width,
+      p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x
+            + rect_width - p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width,
       text_y_base,
       video_width, video_height,
       text_color,
@@ -1357,10 +1376,10 @@ static void gfx_widgets_draw_regular_msg(
       unsigned video_width,
       unsigned video_height)
 {
-   static float msg_queue_info[16] = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
-   static float msg_queue_bar[16]  = COLOR_HEX_TO_FLOAT(0xDDDDDD, 1.0f);
-   unsigned bar_width;
-   unsigned bar_margin;
+   static float msg_queue_info[16] = COLOR_HEX_TO_FLOAT(0x0C99D6, 1.0f);
+   static float msg_queue_bar[16]  = COLOR_HEX_TO_FLOAT(0xCCCCCC, 1.0f);
+   unsigned rect_width;
+   unsigned rect_margin;
    unsigned text_color;
    static float last_alpha = 0.0f;
 
@@ -1396,17 +1415,18 @@ static void gfx_widgets_draw_regular_msg(
    }
 
    /* Background */
-   bar_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
-   bar_margin = p_dispwidget->simple_widget_padding * 0.15f;
+   rect_width  = p_dispwidget->simple_widget_padding + msg->width + p_dispwidget->msg_queue_icon_size_x;
+   rect_margin = p_dispwidget->simple_widget_padding * 0.15f;
+   gfx_display_set_alpha(msg_queue_bar, msg->alpha);
 
    gfx_display_draw_quad(
          p_disp,
          userdata,
          video_width,
          video_height,
-         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x,
+         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x + rect_margin,
          video_height - msg->offset_y,
-         bar_width - bar_margin,
+         rect_width - rect_margin,
          p_dispwidget->msg_queue_height,
          video_width,
          video_height,
@@ -1419,9 +1439,9 @@ static void gfx_widgets_draw_regular_msg(
          userdata,
          video_width,
          video_height,
-         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x - bar_margin,
+         p_dispwidget->msg_queue_rect_start_x - p_dispwidget->msg_queue_icon_size_x,
          video_height - msg->offset_y,
-         bar_margin,
+         rect_margin,
          p_dispwidget->msg_queue_height,
          video_width,
          video_height,
@@ -1435,7 +1455,9 @@ static void gfx_widgets_draw_regular_msg(
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       msg->msg,
       p_dispwidget->msg_queue_regular_text_start,
-      video_height - msg->offset_y + (p_dispwidget->msg_queue_height - msg->text_height)/2.0f + p_dispwidget->gfx_widget_fonts.msg_queue.line_ascender,
+      video_height - msg->offset_y
+            + (p_dispwidget->msg_queue_height - msg->text_height) / 2.0f
+            + p_dispwidget->gfx_widget_fonts.msg_queue.line_ascender,
       video_width, video_height,
       text_color,
       TEXT_ALIGN_LEFT,
@@ -1449,8 +1471,7 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_flush_text(video_width, video_height, &p_dispwidget->gfx_widget_fonts.msg_queue);
 
       if (dispctx && dispctx->scissor_end)
-         dispctx->scissor_end(userdata,
-               video_width, video_height);
+         dispctx->scissor_end(userdata, video_width, video_height);
    }
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
@@ -1466,8 +1487,9 @@ static void gfx_widgets_draw_regular_msg(
             p_dispwidget->msg_queue_icon_size_x,
             p_dispwidget->msg_queue_icon_size_y,
             p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
-            p_dispwidget->msg_queue_spacing,
-            video_height - msg->offset_y  - p_dispwidget->msg_queue_icon_offset_y,
+            p_dispwidget->msg_queue_rect_start_x
+                  - p_dispwidget->msg_queue_icon_size_x + (p_dispwidget->simple_widget_padding / 2.0f),
+            video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
             0.0f, /* rad                         */
             1.0f, /* cos(rad)   = cos(0)  = 1.0f */
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
