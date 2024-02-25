@@ -286,12 +286,6 @@
       <Link>%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' == 'ReleaseANGLE' or '$(Configuration)' == 'DebugANGLE'">
-    <None Include="ANGLE\$(Platform)\*.dll">
-      <DeploymentContent>true</DeploymentContent>
-      <Link>%(Filename)%(Extension)</Link>
-    </None>
-  </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Release' or '$(Configuration)' == 'Debug'">
     <None Include="MESA\$(Platform)\*.dll">
       <DeploymentContent>true</DeploymentContent>
