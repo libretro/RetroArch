@@ -259,7 +259,7 @@ VIDEO CONTEXT
 #include "../gfx/common/gl_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/wgl_ctx.c"
@@ -268,7 +268,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
+#if !defined(__WINRT__) 
 #include "../gfx/display_servers/dispserv_win32.c"
+#endif
 
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
