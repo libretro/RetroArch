@@ -1522,7 +1522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "使用するコントローラーのドライバです。 "
+   "使用するコントローラドライバです。(再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1781,7 +1781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "使用するメニュードライバです。変更を適用するには再起動が必要です。"
+   "使用するメニュードライバです。(再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -4811,7 +4811,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "ファイルブラウザに表示されるファイルを対応している拡張子でフィルタリングします。"
+   "ファイルブラウザに表示されるファイルを対応する拡張子でフィルタリングします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4827,7 +4827,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "コンテンツをロードするとき、最後に使用したディレクトリでファイルブラウザを開きます。注意: 再起動すると場所はデフォルトにリセットされます。"
+   "コンテンツをロードする際に、最後に使用したディレクトリでファイルブラウザを開きます。注意: 再起動すると場所はデフォルトにリセットされます。"
    )
 
 /* Settings > Frame Throttle */
@@ -9473,7 +9473,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "シェーダープリセットとパスをロードするとき、最後に使用したディレクトリでファイルブラウザを開きます。"
+   "シェーダープリセットとパスをロードする際に、最後に使用したディレクトリでファイルブラウザを開きます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -12469,7 +12469,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "コアとは？"
+   "コアとは?"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,

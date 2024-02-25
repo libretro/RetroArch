@@ -130,10 +130,6 @@ MSG_HASH(
    "Abre a vista de escritorio tradicional."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desactiva o modo quiosco (precisa de se reiniciar)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Amosa todas os axustes relacionados coas configuracións."
    )
@@ -1137,10 +1133,6 @@ MSG_HASH(
    "Explorador de ficheiros"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Cambiar os axustes do navegador de arquivos."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "Ficheiro de configuración."
    )
@@ -1263,10 +1255,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Telemando de xogo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Controlador do telemando de xogo a empregar."
    )
 
 MSG_HASH(

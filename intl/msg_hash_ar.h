@@ -138,10 +138,6 @@ MSG_HASH(
    "افتح قائمة سطح المكتب التقليدية."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "تعطيل وضع Kiosk (مطلوب إعادة التشغيل)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "إظهار كافة الإعدادات ذات الصلة بالتهيئات."
    )
@@ -1137,10 +1133,6 @@ MSG_HASH(
    "مستعرض الملفات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "تغيير إعدادات متصفح الملفات."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
    "ملف الإعدادات."
    )
@@ -1335,10 +1327,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "نظام تشغيل الجوي باد"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "مشغل Joypad للاستخدام."
    )
 
 MSG_HASH(
@@ -3086,16 +3074,8 @@ MSG_HASH(
    "إظهار الملفات والمجلدات المخفية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "إظهار الملفات/الدلائل المخفية داخل متصفح الملفات."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "تصفية ملحقات غير معروفة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "تصفية الملفات التي تظهر في متصفح الملفات عن طريق ملحقات مدعومة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -3334,10 +3314,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
    "عتامة جميع عناصر واجهة المستخدم للتراكب."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "حدد تراكب من متصفح الملفات."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -3355,10 +3331,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "مسار تخطيط الفيديو"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "حدد تخطيط فيديو من متصفح الملفات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5995,10 +5967,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "حدد سمة لون مختلفة. اختيار 'مخصص' يمكن استخدام ملفات الإعداد المسبق لقائمة الملفات."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "حدد الإعداد المسبق لقائمة السمة من متصفح الملفات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,

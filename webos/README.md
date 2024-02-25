@@ -1,7 +1,7 @@
 ## Building
 ```sh
 make -f Makefile.webos clean
-make -f Makefile.webos -j$(ncpu --all) ipk
+make -f Makefile.webos -j$(getconf _NPROCESSORS_ONLN) ipk
 ```
 
 ## Testing
