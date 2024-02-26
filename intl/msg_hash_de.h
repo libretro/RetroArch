@@ -3987,7 +3987,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
-   "Die physische Maus wie von RetroArc erkannt."
+   "Die physische Maus wie von RetroArch erkannt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
