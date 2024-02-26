@@ -63,6 +63,8 @@ enum gfx_widgets_icon
 
    MENU_WIDGETS_ICON_HOURGLASS,
    MENU_WIDGETS_ICON_CHECK,
+   MENU_WIDGETS_ICON_ADD,
+   MENU_WIDGETS_ICON_EXIT,
 
    MENU_WIDGETS_ICON_INFO,
 
@@ -111,7 +113,10 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
    /* Unfold animation */
    DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
-   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7)
+   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
+   /* Color style */
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9)
 };
 
 /* There can only be one message animation at a time to 

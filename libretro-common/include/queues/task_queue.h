@@ -44,6 +44,13 @@ enum task_type
    TASK_TYPE_BLOCKING
 };
 
+enum task_style
+{
+   TASK_STYLE_NONE,
+   TASK_STYLE_POSITIVE,
+   TASK_STYLE_NEGATIVE
+};
+
 typedef struct retro_task retro_task_t;
 typedef void (*retro_task_callback_t)(retro_task_t *task,
       void *task_data,
@@ -114,6 +121,7 @@ struct retro_task
    uint32_t ident;
 
    enum task_type type;
+   enum task_style style;
 
    /* if set to true, frontend will
    use an alternative look for the

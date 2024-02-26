@@ -980,6 +980,7 @@ retro_task_t *task_init(void)
    task->progress_cb       = NULL;
    task->title             = NULL;
    task->type              = TASK_TYPE_NONE;
+   task->style             = TASK_STYLE_NONE;
    task->ident             = task_count++;
    task->frontend_userdata = NULL;
    task->alternative_look  = false;

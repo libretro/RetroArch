@@ -518,8 +518,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
     * > Note that 'connection successful' messages
     *   may be suppressed, but error messages are
     *   always shown */
+   task->style = TASK_STYLE_NEGATIVE;
    if (autoconfig_handle->device_info.autoconfigured)
    {
+      /* Successful addition style */
+      task->style = TASK_STYLE_POSITIVE;
+
       if (match_found)
       {
          /* A valid autoconfig was applied */
@@ -777,6 +781,9 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       goto task_finished;
+
+   /* Removal style */
+   task->style = TASK_STYLE_NEGATIVE;
 
    /* Get display name for task status message */
    device_display_name = autoconfig_handle->device_info.display_name;

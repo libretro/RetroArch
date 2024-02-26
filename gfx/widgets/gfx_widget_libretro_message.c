@@ -225,7 +225,7 @@ static void gfx_widget_libretro_message_layout(
    state->frame_width  = divider_width;
 
    /* X-alignment with other widget types */
-   state->bg_x         = (float)state->text_padding * 1.44f;
+   state->bg_x         = (float)state->text_padding * 1.33f;
    state->bg_y_start   = (float)last_video_height + (float)state->frame_width;
    state->bg_y_end     = (float)last_video_height - (float)state->bg_height;
    state->text_x       = state->bg_x + (float)state->text_padding;
