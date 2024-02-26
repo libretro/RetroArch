@@ -226,7 +226,7 @@ $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
-	$(Q)$(WINDRES) -o $@ $<
+	$(Q)$(WINDRES) $(DEFINES) -o $@ $<
 
 install: $(TARGET)
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
