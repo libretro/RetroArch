@@ -1061,9 +1061,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
-            if (ui_menubar_enable)
-               win32_menu_loop(main_window.hwnd, wparam);
+            win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
    }
