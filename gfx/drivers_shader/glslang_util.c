@@ -155,16 +155,18 @@ bool inject(const char *inject_file, struct string_list *output, const char *inj
       char inj_key[100];
       char inj_value[100];
       char tmp[350];  //size of: #undef $inj_key \n #define $inj_key $inj_value 
+      tmp[0] = '\0';
+      attr.i = 0;
       
       /* Inject them */
       if (inj_to_define(line, inj_key, inj_value, *inject_prefix )) { 
          snprintf(tmp, sizeof(tmp), "#undef %s", inj_key);
-         RARCH_LOG("[shader]: Injected #undef %s\n", inj_key);
+         RARCH_DBG("[shader]: Injected #undef %s\n", inj_key);
          if (!string_list_append(output, tmp, attr)) goto error;
          
          snprintf(tmp, sizeof(tmp), "#define %s %s", inj_key, inj_value);
          if (!string_list_append(output, tmp, attr)) goto error;       
-         RARCH_LOG("[shader]: Injected #define %s %s\n", inj_key, inj_value);
+         RARCH_DBG("[shader]: Injected #define %s %s\n", inj_key, inj_value);
       }
          
    }
