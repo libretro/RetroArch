@@ -662,6 +662,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_patch_applied,   M
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_remap_load,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_config_override_load, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_set_initial_disk, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_disk_control, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_save_state, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_fast_forward, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD)
 #ifdef HAVE_SCREENSHOTS
@@ -4281,6 +4282,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_set_initial_disk);
+            break;
+         case MENU_ENUM_LABEL_NOTIFICATION_SHOW_DISK_CONTROL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_disk_control);
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_save_state);

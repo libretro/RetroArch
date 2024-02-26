@@ -4981,6 +4981,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_msg)
                   verbose                      = *show_msg;
 
+               if (!settings->bools.notification_show_disk_control)
+                  verbose                      = false;
+
                disk_control_set_eject_state(
                      &sys_info->disk_control, eject, verbose);
 
@@ -5013,6 +5016,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_msg)
                   verbose     = *show_msg;
 
+               if (!settings->bools.notification_show_disk_control)
+                  verbose     = false;
+
                disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
             else
@@ -5036,6 +5042,9 @@ bool command_event(enum event_command cmd, void *data)
 
                if (show_msg)
                   verbose     = *show_msg;
+
+               if (!settings->bools.notification_show_disk_control)
+                  verbose     = false;
 
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }

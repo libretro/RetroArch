@@ -6066,6 +6066,10 @@ MSG_HASH(
    "notification_show_set_initial_disk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "notification_show_disk_control"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "notification_show_save_state"
    )
