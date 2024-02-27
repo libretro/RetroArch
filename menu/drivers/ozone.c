@@ -8084,8 +8084,20 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
                new_selection   = 0;
 
-            ozone_sidebar_goto(ozone, new_selection);
-            new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            if (     !menu_navigation_wraparound_enable
+                  && selection == ozone->system_tab_end + horizontal_list_size)
+               new_selection   = selection;
+
+            if (new_selection != (int)selection)
+            {
+               ozone_sidebar_goto(ozone, new_selection);
+               new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            }
+            else
+            {
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
+               new_action      = MENU_ACTION_NOOP;
+            }
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
@@ -8121,8 +8133,20 @@ static enum menu_action ozone_parse_menu_entry_action(
             if ((new_selection = (int)selection - 1) < 0)
                new_selection   = horizontal_list_size + ozone->system_tab_end;
 
-            ozone_sidebar_goto(ozone, new_selection);
-            new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            if (     !menu_navigation_wraparound_enable
+                  && selection == 0)
+               new_selection   = 0;
+
+            if (new_selection != (int)selection)
+            {
+               ozone_sidebar_goto(ozone, new_selection);
+               new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            }
+            else
+            {
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_UP);
+               new_action      = MENU_ACTION_NOOP;
+            }
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
