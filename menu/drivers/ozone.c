@@ -444,7 +444,8 @@ enum ozone_handle_flags2
    OZONE_FLAG2_POINTER_IN_SIDEBAR                    = (1 <<  4),
    OZONE_FLAG2_LAST_POINTER_IN_SIDEBAR               = (1 <<  5),
    OZONE_FLAG2_CURSOR_WIGGLING                       = (1 <<  6),
-   OZONE_FLAG2_LAST_USE_PREFERRED_SYSTEM_COLOR_THEME = (1 <<  7)
+   OZONE_FLAG2_LAST_USE_PREFERRED_SYSTEM_COLOR_THEME = (1 <<  7),
+   OZONE_FLAG2_RESET_DEPTH                           = (1 <<  8)
 };
 
 struct ozone_handle
@@ -606,7 +607,8 @@ struct ozone_handle
    int16_t cursor_x_old;
    int16_t cursor_y_old;
 
-   uint8_t flags2;
+   uint16_t flags2;
+
    uint8_t selection_lastplayed_lines;
    uint8_t system_tab_end;
    uint8_t tabs[OZONE_SYSTEM_TAB_LAST];
@@ -3816,7 +3818,7 @@ static unsigned ozone_get_horizontal_selection_type(ozone_handle_t *ozone)
    if (ozone->categories_selection_ptr > ozone->system_tab_end)
    {
       size_t i = ozone->categories_selection_ptr - ozone->system_tab_end - 1;
-      return ozone->horizontal_list.list[i].type;
+      return (ozone->horizontal_list.size) ? ozone->horizontal_list.list[i].type : 0;
    }
    return 0;
 }
@@ -4001,6 +4003,7 @@ static void ozone_go_to_sidebar(
    gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
+
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_play_scroll_sound(false);
 #endif
@@ -8084,8 +8087,20 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
                new_selection   = 0;
 
-            ozone_sidebar_goto(ozone, new_selection);
-            new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            if (     !menu_navigation_wraparound_enable
+                  && selection == ozone->system_tab_end + horizontal_list_size)
+               new_selection   = selection;
+
+            if (new_selection != (int)selection)
+            {
+               ozone_sidebar_goto(ozone, new_selection);
+               new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            }
+            else
+            {
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_DOWN);
+               new_action      = MENU_ACTION_NOOP;
+            }
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
@@ -8121,8 +8136,20 @@ static enum menu_action ozone_parse_menu_entry_action(
             if ((new_selection = (int)selection - 1) < 0)
                new_selection   = horizontal_list_size + ozone->system_tab_end;
 
-            ozone_sidebar_goto(ozone, new_selection);
-            new_action         = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            if (     !menu_navigation_wraparound_enable
+                  && selection == 0)
+               new_selection   = 0;
+
+            if (new_selection != (int)selection)
+            {
+               ozone_sidebar_goto(ozone, new_selection);
+               new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            }
+            else
+            {
+               ozone_start_cursor_wiggle(ozone, MENU_ACTION_UP);
+               new_action      = MENU_ACTION_NOOP;
+            }
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
@@ -8247,6 +8274,17 @@ static enum menu_action ozone_parse_menu_entry_action(
             break;
          }
 
+         /* Configuration load must reset depth according to new menu
+          * location, otherwise sidebar gets stuck in wrong position */
+         {
+            const file_list_t *list = menu_st->entries.list ? MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
+            if (list->size)
+            {
+               if (string_is_equal(list->list[list->size - 1].label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS)))
+                  ozone->flags2 |= OZONE_FLAG2_RESET_DEPTH;
+            }
+         }
+
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
             ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
@@ -8267,6 +8305,10 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
             if (menu_entries_search_get_terms())
                break;
+
+         /* Limit previous sidebar selection if playlist is deleted */
+         if (ozone->categories_selection_ptr > ozone->system_tab_end + ozone->horizontal_list.size)
+            ozone->categories_selection_ptr = ozone->system_tab_end + ozone->horizontal_list.size;
 
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
@@ -9385,6 +9427,13 @@ static void ozone_context_destroy(void *data)
 
    /* Screensaver */
    menu_screensaver_context_destroy(ozone->screensaver);
+
+   /* Forced depth reset due to menu position reset */
+   if (ozone->flags2 & OZONE_FLAG2_RESET_DEPTH)
+   {
+      ozone->flags2 &= ~OZONE_FLAG2_RESET_DEPTH;
+      ozone->depth = 1;
+   }
 }
 
 static void *ozone_list_get_entry(void *data,
@@ -11691,7 +11740,7 @@ static void ozone_set_header(ozone_handle_t *ozone)
          || (ozone->is_quick_menu && !menu_is_running_quick_menu())
          || (ozone->depth > 1))
       menu_entries_get_title(ozone->title, sizeof(ozone->title));
-   else
+   else if (ozone->horizontal_list.size)
    {
       ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(
             &ozone->horizontal_list,
@@ -12117,8 +12166,8 @@ static void ozone_toggle(void *userdata, bool menu_on)
 
    if (ozone->depth == 1)
    {
-      ozone->flags         |= OZONE_FLAG_DRAW_SIDEBAR;
-      ozone->sidebar_offset = 0.0f;
+      ozone->flags                   |= OZONE_FLAG_DRAW_SIDEBAR;
+      ozone->sidebar_offset           = 0.0f;
    }
 
    ozone_sidebar_update_collapse(ozone, settings->bools.ozone_collapse_sidebar, false);
