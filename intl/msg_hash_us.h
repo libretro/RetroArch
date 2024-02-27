@@ -14743,7 +14743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Scanning of directory finished"
+   "Scanning of directory finished."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -15107,19 +15107,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Scanning of file finished"
+   "Scanning of file finished."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Successfully started cheat search"
+   "Successfully started cheat search."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Failed to start cheat search"
+   "Failed to start cheat search."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Searching has not been initialized/started"
+   "Searching has not been initialized/started."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -15127,23 +15127,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Added %u matches"
+   "Added %u matches."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Failed to add matches"
+   "Failed to add matches."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Created code from match"
+   "Created code from match."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Failed to create code"
+   "Failed to create code."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Deleted match"
+   "Deleted match."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -15183,7 +15183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Failed to set disc"
+   "Failed to set disc."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -15191,23 +15191,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Failed to connect to client"
+   "Failed to connect to client."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Failed to connect to host"
+   "Failed to connect to host."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Netplay host full"
+   "Netplay host full."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "You are banned from this host"
+   "You are banned from this host."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Failed to receive header from host"
+   "Failed to receive header from host."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -15251,15 +15251,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Warning: Missing assets, use the Online Updater if available"
+   "Warning: Missing assets, use the Online Updater if available."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "Warning: Missing fonts for selected language, use the Online Updater if available"
+   "Warning: Missing fonts for selected language, use the Online Updater if available."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Warning: Unsupported language - using English"
+   "Warning: Unsupported language - using English."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -15295,11 +15295,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Invalid arcade DAT file selected"
+   "Invalid arcade DAT file selected."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Selected arcade DAT file is too large (insufficient free memory)"
+   "Selected arcade DAT file is too large (insufficient free memory)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -15307,11 +15307,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Invalid manual scan configuration"
+   "Invalid manual scan configuration."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "No valid content detected"
+   "No valid content detected."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
