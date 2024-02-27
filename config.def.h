@@ -1071,6 +1071,9 @@
  * at launch the last used disk of multi-disk content */
 #define DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK true
 
+/* Display disc control notifications */
+#define DEFAULT_NOTIFICATION_SHOW_DISK_CONTROL true
+
 /* Display save state notifications */
 #define DEFAULT_NOTIFICATION_SHOW_SAVE_STATE true
 
