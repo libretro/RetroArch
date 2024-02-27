@@ -45,7 +45,7 @@
 
 #define BASE_FONT_SIZE 32.0f
 
-#define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.62f)
+#define MSG_QUEUE_FONT_SIZE 20.0f
 
 /* Icons */
 static const char
@@ -474,11 +474,11 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
          continue;
 
       if (y == 0)
-         y += (p_dispwidget->simple_widget_padding * 2.0f);
+         y += (p_dispwidget->msg_queue_padding * 4.0f);
 
       y +=    (p_dispwidget->msg_queue_height / 2.0f / (msg->task_ptr ? 2.0f : 1.0f))
             + (p_dispwidget->msg_queue_spacing * (msg->task_ptr ? 1.0f : 2.0f))
-            + (p_dispwidget->simple_widget_padding / 10.0f);
+            + floor(p_dispwidget->divider_width_1px);
 
       if (!(msg->flags & DISPWIDG_FLAG_UNFOLDED))
          unfold = msg;
@@ -775,9 +775,12 @@ static void gfx_widgets_font_init(
       gfx_widget_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
 {
-   int                glyph_width   = 0;
-   float                scaled_size = font_size *
-      p_dispwidget->last_scale_factor;
+   int glyph_width               = 0;
+   float scaled_size             = font_size * p_dispwidget->last_scale_factor;
+
+   /* Limit minimum font size to keep it readable */
+   if (scaled_size < 9)
+      scaled_size = 9;
 
    /* Free existing font */
    if (font_data->font)
@@ -787,10 +790,10 @@ static void gfx_widgets_font_init(
    }
 
    /* Get approximate glyph width */
-   font_data->glyph_width = scaled_size * (3.0f / 4.0f);
+   font_data->glyph_width        = scaled_size * (3.0f / 4.0f);
 
    /* Create font */
-   font_data->font = gfx_display_font_file(p_disp,
+   font_data->font               = gfx_display_font_file(p_disp,
          font_path, scaled_size, is_threaded);
 
    /* Get font metadata */
@@ -811,7 +814,6 @@ static void gfx_widgets_layout(
       bool is_threaded, const char *dir_assets, char *font_path)
 {
    size_t i;
-   unsigned msg_queue_padding;
 
    /* Initialise fonts */
    if (string_is_empty(font_path))
@@ -863,11 +865,11 @@ static void gfx_widgets_layout(
    }
 
    /* Calculate dimensions */
-   p_dispwidget->simple_widget_padding            = p_dispwidget->gfx_widget_fonts.regular.line_height * 2.0f / 3.0f;
+   p_dispwidget->simple_widget_padding            = p_dispwidget->gfx_widget_fonts.regular.line_height * (2.0f / 3.0f) + 0.5f;
    p_dispwidget->simple_widget_height             = p_dispwidget->gfx_widget_fonts.regular.line_height + p_dispwidget->simple_widget_padding;
 
-   p_dispwidget->msg_queue_height                 = p_dispwidget->gfx_widget_fonts.msg_queue.line_height * 2.333f * (BASE_FONT_SIZE / MSG_QUEUE_FONT_SIZE);
-   msg_queue_padding                              = (unsigned)(((float)p_dispwidget->gfx_widget_fonts.msg_queue.line_height * (2.0f / 3.0f)) + 0.5f);
+   p_dispwidget->msg_queue_height                 = p_dispwidget->gfx_widget_fonts.msg_queue.line_height * 2.5f * (BASE_FONT_SIZE / MSG_QUEUE_FONT_SIZE);
+   p_dispwidget->msg_queue_padding                = (unsigned)(((float)p_dispwidget->gfx_widget_fonts.msg_queue.line_height * (2.0f / 3.0f)) + 0.5f);
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
    {
@@ -887,7 +889,7 @@ static void gfx_widgets_layout(
    }
 
    p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 4.0f;
-   p_dispwidget->msg_queue_rect_start_x           = ceil((msg_queue_padding * 2.0f) - (p_dispwidget->simple_widget_padding * 0.15f));
+   p_dispwidget->msg_queue_rect_start_x           = ceil((p_dispwidget->msg_queue_padding * 2.0f) - (p_dispwidget->simple_widget_padding * 0.15f));
    p_dispwidget->msg_queue_internal_icon_size     = p_dispwidget->msg_queue_icon_size_y;
    p_dispwidget->msg_queue_internal_icon_offset   = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_internal_icon_size) / 2;
    p_dispwidget->msg_queue_icon_offset_y          = (p_dispwidget->msg_queue_icon_size_y - p_dispwidget->msg_queue_height) / 2;
@@ -1212,14 +1214,10 @@ static void gfx_widgets_draw_task_msg(
       snprintf(task_percentage, sizeof(task_percentage),
             "%i%%", msg->task_progress);
 
-   task_percentage_offset            = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width
-      * strlen(task_percentage) + p_dispwidget->simple_widget_padding * 2.0f;
-
-   rect_width = p_dispwidget->simple_widget_padding
-      + msg->width
-      + task_percentage_offset;
-   bar_width  = rect_width * msg->task_progress/100.0f;
-   text_color = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
+   task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * strlen(task_percentage);
+   rect_width             = p_dispwidget->msg_queue_padding * 5.0f + msg->width + task_percentage_offset;
+   bar_width              = rect_width * msg->task_progress/100.0f;
+   text_color             = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
 
    /* Rect */
    msg_queue_current_background = msg_queue_task_progress_1;
@@ -1299,7 +1297,7 @@ static void gfx_widgets_draw_task_msg(
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       {
          texture    = MENU_WIDGETS_ICON_HOURGLASS;
-         color      = msg_queue_task_progress_1;
+         color      = msg_queue_bar;
          radians    = msg->hourglass_rotation;
       }
       else if (msg->flags & DISPWIDG_FLAG_POSITIVE)
@@ -1323,7 +1321,7 @@ static void gfx_widgets_draw_task_msg(
             p_dispwidget->msg_queue_height / 2.5f,
             p_dispwidget->gfx_widgets_icons_textures[texture],
             p_dispwidget->msg_queue_task_hourglass_x + (p_dispwidget->msg_queue_height / MSG_QUEUE_FONT_SIZE),
-            video_height - msg->offset_y + (p_dispwidget->msg_queue_height / MSG_QUEUE_FONT_SIZE) - 1.0f,
+            video_height - msg->offset_y + (p_dispwidget->msg_queue_height / MSG_QUEUE_FONT_SIZE),
             radians,
             cosine,
             sine,

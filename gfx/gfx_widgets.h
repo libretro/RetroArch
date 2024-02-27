@@ -217,6 +217,7 @@ typedef struct dispgfx_widget
    unsigned generic_message_height;
 
    unsigned msg_queue_height;
+   unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
