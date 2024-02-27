@@ -3816,7 +3816,7 @@ static unsigned ozone_get_horizontal_selection_type(ozone_handle_t *ozone)
    if (ozone->categories_selection_ptr > ozone->system_tab_end)
    {
       size_t i = ozone->categories_selection_ptr - ozone->system_tab_end - 1;
-      return ozone->horizontal_list.list[i].type;
+      return (ozone->horizontal_list.size) ? ozone->horizontal_list.list[i].type : 0;
    }
    return 0;
 }
@@ -8268,6 +8268,10 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (menu_entries_search_get_terms())
                break;
 
+         /* Limit previous sidebar selection if playlist is deleted */
+         if (ozone->categories_selection_ptr > ozone->system_tab_end + ozone->horizontal_list.size)
+            ozone->categories_selection_ptr = ozone->system_tab_end + ozone->horizontal_list.size;
+
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
             /* Go back to main menu tab */
@@ -11691,7 +11695,7 @@ static void ozone_set_header(ozone_handle_t *ozone)
          || (ozone->is_quick_menu && !menu_is_running_quick_menu())
          || (ozone->depth > 1))
       menu_entries_get_title(ozone->title, sizeof(ozone->title));
-   else
+   else if (ozone->horizontal_list.size)
    {
       ozone_node_t *node = (ozone_node_t*)file_list_get_userdata_at_offset(
             &ozone->horizontal_list,
