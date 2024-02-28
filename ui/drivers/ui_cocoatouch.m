@@ -34,6 +34,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
+#include "../../tasks/task_content.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -559,6 +560,10 @@ enum
 
    rarch_start_draw_observer();
 
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
+
 #if TARGET_OS_IOS
    [MXMetricManager.sharedManager addSubscriber:self];
 #endif
@@ -571,6 +576,9 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
    rarch_stop_draw_observer();
 }
 
@@ -613,7 +621,38 @@ enum
 #endif
 }
 
+-(BOOL)openRetroArchURL:(NSURL *)url
+{
+   if ([url.host isEqualToString:@"topshelf"])
+   {
+      NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      NSString *ns_path, *ns_core_path;
+      char path[PATH_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      content_ctx_info_t content_info = { 0 };
+      for (NSURLQueryItem *q in comp.queryItems)
+      {
+         if ([q.name isEqualToString:@"path"])
+            ns_path = q.value;
+         else if ([q.name isEqualToString:@"core_path"])
+            ns_core_path = q.value;
+      }
+      if (!ns_path || !ns_core_path)
+         return NO;
+      fill_pathname_expand_special(path, [ns_path UTF8String], sizeof(path));
+      fill_pathname_expand_special(core_path, [ns_core_path UTF8String], sizeof(core_path));
+      RARCH_LOG("TopShelf told us to open %s with %s\n", path, core_path);
+      return task_push_load_content_with_new_core_from_companion_ui(core_path, path,
+                                                                    NULL, NULL, NULL,
+                                                                    &content_info, NULL, NULL);
+   }
+   return NO;
+}
+
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+    if ([[url scheme] isEqualToString:@"retroarch"])
+        return [self openRetroArchURL:url];
+
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
