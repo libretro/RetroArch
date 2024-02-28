@@ -7894,40 +7894,12 @@ MSG_HASH(
    "Хибний пароль."
    )
 MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Додано %u збігів"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Видалений матч"
-   )
-MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Всі чіти видалено."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Чит видалено"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Не вдалося встановити диск"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Не вдалося з'єднатися з клієнтом"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Не вдалося з'єднатися з гостом"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Гост мережевої гри заповнений"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Не вдалось отримати заголовок госта"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -7948,14 +7920,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "Найвищий"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Увага: відсутні шрифти до обраної мови, спробуйте оновити з мережі"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Увага: мова не підтримується — використовується англійська"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,

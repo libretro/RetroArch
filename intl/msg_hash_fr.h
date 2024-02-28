@@ -13927,7 +13927,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Analyse du dossier terminée"
+   "Analyse du dossier terminée."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -14287,19 +14287,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Analyse du fichier terminée"
+   "Analyse du fichier terminée."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Lancement de la recherche de cheats réussi"
+   "Lancement de la recherche de cheats réussi."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Impossible de lancer la recherche de cheats"
+   "Impossible de lancer la recherche de cheats."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "La recherche n'a pas été initialisée/démarrée"
+   "La recherche n'a pas été initialisée/démarrée."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -14307,23 +14307,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Ajouté %u correspondances"
+   "Ajouté %u correspondances."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Impossible d'ajouter les correspondances"
+   "Impossible d'ajouter les correspondances."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Code créé à partir de la correspondance"
+   "Code créé à partir de la correspondance."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Création du code échouée"
+   "Création du code échouée."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Correspondance supprimée"
+   "Correspondance supprimée."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14363,7 +14363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Impossible de sélectionner le disque"
+   "Impossible de sélectionner le disque."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14371,23 +14371,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Échec de la connexion au client"
+   "Échec de la connexion au client."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Échec de la connexion à l'hôte"
+   "Échec de la connexion à l'hôte."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Hôte de jeu en réseau plein"
+   "Hôte de jeu en réseau plein."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "Vous êtes banni de cet hôte"
+   "Vous êtes banni de cet hôte."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Échec de l'obtention de l'entête depuis l'hôte"
+   "Échec de l'obtention de l'entête depuis l'hôte."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14431,15 +14431,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "AVERTISSEMENT : Ressources manquantes, utilisez la mise à jour en ligne si disponible"
+   "Avertissement : Ressources manquantes, utilisez la mise à jour en ligne si disponible."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "Avertissement: Polices manquantes pour la langue sélectionnée, utilisez la Mise à jour en ligne si disponible"
+   "Avertissement : Polices manquantes pour la langue sélectionnée, utilisez la Mise à jour en ligne si disponible."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Avertissement : Langue non prise en charge - utilisation de l'anglais"
+   "Avertissement : Langue non prise en charge - utilisation de l'anglais."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -14475,11 +14475,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Fichier arcade DAT sélectionné invalide"
+   "Fichier arcade DAT sélectionné invalide."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Le fichier arcade DAT sélectionné est trop lourd (mémoire libre insuffisante)"
+   "Le fichier arcade DAT sélectionné est trop lourd (mémoire libre insuffisante)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -14487,11 +14487,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Configuration d'analyse manuelle invalide"
+   "Configuration d'analyse manuelle invalide."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Aucun contenu valide détecté"
+   "Aucun contenu valide détecté."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

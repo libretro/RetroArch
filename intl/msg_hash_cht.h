@@ -13414,10 +13414,6 @@ MSG_HASH(
    "掃描中"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "掃描完成。"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "傳送指令"
    )
@@ -13774,44 +13770,8 @@ MSG_HASH(
    "無法載入即時存檔, 已關閉搶占幀數。"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "掃描完成。"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "成功建立新的搜尋。"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "無法建立金手指搜尋"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "未建立新的搜尋。"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "搜尋結果: %u個。"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "加入搜尋結果: %u個。"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "無法加入到列表中"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "已成功加入到列表中。"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "無法建立代碼"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "已刪除指定位置。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13848,30 +13808,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "已刪除金手指。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "無法放入映像檔"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "無法連線到用戶端"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "無法連線到主機"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "連線遊戲主機已滿。"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "您已被這主機加入黑名單。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "無法從主機端接收標題。"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13914,18 +13850,6 @@ MSG_HASH(
    "最高"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "警告: 缺少主題資源, 如果可連線, 請使用線上更新。"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "警告: 缺少所選語言的字型, 如果可連線, 請使用線上更新。"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "警告: 不支持的語言 - 預設為英語。"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "正在轉存光碟片..."
    )
@@ -13958,24 +13882,8 @@ MSG_HASH(
    "無法刪除著色器配置。"
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "選擇的大型電玩資料庫無效。"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "選擇的大型電玩資料庫過大, 可用記憶體不足。"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "無法載入大型電玩資料庫, 無效的檔案格式。"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "未指定資料夾或未輸入自訂列表名稱。"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "沒有偵測到有效的檔案"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

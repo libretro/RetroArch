@@ -5206,10 +5206,6 @@ MSG_HASH(
    "Verificando"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Verificação da pasta terminada"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviando comando"
    )
@@ -5372,10 +5368,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Palavra-passe incorreta."
-   )
-MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Leitura do ficheiro terminada"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,

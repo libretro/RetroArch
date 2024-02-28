@@ -13955,7 +13955,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Búsqueda de carpeta finalizada"
+   "Búsqueda de directorio finalizada."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -14315,19 +14315,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Búsqueda en el archivo finalizada"
+   "Búsqueda de archivos finalizada."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Se ha iniciado la búsqueda de trucos"
+   "Se ha iniciado la búsqueda de trucos."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Error al iniciar búsqueda de trucos"
+   "Error al iniciar búsqueda de trucos."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "La búsqueda no ha sido iniciada"
+   "La búsqueda no ha sido iniciada."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -14335,23 +14335,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Se han agregado %u coincidencias"
+   "Se han agregado %u coincidencias."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Error al agregar coincidencias"
+   "Error al agregar coincidencias."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Se ha creado el truco a partir de la coincidencia"
+   "Se ha creado el truco a partir de la coincidencia."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Error al crear truco"
+   "Error al crear truco."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Se ha eliminado la coincidencia"
+   "Se ha eliminado la coincidencia."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14391,7 +14391,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Error al asignar disco"
+   "Error al asignar disco."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14399,23 +14399,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Error al conectarse al cliente"
+   "Error al conectarse al cliente."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Error al conectarse al servidor"
+   "Error al conectarse al servidor."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "El servidor de juego en red está lleno"
+   "El servidor de juego en red está lleno."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "No se te permite entrar a este servidor"
+   "No se te permite entrar a este servidor."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Error al recibir el encabezado del servidor"
+   "Error al recibir el encabezado del servidor."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14455,7 +14455,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Advertencia: faltan recursos, utiliza el actualizador en línea si está disponible"
+   "Advertencia: faltan recursos, utiliza el actualizador en línea si está disponible."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
@@ -14463,7 +14463,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Advertencia: idioma no compatible, cambiando a inglés"
+   "Advertencia: idioma no compatible, cambiando a inglés."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -14503,7 +14503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "El archivo DAT de arcade es demasiado grande (no hay memoria suficiente)"
+   "El archivo DAT de arcade es demasiado grande (no hay memoria suficiente)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,

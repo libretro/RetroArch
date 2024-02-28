@@ -13995,7 +13995,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Сканирование каталога завершено"
+   "Сканирование каталога завершено."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -14359,19 +14359,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Сканирование файла завершено"
+   "Сканирование файла завершено."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Успешно начат поиск чит-кода"
+   "Успешно начать поиск читов."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Не удалось начать поиск чит-кода"
+   "Не получилось начать поиск читов."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Поиск не был инициализирован/запущен"
+   "Поиск не был инициализирован/запущен."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -14379,23 +14379,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Добавлено совпадений: %u"
+   "Добавлено %u совпадений."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Не удалось добавить совпадения"
+   "Не удалось добавить совпадения."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Создан код из совпадения"
+   "Создан код из совпадения."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Не удалось создать код"
+   "Не удалось создать код."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Удалено совпадение"
+   "Удалено совпадение."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14435,7 +14435,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Не удалось добавить диск"
+   "Не удалось установить диск."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14443,23 +14443,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Не удалось подключиться к клиенту"
+   "Не удалось подключиться к клиенту."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Не удалось подключиться к хосту"
+   "Не удалось подключиться к хосту."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Сетевой хост заполнен"
+   "Сетевой хост заполнен."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "Вас забанили на данном хосте"
+   "Вас забанили на данном хосте."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Не удалось получить заголовок хоста"
+   "Не удалось получить заголовок хоста."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14502,18 +14502,6 @@ MSG_HASH(
    "Самое высокое"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Внимание: отсутствуют ресурсы; воспользуйтесь онлайн-обновлением"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Внимание: отсутствуют шрифты для выбранного языка, воспользуйтесь онлайн-обновлением"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Предупреждение: язык не поддерживается - используется английский"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Копирование диска..."
    )
@@ -14546,12 +14534,8 @@ MSG_HASH(
    "Ошибка удаления пресета шейдера."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Выбран неправильный аркадный DAT-файл"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Выбран слишком большой аркадный DAT-файл (недостаточно свободной памяти)"
+   "Выбранный аркадный DAT файл слишком большой (недостаточно свободной памяти)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -14559,11 +14543,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Неправильная конфигурация ручного сканирования"
+   "Неверная конфигурация ручного сканирования."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Не найден поддерживаемый контент"
+   "Не найден поддерживаемый контент."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

@@ -6614,10 +6614,6 @@ MSG_HASH(
    "Einde bereikt van terugspoel buffer."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Scannen van directory voltooid"
-   )
-MSG_HASH(
    MSG_FAST_FORWARD,
    "Vooruitspoelen."
    )

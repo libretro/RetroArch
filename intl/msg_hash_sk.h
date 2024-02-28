@@ -6650,10 +6650,6 @@ MSG_HASH(
    "Nesprávne heslo."
    )
 MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Vymazaná zhoda"
-   )
-MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Cheat vymazaný."
    )

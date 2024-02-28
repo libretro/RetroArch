@@ -7766,14 +7766,6 @@ MSG_HASH(
    "Contrasenya incorrecta."
    )
 MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "No s’ha pogut crear el codi"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "S’ha suprimit la coincidència"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    "No queda espai. El màxim són 100 trucs simultanis."
    )
@@ -7820,14 +7812,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "S’ha activat un truc. S’ha desactivat el mode expert d’assoliments per la sessió actual."
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Atenció: falten tipus de lletra per la llengua seleccionada, useu l’actualitzador en línia si està disponible"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Avís: no s’admet aquesta llengua, s’usarà l’anglès"
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,

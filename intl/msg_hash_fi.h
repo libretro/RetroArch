@@ -12826,10 +12826,6 @@ MSG_HASH(
    "Skannataan"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Kansion skannaus valmistui"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Lähetetään komento"
    )
@@ -13130,44 +13126,8 @@ MSG_HASH(
    "Toisen instanssin luominen epäonnistui. Edelläajo käyttää nyt vain yhtä instanssia."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Tiedoston skannaus valmistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Huijaushaku käynnistettiin"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Huijaushaun käynnistäminen epäonnistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Etsintään ei ole aloitettu"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Uusien osumien määrä = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Lisätty %u vastaavuutta"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Vastaavuuksien lisääminen epäonnistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Luotiin koodi vastaavuudesta"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Koodin luominen epäonnistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Poista vastaavuus"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13206,32 +13166,8 @@ MSG_HASH(
    "Huijaus poistettu."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Levyn asettaminen epäonnistui"
-   )
-MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Viimeksi käytetyn levyn asetus epäonnistui."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Yhteys asiakkaaseen epäonnistui"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Yhteys isäntään epäonnistui"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Verkkopelin isäntä on täynnä"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "Sinulla on porttikielto tästä palvelimesta"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Otsakkeen vastaanottaminen isännältä epäonnistui"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13274,18 +13210,6 @@ MSG_HASH(
    "Korkein"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Varoitus: Resursseja puuttuu, käytä verkkopäivitintä, jos se on saatavilla"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Varoitus: Puutteelliset fontit valitulle kielelle, käytä verkkopäivitintä, jos se on saatavilla"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Varoitus: Kieltä ei tueta - käytetään englantia"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Kopioidaan levyä..."
    )
@@ -13318,24 +13242,8 @@ MSG_HASH(
    "Virhe poistettaessa varjostimen esiasetusta."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Virheellinen arcade DAT -tiedosto valittu"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Valittu arcade DAT -tiedosto on liian suuri (riittämätön vapaa muisti)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Arcade DAT -tiedoston lataaminen epäonnistui (virheellinen muoto?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Manuaalisen skannauksen asetukset eivät kelpaa"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Kelvollista sisältöä ei havaittu"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

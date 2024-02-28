@@ -12555,7 +12555,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Skanowanie katalogu zakończone"
+   "Skanowanie katalogu zakończone."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -12835,19 +12835,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Skanowanie pliku zakończone"
+   "Skanowanie pliku zakończone."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Pomyślnie rozpoczęto wyszukiwanie cheat-ów"
+   "Pomyślnie rozpoczęto wyszukiwanie cheat-ów."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Nie udało się uruchomić wyszukiwania cheat-ów"
+   "Nie udało się uruchomić wyszukiwania cheat-ów."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Wyszukiwanie nie zostało zainicjowane/rozpoczęte"
+   "Wyszukiwanie nie zostało zainicjowane/rozpoczęte."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -12855,23 +12855,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Dodano %u dopasowań"
+   "Dodano %u dopasowań."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Nie udało się dodać dopasowania"
+   "Nie udało się dodać dopasowania."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Utworzono kod z dopasowania"
+   "Utworzono kod z dopasowania."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Nie udało się utworzyć kodu"
+   "Nie udało się utworzyć kodu."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Usunięte dopasowanie"
+   "Usunięte dopasowanie."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -12911,27 +12911,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Nie udało się ustawić dysku"
+   "Nie udało się ustawić dysku."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Nie udało się połączyć z klientem"
+   "Nie udało się połączyć z klientem."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Nie udało się połączyć z serwerem"
+   "Nie udało się połączyć z serwerem."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Serwer Netplay pełen"
+   "Serwer Netplay pełen."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "Jesteś zbanowany na tym serwerze"
+   "Jesteś zbanowany na tym serwerze."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Nie udało się odebrać nagłówka z serwera"
+   "Nie udało się odebrać nagłówka z serwera."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
@@ -12967,15 +12967,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Ostrzeżenie: Brakujące zasoby, użyj aktualizatora online, jeśli jest dostępny"
+   "Ostrzeżenie: Brakujące zasoby, użyj aktualizatora online, jeśli jest dostępny."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "Ostrzeżenie: Brakujące czcionki dla wybranego języka, użyj aktualizacji online, jeśli dostępne"
+   "Ostrzeżenie: Brakujące czcionki dla wybranego języka, użyj aktualizacji online, jeśli dostępne."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Ostrzeżenie: Nieobsługiwany język - używając języka angielskiego"
+   "Ostrzeżenie: Nieobsługiwany język - używająm języka angielskiego."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -13011,11 +13011,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Wybrano nieprawidłowy plik arcade DAT"
+   "Wybrano nieprawidłowy plik arcade DAT."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Wybrany plik arcade DAT jest zbyt duży (niewystarczająca wolna pamięć)"
+   "Wybrany plik arcade DAT jest zbyt duży (niewystarczająca wolna pamięć)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -13023,11 +13023,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Nieprawidłowa konfiguracja skanowania ręcznego"
+   "Nieprawidłowa konfiguracja skanowania ręcznego."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Nie wykryto poprawnej zawartości"
+   "Nie wykryto poprawnej zawartości."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
