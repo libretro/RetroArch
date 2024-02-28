@@ -1691,6 +1691,9 @@ static void task_push_to_history_list(
             entry.entry_slot      = runloop_st->entry_state_slot;
 
             command_playlist_push_write(playlist_hist, &entry);
+#if TARGET_OS_TV
+            update_topshelf();
+#endif
          }
       }
    }

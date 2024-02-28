@@ -8700,6 +8700,9 @@ static void general_write_handler(rarch_setting_t *setting)
                 * playlist file (to update maximum capacity) */
                retroarch_favorites_deinit();
                retroarch_favorites_init();
+#if TARGET_OS_TV
+               update_topshelf();
+#endif
             }
          }
          break;
