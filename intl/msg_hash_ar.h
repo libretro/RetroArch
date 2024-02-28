@@ -8738,10 +8738,6 @@ MSG_HASH(
    "جار تحليل الملفات"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "اكتمل تحليل المجلد"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "إرسال الأمر"
    )
@@ -8974,44 +8970,8 @@ MSG_HASH(
    "فشل في تحميل الحالة. تم تعطيل تشغيل الأمام."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "انتهى فحص الملف"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "بدأ البحث عن الغش بنجاح"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "فشل في بدء البحث عن الغش"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "البحث لم يتم تهيئته/بدء"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "عدد المطابقة الجديد = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "تم إضافة %u مطابقة"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "فشل في إضافة المطابقات"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "تم إنشاء رمز من المطابقة"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "فشل إنشاء الكود"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "المباراة المحذوفة"
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
@@ -9046,10 +9006,6 @@ MSG_HASH(
    "تم حذف الغش."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "فشل في تعيين القرص"
-   )
-MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "يجب عليك إيقاف أو تعطيل الوضع الصعب للإنجازات لتحميل الحالات."
    )
@@ -9080,10 +9036,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "الحد الأقصى"
-   )
-MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "تحذير: الأصول المفقودة، استخدم التحديث عبر الإنترنت إذا كانت متوفرة"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -9118,24 +9070,8 @@ MSG_HASH(
    "حدث خطأ أثناء إزالة القائمة مسبقاً."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "ملف DT غير صالح المحدد"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "ملف DAT المحدد كبير جداً (الذاكرة الحرة غير كافية)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "فشل في تحميل ملف DT (تنسيق غير صالح؟)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "تكوين الفحص اليدوي غير صالح"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "لم يتم العثور على محتوى صالح"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

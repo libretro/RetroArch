@@ -13714,10 +13714,6 @@ MSG_HASH(
    "Vizsgálat"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Könyvtár beolvasása kész"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Parancs küldése"
    )
@@ -14074,44 +14070,8 @@ MSG_HASH(
    "Játékállás betöltése sikertelen. Az előre generált képkockák kikapcsolva."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Fájl beolvasása kész"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Csalás keresés sikeresen elindítva"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Csalás keresés indítása sikertelen"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "A keresés még nincs inicializálva/elindítva"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Találatok új száma: %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "%u találat hozzáadva"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Találatok hozzáadása sikertelen"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Kód létrehozva a találatból"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Kód létrehozása sikertelen"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Találat törölve"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14150,32 +14110,8 @@ MSG_HASH(
    "Csalás törölve."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Lemez behelyezése sikertelen"
-   )
-MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Utoljára használt lemez behelyezése sikertelen."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Klienshez csatlakozás sikertelen"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Kiszolgálóhoz csatlakozás sikertelen"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "A netplay kiszolgáló megtelt"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "Ki vagy tiltva erről a kiszolgálóról"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Fejléc fogadása a kiszolgálótól sikertelen"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14218,18 +14154,6 @@ MSG_HASH(
    "Legmagasabb"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Figyelmeztetés: hiányzó beépített médiafájlok, használja az online frissítőt, ha elérhető"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Figyelmeztetés: nincs betűkészlet a kiválasztott nyelvhez, használja az Online frissítőt, ha elérhető"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Figyelmeztetés: nem támogatott nyelv - az angol lesz használatban"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Lemezkép mentése..."
    )
@@ -14262,24 +14186,8 @@ MSG_HASH(
    "Hiba a shader preset eltávolításakor."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "A kiválasztott arcade DAT fájl érvénytelen"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "A kiválasztott arcade DAT fájl túl nagy (nincs elég szabad memória)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Az arcade DAT fájl betöltése sikertelen (érvénytelen formátum?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Érvénytelen beállítás a kézi beolvasáshoz"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Nem található érvényes tartalom"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

@@ -5306,10 +5306,6 @@ MSG_HASH(
    "Σάρωση"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Η σάρωση του ευρετηρίου ολοκληρώθηκε"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Αποστολή εντολής"
    )
@@ -5414,28 +5410,12 @@ MSG_HASH(
    "Λανθασμένος κωδικός."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Η σάρωση του αρχείου ολοκληρώθηκε"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Αποτυχία ορισμού δίσκου"
-   )
-MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
    "Φυσιολογικά"
    )
 MSG_HASH(
    MSG_NO_DISC_INSERTED,
    "Δεν υπάρχει δίσκος στη μονάδα δίσκου."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Μη έγκυρη διαμόρφωση χειροκίνητης σάρωσης"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Δεν εντοπίστηκε έγκυρο περιεχόμενο"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

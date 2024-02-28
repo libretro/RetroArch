@@ -3662,22 +3662,6 @@ MSG_HASH(
    "Desaniciáronse toles trampes."
    )
 MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Hebo un error al conectase al veceru"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Hebo un error al conectase al agospiador"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Hebo un error al recibir la testera del agospiador"
-   )
-MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Alvertencia: Falten gráficos, usa l'anovador si ta disponible"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Volquiando'l discu…"
    )

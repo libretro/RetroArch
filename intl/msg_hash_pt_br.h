@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Carrega um disco de mídia físico. Primeiro, carregue o núcleo, em \"Carregar núcleo\", que pretende usar com o disco."
+   "Carrega um disco de mídia físico.\nOBSERVAÇÃO: carregue o núcleo primeiro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -159,7 +159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Exibe informações do sistema."
+   "Exibe as informações do sistema."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
@@ -386,23 +386,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Informações do disco"
+   "Disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Visualiza as informações sobre discos de mídia inseridos."
+   "Exibe as informações sobre os discos inseridos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Informações da rede"
+   "Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Mostra as interfaces de rede e os endereços IP associados."
+   "Exibe as interfaces de rede e endereços IP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "Informações do sistema"
+   "Sistema"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
@@ -410,7 +410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   "Gerenciar banco de dados"
+   "Gerenciador de banco de dados"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
@@ -9356,7 +9356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
-   "Mostrar/ocultar Cabeçalho"
+   "Mostrar cabeçalho"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
@@ -11635,7 +11635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Falha em carregar o conteúdo"
+   "Houve um erro ao carregar o conteúdo"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
@@ -12050,10 +12050,6 @@ MSG_HASH(
    "Analisando"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Análise concluída"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviando comando"
    )
@@ -12354,44 +12350,8 @@ MSG_HASH(
    "Houve uma falha ao criar uma segunda instância. A \"Execução antecipada\" agora usará apenas uma instância."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Análise concluída"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Pesquisa de trapaças iniciada corretamente"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Falha ao iniciar a pesquisa de trapaças"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "A pesquisa não foi iniciada"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Número de coincidências = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Adicionadas %u coincidências"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Falha ao adicionar coincidências"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Código criado da coincidência"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Falha ao criar o código"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Excluir coincidência"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -12430,30 +12390,6 @@ MSG_HASH(
    "Trapaça excluída."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Falha ao definir o disco"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Falha ao conectar com o cliente"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Falha ao conectar com o anfitrião"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "O anfitrião do jogo em rede está cheio"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "Você foi expulso desta sala"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Erro ao receber o cabeçalho do anfitrião"
-   )
-MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Você deve pausar ou desativar as conquistas no modo hardcore para carregar jogos salvos."
    )
@@ -12490,18 +12426,6 @@ MSG_HASH(
    "Muito alta"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Atenção: Recursos ausentes, use a opção de atualizações e downloads se disponível"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Atenção: Falta fontes para o idioma selecionado, se disponível, use o atualizador online"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Atenção: Não há suporte para o idioma - usando o Inglês"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Criando cópia do disco..."
    )
@@ -12534,24 +12458,8 @@ MSG_HASH(
    "Erro ao remover a predefinição do shader."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Selecionou um arquivo DAT de arcade inválido"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "O arquivo DAT de arcade selecionado é muito grande (memória livre insuficiente)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Falha ao carregar o arquivo DAT do arcade (o formato é inválido?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "As configurações de análise manual são inválidas"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Nenhum conteúdo válido encontrado"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

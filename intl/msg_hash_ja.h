@@ -13923,7 +13923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "ディレクトリのスキャンが完了しました"
+   "ディレクトリのスキャンが完了しました。"
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -14283,19 +14283,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "ファイルのスキャンが完了しました"
+   "ファイルのスキャンが完了しました。"
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "チート検索の開始に成功しました"
+   "チート検索を開始しました。"
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "チート検索の開始に失敗しました"
+   "チート検索を開始できませんでした。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "検索は初期化/開始されていません"
+   "検索は初期化/開始されていません。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -14303,23 +14303,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "マッチした %u 件を追加しました"
+   "一致した %u 件を追加しました。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "追加に失敗しました"
+   "一致を追加できませんでした。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "一致からコードを作成しました"
+   "一致からコードを作成しました。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "コードの生成に失敗しました"
+   "コードを作成できませんでした。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "一致を削除しました"
+   "一致を削除しました。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14359,7 +14359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "ディスクのセットに失敗しました"
+   "ディスクの設定に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14367,23 +14367,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "クライアントへの接続に失敗しました"
+   "クライアントへの接続に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "ホストへの接続に失敗しました"
+   "ホストへの接続に失敗しました。"
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "ネットプレイホストが満員です"
+   "ネットプレイホストが満員です。"
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "あなたはこのホストから BAN されています"
+   "あなたはこのホストから BAN されています。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "ホストからヘッダーを受信できませんでした"
+   "ホストからヘッダーを受信できませんでした。"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14427,15 +14427,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "警告: アセットがありません。利用可能な場合はオンラインアップデータを使用してください。"
+   "警告: アセットがありません。利用可能な場合は、オンラインアップデータを使用してください。"
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "警告: 選択した言語に対応するフォントがありません。 利用可能な場合はオンラインアップデータを使用してください"
+   "警告: 選択した言語のフォントがありません。 利用可能な場合は、オンラインアップデータを使用してください。"
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "警告: 非対応の言語です - 英語を使用します"
+   "警告: サポートされていない言語です - 英語を使用します。"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -14471,11 +14471,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "選択されたアーケード DAT ファイルは無効です"
+   "無効なアーケード DATA ファイルが選択されました。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "選択されたアーケード DAT ファイルは大きすぎます (空きメモリ容量が不足しています)"
+   "選択されたアーケード DAT ファイルが大きすぎます (空きメモリ不足)。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -14483,11 +14483,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "手動スキャン設定が無効です"
+   "無効な手動スキャン設定です。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "有効なコンテンツが見つかりませんでした"
+   "有効なコンテンツが見つかりませんでした。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
