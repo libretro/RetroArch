@@ -1631,7 +1631,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
-   "Allwinner SoCs の G2D ブロックを使用する低水準 Sunxi ビデオドライバです。"
+   "Allwinner SoCs の G2D ブロックを使用する低レベル Sunxi ビデオドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
@@ -1699,7 +1699,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
-   "Windows Audio Session API ドライバです。WASAPI は主に Windows 7 以降から使用されています。"
+   "Windows Audio Session API ドライバです。WASAPI は主に Windows 7 以降から使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
