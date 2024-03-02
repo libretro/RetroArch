@@ -22,6 +22,7 @@
     <None Include="cores\$(Platform)\*.dll" />
     <None Include="RetroArch-msvcUWP_TemporaryKey.pfx" />
     <None Include="ANGLE\$(Platform)\*.dll" />
+    <None Include="MESA\$(Platform)\*.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\uwp\uwp_func.h">
