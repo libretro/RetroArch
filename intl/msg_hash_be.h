@@ -46,7 +46,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Бяззмесціўныя ядры"
+   "Аўтаномныя ядры"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -308,7 +308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Бяззмесціўныя ядры"
+   "Аўтаномныя ядры"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -561,7 +561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Выключыць з меню 'Бяззмесціўныя ядры'"
+   "Выключыць з меню 'Аўтаномныя ядры'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
@@ -1888,63 +1888,63 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
-   "1 - для чашчыні абнаўлення дысплэя 120Гц"
+   "1 – для частаты абнаўлення экрану 120 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
-   "2 - для чашчыні абнаўлення дысплэя 180Гц"
+   "2 – для частаты абнаўлення экрану 180 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
-   "3 - для чашчыні абнаўлення дысплэя 240Гц"
+   "3 – для частаты абнаўлення экрану 240 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
-   "4 - для чашчыні абнаўлення дысплэя 300Гц"
+   "4 – для частаты абнаўлення экрану 300 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
-   "5 - для чашчыні абнаўлення дысплэя 360Гц"
+   "5 – для частаты абнаўлення экрану 360 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
-   "6 - для чашчыні абнаўлення дысплэя 420Гц"
+   "6 – для частаты абнаўлення экрану 420 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
-   "7 - для чашчыні абнаўлення дысплэя 480Гц"
+   "7 – для частаты абнаўлення экрану 480 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
-   "8 - для чашчыні абнаўлення дысплэя 540Гц"
+   "8 – для частаты абнаўлення экрану 540 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
-   "9 - для чашчыні абнаўлення дысплэя 600Гц"
+   "9 – для частаты абнаўлення экрану 600 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
-   "10 - для чашчыні абнаўлення дысплэя 660Гц"
+   "10 – для частаты абнаўлення экрану 660 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
-   "11 - для чашчыні абнаўлення дысплэя 720Гц"
+   "11 – для частаты абнаўлення экрану 720 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
-   "12 - для чашчыні абнаўлення дысплэя 780Гц"
+   "12 – для частаты абнаўлення экрану 780 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
-   "13 - для чашчыні абнаўлення дысплэя 840Гц"
+   "13 – для частаты абнаўлення экрану 840 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
-   "14 - для чашчыні абнаўлення дысплэя 900Гц"
+   "14 – для частаты абнаўлення экрану 900 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
-   "15 - для чашчыні абнаўлення дысплэя 960Гц"
+   "15– для частаты абнаўлення экрану 960 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
@@ -2119,11 +2119,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Уласная чашчыня абнаўлення"
+   "Уласная частата абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Ужываць уласную чашчыню абнаўлення, адзначаную ў файле канфігурацыі."
+   "Ужываць уласную частату абнаўлення, адзначаную ў файле канфігурацыі."
    )
 
 /* Settings > Video > Output */
@@ -2164,31 +2164,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   "Вертыкальная чашчыня абнаўлення"
+   "Вертыкальная частата абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Ацэнка чашчыні абнаўлення экрана"
+   "Ацэнка частаты абнаўлення экрана"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "Дакладная ацэнка чашчыні абнаўлення экрана ў Гц."
+   "Дакладная ацэнка частаты абнаўлення экрана ў Гц."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Вызначаная дысплэем чашчыня абнаўлення"
+   "Вызначаная дысплэем частата абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "Чашчыня абнаўлення, нададзеная драйверам дысплэя."
+   "Частата абнаўлення, нададзеная драйверам дысплэя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Аўтаматычнае пераключэнне чашчыні абнаўлення"
+   "Аўтаматычнае пераключэнне частаты абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Пераключаць чашчыню абнаўлення экрана на падставе бягучага змесціва."
+   "Пераключаць частату абнаўлення экрана на падставе бягучага змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -2204,16 +2204,16 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Парог аўтаматычнай чашчыні абнаўлення PAL"
+   "Парог аўтаматычнай частаты абнаўлення PAL"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Максімальная чашчыня абнаўлення, якую падтрымлівае PAL."
+   "Максімальная частата абнаўлення, якую падтрымлівае PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   "Вертыкальная чашчыня абнаўлення"
+   "Вертыкальная частата абнаўлення"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
@@ -2714,11 +2714,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "Выходная чашчыня (Гц)"
+   "Выходная частата (Гц)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   "Выхадная чашчыня дыскрэтызацыі гуку."
+   "Частата дыскрэтызацыі аўдыявываду."
    )
 
 /* Settings > Audio > Synchronization */
@@ -3931,7 +3931,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Паказ 'Бяззмесціўныя ядры'"
+   "Паказ 'Аўтаномныя ядры'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
