@@ -180,6 +180,7 @@ static void salamander_init(char *s, size_t len)
          {
             config_set_path(config, "libretro_path", s);
             config_file_write(config, config_path, false);
+            RARCH_DBG("Salamander config file written to \"%s\".\n", config_path);
             config_file_free(config);
          }
       }
