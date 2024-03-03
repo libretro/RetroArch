@@ -5404,6 +5404,14 @@ MSG_HASH(
    "Eine Bildschirmmeldung anzeigen, wenn beim Start automatisch die zuletzt verwendete Disc von Multi-Disc-Inhalten wiederhergestellt wird, die über M3U-Wiedergabelisten geladen wurde."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Disc-Steuerungsbenachrichtigung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Beim Einlegen und Auswerfen einer Disc eine Bildschirmmeldung anzeigen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
    "Savestate-Benachrichtigungen"
    )
@@ -13626,6 +13634,10 @@ MSG_HASH(
    "Scanne"
    )
 MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "Verzeichnisscan abgeschlossen."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Sende Befehl"
    )
@@ -13982,8 +13994,44 @@ MSG_HASH(
    "Laden des Savestates fehlgeschlagen. Präemptive Frames wurden deaktiviert."
    )
 MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Dateiscan abgeschlossen."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Cheatsuche erfolgreich gestartet."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Fehler beim Starten der Cheatsuche."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "Suche wurde nicht initialisiert/gestartet."
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Neue Trefferzahl = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "%u Treffer hinzugefügt."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Fehler beim Hinzufügen von Treffern."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Code von Treffer erstellt."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Fehler beim Erstellen des Codes."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Treffer gelöscht."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14022,8 +14070,32 @@ MSG_HASH(
    "Cheat gelöscht."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Fehler beim Einstellen der Disc."
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Fehler beim Einsetzen der zuletzt verwendeten Disc."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Verbindung zum Client fehlgeschlagen."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Verbindung zum Host fehlgeschlagen."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Netplay-Host voll."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Du wurdest von diesem Host verbannt."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Fehler beim Empfang des Headers vom Host."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14062,6 +14134,18 @@ MSG_HASH(
    "Höchste"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Warnung: Fehlende Assets; bitte den Online-Updater verwenden, falls verfügbar."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Warnung: Fehlende Schriftarten für die ausgewählte Sprache; bitte den Online-Updater verwenden, falls verfügbar."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Warnung: Nicht unterstützte Sprache – Englisch wird verwendet."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Dumpe Disc..."
    )
@@ -14094,8 +14178,24 @@ MSG_HASH(
    "Fehler beim Löschen der Shader-Voreinstellung."
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Ungültige Arcade-DAT-Datei ausgewählt."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Ausgewählte Arcade-DAT-Datei ist zu groß (unzureichender freier Speicher)."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Fehler beim Laden der Arcade-DAT-Datei (ungültiges Format?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Ungültige manuelle Scankonfiguration."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Keine gültigen Inhalte gefunden."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
