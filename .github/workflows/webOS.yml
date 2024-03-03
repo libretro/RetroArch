@@ -1,0 +1,52 @@
+name: CI webOS
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+
+      - name: Download ares-cli-rs
+        uses: robinraju/release-downloader@v1.9
+        with:
+          repository: "webosbrew/ares-cli-rs"
+          latest: true
+          fileName: "ares-package_*.deb"
+          out-file-path: "temp"
+
+      - name: Update packages
+        run: sudo apt-get -yq update
+
+      - name: Install webOS CLI
+        run: sudo apt-get -yq install ./temp/*.deb
+
+      - name: Download webOS NDK
+        uses: robinraju/release-downloader@v1.9
+        with:
+          repository: "openlgtv/buildroot-nc4"
+          latest: true
+          fileName: "arm-webos-linux-gnueabi_sdk-buildroot.tar.gz"
+          out-file-path: "/tmp"
+
+      - name: Extract webOS NDK
+        shell: bash
+        working-directory: /tmp
+        run: |
+          tar xzf arm-webos-linux-gnueabi_sdk-buildroot.tar.gz
+          ./arm-webos-linux-gnueabi_sdk-buildroot/relocate-sdk.sh
+
+      - name: Compile RA
+        run: |
+          . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
+          make -f Makefile.webos ADD_SDL2_LIB=1 -j$(getconf _NPROCESSORS_ONLN)
