@@ -1,13 +1,23 @@
 include version.all
 
-$(call assert,$(call seq,$(TARGET_PREFIX),arm-webos-linux-gnueabi-),webOS SDK isn't setup properly. See https://github.com/webosbrew/meta-lg-webos-ndk#compile-program-by-command-line)
+ifneq ($(CROSS_COMPILE),arm-webos-linux-gnueabi-)
+    $(error You need webOS toolchain to build this. See https://github.com/webosbrew/native-toolchain)
+endif
 
-WEBOS_FREETYPE_CONFIG ?= $(SDKTARGETSYSROOT)/usr/bin/freetype-config
+ifdef SDKTARGETSYSROOT
+    $(warning OE-based toolchain isn't supported anymore. Please use https://github.com/webosbrew/native-toolchain)
+    STAGING_DIR = $(SDKTARGETSYSROOT)
+else ifndef STAGING_DIR
+    $(error Can't find buildroot based toolchain. Please use https://github.com/webosbrew/native-toolchain)
+endif
 
-WEBOS_INC_DIR         ?= $(SDKTARGETSYSROOT)/usr/include
-WEBOS_LIB_DIR         ?= $(SDKTARGETSYSROOT)/usr/lib
+WEBOS_FREETYPE_CONFIG ?= $(STAGING_DIR)/usr/bin/freetype-config
 
-ADD_SDL2_LIB ?= 0
+WEBOS_INC_DIR         ?= $(STAGING_DIR)/usr/include
+WEBOS_LIB_DIR         ?= $(STAGING_DIR)/usr/lib
+
+ADD_SDL2_LIB          ?= 0
+SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.0-2/SDL2-2.30.0-webos.tar.gz
 
 #########################
 #########################
@@ -122,7 +132,7 @@ OS = Linux
 TARGET = retroarch
 
 OBJ :=
-LINK := $(CXX)
+LINK := $(CC)
 DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DWEBOS=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
@@ -142,7 +152,7 @@ DEFINES += -DHAVE_PULSE
 DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES
 DEFINES += -DHAVE_UPDATE_CORE_INFO
 
-PKG_CONFIG=$(SDKTARGETSYSROOT)/../../bin/pkg-config
+PKG_CONFIG=pkg-config
 
 SDL2_CFLAGS := $(shell $(PKG_CONFIG) --cflags sdl2)
 SDL2_LIBS := $(shell $(PKG_CONFIG) --libs sdl2)
@@ -225,17 +235,25 @@ clean:
 	rm -rf $(OBJDIR_BASE)
 	rm -f $(TARGET)
 	rm -f *.d
+	rm -rf SDL
 	rm -rf webos/*.ipk
 	rm -rf webos/dist
 
-ipk: $(TARGET)
+sdl2: $(TARGET)
+ifeq ($(ADD_SDL2_LIB), 1)
+	@echo "Downloading SDL2 prebuilt"
+	mkdir -p SDL
+	wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -
+endif
+
+ipk: $(TARGET) sdl2
 	rm -rf webos/dist
 	mkdir -p webos/dist/lib
 	echo "$$APPINFO" > webos/dist/appinfo.json
 	cp -t webos/dist -vf $(TARGET) webos/icon160.png
 	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libstdc++.so.6
 ifeq ($(ADD_SDL2_LIB), 1)
-	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libSDL2-2.0.so.0
+	cp -t webos/dist/lib -vf SDL/lib/libSDL2-2.0.so.0
 endif
 	$(STRIP) webos/dist/$(TARGET)
 	cd webos && ares-package dist
