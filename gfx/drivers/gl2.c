@@ -4075,6 +4075,11 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
       major                             = 3;
       minor                             = 0;
    }
+   else
+   {
+      major                             = 2;
+      minor                             = 0;
+   }
 #else
    enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
 #endif
@@ -4338,7 +4343,14 @@ static void *gl2_init(const video_info_t *video,
       goto error;
 
    if (!string_is_empty(version))
-      sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+   {
+      if (string_starts_with(version, "OpenGL ES "))
+         sscanf(version, "OpenGL ES %d.%d", &gl->version_major, &gl->version_minor);
+      else if (string_starts_with(version, "OpenGL "))
+         sscanf(version, "OpenGL %d.%d", &gl->version_major, &gl->version_minor);
+      else
+         sscanf(version, "%d.%d", &gl->version_major, &gl->version_minor);
+   }
 
    {
       size_t len    = 0;
