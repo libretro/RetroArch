@@ -14502,6 +14502,18 @@ MSG_HASH(
    "Самое высокое"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Внимание: отсутствуют ресурсы, воспользуйтесь Онлайн-обновлением."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Внимание: отсутствуют шрифты для выбранного языка, воспользуйтесь Онлайн-обновлением."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Внимание: язык не поддерживается - используется английский."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Копирование диска..."
    )
@@ -14532,6 +14544,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
    "Ошибка удаления пресета шейдера."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Выбран неправильный аркадный DAT-файл."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
