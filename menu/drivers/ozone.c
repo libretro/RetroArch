@@ -4437,7 +4437,7 @@ static void ozone_list_cache(
    {
       ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
 
-      if (!node)
+      if (!node || !node->height)
          continue;
 
       if (y + ozone->animations.scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
@@ -4449,15 +4449,19 @@ static void ozone_list_cache(
          goto text_iterate;
 
       last++;
+
 text_iterate:
       y += node->height;
    }
 
-   last                    -= 1;
-   last                    += first;
+   if (last)
+   {
+      last                 -= 1;
+      last                 += first;
+   }
 
    first_node               = (ozone_node_t*)selection_buf->list[first].userdata;
-   ozone->old_list_offset_y = first_node->position_y;
+   ozone->old_list_offset_y = (first_node) ? first_node->position_y : 0;
 
    ozone_list_deep_copy(selection_buf,
          &ozone->selection_buf_old, first, last);
