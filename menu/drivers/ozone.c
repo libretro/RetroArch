@@ -409,7 +409,7 @@ enum ozone_handle_flags
    OZONE_FLAG_LIBRETRO_RUNNING                = (1 << 6),
    OZONE_FLAG_FIRST_FRAME                     = (1 << 7),
    OZONE_FLAG_NEED_COMPUTE                    = (1 << 8),
-   OZONE_FLAG_DRAW_OLD_LIST                   = (1 << 9 ),
+   OZONE_FLAG_DRAW_OLD_LIST                   = (1 << 9),
    OZONE_FLAG_HAS_ALL_ASSETS                  = (1 << 10),
    OZONE_FLAG_IS_PLAYLIST                     = (1 << 11),
    OZONE_FLAG_IS_PLAYLIST_OLD                 = (1 << 12),
@@ -4420,6 +4420,7 @@ static void ozone_list_cache(
    scale_factor               = ozone->last_scale_factor;
    ozone->selection_old_list  = ozone->selection;
    ozone->scroll_old          = ozone->animations.scroll_y;
+
    ozone->flags              |=  OZONE_FLAG_NEED_COMPUTE;
    if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
       ozone->flags           |=  OZONE_FLAG_IS_PLAYLIST_OLD;
@@ -4437,7 +4438,7 @@ static void ozone_list_cache(
    {
       ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
 
-      if (!node)
+      if (!node || !node->height)
          continue;
 
       if (y + ozone->animations.scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
@@ -4449,15 +4450,19 @@ static void ozone_list_cache(
          goto text_iterate;
 
       last++;
+
 text_iterate:
       y += node->height;
    }
 
-   last                    -= 1;
-   last                    += first;
+   if (last)
+   {
+      last                 -= 1;
+      last                 += first;
+   }
 
    first_node               = (ozone_node_t*)selection_buf->list[first].userdata;
-   ozone->old_list_offset_y = first_node->position_y;
+   ozone->old_list_offset_y = (first_node) ? first_node->position_y : 0;
 
    ozone_list_deep_copy(selection_buf,
          &ozone->selection_buf_old, first, last);
@@ -5364,15 +5369,16 @@ static void ozone_compute_entries_position(
    menu_list_t *menu_list        = menu_st->entries.list;
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone);
+   int sublabel_max_width        = 0;
    float scale_factor            = ozone->last_scale_factor;
    bool want_thumbnail_bar       = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    bool show_thumbnail_bar       = ozone->show_thumbnail_bar;
 
    if (show_thumbnail_bar != want_thumbnail_bar)
    {
-      if (!(      (ozone->flags & OZONE_FLAG_PENDING_HIDE_THUMBNAIL_BAR)
-               && (ozone->is_quick_menu)))
-         ozone_entries_update_thumbnail_bar(ozone, false, true);
+      if (!(   (ozone->flags & OZONE_FLAG_PENDING_HIDE_THUMBNAIL_BAR)
+            && (ozone->is_quick_menu)))
+         ozone_entries_update_thumbnail_bar(ozone, false, false);
    }
 
    if (ozone->show_thumbnail_bar)
@@ -5381,6 +5387,9 @@ static void ozone_compute_entries_position(
    selection_buf                 = MENU_LIST_GET_SELECTION(menu_list, 0);
 
    video_driver_get_size(&video_info_width, &video_info_height);
+
+   if (menu_show_sublabels)
+      sublabel_max_width         = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
 
    ozone->entries_height         = 0;
 
@@ -5422,10 +5431,10 @@ static void ozone_compute_entries_position(
       {
          if (!string_is_empty(entry.sublabel))
          {
-            int sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
             char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
 
             wrapped_sublabel_str[0] = '\0';
+
             (ozone->word_wrap)(wrapped_sublabel_str,
                   sizeof(wrapped_sublabel_str),
                   entry.sublabel,
@@ -5487,6 +5496,7 @@ static void ozone_draw_entries(
    int entry_padding                 = old_list
          ? ozone_get_entries_padding_old_list(ozone)
          : ozone_get_entries_padding(ozone);
+   int sublabel_max_width            = 0;
    float scale_factor                = ozone->last_scale_factor;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    size_t entries_end                = selection_buf ? selection_buf->size : 0;
@@ -5532,6 +5542,9 @@ static void ozone_draw_entries(
          entry_width   = entry_width_max;
       }
    }
+
+   if (menu_show_sublabels)
+      sublabel_max_width             = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
 
    if (old_list)
    {
@@ -5765,9 +5778,8 @@ border_iterate:
       {
          if (node->wrap && !string_is_empty(sublabel_str))
          {
-            int sublabel_max_width = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
-
             wrapped_sublabel_str[0] = '\0';
+
             (ozone->word_wrap)(wrapped_sublabel_str,
                   sizeof(wrapped_sublabel_str),
                   sublabel_str,
@@ -9791,6 +9803,7 @@ static void ozone_render(void *data,
    gfx_animation_t          *p_anim   = anim_get_ptr();
    settings_t             *settings   = config_get_ptr();
    bool ozone_collapse_sidebar        = settings->bools.ozone_collapse_sidebar;
+
    if (!ozone)
       return;
 
@@ -11377,6 +11390,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->flags          |=  OZONE_FLAG_LIBRETRO_RUNNING;
       else
          ozone->flags          &= ~OZONE_FLAG_LIBRETRO_RUNNING;
+
       ozone->flags             |=  OZONE_FLAG_NEED_COMPUTE;
 
       if (ozone->is_quick_menu)
@@ -11759,7 +11773,7 @@ static void ozone_set_header(ozone_handle_t *ozone)
 static void ozone_animation_end(void *userdata)
 {
    ozone_handle_t *ozone            = (ozone_handle_t*) userdata;
-   ozone->flags                    &= ~(OZONE_FLAG_DRAW_OLD_LIST);
+   ozone->flags                    &= ~OZONE_FLAG_DRAW_OLD_LIST;
    ozone->animations.cursor_alpha   = 1.0f;
 }
 
@@ -11771,7 +11785,7 @@ static void ozone_list_open(
    struct gfx_animation_ctx_entry entry;
    uintptr_t sidebar_tag           = (uintptr_t)&ozone->sidebar_offset;
 
-   ozone->flags                   |= (OZONE_FLAG_DRAW_OLD_LIST);
+   ozone->flags                   |= OZONE_FLAG_DRAW_OLD_LIST;
 
    /* Sidebar animation */
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, animate);
@@ -11848,7 +11862,7 @@ static void ozone_list_open(
       gfx_animation_push(&entry);
    }
    else
-      ozone->animations.list_alpha = 1.0f;
+      ozone_animation_end(ozone);
 }
 
 static void ozone_populate_entries(
