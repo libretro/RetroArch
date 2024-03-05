@@ -4438,6 +4438,9 @@ bool command_event(enum event_command cmd, void *data)
                      runloop_msg_queue_push(
                            msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if TARGET_OS_TV
+                     update_topshelf();
+#endif
                   }
                }
             }

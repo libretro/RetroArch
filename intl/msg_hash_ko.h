@@ -13794,10 +13794,6 @@ MSG_HASH(
    "검색 중"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "디렉토리 검색 완료"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "명령 전달중"
    )
@@ -14158,44 +14154,8 @@ MSG_HASH(
    "상태저장 불러오기에 실패했습니다. 선제 프레임 기능이 비활성화됩니다."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "파일 스캔 완료"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "성공적으로 치트 검색을 시작했습니다"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "치트 검색 시작에 실패했습니다"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "검색이 초기화/시작되지 못했습니다"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "새 일치 카운트 = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "%u 일치가 추가됨"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "일치 항목 추가 실패"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "일치에서 코드 생성"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "코드 생성 실패"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "일치 삭제"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14232,30 +14192,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "치트 삭제됨."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "디스크 설정 실패"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "클라이언트에 연결할 수 없음"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "호스트에 연결할 수 없음"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "넷플레이 호스트가 가득 참"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "이 호스트에서 차단되었습니다"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "호스트에서 헤더 수신 실패"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14298,18 +14234,6 @@ MSG_HASH(
    "매우 높음"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "경고: 애셋이 없습니다. 온라인 업데이터를 사용하십시오"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "경고: 선택된 언어의 폰트가 없습니다. 온라인 업데이터를 사용하십시오"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "경고: 지원되지 않는 언어입니다 - 영어로 전환합니다"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "디스크 덤프 중..."
    )
@@ -14342,24 +14266,8 @@ MSG_HASH(
    "셰이더 프리셋 삭제 오류."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "아케이드 DAT 파일이 올바르지 않습니다"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "선택된 아케이드 DAT 파일이 너무 큽니다 (메모리 부족)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "아케이드 DAT 파일을 불러올 수 없습니다 (올바르지 않은 형식?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "잘못된 수동 스캔 구성"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "콘텐츠를 찾을 수 없습니다"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

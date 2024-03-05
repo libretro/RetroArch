@@ -4962,6 +4962,7 @@ bool core_options_create_override(bool game_specific)
    if (!config_file_write(conf, options_path, true))
       goto error;
 
+   RARCH_LOG("[Core]: Core options file created successfully: \"%s\".\n", options_path);
    runloop_msg_queue_push(
          msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
          1, 100, true,

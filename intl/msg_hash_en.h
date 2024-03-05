@@ -2118,10 +2118,6 @@ MSG_HASH(
    "Password is incorrect."
    )
 MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Searching has not been initialised/started"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    "There's not enough room. The maximum number of simultaneous cheats is 100."
    )
@@ -2132,10 +2128,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_ADD_BOTTOM_SUCCESS,
    "New cheat added to the bottom of the list."
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Net-play host full"
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,

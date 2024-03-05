@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "libretro コア実装を参照します。ブラウザがどこから開始するかは、コアディレクトリのパスに依存します。空白の場合、ルートから開始します。\nコアディレクトリがディレクトリの場合、メニューはそのディレクトリをトップフォルダとして使用します。 コアディレクトリがフルパスの場合、ファイルがあるフォルダから開始します。"
+   "Libretro コア実装を参照します。コアディレクトリに設定されているパスがブラウザの開始ディレクトリになります。空白の場合、ルートから開始します。\nコアディレクトリにディレクトリパスが設定されている場合、メニューはそのディレクトリをトップフォルダとして使用し、フルパスが設定されている場合は、そのファイルがあるフォルダから開始します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "コンテンツを参照します。コンテンツを読み込むには、使用する「コア」とコンテンツファイルが必要です。\nメニューがコンテンツを参照し始める場所を制御するには、「ファイルブラウザディレクトリ」を設定します。\nブラウザは「コアのロード」で最後に設定したコアの拡張子をフィルタリングし、コンテンツが読み込まれたときにそのコアを使用します。"
+   "コンテンツを参照します。コンテンツをロードするには、使用する [コア] とコンテンツファイルが必要です。\nメニューの開始ディレクトリを制御するには、[ファイルブラウザディレクトリ] を設定してください。\nブラウザは [コアをロード] で最後に設定したコアがサポートする拡張子で項目をフィルタリングし、そのコアを使用してコンテンツをロードします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -1631,7 +1631,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
-   "Allwinner SoCs の G2D ブロックを使用する低水準 Sunxi ビデオドライバです。"
+   "Allwinner SoCs の G2D ブロックを使用する低レベル Sunxi ビデオドライバです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
@@ -1647,7 +1647,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
-   "GDI ドライバです。旧式の Windows インターフェースを使用します。推奨されません。"
+   "GDI ドライバです。旧式の Windows インターフェースを使用します。使用しないことをお勧めします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
@@ -1699,7 +1699,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
-   "Windows Audio Session API ドライバです。WASAPI は主に Windows 7 以降から使用されています。"
+   "Windows Audio Session API ドライバです。WASAPI は主に Windows 7 以降から使用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
@@ -1984,11 +1984,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "シェーダー間に追加のシェーダーフレームを挿入します。シェーダーで実際のコンテンツフレームレートよりも高い FPS で動作するエフェクトを実行できるようになります。現在のディスプレイのリフレッシュレート用に準備されたオプションを選択する必要があります。1 以上のスワップ間隔、黒フレーム挿入、正確なフレームレートに同期と組み合わせないでください[...]"
+   "シェーダー間に追加のシェーダーフレームを挿入します。シェーダーで実際のコンテンツフレームレートよりも高い FPS で動作するエフェクトを実行できるようになります。現在のディスプレイ Hz に対応するオプションを設定する必要があります。1 以上のスワップ間隔、黒フレーム挿入、正確なフレームレートに同期と組み合わせないでください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   "コンテンツフレームレートよりも高速に動作するように設計されたシェーダー効果用に、フレーム間に追加のシェーダーフレームを挿入します。現在のディスプレイのリフレッシュレート用に準備されたオプションのみを使用してください。144Hz、165Hz など、60Hz の倍数ではないリフレッシュレートでは使用できません。"
+   "コンテンツフレームレートよりも高速に動作するように設計されたシェーダー効果用に、フレーム間に追加のシェーダーフレームを挿入します。現在のディスプレイ Hz に対応するオプションのみを使用してください。144Hz、165Hz など、60Hz の倍数ではないリフレッシュレートでは使用できません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
@@ -2219,7 +2219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   "ビューポートとしてGamePadの正確な2倍のスケールを使用します。無効にするとテレビのネイティブ解像度で表示されます。"
+   "表示領域としてゲームパッドの 2x 表示倍率を使用します。テレビのネイティブ解像度で表示する場合は無効にしてください。"
    )
 #endif
 MSG_HASH(
@@ -2325,7 +2325,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "ディスプレイの垂直リフレッシュレートを設定します。PAL コンテンツを実行する場合、[50Hz] に設定すると滑らかな動画になります。"
+   "ディスプレイの垂直リフレッシュレートを設定します。PAL コンテンツを実行する場合、[50Hz] に設定すると滑らかなビデオになります。"
    )
 #endif
 MSG_HASH(
@@ -2604,7 +2604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "色空間がリニア空間に変換されたら、HDR10 に到達するために拡張色色域を使用するかどうかを決定します。"
+   "色空間がリニア空間に変換された際に、HDR10 に到達するために拡張色色域を使用するかどうかを決定します。"
    )
 
 /* Settings > Video > Synchronization */
@@ -2615,7 +2615,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "グラフィックカードの出力ビデオを画面のリフレッシュレートに同期します。推奨されます。"
+   "グラフィックカードの出力ビデオを画面のリフレッシュレートに同期します。オンにすることをお勧めします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
@@ -2655,7 +2655,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "将来のフレームドロップを防ぐために、有効な [フレーム遅延] を一時的に減少させます。開始点は [フレーム遅延が] ０ のときの半フレームタイムです。"
+   "将来のフレームドロップを防ぐために、有効な [フレーム遅延] を一時的に減少させます。開始点は [フレーム遅延] が ０ のときの半フレームタイムです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
@@ -3013,7 +3013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "音声入力レートの最大変化量です. オーディオピッチの正確さを犠牲にしてタイミングを非常に大きく変更できるようにするには, これを増やすことをお勧めします. (例: NTSCディスプレイでPALコアを実行する場合)"
+   "オーディオ入力レートの最大変化量です。値を大きくするほど、タイミングを大きく変更できるようになりますが、代償としてオーディオピッチの精度が低下します (例: NTSC ディスプレイで PAL コアを実行する場合など)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
@@ -4262,7 +4262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "入力遅延を減らすため, コアロジックを1フレーム以上先に実行してからステートをロードします."
+   "コアロジックを 1 フレーム以上先に実行し、ステートをロードし直すことで認識された入力遅延を軽減します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -4278,7 +4278,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "RetroArchコアの2番目のインスタンスを使用して先行実行します. ステートロードによるオーディオの問題を防止します."
+   "RetroArch コアのセカンダリインスタンスを使用して先行実行します。ステートロードによるオーディオの問題を防止します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4286,7 +4286,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "先行実行を使用していてコアがステートセーブに対応していない場合に表示される警告メッセージを非表示にします."
+   "先行実行を使用する際、コアがステートセーブに対応していない場合に表示される警告メッセージを非表示にします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
@@ -4329,7 +4329,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-   "ハードウェアレンダリングコアに独自のプライベートコンテキストを与えます. フレーム間でハードウェアの状態が変化することを想定しなくて済みます."
+   "ハードウェアレンダリングされたコアに独自のプライベートコンテキストを与えます。フレーム間でハードウェアの状態が変化することを想定しなくて済むようになります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
@@ -4398,7 +4398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
-   "要求されたコアがすでに読み込まれている場合でも, コンテンツを起動するときにRetroArchを再起動します. これはロード時間の増加を犠牲にしてシステムの安定性を向上させる可能性があります."
+   "要求されたコアがすでにロードされている場合でも、コンテンツを起動するときに RetroArch を再起動します。ロード時間が増加する代わりに、システムの安定性が向上する可能性があります。"
    )
 #endif
 MSG_HASH(
@@ -4784,7 +4784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "ファイルへのログ出力時, RetroArchの各セッション毎に新たなタイムスタンプ付きのファイルにリダイレクトします. 無効の場合, ログはRetroArchを再起動するたびに上書きされます."
+   "ファイルにロギングする際、RetroArch の各セッションごとに新たなタイムスタンプ付きのファイルに出力します。無効にすると、ログは RetroArch を再起動するたび上書きされます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -4995,7 +4995,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "(シェーダを除く) フィルタ適用後の出力を録画します. 画面上で見ているるものと同じくらい見栄えがよくなります."
+   "フィルター (シェーダーは除く) を適用した後の画像をキャプチャします。ビデオは画面上で見るものと同じように派手なものになります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -7241,7 +7241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "スレーブモードでの接続を禁止します. 非常に弱いマシンがある非常に高速なネットワーク以外では推奨されません."
+   "スレーブモードでの接続を禁止します。非常に弱いマシンがある非常に高速なネットワーク以外では推奨されません。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7249,7 +7249,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "ネットプレイ時にホストとクライアントが同期しているかどうかを確認する頻度(フレーム数)です."
+   "ネットプレイ時にホストとクライアントが同期しているがどうかを確認する頻度 (フレーム数) です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
@@ -7774,7 +7774,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-   "RetroAchievements のアカウントユーザー名を入力してください."
+   "RetroAchievements のアカウントユーザー名を入力してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -10666,7 +10666,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "メニュー項目のサイズ変更と配置を行うことで, 画面を最大限に活用します. 無効にすると, 古典的な固定幅の 2 列レイアウトを使用します."
+   "利用可能な画面スペースを最大限に活用するために、メニューエントリーのサイズと位置を変更します。無効にすると、従来の固定幅 2 カラムレイアウトを使用します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -10738,7 +10738,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
-   "背景の部分アニメーション効果を有効にします. パフォーマンスに大きな影響を与えます. "
+   "背景パーティクルアニメーション効果を有効にします。パフォーマンスに大きく影響します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
@@ -11028,7 +11028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-   "上下に移動するときのアニメーション. "
+   "上下に移動する際のアニメーションです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
@@ -11036,7 +11036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "サブメニューを開いたときのアニメーション. "
+   "サブメニューを開く際のアニメーションです。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
@@ -11100,7 +11100,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-   "背景アニメーション効果を選択します. 効果によってはGPUに大きな負荷をかけます. パフォーマンスが不足する場合, 効果をオフにするか, より単純な効果を選択してください. "
+   "背景アニメーション効果を選択します。効果によっては GPU に大きな負荷がかかります。パフォーマンスが不足する場合、オフにするかよりシンプルな効果を選択してください。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -11437,7 +11437,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "サムネイル画像の背景に, 未使用領域のパディングを適用します. これにより, すべての画像の均一な表示サイズが確保され, 異なるサイズのサムネイルを表示する際のメニュー外観が改善されます."
+   "サムネイル画像の未使用スペースを単色の背景で塗りつぶします。すべての画像の表示サイズが均一になることで、基本サイズが異なるコンテンツが混在した際のメニューの見栄えを改善します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -12668,7 +12668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-   "OpenGL/Direct3Dテクスチャーへのレンダリング(マルチパスシェーダ)対応"
+   "OpenGL/Direct3D テクスチャーへのレンダリング (マルチパスシェーダー) 対応"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
@@ -12782,7 +12782,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
-   "すべてのチートを削除するには, 右を5回押してください."
+   "すべてのチートを削除するには右を 5 回押してください。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_DEBUG_INFO,
@@ -12902,7 +12902,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "警告: 相手が違うRetroArchバージョンを使っています. 問題があれば同じバージョンを使って下さい. "
+   "警告: ネットプレイピアが異なるバージョンの RetroArch を実行しています。問題が発生した場合、同じバージョンを使用してください。"
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
@@ -12910,7 +12910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "警告: 相手が違うコアのバージョンを使っています. 問題があれば同じバージョンを使って下さい. "
+   "警告: ネットプレイピアが異なるバージョンのコアを実行しています。問題が発生した場合、同じバージョンを使用してください。"
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -12950,7 +12950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-   "プレイする許可はありません"
+   "プレイする権限がありません"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
@@ -13851,7 +13851,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   "ドライバの再初期化により, 録画を再スタートしています."
+   "ドライバが再初期化されたため、録画を再スタートしています。"
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
@@ -13923,7 +13923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "ディレクトリのスキャンが完了しました"
+   "ディレクトリのスキャンが完了しました。"
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -14083,7 +14083,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+   "表示領域サイズの計算に失敗しました! RAW データを引き続き使用します。これはおそらく正常に動作しません…"
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
@@ -14223,11 +14223,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
-   "先行実行を有効にしました. 遅延フレームを削除しました: %u."
+   "先行実行を有効にしました。遅延フレームを削除しました: %u。"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "2番目のインスタンスで先行実行を有効にしました. 遅延フレームを削除しました: %u."
+   "セカンダリインスタンスで先行実行を有効にしました。遅延フレームを削除しました: %u。"
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
@@ -14283,19 +14283,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "ファイルのスキャンが完了しました"
+   "ファイルのスキャンが完了しました。"
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "チート検索の開始に成功しました"
+   "チート検索を開始しました。"
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "チート検索の開始に失敗しました"
+   "チート検索を開始できませんでした。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "検索は初期化/開始されていません"
+   "検索は初期化/開始されていません。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -14303,23 +14303,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "マッチした %u 件を追加しました"
+   "一致した %u 件を追加しました。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "追加に失敗しました"
+   "一致を追加できませんでした。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "一致からコードを作成しました"
+   "一致からコードを作成しました。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "コードの生成に失敗しました"
+   "コードを作成できませんでした。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "一致を削除しました"
+   "一致を削除しました。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14359,7 +14359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "ディスクのセットに失敗しました"
+   "ディスクの設定に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14367,23 +14367,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "クライアントへの接続に失敗しました"
+   "クライアントへの接続に失敗しました。"
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "ホストへの接続に失敗しました"
+   "ホストへの接続に失敗しました。"
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "ネットプレイホストが満員です"
+   "ネットプレイホストが満員です。"
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "あなたはこのホストから BAN されています"
+   "あなたはこのホストから BAN されています。"
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "ホストからヘッダーを受信できませんでした"
+   "ホストからヘッダーを受信できませんでした。"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14427,15 +14427,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "警告: アセットがありません。利用可能な場合はオンラインアップデータを使用してください。"
+   "警告: アセットがありません。利用可能な場合は、オンラインアップデータを使用してください。"
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "警告: 選択した言語に対応するフォントがありません。 利用可能な場合はオンラインアップデータを使用してください"
+   "警告: 選択した言語のフォントがありません。 利用可能な場合は、オンラインアップデータを使用してください。"
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "警告: 非対応の言語です - 英語を使用します"
+   "警告: サポートされていない言語です - 英語を使用します。"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -14471,11 +14471,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "選択されたアーケード DAT ファイルは無効です"
+   "無効なアーケード DATA ファイルが選択されました。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "選択されたアーケード DAT ファイルは大きすぎます (空きメモリ容量が不足しています)"
+   "選択されたアーケード DAT ファイルが大きすぎます (空きメモリ不足)。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -14483,11 +14483,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "手動スキャン設定が無効です"
+   "無効な手動スキャン設定です。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "有効なコンテンツが見つかりませんでした"
+   "有効なコンテンツが見つかりませんでした。"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
@@ -14721,7 +14721,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Windowsファイルアクセス権限の設定を開く"
+   "Windows ファイルアクセス権限の設定を開く"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
@@ -15233,7 +15233,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-   "3D 表示モードと 2D 表示モードを選択します. '3D'モードでは, クイックメニューを表示するときにピクセルが正方形になり, 深さエフェクトが適用されます. '2D' モードは最高のパフォーマンスを提供します."
+   "3D 表示モードと 2D 表示モードを選択します。[3D] モードでは、クイックメニューを表示する際にピクセルが正方形になり、奥行き効果が適用されます。[2D] モードは最高のパフォーマンスを提供します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
@@ -15331,7 +15331,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "スキャンが成功しました. <br><br>\nコンテンツを正確にスキャンするには:\n<ul><li>互換機コアがもうダウンロードされた</li>\n<li>オンラインアップデータで'コア情報'がもうアップデートされた</li>\n<li>オンラインアップデータで'データベース'がもうアップデートされた</li>\n<li>上記タスクの後にRetroArchを再起動してください. </li></ul>\nコンテンツが<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">存在データベース</a>の一致が必要です. \nまだちゃんと動けないとバグを<a href=\"https://www.github.com/libretro/RetroArch/issues\">報告</a>できます. "
+   "スキャンを完了しました。<br><br>\nコンテンツを正確にスキャンするには、以下の手順を実施する必要があります:\n<ul><li>互換性のあるコアがダウンロードされている</li>\n<li>オンラインアップデータを使用して \"コア情報ファイル\" が更新されている</li>\n<li>オンラインアップデータを使用して \"データベース\" が更新されている</li>\n<li>上記の手順を実施した後、RetroArch を再起動してください。</li></ul>\nコンテンツは<a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">既存のデータベース</a>と一致する必要があります。\nそれでも上手くいかない場合は、<a href=\"https://www.github.com/libretro/RetroArch/issues\">バグレポートの送信</a>を検討してください。"
    )
 #endif
 MSG_HASH(

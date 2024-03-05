@@ -953,9 +953,16 @@ extern "C" {
                {
                if (is_running_on_xbox())
                {
+#ifdef HAVE_OPENGL
+                //For whatever reason, this is not correct when initializing a Mesa GL context. Using the default method instead
+               Windows::UI::Core::CoreWindow^ coreWindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+               DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
+               ret = ConvertDipsToPixels(coreWindow->Bounds.Bottom - coreWindow->Bounds.Top, currentDisplayInformation->LogicalDpi);
+#else
                const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
                if (hdi)
                ret = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionHeightInRawPixels;
+#endif
                }
 
                if (ret == -1)
@@ -991,9 +998,16 @@ extern "C" {
                {
                if (is_running_on_xbox())
                {
+#ifdef HAVE_OPENGL
+               //For whatever reason, this is not correct when initializing a Mesa GL context. Using the default method instead
+               Windows::UI::Core::CoreWindow^ coreWindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+               DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
+               returnValue = ConvertDipsToPixels(coreWindow->Bounds.Right - coreWindow->Bounds.Left, currentDisplayInformation->LogicalDpi);
+#else
                const Windows::Graphics::Display::Core::HdmiDisplayInformation^ hdi = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView();
                if (hdi)
                returnValue = Windows::Graphics::Display::Core::HdmiDisplayInformation::GetForCurrentView()->GetCurrentDisplayMode()->ResolutionWidthInRawPixels;
+#endif
                }
 
                if(returnValue == -1)

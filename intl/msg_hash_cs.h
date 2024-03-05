@@ -13658,10 +13658,6 @@ MSG_HASH(
    "Vyhledávání"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Vyhledávání adresáře dokončeno"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Odesílání příkazu"
    )
@@ -14014,44 +14010,8 @@ MSG_HASH(
    "Nepodařilo se načíst stav. Preemptivní rámce byly zakázány."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Skenování souboru dokončeno"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Vyhledávání cheatu úspěšně spuštěno"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Nepodařilo se spustit vyhledávání cheatu"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Hledání nebylo inicializováno/spuštěno"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Počet nových shod = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Přidáno %u shod"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Přidání shody se nezdařilo"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Vytvořený kód od shody"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Nepodařilo se vytvořit kód"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Smazaná shoda"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14088,30 +14048,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Cheat odstraněn."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Nepodařilo se nastavit disk"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Nepodařilo se připojit k klientovi"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Nepodařilo se připojit k hostiteli"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Hostitel netplay je plný"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "Jste zabanován u tohoto hostitele"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Nepodařilo se získat hlavičku od hostitele"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14154,18 +14090,6 @@ MSG_HASH(
    "Nejvyšší"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Varování: Chybějící aktiva, použijte online aktualizátor, pokud je k dispozici"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Varování: Chybějící písma pro vybraný jazyk, použijte online aktualizátor, pokud je k dispozici"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Varování: Nepodporovaný jazyk - používá se angličtina"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Vyhazování disku..."
    )
@@ -14198,24 +14122,8 @@ MSG_HASH(
    "Chyba při odstraňování předvolby shaderu."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Vybrán nesprávný soubor arcade DAT"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Vybraný soubor arcade DAT je příliš velký (nedostatek volné paměti)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Nepodařilo se načíst soubor arcade DAT (neplatný formát?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Neplatná konfigurace ručního skenování"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Nebyl zjištěn žádný platný obsah"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

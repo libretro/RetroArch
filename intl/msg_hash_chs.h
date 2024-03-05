@@ -13098,10 +13098,6 @@ MSG_HASH(
    "扫描中"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "已完成对文件夹的扫描"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "发送指令"
    )
@@ -13458,44 +13454,8 @@ MSG_HASH(
    "加载状态失败。优先帧已被禁用。"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "文件扫描完成"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "启动金手指搜索成功"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "启动金手指搜索失败"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "搜索尚未初始化/启动"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "新的匹配数量 = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "已添加 %u 个匹配"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "添加匹配失败"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "已从匹配创建代码"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "创建代码失败"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "已删除匹配"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13532,30 +13492,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "金手指已删除。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "放置光盘失败"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "无法连接到客户端"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "无法连接到主机"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "联网主机已满"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "您被禁止在此主机"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "接收主机端报文失败"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13598,18 +13534,6 @@ MSG_HASH(
    "最高"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "警告：素材缺失，请使用在线更新"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "警告：语言所需的字体缺失，请使用在线更新"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "警告：不支持的语言 - 使用英语"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "正在吐出光盘..."
    )
@@ -13642,24 +13566,8 @@ MSG_HASH(
    "移除着色器预设出错。"
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "选择的街机 DAT 文件无效"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "选择的街机 DAT 文件太大 (没有足够内存)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "加载街机 DAT 文件失败 (无效格式？)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "手动扫描配置无效"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "未检测到有效游戏"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
