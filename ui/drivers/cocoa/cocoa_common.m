@@ -905,7 +905,8 @@ static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gf
 {
    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
       @"id": [NSString stringWithUTF8String:entry->path],
-      @"title": [NSString stringWithUTF8String:entry->label],
+      @"title": [NSString stringWithUTF8String:
+                             (string_is_empty(entry->label) ? path_basename(entry->path) : entry->label)],
    }];
    if (!string_is_empty(path_data->content_db_name))
    {
