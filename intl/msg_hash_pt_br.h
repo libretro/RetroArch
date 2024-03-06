@@ -12418,6 +12418,10 @@ MSG_HASH(
    "Houve uma falha ao criar uma segunda instância. A \"Execução antecipada\" agora usará apenas uma instância."
    )
 MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Análise concluída"
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Número de coincidências = %u"
    )
