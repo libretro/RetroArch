@@ -5374,7 +5374,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Unused */
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "ロードされたレイアウト内のビューを選択します. "
+   "ロードされたレイアウト内のビューを選択します。"
    )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
@@ -5461,7 +5461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
-   "メモリ使用量の更新間隔 (フレーム)"
+   "メモリ使用量の更新間隔 (フレーム単位)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
@@ -7261,7 +7261,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "ネットワーク遅延を隠すために使用する, ネットプレイ中の入力遅延のフレーム数です. 顕著な入力の遅れを犠牲にして, ジッタを減らし, CPUの負担を軽減します. "
+   "ネットワーク遅延を隠すために使用する、入力遅延のフレーム数です。顕著な入力遅延を犠牲にして、ジッターとネットプレイ中の CPU 使用率を軽減します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -7273,7 +7273,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "ネットワーク遅延を隠すために使用される可能性がある入力遅延フレームの範囲です. 予期しない入力遅延を犠牲にして, ジッタを減らし, ネットプレイのCPU使用率を減らします. "
+   "ネットワーク遅延を隠すために使用できる入力遅延のフレームの範囲です。予測不可能な入力遅延を犠牲にして、ジッターとネットプレイ中の CPU 使用率を軽減します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -8345,7 +8345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
-   "Logiqx または MAME の リスト XML DATファイルを選択して, スキャンされたアーケードコンテンツ(MAME, FinalBurn Neoなど)の自動命名を有効にします."
+   "スキャンされたアーケードコンテンツ (MAME、FinalBurn Neo など) の自動命名を有効にするために、Logiqx または MAME リスト XML DAT ファイルを選択します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
@@ -9343,7 +9343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "チートが適用される回数です. 他の2つの'繰り返し'オプションと併用することで, メモリの大規模な領域に影響を与えることができます."
+   "チートを適用する回数です。他の 2 つの [繰り返し] オプションと併用することで、メモリの広い範囲に影響を与えることができます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -11116,7 +11116,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
-   "左側サムネイルを右側サムネイルの下に表示し, 両方ともスクリーンの右側に配置します。"
+   "左側サムネイルを画面右側の右側サムネイルの下に表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
@@ -11124,7 +11124,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   "最大許容幅でスケーリングして, サムネイル表示サイズを縮小します。"
+   "最大幅を設定することで、サムネイルの表示サイズを縮小します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
@@ -13203,7 +13203,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "自動ステートセーブ to"
+   "自動ステートセーブ:"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -13363,7 +13363,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-   "Libretro コアは特別なコンテンツを必要としていますが, それらが供給されていません。"
+   "Libretro コアは特別なコンテンツを必要としますが、何も提供されませんでした。"
    )
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
@@ -13511,7 +13511,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "ステートセーブに失敗しました to"
+   "ステートセーブに失敗しました:"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -13563,7 +13563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FATAL_ERROR_RECEIVED_IN,
-   "致命的なエラーが発生しました in"
+   "致命的なエラーが発生しました:"
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
@@ -13711,7 +13711,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FIRMWARE,
-   "ファームウェアファイルが見つかりませんでした"
+   "1 つ以上のファームウェアファイルが不足しています"
    )
 MSG_HASH(
    MSG_LOADING_CONTENT_FILE,
@@ -13739,7 +13739,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "入力リプレイ動画フォーマットはシリアライザのバージョンが異なるようです. ほとんどの場合失敗します. "
+   "入力リプレイ動画フォーマットはシリアライザのバージョンが異なるようです。ほとんどの場合失敗します。"
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
@@ -13907,7 +13907,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
-   "保存に成功しました to"
+   "保存に成功しました:"
    )
 MSG_HASH(
    MSG_SAVING_RAM_TYPE,
@@ -13951,7 +13951,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
-   "スローモーション巻き戻し"
+   "スローモーションで巻き戻しています。"
    )
 MSG_HASH(
    MSG_SKIPPING_SRAM_LOAD,
@@ -14035,7 +14035,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDID_LOAD_STATE,
-   "ステートロードを取り消しました"
+   "ステートロードを取り消しました。"
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
@@ -14059,7 +14059,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-   "Libretroダミーコアを使用します. 録画をスキップします."
+   "Libretro ダミーコアを使用します。録画をスキップしています。"
    )
 MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -14527,7 +14527,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_BACKUP_COMPLETE,
-   "コアのバックアップ完了: "
+   "コアのバックアップを完了しました: "
    )
 MSG_HASH(
    MSG_CORE_RESTORATION_ALREADY_INSTALLED,
@@ -14551,7 +14551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_COMPLETE,
-   "コアのインストール完了: "
+   "コアのインストールを完了しました: "
    )
 MSG_HASH(
    MSG_CORE_RESTORATION_INVALID_CONTENT,
@@ -15198,7 +15198,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
-   "RGAスケーリングとバイキュービックフィルタリングです. ウィジェットが壊れる可能性があります."
+   "RGA スケーリングとバイキュービックフィルタリングです。ウィジェットが壊れる可能性があります。"
    )
 #else
 MSG_HASH(
@@ -15207,7 +15207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
-   "ハードウェアコンテキストのスケーリングです. （利用可能な場合）"
+   "ハードウェアコンテキストのスケーリングです (利用可能な場合)。"
    )
 #endif
 #ifdef _3DS
