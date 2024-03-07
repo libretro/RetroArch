@@ -79,8 +79,6 @@ GL_DEBUG ?= 0 # help diagnose GLSL problems (can cause errors in normal operatio
 GENERATE_SOURCEMAP ?= 0
 FS_DEBUG = 0
 
-MEMORY_PADDING ?= 0
-
 # default value: 5242880  (5 MiB)
 STACK_MEMORY ?= 8388608
 # default value: 16777216 (16 MiB)
@@ -128,10 +126,6 @@ LDFLAGS := -L. --no-heap-copy $(LIBS) -s TOTAL_STACK=$(STACK_MEMORY) -s TOTAL_ME
            --js-library emscripten/library_errno_codes.js
 
 #           -s MODULARIZE=1 -s EXPORT_ES6=1
-
-ifneq ($(MEMORY_PADDING), 0)
-   LDFLAGS += -s GLOBAL_BASE=$(MEMORY_PADDING)mb
-endif
 
 
 ifeq ($(HAVE_RWEBAUDIO), 1)
@@ -253,7 +247,7 @@ $(OBJDIR)/%.o: %.cpp
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
 clean:
-	#rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
 
 .PHONY: all clean
