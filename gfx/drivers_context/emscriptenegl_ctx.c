@@ -44,10 +44,22 @@ typedef struct
    unsigned fb_height;
 } emscripten_ctx_data_t;
 
+bool vsync = true;
+
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
-   emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+   if (interval == 0 || !vsync)
+      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+   else
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
 }
+
+#ifdef EMULATORJS
+void set_vsync(int enabled) {
+    vsync = (enabled == 1);
+    gfx_ctx_emscripten_swap_interval(NULL, 1);
+}
+#endif
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 {
