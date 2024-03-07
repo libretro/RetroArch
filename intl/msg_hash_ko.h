@@ -4556,10 +4556,6 @@ MSG_HASH(
    "콘텐츠 폴더에 시스템 파일 포함"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "콘텐츠 디렉토리를 시스템 디렉토리로 사용합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "스크린샷을 콘텐츠 폴더에 저장"
    )

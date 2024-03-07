@@ -4676,10 +4676,6 @@ MSG_HASH(
    "Sistem Dosyalarını İçerik Dizinine Yaz"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "İçerik dizinini sistem dizini olarak kullanın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Ekran Görüntülerini İçerik Dizinine Yaz"
    )

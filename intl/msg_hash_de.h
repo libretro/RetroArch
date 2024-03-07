@@ -4580,10 +4580,6 @@ MSG_HASH(
    "Systemdateien befinden sich im Verzeichnis des Inhalts"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Inhaltsverzeichnis als Systemverzeichnis verwenden."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Screenshots im Verzeichnis des Inhalts speichern"
    )

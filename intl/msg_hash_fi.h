@@ -138,6 +138,10 @@ MSG_HASH(
    "Avaa perinteinen työpöytävalikko."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Poista kioskitila käytöstä (uudelleenkäynnistys vaaditaan)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Näytä kaikki kokoonpanoon liittyvät asetukset."
    )
@@ -4062,10 +4066,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Järjestelmätiedostot ovat sisälltökansiossa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Käytä sisältökansiota järejstelmän kansiona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
