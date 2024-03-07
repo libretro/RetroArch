@@ -4640,10 +4640,6 @@ MSG_HASH(
    "Fichiers système avec le contenu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Utiliser le dossier du contenu comme dossier système."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Enregistrer les captures d'écran avec le contenu"
    )

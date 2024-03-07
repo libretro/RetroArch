@@ -4704,10 +4704,6 @@ MSG_HASH(
    "Системные файлы в каталоге контента"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Использовать каталог контента в качестве системного каталога."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Запись скриншотов в каталог контента"
    )

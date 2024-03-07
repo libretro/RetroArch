@@ -4508,10 +4508,6 @@ MSG_HASH(
    "Systémové soubory jsou v adresáři obsahu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Použijte adresář s obsahem jako systémový adresář."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Zapsat snímky obrazovky do adresáře obsahu"
    )

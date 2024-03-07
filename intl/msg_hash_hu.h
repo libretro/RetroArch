@@ -4676,10 +4676,6 @@ MSG_HASH(
    "A rendszerfájlok a tartalom könyvtárában vannak"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Rendszerfájlok használata a tartalom könyvtárából."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Képernyőképek mentése a tartalom könyvtárába"
    )
