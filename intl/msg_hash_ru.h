@@ -4704,6 +4704,10 @@ MSG_HASH(
    "Системные файлы в каталоге контента"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Использовать каталог контента в качестве каталога хранения BIOS."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Запись скриншотов в каталог контента"
    )
@@ -8213,7 +8217,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Поиск Netplay-хостов."
+   "Поиск хостов сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
@@ -8221,7 +8225,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Поиск хостов netplay в локальной сети."
+   "Поиск локальных хостов сетевой игры."
    )
 
 /* Netplay > Host */
@@ -12569,7 +12573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Поиск и подключение к серверу по локальной сети."
+   "Поиск и подключение к локальным хостам сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -14239,7 +14243,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
-   "Поиск Netplay-хостов..."
+   "Поиск хостов сетевой игры..."
    )
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,

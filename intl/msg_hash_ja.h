@@ -4696,6 +4696,10 @@ MSG_HASH(
    "コンテンツディレクトリからシステムファイルを読み込む"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "コンテンツディレクトリを システム/BIOS ディレクトリとして使用します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "コンテンツディレクトリにスクリーンショットを書き込む"
    )

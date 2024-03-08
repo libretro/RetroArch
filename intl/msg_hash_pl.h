@@ -4144,6 +4144,10 @@ MSG_HASH(
    "Pliki systemowe znajdują się w katalogu zawartości"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Użyj katalogu zawartości jako katalogu System/BIOS."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Zapisuj zrzuty ekranu w katalogu zawartości"
    )
