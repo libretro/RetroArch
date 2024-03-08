@@ -1879,6 +1879,10 @@ MSG_HASH(
    "Siyah Kare Ekle"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Karelerin arasına siyah kareler ekleyin. CRT tarama çıkışını taklit ederek hareket bulanıklığını büyük ölçüde azaltabilir, ancak parlaklık azalabilir. Değiştirme Aralığı > 1, alt-kareler, Kare Gecikmesi veya Tam İçerik Kare Hızına Eşitleme ile birleştirmeyin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "Gelişmiş hareket netliği için karelerin arasına siyah kareler ekler. Yalnızca mevcut ekran yenileme hızınız için belirlenen seçeneği kullanın. 144Hz, 165Hz vb. gibi 60Hz katı olmayan yenileme hızlarında kullanılmaz. Değiştirme Aralığı > 1 (Otomatik tamam), Kare Gecikmesi veya Tam İçerik Kare Hızına Eşitleme ile birleştirmeyin. Sistem VRR açık bırakmak normalde sorun değil ancak bu ayarla uygun değil. Herhangi bir geçici görüntü tutulması fark ederseniz, 120h[...]"
    )
@@ -4674,6 +4678,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    "Sistem Dosyalarını İçerik Dizinine Yaz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "İçerik dizinini Sistem/BIOS dizini olarak kullanın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
@@ -14042,6 +14050,10 @@ MSG_HASH(
    "Taranıyor"
    )
 MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "Dizin taraması tamamlandı."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Komutlar gönderiliyor"
    )
@@ -14402,8 +14414,44 @@ MSG_HASH(
    "Durum yüklenemedi. Sınırlı Kareler devre dışı bırakıldı."
    )
 MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Dosya taraması tamamlandı."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Hile arama başarıyla başlatıldı."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Hile araması başlatılamadı."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "Arama başlatılmadı/başlatılamadı."
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Yeni eşleşme sayısı = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "%u eşleşmeleri eklendi."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Eşleşme eklenemedi."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Eşleştirme ile oluşturulan kod."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Kod oluşturulamadı."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Silinmiş eşleşme."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14442,8 +14490,32 @@ MSG_HASH(
    "Hile silindi."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Disk ayarlanamadı."
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Son kullanılan disk ayarlanamadı."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "İstemciye bağlanılamadı."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Ana bilgisayara bağlanılamadı."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Netplay ana bilgisayarı dolu."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Bu sunucu üstünde yasaklandınız."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Ana bilgisayardan başlık alınamadı."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14482,6 +14554,18 @@ MSG_HASH(
    "En yüksek"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Uyarı: Eksik içerikler varsa Çevrimiçi Güncelleyici kullanın."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Uyarı: Seçilen dil için eksik yazı tipleri varsa Çevrimiçi Güncelleyiciyi kullanın."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Uyarı: Desteklenmeyen dil - İngilizce kullanıyor."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Diskten aktarılıyor..."
    )
@@ -14514,8 +14598,24 @@ MSG_HASH(
    "Gölgelendirici hazır ayarını kaldırma hatası."
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Geçersiz arcade DAT dosyası seçildi."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Seçilen arcade DAT dosyası çok büyük (yetersiz boş bellek)."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Arcade DAT dosyası yüklenemedi (geçersiz biçim?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Geçersiz el ile tarama yapılandırması."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Doğrulanmış içerik algılanmadı."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
