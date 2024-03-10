@@ -3110,26 +3110,26 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
       {
-         int result                     = 0;
-         video_driver_state_t *video_st = video_state_get_ptr();
-         audio_driver_state_t *audio_st = audio_state_get_ptr();
+         enum retro_av_enable_flags result = 0;
+         video_driver_state_t *video_st    = video_state_get_ptr();
+         audio_driver_state_t *audio_st    = audio_state_get_ptr();
 
          if (    !(audio_st->flags & AUDIO_FLAG_SUSPENDED)
                && (audio_st->flags & AUDIO_FLAG_ACTIVE))
-            result |= 2;
+            result |= RETRO_AV_ENABLE_AUDIO;
 
          if (      (video_st->flags & VIDEO_FLAG_ACTIVE)
                && !(video_st->current_video->frame == video_null.frame))
-            result |= 1;
+            result |= RETRO_AV_ENABLE_VIDEO;
 
 #ifdef HAVE_RUNAHEAD
          if (audio_st->flags & AUDIO_FLAG_HARD_DISABLE)
-            result |= 8;
+            result |= RETRO_AV_ENABLE_HARD_DISABLE_AUDIO;
 #endif
 
 #ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
-            result &= ~(1|2);
+            result &= ~(RETRO_AV_ENABLE_VIDEO|RETRO_AV_ENABLE_AUDIO);
 #endif
 
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
@@ -3137,11 +3137,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             Use RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT instead. */
          /* TODO/FIXME: Get rid of this ugly hack. */
          if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
-            result |= 4;
+            result |= RETRO_AV_ENABLE_FAST_SAVESTATES;
 #endif
          if (data)
          {
-            int* result_p = (int*)data;
+            enum retro_av_enable_flags* result_p = (enum retro_av_enable_flags*)data;
             *result_p = result;
          }
          break;
