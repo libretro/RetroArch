@@ -39,6 +39,14 @@ RETRO_BEGIN_DECLS
  * since we prefer to use the actual name. */
 #define strcasestr(haystack, needle) strcasestr_retro__(haystack, needle)
 
+/**
+ * Portable reimplementation of \c strcasestr(3).
+ * If the original function is available
+ * (as determined by the presence of \c HAVE_STRCASESTR),
+ * it will be used instead.
+ *
+ * @see https://man7.org/linux/man-pages/man3/strstr.3.html
+ */
 char *strcasestr(const char *haystack, const char *needle);
 
 RETRO_END_DECLS

@@ -81,7 +81,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_rename_cb   = NULL;
 
    if (
-             (vfs_info->required_interface_version < 
+             (vfs_info->required_interface_version <
              FILESTREAM_REQUIRED_VFS_VERSION)
          || !vfs_iface)
       return;
@@ -152,15 +152,6 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
    return output;
 }
 
-/**
- * filestream_open:
- * @path               : path to file
- * @mode               : file mode to use when opening (read/write)
- * @hints              :
- *
- * Opens a file for reading or writing, depending on the requested mode.
- * @return A pointer to an RFILE if opened successfully, otherwise NULL.
- **/
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {
    struct retro_vfs_file_handle  *fp = NULL;
@@ -269,9 +260,9 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
             *subfmtiter++    = *format++;
          }
          else if (
-               *format == 'j' || 
-               *format == 'z' || 
-               *format == 't' || 
+               *format == 'j' ||
+               *format == 'z' ||
+               *format == 't' ||
                *format == 'L')
          {
             *subfmtiter++ = *format++;
@@ -470,8 +461,8 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-   return filestream_write(stream, &c_char, 1) == 1 
-      ? (int)(unsigned char)c 
+   return filestream_write(stream, &c_char, 1) == 1
+      ? (int)(unsigned char)c
       : EOF;
 }
 
@@ -521,17 +512,6 @@ int filestream_close(RFILE *stream)
    return output;
 }
 
-/**
- * filestream_read_file:
- * @path             : path to file.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- * @len              : optional output integer containing bytes read.
- *
- * Read the contents of a file into @buf.
- *
- * @return Non-zero on success.
- */
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
    int64_t ret              = 0;
@@ -584,16 +564,6 @@ error:
    return 0;
 }
 
-/**
- * filestream_write_file:
- * @path             : path to file.
- * @data             : contents to write to the file.
- * @size             : size of the contents.
- *
- * Writes data to a file.
- *
- * @return true on success, otherwise false.
- **/
 bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
    int64_t ret   = 0;
@@ -608,11 +578,6 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
    return (ret == size);
 }
 
-/**
- * filestream_getline:
- *
- * Returned pointer must be freed by the caller.
- **/
 char *filestream_getline(RFILE *stream)
 {
    char *newline_tmp  = NULL;
