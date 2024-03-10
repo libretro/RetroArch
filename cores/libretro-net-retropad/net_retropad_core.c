@@ -85,6 +85,8 @@ static retro_input_state_t NETRETROPAD_CORE_PREFIX(input_state_cb);
 
 static uint16_t *frame_buf;
 
+static unsigned input_state_validated = 0;
+
 static struct descriptor joypad = {
    .device = RETRO_DEVICE_JOYPAD,
    .port_min = 0,
@@ -338,7 +340,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 {
    int i;
    unsigned rle;
-   unsigned input_state = 0;
+   uint32_t input_state = 0;
    uint16_t *pixel      = frame_buf + 49 * 320 + 32;
 
    /* Update input states and send them if needed */
@@ -350,6 +352,32 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
       int offset = DESC_OFFSET(&joypad, 0, 0, i);
       if (joypad.value[offset])
          input_state |= 1 << i;
+   }
+
+   for (i = analog.id_min; i <= analog.id_max; i++)
+   {
+      /* bitmap: x-- x- x+ x++ y-- y- y+ y++*/
+      /* default analog deadzone: 0.0 - increased for convenience, default analog threshold: 0.5 */
+      int offset = DESC_OFFSET(&analog, 0, RETRO_DEVICE_INDEX_ANALOG_LEFT, i);
+      if (     (int16_t)analog.value[offset] < -32766/2)
+         input_state |= 1 << (16 + i*8 + 0);
+      else if ((int16_t)analog.value[offset] < -3276)
+         input_state |= 1 << (16 + i*8 + 1);
+      else if ((int16_t)analog.value[offset] > 32768/2)
+         input_state |= 1 << (16 + i*8 + 3);
+      else if ((int16_t)analog.value[offset] > 3276)
+         input_state |= 1 << (16 + i*8 + 2);
+      
+      offset = DESC_OFFSET(&analog, 0, RETRO_DEVICE_INDEX_ANALOG_RIGHT, i);
+      if (     (int16_t)analog.value[offset] < -32766/2)
+         input_state |= 1 << (16 + i*8 + 4);
+      else if ((int16_t)analog.value[offset] < -3276)
+         input_state |= 1 << (16 + i*8 + 5);
+      else if ((int16_t)analog.value[offset] > 32768/2)
+         input_state |= 1 << (16 + i*8 + 7);
+      else if ((int16_t)analog.value[offset] > 3276)
+         input_state |= 1 << (16 + i*8 + 6);
+
    }
 
    for (rle = 0; rle < sizeof(retropad_buttons); )
@@ -364,7 +392,20 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          if (paint)
          {
             unsigned count;
-            uint16_t color = (input_state & button) ? 0x0500 : 0xffff;
+            uint16_t color;
+            
+            if (input_state & button)
+            {
+               color = 0xA000;
+               input_state_validated |= button;
+            } 
+            else 
+            {
+               if (input_state_validated & button )
+                  color = 0xbff7;
+               else
+                  color = 0xffff;
+            }
 
             for (count = retropad_buttons[rle++]; count > 0; count--)
                *pixel++ = color;
