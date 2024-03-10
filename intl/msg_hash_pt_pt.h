@@ -202,7 +202,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Transfira e instale um núcleo a partir do atualizador online."
+   "Transferir e instalar um núcleo a partir do atualizador online."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -465,7 +465,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   "Nenhum"
+   "Não partilhar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
@@ -1603,6 +1603,10 @@ MSG_HASH(
    "Aplica um filtro de vídeo movido a CPU. Pode vir a um alto custo de performance. Alguns filtros de vídeo podem só funcionar com núcleos que usam cor 32-bit ou 16-bit."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Aplica um filtro de vídeo alimentado por CPU. Pode ter um alto custo de desempenho. Alguns filtros de vídeo podem funcionar apenas para núcleos que usam núcleos de 32 ou 16 bits. Podem ser selecionadas bibliotecas de filtros de vídeo vinculadas dinamicamente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Remover filtro de vídeo"
    )
@@ -1811,8 +1815,16 @@ MSG_HASH(
    "Lembrar posição e tamanho da janela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Mostra todo o conteúdo numa janela de tamanho fixo com as dimensões especificadas por 'Largura da Janela' e 'Altura da Janela', e guarda o tamanho e a posição atual da janela ao fechar o RetroArch. Quando desativado, o tamanho da janela será definido dinamicamente com base na 'Escala em modo janela'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    "Usar Tamanho de Janela Personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Mostra todo o conteúdo numa janela de tamanho fixo com as dimensões especificadas por 'Largura da Janela' e 'Altura da Janela'. Quando desativado, o tamanho da janela será definido dinamicamente com base na 'Escala em modo janela'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1905,6 +1917,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminosidade de Papel Branco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Define a luminância a que o \"papel branco\" deve estar, ou seja, texto legível ou luminância máxima da gama SDR (Standard Dynamic Range). Útil para se ajustar a diferentes condições de iluminação no seu ambiente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
@@ -2132,6 +2148,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Remover"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Estado: Não disponível"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -2700,6 +2720,14 @@ MSG_HASH(
    "Mostrar taxa de fotogramas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Notificações de controlo de disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Apresentar uma mensagem no ecrã ao inserir e ejetar discos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Tipo de letra das notificações no ecrã"
    )
@@ -2797,6 +2825,22 @@ MSG_HASH(
    )
 #ifdef HAVE_LAKKA
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   "Mostrar 'Atualizador online'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   "Mostrar a opção \"Atualizador online\" no menu principal."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+   "Mostrar a capacidade de atualizar núcleos (e ficheiros de informação de núcleos) na opção \"Atualizador online\"."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+   "Mostrar entrada obsoleta para transferir pacotes de miniaturas na opção \"Atualização online\"."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Menu principal"
@@ -3013,6 +3057,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    "Após a transferência, extrair automaticamente o conteúdo dos ficheiros transferidos."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   "Crie automaticamente uma cópia de segurança de quaisquer núcleos instalados ao efetuar uma atualização online. Permite a reversão fácil para um núcleo em funcionamento se uma atualização introduzir uma regressão."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Especifique o número de cópias de segurança geradas automaticamente a manter para cada núcleo instalado. Quando este limite for atingido, a criação de uma nova cópia de segurança através de uma atualização online irá eliminar a cópia de segurança mais antiga. As cópias de segurança manuais do núcleo não são afetadas por esta definição."
    )
 
 /* Settings > Playlists */
@@ -3675,7 +3727,7 @@ MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   "Nenhum"
+   "Não partilhar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -3878,6 +3930,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
    "Vermelho vulcânico"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
+   "Dinâmico"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
@@ -5206,6 +5262,10 @@ MSG_HASH(
    "Verificando"
    )
 MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "A verificação da pasta foi concluída."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviando comando"
    )
@@ -5370,8 +5430,96 @@ MSG_HASH(
    "Palavra-passe incorreta."
    )
 MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "A verificação do ficheiro foi concluída."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Iniciou com sucesso a pesquisa de batota (cheats)."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Falha ao iniciar a pesquisa de batota (cheats)."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "A pesquisa não foi inicializada/iniciada."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Adicionadas %u correspondências."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Falha ao adicionar correspondências."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Código criado a partir da correspondência."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Falha na criação do código."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Correspondência eliminada."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Falha ao definir o disco."
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Ocorreu um erro ao definir o último disco utilizado."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Falha na ligação ao cliente."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Falha na ligação ao anfitrião."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Anfitrião do Netplay completo."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Está banido deste anfitrião."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Falha ao obter o cabeçalho do anfitrião."
+   )
+MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Aviso: Recursos em falta, utilize o Atualizador Online, se disponível."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Aviso: Faltam fontes para o idioma selecionado, utilize o Atualizador Online, se disponível."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Aviso: Idioma não suportado - utilização do inglês."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Foi selecionado um ficheiro DAT de arcada inválido."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "O ficheiro DAT da arcada selecionado é demasiado grande (memória livre insuficiente)."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "As definições de verificação manual não são válidas."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Não foi detetado qualquer conteúdo válido."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
@@ -5521,6 +5669,10 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_QT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+   "Verificação concluída.<br><br>\nPara que o conteúdo seja corretamente verificado, é necessário:\n<ul><li>ter um núcleo compatível já transferido</li>\n<li>ter os \"Ficheiros de Informação de Núcleos\" atualizados através da Atualização Online</li>\n<li>ter \"Bases de dados\" atualizadas através do Atualizador Online</li>\n<li>reiniciar o RetroArch se alguma das ações acima tiver sido realizada</li></ul>\nPor último, o conteúdo deve corresponder às bases de dados existentes de <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. Se ainda não estiver a funcionar, considere a possibilidade de <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar um relatório de erro</a>."
+   )
 #endif
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,
