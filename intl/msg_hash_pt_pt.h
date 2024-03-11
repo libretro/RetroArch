@@ -2097,11 +2097,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   "Controlo dinâmico de taxa de som"
+   "Controlo dinâmico da taxa de áudio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Ajuda a suavizar as imperfeições no sincronismo entre som e vídeo. Caso se encontre desativada, esta opção fará com que a sincronização adequada se torne quase impossível de se concretizar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Definir este valor como 0 desativa o controlo da taxa de áudio. Qualquer outro valor controla o delta de controlo da taxa de áudio.\nDefine a quantidade de taxa de entrada que pode ser ajustada dinamicamente. A taxa de entrada é definida como:\ntaxa de entrada * (1,0 +/- (delta de controlo da taxa))"
    )
 
 /* Settings > Audio > MIDI */
@@ -2887,6 +2891,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "Selecione uma imagem para definir como fundo do menu. As imagens manuais e dinâmicas substituem a opção \"Tema de cor\"."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Opacidade da imagem de fundo"
@@ -4052,6 +4060,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Quando ativado, cada item de metadados de conteúdo apresentado na barra lateral direita das listas de reprodução (núcleo associado, tempo de reprodução) ocupará uma única linha, e as cadeias que excedam a largura disponível serão automaticamente deslocadas. Quando desativado, cada item de metadados será exibido estaticamente, ocupando tantas linhas quantas forem necessárias."
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
