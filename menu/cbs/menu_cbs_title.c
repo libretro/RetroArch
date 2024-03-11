@@ -107,7 +107,7 @@ static void action_get_title_fill_search_filter_default(
 static void action_get_title_fill_path_search_filter_default(
       const char *path, enum msg_hash_enums lbl, char *s, size_t len)
 {
-   size_t _len       = 0; 
+   size_t _len       = 0;
    const char *title = msg_hash_to_str(lbl);
    if (!string_is_empty(title))
       _len           = strlcpy(s, title, len);
@@ -747,7 +747,6 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_browser_directory,     MENU_ENUM_LABEL
 DEFAULT_FILL_TITLE_MACRO(action_get_title_use_last_start_directory,     MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_content_directory,     MENU_ENUM_LABEL_VALUE_CONTENT_DIR)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_screenshot_directory,  MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY)
-DEFAULT_FILL_TITLE_MACRO(action_get_title_cursor_directory,      MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_onscreen_overlay_keyboard_directory, MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_recording_config_directory, MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_recording_output_directory, MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY)
@@ -887,7 +886,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    unsigned i;
-   typedef struct title_info_list 
+   typedef struct title_info_list
    {
       enum msg_hash_enums type;
       enum msg_hash_enums val;
@@ -969,7 +968,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
    unsigned i;
-   typedef struct title_info_list 
+   typedef struct title_info_list
    {
       enum msg_hash_enums type;
       int (*cb)(const char *path, const char *label,
@@ -1087,7 +1086,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST, action_get_title_deferred_cursor_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER, action_get_title_list_rdb_entry_developer},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER, action_get_title_list_rdb_entry_publisher},
-      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN, 
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN,
          action_get_title_list_rdb_entry_origin},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE,
             action_get_title_list_rdb_entry_franchise},
@@ -1147,8 +1146,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_video_filter_directory},
       {MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
          action_get_title_audio_filter_directory},
-      {MENU_ENUM_LABEL_CURSOR_DIRECTORY,
-         action_get_title_cursor_directory},
       {MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
          action_get_title_recording_config_directory},
       {MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
@@ -1457,9 +1454,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_FILTER_DIR:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter_directory);
             break;
-         case MENU_ENUM_LABEL_CURSOR_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cursor_directory);
-            break;
          case MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_recording_config_directory);
             break;
@@ -1704,7 +1698,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_facebook_list);
-            break;            
+            break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST:
          case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_download_core_content_list);
@@ -1790,7 +1784,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    unsigned i;
-   typedef struct title_info_list 
+   typedef struct title_info_list
    {
       enum msg_hash_enums type;
       int (*cb)(const char *path, const char *label,
