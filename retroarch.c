@@ -3038,7 +3038,6 @@ static void dir_check_config(void)
    /* PORT */
    ENSURE_DIRECTORY(settings->paths.directory_video_shader);
    ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVESTATE));
-   ENSURE_DIRECTORY(settings->paths.directory_resampler);
    ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVEFILE));
    ENSURE_DIRECTORY(settings->paths.directory_screenshot);
    ENSURE_DIRECTORY(settings->paths.directory_system);
