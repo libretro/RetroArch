@@ -122,11 +122,11 @@ public final class MainMenuActivity extends PreferenceActivity
 
 		startRetroActivity(
 				retro,
-				null,
-				prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
-				UserPreferences.getDefaultConfigPath(this),
-				Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-				getApplicationInfo().dataDir,
+				getIntent().getStringExtra("ROM"),
+				getIntent().getStringExtra("LIBRETRO") != null ? getIntent().getStringExtra("LIBRETRO") : prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
+				getIntent().getStringExtra("CONFIGFILE") != null ? getIntent().getStringExtra("CONFIGFILE") : UserPreferences.getDefaultConfigPath(this),
+				getIntent().getStringExtra("IME") != null ? getIntent().getStringExtra("IME") : Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+				getIntent().getStringExtra("DATADIR") != null ? getIntent().getStringExtra("DATADIR") : getApplicationInfo().dataDir,
 				getApplicationInfo().sourceDir);
 		startActivity(retro);
 		finish();

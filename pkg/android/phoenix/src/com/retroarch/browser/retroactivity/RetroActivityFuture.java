@@ -5,17 +5,130 @@ import android.view.View;
 import android.view.WindowManager;
 import android.content.Intent;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.input.InputManager;
+import android.Manifest;
 import android.os.Build;
+import android.os.Bundle;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.ArrayList;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
   // If set to true then Retroarch will completely exit when it loses focus
   private boolean quitfocus = false;
+
+  private boolean addPermission(List<String> permissionsList, String permission)
+  {
+     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+     {
+        if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
+        {
+           permissionsList.add(permission);
+
+           // Check for Rationale Option
+           if (!shouldShowRequestPermissionRationale(permission))
+              return false;
+        }
+     }
+
+     return true;
+  }
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+
+   if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+   {
+      // Android 6.0+ needs runtime permission checks
+      List<String> permissionsNeeded = new ArrayList<String>();
+      final List<String> permissionsList = new ArrayList<String>();
+
+      if (!addPermission(permissionsList, Manifest.permission.READ_EXTERNAL_STORAGE))
+         permissionsNeeded.add("Read External Storage");
+      if (!addPermission(permissionsList, Manifest.permission.WRITE_EXTERNAL_STORAGE))
+         permissionsNeeded.add("Write External Storage");
+
+      if (permissionsList.size() > 0)
+      {
+         // We have permissions that have not yet been approved, so we need to close this activity and switch to MainMenuActivity instead
+         Intent intent = new Intent(this, com.retroarch.browser.mainmenu.MainMenuActivity.class);
+         intent.putExtra("ROM", getIntent().getStringExtra("ROM"));
+         intent.putExtra("LIBRETRO", getIntent().getStringExtra("LIBRETRO"));
+         intent.putExtra("CONFIGFILE", getIntent().getStringExtra("CONFIGFILE"));
+         intent.putExtra("QUITFOCUS", getIntent().getStringExtra("QUITFOCUS"));
+         intent.putExtra("IME", getIntent().getStringExtra("IME"));
+         intent.putExtra("DATADIR", getIntent().getStringExtra("DATADIR"));
+         startActivity(intent);
+         finish();
+         return;
+      }
+   }
+
+    super.onCreate(savedInstanceState);
+
+    Intent retro = getIntent();
+
+    if (!retro.hasExtra("LIBRETRO")) {
+      // No core file passed in
+      return;
+    }
+
+    // Copies the core to the necessary folder if needed (for sideloading cores)
+    File providedCoreFile = new File(retro.getStringExtra("LIBRETRO"));
+    File coresFolder = new File(UserPreferences.getPreferences(this).getString("libretro_path", this.getApplicationInfo().dataDir + "/cores/"));
+
+    // Check that both exist
+    if (!coresFolder.exists())
+      coresFolder.mkdirs();
+
+    if (!providedCoreFile.exists() || providedCoreFile.isDirectory())
+        return;
+
+    File destination = new File(coresFolder, providedCoreFile.getName());
+
+    if (destination.getAbsolutePath().equals(providedCoreFile.getAbsolutePath())){
+      // Nothing needs to be done if the provided core path is already in the correct folder
+      return;
+    }
+
+    // Otherwise, copy the core file to the correct folder
+    Log.d("sideload", "Copying " + providedCoreFile.getAbsolutePath() + " to " + destination.getAbsolutePath());
+
+    try
+    {
+        InputStream is = new FileInputStream(providedCoreFile);
+        OutputStream os = new FileOutputStream(destination);
+
+        byte[] buf = new byte[1024];
+        int length;
+
+        while ((length = is.read(buf)) > 0)
+        {
+            os.write(buf, 0, length);
+        }
+
+        is.close();
+        os.close();
+        retro.putExtra("LIBRETRO", destination.getAbsolutePath());
+    }
+    catch (IOException ex)
+    {
+        ex.printStackTrace();
+        return;
+    }
+  }
 
   @Override
   public void onResume() {
