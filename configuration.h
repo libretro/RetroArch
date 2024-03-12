@@ -543,7 +543,6 @@ typedef struct settings
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
       char directory_osk_overlay[PATH_MAX_LENGTH];
-      char directory_resampler[PATH_MAX_LENGTH];
       char directory_screenshot[PATH_MAX_LENGTH];
       char directory_system[PATH_MAX_LENGTH];
       char directory_cache[PATH_MAX_LENGTH];
@@ -1218,7 +1217,7 @@ bool config_load_remap(const char *directory_input_remapping,
  **/
 
 void config_get_autoconf_profile_filename(
-      const char *device_name, unsigned user, 
+      const char *device_name, unsigned user,
       char *buf, size_t len_buf);
 /**
  * config_save_autoconf_profile:

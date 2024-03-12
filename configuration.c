@@ -1579,7 +1579,6 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("cache_directory",               settings->paths.directory_cache, false, NULL, true);
    SETTING_PATH("audio_dsp_plugin",              settings->paths.path_audio_dsp_plugin, false, NULL, true);
    SETTING_PATH("audio_filter_dir",              settings->paths.directory_audio_filter, true, NULL, true);
-   SETTING_PATH("resampler_directory",           settings->paths.directory_resampler, false, NULL, true);
    SETTING_PATH("video_shader_dir",              settings->paths.directory_video_shader, true, NULL, true);
    SETTING_PATH("video_filter_dir",              settings->paths.directory_video_filter, true, NULL, true);
    SETTING_PATH("video_filter",                  settings->paths.path_softfilter_plugin, false, NULL, true);
@@ -1720,7 +1719,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("game_specific_options",         &settings->bools.game_specific_options, true, DEFAULT_GAME_SPECIFIC_OPTIONS, false);
    SETTING_BOOL("auto_overrides_enable",         &settings->bools.auto_overrides_enable, true, DEFAULT_AUTO_OVERRIDES_ENABLE, false);
    SETTING_BOOL("auto_remaps_enable",            &settings->bools.auto_remaps_enable, true, DEFAULT_AUTO_REMAPS_ENABLE, false);
-   SETTING_BOOL("initial_disk_change_enable",    &settings->bools.initial_disk_change_enable, true, DEFAULT_INITIAL_DISK_CHANGE_ENABLE, false);   
+   SETTING_BOOL("initial_disk_change_enable",    &settings->bools.initial_disk_change_enable, true, DEFAULT_INITIAL_DISK_CHANGE_ENABLE, false);
    SETTING_BOOL("global_core_options",           &settings->bools.global_core_options, true, DEFAULT_GLOBAL_CORE_OPTIONS, false);
    SETTING_BOOL("auto_shaders_enable",           &settings->bools.auto_shaders_enable, true, DEFAULT_AUTO_SHADERS_ENABLE, false);
    SETTING_BOOL("scan_without_core_match",       &settings->bools.scan_without_core_match, true, DEFAULT_SCAN_WITHOUT_CORE_MATCH, false);
@@ -2904,7 +2903,6 @@ void config_set_defaults(void *data)
 
    *settings->paths.path_libretro_info = '\0';
    *settings->paths.directory_libretro = '\0';
-   *settings->paths.directory_resampler = '\0';
    *settings->paths.directory_screenshot = '\0';
    *settings->paths.directory_system = '\0';
    *settings->paths.directory_cache = '\0';
@@ -3110,10 +3108,6 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.directory_screenshot,
             g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RESAMPLER]))
-      configuration_set_string(settings,
-            settings->paths.directory_resampler,
-            g_defaults.dirs[DEFAULT_DIR_RESAMPLER]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
       configuration_set_string(settings,
             settings->paths.log_dir,
@@ -4112,7 +4106,7 @@ static bool config_load_file(global_t *global,
     if (settings->bools.switch_oc == true) {
 	  fprintf(f, "1\n");
 	} else {
-	  fprintf(f, "0\n");	
+	  fprintf(f, "0\n");
     }
     fclose(f);
     if (settings->bools.switch_cec == true) {
@@ -4120,7 +4114,7 @@ static bool config_load_file(global_t *global,
 	  fprintf(f, "\n");
       fclose(f);
 	} else {
-	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);	
+	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);
     }
    if (settings->bools.bluetooth_ertm_disable == true) {
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
@@ -4131,8 +4125,8 @@ static bool config_load_file(global_t *global,
 	  fprintf(f, "0\n");
       fclose(f);
     }
-#endif   
- 
+#endif
+
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
 
@@ -4472,7 +4466,7 @@ bool config_unload_override(void)
    {
       /* This is for 'win32_common.c', so we don't save
        * fullscreen size and position if we're switching
-       * back to windowed mode. 
+       * back to windowed mode.
        * Might be useful for other devices as well? */
       if (      settings->bools.video_window_save_positions
             && !settings->bools.video_fullscreen)
@@ -4931,7 +4925,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
 }
 
 void config_get_autoconf_profile_filename(
-      const char *device_name, unsigned user, 
+      const char *device_name, unsigned user,
       char *buf, size_t len_buf)
 {
    static const char* invalid_filename_chars[] = {

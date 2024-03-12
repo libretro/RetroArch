@@ -905,10 +905,6 @@ MSG_HASH(
    "system_information_cpu_cores"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CURSOR_DIRECTORY,
-   "cursor_directory"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CURSOR_MANAGER,
    "cursor_manager"
    )
