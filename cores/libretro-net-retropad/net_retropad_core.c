@@ -1,14 +1,14 @@
 /*
  * To-do:
- * - Analog support
  * - Some sort of connection control, it only sends packets
  *   but there is no acknoledgement of a connection o keepalives
  * - Send player name
  * - Render something on-screen maybe a gui to configure IP and port
      instead of the ridiculously long strings we're using now
  * - Allow changing IP address and port in runtime
- * - Support other platforms
  * - Input recording / Combos
+ * - Enable test input loading from menu
+ * - Visualization of keyboard and aux inputs (gyro, accelero, light)
 */
 
 #include <stdio.h>
@@ -25,6 +25,11 @@
 #include <retro_timers.h>
 
 #include <libretro.h>
+
+#include <file/file_path.h>
+#include <string/stdstring.h>
+#include <streams/file_stream.h>
+#include <formats/rjson.h>
 
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
@@ -48,6 +53,10 @@
    index * ((desc)->id_max - (desc)->id_min + 1) + \
    id \
 )
+
+#define MAX_TEST_STEPS 200
+#define INITIAL_FRAMES 60*5
+#define ONE_TEST_STEP_FRAMES 60*5
 
 struct descriptor {
    int device;
@@ -85,8 +94,6 @@ static retro_input_state_t NETRETROPAD_CORE_PREFIX(input_state_cb);
 
 static uint16_t *frame_buf;
 
-static unsigned input_state_validated = 0;
-
 static struct descriptor joypad = {
    .device = RETRO_DEVICE_JOYPAD,
    .port_min = 0,
@@ -112,10 +119,230 @@ static struct descriptor *descriptors[] = {
    &analog
 };
 
+static uint16_t combo_def[] =
+{
+   1 << RETRO_DEVICE_ID_JOYPAD_UP    | 1 << RETRO_DEVICE_ID_JOYPAD_LEFT,  /* D-pad diagonals */
+   1 << RETRO_DEVICE_ID_JOYPAD_UP    | 1 << RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   1 << RETRO_DEVICE_ID_JOYPAD_DOWN  | 1 << RETRO_DEVICE_ID_JOYPAD_LEFT,
+   1 << RETRO_DEVICE_ID_JOYPAD_DOWN  | 1 << RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   1 << RETRO_DEVICE_ID_JOYPAD_UP    | 1 << RETRO_DEVICE_ID_JOYPAD_DOWN,  /* D-pad opposites */
+   1 << RETRO_DEVICE_ID_JOYPAD_LEFT  | 1 << RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   1 << RETRO_DEVICE_ID_JOYPAD_L3    | 1 << RETRO_DEVICE_ID_JOYPAD_R3,    /* Combo values for menu / exit */
+   1 << RETRO_DEVICE_ID_JOYPAD_DOWN  | 1 << RETRO_DEVICE_ID_JOYPAD_Y | 1 << RETRO_DEVICE_ID_JOYPAD_L | 1 << RETRO_DEVICE_ID_JOYPAD_R,
+   1 << RETRO_DEVICE_ID_JOYPAD_START | 1 << RETRO_DEVICE_ID_JOYPAD_SELECT | 1 << RETRO_DEVICE_ID_JOYPAD_L | 1 << RETRO_DEVICE_ID_JOYPAD_R,
+   1 << RETRO_DEVICE_ID_JOYPAD_START | 1 << RETRO_DEVICE_ID_JOYPAD_SELECT,
+   1 << RETRO_DEVICE_ID_JOYPAD_L3    | 1 << RETRO_DEVICE_ID_JOYPAD_R,
+   1 << RETRO_DEVICE_ID_JOYPAD_L     | 1 << RETRO_DEVICE_ID_JOYPAD_R,
+   1 << RETRO_DEVICE_ID_JOYPAD_DOWN  | 1 << RETRO_DEVICE_ID_JOYPAD_SELECT,
+   1 << RETRO_DEVICE_ID_JOYPAD_L2    | 1 << RETRO_DEVICE_ID_JOYPAD_R2
+};
+
+typedef struct
+{
+   unsigned expected_button;
+   char message[PATH_MAX_LENGTH];
+   bool detected;
+} input_test_step_t;
+
+static input_test_step_t input_test_steps[MAX_TEST_STEPS];
+
+static unsigned current_frame         = 0;
+static unsigned next_teststep_frame   = 0;
+static unsigned current_test_step     = 0;
+static unsigned last_test_step        = MAX_TEST_STEPS + 1;
+static uint32_t input_state_validated = 0;
+static uint32_t combo_state_validated = 0;
+static bool     dump_state_blocked    = false;
+
+/************************************/
+/* JSON Helpers for test input file */
+/************************************/
+
+typedef struct
+{
+   unsigned *current_entry_uint_val;
+   char **current_entry_str_val;
+   unsigned expected_button;
+   char *message;
+} ITifJSONContext;
+
+static bool ITifJSONObjectEndHandler(void* context)
+{
+   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+
+   /* Too long input is handled elsewhere, it should not lead to parse error */
+   if (current_test_step >= MAX_TEST_STEPS)
+      return true;
+
+   /* Copy values read from JSON file */
+   input_test_steps[current_test_step].expected_button = pCtx->expected_button;
+
+   if (!string_is_empty(pCtx->message))
+      strlcpy(
+            input_test_steps[current_test_step].message, pCtx->message,
+            sizeof(input_test_steps[current_test_step].message));
+   else
+      input_test_steps[current_test_step].message[0] = '\0';
+   current_test_step++;
+   last_test_step = current_test_step;
+
+   return true;
+}
+
+static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+{
+   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+
+   /* something went wrong */
+   if (pCtx->current_entry_str_val)
+      return false;
+
+   if (length)
+   {
+      if (string_is_equal(pValue, "expected_button"))
+         pCtx->current_entry_uint_val = &pCtx->expected_button;
+      else if (string_is_equal(pValue, "message"))
+         pCtx->current_entry_str_val = &pCtx->message;
+      /* ignore unknown members */
+   }
+
+   return true;
+}
+
+static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t length)
+{
+   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+
+   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+      *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
+   /* ignore unknown members */
+
+   pCtx->current_entry_uint_val = NULL;
+
+   return true;
+}
+
+static bool ITifJSONStringHandler(void* context, const char *pValue, size_t length)
+{
+   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+
+   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   {
+      if (*pCtx->current_entry_str_val)
+         free(*pCtx->current_entry_str_val);
+
+      *pCtx->current_entry_str_val = strdup(pValue);
+   }
+   /* ignore unknown members */
+
+   pCtx->current_entry_str_val = NULL;
+
+   return true;
+}
+
+/* Parses test input file referenced by file_path.
+ * Does nothing if test input file does not exist. */
+static bool input_test_file_read(const char* file_path)
+{
+   bool success            = false;
+   ITifJSONContext context = {0};
+   RFILE *file             = NULL;
+   rjson_t* parser;
+
+   /* Sanity check */
+   if (    string_is_empty(file_path)
+       || !path_is_valid(file_path)
+      )
+      return false;
+
+   /* Attempt to open test input file */
+   file = filestream_open(
+         file_path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!file)
+   {
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[Remote RetroPad]: Failed to open test input file: \"%s\".\n",
+            file_path);
+      return false;
+   }
+
+   /* Initialise JSON parser */
+   if (!(parser = rjson_open_rfile(file)))
+   {
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,"[Remote RetroPad]: Failed to create JSON parser.\n");
+      goto end;
+   }
+
+   /* Configure parser */
+   rjson_set_options(parser, RJSON_OPTION_ALLOW_UTF8BOM);
+
+   /* Read file */
+   if (rjson_parse(parser, &context,
+         ITifJSONObjectMemberHandler,
+         ITifJSONStringHandler,
+         ITifJSONNumberHandler,
+         NULL, ITifJSONObjectEndHandler, NULL, NULL, /* object/array handlers */
+         NULL, NULL) /* unused boolean/null handlers */
+         != RJSON_DONE)
+   {
+      if (rjson_get_source_context_len(parser))
+      {
+         NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+               "[Remote RetroPad]: Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
+               file_path,
+               rjson_get_source_context_len(parser),
+               rjson_get_source_context_buf(parser));
+      }
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+            "[Remote RetroPad]: Error parsing test input file: %s\n",
+            file_path);
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[Remote RetroPad]: Error: Invalid JSON at line %d, column %d - %s.\n",
+            (int)rjson_get_source_line(parser),
+            (int)rjson_get_source_column(parser),
+            (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+   }
+
+   /* Free parser */
+   rjson_free(parser);
+
+   success = true;
+end:
+   /* Clean up leftover strings */
+   if (context.message)
+      free(context.message);
+
+   /* Close log file */
+   filestream_close(file);
+
+   if (last_test_step >= MAX_TEST_STEPS)
+   {
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,"[Remote RetroPad]: too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
+   }
+   for (current_test_step = 0; current_test_step < last_test_step; current_test_step++)
+   {
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,
+         "[Remote RetroPad]: test step %02d read from file: button %x, message %s\n",
+         current_test_step,
+         input_test_steps[current_test_step].expected_button,
+         input_test_steps[current_test_step].message);
+   }
+   current_test_step = 0;
+   return success;
+}
+
+/********************************/
+/* Test input file handling end */
+/********************************/
+
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 {
    unsigned i;
 
+   dump_state_blocked = false;
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
 
    if (frame_buf)
@@ -149,6 +376,7 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Initialising sockets...\n");
    network_init();
+
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
@@ -185,8 +413,8 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_info)(
    memset(info, 0, sizeof(*info));
    info->library_name     = "RetroPad Remote";
    info->library_version  = "0.01";
-   info->need_fullpath    = false;
-   info->valid_extensions = ""; /* Nothing. */
+   info->need_fullpath    = true;
+   info->valid_extensions = "ratst"; /* Special test input file. */
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
@@ -341,8 +569,10 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    int i;
    unsigned rle;
    uint32_t input_state = 0;
+   uint32_t expected_input = 0;
    uint16_t *pixel      = frame_buf + 49 * 320 + 32;
 
+   current_frame++;
    /* Update input states and send them if needed */
    retropad_update_input();
 
@@ -367,7 +597,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          input_state |= 1 << (16 + i*8 + 3);
       else if ((int16_t)analog.value[offset] > 3276)
          input_state |= 1 << (16 + i*8 + 2);
-      
+
       offset = DESC_OFFSET(&analog, 0, RETRO_DEVICE_INDEX_ANALOG_RIGHT, i);
       if (     (int16_t)analog.value[offset] < -32766/2)
          input_state |= 1 << (16 + i*8 + 4);
@@ -377,8 +607,79 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          input_state |= 1 << (16 + i*8 + 7);
       else if ((int16_t)analog.value[offset] > 3276)
          input_state |= 1 << (16 + i*8 + 6);
-
    }
+
+   /* Input test section start. */
+
+   /* Check for predefined combo inputs. */
+   for (unsigned j = 0; j < sizeof(combo_def)/sizeof(combo_def[0]); j++)
+   {
+      if ((input_state & combo_def[j]) == combo_def[j])
+         combo_state_validated |= 1 << j;
+   }
+
+/* Print a log for A+B combination, but only once while those are pressed */
+   if (input_state == ((1 << RETRO_DEVICE_ID_JOYPAD_A | 1 << RETRO_DEVICE_ID_JOYPAD_B) & 0x0000ffff))
+   {
+      if (!dump_state_blocked)
+      {
+         NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,"[Remote RetroPad]: Validated state: %08x combo: %08x\n",input_state_validated, combo_state_validated);
+         dump_state_blocked = true;
+      }
+   }
+   else if (dump_state_blocked)
+      dump_state_blocked = false;
+
+   /* Handle test step proceeding and feedback to user */
+   if (current_test_step < last_test_step && current_frame > INITIAL_FRAMES)
+   {
+      if (current_frame > INITIAL_FRAMES + next_teststep_frame)
+      {
+         struct retro_message message;
+         if (current_frame > INITIAL_FRAMES + 1)
+            current_test_step++;
+         if (current_test_step < last_test_step)
+         {
+            message.msg = input_test_steps[current_test_step].message;
+            message.frames = ONE_TEST_STEP_FRAMES;
+            NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+            next_teststep_frame = current_frame +  ONE_TEST_STEP_FRAMES - INITIAL_FRAMES;
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+               "[Remote RetroPad]: Proceeding to test step %d at frame %d, next: %d\n",
+               current_test_step,current_frame,next_teststep_frame+INITIAL_FRAMES);
+         }
+         else
+         {
+            char buf[1024];
+            unsigned pass_count = 0;
+            for(unsigned i=0; i<last_test_step;i++)
+               if (input_test_steps[i].detected)
+                  pass_count++;
+            message.msg = buf;
+            snprintf(buf,sizeof(buf),"Test sequence finished, result: %d/%d inputs detected",pass_count,last_test_step);
+            message.frames = ONE_TEST_STEP_FRAMES * 3;
+            NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+               "[Remote RetroPad]: Test sequence finished at frame %d, result: %d/%d inputs detected\n",
+               current_frame, pass_count, last_test_step);
+         }
+      }
+
+      if (current_test_step < last_test_step)
+      {
+         expected_input = 1 << input_test_steps[current_test_step].expected_button;
+         if(input_state & expected_input)
+         {
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+               "[Remote RetroPad]: Test step %d successful at frame %d\n",
+               current_test_step, current_frame);
+            input_test_steps[current_test_step].detected = true;
+            next_teststep_frame = current_frame - INITIAL_FRAMES;
+         }
+      }
+   }
+   /* Input test section end. */
 
    for (rle = 0; rle < sizeof(retropad_buttons); )
    {
@@ -393,16 +694,22 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          {
             unsigned count;
             uint16_t color;
-            
+
+            /* Red for active inputs */
             if (input_state & button)
             {
                color = 0xA000;
                input_state_validated |= button;
-            } 
-            else 
+            }
+            else
             {
-               if (input_state_validated & button )
+               /* Light blue for expected input */
+               if (expected_input & button)
+                  color = 0x7fff;
+               /* Light green for already validated input */
+               else if (input_state_validated & button )
                   color = 0xbff7;
+               /* White as default */
                else
                   color = 0xffff;
             }
@@ -449,6 +756,20 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info
    socket_set_target(&si_other, &in_target);
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
+
+   /* If a .ratst file is given (only possible via command line),
+    * initialize test sequence. */
+   if (info)
+      input_test_file_read(info->path);
+   if (last_test_step > MAX_TEST_STEPS)
+      current_test_step = last_test_step;
+   else
+   {
+      struct retro_message message;
+      message.msg = "Initiating test sequence...";
+      message.frames = INITIAL_FRAMES;
+      NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
+   }
 
    return true;
 }
