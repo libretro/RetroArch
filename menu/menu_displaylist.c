@@ -70,6 +70,10 @@
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#ifdef IOS
+#include "JITSupport.h"
+#endif
+
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
 #include <media/media_detect_cd.h>
