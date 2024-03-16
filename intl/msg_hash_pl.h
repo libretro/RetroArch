@@ -213,6 +213,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest wyłączone."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Zamknij RetroArch. Zabicie programu w jakikolwiek twardy sposób (SIGKILL, itp.) zakończy RetroArch bez zapisywania konfiguracji w każdym przypadku. W systemach uniksowych, SIGINT/SIGTERM pozwala na czystą deinicjalizację, która zawiera zapis konfiguracji, jeśli jest włączona."
+   )
 
 /* Main Menu > Load Core */
 
@@ -1473,6 +1477,10 @@ MSG_HASH(
    "Sterownik wejścia do użycia. Niektóre sterowniki wideo wymuszają inny sterownik wejścia."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "Sterownik udev odczytuje zdarzenia evdev dla obsługi klawiatury. Obsługuje również wywołania zwrotne klawiatury, myszy i touchpadów.\nDomyślnie w większości dystrybucji, węzły /dev/input są tylko dla roota (tryb 600). Można skonfigurować regułę udev, która czyni je dostępnymi dla użytkowników innych niż root."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Sterownik wejścia linuxraw wymaga aktywnego TTY. Zdarzenia klawiatury są odczytywane bezpośrednio z TTY, co czyni go prostszym, ale nie tak elastycznym jak udev. Myszy, itp. nie są w ogóle obsługiwane. Ten sterownik używa starszego API joysticka (/dev/input/js*)."
    )
@@ -1487,6 +1495,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    "Sterownik kontrolera do użycia. (Wymagane wersje)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "Sterownik kontrolera DirectInput."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Niskopoziomowy sterownik urządzenia HID."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Surowy sterownik Linux, wykorzystuje starsze API joysticka. Jeśli to możliwe, należy użyć udev."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Sterownik Linux dla kontrolerów podłączonych do portu równoległego za pomocą specjalnych adapterów."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Sterownik kontrolera oparty na bibliotekach SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Sterownik kontrolera z interfejsem udev, ogólnie zalecany. Używa najnowszego API joypada evdev do obsługi joysticka. Obsługuje hotplugging i force feedback.\nDomyślnie w większości dystrybucji, węzły /dev/input są tylko dla roota (tryb 600). Można skonfigurować regułę udev, która czyni je dostępnymi dla osób niebędących rootem."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "Sterownik kontrolera XInput. Głównie dla kontrolerów Xbox."
    )
 
 MSG_HASH(
@@ -1803,12 +1839,20 @@ MSG_HASH(
    "Zapobiegaj aktywacji systemowemu wygaszaczowi ekranu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Wstrzymuje wygaszacz ekranu. Jest wskazówką, która niekoniecznie musi być honorowana przez sterownik wideo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Wątkowe wideo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    "Poprawia wydajność kosztem większego opóźnienia i częstszego zacinania się obrazu. Używaj tylko wtedy, gdy pełna prędkość nie może być uzyskana w inny sposób."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Użyj wielowątkowego sterownika wideo. Użycie tej opcji może poprawić wydajność kosztem możliwych opóźnień i większego zacinania się obrazu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1899,6 +1943,18 @@ MSG_HASH(
    "Dostosowuje liczbę ramek wyświetlanych w czarnej sekwencji bfi. Więcej czarnych ramek zwiększa przezroczystość ruchu, ale zmniejsza jasność. Nie dotyczy 120hz, ponieważ jest tylko jedna dodatkowa 60hz, więc musi być czarny w przeciwnym razie BFI nie byłby w ogóle aktywny."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Pod-klatki shadera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Wstawia dodatkowe klatki shadera pomiędzy klatkami. Umożliwia shaderom wykonywanie efektów, które działają z wyższą liczbą klatek na sekundę niż rzeczywista częstotliwość wyświetlania treści. Powinno być ustawione na bieżące Hz ekranu. Nie łączyć z opcjami Interwał zmiany klatek > 1, BFI, Opóźnienie klatek lub Synchronizuj do dokładnego framerate'u zawartości."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Wstawia dodatkowe klatki shaderów pomiędzy klatkami dla wszelkich możliwych efektów shaderów, które są zaprojektowane do działania szybciej niż częstotliwość zawartości. Używaj tylko opcji wyznaczonej dla bieżącej częstotliwości odświeżania wyświetlacza. Nie używać przy częstotliwościach odświeżania, które nie są wielokrotnościami 60 Hz, takich jak 144 Hz, 165 Hz itp. Nie łączyć z opcjami Interwał zmiany klatek > 1, BFI, Opóźnienie klatek lub Synchronizuj do d[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
    "Wyłączony"
    )
@@ -1974,6 +2030,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Filtrowanie dwuliniowe"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Dodaje lekkie rozmycie do obrazu, aby zmiękczyć twarde krawędzie pikseli. Ta opcja ma bardzo niewielki wpływ na wydajność. Powinna być wyłączona w przypadku korzystania z shaderów."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -2031,6 +2091,14 @@ MSG_HASH(
    "Zastosuj filtr wideo z napędem CPU. Może to być wysokie koszty wydajności. Niektóre filtry wideo mogą działać tylko dla rdzeni o kolorze 32-bitowym lub 16-bitowym."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Zastosuj filtr wideo zasilany przez procesor. Może się to wiązać z wysokim kosztem wydajności. Niektóre filtry wideo mogą działać tylko dla rdzeni, które używają 32-bitowego lub 16-bitowego koloru. Można wybrać dynamicznie połączone biblioteki filtrów wideo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Zastosuj filtr wideo zasilany przez procesor. Może się to wiązać z wysokim kosztem wydajności. Niektóre filtry wideo mogą działać tylko dla rdzeni, które używają 32-bitowego lub 16-bitowego koloru. Można wybrać wbudowane biblioteki filtrów wideo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Usuń filtr wideo"
    )
@@ -2038,6 +2106,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Zwolnij każdy aktywny filtry wideo zasilane przez procesor (CPU)."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Włącz pełny ekran nad wycięciem na urządzeniach z Androidem i iOS"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2099,6 +2171,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Wybierz, którego ekranu chcesz użyć."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "Który monitor ma być preferowany. 0 (domyślnie) oznacza, że żaden konkretny monitor nie jest preferowany, 1 i więcej (1 oznacza pierwszy monitor), sugeruje RetroArch użycie tego konkretnego monitora."
    )
 #if defined (WIIU)
 MSG_HASH(
@@ -2167,12 +2243,24 @@ MSG_HASH(
    "Dokładna szacowana częstotliwość odświeżania ekranu w Hz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "Dokładna częstotliwość odświeżania monitora (Hz). Służy do obliczania częstotliwości wejściowej audio za pomocą wzoru:\naudio_input_rate = częstotliwość wejściowa gry * częstotliwość odświeżania wyświetlacza / częstotliwość odświeżania gry\nJeśli rdzeń nie zgłasza żadnych wartości, dla kompatybilności zostaną przyjęte wartości domyślne NTSC.\nWartość ta powinna być zbliżona do 60 Hz, aby uniknąć dużych zmian tonacji dźwięku. Jeśli monitor nie dział[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Ustaw częstotliwość odświeżania raportowaną przez ekran"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Częstotliwość odświeżania zgłoszona przez sterownik ekranu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Automatyczna zmiana częstotliwości odświeżania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Automatycznie przełącz częstotliwość odświeżania ekranu na podstawie bieżącej zawartości."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -2185,6 +2273,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Wszystkie tryby pełnoekranowe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Próg automatycznej częstotliwości odświeżania PAL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Maksymalna częstotliwość odświeżania uznawana za PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -2295,6 +2391,10 @@ MSG_HASH(
    "Użyj niestandardowego rozmiaru okna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Wyświetla całą zawartość w oknie o stałym rozmiarze określonym przez \"Szerokość okna\" i \"Wysokość okna\". Gdy opcja ta jest wyłączona, rozmiar okna będzie ustawiany dynamicznie na podstawie \"Skala okna\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    "Szerokość okna"
    )
@@ -2315,8 +2415,16 @@ MSG_HASH(
    "Maksymalna szerokość okna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Ustawia maksymalną szerokość okna wyświetlania przy automatycznej zmianie rozmiaru na podstawie \"Skala okna\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    "Maksymalna wysokość okna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Ustawia maksymalną wysokość okna wyświetlania przy automatycznej zmianie rozmiaru na podstawie \"Skala okna\"."
    )
 
 /* Settings > Video > Scaling */
@@ -2328,6 +2436,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    "Skaluj wideo tylko w krokach całkowitych. Rozmiar podstawowy zależy od geometrii i proporcji zgłoszonej przez system. Jeśli 'Wymuś współczynnik aspektów' nie jest ustawiony, X/Y będzie liczbą całkowitą skalowaną niezależnie."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Wymusza zaokrąglenie skalowania obrazu do następnej większej liczby całkowitej, zamiast zaokrąglać obraz w dół."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2490,8 +2602,24 @@ MSG_HASH(
    "Opóźnienie ramki (ms)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Zmniejsza opóźnienie kosztem wyższego ryzyka przycinania się wideo. Dodaje opóźnienie w milisekundach po prezentacji wideo i przed główną klatką."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Ustawia liczbę milisekund opóźnienia po prezentacji wideo przed uruchomieniem rdzenia. Może zmniejszyć opóźnienie kosztem wyższego ryzyka przycinania się. Maksymalnie %d."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatyczne opóźnienie ramki"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Tymczasowo zmniejsz efektywne \"Opóźnienie klatek\", aby zapobiec potencjalnym spadkom klatek. Punktem początkowym jest połowa czasu ramki, gdy \"Opóźnienie klatek\" wynosi 0."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "Tymczasowo zmniejsz efektywne \"Opóźnienie klatek\", aż docelowa częstotliwość odświeżania będzie stabilna. Pomiar rozpoczyna się od połowy czasu klatki, gdy \"Opóźnienie klatek\" wynosi 0. Np. 8 dla NTSC i 10 dla PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -2514,12 +2642,20 @@ MSG_HASH(
    "Ustaw ile klatek procesor może uruchamiać przed GPU podczas używania 'Hard GPU Sync'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Ustawia, ile klatek CPU może uruchomić przed GPU podczas korzystania z \"Twarda synchronizacja GPU\". Maksymalnie 3.\n 0: Natychmiast synchronizuj z GPU.\n 1: Synchronizuj z poprzednią klatką.\n 2: Itd..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    "Synchronizuj, aby uzyskać dokładną liczbę klatek na sekundę (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    "Brak odchylenia od żądanego chronometrażu rdzenia. Używaj dla ekranów ze zmienną częstotliwością odświeżania (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Synchronizuj do dokładnego framerate'u zawartości. Opcja ta jest odpowiednikiem wymuszenia prędkości x1, jednocześnie umożliwiając szybkie przewijanie do przodu. Brak odchyleń od żądanej częstotliwości odświeżania rdzenia, brak DRC."
    )
 
 /* Settings > Audio */
@@ -2591,12 +2727,24 @@ MSG_HASH(
    "Wycisz dźwięk miksera."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Szanuj tryb cichy"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Wycisz wszystkie dźwięki w trybie cichym."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "Wycisz podczas przyspieszania"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automatycznie wycisz dźwięk podczas używania przyspieszenia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Przyspiesz podczas przewijania do przodu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
