@@ -5420,7 +5420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   "Configure mouse input sent from the overlay."
+   "Configure mouse input sent from the overlay. Note: 1-, 2-, and 3-finger taps send left, right, and middle button clicks."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */

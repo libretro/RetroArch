@@ -2904,7 +2904,6 @@ void input_overlay_auto_rotate_(
 static void input_overlay_poll_lightgun(settings_t *settings,
       input_overlay_t *ol, const int old_ptr_count)
 {
-   input_overlay_state_t *ol_state       = &ol->overlay_state;
    input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
    const int ptr_count                   = ptr_st->count;
    unsigned action                       = OVERLAY_LIGHTGUN_ACTION_NONE;
