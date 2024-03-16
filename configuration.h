@@ -135,6 +135,9 @@ typedef struct settings
       int menu_xmb_title_margin;
       int menu_xmb_title_margin_horizontal_offset;
 #endif
+#ifdef HAVE_OVERLAY
+      int input_overlay_lightgun_port;
+#endif
    } ints;
 
    struct
@@ -319,6 +322,12 @@ typedef struct settings
       unsigned input_overlay_show_inputs_port;
       unsigned input_overlay_dpad_diagonal_sensitivity;
       unsigned input_overlay_abxy_diagonal_sensitivity;
+      unsigned input_overlay_lightgun_trigger_delay;
+      unsigned input_overlay_lightgun_two_touch_input;
+      unsigned input_overlay_lightgun_three_touch_input;
+      unsigned input_overlay_lightgun_four_touch_input;
+      unsigned input_overlay_mouse_hold_msec;
+      unsigned input_overlay_mouse_dtap_msec;
 #endif
 
       unsigned run_ahead_frames;
@@ -417,6 +426,9 @@ typedef struct settings
       float input_overlay_y_separation_portrait;
       float input_overlay_x_offset_portrait;
       float input_overlay_y_offset_portrait;
+
+      float input_overlay_mouse_speed;
+      float input_overlay_mouse_swipe_threshold;
 
       float slowmotion_ratio;
       float fastforward_ratio;
@@ -664,6 +676,11 @@ typedef struct settings
       bool input_overlay_auto_rotate;
       bool input_overlay_auto_scale;
       bool input_osk_overlay_auto_scale;
+      bool input_overlay_pointer_enable;
+      bool input_overlay_lightgun_trigger_on_touch;
+      bool input_overlay_lightgun_allow_offscreen;
+      bool input_overlay_mouse_hold_to_drag;
+      bool input_overlay_mouse_dtap_to_drag;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;

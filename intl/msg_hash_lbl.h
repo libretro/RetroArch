@@ -1347,6 +1347,14 @@ MSG_HASH(
    "deferred_osk_overlay_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OVERLAY_LIGHTGUN_SETTINGS_LIST,
+   "deferred_overlay_lightgun_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OVERLAY_MOUSE_SETTINGS_LIST,
+   "deferred_overlay_mouse_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
    "deferred_onscreen_video_layout_settings_list"
    )
@@ -2052,6 +2060,62 @@ MSG_HASH(
    "input_osk_overlay_auto_scale"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "input_overlay_pointer_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "input_overlay_lightgun_port"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "input_overlay_lightgun_trigger_on_touch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "input_overlay_lightgun_trigger_delay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "input_overlay_lightgun_allow_offscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "input_overlay_lightgun_two_touch_input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "input_overlay_lightgun_three_touch_input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "input_overlay_lightgun_four_touch_input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "input_overlay_mouse_speed"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "input_overlay_mouse_hold_to_drag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "input_overlay_mouse_hold_msec"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "input_overlay_mouse_dtap_to_drag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "input_overlay_mouse_dtap_msec"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "input_overlay_mouse_swipe_threshold"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
    "input_overlay_dpad_diagonal_sensitivity"
    )
@@ -2654,6 +2718,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
    "onscreen_overlay_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "overlay_lightgun_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,
+   "overlay_mouse_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
