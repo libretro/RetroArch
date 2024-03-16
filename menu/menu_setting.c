@@ -303,6 +303,8 @@ enum settings_list_type
    SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
    SETTINGS_LIST_OVERLAY,
    SETTINGS_LIST_OSK_OVERLAY,
+   SETTINGS_LIST_OVERLAY_MOUSE,
+   SETTINGS_LIST_OVERLAY_LIGHTGUN,
    SETTINGS_LIST_MENU,
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
@@ -5460,6 +5462,79 @@ static void setting_get_string_representation_uint_input_overlay_show_inputs_por
       snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer + 1);
 }
+
+static void setting_get_string_representation_overlay_lightgun_port(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      if (*setting->value.target.integer < 0)
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY), len);
+      else
+         snprintf(s, len, "%d", *setting->value.target.integer + 1);
+   }
+}
+
+static void setting_get_string_representation_overlay_lightgun_action(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case OVERLAY_LIGHTGUN_ACTION_NONE:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_NONE), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_TRIGGER:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_RELOAD:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_AUX_A:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_AUX_B:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_AUX_C:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_SELECT:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_START:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_UP:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_DOWN:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_LEFT:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_RIGHT:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT), len);
+         break;
+   }
+}
 #endif
 
 /* A protected driver is such that the user cannot set to "null" using the UI.
@@ -10347,6 +10422,24 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
                MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -17174,6 +17267,25 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -1.0f, 1.0f, 0.005f, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_pointer_enable,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+               DEFAULT_INPUT_OVERLAY_POINTER_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);
@@ -17241,6 +17353,241 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
+      case SETTINGS_LIST_OVERLAY_LIGHTGUN:
+#ifdef HAVE_OVERLAY
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.input_overlay_lightgun_port,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by = -1;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_port;
+         menu_settings_list_current_add_range(list, list_info, -1, MAX_USERS - 1, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_lightgun_trigger_on_touch,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_trigger_delay,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0,
+               OVERLAY_LIGHTGUN_TRIG_MAX_DELAY, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_two_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_action;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_LIGHTGUN_ACTION_NONE, OVERLAY_LIGHTGUN_ACTION_END - 1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_three_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_action;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_LIGHTGUN_ACTION_NONE, OVERLAY_LIGHTGUN_ACTION_END - 1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_four_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_action;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_LIGHTGUN_ACTION_NONE, OVERLAY_LIGHTGUN_ACTION_END - 1, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_lightgun_allow_offscreen,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
+      case SETTINGS_LIST_OVERLAY_MOUSE:
+#ifdef HAVE_OVERLAY
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_mouse_speed,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+               DEFAULT_INPUT_OVERLAY_MOUSE_SPEED,
+               "%.1fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.1, 5.0, 0.1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_mouse_hold_to_drag,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+               DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_mouse_hold_msec,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+               DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 1000, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_mouse_dtap_to_drag,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+               DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_mouse_dtap_msec,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+               DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_mouse_swipe_threshold,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+               DEFAULT_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+               "%.1f%%",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.0, 10.0, 0.1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -23753,6 +24100,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
       SETTINGS_LIST_OVERLAY,
       SETTINGS_LIST_OSK_OVERLAY,
+      SETTINGS_LIST_OVERLAY_MOUSE,
+      SETTINGS_LIST_OVERLAY_LIGHTGUN,
       SETTINGS_LIST_MENU,
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,

@@ -1093,6 +1093,168 @@ const char **input_keyboard_start_line(
    return (const char**)&keyboard_line->buffer;
 }
 
+#ifdef HAVE_OVERLAY
+static int16_t input_overlay_mouse_state(input_overlay_t *ol, unsigned id)
+{
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+   int16_t res;
+
+   switch(id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_MOUSE);
+
+         res = ptr_st->mouse.scale_x
+               * (ptr_st->screen_x - ptr_st->mouse.prev_screen_x);
+         ptr_st->mouse.prev_screen_x = ptr_st->screen_x;
+         return res;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         res = ptr_st->mouse.scale_y
+               * (ptr_st->screen_y - ptr_st->mouse.prev_screen_y);
+         ptr_st->mouse.prev_screen_y = ptr_st->screen_y;
+         return res;
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return (ptr_st->mouse.click & 0x1) ||
+                (ptr_st->mouse.hold  & 0x1);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return (ptr_st->mouse.click & 0x2) ||
+                (ptr_st->mouse.hold  & 0x2);
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return (ptr_st->mouse.click & 0x4) ||
+                (ptr_st->mouse.hold  & 0x4);
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+static int16_t input_overlay_lightgun_state(settings_t *settings,
+      input_overlay_t *ol, unsigned id)
+{
+   struct video_viewport vp;
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+   unsigned rarch_id;
+   int16_t edge;
+
+   switch(id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
+
+         if (     ptr_st->ptr[0].x != -0x8000
+               || settings->bools.input_overlay_lightgun_allow_offscreen)
+            return ptr_st->ptr[0].x;
+         else if (video_driver_get_viewport_info(&vp))
+         {
+            edge = ((2 * vp.x * 0x7fff) / (int)vp.full_width) - 0x7fff;
+            return ((ptr_st->screen_x > edge) ? 0x7fff : -0x7fff);
+         }
+         return -0x8000;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         if (     ptr_st->ptr[0].y != -0x8000
+               || settings->bools.input_overlay_lightgun_allow_offscreen)
+            return ptr_st->ptr[0].y;
+         else if (video_driver_get_viewport_info(&vp))
+         {
+            edge = ((2 * vp.y * 0x7fff) / (int)vp.full_height) - 0x7fff;
+            return ((ptr_st->screen_y > edge) ? 0x7fff : -0x7fff);
+         }
+         return -0x8000;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         return ( settings->bools.input_overlay_lightgun_allow_offscreen
+               && (ptr_st->ptr[0].x == -0x8000 || ptr_st->ptr[0].y == -0x8000));
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+         rarch_id = RARCH_LIGHTGUN_AUX_A;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+         rarch_id = RARCH_LIGHTGUN_AUX_B;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+         rarch_id = RARCH_LIGHTGUN_AUX_C;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         rarch_id = RARCH_LIGHTGUN_TRIGGER;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         rarch_id = RARCH_LIGHTGUN_START;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         rarch_id = RARCH_LIGHTGUN_SELECT;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+         rarch_id = RARCH_LIGHTGUN_RELOAD;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+         rarch_id = RARCH_LIGHTGUN_DPAD_UP;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+         rarch_id = RARCH_LIGHTGUN_DPAD_DOWN;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+         rarch_id = RARCH_LIGHTGUN_DPAD_LEFT;
+         break;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+         rarch_id = RARCH_LIGHTGUN_DPAD_RIGHT;
+         break;
+      default:
+         rarch_id = RARCH_BIND_LIST_END;
+         break;
+   }
+
+   return (   rarch_id < RARCH_BIND_LIST_END
+           && (   ptr_st->lightgun.multitouch_id == rarch_id
+               || BIT256_GET(ol->overlay_state.buttons, rarch_id)));
+}
+
+static int16_t input_overlay_pointer_state(input_overlay_t *ol,
+      unsigned idx, unsigned id)
+{
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+
+   ptr_st->device_mask                  |= (1 << RETRO_DEVICE_POINTER);
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return ptr_st->ptr[idx].x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return ptr_st->ptr[idx].y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return (idx < ptr_st->count)
+               && ptr_st->ptr[idx].x != -0x8000
+               && ptr_st->ptr[idx].y != -0x8000;
+      case RETRO_DEVICE_ID_POINTER_COUNT:
+         return ptr_st->count;
+   }
+
+   return 0;
+}
+
+static int16_t input_overlay_pointing_device_state(settings_t *settings,
+      input_overlay_t *ol, unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   switch (device)
+   {
+      case RETRO_DEVICE_MOUSE:
+         return input_overlay_mouse_state(ol, id);
+      case RETRO_DEVICE_LIGHTGUN:
+         if (     settings->ints.input_overlay_lightgun_port == -1
+               || settings->ints.input_overlay_lightgun_port == (int)port)
+            return input_overlay_lightgun_state(settings, ol, id);
+         break;
+      case RETRO_DEVICE_POINTER:
+         return input_overlay_pointer_state(ol, idx, id);
+      default:
+         break;
+   }
+
+   return 0;
+}
+#endif
+
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static bool input_remote_init_network(input_remote_t *handle,
       uint16_t port, unsigned user)
@@ -1537,6 +1699,14 @@ static int16_t input_state_device(
       case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
+
+#ifdef HAVE_OVERLAY
+         if (     (input_st->overlay_ptr)
+               && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ENABLE)
+               && (settings->bools.input_overlay_pointer_enable))
+            res = input_overlay_pointing_device_state(settings,
+                  input_st->overlay_ptr, port, device, idx, id);
+#endif
 
          if (input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
             break;
@@ -2087,8 +2257,10 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
  *
  * @norm_x and @norm_y are the result of
  * video_driver_translate_coord_viewport().
+ *
+ * @return true if touch pointer is inside any hitbox
  **/
-static void input_overlay_poll(
+static bool input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
       int touch_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
@@ -2097,6 +2269,7 @@ static void input_overlay_poll(
    struct overlay_desc *descs = ol->active->descs;
    unsigned int highest_prio  = 0;
    int old_touch_idx          = input_driver_st.old_touch_index_lut[touch_idx];
+   bool any_hitbox_pressed    = false;
    bool use_range_mod;
 
    /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
@@ -2193,10 +2366,14 @@ static void input_overlay_poll(
          desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
             * ol->active->mod_h;
       }
+
+      any_hitbox_pressed = true;
    }
 
    if (ol->flags & INPUT_OVERLAY_BLOCKED)
       memset(out, 0, sizeof(*out));
+
+   return any_hitbox_pressed;
 }
 
 /**
@@ -2717,6 +2894,285 @@ void input_overlay_auto_rotate_(
 }
 
 /**
+ * input_overlay_poll_lightgun
+ * @settings: pointer to settings
+ * @ol : overlay handle
+ * @old_ptr_count : previous poll's non-hitbox pointer count
+ *
+ * Updates multi-touch button state of the overlay lightgun.
+ */
+static void input_overlay_poll_lightgun(settings_t *settings,
+      input_overlay_t *ol, const int old_ptr_count)
+{
+   input_overlay_state_t *ol_state       = &ol->overlay_state;
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+   const int ptr_count                   = ptr_st->count;
+   unsigned action                       = OVERLAY_LIGHTGUN_ACTION_NONE;
+   int8_t trig_delay                     =
+         settings->uints.input_overlay_lightgun_trigger_delay;
+   int8_t delay_idx;
+
+   static uint16_t trig_buf;
+   static uint8_t now_idx;
+   static uint8_t peak_ptr_count;
+   static const unsigned action_to_id[OVERLAY_LIGHTGUN_ACTION_END] = {
+      RARCH_BIND_LIST_END,
+      RARCH_LIGHTGUN_TRIGGER,
+      RARCH_LIGHTGUN_RELOAD,
+      RARCH_LIGHTGUN_AUX_A,
+      RARCH_LIGHTGUN_AUX_B,
+      RARCH_LIGHTGUN_AUX_C,
+      RARCH_LIGHTGUN_START,
+      RARCH_LIGHTGUN_SELECT,
+      RARCH_LIGHTGUN_DPAD_UP,
+      RARCH_LIGHTGUN_DPAD_DOWN,
+      RARCH_LIGHTGUN_DPAD_LEFT,
+      RARCH_LIGHTGUN_DPAD_RIGHT
+   };
+
+   /* Update peak pointer count */
+   if (!old_ptr_count && ptr_count)
+      peak_ptr_count = ptr_count;
+   else
+      peak_ptr_count = MAX(ptr_count, peak_ptr_count);
+
+   /* Apply trigger delay */
+   now_idx   = (now_idx + 1) % (OVERLAY_LIGHTGUN_TRIG_MAX_DELAY + 1);
+   delay_idx = (now_idx + trig_delay) % (OVERLAY_LIGHTGUN_TRIG_MAX_DELAY + 1);
+
+   if (ptr_count > 0)
+      BIT16_SET(trig_buf, delay_idx);
+   else
+      BIT16_CLEAR(trig_buf, delay_idx);
+
+   /* Create button input if we're past the trigger delay */
+   if (BIT16_GET(trig_buf, now_idx))
+   {
+      switch (peak_ptr_count)
+      {
+         case 1:
+            if (settings->bools.input_overlay_lightgun_trigger_on_touch)
+               action = OVERLAY_LIGHTGUN_ACTION_TRIGGER;
+            break;
+         case 2:
+            action = settings->uints.input_overlay_lightgun_two_touch_input;
+            break;
+         case 3:
+            action = settings->uints.input_overlay_lightgun_three_touch_input;
+            break;
+         case 4:
+            action = settings->uints.input_overlay_lightgun_four_touch_input;
+            break;
+         default:
+            break;
+      }
+   }
+
+   ptr_st->lightgun.multitouch_id = action_to_id[action];
+}
+
+static void input_overlay_get_mouse_scale(settings_t *settings,
+      float *scale_x, float *scale_y,
+      int *swipe_thres_x, int *swipe_thres_y)
+{
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   struct retro_game_geometry *geom = &video_st->av_info.geometry;
+   float swipe_thres;
+   float adj_x, adj_y;
+   float display_aspect, core_aspect;
+   float speed;
+
+   if (geom->base_height)
+   {
+      speed          = settings->floats.input_overlay_mouse_speed;
+      swipe_thres    =
+            655.35f * settings->floats.input_overlay_mouse_swipe_threshold;
+      display_aspect = (float)video_st->width / video_st->height;
+      core_aspect    = (float)geom->base_width / geom->base_height;
+
+      if (display_aspect > core_aspect)
+      {
+         adj_x = speed * (display_aspect / core_aspect);
+         adj_y = speed;
+      }
+      else
+      {
+         adj_y = speed * (core_aspect / display_aspect);
+         adj_x = speed;
+      }
+
+      *scale_x = (adj_x * geom->base_width) / (float)0x7fff;
+      *scale_y = (adj_y * geom->base_height) / (float)0x7fff;
+
+      if (display_aspect > 1.0f)
+      {
+         *swipe_thres_x = (int)(swipe_thres / display_aspect);
+         *swipe_thres_y = (int)swipe_thres;
+      }
+      else
+      {
+         *swipe_thres_x = (int)swipe_thres;
+         *swipe_thres_y = (int)(swipe_thres / display_aspect);
+      }
+   }
+}
+
+/**
+ * input_overlay_poll_mouse
+ * @settings: pointer to settings
+ * @ol : overlay handle
+ * @old_ptr_count : previous poll's non-hitbox pointer count
+ *
+ * Updates button state of the overlay mouse.
+ */
+static void input_overlay_poll_mouse(settings_t *settings,
+      input_overlay_t *ol, const int old_ptr_count)
+{
+   input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
+   struct input_overlay_mouse_state *mouse_st = &ptr_st->mouse;
+   const retro_time_t now_usec                = cpu_features_get_time_usec();
+   const retro_time_t hold_usec               = settings->uints.input_overlay_mouse_hold_msec * 1000;
+   const retro_time_t dtap_usec               = settings->uints.input_overlay_mouse_dtap_msec * 1000;
+   const int ptr_count                        = ptr_st->count;
+   int swipe_thres_x                          = 0;
+   int swipe_thres_y                          = 0;
+   const bool hold_to_drag                    = settings->bools.input_overlay_mouse_hold_to_drag;
+   const bool dtap_to_drag                    = settings->bools.input_overlay_mouse_dtap_to_drag;
+   bool want_feedback                         = false;
+   bool is_swipe, is_brief, is_long;
+
+   static retro_time_t start_usec;
+   static retro_time_t last_down_usec;
+   static retro_time_t last_up_usec;
+   static retro_time_t pending_click_usec;
+   static retro_time_t click_dur_usec;
+   static retro_time_t click_end_usec;
+   static int x_start;
+   static int y_start;
+   static int peak_ptr_count;
+   static int old_peak_ptr_count;
+   static bool skip_buttons;
+   static bool pending_click;
+
+   input_overlay_get_mouse_scale(settings,
+         &mouse_st->scale_x, &mouse_st->scale_y,
+         &swipe_thres_x, &swipe_thres_y);
+
+   /* Check for pointer count changes */
+   if (ptr_count != old_ptr_count)
+   {
+      mouse_st->click = 0;
+      pending_click   = false;
+
+      if (ptr_count)
+      {
+         /* Assume main pointer changed. Reset deltas */
+         mouse_st->prev_screen_x = x_start = ptr_st->screen_x;
+         mouse_st->prev_screen_y = y_start = ptr_st->screen_y;
+      }
+      else
+         old_peak_ptr_count = peak_ptr_count;
+
+      if (ptr_count > old_ptr_count)
+      {
+         /* Pointer added */
+         peak_ptr_count = ptr_count;
+         start_usec     = now_usec;
+      }
+      else
+         /* Pointer removed */
+         mouse_st->hold = 0;
+   }
+
+   /* Action type */
+   is_swipe = abs(ptr_st->screen_x - x_start) > swipe_thres_x ||
+              abs(ptr_st->screen_y - y_start) > swipe_thres_y;
+   is_brief = (now_usec - start_usec) < 200000;
+   is_long  = (now_usec - start_usec) > (hold_to_drag ? hold_usec : 250000);
+
+   /* Check if new button input should be created */
+   if (!skip_buttons)
+   {
+      if (!is_swipe)
+      {
+         if (     hold_to_drag
+               && is_long && ptr_count && !mouse_st->hold)
+         {
+            /* Long press */
+            mouse_st->hold = (1 << (ptr_count - 1));
+            want_feedback  = true;
+         }
+         else if (is_brief)
+         {
+            if (ptr_count && !old_ptr_count)
+            {
+               /* New input. Check for double tap */
+               if (     dtap_to_drag
+                     && now_usec - last_up_usec < dtap_usec)
+                  mouse_st->hold = (1 << (old_peak_ptr_count - 1));
+
+               last_down_usec = now_usec;
+            }
+            else if (!ptr_count && old_ptr_count)
+            {
+               /* Finished a tap. Send click */
+               click_dur_usec = (now_usec - last_down_usec) + 5000;
+
+               if (dtap_to_drag)
+               {
+                  pending_click      = true;
+                  pending_click_usec = now_usec + dtap_usec;
+               }
+               else
+               {
+                  mouse_st->click    = (1 << (peak_ptr_count - 1));
+                  click_end_usec     = now_usec + click_dur_usec;
+               }
+
+               last_up_usec = now_usec;
+            }
+         }
+      }
+      else
+      {
+         /* If dragging 2+ fingers, hold RMB or MMB */
+         if (ptr_count > 1)
+         {
+            mouse_st->hold = (1 << (ptr_count - 1));
+            if (hold_to_drag)
+               want_feedback = true;
+         }
+         skip_buttons = true;
+      }
+   }
+
+   /* Check for pending click */
+   if (pending_click && now_usec >= pending_click_usec)
+   {
+      mouse_st->click = (1 << (old_peak_ptr_count - 1));
+      click_end_usec  = now_usec + click_dur_usec;
+      pending_click   = false;
+   }
+
+   if (!ptr_count)
+      skip_buttons = false; /* Reset button checks  */
+   else if (is_long)
+      skip_buttons = true;  /* End of button checks */
+
+   /* Remove stale clicks */
+   if (mouse_st->click && now_usec > click_end_usec)
+      mouse_st->click = 0;
+
+   if (want_feedback && settings->bools.vibrate_on_keypress)
+   {
+      input_driver_t *current_input = input_driver_st.current_driver;
+
+      if (current_input && current_input->keypress_vibrate)
+         current_input->keypress_vibrate();
+   }
+}
+
+/**
  * input_overlay_track_touch_inputs
  * @state : Overlay input state for this poll
  * @old_state : Overlay input state for previous poll
@@ -2772,6 +3228,54 @@ static void input_overlay_track_touch_inputs(
    }
 }
 
+static void input_overlay_update_pointer_coords(
+      input_overlay_pointer_state_t *ptr_st, int touch_idx)
+{
+   void *input_data              = input_driver_st.current_data;
+   input_driver_t *current_input = input_driver_st.current_driver;
+
+   /* Need multi-touch coordinates for pointer only */
+   if (     ptr_st->count
+         && !(ptr_st->device_mask & (1 << RETRO_DEVICE_POINTER)))
+      goto finish;
+
+   /* Need viewport pointers for pointer and lightgun */
+   if (ptr_st->device_mask &
+         ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
+   {
+      ptr_st->ptr[ptr_st->count].x  = current_input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RETRO_DEVICE_POINTER,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_X);
+      ptr_st->ptr[ptr_st->count].y  = current_input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RETRO_DEVICE_POINTER,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_Y);
+   }
+
+   /* Need fullscreen pointer for mouse and lightgun */
+   if (     !ptr_st->count
+         && (ptr_st->device_mask &
+             ((1 << RETRO_DEVICE_MOUSE) | (1 << RETRO_DEVICE_LIGHTGUN))))
+   {
+      ptr_st->screen_x = current_input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RARCH_DEVICE_POINTER_SCREEN,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_X);
+      ptr_st->screen_y = current_input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RARCH_DEVICE_POINTER_SCREEN,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_Y);
+   }
+
+finish:
+   ptr_st->count++;
+}
+
 /*
  * input_poll_overlay:
  *
@@ -2788,19 +3292,23 @@ static void input_poll_overlay(
 {
    input_overlay_state_t old_ol_state;
    int i, j;
-   input_overlay_t *ol                     = (input_overlay_t*)ol_data;
-   uint16_t key_mod                        = 0;
-   bool button_pressed                     = false;
-   input_driver_state_t *input_st          = &input_driver_st;
-   void *input_data                        = input_st->current_data;
-   input_overlay_state_t *ol_state         = &ol->overlay_state;
-   input_driver_t *current_input           = input_st->current_driver;
+   input_overlay_t *ol                      = (input_overlay_t*)ol_data;
+   uint16_t key_mod                         = 0;
+   bool button_pressed                      = false;
+   input_driver_state_t *input_st           = &input_driver_st;
+   void *input_data                         = input_st->current_data;
+   input_overlay_state_t *ol_state          = &ol->overlay_state;
+   input_overlay_pointer_state_t *ptr_state = &ol->pointer_state;
+   input_driver_t *current_input            = input_st->current_driver;
    enum overlay_show_input_type
-         input_overlay_show_inputs         = (enum overlay_show_input_type)
+         input_overlay_show_inputs          = (enum overlay_show_input_type)
                settings->uints.input_overlay_show_inputs;
-   unsigned input_overlay_show_inputs_port = settings->uints.input_overlay_show_inputs_port;
-   float touch_scale                       = (float)settings->uints.input_touch_scale;
-   bool osk_state_changed                  = false;
+   unsigned input_overlay_show_inputs_port  = settings->uints.input_overlay_show_inputs_port;
+   float touch_scale                        = (float)settings->uints.input_touch_scale;
+   bool ol_ptr_enable                       = settings->bools.input_overlay_pointer_enable;
+   bool osk_state_changed                   = false;
+
+   static int old_ptr_count;
 
    if (!ol_state)
       return;
@@ -2808,6 +3316,12 @@ static void input_poll_overlay(
    memcpy(&old_ol_state, ol_state,
          sizeof(old_ol_state));
    memset(ol_state, 0, sizeof(*ol_state));
+
+   if (ol_ptr_enable)
+   {
+      old_ptr_count    = ptr_state->count;
+      ptr_state->count = 0;
+   }
 
    if (current_input->input_state)
    {
@@ -2877,27 +3391,46 @@ static void input_poll_overlay(
       for (i = 0; i < ol_state->touch_count; i++)
       {
          input_overlay_state_t polled_data;
+         bool hitbox_pressed = false;
+
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
          if (ol->flags & INPUT_OVERLAY_ENABLE)
-            input_overlay_poll(ol, &polled_data, i,
+            hitbox_pressed = input_overlay_poll(ol, &polled_data, i,
                   ol_state->touch[i].x, ol_state->touch[i].y, touch_scale);
          else
             ol->flags &= ~INPUT_OVERLAY_BLOCKED;
 
-         bits_or_bits(ol_state->buttons.data,
-               polled_data.buttons.data,
-               ARRAY_SIZE(polled_data.buttons.data));
+         if (hitbox_pressed)
+         {
+            bits_or_bits(ol_state->buttons.data,
+                  polled_data.buttons.data,
+                  ARRAY_SIZE(polled_data.buttons.data));
 
-         for (j = 0; j < (int)ARRAY_SIZE(ol_state->keys); j++)
-            ol_state->keys[j] |= polled_data.keys[j];
+            for (j = 0; j < (int)ARRAY_SIZE(ol_state->keys); j++)
+               ol_state->keys[j] |= polled_data.keys[j];
 
-         /* Fingers pressed later take priority and matched up
-          * with overlay poll priorities. */
-         for (j = 0; j < 4; j++)
-            if (polled_data.analog[j])
-               ol_state->analog[j] = polled_data.analog[j];
+            /* Fingers pressed later take priority and matched up
+             * with overlay poll priorities. */
+            for (j = 0; j < 4; j++)
+               if (polled_data.analog[j])
+                  ol_state->analog[j] = polled_data.analog[j];
+         }
+         else if (ol_ptr_enable
+               && ptr_state->device_mask
+               && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+            input_overlay_update_pointer_coords(ptr_state, i);
       }
+   }
+
+   if (ol_ptr_enable)
+   {
+      if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
+         input_overlay_poll_lightgun(settings, ol, old_ptr_count);
+      if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
+         input_overlay_poll_mouse(settings, ol, old_ptr_count);
+
+      ptr_state->device_mask = 0;
    }
 
    if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
@@ -2987,7 +3520,7 @@ static void input_poll_overlay(
          (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
          input_overlay_show_inputs_port);
 
-   if (button_pressed)
+   if (button_pressed || ol_ptr_enable)
       input_st->flags |=  INP_FLAG_BLOCK_POINTER_INPUT;
    else
       input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
@@ -4463,13 +4996,15 @@ static void input_overlay_enable_(bool enable)
    else
    {
       /* Disable and clear input state */
-      ol->flags &= ~INPUT_OVERLAY_ENABLE;
+      ol->flags       &= ~INPUT_OVERLAY_ENABLE;
+      input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 
       if (ol->iface && ol->iface->enable)
          ol->iface->enable(ol->iface_data, false);
       ol->iface = NULL;
 
       memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));
+      memset(&ol->pointer_state, 0, sizeof(input_overlay_pointer_state_t));
    }
 }
 
@@ -4480,6 +5015,8 @@ static void input_overlay_deinit(void)
 
    input_overlay_free(input_driver_st.overlay_cache_ptr);
    input_driver_st.overlay_cache_ptr = NULL;
+
+   input_driver_st.flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 }
 
 static void input_overlay_move_to_cache(void)

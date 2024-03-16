@@ -395,6 +395,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST;
       case ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST;
+      case ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_OVERLAY_LIGHTGUN_SETTINGS_LIST;
+      case ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_OVERLAY_MOUSE_SETTINGS_LIST;
       case ACTION_OK_DL_MENU_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST;
 #ifdef _3DS
@@ -1696,6 +1700,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
       case ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST:
       case ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST:
+      case ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST:
+      case ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST:
       case ACTION_OK_DL_MENU_SETTINGS_LIST:
 #ifdef _3DS
       case ACTION_OK_DL_MENU_BOTTOM_SETTINGS_LIST:
@@ -6068,6 +6074,8 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_display_list, ACTION_OK_DL_ONSC
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_notifications_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_notifications_views_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_overlay_list, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_lightgun_settings_list, ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_mouse_settings_list, ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_list, ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_list, ACTION_OK_DL_MENU_SETTINGS_LIST)
 #ifdef _3DS
@@ -8715,6 +8723,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,     action_ok_onscreen_notifications_list},
          {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,action_ok_onscreen_notifications_views_list},
          {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,           action_ok_onscreen_overlay_list},
+         {MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,           action_ok_overlay_lightgun_settings_list},
+         {MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,              action_ok_overlay_mouse_settings_list},
          {MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,                action_ok_osk_overlay_list},
          {MENU_ENUM_LABEL_MENU_SETTINGS,                       action_ok_menu_list},
 #ifdef _3DS

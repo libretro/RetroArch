@@ -873,6 +873,20 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_portrait,       MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_enable,                  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_preset,                  MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_osk_overlay_preset,              MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_pointer_enable,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_port,              MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_trigger_on_touch,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_trigger_delay,     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_allow_offscreen,   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_two_touch_input,   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_three_touch_input, MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_lightgun_four_touch_input,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_mouse_speed,                MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_mouse_hold_to_drag,         MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_mouse_hold_msec,            MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_mouse_dtap_to_drag,         MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_mouse_dtap_msec,            MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_mouse_swipe_threshold,      MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_public_announce,       MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ip_address,            MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_tcp_udp_port,          MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT)
@@ -1246,6 +1260,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_midi_output,                        
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_midi_volume,                           MENU_ENUM_SUBLABEL_MIDI_VOLUME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_overlay_settings_list,        MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_osk_overlay_settings_list,             MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_lightgun_settings_list,        MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_mouse_settings_list,           MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_notifications_settings_list,  MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_notifications_views_settings_list, MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)
 #ifdef HAVE_QT
@@ -3733,6 +3749,48 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OVERLAY_Y_OFFSET_PORTRAIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_y_offset_portrait);
             break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_pointer_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_port);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_trigger_on_touch);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_trigger_delay);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_allow_offscreen);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_two_touch_input);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_three_touch_input);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_lightgun_four_touch_input);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_mouse_speed);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_mouse_hold_to_drag);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_mouse_hold_msec);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_mouse_dtap_to_drag);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_mouse_dtap_msec);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_mouse_swipe_threshold);
+            break;
          case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_dsp_plugin);
             break;
@@ -5268,6 +5326,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_osk_overlay_settings_list);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_lightgun_settings_list);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_mouse_settings_list);
             break;
          case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_notifications_settings_list);
