@@ -1853,6 +1853,28 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          count++;
    }
 
+#ifdef IOS
+   {
+      const char *val_yes_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES);
+      const char *val_no_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO);
+
+      size_t _len     = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE),
+            sizeof(entry));
+      entry[  _len]   = ':';
+      entry[++_len]   = ' ';
+      entry[++_len]   = '\0';
+      if (jit_available())
+         strlcpy(entry + _len, val_yes_str, sizeof(entry) - _len);
+      else
+         strlcpy(entry + _len, val_no_str,  sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+#endif
+
    /* Input devices */
    {
       const char *menu_driver = menu_driver_ident();

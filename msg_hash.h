@@ -858,6 +858,7 @@ enum msg_hash_enums
    /* System information */
    MENU_LABEL(CPU_CORES),
    MENU_LABEL(CPU_ARCHITECTURE),
+   MENU_LABEL(JIT_AVAILABLE),
 
    /* Input  */
 
