@@ -1,5 +1,39 @@
 # Future
-
+- AI: Fix narrator language when AI translation and menu languages are different
+- DISK CONTROL: Add option to disable initial disk change
+- DISK CONTROL: Visibility option for disk control notifications
+- EMSCRIPTEN: Fix mouse Y parameter translation in rwebinput
+- INPUT: Fix input state combos including R3 and false triggers of RETROK_UNKNOWN
+- INPUT: Add a new turbo mode, "Classic (Toggle)"
+- INPUT: Fix bind hold when axis does not rest at 0
+- INPUT: Limit axis threshold setting to sensible values
+- INPUT/LINUXRAW: Fix device name and hotplug reconnect
+- IOS/TVOS: Pause application on applicationWillResignActive
+- LIBRETRO: Add Doxygen-styled comments to parts of the libretro API
+- MENU: Add sublabels for input bind common entries
+- MENU: Don't load history and favorites if size is 0
+- MENU: Don't disable fast forward when entering menu
+- MENU: Widget position, size, color, icon adjustments
+- MENU: Fix savestate slots in Qt UI
+- MENU: Reorder and reduce depth of User Interface menu
+- MENU/OZONE: Fix sidebar wraparound, visibility after config load, crash after playlist delete
+- MENU/OZONE: Fix sidebar and sublabel animations
+- OSX/MACOS: Fix crash on non-Metal build
+- OSX/MACOS: Add portable.txt as flag for portable install
+- REMOTE RETROPAD: add display for analog axes, indication of inputs already pressed
+- TVOS: Force asset re-extraction when cache is deleted
+- TVOS: Add history and favorites to Top Shelf
+- TVOS: Fix crash when history item does not have a label
+- UWP: Enable HAVE_ACCESSIBILITY for UWP builds
+- UWP: Allow UWP build to work with a modified version of Mesa Gallium D3D12
+- VIDEO: Add subframe shader support for Vulkan/GLcore/DX10-11-12, enabling shaders to run at higher framerate than the content
+- VIDEO: Fix restoring fullscreen/windowed setting when unloading override
+- VIDEO/VULKAN: Fix HDR with Vulkan after reinit
+- VIDEO/VULKAN: Remove the use of oldSwapchain
+- VIDEO/GL2: Fix OpenGL ES version detection
+- WEBOS: Fix build, add core location on webosbrew.org
+- WIN32: Fix Alt+Enter not working when menubar is disabled
+ 
 # 1.17.0
 - ACCESSIBILITY/TTS: fix target language and missing espeak handling on Linux
 - AI: AI service reworked: performance increase, automatic translation, configurable subtitle placement, and more
