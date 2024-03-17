@@ -5250,6 +5250,12 @@ MSG_HASH(
    "Opacità di tutti gli elementi UI della sovrapposizione tastiera."
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(

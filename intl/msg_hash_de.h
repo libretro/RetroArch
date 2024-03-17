@@ -5222,6 +5222,12 @@ MSG_HASH(
    "Deckkraft aller Bedienelemente des Tastatur-Overlays."
    )
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(
