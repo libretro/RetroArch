@@ -635,6 +635,10 @@ MSG_HASH(
    "Núcleos de la CPU"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT disponible"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identificador del front-end"
    )
@@ -5302,6 +5306,30 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
    "Selecciona y ajusta una superposición de teclado."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Activar superposición para «lightguns», ratón y punteros"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Utiliza todas las acciones táctiles que no pulsen controles de la superposición para crear acciones de entrada de dispositivos de puntero para el núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "«Lightgun» mediante la superposición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Configura las acciones de entrada de «lightguns» enviadas a través de la superposición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "Ratón mediante la superposición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Configura las acciones de entrada de los ratones/mice enviadas a través de la superposición."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -5328,6 +5356,120 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
    "Controla la opacidad de todos los elementos de la superposición de teclado."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Puerto de «lightgun»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Establece el puerto del núcleo que recibirá las acciones de entrada de la «lightgun» de la superposición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "Cualquiera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Apretar el gatillo al tocar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Envía una señal del gatillo junto con la del puntero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Retraso del gatillo (fotogramas)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Retrasa las acciones de entrada del gatillo para dar un margen de tiempo al cursor para que pueda desplazarse. Este retraso también sirve para contabilizar correctamente una acción táctil de varios dedos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Acción de dos dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Selecciona la acción de entrada que se enviará cuando haya dos punteros en pantalla. El retraso del gatillo debería tener un valor ajeno a 0 para poder distinguir una acción de la otra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Acción de tres dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Selecciona la acción de entrada que se enviará cuando haya tres punteros en pantalla. El retraso del gatillo debería tener un valor ajeno a 0 para poder distinguir una acción de la otra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Acción de cuatro dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Selecciona la acción de entrada que se enviará cuando haya cuatro punteros en pantalla. El retraso del gatillo debería tener un valor ajeno a 0 para poder distinguir una acción de la otra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Permitir apuntar fuera de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Permite apuntar fuera de los límites de la pantalla. Desactiva esta opción para limitar el apuntado fuera de pantalla al interior del borde."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Velocidad del ratón"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "Ajusta la velocidad del movimiento del cursor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Mantener pulsado para arrastrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Mantén pulsada la pantalla para mantener pulsado un botón."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Umbral de pulsación larga (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Ajusta el tiempo que debes mantener pulsada la pantalla para reconocer una pulsación larga."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Tocar dos veces para arrastrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Toca la pantalla dos veces para empezar a mantener pulsado un botón con el segundo toque. Añadirá un retraso a las pulsaciones del ratón."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Umbral del toque doble (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Ajusta el margen de tiempo entre toques con el que se detectará uno doble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Umbral de deslizamiento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Ajusta el rango de movimiento permitido a la hora de detectar una pulsación larga o un toque. Se representa como un porcentaje de la dimensión más pequeña de la pantalla."
    )
 
 /* Settings > On-Screen Display > Video Layout */

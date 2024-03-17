@@ -599,6 +599,10 @@ MSG_HASH(
    "Núcleos da CPU"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT disponível"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identificador da interface"
    )
@@ -4385,6 +4389,16 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Velocidade do mouse"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
