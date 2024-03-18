@@ -4902,10 +4902,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
    "Nakładka myszy"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   "Skonfiguruj wprowadzanie myszy wysyłane z nakładki."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
