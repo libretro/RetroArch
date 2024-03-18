@@ -575,6 +575,9 @@ typedef struct settings
 #ifdef _3DS
       char directory_bottom_assets[PATH_MAX_LENGTH];
 #endif
+#ifdef HAVE_TEST_DRIVERS
+      char test_input_file_joypad[PATH_MAX_LENGTH];
+#endif
       char log_dir[PATH_MAX_LENGTH];
       char app_icon[PATH_MAX_LENGTH];
    } paths;

@@ -663,6 +663,9 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
                "[Remote RetroPad]: Test sequence finished at frame %d, result: %d/%d inputs detected\n",
                current_frame, pass_count, last_test_step);
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+               "[Remote RetroPad]: Validated state: %08x combo: %08x\n",
+               input_state_validated, combo_state_validated);
          }
       }
 
