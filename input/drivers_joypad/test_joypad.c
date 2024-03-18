@@ -15,9 +15,11 @@
  */
 
 /* Possible improvement list:
- * Add vid/pid to autoconf profile step
+ * Add vid/pid to autoconf profile step, if autoconf matching needs testing
  * Multiple device autoconf profiles, with different analog/digital setup, analog buttons, extra buttons, unconfigured buttons...
+ * Unimplemented functions (get_button, rumble)
  */
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +42,14 @@
 #ifndef MAX_AXIS
 #define MAX_AXIS 10
 #endif
+
+#define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
+#define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
+#define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
+#define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
+#define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST    47
+#define JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST    1000
+#define JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST     JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST+MAX_AXIS*DEFAULT_MAX_PADS
 
 typedef struct
 {
@@ -81,11 +91,11 @@ typedef struct
    unsigned action;
    unsigned param_num;
    char *param_str;
-} ITifJSONContext;
+} JTifJSONContext;
 
-static bool ITifJSONObjectEndHandler(void* context)
+static bool JTifJSONObjectEndHandler(void* context)
 {
-   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+   JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
    /* Too long input is handled elsewhere, it should not lead to parse error */
    if (current_test_step >= MAX_TEST_STEPS)
@@ -114,9 +124,9 @@ static bool ITifJSONObjectEndHandler(void* context)
    return true;
 }
 
-static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool JTifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
 {
-   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+   JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
    /* something went wrong */
    if (pCtx->current_entry_str_val)
@@ -138,9 +148,9 @@ static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_
    return true;
 }
 
-static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool JTifJSONNumberHandler(void* context, const char *pValue, size_t length)
 {
-   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+   JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
    if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
@@ -151,9 +161,9 @@ static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t leng
    return true;
 }
 
-static bool ITifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool JTifJSONStringHandler(void* context, const char *pValue, size_t length)
 {
-   ITifJSONContext *pCtx = (ITifJSONContext*)context;
+   JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
    if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
    {
@@ -174,7 +184,7 @@ static bool ITifJSONStringHandler(void* context, const char *pValue, size_t leng
 static bool input_test_file_read(const char* file_path)
 {
    bool success            = false;
-   ITifJSONContext context = {0};
+   JTifJSONContext context = {0};
    RFILE *file             = NULL;
    rjson_t* parser;
 
@@ -212,10 +222,10 @@ static bool input_test_file_read(const char* file_path)
 
    /* Read file */
    if (rjson_parse(parser, &context,
-         ITifJSONObjectMemberHandler,
-         ITifJSONStringHandler,
-         ITifJSONNumberHandler,
-         NULL, ITifJSONObjectEndHandler, NULL, NULL, /* object/array handlers */
+         JTifJSONObjectMemberHandler,
+         JTifJSONStringHandler,
+         JTifJSONNumberHandler,
+         NULL, JTifJSONObjectEndHandler, NULL, NULL, /* object/array handlers */
          NULL, NULL) /* unused boolean/null handlers */
          != RJSON_DONE)
    {
@@ -305,7 +315,7 @@ static void *test_joypad_init(void *data)
    {
       if (input_test_steps[i].frame > 0)
          continue;
-      if (input_test_steps[i].action == 1)
+      if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_ADD_CONTROLLER)
       {
          test_joypads[input_test_steps[i].param_num].name = input_test_steps[i].param_str;
          test_joypad_autodetect_add(input_test_steps[i].param_num);
@@ -389,39 +399,57 @@ static void test_joypad_poll(void)
    {
       if (!input_test_steps[i].handled && curr_frame > input_test_steps[i].frame)
       {
-         if (input_test_steps[i].action == 1)
+         if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_ADD_CONTROLLER)
          {
             test_joypads[input_test_steps[i].param_num].name = input_test_steps[i].param_str;
             test_joypad_autodetect_add(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
          }
-         else if(input_test_steps[i].action >= 16 && input_test_steps[i].action <= 31)
+         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST &&
+                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
          {
-            unsigned targetpad = input_test_steps[i].action - 16;
+            unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST;
             test_joypads[targetpad].button_state |= input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
-            RARCH_DBG("[Test input driver]: Pressing device %d buttons %x, new state %x.\n",targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
+            RARCH_DBG(
+               "[Test input driver]: Pressing device %d buttons %x, new state %x.\n",
+               targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
-         else if(input_test_steps[i].action >= 32 && input_test_steps[i].action <= 47)
+         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST &&
+                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST)
          {
-            unsigned targetpad = input_test_steps[i].action - 32;
+            unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST;
             test_joypads[targetpad].button_state &= ~input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
-            RARCH_DBG("[Test input driver]: Releasing device %d buttons %x, new state %x.\n",targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
+            RARCH_DBG(
+               "[Test input driver]: Releasing device %d buttons %x, new state %x.\n",
+               targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
-         else if(input_test_steps[i].action >= 1000 && input_test_steps[i].action <= 1000+MAX_AXIS*DEFAULT_MAX_PADS)
+         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST &&
+                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST)
          {
-            unsigned targetpad = (input_test_steps[i].action - 1000)/MAX_AXIS;
-            unsigned targetaxis = input_test_steps[i].action - 1000 - (targetpad*MAX_AXIS);
+            unsigned targetpad =
+               (input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST) / MAX_AXIS;
+            unsigned targetaxis =
+               input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST - (targetpad*MAX_AXIS);
             if (targetpad < DEFAULT_MAX_PADS && targetaxis < MAX_AXIS)
                test_joypads[targetpad].axis_state[targetaxis] = (int16_t) input_test_steps[i].param_num;
+            else
+               RARCH_WARN(
+                  "[Test input driver]: Decoded axis outside target range: action %d pad %d axis %d.\n",
+                  input_test_steps[i].action, targetpad, targetaxis);
+
             input_test_steps[i].handled = true;
-            RARCH_DBG("[Test input driver]: Setting axis device %d axis %d value %d.\n",targetpad, targetaxis, (int16_t)input_test_steps[i].param_num);
+            RARCH_DBG(
+               "[Test input driver]: Setting axis device %d axis %d value %d.\n",
+               targetpad, targetaxis, (int16_t)input_test_steps[i].param_num);
          }
          else
          {
             input_test_steps[i].handled = true;
-            RARCH_WARN("[Test input driver]: Unrecognized action %d in step %d, skipping\n",input_test_steps[i].action,i);
+            RARCH_WARN(
+               "[Test input driver]: Unrecognized action %d in step %d, skipping\n",
+               input_test_steps[i].action,i);
          }
 
       }

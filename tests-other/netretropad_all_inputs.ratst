@@ -1,19 +1,19 @@
 [
 {
   "expected_button": 8,
-  "message": "Press A"
+  "message": "Press A (face button right)"
 },
 {
   "expected_button": 0,
-  "message": "Press B"
+  "message": "Press B (face button bottom)"
 },
 {
   "expected_button": 9,
-  "message": "Press X"
+  "message": "Press X (face button top)"
 },
 {
   "expected_button": 1,
-  "message": "Press Y"
+  "message": "Press Y (face button left)"
 },
 {
   "expected_button": 2,
