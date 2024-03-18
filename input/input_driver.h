@@ -1113,6 +1113,7 @@ extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
 extern input_device_driver_t rwebpad_joypad;
+extern input_device_driver_t test_joypad;
 
 #ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;

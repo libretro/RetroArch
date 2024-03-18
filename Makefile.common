@@ -2431,6 +2431,12 @@ ifeq ($(HAVE_WEBOS), 1)
   DEFINES += -DWEBOS
 endif
 
+ifeq ($(HAVE_TEST_DRIVERS), 1)
+  DEFINES += -DHAVE_TEST_DRIVERS
+  OBJ += input/drivers_joypad/test_joypad.o
+endif
+
+
 #####################################
 ### Android Play Feature Delivery ###
 ### (Play Store build core        ###

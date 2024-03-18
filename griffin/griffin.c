@@ -730,6 +730,10 @@ INPUT
 #endif
 #endif
 
+#ifdef HAVE_TEST_DRIVERS
+#include "../input/drivers_joypad/test_joypad.c"
+#endif
+
 /*============================================================
 INPUT (HID)
 ============================================================ */

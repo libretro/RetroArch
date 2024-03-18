@@ -481,7 +481,11 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
             "sdl2"))
          fallback_device_name = "Standard Gamepad";
-
+#ifdef HAVE_TEST_DRIVERS
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "test"))
+         fallback_device_name = "Test Gamepad";
+#endif
       if (!string_is_empty(fallback_device_name) &&
           !string_is_equal(autoconfig_handle->device_info.name,
                fallback_device_name))
