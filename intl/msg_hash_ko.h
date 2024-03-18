@@ -5366,10 +5366,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
    "오버레이 마우스"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   "오버레이에서 보내는 마우스 입력을 설정합니다."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
