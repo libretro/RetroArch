@@ -178,6 +178,7 @@ struct android_app
 
    jmethodID getVolumeCount;
    jmethodID getVolumePath;
+   jmethodID inputGrabMouse;
 
    struct
    {
