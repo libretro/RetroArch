@@ -5334,6 +5334,30 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
    "Выбор и подстройка оверлея клавиатуры."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Световой пистолет, мышь и указатель с оверлея"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Использовать любые касания не по кнопкам оверлея для передачи ядру событий ввода с указывающего устройства."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "Световой пистолет с оверлея"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Настройка событий ввода светового пистолета, отправляемых с оверлея."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "Мышь с оверлея"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Настройка событий ввода мыши, отправляемых с оверлея. Примечание: одиночные, двойные и тройные касания передают клики левой, правой и средней кнопками мыши."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -5364,9 +5388,77 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Порт светового пистолета"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Порт ядра, который получает события ввода светового пистолета с оверлея."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "Любой"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Нажатие курка при касании"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Передавать нажатия курка, используя ввод с указателя."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Задержка курка (в кадрах)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Задержка срабатывания курка, чтобы предоставить время для смещения курсора. Также используется для регистрации правильного количества одновременных нажатий."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Скорость мыши"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "Настройка скорости перемещения курсора."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Перетаскивание долгим тапом"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Сделайте долгий тап по экрану, чтобы начать удерживание кнопки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Задержка долгого нажатия (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Время удерживания, необходимое для долгого нажатия (тапа)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Перетаскивание двойным тапом"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Сделайте двойной тап по экрану для удерживания кнопки после второго касания. Добавляет задержку к кликам мыши."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Задержка двойного тапа (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Допустимая задержка между касаниями для срабатывания двойного тапа."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 

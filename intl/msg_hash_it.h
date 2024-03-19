@@ -5242,6 +5242,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
    "Overlay del Mouse"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Configurare l'input del mouse inviato dalla sovrapposizione. Nota: 1-, 2-, e 3 dita tocca mandare clic a sinistra, destra e centrale."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
