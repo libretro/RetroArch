@@ -4232,6 +4232,28 @@ static bool vulkan_frame(void *data, const void *frame,
      vulkan_filter_chain_set_current_shader_subframe(
            (vulkan_filter_chain_t*)vk->filter_chain, 1);
    }
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  (backbuffer->image != VK_NULL_HANDLE)
+         &&  !black_frame_insertion
+         &&  !input_driver_nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(vk->flags & VK_FLAG_MENU_ENABLE))
+         &&  !(vk->context->swap_interval > 1))
+   {
+      vulkan_filter_chain_set_simulate_scanline(
+            (vulkan_filter_chain_t*)vk->filter_chain, true);
+   }
+   else
+   {
+      vulkan_filter_chain_set_simulate_scanline(
+            (vulkan_filter_chain_t*)vk->filter_chain, false);
+   }
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION 
+
 #ifdef HAVE_REWIND
    vulkan_filter_chain_set_frame_direction(
          (vulkan_filter_chain_t*)vk->filter_chain,

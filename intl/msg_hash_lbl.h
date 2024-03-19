@@ -4132,6 +4132,10 @@ MSG_HASH(
    "video_shader_subframes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES,
+   "video_scan_subframes"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
    "video_crop_overscan"
    )
