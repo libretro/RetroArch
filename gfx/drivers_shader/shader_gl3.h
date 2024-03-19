@@ -25,6 +25,8 @@
 
 #include "glslang_util.h"
 
+#define GL3_ROLLING_SCANLINE_SIMULATION
+
 RETRO_BEGIN_DECLS
 
 typedef struct gl3_filter_chain gl3_filter_chain_t;
@@ -124,6 +126,12 @@ void gl3_filter_chain_set_shader_subframes(
 void gl3_filter_chain_set_current_shader_subframe(
       gl3_filter_chain_t *chain,
       uint32_t cur_subframe);
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+void gl3_filter_chain_set_simulate_scanline(
+      gl3_filter_chain_t *chain,
+      bool simulate_scanline);
+#endif // GL3_ROLLING_SCANLINE_SIMULATION     
 
 void gl3_filter_chain_set_pass_name(
       gl3_filter_chain_t *chain,

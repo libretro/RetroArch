@@ -76,6 +76,8 @@ const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0
 #endif
 #endif
 
+#define D3D11_ROLLING_SCANLINE_SIMULATION
+
 /* Temporary workaround for d3d11 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d11_fake_context;
 
@@ -3025,7 +3027,23 @@ static bool d3d11_gfx_frame(
                context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
    }
 
-   context->lpVtbl->RSSetState(context, d3d11->scissor_disabled);
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !black_frame_insertion
+         &&  !nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)))
+   {
+      context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
+   }
+   else
+#endif // D3D11_ROLLING_SCANLINE_SIMULATION 
+   {
+      context->lpVtbl->RSSetState(context, d3d11->scissor_disabled);
+   } 
+
    d3d11->context->lpVtbl->OMSetBlendState(
          d3d11->context, d3d11->blend_disable,
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
@@ -3158,6 +3176,41 @@ static bool d3d11_gfx_frame(
                &d3d11->pass[i].rt.rt_view, NULL);
          context->lpVtbl->RSSetViewports(context, 1, &d3d11->pass[i].viewport);
 
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+         if (      (video_info->shader_subframes > 1)
+               &&  (video_info->scan_subframes)
+               &&  !black_frame_insertion
+               &&  !nonblock_state
+               &&  !runloop_is_slowmotion
+               &&  !runloop_is_paused
+               &&  (!(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)))
+         {
+            D3D11_RECT scissor_rect;
+
+            scissor_rect.left   = 0;
+            scissor_rect.top    = (unsigned int)(((float)d3d11->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+                                    * (float)video_info->current_subframe);
+            scissor_rect.right  = d3d11->pass[i].viewport.Width ;
+            scissor_rect.bottom = (unsigned int)(((float)d3d11->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+                                    * (float)(video_info->current_subframe + 1));
+
+            d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1,
+                  &scissor_rect);
+         }
+         else
+         {
+            D3D11_RECT scissor_rect;
+
+            scissor_rect.left   = 0;
+            scissor_rect.top    = 0;
+            scissor_rect.right  = d3d11->pass[i].viewport.Width;
+            scissor_rect.bottom = d3d11->pass[i].viewport.Height;
+
+            d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1,
+                  &scissor_rect);
+         }
+#endif // D3D11_ROLLING_SCANLINE_SIMULATION  
+
          if (i == d3d11->shader_preset->passes - 1)
             context->lpVtbl->Draw(context, 4, 0);
          else
@@ -3203,6 +3256,33 @@ static bool d3d11_gfx_frame(
             &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
    }
+
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !black_frame_insertion
+         &&  !nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)))
+   {
+      D3D11_RECT scissor_rect;
+
+      scissor_rect.left   = 0;
+      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+                              * (float)video_info->current_subframe);
+      scissor_rect.right  = video_width ;
+      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+                              * (float)(video_info->current_subframe + 1));
+
+      d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1,
+            &scissor_rect);
+   }
+   else
+   {
+      d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &d3d11->scissor);
+   }
+#endif // D3D11_ROLLING_SCANLINE_SIMULATION  
 
    context->lpVtbl->Draw(context, 4, 0);
    context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
@@ -3458,6 +3538,10 @@ static bool d3d11_gfx_frame(
       d3d11->flags |= D3D11_ST_FLAG_FRAME_DUPE_LOCK;
       for (k = 1; k < video_info->shader_subframes; k++)
       {
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+         video_info->current_subframe = k;
+#endif // D3D11_ROLLING_SCANLINE_SIMULATION  
+
          if (d3d11->shader_preset)
             for (m = 0; m < d3d11->shader_preset->passes; m++)
             {

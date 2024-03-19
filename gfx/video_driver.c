@@ -2563,6 +2563,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
    video_info->shader_subframes            = settings->uints.video_shader_subframes;
+   video_info->current_subframe            = 0;
+   video_info->scan_subframes              = settings->bools.video_scan_subframes;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->runahead                    = settings->bools.run_ahead_enabled;
@@ -3920,6 +3922,7 @@ void video_driver_frame(const void *data, unsigned width,
          && video_st->current_video
          && video_st->current_video->frame)
    {
+      video_info.current_subframe = 0;
       if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,

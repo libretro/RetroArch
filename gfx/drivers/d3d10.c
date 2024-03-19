@@ -60,6 +60,8 @@
 #error "UWP does not support D3D10"
 #endif
 
+#define D3D10_ROLLING_SCANLINE_SIMULATION
+
 typedef struct
 {
    d3d10_texture_t               texture;
@@ -2417,6 +2419,41 @@ static bool d3d10_gfx_frame(
             context->lpVtbl->RSSetViewports(context, 1,
                   &d3d10->pass[i].viewport);
 
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION
+            if (      (video_info->shader_subframes > 1)
+                  &&  (video_info->scan_subframes)
+                  &&  !black_frame_insertion
+                  &&  !nonblock_state
+                  &&  !runloop_is_slowmotion
+                  &&  !runloop_is_paused
+                  &&  (!(d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)))
+            {
+               D3D10_RECT scissor_rect;
+
+               scissor_rect.left   = 0;
+               scissor_rect.top    = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+                                       * (float)video_info->current_subframe);
+               scissor_rect.right  = d3d10->pass[i].viewport.Width ;
+               scissor_rect.bottom = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+                                       * (float)(video_info->current_subframe + 1));
+
+               d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
+                     &scissor_rect);
+            }
+            else
+            {
+               D3D10_RECT scissor_rect;
+
+               scissor_rect.left   = 0;
+               scissor_rect.top    = 0;
+               scissor_rect.right  = d3d10->pass[i].viewport.Width;
+               scissor_rect.bottom = d3d10->pass[i].viewport.Height;
+
+               d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
+                     &scissor_rect);
+            }
+#endif // D3D10_ROLLING_SCANLINE_SIMULATION            
+
             context->lpVtbl->Draw(context, 4, 0);
             texture = &d3d10->pass[i].rt;
          }
@@ -2448,6 +2485,29 @@ static bool d3d10_gfx_frame(
          d3d10->clearcolor);
    context->lpVtbl->RSSetViewports(context, 1, &d3d10->frame.viewport);
 
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION  
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !black_frame_insertion
+         &&  !nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)))
+   {
+      D3D10_RECT scissor_rect;
+
+      scissor_rect.left   = 0;
+      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+                              * (float)video_info->current_subframe);
+      scissor_rect.right  = video_width ;
+      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+                              * (float)(video_info->current_subframe + 1));
+
+      d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
+            &scissor_rect);
+   }
+   else
+#endif // D3D10_ROLLING_SCANLINE_SIMULATION  
    {
       D3D10_RECT scissor_rect;
 
@@ -2463,6 +2523,20 @@ static bool d3d10_gfx_frame(
    context->lpVtbl->Draw(context, 4, 0);
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_enable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
+
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION  
+   {
+      D3D10_RECT scissor_rect;
+
+      scissor_rect.left   = 0;
+      scissor_rect.top    = 0;
+      scissor_rect.right  = video_width;
+      scissor_rect.bottom = video_height;
+
+      d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
+            &scissor_rect);
+   }
+#endif // D3D10_ROLLING_SCANLINE_SIMULATION  
 
    if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
          && d3d10->menu.texture.handle)
@@ -2622,8 +2696,13 @@ static bool d3d10_gfx_frame(
          &&  (!(d3d10->flags & D3D10_ST_FLAG_FRAME_DUPE_LOCK)))
    {
       d3d10->flags |= D3D10_ST_FLAG_FRAME_DUPE_LOCK;
+      
       for (k = 1; k < video_info->shader_subframes; k++)
       {
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION  
+         video_info->current_subframe = k;
+#endif // D3D10_ROLLING_SCANLINE_SIMULATION  
+
          if (d3d10->shader_preset)
             for (m = 0; m < d3d10->shader_preset->passes; m++)
             {

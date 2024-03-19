@@ -2604,6 +2604,25 @@ static bool gl3_frame(void *data, const void *frame,
            gl->filter_chain, 1);
    }
 
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !video_info->black_frame_insertion
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
+   {
+      gl3_filter_chain_set_simulate_scanline(
+            gl->filter_chain, true);
+   }
+   else
+   {
+      gl3_filter_chain_set_simulate_scanline(
+            gl->filter_chain, false);
+   }   
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
          &gl->filter_chain_vp);
