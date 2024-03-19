@@ -7933,14 +7933,14 @@ void runloop_path_set_redirect(settings_t *settings,
    char new_savestate_dir[PATH_MAX_LENGTH];
    char intermediate_savefile_dir[PATH_MAX_LENGTH];
    char intermediate_savestate_dir[PATH_MAX_LENGTH];
-   runloop_state_t *runloop_st = &runloop_state;
-   struct retro_system_info *sysinfo = &runloop_st->system.info;
-   bool sort_savefiles_enable = settings->bools.sort_savefiles_enable;
-   bool sort_savefiles_by_content_enable = settings->bools.sort_savefiles_by_content_enable;
-   bool sort_savestates_enable = settings->bools.sort_savestates_enable;
+   runloop_state_t *runloop_st            = &runloop_state;
+   struct retro_system_info *sysinfo      = &runloop_st->system.info;
+   bool sort_savefiles_enable             = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content_enable  = settings->bools.sort_savefiles_by_content_enable;
+   bool sort_savestates_enable            = settings->bools.sort_savestates_enable;
    bool sort_savestates_by_content_enable = settings->bools.sort_savestates_by_content_enable;
-   bool savefiles_in_content_dir = settings->bools.savefiles_in_content_dir;
-   bool savestates_in_content_dir = settings->bools.savestates_in_content_dir;
+   bool savefiles_in_content_dir          = settings->bools.savefiles_in_content_dir;
+   bool savestates_in_content_dir         = settings->bools.savestates_in_content_dir;
 
    content_dir_name[0] = '\0';
 
@@ -7990,7 +7990,7 @@ void runloop_path_set_redirect(settings_t *settings,
    {
 #ifdef HAVE_MENU
       if (!string_is_equal(sysinfo->library_name,
-             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
          /* Per-core and/or per-content-directory saves */
@@ -8081,7 +8081,7 @@ void runloop_path_set_redirect(settings_t *settings,
 
    if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
-      bool savefile_is_dir = path_is_directory(new_savefile_dir);
+      bool savefile_is_dir  = path_is_directory(new_savefile_dir);
       bool savestate_is_dir = path_is_directory(new_savestate_dir);
       if (savefile_is_dir)
          strlcpy(runloop_st->name.savefile, new_savefile_dir,
