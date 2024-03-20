@@ -3543,6 +3543,10 @@ MSG_HASH(
    "Набор налад накладкі"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Накладка светлавога пісталета, мышы ды ўказальніка"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    "Накладка светлавога пісталета"
    )
