@@ -2055,6 +2055,18 @@ MSG_HASH(
    "Capturar pantalla mediante la GPU"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Simulación de escalonamiento de líneas de barrido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Simula de forma básica el escalonamiento de las líneas de barrido a lo largo de varios subfotogramas diviendo la pantalla en partes verticales y renderizando cada una de las mismas en función de los subfotogramas que existan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simula de forma básica el escalonamiento de las líneas de barrido a lo largo de varios subfotogramas diviendo la pantalla en partes verticales y renderizando cada una de las mismas en función de los subfotogramas que existan, de arriba a abajo."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Si es posible, las capturas de pantalla mostrarán la imagen con los shaders aplicados por la GPU."
    )
