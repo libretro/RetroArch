@@ -1,15 +1,22 @@
 # Future
+
+# 1.18.0
 - AI: Fix narrator language when AI translation and menu languages are different
 - DISK CONTROL: Add option to disable initial disk change
 - DISK CONTROL: Visibility option for disk control notifications
+- DRM: Fix mode vrefresh calculation. When using an interlaced/doublescan mode, the vertical refresh rate is mis-calculated.
 - EMSCRIPTEN: Fix mouse Y parameter translation in rwebinput
 - INPUT: Fix input state combos including R3 and false triggers of RETROK_UNKNOWN
 - INPUT: Add a new turbo mode, "Classic (Toggle)"
 - INPUT: Fix bind hold when axis does not rest at 0
 - INPUT: Limit axis threshold setting to sensible values
+- INPUT: Add Overlay Mouse, Lightgun, and Pointer
+- INPUT/ANDROID: Fix mouse grab behavior on Android
 - INPUT/LINUXRAW: Fix device name and hotplug reconnect
+- IOS: Minor iOS JIT availability information
 - IOS/TVOS: Pause application on applicationWillResignActive
 - LIBRETRO: Add Doxygen-styled comments to parts of the libretro API
+- LUA: Update Lua to version 5.3.6
 - MENU: Add sublabels for input bind common entries
 - MENU: Don't load history and favorites if size is 0
 - MENU: Don't disable fast forward when entering menu
@@ -21,6 +28,8 @@
 - OSX/MACOS: Fix crash on non-Metal build
 - OSX/MACOS: Add portable.txt as flag for portable install
 - REMOTE RETROPAD: add display for analog axes, indication of inputs already pressed
+- SAVES: Allow combining saves in content dir with save sorting
+- SHADER: Added rolling scan line simulation based on the shader subframe feature. This is implemented with a scrolling scissor rect rather than in the shader itself as this is more efficient although may not work for every shader pass - we may need an option to exclude certain passes. The implementation simply divides the screen up by the number of sub frames and then moves the scissor rect down over the screen over the number of sub frames
 - TVOS: Force asset re-extraction when cache is deleted
 - TVOS: Add history and favorites to Top Shelf
 - TVOS: Fix crash when history item does not have a label
@@ -31,6 +40,7 @@
 - VIDEO/VULKAN: Fix HDR with Vulkan after reinit
 - VIDEO/VULKAN: Remove the use of oldSwapchain
 - VIDEO/GL2: Fix OpenGL ES version detection
+- WEBDAV: Fixed SEGFAULT in WebDav task sync + type changes 
 - WEBOS: Fix build, add core location on webosbrew.org
 - WIN32: Fix Alt+Enter not working when menubar is disabled
  
