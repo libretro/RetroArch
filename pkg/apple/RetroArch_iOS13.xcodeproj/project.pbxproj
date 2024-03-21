@@ -1739,7 +1739,7 @@
 				CODE_SIGN_ENTITLEMENTS = RetroArchTopShelfExtension/RetroArchTopShelfExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1762,7 +1762,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch.RetroArchTopShelfExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1806,7 +1806,7 @@
 				CODE_SIGN_ENTITLEMENTS = RetroArchTopShelfExtension/RetroArchTopShelfExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1829,7 +1829,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch.RetroArchTopShelfExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
@@ -1872,7 +1872,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1904,7 +1904,7 @@
 					"@executable_path/modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
@@ -1947,7 +1947,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1979,7 +1979,7 @@
 					"@executable_path/modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
 					"$(inherited)",
@@ -2038,7 +2038,7 @@
 				CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTV.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -2077,7 +2077,7 @@
 					"$(PROJECT_DIR)/tvOS/modules",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "$(inherited)";
@@ -2127,7 +2127,7 @@
 				CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTV.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -2166,7 +2166,7 @@
 					"$(PROJECT_DIR)/tvOS/modules",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = "$(inherited)";
@@ -2217,7 +2217,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2240,7 +2240,7 @@
 					"@executable_path/../../modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2288,7 +2288,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.17.0;
+				CURRENT_PROJECT_VERSION = 1.18.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2311,7 +2311,7 @@
 					"@executable_path/../../modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.17.0;
+				MARKETING_VERSION = 1.18.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
