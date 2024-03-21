@@ -2075,6 +2075,18 @@ MSG_HASH(
    "GPU 스크린샷 사용"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "롤링 스캔라인 시뮬레이션"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "여러 개의 서브프레임을 가지고 화면을 세로로 나눠 각 구간에 맞는 서브프레임을 렌더하는 식으로 롤링 스캔라인 효과를 흉내냅니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "여러 개의 서브프레임을 가지고 화면을 세로로 나눠 위에서 아래로 내려가며 각 구간에 맞는 서브프레임을 렌더하는 식으로 롤링 스캔라인 효과를 흉내냅니다."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "가능한 경우 스크린샷을 GPU에서 셰이더 처리된 화면으로 저장합니다."
    )
