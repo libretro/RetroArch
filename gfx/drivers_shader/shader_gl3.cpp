@@ -2747,6 +2747,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
+
+            case RARCH_SCALE_ORIGINAL:
+               pass_info.scale_x      = pass->fbo.scale_x;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+               break;
          }
 
          switch (pass->fbo.type_y)
@@ -2765,6 +2770,12 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
+
+            case RARCH_SCALE_ORIGINAL:
+               pass_info.scale_y      = pass->fbo.scale_x;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+               break;
+
          }
       }
 
