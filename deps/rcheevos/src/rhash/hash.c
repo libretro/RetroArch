@@ -528,7 +528,7 @@ static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector
     verbose_message_callback(message);
   }
 
-  if (size < (unsigned)num_read)
+  if (size < (unsigned)num_read) /* we read a whole sector - only hash the part containing file data */
     num_read = (size_t)size;
 
   do
@@ -834,11 +834,17 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
     uint32_t filename_len  = RC_ZIP_READ_LE16(cdir + 0x1C);
     int32_t  extra_len     = RC_ZIP_READ_LE16(cdir + 0x1E);
     int32_t  comment_len   = RC_ZIP_READ_LE16(cdir + 0x20);
+    int32_t  external_attr = RC_ZIP_READ_LE16(cdir + 0x26);
     uint64_t local_hdr_ofs = RC_ZIP_READ_LE32(cdir + 0x2A);
     cdir_entry_len = cdirhdr_size + filename_len + extra_len + comment_len;
 
     if (signature != 0x02014b50) /* expected central directory entry signature */
       break;
+
+    /* Ignore records describing a directory (we only hash file records) */
+    name = (cdir + cdirhdr_size);
+    if (name[filename_len - 1] == '/' || name[filename_len - 1] == '\\' || (external_attr & 0x10))
+        continue;
 
     /* Handle Zip64 fields */
     if (decomp_size == 0xFFFFFFFF || comp_size == 0xFFFFFFFF || local_hdr_ofs == 0xFFFFFFFF)
@@ -893,7 +899,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
     hashindex++;
 
     /* Convert and store the file name in the hash data buffer */
-    for (name = (cdir + cdirhdr_size), name_end = name + filename_len; name != name_end; name++)
+    for (name_end = name + filename_len; name != name_end; name++)
     {
       *(hashdata++) =
         (*name == '\\' ? '/' : /* convert back-slashes to regular slashes */
@@ -1717,7 +1723,7 @@ static int rc_hash_nintendo_3ds_ncch(md5_state_t* md5, void* file_handle, uint8_
         }
 
         AES_init_ctx(&ncch_aes, primary_key);
-        AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], exefs_section_size);
+        AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], (size_t)exefs_section_size);
       }
     }
   }

@@ -42,9 +42,12 @@ typedef struct rc_client_generic_callback_data_t {
 
 typedef struct rc_client_pending_media_t
 {
+#ifdef RC_CLIENT_SUPPORTS_HASH
   const char* file_path;
   uint8_t* data;
   size_t data_size;
+#endif
+  const char* hash;
   rc_client_callback_t callback;
   void* callback_userdata;
 } rc_client_pending_media_t;
@@ -59,7 +62,9 @@ typedef struct rc_client_load_state_t
   rc_client_subset_info_t* subset;
   rc_client_game_hash_t* hash;
 
+#ifdef RC_CLIENT_SUPPORTS_HASH
   rc_hash_iterator_t hash_iterator;
+#endif
   rc_client_pending_media_t* pending_media;
 
   rc_api_start_session_response_t *start_session_response;
@@ -68,7 +73,9 @@ typedef struct rc_client_load_state_t
 
   uint8_t progress;
   uint8_t outstanding_requests;
+#ifdef RC_CLIENT_SUPPORTS_HASH
   uint8_t hash_console_id;
+#endif
 } rc_client_load_state_t;
 
 static void rc_client_begin_fetch_game_data(rc_client_load_state_t* callback_data);
@@ -135,6 +142,10 @@ void rc_client_destroy(rc_client_t* client)
 
   rc_client_unload_game(client);
 
+#ifdef RC_CLIENT_SUPPORTS_RAINTEGRATION
+  rc_client_unload_raintegration(client);
+#endif
+
 #ifdef RC_CLIENT_SUPPORTS_EXTERNAL
   if (client->state.external_client && client->state.external_client->destroy)
     client->state.external_client->destroy();
@@ -151,9 +162,11 @@ void rc_client_destroy(rc_client_t* client)
 
 static rc_client_t* g_hash_client = NULL;
 
+#ifdef RC_CLIENT_SUPPORTS_HASH
 static void rc_client_log_hash_message(const char* message) {
   rc_client_log_message(g_hash_client, message);
 }
+#endif
 
 void rc_client_log_message(const rc_client_t* client, const char* message)
 {
@@ -1401,6 +1414,18 @@ static void rc_client_apply_unlocks(rc_client_subset_info_t* subset, rc_api_unlo
   }
 }
 
+static void rc_client_free_pending_media(rc_client_pending_media_t* pending_media)
+{
+  if (pending_media->hash)
+    free((void*)pending_media->hash);
+#ifdef RC_CLIENT_SUPPORTS_HASH
+  if (pending_media->data)
+    free(pending_media->data);
+  free((void*)pending_media->file_path);
+#endif
+  free(pending_media);
+}
+
 static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_start_session_response_t *start_session_response)
 {
   rc_client_t* client = load_state->client;
@@ -1449,12 +1474,17 @@ static void rc_client_activate_game(rc_client_load_state_t* load_state, rc_api_s
       rc_mutex_unlock(&load_state->client->state.mutex);
 
       if (pending_media) {
-        rc_client_begin_change_media(client, pending_media->file_path,
-          pending_media->data, pending_media->data_size, pending_media->callback, pending_media->callback_userdata);
-        if (pending_media->data)
-          free(pending_media->data);
-        free((void*)pending_media->file_path);
-        free(pending_media);
+        if (pending_media->hash) {
+          rc_client_begin_change_media_from_hash(client, pending_media->hash,
+            pending_media->callback, pending_media->callback_userdata);
+        } else {
+#ifdef RC_CLIENT_SUPPORTS_HASH
+          rc_client_begin_change_media(client, pending_media->file_path,
+            pending_media->data, pending_media->data_size,
+            pending_media->callback, pending_media->callback_userdata);
+#endif
+        }
+        rc_client_free_pending_media(pending_media);
       }
 
       /* client->game must be set before calling this function so it can query the console_id */
@@ -1962,6 +1992,7 @@ static void rc_client_begin_fetch_game_data(rc_client_load_state_t* load_state)
   int result;
 
   if (load_state->hash->game_id == 0) {
+#ifdef RC_CLIENT_SUPPORTS_HASH
     char hash[33];
 
     if (rc_hash_iterate(hash, &load_state->hash_iterator)) {
@@ -2010,18 +2041,34 @@ static void rc_client_begin_fetch_game_data(rc_client_load_state_t* load_state)
       /* only a single hash was tried, capture it */
       load_state->game->public_.console_id = load_state->hash_console_id;
       load_state->game->public_.hash = load_state->hash->hash;
+
+      if (client->callbacks.identify_unknown_hash) {
+        load_state->hash->game_id = client->callbacks.identify_unknown_hash(
+            load_state->hash_console_id, load_state->hash->hash, client, load_state->callback_userdata);
+
+        if (load_state->hash->game_id != 0) {
+          RC_CLIENT_LOG_INFO_FORMATTED(load_state->client, "Client says to load game %u for unidentified hash %s",
+            load_state->hash->game_id, load_state->hash->hash);
+        }
+      }
     }
+#else
+    load_state->game->public_.console_id = RC_CONSOLE_UNKNOWN;
+    load_state->game->public_.hash = load_state->hash->hash;
+#endif /* RC_CLIENT_SUPPORTS_HASH */
 
-    load_state->game->public_.title = "Unknown Game";
-    load_state->game->public_.badge_name = "";
-    client->game = load_state->game;
-    load_state->game = NULL;
+    if (load_state->hash->game_id == 0) {
+      load_state->game->public_.title = "Unknown Game";
+      load_state->game->public_.badge_name = "";
+      client->game = load_state->game;
+      load_state->game = NULL;
 
-    rc_client_load_error(load_state, RC_NO_GAME_LOADED, "Unknown game");
-    return;
+      rc_client_load_error(load_state, RC_NO_GAME_LOADED, "Unknown game");
+      return;
+    }
   }
 
-  if (load_state->hash->hash[0] != '[') {
+  if (load_state->hash->hash[0] != '[') { /* not [NO HASH] or [SUBSETxx] */
     load_state->game->public_.id = load_state->hash->game_id;
     load_state->game->public_.hash = load_state->hash->hash;
   }
@@ -2217,14 +2264,6 @@ static rc_client_async_handle_t* rc_client_load_game(rc_client_load_state_t* loa
   return (client->state.load == load_state) ? &load_state->async_handle : NULL;
 }
 
-rc_hash_iterator_t* rc_client_get_load_state_hash_iterator(rc_client_t* client)
-{
-  if (client && client->state.load)
-    return &client->state.load->hash_iterator;
-
-  return NULL;
-}
-
 rc_client_async_handle_t* rc_client_begin_load_game(rc_client_t* client, const char* hash, rc_client_callback_t callback, void* callback_userdata)
 {
   rc_client_load_state_t* load_state;
@@ -2255,6 +2294,16 @@ rc_client_async_handle_t* rc_client_begin_load_game(rc_client_t* client, const c
   load_state->callback_userdata = callback_userdata;
 
   return rc_client_load_game(load_state, hash, NULL);
+}
+
+#ifdef RC_CLIENT_SUPPORTS_HASH
+
+rc_hash_iterator_t* rc_client_get_load_state_hash_iterator(rc_client_t* client)
+{
+  if (client && client->state.load)
+    return &client->state.load->hash_iterator;
+
+  return NULL;
 }
 
 rc_client_async_handle_t* rc_client_begin_identify_and_load_game(rc_client_t* client,
@@ -2339,6 +2388,8 @@ rc_client_async_handle_t* rc_client_begin_identify_and_load_game(rc_client_t* cl
 
   return rc_client_load_game(load_state, hash, file_path);
 }
+
+#endif /* RC_CLIENT_SUPPORTS_HASH */
 
 int rc_client_get_load_game_state(const rc_client_t* client)
 {
@@ -2442,8 +2493,10 @@ void rc_client_unload_game(rc_client_t* client)
   }
 }
 
-static void rc_client_change_media(rc_client_t* client, const rc_client_game_hash_t* game_hash, rc_client_callback_t callback, void* callback_userdata)
+static void rc_client_change_media_internal(rc_client_t* client, const rc_client_game_hash_t* game_hash, rc_client_callback_t callback, void* callback_userdata)
 {
+  client->game->public_.hash = game_hash->hash;
+
   if (game_hash->game_id == client->game->public_.id) {
     RC_CLIENT_LOG_INFO_FORMATTED(client, "Switching to valid media for game %u: %s", game_hash->game_id, game_hash->hash);
   }
@@ -2451,13 +2504,19 @@ static void rc_client_change_media(rc_client_t* client, const rc_client_game_has
     RC_CLIENT_LOG_INFO(client, "Switching to unknown media");
   }
   else if (game_hash->game_id == 0) {
+    if (client->state.hardcore) {
+      RC_CLIENT_LOG_WARN_FORMATTED(client, "Disabling hardcore for unidentified media: %s", game_hash->hash);
+      rc_client_set_hardcore_enabled(client, 0);
+      callback(RC_HARDCORE_DISABLED, "Hardcore disabled. Unidentified media inserted.", client, callback_userdata);
+      return;
+    }
+
     RC_CLIENT_LOG_INFO_FORMATTED(client, "Switching to unrecognized media: %s", game_hash->hash);
   }
   else {
     RC_CLIENT_LOG_INFO_FORMATTED(client, "Switching to known media for game %u: %s", game_hash->game_id, game_hash->hash);
   }
 
-  client->game->public_.hash = game_hash->hash;
   callback(RC_OK, NULL, client, callback_userdata);
 }
 
@@ -2489,21 +2548,64 @@ static void rc_client_identify_changed_media_callback(const rc_api_server_respon
   else {
     load_state->hash->game_id = resolve_hash_response.game_id;
 
-    if (resolve_hash_response.game_id == 0 && client->state.hardcore) {
-      RC_CLIENT_LOG_WARN_FORMATTED(client, "Disabling hardcore for unidentified media: %s", load_state->hash->hash);
-      rc_client_set_hardcore_enabled(client, 0);
-      client->game->public_.hash = load_state->hash->hash; /* do still update the loaded hash */
-      load_state->callback(RC_HARDCORE_DISABLED, "Hardcore disabled. Unidentified media inserted.", client, load_state->callback_userdata);
-    }
-    else {
+    if (resolve_hash_response.game_id != 0) {
       RC_CLIENT_LOG_INFO_FORMATTED(client, "Identified game: %u (%s)", load_state->hash->game_id, load_state->hash->hash);
-      rc_client_change_media(client, load_state->hash, load_state->callback, load_state->callback_userdata);
     }
+
+    rc_client_change_media_internal(client, load_state->hash, load_state->callback, load_state->callback_userdata);
   }
 
   free(load_state);
   rc_api_destroy_resolve_hash_response(&resolve_hash_response);
 }
+
+static rc_client_async_handle_t* rc_client_begin_change_media_internal(rc_client_t* client,
+    rc_client_game_info_t* game, rc_client_game_hash_t* game_hash, rc_client_callback_t callback, void* callback_userdata)
+{
+  rc_client_load_state_t* callback_data;
+  rc_client_async_handle_t* async_handle;
+  rc_api_resolve_hash_request_t resolve_hash_request;
+  rc_api_request_t request;
+  int result;
+
+  if (game_hash->game_id != RC_CLIENT_UNKNOWN_GAME_ID) {
+    rc_client_change_media_internal(client, game_hash, callback, callback_userdata);
+    return NULL;
+  }
+
+  /* call the server to make sure the hash is valid for the loaded game */
+  memset(&resolve_hash_request, 0, sizeof(resolve_hash_request));
+  resolve_hash_request.game_hash = game_hash->hash;
+
+  result = rc_api_init_resolve_hash_request(&request, &resolve_hash_request);
+  if (result != RC_OK) {
+    callback(result, rc_error_str(result), client, callback_userdata);
+    return NULL;
+  }
+
+  callback_data = (rc_client_load_state_t*)calloc(1, sizeof(rc_client_load_state_t));
+  if (!callback_data) {
+    callback(RC_OUT_OF_MEMORY, rc_error_str(RC_OUT_OF_MEMORY), client, callback_userdata);
+    return NULL;
+  }
+
+  callback_data->callback = callback;
+  callback_data->callback_userdata = callback_userdata;
+  callback_data->client = client;
+  callback_data->hash = game_hash;
+  callback_data->game = game;
+
+  async_handle = &callback_data->async_handle;
+  rc_client_begin_async(client, async_handle);
+  client->callbacks.server_call(&request, rc_client_identify_changed_media_callback, callback_data, client);
+
+  rc_api_destroy_request(&request);
+
+  /* if handle is no longer valid, the async operation completed synchronously */
+  return rc_client_async_handle_valid(client, async_handle) ? async_handle : NULL;
+}
+
+#ifdef RC_CLIENT_SUPPORTS_HASH
 
 rc_client_async_handle_t* rc_client_begin_change_media(rc_client_t* client, const char* file_path,
     const uint8_t* data, size_t data_size, rc_client_callback_t callback, void* callback_userdata)
@@ -2535,12 +2637,8 @@ rc_client_async_handle_t* rc_client_begin_change_media(rc_client_t* client, cons
     if (game->public_.console_id == 0) {
       /* still waiting for game data */
       pending_media = client->state.load->pending_media;
-      if (pending_media) {
-        if (pending_media->data)
-          free(pending_media->data);
-        free((void*)pending_media->file_path);
-        free(pending_media);
-      }
+      if (pending_media)
+        rc_client_free_pending_media(pending_media);
 
       pending_media = (rc_client_pending_media_t*)calloc(1, sizeof(*pending_media));
       if (!pending_media) {
@@ -2627,53 +2725,78 @@ rc_client_async_handle_t* rc_client_begin_change_media(rc_client_t* client, cons
     rc_mutex_unlock(&client->state.mutex);
 
     if (!result) {
-      rc_client_change_media(client, game_hash, callback, callback_userdata);
+      rc_client_change_media_internal(client, game_hash, callback, callback_userdata);
       return NULL;
     }
   }
 
-  if (game_hash->game_id != RC_CLIENT_UNKNOWN_GAME_ID) {
-    rc_client_change_media(client, game_hash, callback, callback_userdata);
+  return rc_client_begin_change_media_internal(client, game, game_hash, callback, callback_userdata);
+}
+
+#endif /* RC_CLIENT_SUPPORTS_HASH */
+
+rc_client_async_handle_t* rc_client_begin_change_media_from_hash(rc_client_t* client, const char* hash,
+    rc_client_callback_t callback, void* callback_userdata)
+{
+  rc_client_game_hash_t* game_hash;
+  rc_client_game_info_t* game;
+  rc_client_pending_media_t* pending_media = NULL;
+
+  if (!client) {
+    callback(RC_INVALID_STATE, "client is required", client, callback_userdata);
     return NULL;
   }
-  else {
-    /* call the server to make sure the hash is valid for the loaded game */
-    rc_client_load_state_t* callback_data;
-    rc_client_async_handle_t* async_handle;
-    rc_api_resolve_hash_request_t resolve_hash_request;
-    rc_api_request_t request;
-    int result;
 
-    memset(&resolve_hash_request, 0, sizeof(resolve_hash_request));
-    resolve_hash_request.game_hash = game_hash->hash;
-
-    result = rc_api_init_resolve_hash_request(&request, &resolve_hash_request);
-    if (result != RC_OK) {
-      callback(result, rc_error_str(result), client, callback_userdata);
-      return NULL;
-    }
-
-    callback_data = (rc_client_load_state_t*)calloc(1, sizeof(rc_client_load_state_t));
-    if (!callback_data) {
-      callback(RC_OUT_OF_MEMORY, rc_error_str(RC_OUT_OF_MEMORY), client, callback_userdata);
-      return NULL;
-    }
-
-    callback_data->callback = callback;
-    callback_data->callback_userdata = callback_userdata;
-    callback_data->client = client;
-    callback_data->hash = game_hash;
-    callback_data->game = game;
-
-    async_handle = &callback_data->async_handle;
-    rc_client_begin_async(client, async_handle);
-    client->callbacks.server_call(&request, rc_client_identify_changed_media_callback, callback_data, client);
-
-    rc_api_destroy_request(&request);
-
-    /* if handle is no longer valid, the async operation completed synchronously */
-    return rc_client_async_handle_valid(client, async_handle) ? async_handle : NULL;
+  if (!hash || !hash[0]) {
+    callback(RC_INVALID_STATE, "hash is required", client, callback_userdata);
+    return NULL;
   }
+
+#ifdef RC_CLIENT_SUPPORTS_EXTERNAL
+  if (client->state.external_client && client->state.external_client->begin_change_media_from_hash) {
+    return client->state.external_client->begin_change_media_from_hash(client, hash, callback, callback_userdata);
+  }
+#endif
+
+  rc_mutex_lock(&client->state.mutex);
+  if (client->state.load) {
+    game = client->state.load->game;
+    if (game->public_.console_id == 0) {
+      /* still waiting for game data */
+      pending_media = client->state.load->pending_media;
+      if (pending_media)
+        rc_client_free_pending_media(pending_media);
+
+      pending_media = (rc_client_pending_media_t*)calloc(1, sizeof(*pending_media));
+      if (!pending_media) {
+        rc_mutex_unlock(&client->state.mutex);
+        callback(RC_OUT_OF_MEMORY, rc_error_str(RC_OUT_OF_MEMORY), client, callback_userdata);
+        return NULL;
+      }
+
+      pending_media->hash = strdup(hash);
+      pending_media->callback = callback;
+      pending_media->callback_userdata = callback_userdata;
+
+      client->state.load->pending_media = pending_media;
+    }
+  } else {
+    game = client->game;
+  }
+  rc_mutex_unlock(&client->state.mutex);
+
+  if (!game) {
+    callback(RC_NO_GAME_LOADED, rc_error_str(RC_NO_GAME_LOADED), client, callback_userdata);
+    return NULL;
+  }
+
+  /* still waiting for game data */
+  if (pending_media)
+    return NULL;
+
+  /* check to see if we've already hashed this file. */
+  game_hash = rc_client_find_game_hash(client, hash);
+  return rc_client_begin_change_media_internal(client, game, game_hash, callback, callback_userdata);
 }
 
 const rc_client_game_t* rc_client_get_game_info(const rc_client_t* client)
@@ -3767,7 +3890,7 @@ int rc_client_has_leaderboards(rc_client_t* client)
   return result;
 }
 
-static void rc_client_allocate_leaderboard_tracker(rc_client_game_info_t* game, rc_client_leaderboard_info_t* leaderboard)
+void rc_client_allocate_leaderboard_tracker(rc_client_game_info_t* game, rc_client_leaderboard_info_t* leaderboard)
 {
   rc_client_leaderboard_tracker_info_t* tracker;
   rc_client_leaderboard_tracker_info_t* available_tracker = NULL;
@@ -5249,6 +5372,11 @@ size_t rc_client_progress_size(rc_client_t* client)
 
 int rc_client_serialize_progress(rc_client_t* client, uint8_t* buffer)
 {
+  return rc_client_serialize_progress_sized(client, buffer, 0xFFFFFFFF);
+}
+
+int rc_client_serialize_progress_sized(rc_client_t* client, uint8_t* buffer, size_t buffer_size)
+{
   int result;
 
   if (!client)
@@ -5256,7 +5384,7 @@ int rc_client_serialize_progress(rc_client_t* client, uint8_t* buffer)
 
 #ifdef RC_CLIENT_SUPPORTS_EXTERNAL
   if (client->state.external_client && client->state.external_client->serialize_progress)
-    return client->state.external_client->serialize_progress(buffer);
+    return client->state.external_client->serialize_progress(buffer, buffer_size);
 #endif
 
   if (!client->game)
@@ -5266,7 +5394,7 @@ int rc_client_serialize_progress(rc_client_t* client, uint8_t* buffer)
     return RC_INVALID_STATE;
 
   rc_mutex_lock(&client->state.mutex);
-  result = rc_runtime_serialize_progress(buffer, &client->game->runtime, NULL);
+  result = rc_runtime_serialize_progress_sized(buffer, (uint32_t)buffer_size, &client->game->runtime, NULL);
   rc_mutex_unlock(&client->state.mutex);
 
   return result;
@@ -5367,6 +5495,11 @@ static void rc_client_subset_after_deserialize_progress(rc_client_game_info_t* g
 
 int rc_client_deserialize_progress(rc_client_t* client, const uint8_t* serialized)
 {
+  return rc_client_deserialize_progress_sized(client, serialized, 0xFFFFFFFF);
+}
+
+int rc_client_deserialize_progress_sized(rc_client_t* client, const uint8_t* serialized, size_t serialized_size)
+{
   rc_client_subset_info_t* subset;
   int result;
 
@@ -5375,7 +5508,7 @@ int rc_client_deserialize_progress(rc_client_t* client, const uint8_t* serialize
 
 #ifdef RC_CLIENT_SUPPORTS_EXTERNAL
   if (client->state.external_client && client->state.external_client->deserialize_progress)
-    return client->state.external_client->deserialize_progress(serialized);
+    return client->state.external_client->deserialize_progress(serialized, serialized_size);
 #endif
 
   if (!client->game)
@@ -5395,7 +5528,7 @@ int rc_client_deserialize_progress(rc_client_t* client, const uint8_t* serialize
     result = RC_OK;
   }
   else {
-    result = rc_runtime_deserialize_progress(&client->game->runtime, serialized, NULL);
+    result = rc_runtime_deserialize_progress_sized(&client->game->runtime, serialized, (uint32_t)serialized_size, NULL);
   }
 
   for (subset = client->game->subsets; subset; subset = subset->next)

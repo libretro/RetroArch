@@ -2115,7 +2115,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
+      DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
       ifneq ($(HAVE_THREADS), 1)
