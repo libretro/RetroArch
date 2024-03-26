@@ -7645,11 +7645,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Dateinamen zur Thumbnail-Zuordnung verwenden"
+   "Dateinamen zur Miniaturansichten Zuordnung verwenden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "Wenn aktiviert, werden Thumbnails anhand des Dateinamens des Eintrags und nicht anhand seines Labels gefunden."
+   "Wenn aktiviert, werden Miniaturansichten anhand des Dateinamens des Eintrags und nicht anhand seines Labels gefunden."
    )
    MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
