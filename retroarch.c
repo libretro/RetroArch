@@ -4449,11 +4449,15 @@ bool command_event(enum event_command cmd, void *data)
          {
             struct string_list *str_list = (struct string_list*)data;
             struct menu_state *menu_st     = menu_state_get_ptr();
+            settings_t *settings = config_get_ptr();
 
             if (str_list)
             {
                if (str_list->size >= 7)
                {
+                  playlist_config_t playlist_config;
+                  playlist_t * playlist;
+                  
                   struct playlist_entry entry     = {0};
                   bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
 
@@ -4465,11 +4469,6 @@ bool command_event(enum event_command cmd, void *data)
                   entry.db_name   = str_list->elems[5].data; /* db_name */
                   
                   /* load the playlist */
-                  
-                  playlist_config_t playlist_config;
-                  settings_t *settings = config_get_ptr();
-                  playlist_t * playlist;
-
                   playlist_config.capacity            = COLLECTION_SIZE;
                   playlist_config.old_format          = settings->bools.playlist_use_old_format;
                   playlist_config.compress            = settings->bools.playlist_compression;
@@ -4481,7 +4480,6 @@ bool command_event(enum event_command cmd, void *data)
                   playlist_config_set_path(&playlist_config, str_list->elems[6].data);
                   playlist = playlist_init(&playlist_config);
 
-                  
                   /* Check whether favourties playlist is at capacity */
                   if (playlist_size(playlist) >=
                         playlist_capacity(playlist))
