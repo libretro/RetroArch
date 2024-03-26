@@ -269,7 +269,9 @@ enum event_command
    CMD_EVENT_MICROPHONE_REINIT,
 #endif
    /* Deprecated */
-   CMD_EVENT_SEND_DEBUG_INFO
+   CMD_EVENT_SEND_DEBUG_INFO,
+   /* Add a playlist entry to another playlist. */
+   CMD_EVENT_ADD_TO_PLAYLIST
 };
 
 enum cmd_source_t
