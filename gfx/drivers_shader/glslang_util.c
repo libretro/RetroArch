@@ -97,8 +97,89 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
 
+/* inj_to_define
+ * check if str is in format inj_char KEY = VALUE
+ * (spaces are not mandatory)
+ * returns true if str is in that format and fills "value" ans "key" accordingly
+*/
+bool inj_to_define(char *str, char *key, char *value, char inj_char) {
+   // remove spaces tabs and double quotes
+   int i = 0, j = 0;
+   while (str[i] != '\0') {
+      if (str[i] != ' ' && str[i] != '"' && str[i] != '\t') {
+      str[j++] = str[i];
+      }
+      i++;
+   }
+   str[j] = '\0';
+
+   // Does it start with inj_char
+   if (*str != inj_char) return false;
+
+   // Is it in format KEY=VALUE now?
+   char *eq_pos = strchr(str, '=');
+   if (!eq_pos) return false;
+
+   // Extract KEY,VALUE
+   *eq_pos = '\0';             // Substitute '=' with \0 to divide key and value
+   strcpy(key, str + 1);       // copy key skipping inj_char
+   strcpy(value, eq_pos + 1);  // copy value
+
+   return true;
+}
+
+bool inject(const char *inject_file, struct string_list *output, const char *inject_prefix){
+   
+   /* Read inject file contents */
+   union string_list_elem_attr attr;
+   uint8_t *buf              = NULL;
+   int64_t buf_len           = 0;
+   struct string_list lines  = {0};
+   bool    ret               = false;
+
+   if (filestream_read_file(inject_file, (void**)&buf, &buf_len)) {
+      string_list_initialize(&lines);  
+      ret = string_separate_noalloc(&lines, (char*)buf, "\n");
+   }
+
+   if (buf) 
+      free(buf);
+   if (!ret) 
+      return false;
+   if (lines.size < 1)
+      goto error;
+	
+   /* Cycle through its lines searching for matching format (*KEY = VALUE) */
+   for (size_t j = 0; j < lines.size; j++) {
+      char *line   = lines.elems[j].data;
+      char inj_key[100];
+      char inj_value[100];
+      char tmp[350];  //size of: #undef $inj_key \n #define $inj_key $inj_value 
+      tmp[0] = '\0';
+      attr.i = 0;
+      
+      /* Inject them */
+      if (inj_to_define(line, inj_key, inj_value, *inject_prefix )) { 
+         snprintf(tmp, sizeof(tmp), "#undef %s", inj_key);
+         RARCH_DBG("[shader]: Injected #undef %s\n", inj_key);
+         if (!string_list_append(output, tmp, attr)) goto error;
+         
+         snprintf(tmp, sizeof(tmp), "#define %s %s", inj_key, inj_value);
+         if (!string_list_append(output, tmp, attr)) goto error;       
+         RARCH_DBG("[shader]: Injected #define %s %s\n", inj_key, inj_value);
+      }
+         
+   }
+      
+   return true;
+   
+   error:
+      string_list_deinitialize(&lines);
+      return false;
+}
+
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file)
+      struct string_list *output, bool root_file, const char *preset_path)
 {
    size_t i;
    char tmp[PATH_MAX_LENGTH];
@@ -186,7 +267,25 @@ bool glslang_read_shader_file(const char *path,
    for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
       const char *line   = lines.elems[i].data;
-
+      
+      const char inject_prefix[] = "*" ;
+      const char preset_defines_keyword[] = "#pragma inject_preset_code";
+      
+      /* Check for injection directives*/
+      if (!strncmp(preset_defines_keyword, line, STRLEN_CONST(preset_defines_keyword)) && preset_path != NULL )
+      {
+         /* From preset path */
+         inject(preset_path, output, inject_prefix);
+         /* ...and from inc file */
+         /* Strip existing extension and append .inc */
+         char *inc_file_path = strdup(preset_path); 
+         char *p_ptr = strrchr(inc_file_path, '.');
+         if (p_ptr != NULL) *p_ptr = '\0';
+         strcat(inc_file_path, ".inc");
+         if (filestream_exists(inc_file_path)) //Does the inc file exist?
+            inject(inc_file_path, output, inject_prefix); //Inject
+      }
+      
       /* Check for 'include' statements */
       if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
       {
@@ -209,7 +308,7 @@ bool glslang_read_shader_file(const char *path,
                include_path, path, include_file, sizeof(include_path));
 
          /* Parse include file */
-         if (!glslang_read_shader_file(include_path, output, false))
+         if (!glslang_read_shader_file(include_path, output, false, preset_path))
             goto error;
 
          /* After including a file, use line directive
@@ -239,13 +338,25 @@ bool glslang_read_shader_file(const char *path,
             goto error;
    }
 
+   /* 
+      if (preset_path != NULL) {
+      RARCH_LOG("RAW SHADER------------------------------------------\n");
+      for (size_t i = 0; i < output -> size; i++)
+      {
+         const char *line = output -> elems[i].data;
+         RARCH_LOG("    %s\n", line);
+      }
+      RARCH_LOG("/RAW SHADER------------------------------------------/\n");
+   }
+   
+   */
    string_list_deinitialize(&lines);
-
    return true;
 
 error:
    string_list_deinitialize(&lines);
    return false;
+
 }
 
 const char *glslang_format_to_string(enum glslang_format fmt)

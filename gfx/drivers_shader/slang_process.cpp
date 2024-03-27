@@ -391,11 +391,11 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
 {
    glslang_meta meta;
    struct string_list lines = {0};
-   
+
    if (!string_list_initialize(&lines))
       goto error;
 
-   if (!glslang_read_shader_file(shader_path, &lines, true))
+   if (!glslang_read_shader_file(shader_path, &lines, true, NULL))
       goto error;
    meta = glslang_meta{};
    if (!glslang_parse_meta(&lines, &meta))
@@ -422,7 +422,7 @@ bool slang_process(
    Compiler*          ps_compiler = NULL;
    video_shader_pass& pass        = shader_info->pass[pass_number];
 
-   if (!glslang_compile_shader(pass.source.path, &output))
+   if (!glslang_compile_shader(pass.source.path, &output, shader_info->loaded_preset_path))
       return false;
 
    if (!slang_preprocess_parse_parameters(output.meta, shader_info))

@@ -121,7 +121,7 @@ const char *glslang_format_to_string(glslang_format fmt);
 enum glslang_format glslang_find_format(const char *fmt);
 
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file);
+      struct string_list *output, bool root_file, const char *preset_path);
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem);
 
