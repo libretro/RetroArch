@@ -7289,3 +7289,61 @@ void input_keyboard_event(bool down, unsigned code,
       }
    }
 }
+
+static int input_device_get_reserved_port(int vendor_id,
+      int product_id, const char *device_name)
+{
+   settings_t *settings = config_get_ptr();
+
+   int  port;
+   bool is_reserved;
+   char settings_key[256];
+   char settings_value[256];
+   int  settings_value_vendor_id;
+   int  settings_value_product_id;
+   char settings_value_device_name[256];
+   char *settings_values[MAX_USERS];
+   settings_values[0] = settings->arrays.input_player1_reserved_device;
+   settings_values[1] = settings->arrays.input_player2_reserved_device;
+   settings_values[2] = settings->arrays.input_player3_reserved_device;
+   settings_values[3] = settings->arrays.input_player4_reserved_device;
+   settings_values[4] = settings->arrays.input_player5_reserved_device;
+   settings_values[5] = settings->arrays.input_player6_reserved_device;
+   settings_values[6] = settings->arrays.input_player7_reserved_device;
+   settings_values[7] = settings->arrays.input_player8_reserved_device;
+   settings_values[8] = settings->arrays.input_player9_reserved_device;
+   settings_values[9] = settings->arrays.input_player10_reserved_device;
+   settings_values[10] = settings->arrays.input_player11_reserved_device;
+   settings_values[11] = settings->arrays.input_player12_reserved_device;
+   settings_values[12] = settings->arrays.input_player13_reserved_device;
+   settings_values[13] = settings->arrays.input_player14_reserved_device;
+   settings_values[14] = settings->arrays.input_player15_reserved_device;
+   settings_values[15] = settings->arrays.input_player16_reserved_device;
+
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      strlcpy(settings_value, settings_values[port], sizeof(settings_value));
+
+      if (!string_is_empty(settings_value))
+      {
+         if (sscanf(settings_value, "%04x:%04x ", &settings_value_vendor_id, &settings_value_product_id) != 2)
+         {
+            strlcpy(settings_value_device_name, settings_value, sizeof(settings_value_device_name));
+            is_reserved = string_is_equal(device_name, settings_value_device_name);
+         }
+         else
+         {
+            is_reserved = (vendor_id == settings_value_vendor_id && product_id == settings_value_product_id);
+         }
+
+         if (is_reserved)
+         {
+            RARCH_LOG("[Input]: Device \"%s\" (%d:%d) is reserved for port %d.\n",
+                  device_name, vendor_id, product_id, port);
+            return port;
+         }
+      }
+   }
+
+   return -1;
+}
