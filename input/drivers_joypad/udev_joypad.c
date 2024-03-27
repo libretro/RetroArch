@@ -38,6 +38,8 @@
 #include "../../configuration.h"
 #include "../../config.def.h"
 
+#include "../../gfx/video_driver.h"
+
 #include "../../tasks/tasks_internal.h"
 
 #include "../../verbosity.h"
@@ -742,7 +744,7 @@ static int16_t udev_joypad_state(
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port_idx < MAX_USERS)
+   if (port_idx < MAX_USERS && video_driver_has_focus())
    {
       unsigned i;
       const struct udev_joypad *pad     = (const struct udev_joypad*)
