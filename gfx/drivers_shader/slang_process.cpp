@@ -161,6 +161,8 @@ static bool slang_process_reflection(
             "FrameCount",
             "FrameDirection",
             "Rotation",
+            "TotalSubFrames",
+            "CurrentSubFrame",
          };
          int size = sizeof(names) / sizeof(*names);
          if (semantic < size)

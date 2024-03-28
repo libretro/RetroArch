@@ -877,17 +877,27 @@ static void win32_save_position(void)
    placement.rcNormalPosition.right  = 0;
    placement.rcNormalPosition.bottom = 0;
 
-   if (GetWindowPlacement(main_window.hwnd, &placement))
+   /* If 'skip_window_positions' is true it means we've
+    * just unloaded an override that had fullscreen mode
+    * enabled while we have windowed mode set globally,
+    * in this case we skip the following blocks to not
+    * end up with fullscreen size and position. */
+   if (!settings->skip_window_positions)
    {
-      g_win32->pos_x      = placement.rcNormalPosition.left;
-      g_win32->pos_y      = placement.rcNormalPosition.top;
-   }
+      if (GetWindowPlacement(main_window.hwnd, &placement))
+      {
+         g_win32->pos_x      = placement.rcNormalPosition.left;
+         g_win32->pos_y      = placement.rcNormalPosition.top;
+      }
 
-   if (GetWindowRect(main_window.hwnd, &rect))
-   {
-      g_win32->pos_width  = rect.right  - rect.left;
-      g_win32->pos_height = rect.bottom - rect.top;
+      if (GetWindowRect(main_window.hwnd, &rect))
+      {
+         g_win32->pos_width  = rect.right  - rect.left;
+         g_win32->pos_height = rect.bottom - rect.top;
+      }
    }
+   else
+      settings->skip_window_positions = false;
 
    if (window_save_positions)
    {
@@ -1051,9 +1061,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
-            if (ui_menubar_enable)
-               win32_menu_loop(main_window.hwnd, wparam);
+            win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
    }
@@ -2345,10 +2353,21 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float video_refresh    = settings->floats.video_refresh_rate;
+      float refresh_rate     = settings->floats.video_refresh_rate;
       unsigned bfi           = settings->uints.video_black_frame_insertion;
-      float refresh_mod      = bfi + 1.0f;
-      float refresh_rate     = video_refresh * refresh_mod;
+      unsigned swap_interval = settings->uints.video_swap_interval;
+      unsigned
+         shader_subframes    = settings->uints.video_shader_subframes;
+
+      /* if refresh_rate is <=60hz, adjust for modifiers, if it is higher
+         assume modifiers already factored into setting. Multiplying by
+         modifiers will still leave result at original value when they
+         are not set. Swap interval 0 is automatic, but at automatic
+         we should default to checking for normal SI 1 for rate change*/
+      if (swap_interval == 0)
+        ++swap_interval;
+      if ((int)refresh_rate <= 60)
+         refresh_rate     = refresh_rate * (bfi + 1) * swap_interval * shader_subframes;
 
       if (windowed_full)
       {
@@ -2680,16 +2699,20 @@ void win32_get_video_output_next(
 }
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-#define WIN32_GET_VIDEO_OUTPUT(iModeNum, dm) EnumDisplaySettingsEx(NULL, iModeNum, dm, EDS_ROTATEDMODE)
+#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettingsEx(devName, iModeNum, dm, EDS_ROTATEDMODE)
 #else
-#define WIN32_GET_VIDEO_OUTPUT(iModeNum, dm) EnumDisplaySettings(NULL, iModeNum, dm)
+#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettings(devName, iModeNum, dm)
 #endif
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
    memset(dm, 0, len);
    dm->dmSize  = len;
-   if (WIN32_GET_VIDEO_OUTPUT((mode == -1)
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+   if (WIN32_GET_VIDEO_OUTPUT((const char*)&current_mon.szDevice, (mode == -1)
             ? ENUM_CURRENT_SETTINGS
             : (DWORD)mode,
             dm) == 0)

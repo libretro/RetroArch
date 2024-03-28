@@ -3,8 +3,10 @@ name: CI Android
 on:
   push:
   pull_request:
+  workflow_dispatch:
   repository_dispatch:
     types: [run_build]
+  
 
 permissions:
   contents: read

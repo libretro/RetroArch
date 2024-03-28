@@ -114,10 +114,6 @@ MSG_HASH(
    "Åbn den traditionelle skrivebords menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Deaktiver Kiosk-tilstand (Genstart Påkrævet)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vis alle konfigurationsrelaterede indstillinger."
    )
@@ -162,20 +158,8 @@ MSG_HASH(
    "Læs mere om, hvordan programmet virker."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Genstart RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Genstart programmet."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Afslut RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Afslut programmet."
+   "Luk"
    )
 
 /* Main Menu > Load Core */
@@ -781,10 +765,6 @@ MSG_HASH(
    "Filhåndtering"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Skift filhåndteringsindstillinger."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    "Skift indstillingerne for spoling tilbage, spoling frem og slow motion."
    )
@@ -884,10 +864,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
    "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Controller driver der skal bruges."
-   )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Videodriver der skal bruges."
@@ -933,10 +910,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    "Placeringsdriver der skal bruges."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Menudriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1127,6 +1100,12 @@ MSG_HASH(
 #endif
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */

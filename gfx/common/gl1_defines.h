@@ -65,7 +65,8 @@ enum gl1_flags
    GL1_FLAG_SMOOTH                  = (1 << 8),
    GL1_FLAG_MENU_SMOOTH             = (1 << 9),
    GL1_FLAG_OVERLAY_ENABLE          = (1 << 10),
-   GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11)
+   GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11),
+   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12)
 };
 
 typedef struct gl1

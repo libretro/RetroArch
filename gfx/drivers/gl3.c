@@ -2503,11 +2503,10 @@ static bool gl3_frame(void *data, const void *frame,
 #if 0
    bool msg_bgcolor_enable                 = video_info->msg_bgcolor_enable;
 #endif
-   unsigned black_frame_insertion          = video_info->black_frame_insertion;
-
+   int bfi_light_frames;
+   int i;
+   unsigned n;
    unsigned hard_sync_frames               = video_info->hard_sync_frames;
-   bool runloop_is_paused                  = video_info->runloop_is_paused;
-   bool runloop_is_slowmotion              = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state        = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
    bool menu_is_alive                      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -2585,6 +2584,45 @@ static bool gl3_frame(void *data, const void *frame,
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
+
+   /* Sub-frame info for multiframe shaders (per real content frame). 
+      Should always be 1 for non-use of subframes*/
+   if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+   {
+     if (     video_info->black_frame_insertion
+           || video_info->input_driver_nonblock_state
+           || video_info->runloop_is_slowmotion
+           || video_info->runloop_is_paused
+           || (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+        gl3_filter_chain_set_shader_subframes(
+           gl->filter_chain, 1);
+     else
+        gl3_filter_chain_set_shader_subframes(
+           gl->filter_chain, video_info->shader_subframes);
+
+     gl3_filter_chain_set_current_shader_subframe(
+           gl->filter_chain, 1);
+   }
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !video_info->black_frame_insertion
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
+   {
+      gl3_filter_chain_set_simulate_scanline(
+            gl->filter_chain, true);
+   }
+   else
+   {
+      gl3_filter_chain_set_simulate_scanline(
+            gl->filter_chain, false);
+   }   
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
          &gl->filter_chain_vp);
@@ -2672,24 +2710,81 @@ static bool gl3_frame(void *data, const void *frame,
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-    if (
-         black_frame_insertion
-         && !input_driver_nonblock_state
-         && !runloop_is_slowmotion
-         && !runloop_is_paused
-         && (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
-    {
-        size_t n;
-        for (n = 0; n < black_frame_insertion; ++n)
-        {
-          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);
+   if (
+         video_info->black_frame_insertion
+         && !video_info->input_driver_nonblock_state
+         && !video_info->runloop_is_slowmotion
+         && !video_info->runloop_is_paused
+         && !(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+   {
 
-          if (gl->ctx_driver->swap_buffers)
-            gl->ctx_driver->swap_buffers(gl->ctx_data);
-        }
-    }
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+      video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl->flags |= GL3_FLAG_FRAME_DUPE_LOCK;
+
+         while (bfi_light_frames > 0)
+         {
+            if (!(gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+         {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (gl->ctx_driver->swap_buffers)
+               gl->ctx_driver->swap_buffers(gl->ctx_data);
+         }
+      }
+   }
 #endif
+
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  !video_info->black_frame_insertion
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+         &&  (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK)))
+   {
+      gl->flags |= GL3_FLAG_FRAME_DUPE_LOCK;
+      for (i = 1; i < (int) video_info->shader_subframes; i++)
+      {
+         gl3_filter_chain_set_shader_subframes(
+            gl->filter_chain, video_info->shader_subframes);
+         gl3_filter_chain_set_current_shader_subframe(
+            gl->filter_chain, i+1);
+
+         if (!gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+            return false;
+         }
+      }
+      gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+   }
 
    if (    hard_sync
        && !input_driver_nonblock_state
@@ -2711,6 +2806,7 @@ static uint32_t gl3_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 
    return flags;
 }

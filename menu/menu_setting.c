@@ -303,6 +303,8 @@ enum settings_list_type
    SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
    SETTINGS_LIST_OVERLAY,
    SETTINGS_LIST_OSK_OVERLAY,
+   SETTINGS_LIST_OVERLAY_MOUSE,
+   SETTINGS_LIST_OVERLAY_LIGHTGUN,
    SETTINGS_LIST_MENU,
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
@@ -2528,9 +2530,15 @@ static int setting_action_ok_bind_all_save_autoconfig(
 
    if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
+   {
+      char buf[PATH_MAX_LENGTH];
+      char msg[PATH_MAX_LENGTH];
+      config_get_autoconf_profile_filename(name, index_offset, buf, sizeof(buf));
+      snprintf(msg, sizeof(msg),msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED),buf);
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
+            msg, 1, 180, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    else
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true,
@@ -5454,6 +5462,79 @@ static void setting_get_string_representation_uint_input_overlay_show_inputs_por
       snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer + 1);
 }
+
+static void setting_get_string_representation_overlay_lightgun_port(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      if (*setting->value.target.integer < 0)
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY), len);
+      else
+         snprintf(s, len, "%d", *setting->value.target.integer + 1);
+   }
+}
+
+static void setting_get_string_representation_overlay_lightgun_action(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case OVERLAY_LIGHTGUN_ACTION_NONE:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_NONE), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_TRIGGER:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_RELOAD:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_AUX_A:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_AUX_B:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_AUX_C:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_SELECT:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_START:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_UP:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_DOWN:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_LEFT:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT), len);
+         break;
+      case OVERLAY_LIGHTGUN_ACTION_DPAD_RIGHT:
+         strlcpy(s, msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT), len);
+         break;
+   }
+}
 #endif
 
 /* A protected driver is such that the user cannot set to "null" using the UI.
@@ -6392,6 +6473,124 @@ static void setting_get_string_representation_video_swap_interval(rarch_setting_
       snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
 }
 
+static void setting_get_string_representation_black_frame_insertion(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 0:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF), len);
+         break;
+      case 1:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120), len);
+         break;
+      case 2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180), len);
+         break;
+      case 3:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240), len);
+         break;
+      case 4:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300), len);
+         break;
+      case 5:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360), len);
+         break;
+      case 6:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420), len);
+         break;
+      case 7:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480), len);
+         break;
+      case 8:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540), len);
+         break;
+      case 9:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600), len);
+         break;
+      case 10:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660), len);
+         break;
+      case 11:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720), len);
+         break;
+      case 12:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780), len);
+         break;
+      case 13:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840), len);
+         break;
+      case 14:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900), len);
+         break;
+      case 15:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960), len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_shader_subframes(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 1:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF), len);
+         break;
+      case 2:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120), len);
+         break;
+      case 3:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180), len);
+         break;
+      case 4:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240), len);
+         break;
+      case 5:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300), len);
+         break;
+      case 6:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360), len);
+         break;
+      case 7:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420), len);
+         break;
+      case 8:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480), len);
+         break;
+      case 9:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540), len);
+         break;
+      case 10:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600), len);
+         break;
+      case 11:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660), len);
+         break;
+      case 12:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720), len);
+         break;
+      case 13:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780), len);
+         break;
+      case 14:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840), len);
+         break;
+      case 15:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900), len);
+         break;
+      case 16:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960), len);
+         break;
+   }
+}
+
 static void setting_get_string_representation_video_frame_delay(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -6793,6 +6992,9 @@ static void setting_get_string_representation_turbo_mode(
    {
       case INPUT_TURBO_MODE_CLASSIC:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC), len);
+         break;
+      case INPUT_TURBO_MODE_CLASSIC_TOGGLE:
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE), len);
          break;
       case INPUT_TURBO_MODE_SINGLEBUTTON:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON), len);
@@ -7906,13 +8108,6 @@ static void general_read_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          *setting->value.target.fraction = settings->floats.video_refresh_rate;
          break;
-      case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX];
-         break;
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
            setting->value.target.string = settings->arrays.input_android_physical_keyboard;
@@ -8105,14 +8300,110 @@ static void general_write_handler(rarch_setting_t *setting)
                settings->floats.audio_max_timing_skew,
                *setting->value.target.fraction);
          break;
+      case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+         /* If enabling BFI, auto disable other sync settings 
+            that do not work together with BFI */
+         if (*setting->value.target.unsigned_integer > 0)
+         {
+            configuration_set_uint(settings,
+               settings->uints.video_swap_interval,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_frame_delay,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.video_frame_delay_auto,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.vrr_runloop_enable,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_shader_subframes,
+               1);
+
+             /* Set reasonable default for dark frames for current BFI value.
+                Even results OR odd 60hz multiples should be mostly immune to lcd voltage retention.
+                Nothing to be done for 120hz except phase retention usage if needed. */
+            if (*setting->value.target.unsigned_integer == 1)
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  1);
+            }
+            /* Odd 60hz multiples, safe to nudge result over 50% for more clarity by default */
+            else if ((*setting->value.target.unsigned_integer + 1) % 2 != 0)
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  ((*setting->value.target.unsigned_integer + 1) / 2) + 1);
+            }
+            /* Odd result on even multiple, bump result up one */
+            else if (((*setting->value.target.unsigned_integer + 1) / 2) % 2 != 0)
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  ((*setting->value.target.unsigned_integer + 1) / 2) + 1);
+            }
+            /* Even result on even multiple, leave alone */
+            else
+            {
+               configuration_set_uint(settings,
+                  settings->uints.video_bfi_dark_frames,
+                  ((*setting->value.target.unsigned_integer + 1) / 2));
+            }
+         }
 #ifdef HAVE_CHEEVOS
+         rcheevos_validate_config_settings();
+#endif
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES:
+         /* If enabling BFI, auto disable other sync settings 
+            that do not work together with subframes */
+         if (*setting->value.target.unsigned_integer > 1)
+         {
+            configuration_set_uint(settings,
+               settings->uints.video_swap_interval,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_frame_delay,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.video_frame_delay_auto,
+               0);
+            configuration_set_bool(settings,
+               settings->bools.vrr_runloop_enable,
+               0);
+            configuration_set_uint(settings,
+               settings->uints.video_black_frame_insertion,
+               0);
+         }
+#ifdef HAVE_CHEEVOS
+         rcheevos_validate_config_settings();
+#endif
+         break;
+      case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
+         /* Limit choice to max possible for current BFI Hz Setting */
+         if (*setting->value.target.unsigned_integer > settings->uints.video_black_frame_insertion)
+            configuration_set_uint(settings,
+               settings->uints.video_bfi_dark_frames,
+               settings->uints.video_black_frame_insertion);
+         break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
-      case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+      case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
+         /* BFI or shader subframes doesn't play nice with any of these */
+         configuration_set_bool(settings,
+            settings->uints.video_black_frame_insertion,
+            0);
+         configuration_set_uint(settings,
+            settings->uints.video_shader_subframes,
+            1);
+#ifdef HAVE_CHEEVOS
          rcheevos_validate_config_settings();
-         break;
 #endif
+         break;
+
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
@@ -8224,14 +8515,6 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-         break;
-      case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-      case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         settings->modified           = true;
-         settings->uints.input_joypad_index[setting->enum_idx - MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX]             = *setting->value.target.integer;
          break;
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
@@ -8492,6 +8775,9 @@ static void general_write_handler(rarch_setting_t *setting)
                 * playlist file (to update maximum capacity) */
                retroarch_favorites_deinit();
                retroarch_favorites_init();
+#if TARGET_OS_TV
+               update_topshelf();
+#endif
             }
          }
          break;
@@ -9001,6 +9287,16 @@ static void timezone_change_handler(rarch_setting_t *setting)
 }
 #endif
 
+static void appicon_change_handler(rarch_setting_t *setting)
+{
+   uico_driver_state_t *uico_st    = uico_state_get_ptr();
+   if (!setting)
+      return;
+   if (!uico_st->drv || !uico_st->drv->set_app_icon)
+      return;
+   uico_st->drv->set_app_icon(setting->value.target.string);
+}
+
 #ifdef _3DS
 static void new3ds_speedup_change_handler(rarch_setting_t *setting)
 {
@@ -9051,8 +9347,6 @@ static bool setting_append_list_input_player_options(
          parent_group);
 
    {
-      char tmp_string[32];
-
       static char device_index[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
       static char analog_to_digital[MAX_USERS][64];
@@ -9071,23 +9365,19 @@ static bool setting_append_list_input_player_options(
       static char split_joycon[MAX_USERS][64];
       static char label_split_joycon[MAX_USERS][64];
 #endif
-      size_t _len = strlcpy(tmp_string, "input_player", sizeof(tmp_string));
-      snprintf(tmp_string + _len, sizeof(tmp_string) - _len, "%u", user + 1);
 
-      snprintf(analog_to_digital[user], sizeof(analog_to_digital[user]),
+      snprintf(analog_to_digital[user],        sizeof(analog_to_digital[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), user + 1);
-      fill_pathname_join_delim(device_index[user], tmp_string, "joypad_index", '_',
-            sizeof(device_index[user]));
-      fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
-            sizeof(mouse_index[user]));
-      fill_pathname_join_delim(bind_all[user], tmp_string, "bind_all", '_',
-            sizeof(bind_all[user]));
-      fill_pathname_join_delim(bind_all_save_autoconfig[user],
-            tmp_string, "bind_all_save_autoconfig", '_',
-            sizeof(bind_all_save_autoconfig[user]));
-      fill_pathname_join_delim(bind_defaults[user],
-            tmp_string, "bind_defaults", '_',
-            sizeof(bind_defaults[user]));
+      snprintf(device_index[user],             sizeof(device_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),            user + 1);
+      snprintf(mouse_index[user],              sizeof(mouse_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),             user + 1);
+      snprintf(bind_all[user],                 sizeof(bind_all[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),          user + 1);
+      snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),   user + 1);
+      snprintf(bind_defaults[user],            sizeof(bind_defaults[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),     user + 1);
 
       strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
@@ -10139,6 +10429,24 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
                MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
                &group_info,
@@ -10725,7 +11033,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CONFIGURATION:
          {
             uint8_t i, listing = 0;
-            struct bool_entry bool_entries[8];
+            struct bool_entry bool_entries[9];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
@@ -10766,6 +11074,13 @@ static bool setting_append_list(
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
             bool_entries[listing].default_value  = DEFAULT_AUTO_REMAPS_ENABLE;
+            bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.initial_disk_change_enable;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE;
+            bool_entries[listing].default_value  = DEFAULT_INITIAL_DISK_CHANGE_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
             listing++;
 
@@ -11247,6 +11562,21 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
                   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
                   DEFAULT_SCAN_WITHOUT_CORE_MATCH,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.scan_serial_and_crc,
+                  MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC,
+                  MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+                  DEFAULT_SCAN_SERIAL_AND_CRC,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -12070,7 +12400,7 @@ static bool setting_append_list(
             /* prevent unused function warning on unsupported builds */
             (void)setting_get_string_representation_int_gpu_index;
 
-#ifdef ANDROID
+#if defined(ANDROID) || TARGET_OS_IOS
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.video_notch_write_over_enable,
@@ -13203,6 +13533,46 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.video_shader_subframes,
+                  MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+                  DEFAULT_SHADER_SUBFRAMES,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_shader_subframes;
+            (*list)[list_info->index - 1].offset_by = 1;
+            menu_settings_list_current_add_range(list, list_info, 1, 16, 1, true, true);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_scan_subframes,
+                  MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+                  DEFAULT_SCAN_SUBFRAMES,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.video_max_swapchain_images,
                   MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
                   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -13424,9 +13794,26 @@ static bool setting_append_list(
                         general_write_handler,
                         general_read_handler);
                   (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-                  menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+                  (*list)[list_info->index - 1].get_string_representation =
+                        &setting_get_string_representation_black_frame_insertion;
+                  menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
                   MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
                   SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+                  CONFIG_UINT(
+                        list, list_info,
+                        &settings->uints.video_bfi_dark_frames,
+                        MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+                        MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+                        DEFAULT_BFI_DARK_FRAMES,
+                        &group_info,
+                        &subgroup_info,
+                        parent_group,
+                        general_write_handler,
+                        general_read_handler);
+                  (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  (*list)[list_info->index - 1].offset_by = 1;
+                  menu_settings_list_current_add_range(list, list_info, 1, 15, 1, true, true);
                }
             }
 #endif
@@ -13774,6 +14161,26 @@ static bool setting_append_list(
                SD_FLAG_LAKKA_ADVANCED
                );
 #endif
+
+#if TARGET_OS_IOS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_respect_silent_mode,
+               MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+               DEFAULT_AUDIO_RESPECT_SILENT_MODE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.audio_fastforward_mute,
@@ -14752,6 +15159,22 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.input_hotkey_device_merge,
+                  MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+                  DEFAULT_INPUT_HOTKEY_DEVICE_MERGE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.input_menu_swap_ok_cancel_buttons,
                   MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
                   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -14869,7 +15292,7 @@ static bool setting_append_list(
                   &settings->bools.input_auto_mouse_grab,
                   MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,
                   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-                  false,
+                  DEFAULT_INPUT_AUTO_MOUSE_GRAB,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -15005,7 +15428,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 1.0, 0.01, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0.05, 0.99, 0.01, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_FLOAT(
@@ -15220,6 +15643,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_turbo_default_button;
          menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_DEFAULT_BUTTON_LAST-1), 1, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_allow_turbo_dpad,
+                  MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+                  DEFAULT_ALLOW_TURBO_DPAD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -15528,6 +15967,8 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_BOOL(
                list, list_info,
@@ -16232,6 +16673,21 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.notification_show_disk_control,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+               DEFAULT_NOTIFICATION_SHOW_DISK_CONTROL,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.notification_show_save_state,
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -16831,6 +17287,25 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -1.0f, 1.0f, 0.005f, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_pointer_enable,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+               DEFAULT_INPUT_OVERLAY_POINTER_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok    = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left  = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);
@@ -16898,6 +17373,241 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
+      case SETTINGS_LIST_OVERLAY_LIGHTGUN:
+#ifdef HAVE_OVERLAY
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.input_overlay_lightgun_port,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by = -1;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_port;
+         menu_settings_list_current_add_range(list, list_info, -1, MAX_USERS - 1, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_lightgun_trigger_on_touch,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_trigger_delay,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0,
+               OVERLAY_LIGHTGUN_TRIG_MAX_DELAY, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_two_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_action;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_LIGHTGUN_ACTION_NONE, OVERLAY_LIGHTGUN_ACTION_END - 1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_three_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_action;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_LIGHTGUN_ACTION_NONE, OVERLAY_LIGHTGUN_ACTION_END - 1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_lightgun_four_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_lightgun_action;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_LIGHTGUN_ACTION_NONE, OVERLAY_LIGHTGUN_ACTION_END - 1, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_lightgun_allow_offscreen,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+               DEFAULT_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         END_GROUP(list, list_info, parent_group);
+#endif
+         break;
+      case SETTINGS_LIST_OVERLAY_MOUSE:
+#ifdef HAVE_OVERLAY
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_mouse_speed,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+               DEFAULT_INPUT_OVERLAY_MOUSE_SPEED,
+               "%.1fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.1, 5.0, 0.1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_mouse_hold_to_drag,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+               DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_mouse_hold_msec,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+               DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 1000, 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_mouse_dtap_to_drag,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+               DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_mouse_dtap_msec,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+               DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.input_overlay_mouse_swipe_threshold,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+               DEFAULT_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+               "%.1f%%",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.0, 10.0, 0.1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -19468,6 +20178,25 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+         {
+            CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->paths.app_icon,
+               sizeof(settings->paths.app_icon),
+               MENU_ENUM_LABEL_APPICON_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+               "",
+               (char*)calloc(1, sizeof(char)),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_IS_DRIVER);
+            (*list)[list_info->index - 1].action_ok      = setting_action_ok_uint;
+            (*list)[list_info->index - 1].change_handler = appicon_change_handler;
+         }
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.pause_nonactive,
@@ -19702,6 +20431,8 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 #endif
+#if 0
+/* Thumbnailpack removal */
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_legacy_thumbnail_updater,
@@ -19716,6 +20447,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 #endif
 
 #ifdef HAVE_MIST
@@ -23388,6 +24120,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_ONSCREEN_NOTIFICATIONS,
       SETTINGS_LIST_OVERLAY,
       SETTINGS_LIST_OSK_OVERLAY,
+      SETTINGS_LIST_OVERLAY_MOUSE,
+      SETTINGS_LIST_OVERLAY_LIGHTGUN,
       SETTINGS_LIST_MENU,
       SETTINGS_LIST_MENU_FILE_BROWSER,
       SETTINGS_LIST_MULTIMEDIA,

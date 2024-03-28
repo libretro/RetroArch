@@ -223,6 +223,7 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rhash/aes.c"
 #include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 
@@ -258,16 +259,18 @@ VIDEO CONTEXT
 #include "../gfx/common/gl_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)) && !defined(HAVE_ANGLE)
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
+#if !defined(__WINRT__) 
 #include "../gfx/display_servers/dispserv_win32.c"
+#endif
 
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
@@ -727,6 +730,10 @@ INPUT
 #endif
 #endif
 
+#ifdef HAVE_TEST_DRIVERS
+#include "../input/drivers_joypad/test_joypad.c"
+#endif
+
 /*============================================================
 INPUT (HID)
 ============================================================ */
@@ -1170,8 +1177,6 @@ RETROARCH
 #include "../runahead.c"
 #endif
 #include "../command.c"
-#include "../midi_driver.c"
-#include "../location_driver.c"
 #include "../ui/ui_companion_driver.c"
 #include "../libretro-common/queues/task_queue.c"
 
@@ -1261,7 +1266,22 @@ DATA RUNLOOP
 #endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
+#ifdef HAVE_XDELTA
+#define adler32(...) xdelta_adler32(__VA_ARGS__)
+#include "../deps/xdelta3/xdelta3.c"
+#undef adler32
+#ifdef Q
+#undef Q
 #endif
+#ifdef W
+#undef W
+#endif
+#ifdef Z
+#undef Z
+#endif
+#endif
+#endif
+#include "../save.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_movie.c"
 #include "../tasks/task_image.c"

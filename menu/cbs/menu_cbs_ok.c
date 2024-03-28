@@ -395,6 +395,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST;
       case ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST;
+      case ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_OVERLAY_LIGHTGUN_SETTINGS_LIST;
+      case ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_OVERLAY_MOUSE_SETTINGS_LIST;
       case ACTION_OK_DL_MENU_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST;
 #ifdef _3DS
@@ -1527,6 +1531,8 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
+#if 0
+/* Thumbnailpack removal */
       case ACTION_OK_DL_THUMBNAILS_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1536,6 +1542,7 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
+#endif
       case ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1693,6 +1700,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST:
       case ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST:
       case ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST:
+      case ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST:
+      case ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST:
       case ACTION_OK_DL_MENU_SETTINGS_LIST:
 #ifdef _3DS
       case ACTION_OK_DL_MENU_BOTTOM_SETTINGS_LIST:
@@ -3680,12 +3689,16 @@ static int generic_action_ok_remap_file_operation(const char *path,
                msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
                1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_LOG("[Remap]: File saved successfully: \"%s\".\n",remap_file_path);
       }
       else
+      {
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
                1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_ERR("[Remap]: File save unsuccessful: \"%s\".\n",remap_file_path);
+      }
    }
    else
    {
@@ -4971,6 +4984,8 @@ static int generic_action_ok_network(const char *path,
          callback     = cb_net_generic;
          suppress_msg = true;
          break;
+#if 0
+/* Thumbnailpack removal */
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join_special(url_path,
                FILE_PATH_CORE_THUMBNAILPACKS_URL,
@@ -4979,6 +4994,7 @@ static int generic_action_ok_network(const char *path,
          type_id2     = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback     = cb_net_generic;
          break;
+#endif
 #ifdef HAVE_LAKKA
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
          /* TODO unhardcode this path */
@@ -5017,7 +5033,10 @@ static int generic_action_ok_network(const char *path,
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
 DEFAULT_ACTION_OK_LIST(action_ok_core_system_files_list, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_LIST)
+#if 0
+/* Thumbnailpack removal */
 DEFAULT_ACTION_OK_LIST(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
+#endif
 DEFAULT_ACTION_OK_LIST(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
 static void cb_generic_dir_download(retro_task_t *task,
@@ -5449,7 +5468,10 @@ static int action_ok_sideload_core(const char *path,
 #ifdef HAVE_NETWORKING
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
+#if 0
+/* Thumbnailpack removal */
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_thumbnails_updater_download, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD)
+#endif
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
 #ifdef HAVE_LAKKA
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
@@ -5538,6 +5560,9 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
     *   the active entry to be 'Run' (first item in
     *   menu list) */
    menu_st->selection_ptr       = 0;
+
+   /* Check if we need to quit */
+   check_quit_on_close();
 
    /* Unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
@@ -5926,6 +5951,9 @@ static int action_ok_delete_entry(const char *path,
    {
       playlist_delete_index(playlist, menu->rpl_entry_selection_ptr);
       playlist_write_file(playlist);
+#if TARGET_OS_TV
+      update_topshelf();
+#endif
    }
 
    new_selection_ptr      = menu_st->selection_ptr;
@@ -6046,6 +6074,8 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_display_list, ACTION_OK_DL_ONSC
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_notifications_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_notifications_views_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_overlay_list, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_lightgun_settings_list, ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_mouse_settings_list, ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_list, ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_list, ACTION_OK_DL_MENU_SETTINGS_LIST)
 #ifdef _3DS
@@ -6235,8 +6265,18 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
    else
       snprintf(hostname, sizeof(hostname), "%s|%d", room->address, room->port);
 
-   task_push_netplay_crc_scan(room->gamecrc, room->gamename,
-      room->subsystem_name, room->corename, hostname);
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+   {
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+      command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)hostname);
+      menu_input_dialog_end();
+      retroarch_menu_running_finished(false);
+   }
+   else
+   {
+      task_push_netplay_crc_scan(room->gamecrc, room->gamename,
+         room->subsystem_name, room->corename, hostname);
+   }
 
    return 0;
 }
@@ -7701,7 +7741,14 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
 {
    if (!string_is_empty(line))
    {
-      if (!task_push_netplay_content_reload(line))
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+      {
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)line);
+         menu_input_dialog_end();
+         retroarch_menu_running_finished(false);
+      }
+      else if (!task_push_netplay_content_reload(line))
       {
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -8445,7 +8492,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #if defined(ANDROID)
          {MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,          action_ok_switch_installed_cores_pfd},
 #endif
+#if 0
+/* Thumbnailpack removal */
          {MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,             action_ok_thumbnails_updater_list},
+#endif
          {MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,          action_ok_pl_thumbnails_updater_list},
          {MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,        action_ok_pl_entry_content_thumbnails},
          {MENU_ENUM_LABEL_UPDATE_LAKKA,                        action_ok_lakka_list},
@@ -8673,6 +8723,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,     action_ok_onscreen_notifications_list},
          {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,action_ok_onscreen_notifications_views_list},
          {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,           action_ok_onscreen_overlay_list},
+         {MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,           action_ok_overlay_lightgun_settings_list},
+         {MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,              action_ok_overlay_mouse_settings_list},
          {MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,                action_ok_osk_overlay_list},
          {MENU_ENUM_LABEL_MENU_SETTINGS,                       action_ok_menu_list},
 #ifdef _3DS
@@ -9173,8 +9225,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL:
+#if 0
+/* Thumbnailpack removal */
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
+#endif
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_LAKKA:

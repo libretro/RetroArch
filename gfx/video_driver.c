@@ -123,7 +123,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_OPENDINGUX_FBDEV)
    &gfx_ctx_opendingux_fbdev,
 #endif
-#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
+#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_ANGLE)
    &gfx_ctx_wgl,
 #endif
 #if defined(__WINRT__) && defined(HAVE_OPENGLES)
@@ -1174,7 +1174,7 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-   RARCH_DBG("[Video]: Display server set resolution, hz: %f\n",hz);
+   RARCH_DBG("[Video]: Display server set resolution to %ux%u %.3f Hz.\n", width, height, hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, width, height, int_hz,
@@ -1240,6 +1240,7 @@ void video_switch_refresh_rate_maybe(
    unsigned video_swap_interval       = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
+   unsigned shader_subframes          = settings->uints.video_shader_subframes;
    bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
    bool exclusive_fullscreen          = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
    bool windowed_fullscreen           = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
@@ -1254,7 +1255,7 @@ void video_switch_refresh_rate_maybe(
       refresh_rate       = 60.00f;
 
    /* Black frame insertion + swap interval multiplier */
-   refresh_rate          = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval);
+   refresh_rate          = (refresh_rate * (video_bfi + 1.0f) * video_swap_interval * shader_subframes);
 
    /* Fallback when target refresh rate is not exposed or when below standards */
    if (!video_display_server_has_refresh_rate(refresh_rate) || refresh_rate < 50)
@@ -1290,7 +1291,7 @@ void video_switch_refresh_rate_maybe(
 bool video_display_server_set_refresh_rate(float hz)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-   RARCH_DBG("[Video]: Display server set refresh rate %f\n", hz);
+   RARCH_DBG("[Video]: Display server set refresh rate to %.3f Hz.\n", hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, 0, 0, (int)hz,
@@ -1307,9 +1308,18 @@ void video_display_server_restore_refresh_rate(void)
 
    if (!refresh_rate_original || refresh_rate_current == refresh_rate_original)
       return;
-   RARCH_DBG("[Video]: Display server restore refresh rate %f\n", refresh_rate_original);
-   video_monitor_set_refresh_rate(refresh_rate_original);
-   video_display_server_set_refresh_rate(refresh_rate_original);
+
+   RARCH_DBG("[Video]: Restoring original refresh rate: %.3f Hz.\n", video_st->video_refresh_rate_original);
+
+   if (video_display_server_set_refresh_rate(refresh_rate_original))
+   {
+      /* Set the av_info fps also to the original refresh rate */
+      /* to avoid re-initialization problems */
+      struct retro_system_av_info *av_info = &video_st->av_info;
+      av_info->timing.fps = video_st->video_refresh_rate_original;
+
+      video_monitor_set_refresh_rate(refresh_rate_original);
+   }
 }
 
 const char *video_display_server_get_output_options(void)
@@ -2551,6 +2561,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
+   video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
+   video_info->shader_subframes            = settings->uints.video_shader_subframes;
+   video_info->current_subframe            = 0;
+   video_info->scan_subframes              = settings->bools.video_scan_subframes;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->runahead                    = settings->bools.run_ahead_enabled;
@@ -3908,6 +3922,7 @@ void video_driver_frame(const void *data, unsigned width,
          && video_st->current_video
          && video_st->current_video->frame)
    {
+      video_info.current_subframe = 0;
       if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
@@ -4043,6 +4058,7 @@ void video_frame_delay(video_driver_state_t *video_st,
       uint8_t video_swap_interval = runloop_get_video_swap_interval(
             settings->uints.video_swap_interval);
       uint8_t video_bfi           = settings->uints.video_black_frame_insertion;
+      uint8_t shader_subframes    = settings->uints.video_shader_subframes;
       uint8_t frame_time_interval = 8;
       static uint8_t skip_update  = 0;
       static bool skip_delay_prev = false;
@@ -4074,7 +4090,7 @@ void video_frame_delay(video_driver_state_t *video_st,
          frame_time_update = false;
 
       /* Black frame insertion + swap interval multiplier */
-      refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval);
+      refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
 
       /* Set target moderately as half frame time with 0 (Auto) delay */
       if (video_frame_delay == 0)
@@ -4301,14 +4317,14 @@ void video_frame_rest(video_driver_state_t *video_st,
    retro_time_t frame_time_target    = 1000000.0f / settings->floats.video_refresh_rate;
    retro_time_t frame_time           = 0;
    static retro_time_t after_present = 0;
-   int sleep_max                     = frame_time_target / 1000 / 2;
-   int sleep                         = 0;
+   retro_time_t sleep_max            = frame_time_target / 1000 / 2;
+   retro_time_t sleep                         = 0;
    int frame_time_near_req_count     = ceil(settings->floats.video_refresh_rate / 2);
    static int frame_time_over_count  = 0;
    static int frame_time_near_count  = 0;
    static int frame_time_try_count   = 0;
    double video_stddev               = 0;
-   audio_statistics_t audio_stats;
+   audio_statistics_t audio_stats = {0};
 
    /* Must require video and audio deviation standards */
    video_monitor_fps_statistics(NULL, &video_stddev, NULL);

@@ -772,7 +772,7 @@ typedef drflac_int32 drflac_result;
 static drflac_bool32 drflac__gIsLZCNTSupported = DRFLAC_FALSE;
 #ifndef DRFLAC_NO_CPUID
 static drflac_bool32 drflac__gIsSSE42Supported = DRFLAC_FALSE;
-static void drflac__init_cpu_caps()
+static void drflac__init_cpu_caps(void)
 {
     int info[4] = {0};
 

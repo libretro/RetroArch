@@ -75,6 +75,7 @@ struct content_playlist
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
    enum playlist_thumbnail_mode left_thumbnail_mode;
+   enum playlist_thumbnail_match_mode thumbnail_match_mode;
    enum playlist_sort_mode sort_mode;
 
    bool modified;
@@ -90,6 +91,7 @@ typedef struct
    unsigned *current_entry_uint_val;
    enum playlist_label_display_mode *current_meta_label_display_mode_val;
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
+   enum playlist_thumbnail_match_mode *current_meta_thumbnail_match_mode_val;
    enum playlist_sort_mode *current_meta_sort_mode_val;
    bool *current_meta_bool_val;
    playlist_t *playlist;
@@ -1057,6 +1059,53 @@ error:
    return false;
 }
 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx, 
+      enum playlist_thumbnail_name_flags thumbnail_flags)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return;
+
+   entry                   = &playlist->entries[idx];
+   entry->thumbnail_flags |= thumbnail_flags;
+}
+
+enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return    PLAYLIST_THUMBNAIL_FLAG_NONE;
+
+   entry = &playlist->entries[idx];
+   return entry->thumbnail_flags;
+}
+
+
+enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return    PLAYLIST_THUMBNAIL_FLAG_NONE;
+   entry = &playlist->entries[idx];
+
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_NONE;
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_STD_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME;
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
+   /* Special case: only one entry in playlist, only one query is possible
+    * as flag swapping relies on going back and forth among entries
+    * so just use the most likely version here */
+   if (idx == 0 && RBUF_LEN(playlist->entries) == 1)
+            return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
+   return PLAYLIST_THUMBNAIL_FLAG_FULL_NAME;
+}
+
+
 /**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
@@ -1772,6 +1821,14 @@ void playlist_write_file(playlist_t *playlist)
       rjsonwriter_raw(writer, "\n", 1);
 
       rjsonwriter_add_spaces(writer, 2);
+      rjsonwriter_add_string(writer, "thumbnail_match_mode");
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%d", (int)playlist->thumbnail_match_mode);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
+
+      rjsonwriter_add_spaces(writer, 2);
       rjsonwriter_add_string(writer, "sort_mode");
       rjsonwriter_raw(writer, ":", 1);
       rjsonwriter_raw(writer, " ", 1);
@@ -2283,19 +2340,22 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t length)
          {
             /* handle any top-level playlist metadata here */
             if (pCtx->current_meta_label_display_mode_val)
-               *pCtx->current_meta_label_display_mode_val = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
+               *pCtx->current_meta_label_display_mode_val   = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_thumbnail_mode_val)
-               *pCtx->current_meta_thumbnail_mode_val     = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+               *pCtx->current_meta_thumbnail_mode_val       = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_thumbnail_match_mode_val)
+               *pCtx->current_meta_thumbnail_match_mode_val = (enum playlist_thumbnail_match_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_sort_mode_val)
-               *pCtx->current_meta_sort_mode_val          = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
+               *pCtx->current_meta_sort_mode_val            = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
          }
       }
    }
 
-   pCtx->current_entry_uint_val              = NULL;
-   pCtx->current_meta_label_display_mode_val = NULL;
-   pCtx->current_meta_thumbnail_mode_val     = NULL;
-   pCtx->current_meta_sort_mode_val          = NULL;
+   pCtx->current_entry_uint_val                = NULL;
+   pCtx->current_meta_label_display_mode_val   = NULL;
+   pCtx->current_meta_thumbnail_mode_val       = NULL;
+   pCtx->current_meta_thumbnail_match_mode_val = NULL;
+   pCtx->current_meta_sort_mode_val            = NULL;
 
    return true;
 }
@@ -2395,12 +2455,13 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
          && (pCtx->array_depth  == 0)
          && length)
    {
-      pCtx->current_string_val                  = NULL;
-      pCtx->current_meta_label_display_mode_val = NULL;
-      pCtx->current_meta_thumbnail_mode_val     = NULL;
-      pCtx->current_meta_sort_mode_val          = NULL;
-      pCtx->current_meta_bool_val               = NULL;
-      pCtx->in_items                            = false;
+      pCtx->current_string_val                    = NULL;
+      pCtx->current_meta_label_display_mode_val   = NULL;
+      pCtx->current_meta_thumbnail_mode_val       = NULL;
+      pCtx->current_meta_thumbnail_match_mode_val = NULL;
+      pCtx->current_meta_sort_mode_val            = NULL;
+      pCtx->current_meta_bool_val                 = NULL;
+      pCtx->in_items                              = false;
 
       switch (pValue[0])
       {
@@ -2446,6 +2507,10 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
             else if (string_is_equal(pValue, "sort_mode"))
                pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
             break;
+	  case 't':
+            if (string_is_equal(pValue, "thumbnail_match_mode"))
+               pCtx->current_meta_thumbnail_match_mode_val     = &pCtx->playlist->thumbnail_match_mode;
+	    break;
       }
    }
 
@@ -2818,6 +2883,7 @@ playlist_t *playlist_init(const playlist_config_t *config)
    playlist->label_display_mode     = LABEL_DISPLAY_MODE_DEFAULT;
    playlist->right_thumbnail_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    playlist->left_thumbnail_mode    = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->thumbnail_match_mode   = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT;
    playlist->sort_mode              = PLAYLIST_SORT_MODE_DEFAULT;
 
    playlist->scan_record.search_recursively = false;
@@ -3172,28 +3238,31 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name)
 {
-   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+   if (!playlist || !db_name || idx >= RBUF_LEN(playlist->entries))
       return;
 
-   if (db_name)
+   if (!string_is_empty(playlist->entries[idx].db_name))
+       *db_name = playlist->entries[idx].db_name;
+   else
    {
-      if (!string_is_empty(playlist->entries[idx].db_name))
-         *db_name = playlist->entries[idx].db_name;
-      else
-      {
-         const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
+       const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
 
-         /* Only use file basename if this is a 'collection' playlist
-          * (i.e. ignore history/favourites) */
-         if (
-                  !string_is_empty(conf_path_basename)
-               && !string_is_equal(conf_path_basename,
-                        FILE_PATH_CONTENT_HISTORY)
-               && !string_is_equal(conf_path_basename,
-                        FILE_PATH_CONTENT_FAVORITES)
-            )
-            *db_name = conf_path_basename;
-      }
+       /* Only use file basename if this is a 'collection' playlist
+        * (i.e. ignore history/favourites) */
+       if (
+           !string_is_empty(conf_path_basename)
+           && !string_is_equal(conf_path_basename,
+                               FILE_PATH_CONTENT_HISTORY)
+           && !string_is_equal(conf_path_basename,
+                               FILE_PATH_CONTENT_FAVORITES)
+           )
+           *db_name = conf_path_basename;
+       else
+       {
+          core_info_t *core_info = playlist_entry_get_core_info(&playlist->entries[idx]);
+          if (core_info && core_info->databases)
+             *db_name = core_info->databases;
+       }
    }
 }
 
@@ -3230,6 +3299,13 @@ enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
    }
    /* Fallback */
    return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+}
+
+bool playlist_thumbnail_match_with_filename(playlist_t *playlist)
+{
+   if (!playlist)
+      return false;
+   return playlist->thumbnail_match_mode == PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_FILENAME;
 }
 
 enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist)

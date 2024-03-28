@@ -33,10 +33,8 @@
 #include "../paths.h"
 #include "gfx_display.h"
 
-#if !defined(HAVE_VIDEOCORE)
 #include "../deps/switchres/switchres_wrapper.h"
 static sr_mode srm;
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

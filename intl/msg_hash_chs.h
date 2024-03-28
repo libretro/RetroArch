@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "浏览一个librettro 核心实现。浏览器从何处启动取决于您的核心文件夹在哪，如果留空，它将从根目录启动。\n如果核心文件夹是一个目录，菜单将使用该文件夹作为顶级目录。 如果核心文件夹是一个完整路径，它将从文件所在的目录启动。"
+   "浏览 libretro 核心实现。浏览器的起始位置取决于你的「核心目录」路径。若空，则从根目录开始。\n如果「核心目录」是一个目录，菜单会将其作为顶级文件夹使用。如果「核心目录」是一个完整路径，它将从路径所指文件所在的文件夹开始。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "浏览内容。要加载内容，“核心”和内容文件是必备的。\n要设置主菜单浏览内容的初始目录，请设置“文件浏览器目录”。 如果未设置，默认在根目录。\n浏览器将筛选“加载核心”中最后一个核心的扩展，并在内容加载时使用该核心。"
+   "浏览内容。要加载内容，你需要使用一个“核心”，和一个内容文件。\n要控制菜单开始浏览内容的位置，请设置「文件浏览器目录」。若未设置，它将从根目录开始。\n浏览器将依最后从「加载核心」中设置的核心过滤扩展名，并在内容加载时使用该核心。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -136,10 +136,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
    "打开传统桌面菜单。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "禁用游戏机厅模式。(需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -195,23 +191,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "重启程序"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "重启程序。"
+   "重启"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "退出程序"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "退出程序。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "退出 RetroArch，用 (SIGKILL 等) 终止程序将不保存任何配置而终止RetroArch等强制退出方式。另外，在类 Unix 中，用 SIGINT/SIGTERM 可以简洁地去初始化。"
+   "退出"
    )
 
 /* Main Menu > Load Core */
@@ -549,11 +533,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "从「独立核心」菜单中排除"
+   "从「无内容核心」菜单中排除"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "防止此核心显示在“独立核心”的选项卡/菜单中。只有当显示模式设置为“自定义”时才适用。"
+   "阻止此核心显示在「无内容核心」选项卡/菜单中。仅当显示模式设置为「自定义」时适用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -604,7 +588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   "RetroArch版本"
+   "RetroArch 版本"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -1193,12 +1177,60 @@ MSG_HASH(
    "更改存档设置。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "云同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "更改云同步设置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "启用云同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "尝试同步配置、sram 和状态到云存储提供商。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "破坏性云同步"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "禁用后，文件会在被覆盖或删除之前移至备份文件夹。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "云同步后端"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "使用哪种云存储网络协议。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "云存储 URL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "云存储服务的 API 入口点的 URL。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "用户名"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "您的云存储账户的用户名。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "密码"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "您的云存储账户的密码。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1213,20 +1245,16 @@ MSG_HASH(
    "文件浏览器"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "更改文件浏览器设置。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   "配置文件."
+   "配置文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   "压缩存档文件"
+   "压缩归档文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   "写入配置文件"
+   "录制配置文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
@@ -1234,7 +1262,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   "配置文件."
+   "配置文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
@@ -1246,7 +1274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
-   "控制器重映射文件。"
+   "重映射控制文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
@@ -1449,10 +1477,6 @@ MSG_HASH(
    "使用的输入驱动。某些视频驱动强制使用不同的输入驱动。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Udev 输入设备使用最近的 evdev 手柄 API 来驱动游戏手柄，也支持即插即用和力反馈。\n设备读取 evdev 记录支持当前键盘及按键回滚、鼠标和触摸板。\n大多数发行版默认情况下，/dev/input的节点是root专用的 (模式600) 。您可以设置一个 udev 规则，使非 root 用户可以访问它们。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Linuxraw 输入驱动程序需要一个活动的 TTY。 键盘事件直接从 TTY 读取，从而使其更简单，但不像udev那样灵活。 Mice 等根本不支持。此驱动程序使用旧的游戏杆API(/dev/input/js*)。"
    )
@@ -1464,10 +1488,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "手柄"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "要使用的手柄驱动。"
-   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "视频"
@@ -1478,59 +1499,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   "OpenGL 1.x 驱动程序。要求最低版本：OpenGL 1.1。不支持Shaders。如果可能，请使用后的 OpenGL 驱动程序。"
+   "OpenGL 1.x 驱动程序。最低版本要求：OpenGL 1.1。不支持着色器。如果可能，请改用更高版本的 OpenGL 驱动程序。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "OpenGL 2.x 驱动程序。此驱动程序允许libretro GL 核心除软件渲染核心外被使用。 需要最小版本：OpenGL 2.0 或 OpenGLES 2.0 。支持 GLSL shader 格式。如果可能的话，请使用 glcore 驱动程序。"
+   "OpenGL 2.x 驱动程序。除了软件渲染核心之外，该驱动程序还允许使用 libretro GL 核心。所需的最低版本：OpenGL 2.0 或 OpenGLES 2.0。支持 GLSL 着色器格式。如果可能的话，请改用 glcore 驱动程序。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "OpenGL 3.x 驱动程序。此驱动程序允许libretro GL 核心除软件渲染核心外被使用。 需要最低版本︰ OpenGL 3.2或 OpenGLES 3.0+。支持Slang Shader 格式。"
+   "OpenGL 3.x 驱动程序。除了软件渲染核心之外，该驱动程序还允许使用 libretro GL 核心。所需的最低版本：OpenGL 3.2 或 OpenGLES 3.0+。支持 Slang 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   "Vulkan 驱动程序。此驱动程序允许除了软件渲染的核心外，还使用libretro Vulkan cores。 需要最小版本︰ Vulkan 1.0。支持HDR 和 Slang Shaders。"
+   "Vulkan 驱动程序。除了软件渲染核心之外，该驱动程序还允许使用 libretro Vulkan 核心。所需的最低版本：Vulkan 1.0。支持 HDR 和 Slang 着色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
-   "SDL 1.2 软件渲染驱动。性能被认为是次优化。考虑只作为最后手段使用。"
+   "SDL 1.2 软件渲染驱动程序。性能被认为是次优的。不得已才考虑使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
-   "SDL 2 软件渲染驱动。软件渲染的 librettro 核心实现的性能取决于您的平台SDL 实现情况。"
+   "SDL 2 软件渲染驱动程序。软件渲染的 libretro 核心实现的性能取决于您的平台 SDL 实现。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   "苹果平台的金属驱动程序。支持 Slang Shader 格式。"
+   "Apple 平台的 Metal 驱动程序。支持 Slang 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
-   "Direct3D 8驱动程序没有Shader支持."
+   "Direct3D 8 驱动程序，不支持着色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   "Direct3D 9 驱动程序支持旧的Cg Shader 格式。"
+   "Direct3D 9 驱动程序，支持旧的 Cg 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
-   "Direct3D 9 驱动程序支持HLSL Shader 格式。"
+   "Direct3D 9 驱动程序，支持 HLSL 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
-   "Direct3D 10 驱动程序，支持 Slang Shader 格式。"
+   "Direct3D 10 驱动程序，支持 Slang 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
-   "Direct3D 11 驱动程序，支持 HDR 和 Slang Shader 格式。"
+   "Direct3D 11 驱动程序，支持 HDR 和 Slang 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
-   "Direct3D 12 驱动程序，支持 HDR 和 Slang Shader 格式。"
+   "Direct3D 12 驱动程序，支持 HDR 和 Slang 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
-   "DispmanX 驱动程序。在 Raspberry Pi 0.3. 中使用 DispmanX API 用于Videocore IV GPU 。无叠加层或Shader 支持。"
+   "DispmanX 驱动程序。 在 Raspberry Pi 0..3 中使用适用于 Videocore IV GPU 的 DispmanX API。没有叠加层或着色器支持。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
@@ -1538,31 +1559,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
-   "一个低级别 Exynos 视频驱动程序，使用 Samsung Exynos SoC 中的 G2D 区块进行闪烁操作。软件渲染核心的性能应该是最佳的。"
+   "低级 Exynos 视频驱动程序，使用 Samsung Exynos SoC 中的 G2D 块进行 blit 操作。软件渲染核心的性能应该是最佳的。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
-   "普通DRM 视频驱动程序。这是一个低级别的视频驱动程序，使用 libdrm 使用GPU 叠加层缩放硬件缩放。"
+   "普通 DRM 视频驱动程序。这是一个低级视频驱动程序，使用 libdrm 通过 GPU 叠加层进行硬件缩放。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
-   "一个低等级的 Sunxi 视频驱动程序，在Allwinner SoC 中使用G2D 块。"
+   "低级 Sunxi 视频驱动程序，在 Allwinner SoC 中使用 G2D 模块。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
-   "Wii U 驱动程序。支持 Slang Shader。"
+   "Wii U 驱动程序。支持 Slang 着色器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
-   "切换驱动程序。支持 GLSL shader 格式。"
+   "Switch 驱动程序。支持 GLSL 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
-   "OpenVG 驱动程序。使用 OpenVG 硬件加速2D 矢量图形API。"
+   "OpenVG 驱动程序。使用 OpenVG 硬件加速 2D 矢量图形 API。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
-   "GDI 驱动。使用旧版本的 Windows 接口。不推荐。"
+   "GDI 驱动程序。使用旧版 Windows 接口。不建议。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
@@ -1637,6 +1658,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
    "麦克风重采样器"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "要使用的麦克风重采样器驱动程序。"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1648,15 +1673,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
-   "窗口化的Sinc实现。"
+   "Windowed Sinc 实现。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
-   "复杂的余弦实现。"
+   "Convoluted Cosine 实现。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
-   "最邻近的重采样实现，这个重采样器忽略了质量设置。"
+   "Nearest resampling 实现。此重采样器忽略质量设置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1691,24 +1716,20 @@ MSG_HASH(
    "菜单"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "使用的菜单驱动。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
-   "XMB是一个RetroArch图形用户界面，看起来像第七代控制台菜单。它可以支持与Ozone一样的功能。"
+   "XMB 是 RetroArch 的一个 GUI，看起来像第 7 世代主机菜单。它可以支持与 Ozone 相同的功能。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
-   "Ozone是RetroArch在大多数平台上的默认图形用户界面。它为使用游戏控制器进行导航进行了优化。"
+   "Ozone 是大多数平台上 RetroArch 的默认 GUI。它针对游戏控制器的导航进行了优化。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
-   "RGUI是RetroArch的一个简单的内置GUI。它在菜单驱动中的性能要求最低，可以在低分辨率的屏幕上使用。"
+   "RGUI 是 RetroArch 的内置简单 GUI。它在菜单驱动程序中的性能要求最低，并且可以在低分辨率屏幕上使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
-   "在移动设备上，RetroArch默认使用移动UI，MaterialUI。这个界面是围绕触摸屏和指针式设备设计的，比如鼠标/轨迹球。"
+   "在移动设备上，RetroArch 默认使用移动端 UI，MaterialUI。该界面是围绕触摸屏和指针设备（例如鼠标/轨迹球）设计的。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1787,7 +1808,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
-   "暂停屏幕保护程序。是一个提示，不一定要由视频驱动来实现。"
+   "挂起屏幕保护程序。这是请求，视频驱动程序不必遵守该请求。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
@@ -1806,14 +1827,6 @@ MSG_HASH(
    "黑帧补间"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在帧之间插入黑色帧。这能在高刷新率屏幕上消除残影。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "在帧之间插入一个黑框。对于120赫兹的显示器来说，在播放60赫兹的材料时可以消除重影。视频刷新率仍应配置为60赫兹显示器（将刷新率除以2）。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU 截屏"
    )
@@ -1827,7 +1840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "给图像添加轻微的模糊效果，以柔化硬像素的边缘。这个选项对性能的影响非常小。如果使用了着色器则应该禁用。"
+   "向图像添加轻微的模糊以柔化硬像素边缘。此选项对性能影响很小。如果使用着色器，则应禁用本选项。"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1836,7 +1849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "指定通过内部 IPU 缩放画面时使用的图像差值算法。我们推荐对基于 CPU 的视频滤镜使用「双立方」及「双线性」选项，此选项不会对性能造成影响。"
+   "指定通过内部 IPU 缩放内容时的图像插值方法。使用 CPU 驱动的视频滤镜时，建议使用“双三次”或“双线性”。此选项对性能没有影响。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -1857,11 +1870,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "当“整数缩放”被禁用时，指定图像内插法。“最近的邻里”对性能影响最小。"
+   "指定禁用“整数比例”时的图像插值方法。“最近邻”对性能的影响最小。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   "最近的邻里点"
+   "最近邻"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
@@ -1887,11 +1900,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "应用CPU驱动的视频过滤器。可能要付出很高的性能代价。一些视频过滤器可能只适用于使用32位或16位颜色的内核。可以选择动态链接的视频过滤器库。"
+   "应用 CPU 驱动的视频滤镜。可能会付出很高的性能成本。某些视频滤镜可能仅适用于使用 32 位或 16 位颜色的内核。可以选择动态链接的视频滤镜库。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "应用CPU驱动的视频过滤器。可能要付出很高的性能代价。一些视频过滤器可能只适用于使用32位或16位颜色的内核。可以选择内置视频过滤器库。"
+   "应用 CPU 驱动的视频滤镜。可能会付出很高的性能成本。某些视频滤镜可能仅适用于使用 32 位或 16 位颜色的内核。可选择内置视频滤镜库。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -1903,7 +1916,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "在刘海屏 Android 设备中占满全屏"
+   "在 Android 和 iOS 刘海屏设备中启用全屏"
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -1972,10 +1985,6 @@ MSG_HASH(
    "倾向于哪个显示器。0（默认）意味着不偏好任何特定的显示器，1及以上（1是第一个显示器），建议RetroArch使用该特定显示器。"
    )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Wii U 掌机优化 (需要重启)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "使用掌机视图的精确两倍缩放。如果禁用，则使用原生电视分辨率。"
@@ -2297,10 +2306,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "自定义视图高度，如果宽高比设置为「自定义宽高比」，则使用此数值。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "裁减过扫描 (需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2919,10 +2924,6 @@ MSG_HASH(
    "支持的最大玩家数量。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "轮询行为（需要重启）。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "影响在RetroArch中输入投票的方式。设置为“早期”或“晚期”可以减少投票的延迟，取决于您的配置。"
    )
@@ -2947,10 +2948,6 @@ MSG_HASH(
    "自动配置已有配置文件的手柄，即插即玩。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "禁用 Windows 快捷键 (需要重启)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "在应用中保留 Win 组合键。"
@@ -3141,10 +3138,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Android断开连接解决方法"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "处理控制器断开连接和重新连接，防止2名玩家使用相同的控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -4413,16 +4406,8 @@ MSG_HASH(
    "显示隐藏文件和文件夹"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "在文件浏览器中显示隐藏的文件和文件夹。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "过滤未知扩展名"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "按支持的扩展名过滤文件管理器中显示的文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4435,10 +4420,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "记住上次使用的开始文件夹"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "在起始目录加载游戏时，于最后打开的位置开启文件浏览器。注：重启全能模拟器后，此位置将重置。"
    )
 
 /* Settings > Frame Throttle */
@@ -4826,10 +4807,6 @@ MSG_HASH(
    "遮罩预设"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "从文件管理器中选择遮罩。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(横屏) 遮罩缩放"
    )
@@ -4929,6 +4906,12 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(
@@ -4942,10 +4925,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "视频布局路径"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "从文件管理器中选择视频布局。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5488,10 +5467,6 @@ MSG_HASH(
    "启动时启动用户界面配对驱动程序(如果可用)。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "桌面菜单 (需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "启动时打开桌面菜单。"
    )
@@ -5625,10 +5600,6 @@ MSG_HASH(
    "显示「设置」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "显示「设置」菜单。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "设置开启「设置」页的密码"
    )
@@ -5641,56 +5612,28 @@ MSG_HASH(
    "显示「收藏」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "显示「收藏」菜单。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "显示「图片」页"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "显示「图片」菜单。(在 Ozone/XMB 中需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "显示「音乐」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "显示「音乐」菜单。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "显示「视频」页"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "显示「视频」菜单。(在 Ozone/XMB 中需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "显示「联机」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "显示「联机」菜单。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "显示「历史」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "显示「历史」菜单。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "显示「导入」页"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "显示「导入」菜单。(在 Ozone/XMB 中需要重启)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -5713,24 +5656,12 @@ MSG_HASH(
    "显示「游戏列表」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "显示「游戏列表」。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "显示「探索」页"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "显示探索游戏选项。(在 Ozone/XMB 中需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "显示“无内容封面”"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "指定要在菜单中显示的核心类型(如果有的话)。 当设置为“自定义”时，可以通过“管理代码”菜单切换单个核心可见性(需要在 Ozone/XMB上重新启动)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -7367,18 +7298,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "文件浏览器"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "设置文件管理器的起始文件夹。"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "配置"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "设置菜单配置文件的启起始文件夹。"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
    "核心"
@@ -8915,10 +8834,6 @@ MSG_HASH(
    "记住上次使用的着色器文件夹"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "打开文件浏览器时从上次用过的着色器文件夹开始。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "通过加载一个预设着色器配置文件来自动设置。"
    )
@@ -9960,10 +9875,6 @@ MSG_HASH(
    "选择不同的颜色主题。选择「自定义」启用菜单主题预设文件。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "从文件管理器中选择菜单主题。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    "当点击“快捷菜单”上的按钮，允许正在运行中的游戏在后台显示。 禁用透明度可能会改变主题的颜色。"
    )
@@ -10386,10 +10297,6 @@ MSG_HASH(
    "标题边缘水平偏移"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "启用「设置」页 (需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "显示应用程序「设置」页。"
    )
@@ -10544,16 +10451,8 @@ MSG_HASH(
    "总是合上左侧边栏。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "截断游戏列表名称 (需要重启)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "从列表中移除主机厂商名称。例如「Sony - PlayStation」变成「PlayStation」。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "按截断后的名称排序游戏列表 (需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -10653,10 +10552,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "使用开关图标而不是开/关文字来表示设置项的开启关闭状态。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "游戏列表图标 (需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -13209,10 +13104,6 @@ MSG_HASH(
    "扫描中"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "已完成对文件夹的扫描"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "发送指令"
    )
@@ -13569,44 +13460,8 @@ MSG_HASH(
    "加载状态失败。优先帧已被禁用。"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "文件扫描完成"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "启动金手指搜索成功"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "启动金手指搜索失败"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "搜索尚未初始化/启动"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "新的匹配数量 = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "已添加 %u 个匹配"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "添加匹配失败"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "已从匹配创建代码"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "创建代码失败"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "已删除匹配"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13643,34 +13498,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "金手指已删除。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "放置光盘失败"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "无法放置上次使用的光盘..."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "无法连接到客户端"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "无法连接到主机"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "联网主机已满"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "您被禁止在此主机"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "接收主机端报文失败"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13713,18 +13540,6 @@ MSG_HASH(
    "最高"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "警告：素材缺失，请使用在线更新"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "警告：语言所需的字体缺失，请使用在线更新"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "警告：不支持的语言 - 使用英语"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "正在吐出光盘..."
    )
@@ -13757,24 +13572,8 @@ MSG_HASH(
    "移除着色器预设出错。"
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "选择的街机 DAT 文件无效"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "选择的街机 DAT 文件太大 (没有足够内存)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "加载街机 DAT 文件失败 (无效格式？)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "手动扫描配置无效"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "未检测到有效游戏"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

@@ -481,7 +481,11 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
             "sdl2"))
          fallback_device_name = "Standard Gamepad";
-
+#ifdef HAVE_TEST_DRIVERS
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "test"))
+         fallback_device_name = "Test Gamepad";
+#endif
       if (!string_is_empty(fallback_device_name) &&
           !string_is_equal(autoconfig_handle->device_info.name,
                fallback_device_name))
@@ -518,8 +522,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
     * > Note that 'connection successful' messages
     *   may be suppressed, but error messages are
     *   always shown */
+   task->style = TASK_STYLE_NEGATIVE;
    if (autoconfig_handle->device_info.autoconfigured)
    {
+      /* Successful addition style */
+      task->style = TASK_STYLE_POSITIVE;
+
       if (match_found)
       {
          /* A valid autoconfig was applied */
@@ -612,7 +620,7 @@ bool input_autoconfigure_connect(
 
    /* Configure handle */
    if (!(autoconfig_handle = (autoconfig_handle_t*)
-            malloc(sizeof(autoconfig_handle_t))))
+            calloc(1, sizeof(autoconfig_handle_t))))
       goto error;
 
    autoconfig_handle->port                         = port;
@@ -777,6 +785,9 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       goto task_finished;
+
+   /* Removal style */
+   task->style = TASK_STYLE_NEGATIVE;
 
    /* Get display name for task status message */
    device_display_name = autoconfig_handle->device_info.display_name;

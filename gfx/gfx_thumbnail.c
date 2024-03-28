@@ -292,12 +292,13 @@ void gfx_thumbnail_request(
                const char *system                         = NULL;
                const char *img_name                       = NULL;
                static char last_img_name[PATH_MAX_LENGTH] = {0};
-
+               settings_t *settings                       = config_get_ptr();
+               enum playlist_thumbnail_name_flags curr_flag;
                if (!playlist)
                   goto end;
 
-               /* Get current image name */
-               if (!gfx_thumbnail_get_img_name(path_data, &img_name))
+               /* Validate entry */
+               if (!gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
                   goto end;
 
                /* Only trigger a thumbnail download if image
@@ -321,7 +322,20 @@ void gfx_thumbnail_request(
                if (!gfx_thumbnail_get_system(path_data, &system))
                   goto end;
 
-               /* Trigger thumbnail download */
+               /* Since task_push_pl_entry_download will shift the flag, do not attempt if it is already
+                * at second to last option. */
+               curr_flag = playlist_get_curr_thumbnail_name_flag(playlist,idx);
+               if (curr_flag & PLAYLIST_THUMBNAIL_FLAG_NONE || curr_flag & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+                  goto end;
+               /* Do not try to fetch full names here, if it is not explicitly wanted */
+               if (!settings->bools.playlist_use_filename && 
+                   !playlist_thumbnail_match_with_filename(playlist) &&
+                   curr_flag == PLAYLIST_THUMBNAIL_FLAG_INVALID)
+                    playlist_update_thumbnail_name_flag(playlist, idx, PLAYLIST_THUMBNAIL_FLAG_FULL_NAME);
+
+               /* Trigger thumbnail download *
+                * Note: download will grab all 3 possible thumbnails, no matter
+                * what left/right thumbnails are set at the moment */
                task_push_pl_entry_thumbnail_download(
                      system, playlist, (unsigned)idx,
                      false, true);

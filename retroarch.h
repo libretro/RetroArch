@@ -206,6 +206,8 @@ void core_options_flush(void);
  **/
 void retroarch_fail(int error_code, const char *error);
 
+void check_quit_on_close(void);
+
 uint16_t retroarch_get_flags(void);
 
 RETRO_END_DECLS

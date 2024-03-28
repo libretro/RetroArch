@@ -5,6 +5,7 @@
 #include "config_file.h"
 extern config_file_t *open_userdefaults_config_file(void);
 extern void write_userdefaults_config_file(void);
+extern void update_topshelf(void);
 #endif
 
 #ifdef __OBJC__
@@ -72,6 +73,7 @@ UINavigationControllerDelegate> {
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
 @property (nonatomic) int menu_count;
+@property (nonatomic) NSDate *bgDate;
 
 + (RetroArch_iOS*)get;
 

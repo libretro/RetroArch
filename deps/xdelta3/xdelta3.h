@@ -104,7 +104,6 @@
  * the 32bit boundary [xdelta3-test.h]).
  */
 #ifndef _WIN32
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <stdint.h>
 #else /* WIN32 case */
@@ -116,7 +115,6 @@
 
 /* _MSV_VER is defined by Microsoft tools, not by Mingw32 */
 #ifdef _MSC_VER
-typedef signed int     ssize_t;
 typedef int pid_t;
 #if _MSC_VER < 1600
 typedef unsigned char  uint8_t;
@@ -145,13 +143,7 @@ typedef ULONGLONG      uint64_t;
 
 /* The source window size is limited to 2GB unless
  * XD3_USE_LARGESIZET is defined to 1. */
-#ifndef XD3_USE_LARGESIZET
-#if SIZE_MAX == UINT64_MAX
 #define XD3_USE_LARGESIZET 1
-#else
-#define XD3_USE_LARGESIZET 0
-#endif
-#endif
 
 #if SIZE_MAX == UINT64_MAX
 #define SIZEOF_SIZE_T 8
@@ -199,68 +191,31 @@ _Static_assert(SIZEOF_UNSIGNED_LONG_LONG == sizeof(unsigned long long), "SIZEOF_
 #endif
 
 /* Set a xoff_t typedef and the "Q" printf insert. */
-#if defined(_WIN32)
 typedef uint64_t xoff_t;
-#define Q "I64"
-#elif SIZEOF_UNSIGNED_LONG == 8
-typedef unsigned long xoff_t;
-#define Q "l"
-#elif SIZEOF_SIZE_T == 8
-typedef size_t xoff_t;
-#define Q "z"
-#elif SIZEOF_UNSIGNED_LONG_LONG == 8
-typedef unsigned long long xoff_t;
 #define Q "ll"
-#endif /* typedef and #define Q */
-
 #define SIZEOF_XOFF_T 8
 
 #else /* XD3_USE_LARGEFILE64 == 0 */
 
-#if SIZEOF_UNSIGNED_INT == 4
-typedef unsigned int xoff_t;
-#elif SIZEOF_UNSIGNED_LONG == 4
-typedef unsigned long xoff_t;
-#else
 typedef uint32_t xoff_t;
-#endif /* xoff_t is 32 bits */
-
-#define SIZEOF_XOFF_T 4
 #define Q
+#define SIZEOF_XOFF_T 4
+
 #endif /* 64 vs 32 bit xoff_t */
 
 /* Settings based on the size of usize_t (32 and 64 bit window size) */
 #if XD3_USE_LARGESIZET
 
 /* Set a usize_ttypedef and the "W" printf insert. */
-#if defined(_WIN32)
 typedef uint64_t usize_t;
-#define W "I64"
-#elif SIZEOF_UNSIGNED_LONG == 8
-typedef unsigned long usize_t;
-#define W "l"
-#elif SIZEOF_SIZE_T == 8
-typedef size_t usize_t;
-#define W "z"
-#elif SIZEOF_UNSIGNED_LONG_LONG == 8
-typedef unsigned long long usize_t;
 #define W "ll"
-#endif /* typedef and #define W */
-
 #define SIZEOF_USIZE_T 8
 
 #else /* XD3_USE_LARGESIZET == 0 */
 
-#if SIZEOF_UNSIGNED_INT == 4
-typedef unsigned int usize_t;
-#elif SIZEOF_UNSIGNED_LONG == 4
-typedef unsigned long usize_t;
-#else
 typedef uint32_t usize_t;
-#endif /* usize_t is 32 bits */
-
-#define SIZEOF_USIZE_T 4
 #define W
+#define SIZEOF_USIZE_T 4
 
 #endif /* 64 vs 32 bit usize_t */
 
@@ -1497,6 +1452,8 @@ void xd3_blksize_add (xoff_t *blkno,
 #define IF_DEBUG2(x)
 #endif
 
+#ifndef SIZEOF_ARRAY
 #define SIZEOF_ARRAY(x) (sizeof(x) / sizeof(x[0]))
+#endif
 
 #endif /* _XDELTA3_H_ */

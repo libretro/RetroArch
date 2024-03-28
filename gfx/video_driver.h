@@ -415,6 +415,9 @@ typedef struct video_frame_info
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
    unsigned black_frame_insertion;
+   unsigned bfi_dark_frames;
+   unsigned shader_subframes;
+   unsigned current_subframe;
    unsigned fps_update_interval;
    unsigned memory_update_interval;
    unsigned msg_queue_delay;
@@ -487,6 +490,7 @@ typedef struct video_frame_info
    bool crt_switch_hires_menu;
    bool hdr_enable;
    bool overlay_behind_menu;
+   bool scan_subframes;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);

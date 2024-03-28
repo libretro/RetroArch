@@ -1,14 +1,12 @@
 #ifndef RC_RUNTIME_TYPES_H
 #define RC_RUNTIME_TYPES_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "rc_error.h"
 
 #include <stddef.h>
 #include <stdint.h>
+
+RC_BEGIN_C_DECLS
 
 #ifndef RC_RUNTIME_H /* prevents pedantic redefiniton error */
 
@@ -31,7 +29,7 @@ typedef struct rc_value_t rc_value_t;
  * num_bytes is greater than 1, the value is read in little-endian from
  * memory.
  */
-typedef uint32_t(*rc_peek_t)(uint32_t address, uint32_t num_bytes, void* ud);
+typedef uint32_t(RC_CCONV *rc_peek_t)(uint32_t address, uint32_t num_bytes, void* ud);
 
 /*****************************************************************************\
 | Memory References                                                           |
@@ -132,7 +130,7 @@ typedef struct rc_operand_t {
 }
 rc_operand_t;
 
-int rc_operand_is_memref(const rc_operand_t* operand);
+RC_EXPORT int RC_CCONV rc_operand_is_memref(const rc_operand_t* operand);
 
 /*****************************************************************************\
 | Conditions                                                                  |
@@ -276,11 +274,11 @@ struct rc_trigger_t {
   uint8_t measured_as_percent;
 };
 
-int rc_trigger_size(const char* memaddr);
-rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
-int rc_evaluate_trigger(rc_trigger_t* trigger, rc_peek_t peek, void* ud, lua_State* L);
-int rc_test_trigger(rc_trigger_t* trigger, rc_peek_t peek, void* ud, lua_State* L);
-void rc_reset_trigger(rc_trigger_t* self);
+RC_EXPORT int RC_CCONV rc_trigger_size(const char* memaddr);
+RC_EXPORT rc_trigger_t* RC_CCONV rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
+RC_EXPORT int RC_CCONV rc_evaluate_trigger(rc_trigger_t* trigger, rc_peek_t peek, void* ud, lua_State* L);
+RC_EXPORT int RC_CCONV rc_test_trigger(rc_trigger_t* trigger, rc_peek_t peek, void* ud, lua_State* L);
+RC_EXPORT void RC_CCONV rc_reset_trigger(rc_trigger_t* self);
 
 /*****************************************************************************\
 | Values                                                                      |
@@ -303,9 +301,9 @@ struct rc_value_t {
   rc_value_t* next;
 };
 
-int rc_value_size(const char* memaddr);
-rc_value_t* rc_parse_value(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
-int32_t rc_evaluate_value(rc_value_t* value, rc_peek_t peek, void* ud, lua_State* L);
+RC_EXPORT int RC_CCONV rc_value_size(const char* memaddr);
+RC_EXPORT rc_value_t* RC_CCONV rc_parse_value(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
+RC_EXPORT int32_t RC_CCONV rc_evaluate_value(rc_value_t* value, rc_peek_t peek, void* ud, lua_State* L);
 
 /*****************************************************************************\
 | Leaderboards                                                                |
@@ -333,10 +331,10 @@ struct rc_lboard_t {
   uint8_t state;
 };
 
-int rc_lboard_size(const char* memaddr);
-rc_lboard_t* rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
-int rc_evaluate_lboard(rc_lboard_t* lboard, int32_t* value, rc_peek_t peek, void* peek_ud, lua_State* L);
-void rc_reset_lboard(rc_lboard_t* lboard);
+RC_EXPORT int RC_CCONV rc_lboard_size(const char* memaddr);
+RC_EXPORT rc_lboard_t* RC_CCONV rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
+RC_EXPORT int RC_CCONV rc_evaluate_lboard(rc_lboard_t* lboard, int32_t* value, rc_peek_t peek, void* peek_ud, lua_State* L);
+RC_EXPORT void RC_CCONV rc_reset_lboard(rc_lboard_t* lboard);
 
 /*****************************************************************************\
 | Value formatting                                                            |
@@ -356,11 +354,18 @@ enum {
   RC_FORMAT_FLOAT3,
   RC_FORMAT_FLOAT4,
   RC_FORMAT_FLOAT5,
-  RC_FORMAT_FLOAT6
+  RC_FORMAT_FLOAT6,
+  RC_FORMAT_FIXED1,
+  RC_FORMAT_FIXED2,
+  RC_FORMAT_FIXED3,
+  RC_FORMAT_TENS,
+  RC_FORMAT_HUNDREDS,
+  RC_FORMAT_THOUSANDS,
+  RC_FORMAT_UNSIGNED_VALUE
 };
 
-int rc_parse_format(const char* format_str);
-int rc_format_value(char* buffer, int size, int32_t value, int format);
+RC_EXPORT int RC_CCONV rc_parse_format(const char* format_str);
+RC_EXPORT int RC_CCONV rc_format_value(char* buffer, int size, int32_t value, int format);
 
 /*****************************************************************************\
 | Rich Presence                                                               |
@@ -411,16 +416,14 @@ struct rc_richpresence_t {
   rc_value_t* variables;
 };
 
-int rc_richpresence_size(const char* script);
-int rc_richpresence_size_lines(const char* script, int* lines_read);
-rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_State* L, int funcs_ndx);
-int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, size_t buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
-void rc_update_richpresence(rc_richpresence_t* richpresence, rc_peek_t peek, void* peek_ud, lua_State* L);
-int rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* buffer, size_t buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
-void rc_reset_richpresence(rc_richpresence_t* self);
+RC_EXPORT int RC_CCONV rc_richpresence_size(const char* script);
+RC_EXPORT int RC_CCONV rc_richpresence_size_lines(const char* script, int* lines_read);
+RC_EXPORT rc_richpresence_t* RC_CCONV rc_parse_richpresence(void* buffer, const char* script, lua_State* L, int funcs_ndx);
+RC_EXPORT int RC_CCONV rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, size_t buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
+RC_EXPORT void RC_CCONV rc_update_richpresence(rc_richpresence_t* richpresence, rc_peek_t peek, void* peek_ud, lua_State* L);
+RC_EXPORT int RC_CCONV rc_get_richpresence_display_string(rc_richpresence_t* richpresence, char* buffer, size_t buffersize, rc_peek_t peek, void* peek_ud, lua_State* L);
+RC_EXPORT void RC_CCONV rc_reset_richpresence(rc_richpresence_t* self);
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_RUNTIME_TYPES_H */

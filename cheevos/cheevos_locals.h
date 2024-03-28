@@ -201,6 +201,7 @@ typedef struct rcheevos_locals_t
 
 #ifdef HAVE_THREADS
    enum event_command queued_command; /* action queued by background thread to be run on main thread */
+   bool game_placard_requested;       /* request to display game placard */
 #endif
 
 #ifndef HAVE_RC_CLIENT
@@ -228,6 +229,8 @@ typedef struct rcheevos_locals_t
 #endif
 
    rcheevos_load_info_t load_info;    /* load info */
+
+   uint32_t unpaused_frames;          /* number of unpaused frames before next pause is allowed */
 
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */

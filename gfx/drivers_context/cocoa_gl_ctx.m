@@ -366,20 +366,14 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       {
          case 3:
 #if MAC_OS_X_VERSION_10_7
-            if (g_gl_minor >= 1 && g_gl_minor <= 3) /* OpenGL 3.2 Core */
-            {
-               attributes[6] = NSOpenGLPFAOpenGLProfile;
-               attributes[7] = NSOpenGLProfileVersion3_2Core;
-            }
+            attributes[6] = NSOpenGLPFAOpenGLProfile;
+            attributes[7] = NSOpenGLProfileVersion3_2Core;
 #endif
             break;
          case 4:
 #if MAC_OS_X_VERSION_10_10
-            if (g_gl_minor == 1) /* OpenGL 4.1 Core */
-            {
-               attributes[6] = NSOpenGLPFAOpenGLProfile;
-               attributes[7] = NSOpenGLProfileVersion4_1Core;
-            }
+            attributes[6] = NSOpenGLPFAOpenGLProfile;
+            attributes[7] = NSOpenGLProfileVersion4_1Core;
 #endif
             break;
       }
@@ -473,15 +467,16 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
 
    if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
-      g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   g_ctx            = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   glk_view.context = g_ctx;
+      g_hw_ctx      = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
+   g_ctx            = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
 
 #ifdef OSX
    [g_ctx makeCurrentContext];
 #else
    [EAGLContext setCurrentContext:g_ctx];
 #endif
+
+   glk_view.context = g_ctx;
 
    /* TODO: Maybe iOS users should be able to 
     * show/hide the status bar here? */

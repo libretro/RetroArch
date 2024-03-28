@@ -53,6 +53,8 @@ static const char *semantic_uniform_names[] = {
    "FrameCount",
    "FrameDirection",
    "Rotation",
+   "TotalSubFrames",
+   "CurrentSubFrame",
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -242,6 +244,12 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
          return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 4;
          /* uint */
       case SLANG_SEMANTIC_FRAME_COUNT:
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
+         /* int */
+      case SLANG_SEMANTIC_TOTAL_SUBFRAMES:
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
+         /* int */
+      case SLANG_SEMANTIC_CURRENT_SUBFRAME:
          return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
          /* int */
       case SLANG_SEMANTIC_FRAME_DIRECTION:

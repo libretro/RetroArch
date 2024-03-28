@@ -54,7 +54,8 @@ enum d3d11_state_flags
    D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 14),
    D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 15),
    D3D11_ST_FLAG_MENU_ENABLE         = (1 << 16),
-   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17)
+   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17),
+   D3D11_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 18)
 };
 
 enum d3d11_feature_level_hint
@@ -291,6 +292,8 @@ typedef struct
       uint32_t                   frame_count;
       int32_t                    frame_direction;
       uint32_t                   rotation;
+      uint32_t                   total_subframes;
+      uint32_t                   current_subframe;
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;

@@ -3434,10 +3434,10 @@ static void *vulkan_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_VULKAN_API);
 
-#if OSX || IOS
-   // The MoltenVK driver needs this, particularly after driver reinit
+   /* The MoltenVK driver needs this, particularly after driver reinit
+      Also it is required for HDR to not break during reinit, while not ideal it
+      is the simplest solution unless reinit tracking is done */
    vk->flags |= VK_FLAG_SHOULD_RESIZE;
-#endif
 
    vulkan_init_readback(vk, settings);
    return vk;
@@ -4051,7 +4051,7 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   int i;
+   int i, j, k;
    VkSubmitInfo submit_info;
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
@@ -4064,6 +4064,8 @@ static bool vulkan_frame(void *data, const void *frame,
    bool statistics_show                          = video_info->statistics_show;
    const char *stat_text                         = video_info->stat_text;
    unsigned black_frame_insertion                = video_info->black_frame_insertion;
+   int bfi_light_frames;
+   unsigned n;
    bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
    bool runloop_is_paused                        = video_info->runloop_is_paused;
@@ -4210,6 +4212,48 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count(
          (vulkan_filter_chain_t*)vk->filter_chain, frame_count);
+
+   /* Sub-frame info for multiframe shaders (per real content frame). 
+      Should always be 1 for non-use of subframes*/
+   if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
+   {
+     if (     black_frame_insertion
+           || input_driver_nonblock_state
+           || runloop_is_slowmotion
+           || runloop_is_paused
+           || (vk->context->swap_interval > 1)
+           || (vk->flags & VK_FLAG_MENU_ENABLE))
+        vulkan_filter_chain_set_shader_subframes(
+           (vulkan_filter_chain_t*)vk->filter_chain, 1);
+     else
+        vulkan_filter_chain_set_shader_subframes(
+           (vulkan_filter_chain_t*)vk->filter_chain, video_info->shader_subframes);
+
+     vulkan_filter_chain_set_current_shader_subframe(
+           (vulkan_filter_chain_t*)vk->filter_chain, 1);
+   }
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  (backbuffer->image != VK_NULL_HANDLE)
+         &&  !black_frame_insertion
+         &&  !input_driver_nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(vk->flags & VK_FLAG_MENU_ENABLE))
+         &&  !(vk->context->swap_interval > 1))
+   {
+      vulkan_filter_chain_set_simulate_scanline(
+            (vulkan_filter_chain_t*)vk->filter_chain, true);
+   }
+   else
+   {
+      vulkan_filter_chain_set_simulate_scanline(
+            (vulkan_filter_chain_t*)vk->filter_chain, false);
+   }
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION 
+
 #ifdef HAVE_REWIND
    vulkan_filter_chain_set_frame_direction(
          (vulkan_filter_chain_t*)vk->filter_chain,
@@ -4870,7 +4914,7 @@ static bool vulkan_frame(void *data, const void *frame,
       vulkan_check_swapchain(vk);
 
    /* Disable BFI during fast forward, slow-motion,
-    * and pause to prevent flicker. */
+    * pause, and menu to prevent flicker. */
    if (
             (backbuffer->image != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
@@ -4878,25 +4922,88 @@ static bool vulkan_frame(void *data, const void *frame,
          && !input_driver_nonblock_state
          && !runloop_is_slowmotion
          && !runloop_is_paused
+         && !(vk->context->swap_interval > 1)
+         && !(video_info->shader_subframes > 1)
          && (!(vk->flags & VK_FLAG_MENU_ENABLE)))
    {
-      int n;
-      for (n = 0; n < (int) black_frame_insertion; ++n)
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+         video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
       {
-         vulkan_inject_black_frame(vk, video_info);
-         if (vk->ctx_driver->swap_buffers)
-            vk->ctx_driver->swap_buffers(vk->ctx_data);
+         vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+         while (bfi_light_frames > 0)
+         {
+            if (!(vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
+         {
+            vulkan_inject_black_frame(vk, video_info);
+            if (vk->ctx_driver->swap_buffers)
+               vk->ctx_driver->swap_buffers(vk->ctx_data);
+         }
       }
    }
 
-   /* Vulkan doesn't directly support swap_interval > 1,
-    * so we fake it by duping out more frames. */
-   if (      (vk->context->swap_interval > 1)
-         && (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  (backbuffer->image != VK_NULL_HANDLE)
+         &&  (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         &&  !black_frame_insertion
+         &&  !input_driver_nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(vk->flags & VK_FLAG_MENU_ENABLE))
+         &&  !(vk->context->swap_interval > 1)
+         &&  (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
    {
-      int i;
       vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
-      for (i = 1; i < (int) vk->context->swap_interval; i++)
+      for (j = 1; j < (int) video_info->shader_subframes; j++)
+      {
+         vulkan_filter_chain_set_shader_subframes(
+               (vulkan_filter_chain_t*)vk->filter_chain, video_info->shader_subframes);
+         vulkan_filter_chain_set_current_shader_subframe(
+               (vulkan_filter_chain_t*)vk->filter_chain, j+1);
+         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+            return false;
+         }
+      }
+      vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+   }
+
+
+   /* Vulkan doesn't directly support swap_interval > 1,
+    * so we fake it by duping out more frames. Shader subframes
+      uses same concept but split above so sub_frame logic the
+      same as the other apis that do support real swap_interval  */
+   if (      (vk->context->swap_interval > 1)
+         &&  !(video_info->shader_subframes > 1)
+         &&  !black_frame_insertion
+         &&  (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
+   {
+      vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
+      for (k = 1; k < (int) vk->context->swap_interval; k++)
       {
          if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
                   video_info))
@@ -5222,6 +5329,7 @@ static uint32_t vulkan_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 
    return flags;
 }

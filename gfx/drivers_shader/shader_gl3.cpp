@@ -925,6 +925,23 @@ public:
       rotation = rot;
    }
 
+   void set_shader_subframes(uint32_t tot_subframes)
+   {
+      total_subframes = tot_subframes;
+   }
+
+   void set_current_shader_subframe(uint32_t cur_subframe)
+   {
+      current_subframe = cur_subframe;
+   }
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+   void set_simulate_scanline(bool simulate)
+   {
+      simulate_scanline = simulate;
+   }
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+
    void set_name(const char *name)
    {
       pass_name = name;
@@ -1024,6 +1041,11 @@ private:
    int32_t frame_direction = 1;
    uint32_t rotation = 0;
    unsigned pass_number = 0;
+   uint32_t total_subframes = 1;
+   uint32_t current_subframe = 1;
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+   bool simulate_scanline = false;
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
 
    size_t ubo_offset = 0;
    std::string pass_name;
@@ -1221,6 +1243,8 @@ bool Pass::init_pipeline()
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
+   reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
+   reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1654,6 +1678,11 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      total_subframes);
+   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      current_subframe);
+
    /* Standard inputs */
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -1771,11 +1800,54 @@ void Pass::build_commands(
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION 
+   if (simulate_scanline)
+   {
+      glEnable(GL_SCISSOR_TEST);
+   }
+#endif // GL3_ROLLING_SCANLINE_SIMULATION 
+
    if (final_pass)
+   {
       glViewport(current_viewport.x, current_viewport.y,
                  current_viewport.width, current_viewport.height);
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+      if (simulate_scanline)
+      {
+         glScissor(  current_viewport.x,
+                     int32_t((float(current_viewport.height) / float(total_subframes)) 
+                              * float(current_subframe - 1)),
+                     current_viewport.width,
+                     uint32_t(float(current_viewport.height) / float(total_subframes))
+         );
+      }
+      else
+      {
+         glScissor(  current_viewport.x, current_viewport.y, 
+                     current_viewport.width, current_viewport.height);
+      }  
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+   }
    else
+   {
       glViewport(0, 0, size.width, size.height);
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+      if (simulate_scanline)
+      {
+         glScissor(  0,
+                     int32_t((float(size.height) / float(total_subframes)) 
+                              * float(current_subframe - 1)),
+                     size.width,
+                     uint32_t(float(size.height) / float(total_subframes))
+         );
+      }
+      else
+      {
+         glScissor(0, 0, size.width, size.height);
+      }      
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+   }
 
 #if !defined(HAVE_OPENGLES)
    if (framebuffer && framebuffer->get_format() == GL_SRGB8_ALPHA8)
@@ -1799,6 +1871,12 @@ void Pass::build_commands(
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glDisableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION 
+   if (simulate_scanline)
+   {
+      glDisable(GL_SCISSOR_TEST);
+   }
+#endif // GL3_ROLLING_SCANLINE_SIMULATION 
 
 #if !defined(HAVE_OPENGLES)
    glDisable(GL_FRAMEBUFFER_SRGB);
@@ -1849,6 +1927,11 @@ public:
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
    void set_rotation(uint32_t rot);
+   void set_shader_subframes(uint32_t tot_subframes);
+   void set_current_shader_subframe(uint32_t cur_subframe);
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION 
+   void set_simulate_scanline(bool simulate);
+#endif // GL3_ROLLING_SCANLINE_SIMULATION 
    void set_pass_name(unsigned pass, const char *name);
 
    void add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture);
@@ -2338,6 +2421,29 @@ void gl3_filter_chain::set_rotation(uint32_t rot)
       passes[i]->set_rotation(rot);
 }
 
+void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_shader_subframes(tot_subframes);
+}
+
+void gl3_filter_chain::set_current_shader_subframe(uint32_t cur_subframe)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_current_shader_subframe(cur_subframe);
+}
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+void gl3_filter_chain::set_simulate_scanline(bool simulate_scanline)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_simulate_scanline(simulate_scanline);
+}
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+
 void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
@@ -2757,6 +2863,29 @@ void gl3_filter_chain_set_rotation(
 {
    chain->set_rotation(rot);
 }
+
+void gl3_filter_chain_set_shader_subframes(
+      gl3_filter_chain_t *chain,
+      uint32_t tot_subframes)
+{
+   chain->set_shader_subframes(tot_subframes);
+}
+
+void gl3_filter_chain_set_current_shader_subframe(
+      gl3_filter_chain_t *chain,
+      uint32_t cur_subframe)
+{
+   chain->set_current_shader_subframe(cur_subframe);
+}
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+void gl3_filter_chain_set_simulate_scanline(
+      gl3_filter_chain_t *chain,
+      bool simulate_scanline)
+{
+   chain->set_simulate_scanline(simulate_scanline);
+}
+#endif // GL3_ROLLING_SCANLINE_SIMULATION  
 
 void gl3_filter_chain_set_frame_count_period(
       gl3_filter_chain_t *chain,

@@ -58,11 +58,16 @@ void input_remapping_cache_global_config(void);
  * init if INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
  * Must be called on core deinitialization. 
  * 
- * @param clear_cache  If true, function becomes a NOOP until the next time
- *                     `input_remapping_cache_global_config()` is called, and 
- *                     INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
+ * @param clear_cache               If true, function becomes a NOOP until the next time
+ *                                  `input_remapping_cache_global_config()` is called, and
+ *                                  INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
+ * @param restore_analog_dpad_mode  Treat 'Analog to Digital Type' like a regular setting,
+ *                                  meaning this should be false when we're not using any
+ *                                  remap file so its value is saved globally on close/quit,
+ *                                  and it should be true when we're using a remap or if
+ *                                  we're resetting settings, to restore its global value.
  */
-void input_remapping_restore_global_config(bool clear_cache);
+void input_remapping_restore_global_config(bool clear_cache, bool restore_analog_dpad_mode);
 
 /**
  * Must be called whenever `settings->uints.input_remap_ports` is modified.

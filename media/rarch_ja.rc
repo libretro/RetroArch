@@ -29,26 +29,26 @@ IDR_MENU MENU
         {
             POPUP "状態のインデックス"
             {
-                MENUITEM "-1 (自動)", ID_M_STATE_INDEX_AUTO
-                MENUITEM "0", ID_M_STATE_INDEX_AUTO
-                MENUITEM "1", ID_M_STATE_INDEX_AUTO
-                MENUITEM "2", ID_M_STATE_INDEX_AUTO
-                MENUITEM "3", ID_M_STATE_INDEX_AUTO
-                MENUITEM "4", ID_M_STATE_INDEX_AUTO
-                MENUITEM "5", ID_M_STATE_INDEX_AUTO
-                MENUITEM "6", ID_M_STATE_INDEX_AUTO
-                MENUITEM "7", ID_M_STATE_INDEX_AUTO
-                MENUITEM "8", ID_M_STATE_INDEX_AUTO
-                MENUITEM "9", ID_M_STATE_INDEX_AUTO
+                MENUITEM "自動", ID_M_STATE_INDEX_AUTO
+                MENUITEM "0", ID_M_STATE_INDEX_0
+                MENUITEM "1", ID_M_STATE_INDEX_1
+                MENUITEM "2", ID_M_STATE_INDEX_2
+                MENUITEM "3", ID_M_STATE_INDEX_3
+                MENUITEM "4", ID_M_STATE_INDEX_4
+                MENUITEM "5", ID_M_STATE_INDEX_5
+                MENUITEM "6", ID_M_STATE_INDEX_6
+                MENUITEM "7", ID_M_STATE_INDEX_7
+                MENUITEM "8", ID_M_STATE_INDEX_8
+                MENUITEM "9", ID_M_STATE_INDEX_9
             }
             MENUITEM "保存状態をロード", ID_M_LOAD_STATE
             MENUITEM "状態保存", ID_M_SAVE_STATE
         }
         MENUITEM "リセット", ID_M_RESET
-        MENUITEM "メニューに切り替え", ID_M_MENU_TOGGLE
         MENUITEM "一時停止", ID_M_PAUSE_TOGGLE
-        MENUITEM "マウスグラブ切り替え", ID_M_MOUSE_GRAB
+        MENUITEM "メニューに切り替え", ID_M_MENU_TOGGLE
         MENUITEM "スクリーンショットを撮る", ID_M_TAKE_SCREENSHOT
+        MENUITEM "マウスグラブ切り替え", ID_M_MOUSE_GRAB
     }
     POPUP "ウィンドウ"
     {
@@ -65,7 +65,9 @@ IDR_MENU MENU
             MENUITEM "9x", ID_M_WINDOW_SCALE_9X
             MENUITEM "10x", ID_M_WINDOW_SCALE_10X
         }
+#ifdef HAVE_QT
         MENUITEM "デスクトップメニューを表示", ID_M_TOGGLE_DESKTOP
+#endif
         MENUITEM "排他的なフルスクリーン切り替え", ID_M_FULL_SCREEN
         // Shader dialog is disabled for now, until video_threaded issues are fixed.
         //MENUITEM "シェーダーのパラメータ", ID_M_SHADER_PARAMETERS

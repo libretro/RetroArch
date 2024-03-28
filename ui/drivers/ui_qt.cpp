@@ -2416,12 +2416,42 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
    if (core_info->firmware_count > 0)
    {
       core_info_ctx_firmware_t firmware_info;
-      bool update_missing_firmware   = false;
-      bool set_missing_firmware      = false;
-      settings_t *settings           = config_get_ptr();
+      bool update_missing_firmware    = false;
+      bool set_missing_firmware       = false;
+      settings_t *settings            = config_get_ptr(); 
+      uint8_t flags                   = content_get_flags();
+      bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
+      bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
+      char tmp_path[PATH_MAX_LENGTH];
 
       firmware_info.path             = core_info->path;
-      firmware_info.directory.system = settings->paths.directory_system;
+
+      /* If 'System Files are in Content Directory' is enabled and content is inited,
+       * adjust the path to check for firmware files */
+      if (systemfiles_in_content_dir && content_is_inited)
+      {
+         strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
+         path_basedir(tmp_path);
+
+         /* If content path is empty, fall back to global system dir path */
+         if (string_is_empty(tmp_path))
+            firmware_info.directory.system = settings->paths.directory_system;
+         else
+         {
+            size_t len = strlen(tmp_path);
+
+            /* Removes trailing slash (unless root dir), doesn't really matter
+             * but it's more consistent with how the path is stored and
+             * displayed without 'System Files are in Content Directory' */
+            if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
+                  && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
+               tmp_path[len - 1] = '\0';
+
+            firmware_info.directory.system = tmp_path;
+         }
+      }
+      else
+         firmware_info.directory.system = settings->paths.directory_system;
 
       update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
 
@@ -2432,9 +2462,29 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
       if (update_missing_firmware)
       {
+         char tmp[PATH_MAX_LENGTH];
          QHash<QString, QString> hash;
 
          hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE)) + ":";
+         hash["value"] = "";
+
+         infoList.append(hash);
+
+         /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
+         if (systemfiles_in_content_dir)
+         {
+            hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY));
+            hash["value"] = "";
+
+            infoList.append(hash);
+         }
+
+         /* Show the path that was checked */
+         snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
+               firmware_info.directory.system);
+
+         hash["key"]   = QString(tmp);
          hash["value"] = "";
 
          infoList.append(hash);
@@ -4940,6 +4990,8 @@ ui_companion_driver_t ui_companion_qt = {
    NULL,
    ui_companion_qt_log_msg,
    ui_companion_qt_is_active,
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
    &ui_browser_window_qt,
    &ui_msg_window_qt,
    &ui_window_qt,

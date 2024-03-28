@@ -34,6 +34,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
+#include "../../tasks/task_content.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -41,6 +42,7 @@
 #endif
 
 #import <AVFoundation/AVFoundation.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
@@ -55,6 +57,46 @@ static CFRunLoopObserverRef iterate_observer;
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
+
+static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
+{
+   static struct string_list *list = NULL;
+   static dispatch_once_t onceToken;
+
+   dispatch_once(&onceToken, ^{
+         union string_list_elem_attr attr;
+         attr.i = 0;
+         NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
+         NSString *primary;
+#if TARGET_OS_TV
+         primary = iconfiles[@"CFBundlePrimaryIcon"];
+#else
+         primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
+#endif
+         list = string_list_new();
+         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+
+         NSArray<NSString *> *alts;
+#if TARGET_OS_TV
+         alts = iconfiles[@"CFBundleAlternateIcons"];
+#else
+         alts = [iconfiles[@"CFBundleAlternateIcons"] allKeys];
+#endif
+         NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+         for (NSString *str in sorted)
+            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+      });
+
+   return list;
+}
+
+static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
+{
+   NSString *str;
+   if (!string_is_equal(iconName, "Default"))
+      str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
+   [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
+}
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
@@ -457,9 +499,24 @@ enum
    }
 }
 
+- (NSData *)pngForIcon:(NSString *)iconName
+{
+    UIImage *img;
+    NSData *png;
+    img = [UIImage imageNamed:iconName];
+    if (!img)
+        NSLog(@"could not load %@\n", iconName);
+    else
+    {
+        png = UIImagePNGRepresentation(img);
+        if (!png)
+            NSLog(@"could not get png for %@\n", iconName);
+    }
+    return png;
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   NSError *error;
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -471,7 +528,6 @@ enum
    self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
-   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
    [self refreshSystemConfig];
@@ -481,7 +537,32 @@ enum
 
    rarch_main(argc, argv, NULL);
 
+   uico_driver_state_t *uico_st     = uico_state_get_ptr();
+   rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
+   struct string_list *icons;
+   if (appicon_setting && uico_st->drv && uico_st->drv->get_app_icons && (icons = uico_st->drv->get_app_icons()) && icons->size > 1)
+   {
+      appicon_setting->default_value.string = icons->elems[0].data;
+      int len = 0, i = 0;
+      const char *iconName = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; // need to ask uico_st for this
+      for (; i < (int)icons->size; i++)
+      {
+         len += strlen(icons->elems[i].data) + 1;
+         if (string_is_equal(iconName, icons->elems[i].data))
+            appicon_setting->value.target.string = icons->elems[i].data;
+      }
+      char *options = (char*)calloc(len, sizeof(char));
+      string_list_join_concat(options, len, icons, "|");
+      if (appicon_setting->values)
+         free((void*)appicon_setting->values);
+      appicon_setting->values = options;
+   }
+
    rarch_start_draw_observer();
+
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
 
 #if TARGET_OS_IOS
    [MXMetricManager.sharedManager addSubscriber:self];
@@ -495,6 +576,9 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
    rarch_stop_draw_observer();
 }
 
@@ -504,17 +588,71 @@ enum
    retroarch_main_quit();
 }
 
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+   self.bgDate = [NSDate date];
+   rarch_stop_draw_observer();
+}
+
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
    rarch_start_draw_observer();
+   NSError *error;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
+   if (settings->bools.audio_respect_silent_mode)
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   else
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+
    if (!ui_companion_start_on_boot)
       [self showGameView];
+
+#ifdef HAVE_CLOUDSYNC
+   if (self.bgDate)
+   {
+      if (   [[NSDate date] timeIntervalSinceDate:self.bgDate] > 60.0f
+          && (   !(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+              || retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)))
+         task_push_cloud_sync();
+      self.bgDate = nil;
+   }
+#endif
+}
+
+-(BOOL)openRetroArchURL:(NSURL *)url
+{
+   if ([url.host isEqualToString:@"topshelf"])
+   {
+      NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      NSString *ns_path, *ns_core_path;
+      char path[PATH_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      content_ctx_info_t content_info = { 0 };
+      for (NSURLQueryItem *q in comp.queryItems)
+      {
+         if ([q.name isEqualToString:@"path"])
+            ns_path = q.value;
+         else if ([q.name isEqualToString:@"core_path"])
+            ns_core_path = q.value;
+      }
+      if (!ns_path || !ns_core_path)
+         return NO;
+      fill_pathname_expand_special(path, [ns_path UTF8String], sizeof(path));
+      fill_pathname_expand_special(core_path, [ns_core_path UTF8String], sizeof(core_path));
+      RARCH_LOG("TopShelf told us to open %s with %s\n", path, core_path);
+      return task_push_load_content_with_new_core_from_companion_ui(core_path, path,
+                                                                    NULL, NULL, NULL,
+                                                                    &content_info, NULL, NULL);
+   }
+   return NO;
 }
 
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+    if ([[url scheme] isEqualToString:@"retroarch"])
+        return [self openRetroArchURL:url];
+
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
@@ -594,6 +732,26 @@ enum
 #endif
 
 @end
+
+ui_companion_driver_t ui_companion_cocoatouch = {
+   NULL, /* init */
+   NULL, /* deinit */
+   NULL, /* toggle */
+   ui_companion_cocoatouch_event_command,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
+   NULL, /* is_active */
+   ui_companion_cocoatouch_get_app_icons,
+   ui_companion_cocoatouch_set_app_icon,
+   NULL, /* browser_window */
+   NULL, /* msg_window */
+   NULL, /* window */
+   NULL, /* application */
+   "cocoatouch",
+};
 
 int main(int argc, char *argv[])
 {
