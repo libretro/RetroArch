@@ -8,6 +8,10 @@ HAVE_STATIC_DUMMY ?= 0
 VITA_TITLE_ID	:= RETROARCH
 VITA_TITLE_NAME	:= RetroArch
 
+# uncomment to removed filtered polling
+# be sure to set in core(s) that also have this feature
+# NO_FILTERED_POLL=1
+
 PC_DEVELOPMENT_IP_ADDRESS  =
 PC_DEVELOPMENT_UDP_PORT	   =
 
@@ -148,6 +152,9 @@ endif
 
 ASFLAGS := $(CFLAGS)
 LDFLAGS := -Wl,-q
+ifneq ($(NO_FILTERED_POLL), 1)
+    LDFLAGS += -Wl,--dynamic-list=link.T
+endif
 
 CFLAGS += -Wall -ffast-math
 CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
@@ -169,6 +176,11 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
+ifeq ($(NO_FILTERED_POLL), 1)
+	CFLAGS   += -DNO_FILTERED_POLL=1
+	CXXFLAGS += -DNO_FILTERED_POLL=1
+endif
+
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
@@ -182,7 +194,7 @@ else
    FSELF_FLAGS := -s
 endif
 
-LIBS	:= $(WHOLE_START) 
+LIBS	:= $(WHOLE_START)
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
   DEFINES += -DHAVE_STATIC_DUMMY
@@ -243,7 +255,7 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
+	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk
 	rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
 	rm -f $(OBJ:.o=.depend)
 

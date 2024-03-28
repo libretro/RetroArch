@@ -3,6 +3,10 @@ NEED_CXX_LINKER?=0
 NEED_GOLD_LINKER?=0
 MISSING_DECLS   =0
 
+# uncomment to removed filtered polling
+# be sure to set in core(s) that also have this feature
+NO_FILTERED_POLL=1
+
 ifneq ($(C90_BUILD),)
    C89_BUILD=1
 endif
@@ -46,6 +50,11 @@ else
    CFLAGS ?= -O3
    CXXFLAGS ?= -O3
    DEF_FLAGS += -ffast-math
+endif
+
+ifeq ($(NO_FILTERED_POLL), 1)
+	CFLAGS   += -DNO_FILTERED_POLL=1
+	CXXFLAGS += -DNO_FILTERED_POLL=1
 endif
 
 DEF_FLAGS += -Wall -Wsign-compare
@@ -109,6 +118,10 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -mwindows
+else
+   ifneq ($(NO_FILTERED_POLL), 1)
+       LDFLAGS += -Wl,--dynamic-list=link.T
+   endif
 endif
 
 ifneq ($(CXX_BUILD), 1)

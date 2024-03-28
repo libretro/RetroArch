@@ -248,6 +248,10 @@ OBJ += frontend/frontend_driver.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o
 
+ifneq ($(NO_FILTERED_POLL), 1)
+       OBJ += $(LIBRETRO_COMM_DIR)/filtered_poll/filtered_poll.o
+endif
+
 ifeq ($(HAVE_PATCH), 1)
    DEFINES += -DHAVE_PATCH
    OBJ     += tasks/task_patch.o
