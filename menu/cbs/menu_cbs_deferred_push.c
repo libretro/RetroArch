@@ -672,6 +672,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physi
 #ifdef HAVE_NETWORKING
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
+GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_list,          DISPLAYLIST_ADD_TO_PLAYLIST_LIST)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -933,6 +934,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_NETWORKING
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
 #endif
+       {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list},
    };
 
    if (!string_is_equal(label, "null"))
@@ -1393,6 +1395,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
          case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_file_browser_select_sideload_core);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_list);
             break;
          default:
             return -1;

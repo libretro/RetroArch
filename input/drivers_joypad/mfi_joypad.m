@@ -30,6 +30,9 @@
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
 #endif
+#ifndef MAX_MFI_AXES
+#define MAX_MFI_AXES 6
+#endif
 
 #if TARGET_OS_IOS
 #include "../../configuration.h"
@@ -48,7 +51,7 @@ enum
 
 /* TODO/FIXME - static globals */
 static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][4];
+static int16_t  mfi_axes[MAX_USERS][MAX_MFI_AXES];
 static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
 static MFIRumbleController *mfi_rumblers[MAX_MFI_CONTROLLERS];
 static NSMutableArray *mfiControllers;
@@ -143,6 +146,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         mfi_axes[slot][1]         = gp.leftThumbstick.yAxis.value * 32767.0f;
         mfi_axes[slot][2]         = gp.rightThumbstick.xAxis.value * 32767.0f;
         mfi_axes[slot][3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
+        mfi_axes[slot][4]         = gp.leftTrigger.value * 32767.0f;
+        mfi_axes[slot][5]         = gp.rightTrigger.value * 32767.0f;
 
     }
     else if (controller.microGamepad)
@@ -633,14 +638,14 @@ static void apple_gamecontroller_joypad_get_buttons(unsigned port,
 static int16_t apple_gamecontroller_joypad_axis(
       unsigned port, uint32_t joyaxis)
 {
-    if (AXIS_NEG_GET(joyaxis) < 4)
+    if (AXIS_NEG_GET(joyaxis) < MAX_MFI_AXES)
     {
        int16_t axis = AXIS_NEG_GET(joyaxis);
        int16_t val  = mfi_axes[port][axis];
        if (val < 0)
           return val;
     }
-    else if (AXIS_POS_GET(joyaxis) < 4)
+    else if (AXIS_POS_GET(joyaxis) < MAX_MFI_AXES)
     {
        int16_t axis = AXIS_POS_GET(joyaxis);
        int16_t val  = mfi_axes[port][axis];
