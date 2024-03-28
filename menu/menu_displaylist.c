@@ -3720,6 +3720,13 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
+      if (  menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
+            MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
       if (!settings->bools.kiosk_mode_enable)
       {
          if (settings->bools.menu_show_overlays)
@@ -3971,6 +3978,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL);
       }
 
+      /*  This is to add to playlist */
+         menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
+                  MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+                  MENU_SETTING_ACTION, 0, 0, NULL);
       if (!settings->bools.kiosk_mode_enable)
       {
          if (settings->bools.quick_menu_show_set_core_association)
@@ -4503,6 +4516,77 @@ static unsigned menu_displaylist_parse_cores(
       }
       info->flags |= MD_FLAG_NEED_SORT;
    }
+
+   return count;
+}
+
+static unsigned menu_displaylist_parse_add_to_playlist_list(
+      file_list_t *list, settings_t *settings)
+{
+   unsigned count               = 0;
+   const char *dir_playlist     = settings->paths.directory_playlist;
+   bool show_hidden_files       = settings->bools.show_hidden_files;
+   char playlist_display_name[PATH_MAX_LENGTH];
+   struct string_list *str_list = dir_list_new_special(
+         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+
+   if (str_list && str_list->size)
+   {
+      unsigned i;
+
+      dir_list_sort(str_list, true);
+
+      for (i = 0; i < str_list->size; i++)
+      {
+         const char *path          = str_list->elems[i].data;
+         const char *playlist_file = NULL;
+
+         if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
+            continue;
+
+         if (string_is_empty(path))
+            continue;
+
+         playlist_file = path_basename_nocompression(path);
+
+         if (string_is_empty(playlist_file))
+            continue;
+
+         /* Ignore non-playlist files */
+         if (!string_is_equal_noncase(path_get_extension(playlist_file),
+                  "lpl"))
+            continue;
+
+         /* Ignore history/favourites
+          * > content_history + favorites are handled separately
+          * > music/video/image_history are ignored */
+         if ( string_ends_with_size(path, "_history.lpl", strlen(path), STRLEN_CONST("_history.lpl"))
+               || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+            continue;
+
+         strlcpy(playlist_display_name, playlist_file, sizeof(playlist_display_name));
+         path_remove_extension(playlist_display_name);
+         
+         menu_entries_append(list, playlist_display_name, path,
+               MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
+               MENU_SETTING_ACTION, 0, 0, NULL);
+         count++;
+      }
+   }
+
+   /* Not necessary to check for NULL here */
+   string_list_free(str_list);
+
+   /* Add favourites */
+   if (
+         settings->bools.quick_menu_show_add_to_favorites
+         && settings->bools.menu_content_show_favorites
+         && menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL)
+      )
+            count++;
 
    return count;
 }
@@ -13761,6 +13845,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_PLAYLIST_MANAGER_LIST:
             menu_entries_clear(info->list);
             count = menu_displaylist_parse_playlist_manager_list(info->list, settings);
+
+            if (count == 0)
+               menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0, NULL);
+
+            info->flags    |= MD_FLAG_NEED_PUSH;
+            break;
+         case DISPLAYLIST_ADD_TO_PLAYLIST_LIST:
+            menu_entries_clear(info->list);
+
+         /*  add new list button here */
+            menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST),
+                     MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
+                     MENU_SETTING_ACTION, 0, 0, NULL);
+                     
+            count = menu_displaylist_parse_add_to_playlist_list(info->list, settings);
 
             if (count == 0)
                menu_entries_append(info->list,

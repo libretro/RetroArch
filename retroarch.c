@@ -4445,6 +4445,76 @@ bool command_event(enum event_command cmd, void *data)
             }
             break;
          }
+         case CMD_EVENT_ADD_TO_PLAYLIST:
+         {
+            struct string_list *str_list = (struct string_list*)data;
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings_t *settings = config_get_ptr();
+
+            if (str_list)
+            {
+               if (str_list->size >= 7)
+               {
+                  playlist_config_t playlist_config;
+                  playlist_t * playlist;
+                  
+                  struct playlist_entry entry     = {0};
+                  bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
+
+                  entry.path      = str_list->elems[0].data; /* content_path */
+                  entry.label     = str_list->elems[1].data; /* content_label */
+                  entry.core_path = str_list->elems[2].data; /* core_path */
+                  entry.core_name = str_list->elems[3].data; /* core_name */
+                  entry.crc32     = str_list->elems[4].data; /* crc32 */
+                  entry.db_name   = str_list->elems[5].data; /* db_name */
+                  
+                  /* load the playlist */
+                  playlist_config.capacity            = COLLECTION_SIZE;
+                  playlist_config.old_format          = settings->bools.playlist_use_old_format;
+                  playlist_config.compress            = settings->bools.playlist_compression;
+                  playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+                  playlist_config_set_base_content_directory(&playlist_config,
+                        settings->bools.playlist_portable_paths
+                        ? settings->paths.directory_menu_content
+                        : NULL);
+                  playlist_config_set_path(&playlist_config, str_list->elems[6].data);
+                  playlist = playlist_init(&playlist_config);
+
+                  /* Check whether favourties playlist is at capacity */
+                  if (playlist_size(playlist) >=
+                        playlist_capacity(playlist))
+                  {
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+                     return true;
+                  }
+
+                  /* Write playlist entry */
+                  if (playlist_push(playlist, &entry))
+                  {
+                     enum playlist_sort_mode current_sort_mode =
+                        playlist_get_sort_mode(playlist);
+
+                     /* New addition - need to resort if option is enabled */
+                     if (     (playlist_sort_alphabetical
+                           && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+                           || (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
+                        playlist_qsort(playlist);
+
+                     playlist_write_file(playlist);
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADDED_TO_PLAYLIST), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  }
+                  menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+                  if (menu_st->driver_ctx->environ_cb)
+                     menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+                           NULL, menu_st->userdata);
+               }
+            }
+            break;
+         }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
          {
             const char *core_name          = "DETECT";
