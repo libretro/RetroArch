@@ -5,7 +5,7 @@ MISSING_DECLS   =0
 
 # uncomment to removed filtered polling
 # be sure to set in core(s) that also have this feature
-NO_FILTERED_POLL=1
+# NO_FILTERED_POLL=1
 
 ifneq ($(C90_BUILD),)
    C89_BUILD=1
