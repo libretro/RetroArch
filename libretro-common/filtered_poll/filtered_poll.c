@@ -38,6 +38,18 @@ int16_t core_input_state_filtered_poll_return_cb_override(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
   int16_t pressed;
+  int i, j;
+
+  int action;
+  int run_loop;
+  int64_t time_since_press;
+
+  int time_lockout_updated;
+
+  int a;
+  int row_moved;
+
+  int s;
 
   /* Get saved polled value of keyboard or joypad button currently being checked with original input
    * callback function */
@@ -53,11 +65,11 @@ int16_t core_input_state_filtered_poll_return_cb_override(unsigned port,
       /* Initialize opeation data table if this has not been done yet */
       if ((!initialized) && (fp_filter_states != NULL))
       {
-        for (int i = 0; i < fp_actions_array_size; i++)
+        for (i = 0; i < fp_actions_array_size; i++)
         {
           fp_filter_states[i].player = fp_codes_filters[i].player;
           fp_filter_states[i].type = fp_codes_filters[i].type;
-          for (int j = 0; j < MAX_OPERATIONS; j++)
+          for (j = 0; j < MAX_OPERATIONS; j++)
           {
             fp_filter_states[i].state[j] = 0;
           }
@@ -66,9 +78,8 @@ int16_t core_input_state_filtered_poll_return_cb_override(unsigned port,
 
       }
 
-      int action = 0;
-      int run_loop = 1;
-      int64_t time_since_press;
+      action = 0;
+      run_loop = 1;
 
       /* Find first filter to check if there are any */
       if ((!fp_codes_filters[action].player) && (fp_codes_filters[action].next_active_position))
@@ -83,10 +94,10 @@ int16_t core_input_state_filtered_poll_return_cb_override(unsigned port,
           /* If enabled, check filter that can lockout a button for a certain amount of time */
           if (fp_codes_filters[action].operations & FP_TIMELOCKOUT)
           {
-            int time_lockout_updated = 0;
+            time_lockout_updated = 0;
             /* Check through all button codes for an action to see if one of them match
              * the requested code / button state */
-            for (int i = 0; i < fp_codes_filters[action].codes_array_length; i++)
+            for (i = 0; i < fp_codes_filters[action].codes_array_length; i++)
             {
               if (fp_codes_filters[action].codes[i].id == NO_CODE)
                 break;
@@ -103,8 +114,8 @@ int16_t core_input_state_filtered_poll_return_cb_override(unsigned port,
                 if (( fp_codes_filters[action].player != fp_filter_states[action].player) ||
                      (fp_codes_filters[action].type   != fp_filter_states[action].type))
                 {
-                  int a = 0;
-                  int row_moved = 0;
+                  a = 0;
+                  row_moved = 0;
                   while ((a < fp_actions_array_size) && !row_moved)
                   {
                     if (( fp_codes_filters[action].player == fp_filter_states[a].player) &&
@@ -114,7 +125,7 @@ int16_t core_input_state_filtered_poll_return_cb_override(unsigned port,
                       fp_filter_states[a].player = 0;
                       fp_filter_states[action].type   = fp_filter_states[a].type;
                       fp_filter_states[a].type = 0;
-                      for (int s = 0; s < MAX_OPERATIONS; s++)
+                      for (s = 0; s < MAX_OPERATIONS; s++)
                       {
                         fp_filter_states[action].state[s] = fp_filter_states[a].state[s];
                         fp_filter_states[a].state[s] = 0;
@@ -212,11 +223,14 @@ void retro_set_filtered_poll_variables(   int fpActionsArraySize,
                                           void *fpCode,
                                           int fpCodesArrayLength)
 {
+  int i;
+
   fp_actions_array_size = fpActionsArraySize;   /* Total number of actions or ports to check */
   fp_codes_filters = codesFilter;               /* Declared operation definition table */
   fp_filter_states = filterState;               /* Declared operation data table */
   fp_code = (struct fp_retro_code *) fpCode;    /* All codes used in all actions with their associated player, device, idx */
-  for (int i=0; i < fp_actions_array_size; i++) /* Save these codes to operations definition table */
+
+  for (i=0; i < fp_actions_array_size; i++) /* Save these codes to operations definition table */
   {
     fp_codes_filters[i].codes = (struct fp_retro_code *) fp_code + (i * fpCodesArrayLength);
     fp_codes_filters[i].codes_array_length = fpCodesArrayLength;
