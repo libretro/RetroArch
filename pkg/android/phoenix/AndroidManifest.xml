@@ -24,6 +24,9 @@
         android:banner="@drawable/banner"
         android:extractNativeLibs="true"
         tools:ignore="UnusedAttribute">
+        <activity
+          android:name=".browser.mainmenu.MigrateRetroarchFolderActivity"
+          android:exported="false"/>
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
