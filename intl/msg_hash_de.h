@@ -6451,6 +6451,22 @@ MSG_HASH(
    "Die Option \"Zu Favoriten hinzufügen\" anzeigen."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Zur Wiedergabeliste hinzufügen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Den Inhalt einer Wiedergabeliste hinzufügen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Neue Wiedergabeliste erstellen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Eine neue Wiedergabeliste erstellen und dieser den aktuellen Eintrag hinzufügen."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
