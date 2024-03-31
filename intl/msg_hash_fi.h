@@ -4651,6 +4651,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Hiiren nopeus"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -5611,6 +5615,22 @@ MSG_HASH(
    "Näytä \"Lisää suosikkeihin\"-valinta."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Lisää soittolistaan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Lisää sisältö soittolistalle."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Luo uusi soittolista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Luo uusi soittolista ja lisää nykyinen kohde siihen."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
