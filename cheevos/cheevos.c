@@ -216,11 +216,9 @@ static int rcheevos_init_memory(rcheevos_locals_t* locals)
    unsigned console_id;
 
 #ifdef HAVE_RC_CLIENT
-   /* we can't initialize memory without knowing which console to initialize for */
+   /* if no game is loaded, fallback to a default mapping (SYSTEM RAM followed by SAVE RAM) */
    game = rc_client_get_game_info(locals->client);
-   if (!game || !game->console_id)
-      return 0;
-   console_id = game->console_id;
+   console_id = game ? game->console_id : 0;
 #else
    console_id = locals->game.console_id;
 #endif
