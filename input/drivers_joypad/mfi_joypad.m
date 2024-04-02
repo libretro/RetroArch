@@ -117,27 +117,29 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
 #if OSX || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
         if (@available(iOS 13, tvOS 13, macOS 10.15, *))
         {
-            /* Support "Options" button present in PS4 / XBox One controllers */
             *buttons             |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+            *buttons             |= gp.buttonMenu.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
             if (@available(iOS 14, tvOS 14, macOS 11, *))
-                *buttons         |= gp.buttonHome.pressed ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
-
-            /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
-             *
-             * LS + Menu => Select
-             * LT + Menu => L3
-             * RT + Menu => R3
-             */
-            if (gp.buttonMenu.pressed )
+                *buttons         |= gp.buttonHome.pressed    ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
+            else
             {
-                if (gp.leftShoulder.pressed)
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_SELECT;
-                else if (gp.leftTrigger.pressed)
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_L3;
-                else if (gp.rightTrigger.pressed)
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_R3;
-                else
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
+               /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
+                *
+                * LS + Menu => Select
+                * LT + Menu => L3
+                * RT + Menu => R3
+                */
+               if (gp.buttonMenu.pressed )
+               {
+                  if (gp.leftShoulder.pressed)
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_SELECT;
+                  else if (gp.leftTrigger.pressed)
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_L3;
+                  else if (gp.rightTrigger.pressed)
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_R3;
+                  else
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
+               }
             }
         }
 #endif
