@@ -839,6 +839,23 @@ static int menu_displaylist_parse_core_info(
       }
    }
 
+   if (core_path)
+   {
+      size_t _len;
+
+      _len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
+            sizeof(tmp));
+      tmp[  _len] = ':';
+      tmp[++_len] = ' ';
+      tmp[++_len] = '\0';
+      strlcpy(tmp + _len, core_path, sizeof(tmp) - _len);
+      if (menu_entries_append(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         count++;
+   }
+
 end:
    if (!kiosk_mode_enable)
    {
