@@ -10837,6 +10837,7 @@ static void materialui_list_insert(
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER))
