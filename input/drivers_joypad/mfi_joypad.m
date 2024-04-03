@@ -30,6 +30,9 @@
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
 #endif
+#ifndef MAX_MFI_AXES
+#define MAX_MFI_AXES 6
+#endif
 
 #if TARGET_OS_IOS
 #include "../../configuration.h"
@@ -48,7 +51,7 @@ enum
 
 /* TODO/FIXME - static globals */
 static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][4];
+static int16_t  mfi_axes[MAX_USERS][MAX_MFI_AXES];
 static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
 static MFIRumbleController *mfi_rumblers[MAX_MFI_CONTROLLERS];
 static NSMutableArray *mfiControllers;
@@ -114,27 +117,29 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
 #if OSX || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
         if (@available(iOS 13, tvOS 13, macOS 10.15, *))
         {
-            /* Support "Options" button present in PS4 / XBox One controllers */
             *buttons             |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+            *buttons             |= gp.buttonMenu.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
             if (@available(iOS 14, tvOS 14, macOS 11, *))
-                *buttons         |= gp.buttonHome.pressed ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
-
-            /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
-             *
-             * LS + Menu => Select
-             * LT + Menu => L3
-             * RT + Menu => R3
-             */
-            if (gp.buttonMenu.pressed )
+                *buttons         |= gp.buttonHome.pressed    ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
+            else
             {
-                if (gp.leftShoulder.pressed)
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_SELECT;
-                else if (gp.leftTrigger.pressed)
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_L3;
-                else if (gp.rightTrigger.pressed)
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_R3;
-                else
-                    *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
+               /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
+                *
+                * LS + Menu => Select
+                * LT + Menu => L3
+                * RT + Menu => R3
+                */
+               if (gp.buttonMenu.pressed )
+               {
+                  if (gp.leftShoulder.pressed)
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_SELECT;
+                  else if (gp.leftTrigger.pressed)
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_L3;
+                  else if (gp.rightTrigger.pressed)
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_R3;
+                  else
+                     *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_START;
+               }
             }
         }
 #endif
@@ -143,6 +148,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         mfi_axes[slot][1]         = gp.leftThumbstick.yAxis.value * 32767.0f;
         mfi_axes[slot][2]         = gp.rightThumbstick.xAxis.value * 32767.0f;
         mfi_axes[slot][3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
+        mfi_axes[slot][4]         = gp.leftTrigger.value * 32767.0f;
+        mfi_axes[slot][5]         = gp.rightTrigger.value * 32767.0f;
 
     }
     else if (controller.microGamepad)
@@ -633,14 +640,14 @@ static void apple_gamecontroller_joypad_get_buttons(unsigned port,
 static int16_t apple_gamecontroller_joypad_axis(
       unsigned port, uint32_t joyaxis)
 {
-    if (AXIS_NEG_GET(joyaxis) < 4)
+    if (AXIS_NEG_GET(joyaxis) < MAX_MFI_AXES)
     {
        int16_t axis = AXIS_NEG_GET(joyaxis);
        int16_t val  = mfi_axes[port][axis];
        if (val < 0)
           return val;
     }
-    else if (AXIS_POS_GET(joyaxis) < 4)
+    else if (AXIS_POS_GET(joyaxis) < MAX_MFI_AXES)
     {
        int16_t axis = AXIS_POS_GET(joyaxis);
        int16_t val  = mfi_axes[port][axis];
