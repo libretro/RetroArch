@@ -504,6 +504,10 @@ MSG_HASH(
    "Требуемые графические API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Полный путь к ядру"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Поддержка быстрых сохранений"
    )
@@ -2069,6 +2073,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    "Имитирует плавающую строку развёртки поверх нескольких подкадров путём разделения экрана по вертикали и отрисовки каждой его части в зависимости от количества подкадров."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Имитирует плавающую строку развёртки поверх нескольких подкадров путём разделения экрана по вертикали и отрисовки каждой его части в зависимости от количества подкадров от верха до низа экрана."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
