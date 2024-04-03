@@ -219,6 +219,7 @@ typedef struct gfx_ctx_wayland_data
    bool maximized;
    bool resize;
    bool configured;
+   bool ignore_configuration;
    bool activated;
    bool suspended;
    bool reported_display_size;

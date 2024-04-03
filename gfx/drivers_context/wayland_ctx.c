@@ -54,6 +54,8 @@ static void xdg_toplevel_handle_configure(void *data,
       int32_t width, int32_t height, struct wl_array *states)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->ignore_configuration)
+      return;
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
    if (wl->win)
@@ -116,6 +118,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    if (!wl->fractional_scale)
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
+   wl->ignore_configuration = false;
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);
 #endif
@@ -129,6 +132,8 @@ libdecor_frame_handle_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->ignore_configuration)
+      return;
    libdecor_frame_handle_configure_common(frame, configuration, wl);
 
 #ifdef HAVE_EGL

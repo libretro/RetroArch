@@ -793,6 +793,9 @@ bool gfx_ctx_wl_init_common(
       }
    }
 
+   // Ignore configure events until splash screen has been replaced
+   wl->ignore_configuration = true;
+
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
    wl->input.keyboard_focus  = true;
