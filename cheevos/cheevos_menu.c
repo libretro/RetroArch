@@ -472,6 +472,10 @@ void rcheevos_menu_populate(void* data)
          case RC_CLIENT_LOAD_GAME_STATE_STARTING_SESSION:
             msg = MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION;
             break;
+         case RC_CLIENT_LOAD_GAME_STATE_NONE:
+            if (!rc_client_get_user_info(rcheevos_locals->client))
+               msg = MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN;
+            break;
          }
 
          menu_entries_append(info->list,
