@@ -3263,7 +3263,8 @@ bool rcheevos_load(const void *data)
    rc_hash_reset_cdreader_hooks();
 
 #if defined(HAVE_GFX_WIDGETS)
-   gfx_widget_set_cheevos_set_loading(true);
+   if (settings->bools.cheevos_verbose_enable)
+      gfx_widget_set_cheevos_set_loading(true);
 #endif
 
    rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
