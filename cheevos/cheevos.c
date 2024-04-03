@@ -108,7 +108,6 @@ static rcheevos_locals_t rcheevos_locals =
 #endif
 #ifdef HAVE_RC_CLIENT
    true, /* hardcore_allowed */
-   false,/* is_disconnected */
 #else
  #ifdef HAVE_GFX_WIDGETS
    0,    /* active_lboard_trackers */
@@ -618,7 +617,6 @@ static void rcheevos_server_error(const char* api_name, const char* message)
 static void rcheevos_server_disconnected(void)
 {
    CHEEVOS_LOG(RCHEEVOS_TAG "Unable to communicate with RetroAchievements server\n");
-   rcheevos_locals.is_disconnected = true;
 
    /* always show message - even with widget. it helps the user understand what the widget is for */
    {
@@ -636,7 +634,6 @@ static void rcheevos_server_disconnected(void)
 static void rcheevos_server_reconnected(void)
 {
    CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server\n");
-   rcheevos_locals.is_disconnected = false;
 
    {
       const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED);
@@ -1224,6 +1221,7 @@ bool rcheevos_unload(void)
 
 #ifdef HAVE_GFX_WIDGETS
    rcheevos_hide_widgets(gfx_widgets_ready());
+   gfx_widget_set_cheevos_set_loading(false);
 #endif
 
 #ifdef HAVE_RC_CLIENT
@@ -2445,9 +2443,7 @@ static void rcheevos_client_load_game_callback(int result,
    char msg[256];
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* hide the loading widget if not in a disconnected state */
-   if (!rcheevos_locals.is_disconnected)
-     gfx_widget_set_cheevos_disconnect(false);
+   gfx_widget_set_cheevos_set_loading(false);
 #endif
 
    if (result != RC_OK || !game)
@@ -3267,7 +3263,7 @@ bool rcheevos_load(const void *data)
    rc_hash_reset_cdreader_hooks();
 
 #if defined(HAVE_GFX_WIDGETS)
-   gfx_widget_set_cheevos_disconnect(true);
+   gfx_widget_set_cheevos_set_loading(true);
 #endif
 
    rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
