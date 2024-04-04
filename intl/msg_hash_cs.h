@@ -500,6 +500,10 @@ MSG_HASH(
    "Požadované grafické rozhraní"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Úplná cesta k jádru"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Podpora uložení pozice"
    )
@@ -2027,6 +2031,18 @@ MSG_HASH(
    "GPU snímek obrazovky"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Simulace valivé skenovací linie"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle počtu dílčích snímků"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle toho, kolik dílčích snímků je od horního okraje obrazovky dolů"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Snímky obrazovky zachycují stínovaný materiál GPU, pokud je k dispozici."
    )
@@ -2518,6 +2534,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Vlastní výška zobrazení, která se použije, pokud je poměr stran nastaven na hodnotu 'Vlastní poměr stran'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Overscan oříznutí (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3128,6 +3148,10 @@ MSG_HASH(
    "Maximální počet uživatelů podporovaných aplikací RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Chování při dotazování (nutný restart)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "Ovlivňuje způsob dotazování vstupu v aplikaci RetroArch. Nastavení na \"Brzké\" nebo \"Pozdní\" může v závislosti na konfiguraci vést ke snížení latence."
    )
@@ -3152,6 +3176,10 @@ MSG_HASH(
    "Automaticky konfiguruje řadiče, které mají profil ve stylu Plug-and-Play."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Zakázání horkých kláves systému Windows (nutný restart)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Zachovat kombinaci Win-key v aplikaci."
@@ -3300,6 +3328,10 @@ MSG_HASH(
    "Klasické"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasické (přepínání)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Jedno tlačítko (přepínání)"
    )
@@ -3310,6 +3342,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Klasický režim, ovládání dvěma tlačítky. Podržením tlačítka a klepnutím na tlačítko Turbo aktivujete sekvenci stisknutí a uvolnění.\nTlačítko Turbo lze přiřadit v nabídce Nastavení/Vstup/Port 1 Ovládání."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasický přepínací režim, ovládání dvěma tlačítky. Podržením tlačítka a klepnutím na tlačítko Turbo aktivujete turbo pro dané tlačítko. Chcete-li turbo vypnout: podržte tlačítko a znovu stiskněte tlačítko Turbo.\nTlačítko Turbo lze přiřadit v menu Nastavení/Vstup/Ovládače Port1."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -3330,6 +3366,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
    "Povolit Turbo D-Pad směry"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Jsou-li povoleny, mohou být digitální směrové vstupy (známé také jako d-pad nebo \"hatswitch\") turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3386,6 +3426,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Řešení odpojení Androidu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Řešení pro odpojování a opětovné připojování ovladačů. Impeduje 2 hráče se stejnými ovladači."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -3487,6 +3531,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "Přidání prodlevy ve snímcích před zablokováním běžného vstupu po stisknutí přiřazené klávesy \"Hotkey Povoleno\". Umožňuje zachytit běžný vstup z klávesy \"Hotkey Povoleno\", pokud je namapována na jinou akci (např. RetroPad \"Select\")."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Sloučení typů zařízení s klávesovou zkratkou"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -5207,6 +5255,42 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Dlouhým stisknutím obrazovky začnete držet tlačítko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Prahová hodnota dlouhého stisku (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Nastavte dobu podržení potřebnou pro dlouhé stisknutí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Přetažení dvojitým klepnutím"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Dvojitým klepnutím na obrazovku začnete při druhém klepnutí držet tlačítko. Přidává zpoždění při kliknutí myší."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Prahová hodnota dvojitého poklepání (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Nastavení přípustné doby mezi klepnutími při detekci dvojitého klepnutí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Práh přejetí prstem"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Nastavte povolený rozsah driftu při detekci dlouhého stisku nebo klepnutí. Vyjadřuje se v procentech menšího rozměru obrazovky."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -5221,6 +5305,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "Cesta k rozvržení videa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
+   "V Průzkumníku souborů vyberte rozvržení videa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5384,6 +5472,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Zobrazení zprávy na obrazovce při automatickém obnovení posledního použitého disku vícediskového obsahu načteného prostřednictvím seznamů skladeb M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Oznámení o kontrole disku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Zobrazení zprávy na obrazovce při vkládání a vysouvání disků."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -5775,6 +5871,10 @@ MSG_HASH(
    "Spustit doprovodný ovladač uživatelského rozhraní při spuštění systému (je-li k dispozici)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   "Menu plochy (nutný restart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Otevření menu plochy při spuštění"
    )
@@ -5908,6 +6008,10 @@ MSG_HASH(
    "Zobrazit 'Nastavení'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   "Zobrazte menu \"Nastavení\". (U zařízení Ozone/XMB je nutný restart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Nastavení hesla pro povolení 'Nastavení'"
    )
@@ -5918,6 +6022,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
    "Zobrazit 'Oblíbené'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "Zobrazení menu \"Oblíbené\". (V systému Ozone/XMB je nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
@@ -14118,6 +14226,34 @@ MSG_HASH(
    "Cheat odstraněn."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Nepodařilo se nastavit disk."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Nepodařilo se nastavit poslední použitý disk."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Nepodařilo se připojit ke klientovi."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Nepodařilo se připojit k hostiteli."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Hostitel sítě Netplay je plný."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Tento hostitel je vám zakázán."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Nepodařilo se přijmout hlavičku od hostitele."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Pro nahrání stavů je nutné pozastavit nebo vypnout Úspěchy hardcore režimu."
    )
@@ -14156,6 +14292,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "Nejvyšší"
+   )
+MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Varování: Chybějící aktiva, použijte online aktualizátor, pokud je k dispozici."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
