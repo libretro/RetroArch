@@ -6983,6 +6983,10 @@ int runloop_iterate(void)
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #endif
+#ifdef HAVE_CHEEVOS
+         if (cheevos_enable)
+            rcheevos_idle();
+#endif
 #ifdef HAVE_MENU
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
@@ -6998,10 +7002,6 @@ int runloop_iterate(void)
                      : settings->floats.video_refresh_rate));
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
-#endif
-#ifdef HAVE_CHEEVOS
-         if (cheevos_enable)
-            rcheevos_idle();
 #endif
          goto end;
       case RUNLOOP_STATE_ITERATE:

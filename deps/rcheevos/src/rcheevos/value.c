@@ -683,9 +683,14 @@ static int rc_typed_value_compare_floats(float f1, float f2, char oper) {
 }
 
 int rc_typed_value_compare(const rc_typed_value_t* value1, const rc_typed_value_t* value2, char oper) {
-  rc_typed_value_t converted_value2;
-  if (value2->type != value1->type)
-    value2 = rc_typed_value_convert_into(&converted_value2, value2, value1->type);
+  rc_typed_value_t converted_value;
+  if (value2->type != value1->type) {
+    /* if either side is a float, convert both sides to float. otherwise, assume the signed-ness of the left side. */
+    if (value2->type == RC_VALUE_TYPE_FLOAT)
+      value1 = rc_typed_value_convert_into(&converted_value, value1, value2->type);
+    else
+      value2 = rc_typed_value_convert_into(&converted_value, value2, value1->type);
+  }
 
   switch (value1->type) {
     case RC_VALUE_TYPE_UNSIGNED:

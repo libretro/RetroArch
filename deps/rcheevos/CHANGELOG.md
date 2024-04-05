@@ -1,3 +1,15 @@
+# v11.2.0
+* add alternate methods for state serialization/deserialization that accept a buffer_size parameter
+* add RC_CLIENT_SUPPORTS_HASH compile flag
+  - allows rc_client code to build without the rhash files (except md5.c)
+  - must be explicitly defined to use rc_client_begin_identify_and_load_game
+* add rc_client_get_load_game_state
+* add rc_client_raintegration_set_get_game_name_function
+* add RC_MEMSIZE_DOUBLE32 and RC_MEMSIZE_DOUBLE32_BE
+* exclude directory records from ZIP hash algorithm
+* fix media host when explicitly setting host to production server
+* fix potential out-of-bounds read looking for error message in non-JSON response
+
 # v11.1.0
 * add rc_client_get_user_agent_clause to generate substring to include in client User-Agents
 * add rc_client_can_pause function to control pause spam

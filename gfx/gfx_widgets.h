@@ -391,6 +391,7 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
 void gfx_widgets_clear_challenge_displays(void);
 void gfx_widget_set_achievement_progress(const char* badge, const char* progress);
 void gfx_widget_set_cheevos_disconnect(bool visible);
+void gfx_widget_set_cheevos_set_loading(bool visible);
 #endif
 
 /* TODO/FIXME/WARNING: Not thread safe! */

@@ -194,6 +194,7 @@ ACHIEVEMENTS
  /* Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c) */
 #define RC_NO_THREADS 1
 #endif
+#define RC_CLIENT_SUPPORTS_HASH 1
 
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
