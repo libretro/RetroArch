@@ -447,29 +447,71 @@ void rcheevos_menu_populate(void* data)
    {
       /* no achievements found */
       if (!rcheevos_locals->core_supports)
+      {
          menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
             MENU_ENUM_LABEL_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
             FILE_TYPE_NONE, 0, 0, NULL);
-      else if (!rc_client_get_game_info(rcheevos_locals->client))
+      }
+      else if (!game)
+      {
+         int state = rc_client_get_load_game_state(rcheevos_locals->client);
+         enum msg_hash_enums msg = MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME;
+         switch (state)
+         {
+         case RC_CLIENT_LOAD_GAME_STATE_IDENTIFYING_GAME:
+            msg = MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME;
+            break;
+         case RC_CLIENT_LOAD_GAME_STATE_AWAIT_LOGIN:
+            msg = MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN;
+            break;
+         case RC_CLIENT_LOAD_GAME_STATE_FETCHING_GAME_DATA:
+            msg = MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA;
+            break;
+         case RC_CLIENT_LOAD_GAME_STATE_STARTING_SESSION:
+            msg = MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION;
+            break;
+         case RC_CLIENT_LOAD_GAME_STATE_NONE:
+            if (!rc_client_get_user_info(rcheevos_locals->client))
+               msg = MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN;
+            break;
+         }
+
          menu_entries_append(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_UNKNOWN_GAME),
-            MENU_ENUM_LABEL_UNKNOWN_GAME,
+            msg_hash_to_str(msg),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
             FILE_TYPE_NONE, 0, 0, NULL);
+      }
+      else if (!game->id)
+      {
+         char buffer[128];
+         snprintf(buffer, sizeof(buffer), "%s (%s)",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME), game->hash);
+
+         menu_entries_append(info->list,
+            buffer,
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0, NULL);
+      }
       else if (!rc_client_get_user_info(rcheevos_locals->client))
+      {
          menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN),
             msg_hash_to_str(MENU_ENUM_LABEL_NOT_LOGGED_IN),
             MENU_ENUM_LABEL_NOT_LOGGED_IN,
             FILE_TYPE_NONE, 0, 0, NULL);
+      }
       else
+      {
          menu_entries_append(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
             FILE_TYPE_NONE, 0, 0, NULL);
+      }
    }
 }
 
