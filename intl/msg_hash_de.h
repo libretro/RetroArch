@@ -492,6 +492,10 @@ MSG_HASH(
    "Benötigte Grafik-API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Vollständiger Pfad des Cores"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Savestate-Unterstützung"
    )
