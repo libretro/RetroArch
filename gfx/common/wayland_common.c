@@ -44,10 +44,6 @@
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-/* Icon is 16x15 scaled by 16 */
-#define SPLASH_WINDOW_WIDTH 240
-#define SPLASH_WINDOW_HEIGHT 256
-
 #ifndef MFD_CLOEXEC
 #define MFD_CLOEXEC		0x0001U
 #endif
