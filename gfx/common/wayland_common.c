@@ -260,9 +260,6 @@ void gfx_ctx_wl_get_video_size_common(void *data,
 
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 {
-   if (wl->input.dpy != NULL && wl->input.fd >= 0)
-      close(wl->input.fd);
-
 #ifdef HAVE_XKBCOMMON
    free_xkb();
 #endif
