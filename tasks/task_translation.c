@@ -301,8 +301,6 @@ static void accessibility_speak(const char *text)
    settings_t *settings = config_get_ptr();
    unsigned speed       = settings->uints.accessibility_narrator_speech_speed;
    bool narrator_on     = settings->bools.accessibility_enable;
-   const char* voice    = ai_service_get_str(settings->uints.ai_service_target_lang);
-
    navigation_say(narrator_on, speed, text, 10);
 #endif
 }
