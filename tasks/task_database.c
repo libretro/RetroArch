@@ -199,17 +199,17 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       size_t system_len = strlen(system_name);
       if (string_starts_with_size(system_name, "Sony", system_len))
       {
-         if (string_is_equal(system_name, "Sony - PlayStation Portable"))
+         if (string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
             if (detect_psp_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal(system_name, "Sony - PlayStation"))
+         else if (string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
          {
             if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal(system_name, "Sony - PlayStation 2"))
+         else if (string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
          {
             if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -217,12 +217,12 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       }
       else if (string_starts_with_size(system_name, "Nintendo", system_len))
       {
-         if (string_is_equal(system_name, "Nintendo - GameCube"))
+         if (string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
             if (detect_gc_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal(system_name, "Nintendo - Wii"))
+         else if (string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
          {
             if (detect_wii_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -230,17 +230,17 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       }
       else if (string_starts_with_size(system_name, "Sega", system_len))
       {
-         if (string_is_equal(system_name, "Sega - Mega-CD - Sega CD"))
+         if (string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
             if (detect_scd_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal(system_name, "Sega - Saturn"))
+         else if (string_is_equal_fast(system_name, "Sega - Saturn", system_len))
          {
             if (detect_sat_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal(system_name, "Sega - Dreamcast"))
+         else if (string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
          {
             if (detect_dc_game(fd, serial, serial_len, filename) != 0)
                return 1;
