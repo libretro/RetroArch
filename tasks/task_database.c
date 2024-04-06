@@ -196,45 +196,55 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
    const char *system_name = NULL;
    if (detect_system(fd, &system_name, filename) >= 1)
    {
-      if (string_is_equal(system_name, "Sony - PlayStation Portable"))
+      size_t system_len = strlen(system_name);
+      if (string_starts_with_size(system_name, "Sony", system_len))
       {
-         if (detect_psp_game(fd, serial, serial_len, filename) != 0)
-            return 1;
+         if (string_is_equal(system_name, "Sony - PlayStation Portable"))
+         {
+            if (detect_psp_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
+         else if (string_is_equal(system_name, "Sony - PlayStation"))
+         {
+            if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
+         else if (string_is_equal(system_name, "Sony - PlayStation 2"))
+         {
+            if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
       }
-      else if (string_is_equal(system_name, "Sony - PlayStation"))
+      else if (string_starts_with_size(system_name, "Nintendo", system_len))
       {
-         if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
-            return 1;
+         if (string_is_equal(system_name, "Nintendo - GameCube"))
+         {
+            if (detect_gc_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
+         else if (string_is_equal(system_name, "Nintendo - Wii"))
+         {
+            if (detect_wii_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
       }
-      else if (string_is_equal(system_name, "Sony - PlayStation 2"))
+      else if (string_starts_with_size(system_name, "Sega", system_len))
       {
-         if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
-            return 1;
-      }
-      else if (string_is_equal(system_name, "Nintendo - GameCube"))
-      {
-         if (detect_gc_game(fd, serial, serial_len, filename) != 0)
-            return 1;
-      }
-      else if (string_is_equal(system_name, "Sega - Mega-CD - Sega CD"))
-      {
-         if (detect_scd_game(fd, serial, serial_len, filename) != 0)
-            return 1;
-      }
-      else if (string_is_equal(system_name, "Sega - Saturn"))
-      {
-         if (detect_sat_game(fd, serial, serial_len, filename) != 0)
-            return 1;
-      }
-      else if (string_is_equal(system_name, "Sega - Dreamcast"))
-      {
-         if (detect_dc_game(fd, serial, serial_len, filename) != 0)
-            return 1;
-      }
-      else if (string_is_equal(system_name, "Nintendo - Wii"))
-      {
-         if (detect_wii_game(fd, serial, serial_len, filename) != 0)
-            return 1;
+         if (string_is_equal(system_name, "Sega - Mega-CD - Sega CD"))
+         {
+            if (detect_scd_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
+         else if (string_is_equal(system_name, "Sega - Saturn"))
+         {
+            if (detect_sat_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
+         else if (string_is_equal(system_name, "Sega - Dreamcast"))
+         {
+            if (detect_dc_game(fd, serial, serial_len, filename) != 0)
+               return 1;
+         }
       }
    }
    return 0;
