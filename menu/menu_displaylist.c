@@ -778,7 +778,7 @@ static int menu_displaylist_parse_core_info(
          if (systemfiles_in_content_dir)
          {
             strlcpy(tmp,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY), 
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
                   sizeof(tmp));
             if (menu_entries_append(list, tmp, "",
                   MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -787,7 +787,7 @@ static int menu_displaylist_parse_core_info(
 
          /* Show the path that was checked */
          snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                firmware_info.directory.system);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -4583,7 +4583,7 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(
 
          strlcpy(playlist_display_name, playlist_file, sizeof(playlist_display_name));
          path_remove_extension(playlist_display_name);
-         
+
          menu_entries_append(list, playlist_display_name, path,
                MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
                MENU_SETTING_ACTION, 0, 0, NULL);
@@ -6117,13 +6117,13 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->setting                  = NULL;
 }
 
-typedef struct menu_displaylist_build_info 
+typedef struct menu_displaylist_build_info
 {
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
 } menu_displaylist_build_info_t;
 
-typedef struct menu_displaylist_build_info_selective 
+typedef struct menu_displaylist_build_info_selective
 {
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
@@ -6864,7 +6864,7 @@ unsigned menu_displaylist_build_list(
             bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
             bool history_list_enable     = settings->bools.history_list_enable;
             bool truncate_playlist       = settings->bools.ozone_truncate_playlist_name;
-            menu_displaylist_build_info_selective_t build_list[] = 
+            menu_displaylist_build_info_selective_t build_list[] =
             {
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},
@@ -12482,6 +12482,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif /* HAVE_LIBNX */
          case DISPLAYLIST_MUSIC_LIST:
             {
+#if defined(HAVE_AUDIOMIXER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
                char combined_path[PATH_MAX_LENGTH];
                const char *ext  = NULL;
@@ -12489,11 +12490,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                fill_pathname_join_special(combined_path, menu->scratch2_buf,
                      menu->scratch_buf, sizeof(combined_path));
                ext = path_get_extension(combined_path);
+#endif
                menu_entries_clear(info->list);
 
-#ifdef HAVE_AUDIOMIXER
+#if defined(HAVE_AUDIOMIXER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                if (multimedia_builtin_mediaplayer_enable)
                {
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+                  struct retro_system_info sysinfo = {0};
+#endif
+#ifdef HAVE_AUDIOMIXER
                   if (audio_driver_mixer_extension_supported(ext))
                   {
                      if (menu_entries_append(info->list,
@@ -12510,13 +12516,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL))
                         count++;
                   }
-               }
 #endif
-
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-               if (multimedia_builtin_mediaplayer_enable)
-               {
-                  struct retro_system_info sysinfo = {0};
 #if defined(HAVE_FFMPEG)
                   libretro_ffmpeg_retro_get_system_info(&sysinfo);
 #elif defined(HAVE_MPV)
@@ -12531,6 +12532,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL))
                         count++;
                   }
+#endif
                }
 #endif
             }
@@ -13881,7 +13883,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      msg_hash_to_str(MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST),
                      MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
                      MENU_SETTING_ACTION, 0, 0, NULL);
-                     
+
             count = menu_displaylist_parse_add_to_playlist_list(info->list, settings);
 
             if (count == 0)
