@@ -490,7 +490,6 @@ static void call_auto_translate_hndl(retro_task_t *task)
    int *mode_ptr               = (int*)task->user_data;
    uint32_t runloop_flags      = runloop_get_flags();
    access_state_t *access_st   = access_state_get_ptr();
-   settings_t *settings        = config_get_ptr();
 
    if (task_get_cancelled(task))
       goto finish;
@@ -508,7 +507,7 @@ static void call_auto_translate_hndl(retro_task_t *task)
       case 4: /* Text + Narrator  */
       case 5: /* Image + Narrator */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running(settings->bools.accessibility_enable))
+         if (!is_narrator_running(config_get_ptr()->bools.accessibility_enable))
             goto finish;
 #endif
          break;
@@ -1753,11 +1752,11 @@ finish:
  */
 bool run_translation_service(settings_t *settings, bool paused)
 {
-   unsigned i;
    retro_task_t *task               = NULL;
    access_request_t *request        = NULL;
    access_state_t *access_st        = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
+   unsigned i;
    input_driver_state_t *input_st   = input_state_get_ptr();
 #endif
 
