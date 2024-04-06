@@ -185,17 +185,21 @@ bool TInputScanner::scanVersion(int& version, EProfile& profile, bool& notFirstT
         if (lookingInMiddle) {
             notFirstToken = true;
             // make forward progress by finishing off the current line plus extra new lines
-            if ((peek() == '\n') || (peek() == '\r')) {
+            if ((peek() == '\n') || (peek() == '\r'))
+	    {
                 while ((peek() == '\n') || (peek() == '\r'))
                     get();
-            } else
+            }
+	    else
+	    {
                 do {
                     c = get();
                 } while (c != EndOfInput && c != '\n' && c != '\r');
-                while ((peek() == '\n') || (peek() == '\r'))
-                    get();
-                if (peek() == EndOfInput)
-                    return true;
+	    }
+	    while ((peek() == '\n') || (peek() == '\r'))
+		    get();
+	    if (peek() == EndOfInput)
+		    return true;
         }
         lookingInMiddle = true;
 
@@ -270,7 +274,7 @@ bool TInputScanner::scanVersion(int& version, EProfile& profile, bool& notFirstT
             profile = ECompatibilityProfile;
 
         return versionNotFirst;
-    };
+    }
 }
 
 // Fill this in when doing glslang-level scanning, to hand back to the parser.
