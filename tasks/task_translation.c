@@ -393,6 +393,7 @@ static INLINE bool translation_user_error(const char *message)
    return translation_user_message(message, true);
 }
 
+#if 0
 /**
  * Displays the given message on screen and returns true. Returns false if no
  * {message} is provided (i.e. it is NULL). The message will be displayed as
@@ -403,6 +404,7 @@ static INLINE bool translation_user_info(const char *message)
 {
    return translation_user_message(message, false);
 }
+#endif
 
 /**
  * Displays the given hash on screen and returns true. Returns false if no
