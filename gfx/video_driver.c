@@ -4345,7 +4345,11 @@ void video_frame_rest(video_driver_state_t *video_st,
    else if (frame_time < frame_time_target)
       frame_time_over_count--;
 
+#if !defined(DJGPP) && defined(__STDC_C99__) || defined(__STDC_C11__)
+   if (llabs(frame_time - frame_time_target) < frame_time_target * 1.002f - frame_time_target)
+#else
    if (labs(frame_time - frame_time_target) < frame_time_target * 1.002f - frame_time_target)
+#endif
       frame_time_near_count++;
    else
       frame_time_near_count--;
