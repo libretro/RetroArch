@@ -6676,6 +6676,14 @@ MSG_HASH(
    "Create New Playlist"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Added to playlist"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Failed to add to playlist: playlist full"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Create a new playlist and add the current entry to it."
    )
