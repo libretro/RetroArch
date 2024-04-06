@@ -21,6 +21,10 @@
 
 #include "../../input/common/wayland_common.h"
 
+/* Icon is 16x15 scaled by 16 */
+#define SPLASH_WINDOW_WIDTH 240
+#define SPLASH_WINDOW_HEIGHT 256
+
 typedef struct toplevel_listener
 {
 #ifdef HAVE_LIBDECOR_H

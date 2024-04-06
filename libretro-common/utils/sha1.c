@@ -226,11 +226,9 @@ void SHA1Input(     SHA1Context         *context,
          context->Length_High++;
          /* Force it to 32 bits */
          context->Length_High &= 0xFFFFFFFF;
+         /* Message is too long */
          if (context->Length_High == 0)
-         {
-            /* Message is too long */
             context->Corrupted = 1;
-         }
       }
 
       if (context->Message_Block_Index == 64)

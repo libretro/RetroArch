@@ -17,7 +17,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
    "add_entry_to_playlist"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME,
    "accounts_cheevos_username"

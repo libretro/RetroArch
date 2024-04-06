@@ -2138,6 +2138,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "گزینهٔ «افزودن به موارد دلخواه» را نمایش بده."
    )
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    "نمایش «اطلاعات»"

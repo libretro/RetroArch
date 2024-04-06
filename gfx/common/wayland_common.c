@@ -44,10 +44,6 @@
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
-/* Icon is 16x15 scaled by 16 */
-#define SPLASH_WINDOW_WIDTH 240
-#define SPLASH_WINDOW_HEIGHT 256
-
 #ifndef MFD_CLOEXEC
 #define MFD_CLOEXEC		0x0001U
 #endif
@@ -256,9 +252,6 @@ void gfx_ctx_wl_get_video_size_common(void *data,
 
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 {
-   if (wl->input.dpy != NULL && wl->input.fd >= 0)
-      close(wl->input.fd);
-
 #ifdef HAVE_XKBCOMMON
    free_xkb();
 #endif
@@ -788,6 +781,9 @@ bool gfx_ctx_wl_init_common(
             wl_display_dispatch(wl->input.dpy);
       }
    }
+
+   // Ignore configure events until splash screen has been replaced
+   wl->ignore_configuration = true;
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
