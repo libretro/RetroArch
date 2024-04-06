@@ -1101,7 +1101,7 @@ __attribute__ ((noinline))
 #endif
 void mpi_mul_hlp( size_t i, mbedtls_mpi_uint *s, mbedtls_mpi_uint *d, mbedtls_mpi_uint b )
 {
-    mbedtls_mpi_uint c = 0, t = 0;
+    mbedtls_mpi_uint c = 0;
 
 #if defined(MULADDC_HUIT)
     for( ; i >= 8; i -= 8 )
@@ -1151,8 +1151,6 @@ void mpi_mul_hlp( size_t i, mbedtls_mpi_uint *s, mbedtls_mpi_uint *d, mbedtls_mp
         MULADDC_STOP
     }
 #endif /* MULADDC_HUIT */
-
-    t++;
 
     do {
         *d += c; c = ( *d < c ); d++;

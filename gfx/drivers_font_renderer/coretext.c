@@ -160,7 +160,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 
    handle->atlas.width            = max_width * CT_ATLAS_COLS;
    handle->atlas.height           = max_height * CT_ATLAS_ROWS;
- 
+
    handle->line_metrics.ascender  = (float)CTFontGetAscent(face);
    handle->line_metrics.descender = (float)CTFontGetDescent(face);
    /* CTFontGetDescent() should return a positive value,
@@ -196,11 +196,11 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    {
       unsigned offset_x, offset_y, r, c;
       char glyph_cstr[2];
-      const uint8_t *src;
-      uint8_t       *dst;
-      CTLineRef line;
       CFStringRef glyph_cfstr;
       CFAttributedStringRef attrString;
+      CTLineRef line           = NULL;
+      const uint8_t *src       = NULL;
+      uint8_t       *dst       = NULL;
       struct font_glyph *glyph = &handle->atlas_slots[i].glyph;
 
       if (!glyph)
@@ -239,9 +239,9 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
       dst  = (uint8_t*)handle->atlas.buffer;
       src  = (const uint8_t*)bitmapData;
 
-      for (r = 0; r < max_height; r++)
+      for (r = 0; r < (unsigned)max_height; r++)
       {
-         for (c = 0; c < max_width; c++)
+         for (c = 0; c < (unsigned)max_width; c++)
          {
             unsigned src_idx  = (unsigned)(r * bytesPerRow + c);
             unsigned dest_idx =
