@@ -229,7 +229,6 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
 {
    static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
-   const bool preferred_formats[]          = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
    bool result                             = false;
@@ -267,8 +266,11 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
           * Usually happens with exclusive mode.
           * RetroArch will try selecting a format. */
          size_t i, j;
+         bool preferred_formats[2];
          WAVEFORMATEXTENSIBLE possible_format;
          HRESULT format_check_hr;
+         preferred_formats[0] = (format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE);
+         preferred_formats[1] = (format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE);
          RARCH_WARN("[WASAPI]: Requested format not supported, and Windows could not suggest one. RetroArch will do so.\n");
          for (i = 0; i < ARRAY_SIZE(preferred_formats); ++i)
          {

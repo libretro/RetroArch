@@ -184,12 +184,6 @@ typedef ULONGLONG      uint64_t;
 #define _FILE_OFFSET_BITS 64
 #endif
 
-_Static_assert(SIZEOF_SIZE_T == sizeof(size_t), "SIZEOF_SIZE_T not correctly set");
-
-#ifdef SIZEOF_UNSIGNED_LONG_LONG
-_Static_assert(SIZEOF_UNSIGNED_LONG_LONG == sizeof(unsigned long long), "SIZEOF_UNSIGNED_LONG_LONG not correctly set");
-#endif
-
 /* Set a xoff_t typedef and the "Q" printf insert. */
 typedef uint64_t xoff_t;
 #define Q "ll"

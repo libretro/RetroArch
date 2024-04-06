@@ -813,7 +813,7 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
 static void gfx_ctx_wgl_get_video_output_next(void *data) { }
 
-//TODO: maybe create an uwp_mesa_common.c?
+/* TODO: maybe create an uwp_mesa_common.c? */
 #ifdef __WINRT__
 
 static void win32_get_video_size(void* data,
@@ -851,16 +851,9 @@ HWND win32_get_window(void)
 /* TODO/FIXME - static globals */
 uint8_t g_win32_flags = 0;
 
-uint8_t win32_get_flags(void)
-{
-   return g_win32_flags;
-}
-
-void win32_setup_pixel_format(HDC hdc, bool supports_gl)
-{
-   //NTD, already done by mesa
-}
-
+uint8_t win32_get_flags(void) { return g_win32_flags; }
+/* NTD, already done by mesa */
+void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
 #endif
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {
