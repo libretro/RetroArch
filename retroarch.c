@@ -4457,7 +4457,7 @@ bool command_event(enum event_command cmd, void *data)
                {
                   playlist_config_t playlist_config;
                   playlist_t * playlist;
-                  
+
                   struct playlist_entry entry     = {0};
                   bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
 
@@ -4467,7 +4467,7 @@ bool command_event(enum event_command cmd, void *data)
                   entry.core_name = str_list->elems[3].data; /* core_name */
                   entry.crc32     = str_list->elems[4].data; /* crc32 */
                   entry.db_name   = str_list->elems[5].data; /* db_name */
-                  
+
                   /* load the playlist */
                   playlist_config.capacity            = COLLECTION_SIZE;
                   playlist_config.old_format          = settings->bools.playlist_use_old_format;
@@ -8196,7 +8196,6 @@ bool retroarch_main_quit(void)
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
 #endif
-   struct retro_system_av_info *av_info = &video_st->av_info;
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);

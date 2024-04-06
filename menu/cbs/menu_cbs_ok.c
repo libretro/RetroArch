@@ -5787,12 +5787,12 @@ static int action_ok_add_entry_to_playlist(const char *path,
    if(!label)
       return 0;
 
-/* 
- * 
+/*
+ *
  * path = menu entry select.  use this to identify the menu item to add the content to
  * entry->path = The file path of the currently selected content
  * [INFO] [playlist] = Add to Favorites
- * [INFO] [content_path] = C:\roms\Arcade - Mame 2003 Plus\aburner2.zip 
+ * [INFO] [content_path] = C:\roms\Arcade - Mame 2003 Plus\aburner2.zip
 */
    /* Read current playlist parameters */
    playlist_get_index(playlist_curr, menu->rpl_entry_selection_ptr, &entry);
@@ -5823,7 +5823,7 @@ static int action_ok_add_entry_to_playlist(const char *path,
        *   [2]: core_path
        *   [3]: core_name
        *   [4]: crc32
-       *   [5]: db_name 
+       *   [5]: db_name
        *   [6]: playlist*/
 
       /* > content_path */
@@ -5901,7 +5901,7 @@ static int action_ok_add_entry_to_playlist(const char *path,
 
       /* db_name */
       string_list_append(str_list, label, attr);
-      
+
 
       /* Trigger 'ADD_TO_FAVORITES' event */
       if (!command_event(CMD_EVENT_ADD_TO_PLAYLIST, (void*)str_list))
@@ -5925,7 +5925,7 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
 
    if(!line)
       return;
- 
+
    /* Create path for new file */
    path_length = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
    strlcat(path, ".lpl",  sizeof(path) - path_length);
@@ -6360,7 +6360,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
+#ifdef HAVE_NETWORKING
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_manual_content_scan_list, ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_manual_content_scan_dat_file, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_list, ACTION_OK_DL_CORE_MANAGER_LIST)

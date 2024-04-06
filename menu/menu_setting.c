@@ -106,7 +106,7 @@
 #include "../lakka.h"
 #ifdef HAVE_LAKKA_SWITCH
 #include "../lakka-switch.h"
-#endif 
+#endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
 #ifdef HAVE_CHEATS
@@ -797,6 +797,7 @@ static void setting_get_string_representation_uint(rarch_setting_t *setting,
             *setting->value.target.unsigned_integer);
 }
 
+#if defined(HAVE_NETWORKING)
 static void setting_get_string_representation_color_rgb(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -804,6 +805,7 @@ static void setting_get_string_representation_color_rgb(rarch_setting_t *setting
       snprintf(s, len, "#%06X",
          *setting->value.target.unsigned_integer & 0xFFFFFF);
 }
+#endif
 
 static void setting_get_string_representation_size_in_mb(
       rarch_setting_t *setting, char *s, size_t len)
@@ -8301,7 +8303,7 @@ static void general_write_handler(rarch_setting_t *setting)
                *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
-         /* If enabling BFI, auto disable other sync settings 
+         /* If enabling BFI, auto disable other sync settings
             that do not work together with BFI */
          if (*setting->value.target.unsigned_integer > 0)
          {
@@ -8357,7 +8359,7 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES:
-         /* If enabling BFI, auto disable other sync settings 
+         /* If enabling BFI, auto disable other sync settings
             that do not work together with subframes */
          if (*setting->value.target.unsigned_integer > 1)
          {
@@ -9207,7 +9209,7 @@ static void switch_oc_enable_toggle_change_handler(rarch_setting_t *setting)
     if (*setting->value.target.boolean == true) {
 	  fprintf(f, "1\n");
 	} else {
-	  fprintf(f, "0\n");	
+	  fprintf(f, "0\n");
     }
     fclose(f);
 }
@@ -9219,9 +9221,9 @@ static void switch_cec_enable_toggle_change_handler(rarch_setting_t *setting)
 	  fprintf(f, "\n");
       fclose(f);
 	} else {
-	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);	
+	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);
     }
-    
+
 }
 
 static void bluetooth_ertm_disable_toggle_change_handler(rarch_setting_t *setting)
@@ -9235,7 +9237,7 @@ static void bluetooth_ertm_disable_toggle_change_handler(rarch_setting_t *settin
 	  fprintf(f, "0\n");
       fclose(f);
     }
-    
+
 }
 #endif
 
@@ -20120,7 +20122,7 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_ai_service_lang;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
-         
+
          CONFIG_UINT(
                list, list_info,
                &settings->uints.ai_service_poll_delay,
@@ -20134,7 +20136,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_AI_SERVICE_POLL_DELAY, 50, true, true);
-         
+
          CONFIG_UINT(
                list, list_info,
                &settings->uints.ai_service_text_position,
@@ -20150,7 +20152,7 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_ai_service_text_position;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-         
+
          CONFIG_UINT(
                list, list_info,
                &settings->uints.ai_service_text_padding,
@@ -22889,7 +22891,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = switch_oc_enable_toggle_change_handler;
- 
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.switch_cec,
@@ -22905,7 +22907,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = switch_cec_enable_toggle_change_handler;
- 
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.bluetooth_ertm_disable,
