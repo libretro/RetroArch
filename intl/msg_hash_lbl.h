@@ -17,14 +17,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
    "add_entry_to_playlist"
    )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Added to playlist"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Failed to add to playlist: playlist full"
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME,
