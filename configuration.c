@@ -5031,7 +5031,6 @@ end:
 bool config_save_autoconf_profile(const
       char *device_name, unsigned user)
 {
-   size_t len;
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
