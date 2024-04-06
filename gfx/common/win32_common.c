@@ -2334,12 +2334,14 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmPelsWidth        = width;
    devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
-   devmode.dmDisplayFlags     = interlaced ? DM_INTERLACED : 0;
    devmode.dmFields           = DM_PELSWIDTH
                               | DM_PELSHEIGHT
                               | DM_DISPLAYFREQUENCY;
+#if !(_MSC_VER && (_MSC_VER < 1600))
+   devmode.dmDisplayFlags     = interlaced ? DM_INTERLACED : 0;
    if (interlaced)
       devmode.dmFields       |= DM_DISPLAYFLAGS;
+#endif
    return win32_change_display_settings(dev_name, &devmode,
          CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
