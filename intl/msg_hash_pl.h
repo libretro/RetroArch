@@ -5939,6 +5939,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
    "Dodaj zawartość do listy odtwarzania."
    )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Dodano do playlisty"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Nie udało się dodać do playlisty: playlista pełna"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
