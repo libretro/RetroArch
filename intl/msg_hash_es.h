@@ -6580,6 +6580,14 @@ MSG_HASH(
    "Crear lista de reproducción nueva"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Se ha agregado a la lista de reproducción"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Error al añadir a lista de reproducción: la lista está llena"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Crea una lista de reproducción nueva y agrega a la misma el elemento actual."
    )

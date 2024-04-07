@@ -6604,6 +6604,14 @@ MSG_HASH(
    "Создать новый плейлист"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Добавлено в плейлист"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Не удалось добавить: плейлист заполнен"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Создать новый плейлист и добавить в него текущую запись."
    )

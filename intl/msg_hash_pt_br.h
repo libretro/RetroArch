@@ -5400,6 +5400,14 @@ MSG_HASH(
    "Criar nova lista de reprodução"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Adicionado"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Lista de reprodução cheia"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Cria uma nova lista de reprodução e adiciona o item atual nela."
    )
@@ -8307,6 +8315,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    "Todos os envios pendentes foram sincronizados com o servidor do RetroAchievements."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "Verificando o jogo"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "Carregando dados do jogo"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "Iniciando sessão"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
