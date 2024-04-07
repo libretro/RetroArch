@@ -721,6 +721,8 @@ uint32_t msg_hash_calculate(const char *s)
 #define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
 #define HASH_EXTENSION_LUTRO                                                   0x0fe37b7bU
 #define HASH_EXTENSION_CHD                                                     0x0b8865d4U
+#define HASH_EXTENSION_PBP                                                     0x0b88b1d0U /* TODO(RobLoach): Is this the correct .pbp hash? */
+#define HASH_EXTENSION_PBP_UPPERCASE                                           0x0b882570U /* TODO(RobLoach): Is this the correct .PBP hash? */
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash)
 {
@@ -885,6 +887,9 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_LUTRO;
       case HASH_EXTENSION_CHD:
          return FILE_TYPE_CHD;
+      case HASH_EXTENSION_PBP:
+      case HASH_EXTENSION_PBP_UPPERCASE:
+         return FILE_TYPE_PBP;
       default:
          break;
    }
@@ -934,6 +939,6 @@ const char *msg_hash_get_wideglyph_str(void)
          break;
    }
 #endif
-   
+
    return NULL;
 }
