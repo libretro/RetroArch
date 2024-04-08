@@ -242,7 +242,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   "启动远程输入设备"
+   "启动远程全能手柄 (RetroPad)"
    )
 
 /* Main Menu > Load Content */
@@ -3469,15 +3469,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
-   "绑定手柄按键"
+   "全能手柄 (RetroPad) 按键绑定"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "更改物理输入设备映射到虚拟RetroPad的方式。 如果输入设备被识别并自动配置正确，用户可能不需要使用此菜单。\n注意：对于核心特定输入的更改，请使用快速菜单的“控制”子菜单。"
+   "更改物理输入设备映射到虚拟全能手柄 (RetroPad) 的方式。 如果输入设备被正确地识别并自动配置，用户可能不需要使用此菜单。\n注意：对于核心特定的输入设备配置更改，请使用快速菜单的“控制”子菜单。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro 使用一个名叫“retroPad”的虚拟抽像手柄，从前端(例如RetroArch) 传送到核心，反之亦然。 此菜单决定虚拟RetroPad如何映射到物理输入设备以及这些设备使用的虚拟输入端口。\n如果物理输入设备被识别并自动配置正确，用户可能根本不需要使用此菜单 对于核心特定输入的更改，应使用快速菜单的“控制”子菜单。"
+   "Libretro 使用一个名叫“全能手柄 (RetroPad)”的虚拟抽像手柄，在前端 (例如 RetroArch) 和核心之间通讯。 此菜单决定虚拟的全能手柄 (RetroPad) 如何映射到物理输入设备以及这些设备使用的虚拟输入端口。\n如果物理输入设备被正确地识别并自动配置，用户可能根本不需要使用此菜单。对于核心特定的输入配置更改，请使用快速菜单的“控制”子菜单。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3485,7 +3485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "将您的物理输入设备配置映射到虚拟RetroPad。"
+   "更改此虚拟端口上的虚拟全能手柄 (RetroPad) 如何映射到您的物理输入设备。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
@@ -7521,15 +7521,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
-   "网络手柄"
+   "网络全能手柄 (RetroPad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-   "网络手柄基础端口"
+   "网络全能手柄 (RetroPad) 基础端口"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-   "用户 %d 网络手柄"
+   "用户 %d 的网络全能手柄 (RetroPad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -10371,11 +10371,11 @@ MSG_HASH( /* FIXME Unused? */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD,
-   "虚拟手柄"
+   "全能手柄 (RetroPad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
-   "全能手柄"
+   "带摇杆的全能手柄 (RetroPad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,

@@ -6580,6 +6580,14 @@ MSG_HASH(
    "新しいプレイリストを作成"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "プレイリストに追加しました"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "プレイリストに追加できませんでした: プレイリストがいっぱいです"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "新しいプレイリストを作成し、現在のエントリーを追加します。"
    )
