@@ -6584,6 +6584,14 @@ MSG_HASH(
    "Yeni Oynatma Listesi Oluştur"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Oynatma listesine eklendi"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Oynatma listesine eklenemedi: liste dolu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Yeni bir oynatma listesi oluşturun ve mevcut kaydı buna ekleyin."
    )

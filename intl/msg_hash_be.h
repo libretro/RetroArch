@@ -1093,7 +1093,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Скід да прадвызначанага"
+   "Скінуць да прадвызначанага"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
@@ -2079,6 +2079,10 @@ MSG_HASH(
    "Затрымка аўташэйдара"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Затрымка (у мс) аўтаматычнай загрузкі шэйдараў. Можа выправіць графічныя збоі пры выкарыстоўванні праграм захопу экрана."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Відэафільтр"
    )
@@ -2122,6 +2126,10 @@ MSG_HASH(
    "Цэнтраванне па восі X"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Прайдзіце праз гэтыя наладкі, калі выява не належным чынам адцэнтравана на дысплэі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
    "Карэкцыя імпульсу"
    )
@@ -2149,6 +2157,10 @@ MSG_HASH(
    "Выбраць, які экран дысплэя будзе выкарыстоўвацца."
    )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Аптымізаваць для Wii U GamePad (патрабуецца перазапуск)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -2888,6 +2900,10 @@ MSG_HASH(
    "Аўтаканфігурацыя"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Адключыць гарачыя клавішы Windows (патрабуецца перазапуск)"
+   )
 #endif
 #ifdef ANDROID
 MSG_HASH(
@@ -3248,6 +3264,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Індэкс прылады"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
+   "Назначыць кіраванне цалкам"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
+   "Скінуць да прадвызначанага кіравання"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
@@ -4119,6 +4143,14 @@ MSG_HASH(
    "Паказваць опцыю 'Дадаць да ўпадабанага'."
    )
 
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Дададзена да плэй-ліста"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Не ўдалося дадаць да плэй-ліста: плэй-ліст запоўнены"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
@@ -6705,6 +6737,14 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "Скарачаць назвы плэй-лістоў (патрабуецца перазапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Сартаваць плэй-лісты пасля скарачэння назваў (патрабуецца перазапуск)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Колеравая тэма"
    )
@@ -7739,6 +7779,10 @@ MSG_HASH(
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Выбраць рэжым адлюстравання (патрабуецца перазапуск)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    "Злучыцца з сеткай"
