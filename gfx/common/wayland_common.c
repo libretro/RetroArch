@@ -152,7 +152,10 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
 }
 
 void xdg_toplevel_handle_close(void *data,
-      struct xdg_toplevel *xdg_toplevel) { command_event(CMD_EVENT_QUIT, NULL); }
+      struct xdg_toplevel *xdg_toplevel)
+{
+   frontend_driver_set_signal_handler_state(1);
+}
 
 #ifdef HAVE_LIBDECOR_H
 void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
@@ -226,7 +229,10 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
 }
 
 void libdecor_frame_handle_close(struct libdecor_frame *frame,
-      void *data) { command_event(CMD_EVENT_QUIT, NULL); }
+      void *data)
+{
+   frontend_driver_set_signal_handler_state(1);
+}
 void libdecor_frame_handle_commit(struct libdecor_frame *frame,
       void *data) { }
 #endif
