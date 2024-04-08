@@ -8002,7 +8002,7 @@ void runloop_path_set_redirect(settings_t *settings,
             if (sort_savefiles_by_content_enable)
                fill_pathname_join_special(
                   new_savefile_dir,
-                  new_savefile_dir,
+                  intermediate_savefile_dir,
                   content_dir_name,
                   sizeof(new_savefile_dir));
 
@@ -8035,7 +8035,7 @@ void runloop_path_set_redirect(settings_t *settings,
             if (sort_savestates_by_content_enable)
                fill_pathname_join_special(
                   new_savestate_dir,
-                  new_savestate_dir,
+                  intermediate_savestate_dir,
                   content_dir_name,
                   sizeof(new_savestate_dir));
 
