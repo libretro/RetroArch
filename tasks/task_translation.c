@@ -66,6 +66,8 @@ static const char* ACCESS_RESPONSE_KEYS[] =
 
 typedef struct
 {
+   bool hw;
+
    uint8_t *data;
    unsigned size;
    unsigned width;
@@ -1235,6 +1237,7 @@ static access_frame_t* translation_grab_frame(void)
    frame->viewport_width   = vp.full_width;
    frame->viewport_height  = vp.full_height;
    frame->size             = frame->width * frame->height * 3;
+   frame->hw               = false;
 
    if (!(frame->data = (uint8_t*)malloc(frame->size)))
       goto finish;
@@ -1253,6 +1256,8 @@ static access_frame_t* translation_grab_frame(void)
          translation_release(true);
          goto finish;
       }
+
+      frame->hw           = true;
 
       /* TODO: Rescale down to regular resolution */
       scaler->in_fmt      = SCALER_FMT_BGR24;
@@ -1359,9 +1364,22 @@ static access_base64_t* translation_frame_encode(access_frame_t *frame)
 
 #ifdef HAVE_RPNG
    strcpy(encode->format, "png");
-   buffer = rpng_save_image_bgr24_string(
-         frame->data, frame->width, frame->height,
-         frame->width * 3, &bytes);
+   if (frame->hw)
+   {
+      size_t pitch = frame->width * 3;
+      buffer = rpng_save_image_bgr24_string(
+            frame->data + frame->width * (frame->height-1) * 3,
+            frame->width,
+            frame->height,
+            (signed)-pitch,
+            &bytes);
+   }
+   else
+   {
+      buffer = rpng_save_image_bgr24_string(
+            frame->data, frame->width, frame->height,
+            frame->width * 3, &bytes);
+   }
 #else
    strcpy(encode->format, "bmp");
    form_bmp_header(header, frame->width, frame->height, false);
