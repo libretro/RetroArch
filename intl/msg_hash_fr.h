@@ -6540,6 +6540,14 @@ MSG_HASH(
    "Créer une nouvelle liste de lecture"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Ajouté à la liste de lecture"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Échec de l'ajout à la liste de lecture : liste de lecture pleine"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Créer une nouvelle playlist et ajouter l'entrée courante à celle-ci."
    )
@@ -9907,6 +9915,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    "Toutes les requêtes en attente ont été synchronisées avec succès sur le serveur RetroSuccès."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "Identification du jeu"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "Récupération des données sur le jeu"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "Démarrage de la session"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
