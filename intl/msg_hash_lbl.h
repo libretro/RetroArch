@@ -6279,18 +6279,6 @@ MSG_HASH(
    "ai_service_source_lang"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,
-   "ai_service_poll_delay"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION,
-   "ai_service_text_position"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,
-   "ai_service_text_padding"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,
    "settings_show_drivers"
    )
