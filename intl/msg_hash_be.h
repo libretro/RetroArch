@@ -2495,7 +2495,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "Жорсткая сінхранізацыя з графічным працэсарам"
+   "Жорсткая сінхранізацыя з ГП"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
@@ -2503,11 +2503,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "Кадры жорсткай сінхранізацыі з графічным працэсарам"
+   "Кадры жорсткай сінхранізацыі з ГП"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Задаць колькасць кадраў, якія ЦП апрацуе апераджаючы ГП пры выкарыстанні функцыі 'Жорсткая сінхранізацыя з графічным працэсарам'."
+   "Задаць колькасць кадраў, якіх можа апрацаваць цэнтральны працэсар апераджаючы графічны пры выкарыстанні функцыі 'Жорсткая сінхранізацыя з ГП'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Задаць колькасць кадраў, якіх можа апрацаваць цэнтральны працэсар апераджаючы графічны пры выкарыстанні функцыі 'Жорсткая сінхранізацыя з ГП'. Максімальнае -- 3.\n 0: Неадкладная сінхранізацыя з ГП.\n 1: Сінхранізацыя з папярэднім кадрам.\n 2: І г.д."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Сінхранізацыя з частатой кадраў змесціва (G-Sync, FreeSync)"
    )
 
 /* Settings > Audio */
@@ -2611,12 +2619,24 @@ MSG_HASH(
    "Узмацненне гучнасці (дБ)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   "Гучнасць гуку (у дБ). Значэнню 0 дБ адпавядае нармальная гучнасць без ужывання ўзмацнення."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    "Узмацненне гучнасці мікшара (дБ)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   "Глабальная гучнасць аўдыямікшара (у дБ). Значэнню 0 дБ адпавядае нармальная гучнасць без ужывання ўзмацнення."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    "Убудова DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   "Убудова DSP гуку, якая апрацоўвае гук перад адпраўкай у драйвер."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -2640,7 +2660,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Памер агульнага буфера WASAPI"
+   "Памер абагуленага буфера WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   "Даўжыня прамежкавага буфера (у кадрах) пры выкарыстанні драйвера WASAPI у абагуленым рэжыме."
    )
 
 /* Settings > Audio > Output */
@@ -2734,7 +2758,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "Памер агульнага буфера WASAPI"
+   "Памер абагуленага буфера WASAPI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+   "Даўжыня прамежкавага буфера (у кадрах) пры выкарыстанні драйвера WASAPI у абагуленым рэжыме."
    )
 #endif
 
@@ -3395,6 +3423,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Загружаць наборы налад шэйдараў аўтаматычна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+   "Выкарыстанне глабальнага файла опцый ядра"
    )
 
 /* Settings > Saving */
