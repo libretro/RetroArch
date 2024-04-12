@@ -6468,6 +6468,14 @@ MSG_HASH(
    "Neue Wiedergabeliste erstellen"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Zur Playlist hinzugefügt"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Fehler beim Hinzufügen zur Playlist: Playlist ist voll"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    "Eine neue Wiedergabeliste erstellen und dieser den aktuellen Eintrag hinzufügen."
    )
@@ -9779,6 +9787,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    "Alle ausstehenden Anfragen wurden erfolgreich mit dem RetroAchievements-Server synchronisiert."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "Spiel wird identifiziert"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "Spieldaten werden abgerufen"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "Sitzung wird gestartet"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
