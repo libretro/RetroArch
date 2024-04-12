@@ -3084,9 +3084,6 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
    access_state_t *access_st       = access_state_get_ptr();
 #endif
-#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
-#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
 #endif
@@ -3103,12 +3100,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          input_overlay_unload();
 #endif
-#ifdef HAVE_TRANSLATE
-         translation_release(true);
-#ifdef HAVE_GFX_WIDGETS
-         if (p_dispwidget->ai_service_overlay_state != 0)
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
+         /* Because the overlay is a display widget,
+          * it's going to be written
+          * over the menu, so we unset it here. */
+         if (dispwidget_get_ptr()->ai_service_overlay_state != 0)
             gfx_widgets_ai_service_overlay_unload();
-#endif
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -3177,16 +3174,11 @@ bool command_event(enum event_command cmd, void *data)
                   if (is_accessibility_enabled(
                            accessibility_enable,
                            access_st->enabled))
-                     navigation_say(
+                     accessibility_speak_priority(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
-#endif
-                  translation_release(true);
                   command_event(CMD_EVENT_UNPAUSE, NULL);
                }
                else /* Pause on call */
@@ -3205,24 +3197,18 @@ bool command_event(enum event_command cmd, void *data)
                 * Also, this mode is required for "auto" translation
                 * packages, since you don't want to pause for that.
                 */
-               if (access_st->ai_service_auto != 0)
+               if (access_st->ai_service_auto == 2)
                {
                   /* Auto mode was turned on, but we pressed the
                    * toggle button, so turn it off now. */
-                  translation_release(true);
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
+                  access_st->ai_service_auto = 0;
+#ifdef HAVE_MENU_WIDGETS
+                  gfx_widgets_ai_service_overlay_unload();
 #endif
                }
-               else
+               else 
                {
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
-                  else
-#endif
-                     command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
                }
             }
 #endif
@@ -4640,12 +4626,12 @@ bool command_event(enum event_command cmd, void *data)
                   access_st->enabled))
             {
                if (paused)
-                  navigation_say(
+                  accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_PAUSED), 10);
                else
-                  navigation_say(
+                  accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -5402,7 +5388,7 @@ bool command_event(enum event_command cmd, void *data)
                if (is_accessibility_enabled(
                         accessibility_enable,
                         access_st->enabled))
-                  navigation_say(
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
@@ -5417,7 +5403,7 @@ bool command_event(enum event_command cmd, void *data)
                      access_st->enabled)
                   && (ai_service_mode == 2)
                   && is_narrator_running(accessibility_enable))
-               navigation_say(
+               accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
@@ -5428,7 +5414,9 @@ bool command_event(enum event_command cmd, void *data)
                bool paused = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
                if (data)
                   paused = *((bool*)data);
-
+               if (     (access_st->ai_service_auto == 0)
+                     && !settings->bools.ai_service_pause)
+                  access_st->ai_service_auto = 1;
                run_translation_service(settings, paused);
             }
 #endif
@@ -7476,7 +7464,7 @@ bool retroarch_main_init(int argc, char *argv[])
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      navigation_say(
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*)msg_hash_to_str(MSG_ACCESSIBILITY_STARTUP),
@@ -8193,9 +8181,6 @@ bool retroarch_main_quit(void)
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
-#ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st     = access_state_get_ptr();
-#endif
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
@@ -8286,20 +8271,6 @@ bool retroarch_main_quit(void)
    runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
-#endif
-
-#ifdef HAVE_TRANSLATE
-   translation_release(false);
-#endif
-
-#ifdef HAVE_ACCESSIBILITY
-#ifdef HAVE_THREADS
-   if (access_st->image_lock)
-   {
-      slock_free(access_st->image_lock);
-      access_st->image_lock = NULL;
-   }
-#endif
 #endif
 
    return true;
@@ -8426,7 +8397,7 @@ void retroarch_favorites_deinit(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-bool navigation_say(
+bool accessibility_speak_priority(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
@@ -8436,48 +8407,29 @@ bool navigation_say(
             accessibility_enable,
             access_st->enabled))
    {
-      const char *voice    = get_user_language_iso639_1(false);
-      bool native_narrator = accessibility_speak_priority(accessibility_narrator_speech_speed,
-         speak_text, priority, voice);
 
-      if (!native_narrator)
-      {
-         /*
-          * The following method is a fallback for other platforms to use the
-          * AI Service url to do the TTS.  However, since the playback is done
-          * via the audio mixer, which only processes the audio while the
-          * core is running, this playback method won't work.  When the audio
-          * mixer can handle playing streams while the core is paused, then
-          * we can use this.
-          */
+      frontend_ctx_driver_t *frontend =
+         frontend_state_get_ptr()->current_frontend_ctx;
+
+      RARCH_LOG("Spoke: %s\n", speak_text);
+
+      if (frontend && frontend->accessibility_speak)
+         return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
+               priority);
+      /* The following method is a fallback for other platforms to use the
+         AI Service url to do the TTS.  However, since the playback is done
+         via the audio mixer, which only processes the audio while the
+         core is running, this playback method won't work.  When the audio
+         mixer can handle playing streams while the core is paused, then
+         we can use this. */
 #if 0
 #if defined(HAVE_NETWORKING)
          return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
 #endif
-      }
    }
 
    return true;
 }
 
-bool accessibility_speak_priority(
-      unsigned accessibility_narrator_speech_speed,
-      const char *speak_text,
-      int priority,
-      const char *voice)
-{
-   frontend_ctx_driver_t *frontend =
-      frontend_state_get_ptr()->current_frontend_ctx;
-
-   RARCH_LOG("Spoke: %s\n", speak_text);
-
-   if (frontend && frontend->accessibility_speak)
-      return frontend->accessibility_speak(accessibility_narrator_speech_speed,
-            speak_text, priority, voice);
-
-   RARCH_LOG("Platform not supported for accessibility.\n");
-
-   return false;
-}
 #endif

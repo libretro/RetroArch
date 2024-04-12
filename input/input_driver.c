@@ -7147,7 +7147,7 @@ void input_keyboard_event(bool down, unsigned code,
             say_char[1] = '\0';
 
             if (character == 127 || character == 8)
-               navigation_say(
+               accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      "backspace", 10);
@@ -7155,12 +7155,12 @@ void input_keyboard_event(bool down, unsigned code,
             {
                const char *lut_name = accessibility_lut_name(c);
                if (lut_name)
-                  navigation_say(
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         lut_name, 10);
                else if (character != 0)
-                  navigation_say(
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         say_char, 10);

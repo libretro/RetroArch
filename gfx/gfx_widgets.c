@@ -1532,66 +1532,6 @@ static void INLINE gfx_widgets_font_unbind(gfx_widget_font_data_t *font_data)
    font_driver_bind_block(font_data->font, NULL);
 }
 
-#ifdef HAVE_TRANSLATE
-static void gfx_widgets_ai_line(
-      video_frame_info_t *video, char *line, int line_idx, int line_total)
-{
-   settings_t *settings       = config_get_ptr();
-   gfx_display_t *p_disp      = (gfx_display_t*)video->disp_userdata;
-   dispgfx_widget_t *p_widget = (dispgfx_widget_t*)video->widgets_userdata;
-   void *userdata             = video->userdata;
-   unsigned video_width       = video->width;
-   unsigned video_height      = video->height;
-   
-   int line_width             = font_driver_get_message_width(
-         p_widget->gfx_widget_fonts.regular.font,
-         line, strlen(line), 1.0f);
-   
-   int hpadding               = p_widget->simple_widget_padding;
-   int vpadding               = settings->uints.ai_service_text_padding;
-   int half_vw                = video_width * 0.5f;
-   int block_width            = line_width + hpadding * 2;
-   int block_height           = p_widget->simple_widget_height;
-   int block_x                = half_vw - block_width * 0.5f;
-   int block_y                = 0;
-   int line_y                 = 0;
-   
-   int position               = (settings->uints.ai_service_text_position > 0)
-         ? settings->uints.ai_service_text_position
-         : p_widget->ai_service_text_position;
-   
-   switch (position)
-   {
-      case 0: /* Undef. */
-      case 1: /* Bottom */
-         block_y  = (video_height * (100 - vpadding) * 0.01f)
-                  - ((line_total - line_idx) * block_height);
-         break;
-      case 2: /* Top    */
-         block_y  = (video_height * (vpadding * 0.01f))
-                  + (line_idx * block_height);
-         break;
-   }
-   
-   line_y = block_y + block_height * 0.5f 
-          + p_widget->gfx_widget_fonts.regular.line_centre_offset;
-  
-   gfx_display_set_alpha(p_widget->backdrop_orig, DEFAULT_BACKDROP);
-   
-   gfx_display_draw_quad(
-         p_disp, userdata, video_width, video_height,
-         block_x, block_y, block_width, block_height,
-         video_width, video_height,
-         p_widget->backdrop_orig,
-         NULL);
-   
-   gfx_widgets_draw_text(
-         &p_widget->gfx_widget_fonts.regular,
-         line, half_vw, line_y,
-         video_width, video_height,
-         0xFFFFFFFF, TEXT_ALIGN_CENTER, true);
-}
-#endif
 
 void gfx_widgets_frame(void *data)
 {
@@ -1642,7 +1582,12 @@ void gfx_widgets_frame(void *data)
    /* AI Service overlay */
    if (p_dispwidget->ai_service_overlay_state > 0)
    {
-      size_t text_length = strlen(p_dispwidget->ai_service_text);
+      float outline_color[16] = {
+      0.00, 1.00, 0.00, 1.00,
+      0.00, 1.00, 0.00, 1.00,
+      0.00, 1.00, 0.00, 1.00,
+      0.00, 1.00, 0.00, 1.00,
+      };
       
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
@@ -1668,47 +1613,63 @@ void gfx_widgets_frame(void *data)
          if (dispctx->blend_end)
             dispctx->blend_end(userdata);
       }
-      
-      /* AI Service subtitle overlay widget */
-      if (text_length > 0)
-      {
-         int padding      = p_dispwidget->simple_widget_padding;
-         int text_width   = font_driver_get_message_width(
-               p_dispwidget->gfx_widget_fonts.regular.font,
-               p_dispwidget->ai_service_text,
-               text_length, 1.0f);
-         
-         if (text_width > (video_width * 0.9f - padding * 2))
-         {
-            size_t text_half  = text_length / 2;
-            char *extra_line  = (char*)malloc(sizeof(char) * text_length);
-            for (; text_half > 0; text_half--)
-            {
-               if (p_dispwidget->ai_service_text[text_half] == ' ')
-               {
-                  p_dispwidget->ai_service_text[text_half] = '\0';
-                  gfx_widgets_ai_line(
-                        video_info, p_dispwidget->ai_service_text, 0, 2);
-                  strlcpy(
-                        extra_line, 
-                        p_dispwidget->ai_service_text + text_half + 1,
-                        text_length - text_half);
-                  gfx_widgets_ai_line(
-                        video_info, extra_line, 1, 2);
-                        
-                  p_dispwidget->ai_service_text[text_half] = ' ';
-                  free(extra_line);
-                  break;
-               }
-            }
-         } 
-         else 
-         {
-            gfx_widgets_ai_line(
-                  video_info, p_dispwidget->ai_service_text, 0, 1);
-         }
-      }
 
+      /* top line */
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width, video_height,
+            0, 0,
+            video_width,
+            p_dispwidget->divider_width_1px,
+            video_width,
+            video_height,
+            outline_color,
+            NULL
+            );
+      /* bottom line */
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width, video_height,
+            0,
+            video_height - p_dispwidget->divider_width_1px,
+            video_width,
+            p_dispwidget->divider_width_1px,
+            video_width,
+            video_height,
+            outline_color,
+            NULL
+            );
+      /* left line */
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0,
+            0,
+            p_dispwidget->divider_width_1px,
+            video_height,
+            video_width,
+            video_height,
+            outline_color,
+            NULL
+            );
+      /* right line */
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width, video_height,
+            video_width - p_dispwidget->divider_width_1px,
+            0,
+            p_dispwidget->divider_width_1px,
+            video_height,
+            video_width,
+            video_height,
+            outline_color,
+            NULL
+            );     
       if (p_dispwidget->ai_service_overlay_state == 2)
           p_dispwidget->ai_service_overlay_state = 3;
    }
@@ -2259,7 +2220,6 @@ void gfx_widgets_ai_service_overlay_unload(void)
    if (p_dispwidget->ai_service_overlay_state == 1)
    {
       video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);
-      p_dispwidget->ai_service_text[0]         = '\0';
       p_dispwidget->ai_service_overlay_texture = 0;
       p_dispwidget->ai_service_overlay_state   = 0;
    }

@@ -3028,42 +3028,6 @@ static void setting_get_string_representation_uint_ai_service_mode(
       case 2:
          enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE;
          break;
-      case 3:
-         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE;
-         break;
-      case 4:
-         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE;
-         break;
-      case 5:
-         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE;
-         break;
-      default:
-         break;
-   }
-
-   if (enum_idx != 0)
-      strlcpy(s, msg_hash_to_str(enum_idx), len);
-}
-
-static void setting_get_string_representation_uint_ai_service_text_position(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case 0:
-         enum_idx = MENU_ENUM_LABEL_VALUE_NONE;
-         break;
-      case 1:
-         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM;
-         break;
-      case 2:
-         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP;
-         break;
       default:
          break;
    }
@@ -20040,7 +20004,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_ai_service_mode;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
          CONFIG_STRING(
                list, list_info,
@@ -20123,49 +20087,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, TRANSLATION_LANG_DONT_CARE, (TRANSLATION_LANG_LAST-1), 1, true, true);
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.ai_service_poll_delay,
-               MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,
-               MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
-               DEFAULT_AI_SERVICE_POLL_DELAY,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_AI_SERVICE_POLL_DELAY, 50, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.ai_service_text_position,
-               MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION,
-               MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
-               DEFAULT_AI_SERVICE_TEXT_POSITION,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_uint_ai_service_text_position;
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.ai_service_text_padding,
-               MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,
-               MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
-               DEFAULT_AI_SERVICE_TEXT_PADDING,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 20, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

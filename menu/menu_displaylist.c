@@ -7933,11 +7933,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_AI_SERVICE_MODE,          PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_URL,           PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_AI_SERVICE_PAUSE,         PARSE_ONLY_BOOL,   false},
-               {MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,    PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,   PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,   PARSE_ONLY_UINT,   false},
-               {MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION, PARSE_ONLY_UINT,   false},
-               {MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,  PARSE_ONLY_UINT,   false},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7947,11 +7944,8 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_AI_SERVICE_MODE:
                   case MENU_ENUM_LABEL_AI_SERVICE_URL:
                   case MENU_ENUM_LABEL_AI_SERVICE_PAUSE:
-                  case MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY:
                   case MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG:
                   case MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG:
-                  case MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION:
-                  case MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING:
                      if (ai_service_enable)
                         build_list[i].checked = true;
                      break;

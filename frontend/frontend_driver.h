@@ -112,7 +112,7 @@ typedef struct frontend_ctx_driver
    enum retro_language (*get_user_language)(void);
    bool (*is_narrator_running)(void);
    bool (*accessibility_speak)(int speed,
-         const char* speak_text, int priority, const char* voice);
+         const char* speak_text, int priority);
    bool (*set_gamemode)(bool on);
 
    const char *ident;

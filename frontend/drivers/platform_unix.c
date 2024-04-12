@@ -2886,10 +2886,10 @@ static const char* accessibility_unix_language_code(const char* language)
 }
 
 static bool accessibility_speak_unix(int speed,
-      const char* speak_text, int priority, const char* voice)
+      const char* speak_text, int priority)
 {
    int pid;
-   const char* language   = accessibility_unix_language_code(voice);
+   const char* language   = accessibility_unix_language_code(get_user_language_iso639_1(true));
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};

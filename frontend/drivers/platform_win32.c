@@ -1035,9 +1035,10 @@ static bool is_narrator_running_windows(void)
 }
 
 static bool accessibility_speak_windows(int speed,
-      const char* speak_text, int priority, const char* voice)
+      const char* speak_text, int priority)
 {
    char cmd[512];
+   const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
    const char *langid     = accessibility_win_language_id(voice);
    bool res               = false;
@@ -1081,12 +1082,9 @@ static bool accessibility_speak_windows(int speed,
       if (!wc || res != 0) 
       {
          RARCH_ERR("Error communicating with NVDA\n");
-         /* Fallback on powershell immediately and retry */
-         g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
-         g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;
          if (wc)
             free(wc);
-         return accessibility_speak_windows(speed, speak_text, priority, voice);
+         return false;
       }
 
       nvdaController_cancelSpeech_func();
