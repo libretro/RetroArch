@@ -1103,6 +1103,7 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
+extern input_driver_t input_test;
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;

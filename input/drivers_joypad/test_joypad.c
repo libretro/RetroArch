@@ -194,7 +194,7 @@ static bool input_test_file_read(const char* file_path)
        || !path_is_valid(file_path)
       )
    {
-      RARCH_DBG("[Test input driver]: No test input file supplied.\n");
+      RARCH_DBG("[Test joypad driver]: No test input file supplied.\n");
       return false;
    }
       
@@ -206,7 +206,7 @@ static bool input_test_file_read(const char* file_path)
 
    if (!file)
    {
-      RARCH_ERR("[Test input driver]: Failed to open test input file: \"%s\".\n",
+      RARCH_ERR("[Test joypad driver]: Failed to open test input file: \"%s\".\n",
             file_path);
       return false;
    }
@@ -214,7 +214,7 @@ static bool input_test_file_read(const char* file_path)
    /* Initialise JSON parser */
    if (!(parser = rjson_open_rfile(file)))
    {
-      RARCH_ERR("[Test input driver]: Failed to create JSON parser.\n");
+      RARCH_ERR("[Test joypad driver]: Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -233,16 +233,16 @@ static bool input_test_file_read(const char* file_path)
       if (rjson_get_source_context_len(parser))
       {
          RARCH_ERR(
-               "[Test input driver]: Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
+               "[Test joypad driver]: Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
                file_path,
                rjson_get_source_context_len(parser),
                rjson_get_source_context_buf(parser));
       }
       RARCH_WARN(
-            "[Test input driver]: Error parsing test input file: %s\n",
+            "[Test joypad driver]: Error parsing test input file: %s\n",
             file_path);
       RARCH_ERR(
-            "[Test input driver]: Error: Invalid JSON at line %d, column %d - %s.\n",
+            "[Test joypad driver]: Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
@@ -262,12 +262,12 @@ end:
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
-      RARCH_WARN("[Test input driver]: too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
+      RARCH_WARN("[Test joypad driver]: too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
    }
    for (current_test_step = 0; current_test_step < last_test_step; current_test_step++)
    {
       RARCH_DBG(
-         "[Test input driver]: test step %02d read from file: frame %d, action %x, num %x, str %s\n",
+         "[Test joypad driver]: test step %02d read from file: frame %d, action %x, num %x, str %s\n",
          current_test_step,
          input_test_steps[current_test_step].frame,
          input_test_steps[current_test_step].action,
@@ -433,7 +433,7 @@ static void test_joypad_poll(void)
             test_joypads[targetpad].button_state |= input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test input driver]: Pressing device %d buttons %x, new state %x.\n",
+               "[Test joypad driver]: Pressing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
          else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST &&
@@ -443,7 +443,7 @@ static void test_joypad_poll(void)
             test_joypads[targetpad].button_state &= ~input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test input driver]: Releasing device %d buttons %x, new state %x.\n",
+               "[Test joypad driver]: Releasing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
          else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST &&
@@ -457,19 +457,19 @@ static void test_joypad_poll(void)
                test_joypads[targetpad].axis_state[targetaxis] = (int16_t) input_test_steps[i].param_num;
             else
                RARCH_WARN(
-                  "[Test input driver]: Decoded axis outside target range: action %d pad %d axis %d.\n",
+                  "[Test joypad driver]: Decoded axis outside target range: action %d pad %d axis %d.\n",
                   input_test_steps[i].action, targetpad, targetaxis);
 
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test input driver]: Setting axis device %d axis %d value %d.\n",
+               "[Test joypad driver]: Setting axis device %d axis %d value %d.\n",
                targetpad, targetaxis, (int16_t)input_test_steps[i].param_num);
          }
          else
          {
             input_test_steps[i].handled = true;
             RARCH_WARN(
-               "[Test input driver]: Unrecognized action %d in step %d, skipping\n",
+               "[Test joypad driver]: Unrecognized action %d in step %d, skipping\n",
                input_test_steps[i].action,i);
          }
 
