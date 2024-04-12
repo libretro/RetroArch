@@ -5389,7 +5389,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Adicionar à lista de reprodução"
+   "Adicionar em uma lista"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
@@ -5397,7 +5397,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Criar nova lista de reprodução"
+   "Criar nova lista"
    )
 MSG_HASH(
    MSG_ADDED_TO_PLAYLIST,
