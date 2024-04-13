@@ -6255,10 +6255,6 @@ MSG_HASH(
    "Wyjście usługi AI"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Pokaż tłumaczenie jako nakładkę obrazu (tryb obrazu), jako bezpośredni dźwięk (Speech), tekst na mowę (Narrator) lub nakładkę tekstu (Text)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Adres URL usługi AI"
    )
@@ -6298,6 +6294,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Język, który serwis przetłumaczy. \"Domyślnie\" to język angielski."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -9068,7 +9065,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Tryb Narratora"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Historia i Ulubione"

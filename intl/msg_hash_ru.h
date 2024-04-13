@@ -6947,10 +6947,6 @@ MSG_HASH(
    "Режим вывода для AI-сервиса"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Выводить перевод графическим наложением (Режим изображения), голосом (Режим озвучивания), синтезом речи (Режим диктора) или текстовым наложением (Режим текста)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Сетевой адрес AI-сервиса"
    )
@@ -6990,6 +6986,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Язык, на который будет осуществляться перевод. По умолчанию используется английский."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -10224,7 +10221,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Режим диктора"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "История и избранное"

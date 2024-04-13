@@ -6883,10 +6883,6 @@ MSG_HASH(
    "Sortie du service IA "
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Afficher la traduction en surimpression d'image (Mode image), en audio direct (Traduction vocale), en synthèse vocale (Narrateur) ou en superposition de texte (Texte)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL du service IA "
    )
@@ -6926,6 +6922,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "La langue vers laquelle le service va traduire. 'Par défaut' est anglais."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -10124,7 +10121,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Mode narrateur"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Historique et favoris"
@@ -12928,7 +12924,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "Installation du cœur échouée"
    )
-
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Appuyez cinq fois sur Droite pour supprimer tous les cheats."

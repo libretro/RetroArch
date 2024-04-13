@@ -6835,10 +6835,6 @@ MSG_HASH(
    "Uscita del servizio IA"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Mostra la traduzione come sovrapposizione immagine (modalità immagine), come audio diretto (Speech), sintesi vocale (Narratore), o sovrapposizione testo (Testo)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL del servizio IA"
    )
@@ -6878,6 +6874,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "La lingua in cui il servizio si tradurrà. 'Predefinito' è l'inglese."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -10076,7 +10073,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Modalità Narratore"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Cronologia & Preferiti"
@@ -12764,7 +12760,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "Installazione core fallita"
    )
-
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Premi a destra cinque volte per eliminare tutti i trucchi."

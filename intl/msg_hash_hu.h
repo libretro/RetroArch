@@ -496,6 +496,10 @@ MSG_HASH(
    "Szükséges grafikus API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "A mag teljes elérési útvonala"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Játékállás mentés támogatása"
    )
@@ -6555,6 +6559,30 @@ MSG_HASH(
    "A \"Kedvencekhez ad\" lehetőség jelenjen meg."
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Hozzáadás játéklistához"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "A tartalom hozzáadása játéklistához."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Új játéklista létrehozása"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Hozzáadva a játéklistához"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Nem sikerült a játéklistához adni: a játéklista megtelt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Új játéklista létrehozása és az aktuális elem hozzáadása."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
@@ -6887,10 +6915,6 @@ MSG_HASH(
    "Az AI szolgáltatás eredménye"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Fordítás megjelenítése képrátétként (Kép mód), közvetlen hangként (Beszéd), felolvasott szöveként (Narrátor), vagy szöveges rátétként (Szöveg)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Az AI szolgáltatás URL-je"
    )
@@ -6930,6 +6954,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "A fordítási szolgáltatás célnyelve. \"Alapértelmezett\" az angol."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -9928,6 +9953,18 @@ MSG_HASH(
    "A függőben maradt RetroAchievements kiszolgáló kérések szinkronizálása sikeres."
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "Játék azonosítása"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "Játék adatainak lekérése"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "Folyamat indítása"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Nincs bejelentkezve"
 )
@@ -10148,7 +10185,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Narrátor mód"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Előzmények és kedvencek"
@@ -12680,7 +12716,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "Mag telepítése sikertelen"
    )
-
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Nyomja meg a jobbra gombot ötször minden csalás törléséhez."

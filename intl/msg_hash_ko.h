@@ -6967,10 +6967,6 @@ MSG_HASH(
    "AI 서비스 출력"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "번역 결과를 이미지 오버레이로 표시하거나(이미지 모드), 오디오로 직접 출력하거나(음성), TTS로 읽어주거나(나레이터), 텍스트 오버레이로 표시합니다(텍스트)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI 서비스 URL"
    )
@@ -7010,6 +7006,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "서비스가 번역하여 표시할 언어입니다. '기본'을 선택하면 영어로 번역합니다."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -10252,7 +10249,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "나레이터 모드"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "최근 실행 & 즐겨찾기"
