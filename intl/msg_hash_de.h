@@ -6811,10 +6811,6 @@ MSG_HASH(
    "KI-Dienst Ausgabeart"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Übersetzung als Bild-Overlay (Bildmodus), als direktes Audio (Sprache), Text-to-Speech (Erzähler) oder als Text-Overlay (Text) anzeigen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "KI-Dienst URL"
    )
@@ -6854,6 +6850,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Die Sprache, in die der Dienst übersetzt. 'Standard' ist Englisch."
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
@@ -10004,7 +10001,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Erzählermodus"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "Verlauf & Favoriten"

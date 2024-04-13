@@ -6923,10 +6923,6 @@ MSG_HASH(
    "AIサービス出力"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "画像オーバーレイ (画像モード)、ダイレクトオーディオ (スピーチ)、テキスト読み上げ (ナレーター)、またはテキストオーバーレイ (テキスト) として翻訳を表示します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI サービス URL"
    )
@@ -10205,7 +10201,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "ナレーターモード"
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "履歴 & お気に入り"
@@ -12905,7 +12900,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
    "コアのインストールに失敗しました"
    )
-
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "すべてのチートを削除するには右を 5 回押してください。"

@@ -6959,10 +6959,6 @@ MSG_HASH(
    "AI 服务输出"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "将翻译作为图像遮罩(图像模式)，或者作为直接音频 (演说)，文本转语音(旁白)，或文本遮罩(文本)。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI 服务 URL"
    )
@@ -7002,6 +6998,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "服务将翻译成的语言。「默认」是英语。"
    )
+
 /* Settings > Accessibility */
 
 MSG_HASH(
