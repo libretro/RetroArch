@@ -4466,6 +4466,10 @@ MSG_HASH(
 /* Settings > Accessibility */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   "Упаўнаважыць сінтэз маўлення, каб дапамагчы ў навігацыі па меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Хуткасць сінтэзу маўлення"
    )

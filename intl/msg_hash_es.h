@@ -6923,6 +6923,10 @@ MSG_HASH(
    "Salida del servicio de IA"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "Muestra las traducciones como una imagen superpuesta (Modo Imagen), audio directo (Voz) o utiliza un narrador del sistema, como NVDA (Narración)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "URL del servicio de IA"
    )
