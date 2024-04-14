@@ -547,10 +547,11 @@ static ui_application_t ui_application_cocoa = {
        return;
 
    NSRect frame = self.window.frame;
+   NSRect bounds = self.window.contentView.bounds;
    settings->uints.window_position_x      = (unsigned)frame.origin.x;
    settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)frame.size.width;
-   settings->uints.window_position_height = (unsigned)frame.size.height;
+   settings->uints.window_position_width  = (unsigned)bounds.size.width;
+   settings->uints.window_position_height = (unsigned)bounds.size.height;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -564,10 +565,11 @@ static ui_application_t ui_application_cocoa = {
        return;
 
    NSRect frame = self.window.frame;
+   NSRect bounds = self.window.contentView.bounds;
    settings->uints.window_position_x      = (unsigned)frame.origin.x;
    settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)frame.size.width;
-   settings->uints.window_position_height = (unsigned)frame.size.height;
+   settings->uints.window_position_width  = (unsigned)bounds.size.width;
+   settings->uints.window_position_height = (unsigned)bounds.size.height;
 }
 
 @end
@@ -721,10 +723,12 @@ static ui_application_t ui_application_cocoa = {
 - (void)updateWindowedSize:(gfx_ctx_mode_t)mode
 {
    settings_t *settings             = config_get_ptr();
-   bool windowed_full               = settings->bools.video_windowed_fullscreen;
+   BOOL is_fullscreen = (self.window.styleMask
+         & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
+   bool windowed_full               = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
    bool window_save_positions       = settings->bools.video_window_save_positions;
 
-   if (windowed_full)
+   if (is_fullscreen || windowed_full)
        return;
 
    if (window_save_positions)
