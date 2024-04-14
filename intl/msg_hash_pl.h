@@ -6255,6 +6255,10 @@ MSG_HASH(
    "Wyjście usługi AI"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "Pokaż tłumaczenie jako nakładkę tekstową (tryb obrazu), odtwarzaj w formie Tekst-To-Speech (Speech) lub użyj narratoru systemowego, takiego jak NVDA (Narrator)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Adres URL usługi AI"
    )
