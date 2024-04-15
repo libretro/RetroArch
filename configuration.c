@@ -6098,27 +6098,31 @@ bool input_remapping_save_file(const char *path)
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
       for (j = 0; j < RETRO_SENSOR_MAX; j++){
-         int sensor_remap = -1;
-         bool sensor_flip_remap=false;
          char sensor_ident[128];
          char sensor_ident_flip[128];
+         unsigned sensor_remap = settings->uints.input_sensor_ids[i][j];
+         
          fill_pathname_join_delim(sensor_ident, s1,
                sensor_strings[j], '_', sizeof(sensor_ident));
          fill_pathname_join_delim(sensor_ident_flip, s1,
             sensor_strings_flip[j], '_', sizeof(sensor_ident_flip));
-         #if 0
-         /* Only save modified button values */
-         if (remap_id == j)
+         
+         if (sensor_remap == j)
             config_unset(conf, sensor_ident);
          else
          {
-            if (remap_id == RARCH_UNMAPPED)
+            if (sensor_remap == RARCH_UNMAPPED)
                config_set_int(conf, sensor_ident, -1);
             else
                config_set_int(conf, sensor_ident,
                      settings->uints.input_sensor_ids[i][j]);
          }
-         #endif
+         /*
+         configuration_set_bool(conf, 
+            settings->bools.input_sensor_flip_axis[i][j],
+            settings->bools.input_sensor_flip_axis[i][j]
+         );
+         */
       }
    }
 
