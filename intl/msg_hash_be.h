@@ -1166,7 +1166,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Змяніць налады ўводу/вываду аўдыя."
+   "Змяніць налады ўводу/вываду гуку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1182,7 +1182,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Змяніць налады, датычныя да відэа, аўдыя ды латэнтнасці ўводу."
+   "Змяніць налады, датычныя латэнтнасці відэа, гуку ды ўводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -2746,7 +2746,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
-   "Частата дыскрэтызацыі гуку; выкарыстоўваецца, калі ядро не запытвае пэўную велічыню."
+   "Частата дыскрэтызацыі гуку ўваходнага сігналу; выкарыстоўваецца, калі ядро не запытвае пэўную велічыню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
@@ -2823,12 +2823,20 @@ MSG_HASH(
    "Выбраць прыладу ўводу."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "Задае прыладу ўводу (адмыслова драйверу). Пры зададзеным 'Выкл' увод MIDI будзе адключаны. Таксама можна пазначаць назву прылады."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Вывад"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    "Выбраць прыладу вываду."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "Задае прыладу вываду (адмыслова драйверу). Пры зададзеным 'Выкл' вывад MIDI будзе адключаны. Таксама можна пазначаць назву прылады..\nПры ўключаным вывадзе MIDI разам з ядром ды гульнёй/праграмай з падтрымкай MIDI, некаторыя або ўсе гукі (у залежнасці ад гульні/праграмы) будуць утв[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -2850,20 +2858,40 @@ MSG_HASH(
    "Прайграць"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   "Пачне прайграванне гукавой плыні. Па завяршэнні бягучыя гукавая плынь будзе выдалена з памяці."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
    "Прайграваць (цыклічна)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   "Пачне прайграванне гукавой плыні. Цыклічна, па завяршэнні, трэк будзе зноў прайгравацца з пачатку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
    "Прайграць (паслядоўна)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   "Пачне прайграванне гукавой плыні. Па завяршэнні будзе пераход у паслядоўным парадку да наступнай гукавой плыні з паўторам дзеянняў. Карысна для рэжыму прайгравання альбомаў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    "Спыніць"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   "Спыніць прайграванне гукавой плыні, але не выдаляць яе з памяці. Можа быць запушчана зноў пры выбары 'Прайграць'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Пазбавіцца"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   "Спыніць прайграванне гукавой плыні ды цалкам выдаліць яе з памяці."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
@@ -2871,7 +2899,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-   "Дапасаваць гучнасць плыні гуку."
+   "Дапасаваць гучнасць гукавой плыні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
@@ -2899,6 +2927,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    "Мікшар"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   "Прайграваць гукавыя плыні адначасова нават у меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
@@ -2947,6 +2979,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Аўтаканфігурацыя"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "Аўтаматычна наладзіць кантролеры, якія маюць профілі, падобна Plug-and-Play."
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
@@ -2963,6 +2999,10 @@ MSG_HASH(
    "Выкарыстоўваць гэтую прыладу як фізічную клавіятуру, а не як геймпад."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "Увод праз дадатковыя адчувальных элементаў"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
    "Аўтаматычны захоп мышы"
@@ -3001,7 +3041,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Час чакання (секунд) перад пераходам да наступнага прызначэння."
+   "Колькасць секунд чакання перад пераходам да наступнага прызначэння."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   "Утрыманне для прызначэння"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   "Колькасць секунд утрымання ўводу для яго прызначэння."
    )
 MSG_HASH(
    MSG_INPUT_BIND_PRESS,
