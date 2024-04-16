@@ -25,14 +25,14 @@
 		0712A7722B807AE400C9765F /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0712A7712B807AE400C9765F /* TVServices.framework */; };
 		0712A7762B807AE400C9765F /* ContentProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 0712A7752B807AE400C9765F /* ContentProvider.m */; };
 		0712A77A2B807AE400C9765F /* RetroArchTopShelfExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0712A7702B807AE400C9765F /* RetroArchTopShelfExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0718BC5F2ABBA807001F2CBE /* Network.framework */; };
-		0734BB242ADB7FEE00EBDCAD /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 92EDD1622982E40C00AD33B4 /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		073734A62A093ACA00BF7397 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 073734A52A093ACA00BF7397 /* AltKit */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
+		077A8E202BCE31F3000ECA41 /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 077A8E1F2BCE31E5000ECA41 /* Frameworks */; };
 		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
+		07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 07E8EBE22BCCD1E10070B42D /* Frameworks */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
@@ -52,7 +52,6 @@
 		9204BE1F1D319EF300BD49DB /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
 		9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 		9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
-		9204BE261D319EF300BD49DB /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		9210C2F224B3A19100E6FE7C /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9210C2F024B3A19100E6FE7C /* MetalKit.framework */; };
 		9210C2F324B3A19100E6FE7C /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9210C2F124B3A19100E6FE7C /* Metal.framework */; };
 		9210C2F624B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */; };
@@ -128,7 +127,6 @@
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
 		92DAF33F277A370600FE2A9E /* EmulatorTouchMouse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92DAF33E277A370600FE2A9E /* EmulatorTouchMouse.swift */; };
-		92E5DCD4231A5786006491BF /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 92E5DCD3231A5786006491BF /* modules */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -160,28 +158,6 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0714E7162983A5E500E6B45B /* Embed Libraries */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				0714E7152983A5E500E6B45B /* libMoltenVK.dylib in Embed Libraries */,
-			);
-			name = "Embed Libraries";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		0734BB252ADB7FEE00EBDCAD /* Embed Libraries */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				0734BB242ADB7FEE00EBDCAD /* libMoltenVK.dylib in Embed Libraries */,
-			);
-			name = "Embed Libraries";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9292D6F528F549D500E47A75 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -207,8 +183,10 @@
 		0718BC5F2ABBA807001F2CBE /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		073DB2892B8706490001BA32 /* RetroArchTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTV.entitlements; sourceTree = "<group>"; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
+		077A8E1F2BCE31E5000ECA41 /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Frameworks; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
+		07E8EBE22BCCD1E10070B42D /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Frameworks; path = iOS/Frameworks; sourceTree = SOURCE_ROOT; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -578,6 +556,7 @@
 		83D632D719ECFCC4009E3161 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				07E8EBE22BCCD1E10070B42D /* Frameworks */,
 				07F7FB012A2DA8B800037C04 /* filters */,
 				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
@@ -590,6 +569,7 @@
 		926C77D821FD1E6500103EDE /* tvOS */ = {
 			isa = PBXGroup;
 			children = (
+				077A8E1F2BCE31E5000ECA41 /* Frameworks */,
 				07B7872C29E8FE8F0088B74F /* filters */,
 				92E5DCD3231A5786006491BF /* modules */,
 				926C77E221FD1E6700103EDE /* Assets.xcassets */,
@@ -1341,7 +1321,6 @@
 				9204BE271D319EF300BD49DB /* ShellScript */,
 				9204BE211D319EF300BD49DB /* Resources */,
 				9292D6F528F549D500E47A75 /* Embed Foundation Extensions */,
-				0734BB252ADB7FEE00EBDCAD /* Embed Libraries */,
 			);
 			buildRules = (
 			);
@@ -1365,7 +1344,6 @@
 				926C77D421FD1E6500103EDE /* Frameworks */,
 				92CC057521FE2D4900FF79F0 /* ShellScript */,
 				926C77D521FD1E6500103EDE /* Resources */,
-				0714E7162983A5E500E6B45B /* Embed Libraries */,
 				0712A77B2B807AE400C9765F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -1468,7 +1446,7 @@
 				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
 				929784502200EEE400989A60 /* iOS/Resources/Icons.xcassets in Resources */,
-				9204BE261D319EF300BD49DB /* iOS/modules in Resources */,
+				07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */,
 				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1477,9 +1455,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				077A8E202BCE31F3000ECA41 /* Frameworks in Resources */,
 				07B7872D29E8FE8F0088B74F /* filters in Resources */,
 				92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
-				92E5DCD4231A5786006491BF /* modules in Resources */,
 				9222F2002314BA7C0097C0FD /* assets.zip in Resources */,
 				926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */,
 			);
@@ -1568,7 +1546,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
+			shellScript = "./make-frameworks.sh\n#./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
 		};
 		92CC057521FE2D4900FF79F0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1586,7 +1564,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./code-sign-cores.sh tvos\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
+			shellScript = "./make-frameworks.sh tvos\n#./code-sign-cores.sh tvos\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1895,13 +1873,11 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_NO_PIE = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
-					"@executable_path/modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
 				MARKETING_VERSION = 1.18.0;
@@ -1970,13 +1946,11 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_NO_PIE = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
-					"@executable_path/modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
 				MARKETING_VERSION = 1.18.0;
@@ -2068,7 +2042,6 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2157,7 +2130,6 @@
 					../../gfx/include,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2237,7 +2209,6 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../../modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
 				MARKETING_VERSION = 1.18.0;
@@ -2308,7 +2279,6 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../../Frameworks",
-					"@executable_path/../../modules",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
 				MARKETING_VERSION = 1.18.0;
@@ -2349,6 +2319,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/iOS/modules",
@@ -2476,6 +2447,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/iOS/modules",
