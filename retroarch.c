@@ -4336,11 +4336,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 #ifdef HAVE_LAKKA
-         system("(sleep 1 && shutdown -P now) & disown");
+         system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
 #else
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
@@ -4351,11 +4351,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 #ifdef HAVE_LAKKA
-         system("(sleep 1 && shutdown -r now) & disown");
+         system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
 #else
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
