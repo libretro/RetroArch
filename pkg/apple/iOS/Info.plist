@@ -4,6 +4,8 @@
 <dict>
 	<key>ALTBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>ALTDeviceID</key>
+	<string>$(TARGET_DEVICE_IDENTIFIER)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -36,8 +38,6 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
@@ -52,11 +52,7 @@
 		<string>_ra_netplay._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>RetroArch uses the local network to find and communicate with AltServer to enable JIT.</string>
-	<key>ALTDeviceID</key>
-	<string>$(TARGET_DEVICE_IDENTIFIER)</string>
-	<key>NSCameraUsageDescription</key>
-	<string>YES</string>
+	<string>RetroArch uses the local network to find local Netplay participants.</string>
 	<key>UIApplicationExitsOnSuspend</key>
 	<false/>
 	<key>UIFileSharingEnabled</key>
@@ -65,7 +61,7 @@
 	<string>Launch Screen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
@@ -87,5 +83,22 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>GCSupportedGameControllers</key>
+	<array>
+		<dict>
+			<key>ProfileName</key>
+			<string>ExtendedGamepad</string>
+		</dict>
+		<dict>
+			<key>ProfileName</key>
+			<string>DirectionalGamepad</string>
+		</dict>
+		<dict>
+			<key>ProfileName</key>
+			<string>MicroGamepad</string>
+		</dict>
+	</array>
+	<key>GCSupportsControllerUserInteraction</key>
+	<true/>
 </dict>
 </plist>
