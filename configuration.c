@@ -1481,6 +1481,7 @@ bool config_overlay_enable_default(void)
 static struct config_array_setting *populate_settings_array(
       settings_t *settings, int *size)
 {
+   unsigned i                           = 0;
    unsigned count                       = 0;
    struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(1, (*size + 1) * sizeof(struct config_array_setting));
 
@@ -1511,22 +1512,23 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("input_android_physical_keyboard", settings->arrays.input_android_physical_keyboard, false, NULL, true);
 #endif
 
-   SETTING_ARRAY("input_player1_reserved_device",  settings->arrays.input_player1_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player2_reserved_device",  settings->arrays.input_player2_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player3_reserved_device",  settings->arrays.input_player3_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player4_reserved_device",  settings->arrays.input_player4_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player5_reserved_device",  settings->arrays.input_player5_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player6_reserved_device",  settings->arrays.input_player6_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player7_reserved_device",  settings->arrays.input_player7_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player8_reserved_device",  settings->arrays.input_player8_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player9_reserved_device",  settings->arrays.input_player9_reserved_device,  false, NULL, true);
-   SETTING_ARRAY("input_player10_reserved_device", settings->arrays.input_player10_reserved_device, false, NULL, true);
-   SETTING_ARRAY("input_player11_reserved_device", settings->arrays.input_player11_reserved_device, false, NULL, true);
-   SETTING_ARRAY("input_player12_reserved_device", settings->arrays.input_player12_reserved_device, false, NULL, true);
-   SETTING_ARRAY("input_player13_reserved_device", settings->arrays.input_player13_reserved_device, false, NULL, true);
-   SETTING_ARRAY("input_player14_reserved_device", settings->arrays.input_player14_reserved_device, false, NULL, true);
-   SETTING_ARRAY("input_player15_reserved_device", settings->arrays.input_player15_reserved_device, false, NULL, true);
-   SETTING_ARRAY("input_player16_reserved_device", settings->arrays.input_player16_reserved_device, false, NULL, true);
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      size_t _len;
+      char formatted_number[4];
+      char prefix[16];
+      char key[32];
+
+      formatted_number[0] = '\0';
+
+      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
+      _len       = strlcpy(key, prefix, sizeof(key));
+      strlcpy(key + _len, "_reserved_device", sizeof(key) - _len);
+
+      SETTING_ARRAY(key, settings->arrays.input_reserved_devices[i], false, NULL, true);
+   }
 
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",                  settings->arrays.menu_driver, false, NULL, true);

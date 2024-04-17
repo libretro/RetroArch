@@ -1398,9 +1398,8 @@ static void handle_hotplug(android_input_t *android,
    reserved_port = input_device_get_reserved_port(
       vendorId, productId, device_name);
 
-   if (reserved_port > -1) {
+   if (reserved_port > -1)
       *port = reserved_port;
-   }
 
    if (*port < 0)
       *port = android->pads_connected;
