@@ -5445,7 +5445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
-   "Ajuster la plage de dérive permise lors de la détection d'un appui long ou d'une tape. Exprimé en pourcentage de la dimension de l'écran plus petite."
+   "Ajuster la plage de dérive permise lors de la détection d'un appui long ou d'une tape. Exprimé en pourcentage de la dimension de l'écran la plus petite."
    )
 
 /* Settings > On-Screen Display > Video Layout */

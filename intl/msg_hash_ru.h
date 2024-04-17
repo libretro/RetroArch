@@ -14491,7 +14491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Успешно начать поиск читов."
+   "Успешно начат поиск чит-кодов."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
