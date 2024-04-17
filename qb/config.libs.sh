@@ -265,6 +265,7 @@ else
    check_lib '' AL -lopenal alcOpenDevice
 fi
 
+check_pkgconf GLIB glib-2.0 2.78.0
 check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false

@@ -18,6 +18,17 @@
 #define _GNU_SOURCE /* See feature_test_macros(7) */
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_GLIB
+#include <glib.h>
+#endif
+
+#include "../../tasks/task_content.h"
+#include "../../paths.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -1037,9 +1048,8 @@ static void wl_data_device_handle_drop(void *data,
 
       /* TODO/FIXME: Convert from file:// URI, Implement file loading
        * Drag and Drop */
-#if 0
-      if (wayland_load_content_from_drop(g_filename_from_uri(line, NULL, NULL)))
-         RARCH_WARN("----- wayland_load_content_from_drop success\n");
+#ifdef HAVE_GLIB
+      path_set(RARCH_PATH_NEXT_CONTENT, g_filename_from_uri(line, NULL, NULL));
 #endif
    }
 
