@@ -78,8 +78,10 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_CORE_THUMBNAILPACKS_URL "http://thumbnailpacks.libretro.com"
 #ifdef HAVE_LAKKA_CANARY
 #define FILE_PATH_LAKKA_URL HAVE_LAKKA_CANARY
-#elif HAVE_LAKKA_NIGHTLY
+#elif defined (HAVE_LAKKA_NIGHTLY)
 #define FILE_PATH_LAKKA_URL "http://nightly.builds.lakka.tv/.updater"
+#elif defined (HAVE_LAKKA_DEVBUILD)
+#define FILE_PATH_LAKKA_URL "http://nightly.builds.lakka.tv/.devbuild"
 #else
 #define FILE_PATH_LAKKA_URL "http://le.builds.lakka.tv"
 #endif
