@@ -656,8 +656,11 @@ enum
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
-   NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
-   /* Copy file to documents directory if it's not already 
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   /* Copy file to documents directory if it's not already
     * inside Documents directory */
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
@@ -665,6 +668,13 @@ enum
             [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
+   task_push_dbscan(
+      settings->paths.directory_playlist,
+      settings->paths.path_content_database,
+      fullpath,
+      false,
+      false,
+      NULL);
    return true;
 }
 
