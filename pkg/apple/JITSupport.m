@@ -26,6 +26,7 @@
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include "../../verbosity.h"
 
 extern int csops(pid_t pid, unsigned int ops, void * useraddr, size_t usersize);
