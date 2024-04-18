@@ -2295,6 +2295,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
 #ifdef _WIN32
       vulkan_library = dylib_load("vulkan-1.dll");
+#elif IOS
+      vulkan_library = dylib_load("libMoltenVK_libretro.framework");
 #elif __APPLE__
       vulkan_library = dylib_load("libMoltenVK.dylib");
 #else

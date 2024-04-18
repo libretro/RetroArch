@@ -207,6 +207,12 @@ static int filebrowser_parse(
    bool path_is_compressed                      = !string_is_empty(path) ?
          path_is_compressed_file(path) : false;
    menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
+#ifdef IOS
+   char full_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(full_path, path, sizeof(full_path));
+#else
+   const char *full_path = path;
+#endif
 
    if (path_is_compressed)
    {
@@ -242,6 +248,10 @@ static int filebrowser_parse(
          filter_ext = false;
 
       if (   string_is_equal(label, "database_manager_list")
+#if IOS
+          || string_is_equal(label, "video_filter")
+          || string_is_equal(label, "audio_dsp_plugin")
+#endif
           || string_is_equal(label, "cursor_manager_list"))
          allow_parent_directory = false;
 
@@ -260,16 +270,16 @@ static int filebrowser_parse(
                && (runloop_st->subsystem_current_count > 0)
                && (content_get_subsystem_rom_id() < subsystem->num_roms))
             ret = dir_list_initialize(&str_list,
-                  path,
+                  full_path,
                   filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, show_hidden_files, true, false);
       }
       else if ((type_default == FILE_TYPE_MANUAL_SCAN_DAT)
             || (type_default == FILE_TYPE_SIDELOAD_CORE))
-         ret = dir_list_initialize(&str_list, path,
+         ret = dir_list_initialize(&str_list, full_path,
                exts, true, show_hidden_files, false, false);
       else
-         ret = dir_list_initialize(&str_list, path,
+         ret = dir_list_initialize(&str_list, full_path,
                filter_ext ? exts : NULL,
                true, show_hidden_files, true, false);
    }
@@ -474,6 +484,32 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
+#ifdef IOS
+   {
+      // check if we're allowed to escape our sandbox
+      struct string_list *str_list = string_list_new();
+      dir_list_append(str_list, "/private/var", NULL, true, false, false, false);
+      if (str_list->size <= 0)
+      {
+         char dir[PATH_MAX_LENGTH];
+         fill_pathname_application_dir(dir, sizeof(dir));
+         if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
+            strlcat(dir, "/", sizeof(dir));
+         if (string_is_equal(dir, full_path))
+            allow_parent_directory = false;
+         else
+         {
+            fill_pathname_home_dir(dir, sizeof(dir));
+            if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
+               strlcat(dir, "/", sizeof(dir));
+            if (string_is_equal(dir, full_path))
+               allow_parent_directory = false;
+         }
+      }
+      string_list_free(str_list);
+   }
+#endif
+
 end:
    if (!path_is_compressed && allow_parent_directory)
       menu_entries_prepend(info_list,
@@ -491,6 +527,9 @@ static int menu_displaylist_parse_core_info(
       settings_t *settings)
 {
    char tmp[PATH_MAX_LENGTH];
+#if IOS
+   char shortened_path[PATH_MAX_LENGTH] = {0};
+#endif
    unsigned i, count             = 0;
    core_info_t *core_info        = NULL;
    const char *core_path         = NULL;
@@ -786,9 +825,17 @@ static int menu_displaylist_parse_core_info(
          }
 
          /* Show the path that was checked */
+#ifdef IOS
+         shortened_path[0] = '\0';
+         fill_pathname_abbreviate_special(shortened_path, firmware_info.directory.system, sizeof(shortened_path));
+         snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
+               shortened_path);
+#else
          snprintf(tmp, sizeof(tmp),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                firmware_info.directory.system);
+#endif
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
@@ -849,7 +896,13 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
+#if IOS
+      shortened_path[0] = '\0';
+      fill_pathname_abbreviate_special(shortened_path, core_path, sizeof(shortened_path));
+      strlcpy(tmp + _len, shortened_path, sizeof(tmp) - _len);
+#else
       strlcpy(tmp + _len, core_path, sizeof(tmp) - _len);
+#endif
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -884,6 +937,7 @@ end:
       }
 #endif
 
+#if !defined(IOS) || !IOS /* should this be allowed on jailbroken iOS devices? */
       if (!string_is_empty(core_path))
       {
          /* Check whether core is currently locked */
@@ -953,6 +1007,7 @@ end:
                count++;
 #endif
       }
+#endif
    }
 
    return count;
@@ -1141,6 +1196,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
       }
    }
 
+#ifndef IOS
    /* Add 'sideload core' entry */
    if (!kiosk_mode_enable)
       if (menu_entries_append(list,
@@ -1149,6 +1205,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
             MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
             MENU_SETTING_ACTION, 0, 0, NULL))
          count++;
+#endif
 
    return count;
 }
@@ -4488,7 +4545,7 @@ static unsigned menu_displaylist_parse_cores(
 #ifdef IOS
       /* For various reasons on iOS/tvOS, MoltenVK shows up
        * in the cores directory; exclude it here */
-      if (string_is_equal(path, "libMoltenVK.dylib"))
+      if (string_starts_with(path, "libMoltenVK"))
          continue;
 #endif
 
@@ -6025,11 +6082,13 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                MENU_SETTING_ACTION, 0, 0, NULL);
 #endif
+#ifndef IOS
          menu_entries_append(info_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST),
                MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
                MENU_SETTING_ACTION, 0, 0, NULL);
+#endif
       }
    }
 #endif

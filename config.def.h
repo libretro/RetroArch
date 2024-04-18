@@ -1164,7 +1164,12 @@
 #endif
 
 /* Will sync audio. (recommended) */
+#ifdef IOS
+/* FIXME: coreaudio will cause the main thread to hang on backgrounding, causing a crash */
+#define DEFAULT_AUDIO_SYNC false
+#else
 #define DEFAULT_AUDIO_SYNC true
+#endif
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)

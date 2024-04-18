@@ -189,6 +189,15 @@ static int dir_list_read(const char *dir,
          if (!include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 #endif
+#ifdef IOS
+         if (string_ends_with(name, ".framework"))
+         {
+            attr.i = RARCH_PLAIN_FILE;
+            if (!string_list_append(list, file_path, attr))
+               goto error;
+            continue;
+         }
+#endif
          if (recursive)
             dir_list_read(file_path, list, ext_list, include_dirs,
                   include_hidden, include_compressed, recursive);
