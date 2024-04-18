@@ -1886,6 +1886,17 @@ retry:
    vulkan_acquire_wait_fences(vk);
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+bool vulkan_is_hdr10_format(VkFormat format)
+{
+   return
+   (
+         format == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+      || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32
+   );
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval)
@@ -2067,11 +2078,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
       for (i = 0; i < format_count; i++)
       {
-         if (     (formats[i].format     == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+         if (     (vulkan_is_hdr10_format(formats[i].format))
                && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
          {
             format = formats[i];
             video_driver_set_hdr_support();
+            break;
          }
       }
 

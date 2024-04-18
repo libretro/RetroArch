@@ -728,6 +728,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+bool vulkan_is_hdr10_format(VkFormat format);
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 RETRO_END_DECLS
 
 #endif

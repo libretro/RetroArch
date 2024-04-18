@@ -3262,7 +3262,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
 
             /* If final pass explicitly emits RGB10, consider it HDR color space. */
-            if (explicit_format && pass_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+            if (explicit_format && vulkan_is_hdr10_format(pass_format))
                chain->set_hdr10();
 
             if (explicit_format && pass_format != pass_info.rt_format)
