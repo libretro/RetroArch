@@ -35,7 +35,7 @@ for dylib in "$BASE_DIR"/modules/*.dylib ; do
         echo "$fwName already signed"
     else
         echo "signing $fwName"
-        codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir/$fwName"
+        codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
     fi
     sed -e "s,%CORE%,$fwName," -e "s,%IDENTIFIER%,$identifier," iOS/fw.tmpl > "$fwDir/Info.plist"
 done
