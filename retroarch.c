@@ -6435,7 +6435,12 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    path_stats = path_stat(path);
 
    /* Check if path is a directory */
-   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   if (
+       ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+#if IOS
+       && !string_ends_with(path, ".framework")
+#endif
+       )
    {
       path_clear(RARCH_PATH_CORE);
 

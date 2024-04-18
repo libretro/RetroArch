@@ -1127,8 +1127,23 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 
    if (mode == PLAYLIST_LOAD)
    {
-      fill_pathname_expand_special(tmp, path, sizeof(tmp));
-      strlcpy(path, tmp, len);
+      if (is_core &&
+          string_starts_with(path, ":/modules/") &&
+          string_ends_with(path, ".dylib"))
+      {
+         path[string_index_last_occurance(path, '.')] = '\0';
+         if (string_ends_with(path, "_ios"))
+            path[string_index_last_occurance(path, '_')] = '\0';
+         strlcpy(tmp, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
+         strlcpy(tmp + STRLEN_CONST(":/Frameworks/"), path + STRLEN_CONST(":/modules/"), sizeof(tmp) - STRLEN_CONST(":/Frameworks/"));
+         strlcat(tmp, ".framework", sizeof(tmp));
+         fill_pathname_expand_special(path, tmp, len);
+      }
+      else
+      {
+         fill_pathname_expand_special(tmp, path, sizeof(tmp));
+         strlcpy(path, tmp, len);
+      }
    }
    else
    {

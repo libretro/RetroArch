@@ -4,12 +4,22 @@
 <dict>
 	<key>ALTBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>ALTDeviceID</key>
+	<string>$(TARGET_DEVICE_IDENTIFIER)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>RetroArch</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>ROM</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.libretro.rom</string>
+			</array>
+		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>All Files</string>
@@ -36,8 +46,6 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
@@ -52,11 +60,7 @@
 		<string>_ra_netplay._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>RetroArch uses the local network to find and communicate with AltServer to enable JIT.</string>
-	<key>ALTDeviceID</key>
-	<string>$(TARGET_DEVICE_IDENTIFIER)</string>
-	<key>NSCameraUsageDescription</key>
-	<string>YES</string>
+	<string>RetroArch uses the local network to find local Netplay participants.</string>
 	<key>UIApplicationExitsOnSuspend</key>
 	<false/>
 	<key>UIFileSharingEnabled</key>
@@ -65,7 +69,7 @@
 	<string>Launch Screen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
@@ -87,5 +91,256 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>GCSupportedGameControllers</key>
+	<array>
+		<dict>
+			<key>ProfileName</key>
+			<string>ExtendedGamepad</string>
+		</dict>
+		<dict>
+			<key>ProfileName</key>
+			<string>DirectionalGamepad</string>
+		</dict>
+		<dict>
+			<key>ProfileName</key>
+			<string>MicroGamepad</string>
+		</dict>
+	</array>
+	<key>GCSupportsControllerUserInteraction</key>
+	<true/>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>ROM file</string>
+			<key>UTTypeIconFiles</key>
+			<array/>
+			<key>UTTypeIdentifier</key>
+			<string>com.libretro.rom</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>.</string>
+					<string>128</string>
+					<string>20</string>
+					<string>2hd</string>
+					<string>32x</string>
+					<string>40</string>
+					<string>60</string>
+					<string>68k</string>
+					<string>7z</string>
+					<string>88d</string>
+					<string>8xg</string>
+					<string>8xk</string>
+					<string>8xp</string>
+					<string>98d</string>
+					<string>V32</string>
+					<string>a0</string>
+					<string>a26</string>
+					<string>a52</string>
+					<string>a78</string>
+					<string>adf</string>
+					<string>adz</string>
+					<string>atr</string>
+					<string>atx</string>
+					<string>ay</string>
+					<string>b0</string>
+					<string>bas</string>
+					<string>bin</string>
+					<string>bms</string>
+					<string>bs</string>
+					<string>bsx</string>
+					<string>car</string>
+					<string>cas</string>
+					<string>cbn</string>
+					<string>ccd</string>
+					<string>cdf</string>
+					<string>cdg</string>
+					<string>cdt</string>
+					<string>cgb</string>
+					<string>chd</string>
+					<string>chf</string>
+					<string>cmd</string>
+					<string>col</string>
+					<string>com</string>
+					<string>cpr</string>
+					<string>crt</string>
+					<string>cso</string>
+					<string>cue</string>
+					<string>d2m</string>
+					<string>d4m</string>
+					<string>d64</string>
+					<string>d6z</string>
+					<string>d71</string>
+					<string>d7z</string>
+					<string>d80</string>
+					<string>d81</string>
+					<string>d82</string>
+					<string>d88</string>
+					<string>d8z</string>
+					<string>d98</string>
+					<string>dat</string>
+					<string>dcm</string>
+					<string>dim</string>
+					<string>dirksimple</string>
+					<string>dmg</string>
+					<string>dms</string>
+					<string>dsi</string>
+					<string>dsk</string>
+					<string>dtf</string>
+					<string>dup</string>
+					<string>dx2</string>
+					<string>easyrpg</string>
+					<string>elf</string>
+					<string>exe</string>
+					<string>fd</string>
+					<string>fdd</string>
+					<string>fdi</string>
+					<string>fds</string>
+					<string>fig</string>
+					<string>g41</string>
+					<string>g4z</string>
+					<string>g64</string>
+					<string>g6z</string>
+					<string>game</string>
+					<string>gb</string>
+					<string>gba</string>
+					<string>gbc</string>
+					<string>gbs</string>
+					<string>gd3</string>
+					<string>gd7</string>
+					<string>gen</string>
+					<string>gg</string>
+					<string>gym</string>
+					<string>gz</string>
+					<string>hdd</string>
+					<string>hdf</string>
+					<string>hdi</string>
+					<string>hdm</string>
+					<string>hdn</string>
+					<string>hdz</string>
+					<string>hes</string>
+					<string>ids</string>
+					<string>img</string>
+					<string>info</string>
+					<string>int</string>
+					<string>ipf</string>
+					<string>iso</string>
+					<string>k7</string>
+					<string>kcr</string>
+					<string>kss</string>
+					<string>ldb</string>
+					<string>lha</string>
+					<string>lnx</string>
+					<string>lyx</string>
+					<string>m3u</string>
+					<string>m5</string>
+					<string>m7</string>
+					<string>md</string>
+					<string>mdf</string>
+					<string>mds</string>
+					<string>mdx</string>
+					<string>mgw</string>
+					<string>mx1</string>
+					<string>mx2</string>
+					<string>n64</string>
+					<string>nbz</string>
+					<string>ndd</string>
+					<string>nds</string>
+					<string>neo</string>
+					<string>nes</string>
+					<string>ngc</string>
+					<string>ngp</string>
+					<string>ngpc</string>
+					<string>nhd</string>
+					<string>nib</string>
+					<string>npc</string>
+					<string>nrg</string>
+					<string>nsf</string>
+					<string>nsfe</string>
+					<string>o</string>
+					<string>ogv</string>
+					<string>p00</string>
+					<string>pak</string>
+					<string>pbp</string>
+					<string>pc2</string>
+					<string>pce</string>
+					<string>pco</string>
+					<string>pcv2</string>
+					<string>prg</string>
+					<string>prx</string>
+					<string>ri</string>
+					<string>rom</string>
+					<string>rp9</string>
+					<string>rzx</string>
+					<string>sap</string>
+					<string>sc</string>
+					<string>scl</string>
+					<string>sf</string>
+					<string>sfc</string>
+					<string>sg</string>
+					<string>sgb</string>
+					<string>sgd</string>
+					<string>sgx</string>
+					<string>slave</string>
+					<string>smc</string>
+					<string>smd</string>
+					<string>sms</string>
+					<string>sna</string>
+					<string>spc</string>
+					<string>st</string>
+					<string>sv</string>
+					<string>swc</string>
+					<string>t64</string>
+					<string>tap</string>
+					<string>tfd</string>
+					<string>thd</string>
+					<string>tic</string>
+					<string>toc</string>
+					<string>trd</string>
+					<string>trn</string>
+					<string>tvcwav</string>
+					<string>tzx</string>
+					<string>u1</string>
+					<string>uae</string>
+					<string>unf</string>
+					<string>unif</string>
+					<string>v32</string>
+					<string>v64</string>
+					<string>vb</string>
+					<string>vboy</string>
+					<string>vec</string>
+					<string>vfl</string>
+					<string>vgm</string>
+					<string>vgz</string>
+					<string>voc</string>
+					<string>vsf</string>
+					<string>wasm</string>
+					<string>wav</string>
+					<string>ws</string>
+					<string>wsc</string>
+					<string>x64</string>
+					<string>x6z</string>
+					<string>xdf</string>
+					<string>xex</string>
+					<string>xfd</string>
+					<string>z1</string>
+					<string>z3</string>
+					<string>z64</string>
+					<string>z80</string>
+					<string>zip</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>com.libretro.rom</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

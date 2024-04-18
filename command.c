@@ -1173,9 +1173,17 @@ bool command_event_save_config(
 #endif
    if (path_exists && config_save_file(config_path))
    {
+#if IOS
+      char tmp[PATH_MAX_LENGTH] = {0};
+      fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+            tmp);
+#else
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
+#endif
       RARCH_LOG("[Config]: %s\n", s);
       return true;
    }

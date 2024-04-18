@@ -6718,8 +6718,15 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 
    /* Start browsing from current directory */
    get_current_menu_value(menu_st, current_value, sizeof(current_value));
+#if IOS
+   char tmp[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
+   if (!path_is_directory(tmp))
+      current_value[0] = '\0';
+#else
    if (!path_is_directory(current_value))
       current_value[0] = '\0';
+#endif
 
    filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));

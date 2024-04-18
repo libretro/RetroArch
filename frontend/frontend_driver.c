@@ -185,6 +185,18 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    s[2] = 'l';
    s[3] = '\0';
    return true;
+#elif defined(IOS)
+   s[0] = 'f';
+   s[1] = 'r';
+   s[2] = 'a';
+   s[3] = 'm';
+   s[4] = 'e';
+   s[5] = 'w';
+   s[6] = 'o';
+   s[7] = 'r';
+   s[8] = 'k';
+   s[9] = '\0';
+   return true;
 #elif defined(__APPLE__) || defined(__MACH__)
    s[0] = 'd';
    s[1] = 'y';
