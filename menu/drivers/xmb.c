@@ -542,14 +542,12 @@ const char* xmb_theme_ident(void)
    {
       case XMB_ICON_THEME_FLATUI:
          return "flatui";
-      case XMB_ICON_THEME_RETROACTIVE:
-         return "retroactive";
+      case XMB_ICON_THEME_FLATUX:
+         return "flatux";
       case XMB_ICON_THEME_RETROSYSTEM:
          return "retrosystem";
       case XMB_ICON_THEME_PIXEL:
          return "pixel";
-      case XMB_ICON_THEME_NEOACTIVE:
-         return "neoactive";
       case XMB_ICON_THEME_SYSTEMATIC:
          return "systematic";
       case XMB_ICON_THEME_DOTART:
