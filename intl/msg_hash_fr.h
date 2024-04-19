@@ -11270,10 +11270,6 @@ MSG_HASH(
    "Minimaliste"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX,
-   "Minimaliste UX"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
    "Monochrome inversé"
    )
