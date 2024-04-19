@@ -86,7 +86,10 @@ function find_dylib() {
     fi
 }
 
-if [ "$1" = "appstore" ] ; then
+if [ "$1" = "all" ] ; then
+    get_all_cores
+    dylibs=(${allcores[*]})
+elif [ "$1" = "appstore" ] ; then
     get_all_cores
     exports=(
         mupen64plus_next

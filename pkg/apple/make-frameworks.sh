@@ -31,11 +31,7 @@ for dylib in "$BASE_DIR"/modules/*.dylib ; do
     fwDir="$BASE_DIR/Frameworks/${fwName}.framework"
     mkdir -p "$fwDir"
     lipo -create "$dylib" -output "$fwDir/$fwName"
-    if codesign --display -r- "$fwDir/$fwName" 2>&1 | grep -q "${CODE_SIGN_IDENTITY_FOR_ITEMS}" ; then
-        echo "$fwName already signed"
-    else
-        echo "signing $fwName"
-        codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir/$fwName"
-    fi
+    echo "signing $fwName"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
     sed -e "s,%CORE%,$fwName," -e "s,%IDENTIFIER%,$identifier," iOS/fw.tmpl > "$fwDir/Info.plist"
 done
