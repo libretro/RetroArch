@@ -1,4 +1,18 @@
 # Future
+- AI: Revert AI translation to previous version (fix for translation not working with HW rendered cores)
+- CHEEVOS: Build a default RetroAchievements memory map when no RetroAchievements game is loaded
+- CHEEVOS: Update to rcheevos 11.2
+- INPUT/MFI: Pressure sensitive left/right triggers
+- INPUT/MFI: Fix Start + L1/L2/R2 combinations
+- INPUT/MFI: Support strong and weak rumble
+- IOS: Fix ios-arm64 nightly build crash
+- IOS/tvOS: Various QoL improvements
+- MENU: New function in Quick Menu: Add to Playlist
+- MENU/XMB: New theme: FlatUX, designed to merge FlatUI and Retroactive themes into a single, unified design
+- VIDEO/VULKAN: Add support for A2R10G10B10 HDR format
+- WAYLAND: Ignore configure events during splash (fix not remembering window size)
+- WAYLAND: Use frontend signal handler to quit (fix quit by window close)
+- WAYLAND: Commit viewport resizes (window resize is more responsive)
 
 # 1.18.0
 - AI: Fix narrator language when AI translation and menu languages are different
