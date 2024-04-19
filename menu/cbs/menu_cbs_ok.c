@@ -4008,10 +4008,10 @@ static int action_ok_path_manual_scan_directory(const char *path,
        * can start with /private and this ensures the path starts with it.
        * This will allow the path to be properly substituted when
        * fill_pathname_expand_special() is called. */
-      char real_content_dir[PATH_MAX_LENGTH];
-      real_content_dir[0] = '\0';
-      realpath(content_dir, real_content_dir);
-      strlcpy(content_dir, real_content_dir, sizeof(content_dir));
+      char tmp_dir[PATH_MAX_LENGTH];
+      tmp_dir[0] = '\0';
+      fill_pathname_expand_special(tmp_dir, content_dir, sizeof(content_dir));
+      realpath(tmp_dir, content_dir);
    }
 #endif
 
