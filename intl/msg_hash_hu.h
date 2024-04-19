@@ -6915,6 +6915,10 @@ MSG_HASH(
    "Az AI szolgáltatás eredménye"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "Fordítás megjelenítése szövegrátétként (Kép mód), felolvasása (Beszéd mód), vagy a rendszer narrátorának használata (Narrátor)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Az AI szolgáltatás URL-je"
    )

@@ -10610,10 +10610,6 @@ MSG_HASH(
    "平面 (FlatUI)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX,
-   "平面 (FlatUX)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
    "單色白 (Monochrome)"
    )
