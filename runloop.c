@@ -1903,6 +1903,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          unsigned rotation       = *(const unsigned*)data;
          bool video_allow_rotate = settings->bools.video_allow_rotate;
 
+         RARCH_DBG("[Environ]: SET_ROTATION: %u\n", rotation);
          if (sys_info)
             sys_info->core_requested_rotation = rotation;
 
