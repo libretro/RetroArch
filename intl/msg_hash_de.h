@@ -6469,7 +6469,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ADDED_TO_PLAYLIST,
-   "Zur Playlist hinzugefügt"
+   "Zur Wiedergabeliste hinzugefügt"
    )
 MSG_HASH(
    MSG_ADD_TO_PLAYLIST_FAILED,
@@ -6812,7 +6812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Übersetzung als Text-Overlay (Bildmodus), als Text-To-Speech (Sprachmodus) abspielen oder einen System-Erzähler wie NVDA (Erzählermodus) verwenden."
+   "Übersetzung als Text Overlay (Bildmodus), als Text To Speech (Sprachmodus) abspielen oder einen System Erzähler wie NVDA (Erzählermodus) verwenden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
