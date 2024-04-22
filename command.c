@@ -1173,9 +1173,17 @@ bool command_event_save_config(
 #endif
    if (path_exists && config_save_file(config_path))
    {
+#if IOS
+      char tmp[PATH_MAX_LENGTH] = {0};
+      fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+            tmp);
+#else
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
+#endif
       RARCH_LOG("[Config]: %s\n", s);
       return true;
    }
@@ -1560,7 +1568,7 @@ void command_event_set_replay_auto_index(settings_t *settings)
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
-   bool replay_auto_index         = settings->bools.replay_auto_index;
+   bool replay_auto_index            = settings->bools.replay_auto_index;
    bool show_hidden_files            = settings->bools.show_hidden_files;
 
    if (!replay_auto_index)
@@ -1609,9 +1617,10 @@ void command_event_set_replay_auto_index(settings_t *settings)
 
    configuration_set_int(settings, settings->ints.replay_slot, max_idx);
 
-   RARCH_LOG("[Replay]: %s: #%d\n",
-         msg_hash_to_str(MSG_FOUND_LAST_REPLAY_SLOT),
-         max_idx);
+   if (max_idx)
+      RARCH_LOG("[Replay]: %s: #%d\n",
+            msg_hash_to_str(MSG_FOUND_LAST_REPLAY_SLOT),
+            max_idx);
 }
 
 void command_event_set_replay_garbage_collect(

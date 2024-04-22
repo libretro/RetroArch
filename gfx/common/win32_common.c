@@ -1061,9 +1061,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
-            if (ui_menubar_enable)
-               win32_menu_loop(main_window.hwnd, wparam);
+            win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
    }
@@ -2328,7 +2326,7 @@ bool win32_suspend_screensaver(void *data, bool enable)
 
 static bool win32_monitor_set_fullscreen(
       unsigned width, unsigned height,
-      unsigned refresh, char *dev_name)
+      unsigned refresh, bool interlaced, char *dev_name)
 {
    DEVMODE devmode;
    memset(&devmode, 0, sizeof(devmode));
@@ -2339,6 +2337,11 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmFields           = DM_PELSWIDTH
                               | DM_PELSHEIGHT
                               | DM_DISPLAYFREQUENCY;
+#if !(_MSC_VER && (_MSC_VER < 1600))
+   devmode.dmDisplayFlags     = interlaced ? DM_INTERLACED : 0;
+   if (interlaced)
+      devmode.dmFields       |= DM_DISPLAYFLAGS;
+#endif
    return win32_change_display_settings(dev_name, &devmode,
          CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
@@ -2382,7 +2385,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          *style          = WS_POPUP | WS_VISIBLE;
 
          if (win32_monitor_set_fullscreen(*width, *height,
-               (int)refresh_rate, current_mon->szDevice))
+               (int)refresh_rate, false, current_mon->szDevice))
          {
             RARCH_LOG("[Video]: Fullscreen set to %ux%u @ %uHz on device %s.\n",
                   *width, *height, (int)refresh_rate, current_mon->szDevice);

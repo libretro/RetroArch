@@ -218,7 +218,7 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-#if defined(_XBOX1)
+#if defined(_XBOX1) || defined (__WINRT__)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[256];
    char buffer[256];
@@ -227,7 +227,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    msg_new[0]        = buffer[0] = '\0';
    snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
          FILE_PATH_PROGRAM_NAME, tag_v, fmt);
+#if defined(__WINRT__)
+   vsnprintf(buffer, sizeof(buffer), msg_new, ap);
+#else
    wvsprintf(buffer, msg_new, ap);
+#endif
    OutputDebugStringA(buffer);
 #elif defined(ANDROID)
    verbosity_state_t *g_verbosity = &main_verbosity_st;
@@ -365,11 +369,12 @@ void RARCH_DBG(const char *fmt, ...)
 {
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 0)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_LOG_V(FILE_PATH_LOG_DBG, fmt, ap);
@@ -381,10 +386,12 @@ void RARCH_LOG(const char *fmt, ...)
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
 
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 1)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_LOG_V(FILE_PATH_LOG_INFO, fmt, ap);
@@ -404,10 +411,12 @@ void RARCH_WARN(const char *fmt, ...)
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
 
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 2)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_WARN_V(FILE_PATH_LOG_WARN, fmt, ap);
@@ -419,8 +428,10 @@ void RARCH_ERR(const char *fmt, ...)
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
 
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_ERR_V(FILE_PATH_LOG_ERROR, fmt, ap);

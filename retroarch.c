@@ -3038,7 +3038,6 @@ static void dir_check_config(void)
    /* PORT */
    ENSURE_DIRECTORY(settings->paths.directory_video_shader);
    ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVESTATE));
-   ENSURE_DIRECTORY(settings->paths.directory_resampler);
    ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVEFILE));
    ENSURE_DIRECTORY(settings->paths.directory_screenshot);
    ENSURE_DIRECTORY(settings->paths.directory_system);
@@ -3085,9 +3084,6 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
    access_state_t *access_st       = access_state_get_ptr();
 #endif
-#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
-#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
 #endif
@@ -3104,12 +3100,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          input_overlay_unload();
 #endif
-#ifdef HAVE_TRANSLATE
-         translation_release(true);
-#ifdef HAVE_GFX_WIDGETS
-         if (p_dispwidget->ai_service_overlay_state != 0)
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
+         /* Because the overlay is a display widget,
+          * it's going to be written
+          * over the menu, so we unset it here. */
+         if (dispwidget_get_ptr()->ai_service_overlay_state != 0)
             gfx_widgets_ai_service_overlay_unload();
-#endif
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -3178,16 +3174,11 @@ bool command_event(enum event_command cmd, void *data)
                   if (is_accessibility_enabled(
                            accessibility_enable,
                            access_st->enabled))
-                     navigation_say(
+                     accessibility_speak_priority(
                            accessibility_enable,
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
-#endif
-                  translation_release(true);
                   command_event(CMD_EVENT_UNPAUSE, NULL);
                }
                else /* Pause on call */
@@ -3206,24 +3197,18 @@ bool command_event(enum event_command cmd, void *data)
                 * Also, this mode is required for "auto" translation
                 * packages, since you don't want to pause for that.
                 */
-               if (access_st->ai_service_auto != 0)
+               if (access_st->ai_service_auto == 2)
                {
                   /* Auto mode was turned on, but we pressed the
                    * toggle button, so turn it off now. */
-                  translation_release(true);
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
+                  access_st->ai_service_auto = 0;
+#ifdef HAVE_MENU_WIDGETS
+                  gfx_widgets_ai_service_overlay_unload();
 #endif
                }
-               else
+               else 
                {
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
-                  else
-#endif
-                     command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
                }
             }
 #endif
@@ -4351,11 +4336,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 #ifdef HAVE_LAKKA
-         system("(sleep 1 && shutdown -P now) & disown");
+         system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
 #else
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
@@ -4366,11 +4351,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 #ifdef HAVE_LAKKA
-         system("(sleep 1 && shutdown -r now) & disown");
+         system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
 #else
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
@@ -4438,7 +4423,80 @@ bool command_event(enum event_command cmd, void *data)
                      runloop_msg_queue_push(
                            msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if TARGET_OS_TV
+                     update_topshelf();
+#endif
                   }
+               }
+            }
+            break;
+         }
+         case CMD_EVENT_ADD_TO_PLAYLIST:
+         {
+            struct string_list *str_list = (struct string_list*)data;
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings_t *settings = config_get_ptr();
+
+            if (str_list)
+            {
+               if (str_list->size >= 7)
+               {
+                  playlist_config_t playlist_config;
+                  playlist_t * playlist;
+
+                  struct playlist_entry entry     = {0};
+                  bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
+
+                  entry.path      = str_list->elems[0].data; /* content_path */
+                  entry.label     = str_list->elems[1].data; /* content_label */
+                  entry.core_path = str_list->elems[2].data; /* core_path */
+                  entry.core_name = str_list->elems[3].data; /* core_name */
+                  entry.crc32     = str_list->elems[4].data; /* crc32 */
+                  entry.db_name   = str_list->elems[5].data; /* db_name */
+
+                  /* load the playlist */
+                  playlist_config.capacity            = COLLECTION_SIZE;
+                  playlist_config.old_format          = settings->bools.playlist_use_old_format;
+                  playlist_config.compress            = settings->bools.playlist_compression;
+                  playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+                  playlist_config_set_base_content_directory(&playlist_config,
+                        settings->bools.playlist_portable_paths
+                        ? settings->paths.directory_menu_content
+                        : NULL);
+                  playlist_config_set_path(&playlist_config, str_list->elems[6].data);
+                  playlist = playlist_init(&playlist_config);
+
+                  /* Check whether favourties playlist is at capacity */
+                  if (playlist_size(playlist) >=
+                        playlist_capacity(playlist))
+                  {
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+                     return true;
+                  }
+
+                  /* Write playlist entry */
+                  if (playlist_push(playlist, &entry))
+                  {
+                     enum playlist_sort_mode current_sort_mode =
+                        playlist_get_sort_mode(playlist);
+
+                     /* New addition - need to resort if option is enabled */
+                     if (     (playlist_sort_alphabetical
+                           && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+                           || (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
+                        playlist_qsort(playlist);
+
+                     playlist_write_file(playlist);
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADDED_TO_PLAYLIST), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  }
+                  menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+                  if (menu_st->driver_ctx->environ_cb)
+                     menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+                           NULL, menu_st->userdata);
                }
             }
             break;
@@ -4568,12 +4626,12 @@ bool command_event(enum event_command cmd, void *data)
                   access_st->enabled))
             {
                if (paused)
-                  navigation_say(
+                  accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_PAUSED), 10);
                else
-                  navigation_say(
+                  accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
@@ -4981,6 +5039,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_msg)
                   verbose                      = *show_msg;
 
+               if (!settings->bools.notification_show_disk_control)
+                  verbose                      = false;
+
                disk_control_set_eject_state(
                      &sys_info->disk_control, eject, verbose);
 
@@ -5013,6 +5074,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_msg)
                   verbose     = *show_msg;
 
+               if (!settings->bools.notification_show_disk_control)
+                  verbose     = false;
+
                disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
             else
@@ -5036,6 +5100,9 @@ bool command_event(enum event_command cmd, void *data)
 
                if (show_msg)
                   verbose     = *show_msg;
+
+               if (!settings->bools.notification_show_disk_control)
+                  verbose     = false;
 
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }
@@ -5321,7 +5388,7 @@ bool command_event(enum event_command cmd, void *data)
                if (is_accessibility_enabled(
                         accessibility_enable,
                         access_st->enabled))
-                  navigation_say(
+                  accessibility_speak_priority(
                         accessibility_enable,
                         accessibility_narrator_speech_speed,
                         (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
@@ -5336,7 +5403,7 @@ bool command_event(enum event_command cmd, void *data)
                      access_st->enabled)
                   && (ai_service_mode == 2)
                   && is_narrator_running(accessibility_enable))
-               navigation_say(
+               accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
                      (char*)msg_hash_to_str(MSG_AI_SERVICE_STOPPED),
@@ -5347,7 +5414,9 @@ bool command_event(enum event_command cmd, void *data)
                bool paused = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
                if (data)
                   paused = *((bool*)data);
-
+               if (     (access_st->ai_service_auto == 0)
+                     && !settings->bools.ai_service_pause)
+                  access_st->ai_service_auto = 1;
                run_translation_service(settings, paused);
             }
 #endif
@@ -6366,7 +6435,12 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    path_stats = path_stat(path);
 
    /* Check if path is a directory */
-   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   if (
+       ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+#if IOS
+       && !string_ends_with(path, ".framework")
+#endif
+       )
    {
       path_clear(RARCH_PATH_CORE);
 
@@ -7395,7 +7469,7 @@ bool retroarch_main_init(int argc, char *argv[])
    if (is_accessibility_enabled(
             accessibility_enable,
             access_st->enabled))
-      navigation_say(
+      accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
             (char*)msg_hash_to_str(MSG_ACCESSIBILITY_STARTUP),
@@ -8112,10 +8186,6 @@ bool retroarch_main_quit(void)
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
-#ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st     = access_state_get_ptr();
-#endif
-   struct retro_system_av_info *av_info = &video_st->av_info;
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
@@ -8206,17 +8276,6 @@ bool retroarch_main_quit(void)
    runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
-#endif
-
-#ifdef HAVE_ACCESSIBILITY
-   translation_release(false);
-#ifdef HAVE_THREADS
-   if (access_st->image_lock)
-   {
-      slock_free(access_st->image_lock);
-      access_st->image_lock = NULL;
-   }
-#endif
 #endif
 
    return true;
@@ -8343,7 +8402,7 @@ void retroarch_favorites_deinit(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-bool navigation_say(
+bool accessibility_speak_priority(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
       const char* speak_text, int priority)
@@ -8353,48 +8412,29 @@ bool navigation_say(
             accessibility_enable,
             access_st->enabled))
    {
-      const char *voice    = get_user_language_iso639_1(false);
-      bool native_narrator = accessibility_speak_priority(accessibility_narrator_speech_speed,
-         speak_text, priority, voice);
 
-      if (!native_narrator)
-      {
-         /*
-          * The following method is a fallback for other platforms to use the
-          * AI Service url to do the TTS.  However, since the playback is done
-          * via the audio mixer, which only processes the audio while the
-          * core is running, this playback method won't work.  When the audio
-          * mixer can handle playing streams while the core is paused, then
-          * we can use this.
-          */
+      frontend_ctx_driver_t *frontend =
+         frontend_state_get_ptr()->current_frontend_ctx;
+
+      RARCH_LOG("Spoke: %s\n", speak_text);
+
+      if (frontend && frontend->accessibility_speak)
+         return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
+               priority);
+      /* The following method is a fallback for other platforms to use the
+         AI Service url to do the TTS.  However, since the playback is done
+         via the audio mixer, which only processes the audio while the
+         core is running, this playback method won't work.  When the audio
+         mixer can handle playing streams while the core is paused, then
+         we can use this. */
 #if 0
 #if defined(HAVE_NETWORKING)
          return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
 #endif
-      }
    }
 
    return true;
 }
 
-bool accessibility_speak_priority(
-      unsigned accessibility_narrator_speech_speed,
-      const char *speak_text,
-      int priority,
-      const char *voice)
-{
-   frontend_ctx_driver_t *frontend =
-      frontend_state_get_ptr()->current_frontend_ctx;
-
-   RARCH_LOG("Spoke: %s\n", speak_text);
-
-   if (frontend && frontend->accessibility_speak)
-      return frontend->accessibility_speak(accessibility_narrator_speech_speed,
-            speak_text, priority, voice);
-
-   RARCH_LOG("Platform not supported for accessibility.\n");
-
-   return false;
-}
 #endif

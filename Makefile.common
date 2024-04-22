@@ -1066,8 +1066,12 @@ ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
    DEFINES += -DHAVE_LAKKA_NIGHTLY
 endif
 
-ifneq ($(HAVE_LAKKA_CANARY), "")
+ifneq ($(HAVE_LAKKA_CANARY),)
    DEFINES += -DHAVE_LAKKA_CANARY=\"${HAVE_LAKKA_CANARY}\"
+endif
+
+ifeq ($(HAVE_LAKKA_DEVBUILD), 1)
+   DEFINES += -DHAVE_LAKKA_DEVBUILD
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
@@ -2115,7 +2119,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
+      DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
       ifneq ($(HAVE_THREADS), 1)
@@ -2430,6 +2434,12 @@ endif
 ifeq ($(HAVE_WEBOS), 1)
   DEFINES += -DWEBOS
 endif
+
+ifeq ($(HAVE_TEST_DRIVERS), 1)
+  DEFINES += -DHAVE_TEST_DRIVERS
+  OBJ += input/drivers_joypad/test_joypad.o
+endif
+
 
 #####################################
 ### Android Play Feature Delivery ###

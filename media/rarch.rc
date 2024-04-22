@@ -32,26 +32,26 @@ IDR_MENU MENU
         {
             POPUP "State Index"
             {
-                MENUITEM "-1 (Auto)", ID_M_STATE_INDEX_AUTO
-                MENUITEM "0", ID_M_STATE_INDEX_AUTO
-                MENUITEM "1", ID_M_STATE_INDEX_AUTO
-                MENUITEM "2", ID_M_STATE_INDEX_AUTO
-                MENUITEM "3", ID_M_STATE_INDEX_AUTO
-                MENUITEM "4", ID_M_STATE_INDEX_AUTO
-                MENUITEM "5", ID_M_STATE_INDEX_AUTO
-                MENUITEM "6", ID_M_STATE_INDEX_AUTO
-                MENUITEM "7", ID_M_STATE_INDEX_AUTO
-                MENUITEM "8", ID_M_STATE_INDEX_AUTO
-                MENUITEM "9", ID_M_STATE_INDEX_AUTO
+                MENUITEM "Auto", ID_M_STATE_INDEX_AUTO
+                MENUITEM "0", ID_M_STATE_INDEX_0
+                MENUITEM "1", ID_M_STATE_INDEX_1
+                MENUITEM "2", ID_M_STATE_INDEX_2
+                MENUITEM "3", ID_M_STATE_INDEX_3
+                MENUITEM "4", ID_M_STATE_INDEX_4
+                MENUITEM "5", ID_M_STATE_INDEX_5
+                MENUITEM "6", ID_M_STATE_INDEX_6
+                MENUITEM "7", ID_M_STATE_INDEX_7
+                MENUITEM "8", ID_M_STATE_INDEX_8
+                MENUITEM "9", ID_M_STATE_INDEX_9
             }
             MENUITEM "Load State", ID_M_LOAD_STATE
             MENUITEM "Save State", ID_M_SAVE_STATE
         }
         MENUITEM "Reset", ID_M_RESET
-        MENUITEM "Menu Toggle", ID_M_MENU_TOGGLE
         MENUITEM "Pause Toggle", ID_M_PAUSE_TOGGLE
-        MENUITEM "Mouse Grab Toggle", ID_M_MOUSE_GRAB
+        MENUITEM "Menu Toggle", ID_M_MENU_TOGGLE
         MENUITEM "Take Screenshot", ID_M_TAKE_SCREENSHOT
+        MENUITEM "Mouse Grab Toggle", ID_M_MOUSE_GRAB
     }
     POPUP "Window"
     {
@@ -68,7 +68,9 @@ IDR_MENU MENU
             MENUITEM "9x", ID_M_WINDOW_SCALE_9X
             MENUITEM "10x", ID_M_WINDOW_SCALE_10X
         }
+#ifdef HAVE_QT
         MENUITEM "Toggle Desktop Menu", ID_M_TOGGLE_DESKTOP
+#endif
         MENUITEM "Toggle Exclusive Full Screen", ID_M_FULL_SCREEN
         // Shader dialog is disabled for now, until video_threaded issues are fixed.
         //MENUITEM "Shader Parameters", ID_M_SHADER_PARAMETERS

@@ -510,9 +510,9 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       ssize_t port;
       for (port = 0; port < MAX_USERS; port++)
       {
-         if (port < sys_info->ports.size)
+         if (port < (ssize_t)sys_info->ports.size)
          {
-            unsigned device = (port < num_active_users)
+            unsigned device = (port < (ssize_t)num_active_users)
                   ? runloop_st->port_map[port]
                   : RETRO_DEVICE_NONE;
             runloop_st->secondary_core.retro_set_controller_port_device(

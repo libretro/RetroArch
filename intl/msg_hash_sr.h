@@ -134,10 +134,6 @@ MSG_HASH(
    "Otvori tradicionalni desktop interfejs."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Isključi kiosk režim (neophodan restart)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Prikaži sva podešavanja vezana za konfiguraciju."
    )
@@ -1125,10 +1121,6 @@ MSG_HASH(
    "Pregledač datoteka"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Izmeni podešavanja pregledača datoteka."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "Konfiguraciona datoteka."
    )
@@ -1275,10 +1267,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Kontroler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Drajver za kontroler."
    )
 
 MSG_HASH(
@@ -1816,10 +1804,6 @@ MSG_HASH(
    "Postavi visinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifičan odnos ekrana'."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Iseci oversken (neophodan restart)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Iseci nekoliko piksela oko ivice slike koji se obično ostavljaju praznim i ponekad sadrže nesmislene piksele."
    )
@@ -2026,6 +2010,12 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -2055,6 +2045,8 @@ MSG_HASH(
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
+
+
 
 
 /* Settings > User Interface > Views > Settings */

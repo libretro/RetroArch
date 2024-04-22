@@ -264,7 +264,7 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
 static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       const char *dir_fullpath, char *dir_name)
 {
-   int i;
+   size_t i;
    struct string_list *dir_list;
    char                dir_fullpath_slash[PATH_MAX_LENGTH];
 
@@ -272,6 +272,12 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
    fill_pathname_slash(dir_fullpath_slash, sizeof(dir_fullpath_slash));
 
    dir_list = dir_list_new(dir_fullpath_slash, NULL, false, true, true, true);
+
+   if (dir_list->size == 0)
+   {
+	   string_list_free(dir_list);
+	   return;
+   }
 
    file_list_reserve(manifest, manifest->size + dir_list->size);
    for (i = 0; i < dir_list->size; i++)
@@ -318,7 +324,7 @@ static struct string_list *task_cloud_sync_directory_map(void)
 static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = task_cloud_sync_directory_map();
-   int i;
+   size_t i;
 
    if (!(sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
    {
@@ -368,7 +374,10 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
    if (sync_state->current_manifest)
       count += sync_state->current_manifest->size;
 
-   task_set_progress(task, (val * 100) / count);
+   if (count != 0)
+	   task_set_progress(task, (val * 100) / count);
+   else
+	   task_set_progress(task, 100);
 }
 
 static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
@@ -490,7 +499,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    char                directory[PATH_MAX_LENGTH];
    char                filename[PATH_MAX_LENGTH];
    settings_t         *settings = config_get_ptr();
-   int                 i;
+   size_t              i;
 
    /* we're just fetching a file the server has, we can update this now */
    task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);

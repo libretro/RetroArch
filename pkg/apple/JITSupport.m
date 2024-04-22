@@ -25,6 +25,8 @@
 #endif
 
 #include <string/stdstring.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include "../../verbosity.h"
 
 extern int csops(pid_t pid, unsigned int ops, void * useraddr, size_t usersize);
@@ -100,6 +102,11 @@ void jb_start_altkit(void) {
 #if HAVE_ALTKIT
    // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
    if (jit_available())
+      return;
+
+   char fwpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_expand_special(fwpath, ":/Frameworks/flycast_libretro.framework", sizeof(fwpath));
+   if (!path_is_valid(fwpath))
       return;
 
    [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {

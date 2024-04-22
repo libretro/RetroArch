@@ -114,10 +114,6 @@ MSG_HASH(
    "Åbn den traditionelle skrivebords menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Deaktiver Kiosk-tilstand (Genstart Påkrævet)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vis alle konfigurationsrelaterede indstillinger."
    )
@@ -769,10 +765,6 @@ MSG_HASH(
    "Filhåndtering"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Skift filhåndteringsindstillinger."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    "Skift indstillingerne for spoling tilbage, spoling frem og slow motion."
    )
@@ -871,10 +863,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
    "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Controller driver der skal bruges."
    )
 
 MSG_HASH(
@@ -1114,6 +1102,12 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -1143,6 +1137,8 @@ MSG_HASH(
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
+
+
 
 
 /* Settings > User Interface > Views > Settings */

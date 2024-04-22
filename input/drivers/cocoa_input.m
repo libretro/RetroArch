@@ -31,6 +31,8 @@
 #include "../../driver.h"
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
+#include "../../ui/drivers/cocoa/cocoa_common.h"
+#include "../../ui/ui_companion_driver.h"
 
 #ifdef HAVE_COREMOTION
 #import <CoreMotion/CoreMotion.h>
@@ -649,7 +651,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
             break;
          if (controller.motion.sensorsRequireManualActivation)
          {
-            /* This is a bug, we assume if you turn on/off either 
+            /* This is a bug, we assume if you turn on/off either
              * you want both on/off */
             if (     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
                   || (action == RETRO_SENSOR_GYROSCOPE_ENABLE))

@@ -123,7 +123,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_OPENDINGUX_FBDEV)
    &gfx_ctx_opendingux_fbdev,
 #endif
-#if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
+#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_ANGLE)
    &gfx_ctx_wgl,
 #endif
 #if defined(__WINRT__) && defined(HAVE_OPENGLES)
@@ -2563,6 +2563,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
    video_info->shader_subframes            = settings->uints.video_shader_subframes;
+   video_info->current_subframe            = 0;
+   video_info->scan_subframes              = settings->bools.video_scan_subframes;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
    video_info->runahead                    = settings->bools.run_ahead_enabled;
@@ -3920,6 +3922,7 @@ void video_driver_frame(const void *data, unsigned width,
          && video_st->current_video
          && video_st->current_video->frame)
    {
+      video_info.current_subframe = 0;
       if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
@@ -4342,7 +4345,11 @@ void video_frame_rest(video_driver_state_t *video_st,
    else if (frame_time < frame_time_target)
       frame_time_over_count--;
 
+#if !defined(DJGPP) && defined(__STDC_C99__) || defined(__STDC_C11__)
+   if (llabs(frame_time - frame_time_target) < frame_time_target * 1.002f - frame_time_target)
+#else
    if (labs(frame_time - frame_time_target) < frame_time_target * 1.002f - frame_time_target)
+#endif
       frame_time_near_count++;
    else
       frame_time_near_count--;
