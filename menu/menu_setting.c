@@ -9460,6 +9460,10 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].get_string_representation =
             &get_string_representation_input_mouse_index;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+
+      /* Preliminary code for the menu.
+       * I never got it working so I will let someone else do it */
+      /*
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
       CONFIG_UINT_ALT(
@@ -9481,7 +9485,7 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
-
+      */
       CONFIG_ACTION_ALT(
             list, list_info,
             bind_all[user],
