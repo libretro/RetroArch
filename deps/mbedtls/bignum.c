@@ -1152,8 +1152,6 @@ void mpi_mul_hlp( size_t i, mbedtls_mpi_uint *s, mbedtls_mpi_uint *d, mbedtls_mp
     }
 #endif /* MULADDC_HUIT */
 
-    t++;
-
     do {
         *d += c; c = ( *d < c ); d++;
     }

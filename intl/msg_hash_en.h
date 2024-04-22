@@ -241,10 +241,6 @@ MSG_HASH(
 /* Settings > Video > Output */
 
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimise for Wii U GamePad (Restart Required)"
-   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -483,10 +479,6 @@ MSG_HASH(
 
 /* Settings > Input */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Polling Behaviour (Restart Required)"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Remap the Controls for This Core"
@@ -838,6 +830,12 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -990,16 +988,8 @@ MSG_HASH(
    "Show 'Favourites'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Show the 'Favourites' menu. (Restart Required on Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Show 'Net-play'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Show the 'Net-play' menu. (Restart Required on Ozone/XMB)"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -1016,6 +1006,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Show the 'Add to Favourites' option."
    )
+
+
 
 /* Settings > User Interface > Views > Settings */
 
@@ -1042,10 +1034,6 @@ MSG_HASH(
 
 /* Settings > AI Service */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
-   "Vertical padding to apply to the text overlay, when the service is in Text mode. More padding will push the text towards the centre of the screen."
-   )
 
 /* Settings > Accessibility */
 
@@ -2134,10 +2122,6 @@ MSG_HASH(
    "Password is incorrect."
    )
 MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Searching has not been initialised/started"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    "There's not enough room. The maximum number of simultaneous cheats is 100."
    )
@@ -2148,10 +2132,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_ADD_BOTTOM_SUCCESS,
    "New cheat added to the bottom of the list."
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Net-play host full"
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,

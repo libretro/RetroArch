@@ -123,8 +123,19 @@ bool drm_get_connector(int fd, unsigned monitor_index)
 
 float drm_calc_refresh_rate(drmModeModeInfo *mode)
 {
-   float refresh_rate = (mode->clock * 1000.0f) / (mode->htotal * mode->vtotal);
-   return refresh_rate;
+   unsigned int num, den;
+
+   num = mode->clock;
+   den = mode->htotal * mode->vtotal;
+
+   if (mode->flags & DRM_MODE_FLAG_INTERLACE)
+      num *= 2;
+   if (mode->flags & DRM_MODE_FLAG_DBLSCAN)
+      den *= 2;
+   if (mode->vscan > 1)
+      den *= mode->vscan;
+
+   return num * 1000.0f / den;
 }
 
 bool drm_get_encoder(int fd)

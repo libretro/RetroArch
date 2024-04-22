@@ -131,7 +131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Näytä työpöytävalikko"
+   "Avaa työpöytävalikko"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
@@ -1253,10 +1253,6 @@ MSG_HASH(
    "Tiedostoselain"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Muuta tiedostoselaimen asetuksia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "Kokoonpanotiedosto."
    )
@@ -1497,10 +1493,6 @@ MSG_HASH(
    "Ohjain"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Käytettävä ohjainajuri."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
    "SDL-kirjastoihin pohjautuva ohjainajuri."
    )
@@ -1714,10 +1706,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Valikko"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Käytettävä valikkoajuri. Vaatii uudelleenkäynnistyksen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -2009,10 +1997,6 @@ MSG_HASH(
    "Valitse mitä näyttöä käytetään."
    )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimoi Wii U GamePad:ille (uudelleenkäynnistys vaaditaan)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Käytä tarkkaa kaksinkertaista skaalausta Wii U:n Gamepadin ikkunoinnissa. Poista käytöstä näyttääksesi alkuperäisessä TV:n resoluutiossa."
@@ -2342,10 +2326,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Mukautettu ikkunan korkeus mitä käytetään, jos kuvasuhde on asetettu 'Mukautettu kuvasuhde'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Rajaa yliskannaus (uudelleenkäynnistys vaaditaan)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2884,10 +2864,6 @@ MSG_HASH(
    "Automaattisesti määrittää ohjaimet, joilla on profiili, Plug-and-Play-tyyliin."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Poista Windows-pikanäppäimet käytöstä (Uudelleenkäynnistys vaaditaan)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Pidä Win-näppäinyhdistelmät sovelluksen sisällä."
@@ -4092,10 +4068,6 @@ MSG_HASH(
    "Järjestelmätiedostot ovat sisälltökansiossa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Käytä sisältökansiota järejstelmän kansiona."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Tallenna kuvankaappaukset sisältökansioon"
    )
@@ -4199,7 +4171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Suodata tiedostoselaimessa näytettävät tiedostot tuetuilla tiedostopäätteillä."
+   "Suodata tiedostoja tiedostoselaimessa tuettujen tiedostopäätteiden mukaan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4215,7 +4187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "Avaa tiedostoselain viimeksi käytettyyn paikkaan, kun lataat sisältöä aloituskansiosta. Huomautus: Sijainti nollaantuu oletusarvoon uudelleenkäynnistyksen yhteydessä."
+   "Avaa tiedostoselain viimeksi käytetyssä sijainnissa, kun lataat sisältöä aloitushakemistosta. Huom: sijainti palautetaan oletusarvoon RetroArchin uudelleenkäynnistyessä."
    )
 
 /* Settings > Frame Throttle */
@@ -4567,10 +4539,6 @@ MSG_HASH(
    "Päällyksen esiasetus"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Valitse päällys tiedostoselaimesta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(Vaakakuva) Päällyksen skaala"
    )
@@ -4682,16 +4650,22 @@ MSG_HASH(
    "Näppäimistöpäällyksen esiasetus"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "Valitse näppäimistöpäällys tiedostoselaimesta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "Automaattinen näppäimistöpäällyksen skaalaus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
    "Näppäimistöpäällyksen peittävyys"
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Hiiren nopeus"
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -4707,10 +4681,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "Videon asettelujen polku"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Valitse videoasettelu tiedostoselaimesta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5210,7 +5180,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "Työpöytävalikko (Uudelleenkäynnistys vaaditaan)"
+   "Työpöytävalikko (uudelleenkäynnistys vaaditaan)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -5346,10 +5316,6 @@ MSG_HASH(
    "Näytä \"Asetukset\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Näytä \"Asetukset\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Aseta salasana saadaksesi \"Asetukset\"-käyttöön"
    )
@@ -5362,56 +5328,28 @@ MSG_HASH(
    "Näytä \"Suosikit\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Näytä \"Suosikit\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Näytä \"Kuvat\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Näytä \"Kuvat\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "Näytä \"Musiikki\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Näytä \"Musiikki\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "Näytä \"Videot\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Näytä \"Videot\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Näytä \"Verkkopeli\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Näytä \"Verkkopeli\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Näytä \"Historia\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Näytä viimeisimpien kohteiden \"Historia\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "Näytä \"Tuo sisältöä\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Näytä \"Tuo sisältöä\"-valikko. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -5434,20 +5372,12 @@ MSG_HASH(
    "Näytä \"Soittolistat\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Näytä \"Soittolistat\" (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Näytä \"Etsi\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Näytä sisällön etsintä -valinta. (Uudelleenkäynnistys vaaditaan Ozonea/XMB:tä käyttäessä)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Näytä \"sisällöttömät ytimet\""
+   "Näytä \"Sisällöttömät ytimet\""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -5700,6 +5630,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Näytä \"Lisää suosikkeihin\"-valinta."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Lisää soittolistaan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Lisää sisältö soittolistalle."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Luo uusi soittolista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Luo uusi soittolista ja lisää nykyinen kohde siihen."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Näytä \"Liitä ydin\""
@@ -6011,10 +5959,6 @@ MSG_HASH(
    "Tekoälypalvelun tuloste"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Näytä käännös kuvapäällyksenä (Kuva-tila), suorana äänenä (Puhe), tekstistä puheeksi (Lukija) tai tekstipäällyksenä (Teksti)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Tekoälypalvelun osoite"
    )
@@ -6053,30 +5997,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Kieli johon palvelu kääntää. 'Oletus' on englanti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
-   "Tekoälypalvelun automaattinen kyselyviive"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_POLL_DELAY,
-   "Vähimmäisviive millisekunteina automaattisten kutsujen välillä. Laskee viivettä, mutta lisää prosessorin käyttöä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
-   "Tekoälypalvelun tekstin sijainnin muutos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_POSITION,
-   "Sijainnin muutos, kun palvelu on tekstitilassa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
-   "Tekoälypalvelun tekstin marginaali (%)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
-   "Pystysuuntainen lisämarginaali, joka lisätään tekstipäällykseen tekstitilassa. Enemmän marginaalia työntää tekstin lähemmäksi näytön keskiosaa."
    )
 
 /* Settings > Accessibility */
@@ -6506,6 +6426,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "Päivittäjän asetukset"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   "Muokkaa ydinpäivittäjän asetuksia"
    )
 
 /* Settings > Network > Updater */
@@ -8537,7 +8461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Avaa tiedostoselain viimeksi käytetyssä kansiossa, kun ladataan varjostimen esiasetuksia ja vaiheita."
+   "Tiedostoselain avautuu viimeksi käytetyssä hakemistossa ladattaessa varjostinasetuksia ja suoritusyksiköitä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -9052,26 +8976,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Kertojatila"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE,
-   "Tekstitila"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE,
-   "Teksti + lukija"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE,
-   "Kuva + lukija"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
-   "Alhaalla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
-   "Yläreuna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -9689,10 +9593,6 @@ MSG_HASH(
    "Valitse eri väriteema. Valitsemalla \"Mukautettu\" valikkoteemojen esiasetustiedostojen käyttö on mahdollista."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Valitse valikon teeman esiasetus tiedostoselaimesta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Läpinäkyvyys"
    )
@@ -10139,10 +10039,6 @@ MSG_HASH(
    "Otsikon marginaalin vaakasuuntainen siirtymä"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Ota käyttöön Asetukset-välilehti (Uudelleenkäynnistys vaaditaan)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Näytä Asetukset-välilehti, joka sisältää ohjelman asetukset."
    )
@@ -10285,16 +10181,8 @@ MSG_HASH(
    "Pidä vasen sivupalkki aina pienennettynä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Lyhennä soittolistojen nimet (uudelleenkäynnistys vaaditaan)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Poista valmistajan nimet soittolistoista. Esimerkiksi \"Sony - PlayStation\" muuttuu muotoon \"PlayStation\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Järjestä soittolistat nimen lyhentämisen jälkeen (uudelleenkäynnistys vaaditaan)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -10398,10 +10286,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "Käytä kuvakkeita PÄÄLLÄ/POIS-tekstin sijaan vaihtoarvoisten valikkoasetusten kohteille."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "Soittolistan kuvakkeet (Uudelleenkäynnistys vaaditaan)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -11817,22 +11701,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Ytimen asennus epäonnistui"
    )
 MSG_HASH(
-   MSG_AI_VIDEO_DRIVER_NOT_SUPPORTED,
-   "Videoajuri ei tue tekoälyaplvelua."
-   )
-MSG_HASH(
-   MSG_AI_AUTO_MODE_ENABLED,
-   "Automaattinen käännös käytössä."
-   )
-MSG_HASH(
-   MSG_AI_AUTO_MODE_DISABLED,
-   "Automaattinen käännös pois käytöstä."
-   )
-MSG_HASH(
-   MSG_AI_NOTHING_TO_TRANSLATE,
-   "Ei mitään käännettävää."
-   )
-MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Poista kaikki huijaukset painamalla oikealle viisi kertaa."
    )
@@ -12946,10 +12814,6 @@ MSG_HASH(
    "Skannataan"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Kansion skannaus valmistui"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Lähetetään komento"
    )
@@ -13250,44 +13114,8 @@ MSG_HASH(
    "Toisen instanssin luominen epäonnistui. Edelläajo käyttää nyt vain yhtä instanssia."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Tiedoston skannaus valmistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Huijaushaku käynnistettiin"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Huijaushaun käynnistäminen epäonnistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Etsintään ei ole aloitettu"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Uusien osumien määrä = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Lisätty %u vastaavuutta"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Vastaavuuksien lisääminen epäonnistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Luotiin koodi vastaavuudesta"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Koodin luominen epäonnistui"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Poista vastaavuus"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13326,32 +13154,8 @@ MSG_HASH(
    "Huijaus poistettu."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Levyn asettaminen epäonnistui"
-   )
-MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Viimeksi käytetyn levyn asetus epäonnistui."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Yhteys asiakkaaseen epäonnistui"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Yhteys isäntään epäonnistui"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Verkkopelin isäntä on täynnä"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "Sinulla on porttikielto tästä palvelimesta"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Otsakkeen vastaanottaminen isännältä epäonnistui"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13394,18 +13198,6 @@ MSG_HASH(
    "Korkein"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Varoitus: Resursseja puuttuu, käytä verkkopäivitintä, jos se on saatavilla"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Varoitus: Puutteelliset fontit valitulle kielelle, käytä verkkopäivitintä, jos se on saatavilla"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Varoitus: Kieltä ei tueta - käytetään englantia"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "Kopioidaan levyä..."
    )
@@ -13438,24 +13230,8 @@ MSG_HASH(
    "Virhe poistettaessa varjostimen esiasetusta."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Virheellinen arcade DAT -tiedosto valittu"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Valittu arcade DAT -tiedosto on liian suuri (riittämätön vapaa muisti)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Arcade DAT -tiedoston lataaminen epäonnistui (virheellinen muoto?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Manuaalisen skannauksen asetukset eivät kelpaa"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Kelvollista sisältöä ei havaittu"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
@@ -13674,6 +13450,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    "Avaa Windowsin tiedostojen käyttöoikeusasetukset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Avaa Windowsin käyttöoikeusasetukset ottaaksesi käyttöön broadFileSystemAccess-ominaisuuden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,

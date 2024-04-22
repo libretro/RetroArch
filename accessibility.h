@@ -31,36 +31,11 @@
 #endif
 
 #include "configuration.h"
-#include "tasks/tasks_internal.h"
-
-#ifdef HAVE_THREADS
-#include "rthreads/rthreads.h"
-#endif
 
 typedef struct
 {
-   /* The last request task, used to prepare and send the translation */
-   retro_task_t *request_task;
-
-   /* The last response task, used to parse costly translation data */
-   retro_task_t *response_task;
-
-   /* Timestamp of the last translation request */
-   retro_time_t last_call;
-
-   #ifdef HAVE_THREADS
-   /* Necessary because last_image is manipulated by task handlers */
-   slock_t *image_lock;
-   #endif
-
-   /* Frame captured during the last call to the translation service */
-   uint8_t *last_image;
-   unsigned last_image_size;
-
-   /* 1 if the automatic mode has been enabled, 0 otherwise */
    int ai_service_auto;
-
-   /* Text-to-speech narrator override flag */
+   /* Is text-to-speech accessibility turned on? */
    bool enabled;
 } access_state_t;
 
@@ -71,86 +46,46 @@ bool is_narrator_running(bool accessibility_enable);
 #endif
 
 /*
-   Invoke this method to send a request to the AI service.
-   It makes the following POST request using URL params:
-      – source_lang (optional): language code of the content currently running.
-      – target_lang (optional): language of the content to return.
-      – output: comma-separated list of formats that must be provided by the
-         service. Also lists supported sub-formats.
+   This function does all the stuff needed to translate the game screen,
+   using the URL given in the settings.  Once the image from the frame
+   buffer is sent to the server, the callback will write the translated
+   image to the screen.
 
-   The currently supported formats are:
-      – sound: raw audio to playback. (wav)
-      – text: text to be read through internal text-to-speech capabilities.
-         'subs' can be specified on top of that to explain that we are looking
-         for short text response in the manner of subtitles.
-      – image: image to display on top of the video feed. Widgets will be used
-         first if possible, otherwise we'll try to draw it directly on the
-         video buffer. (bmp, png, png-a) [All in 24-bits BGR formats]
+   Supported client/services (thus far)
+   -VGTranslate client ( www.gitlab.com/spherebeaker/vg_translate )
+   -Ztranslate client/service ( www.ztranslate.net/docs/service )
 
-   In addition, the request contains a JSON payload, formatted as such:
-      – image: captured frame from the currently running content (in base64).
-      – format: format of the captured frame ("png", or "bmp").
-      – coords: array describing the coordinates of the image within the
-         viewport space (x, y, width, height).
-      – viewport: array describing the size of the viewport (width, height).
-      – label: a text string describing the content (<system id>__<content id>).
-      – state: a JSON object describing the state of the frontend, containing:
-         – paused: 1 if the content has been paused, 0 otherwise.
-         – <key>: the name of a retropad input, valued 1 if pressed.
-            (a, b, x, y, l, r, l2, r2, l3, r3)
-            (up, down, left, right, start, select)
+   To use a client, download the relevant code/release, configure
+   them, and run them on your local machine, or network.  Set the
+   retroarch configuration to point to your local client (usually
+   listening on localhost:4404 ) and enable translation service.
 
-   The translation component then expects a response from the AI service in the
-   form of a JSON payload, formatted as such:
-      – image: base64 representation of an image in a supported format.
-      – sound: base64 representation of a sound byte in a supported format.
-      – text: results from the service as a string.
-      – text_position: hint for the position of the text when the service is
-         running in text mode (ie subtitles). Position is a number,
-         1 for Bottom or 2 for Top (defaults to bottom).
-      – press: a list of retropad input to forcibly press. On top of the
-         expected keys (cf. 'state' above) values 'pause' and 'unpause' can be
-         specified to control the flow of the content.
-      – error: any error encountered with the request.
-      – auto: either 'auto' or 'continue' to control automatic requests.
+   If you don't want to run a client, you can also use a service,
+   which is basically like someone running a client for you.  The
+   downside here is that your retroarch device will have to have
+   an internet connection, and you may have to sign up for it.
 
-   All fields are optional, but at least one of them must be present.
-   If 'error' is set, the error is shown to the user and everything else is
-   ignored, even 'auto' settings.
+   To make your own server, it must listen for a POST request, which
+   will consist of a JSON body, with the "image" field as a base64
+   encoded string of a 24bit-BMP/PNG that the will be translated.
+   The server must output the translated image in the form of a
+   JSON body, with the "image" field also as a base64 encoded
+   24bit-BMP, or as an alpha channel png.
 
-   With 'auto' on 'auto', RetroArch will automatically send a new request
-   (with a minimum delay enforced by uints.ai_service_poll_delay), with a value
-   of 'continue', RetroArch will ignore the returned content and skip to the
-   next automatic request. This allows the service to specify that the returned
-   content is the same as the one previously sent, so RetroArch does not need to
-   update its display unless necessary. With 'continue' the service *must*
-   still send the content, as we may need to display it if the user paused the
-   AI service for instance.
-
-   {paused} boolean is passed in to indicate if the current call was made
-   during a paused frame. Due to how the menu widgets work, if the AI service
-   is called in 'auto' mode, then this call will be made while the menu widgets
-   unpause the core for a frame to update the on-screen widgets. To tell the AI
-   service what the pause mode is honestly, we store the runloop_paused
-   variable from before the service wipes the widgets, and pass that in here.
+  "paused" boolean is passed in to indicate if the current call
+   was made during a paused frame.  Due to how the menu widgets work,
+   if the ai service is called in "auto" mode, then this call will
+   be made while the menu widgets unpause the core for a frame to update
+   the on-screen widgets.  To tell the ai service what the pause
+   mode is honestly, we store the runloop_paused variable from before
+   the handle_translation_cb wipes the widgets, and pass that in here.
 */
 bool run_translation_service(settings_t *settings, bool paused);
 
-void translation_release(bool inform);
-
-/* Proxy for calls related to menu navigation */
-bool navigation_say(
+bool accessibility_speak_priority(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,
-      const char* speak_text,
-      int priority);
-
-/* Local platform-specific TTS  */
-bool accessibility_speak_priority(
-      unsigned accessibility_narrator_speech_speed,
-      const char *speak_text,
-      int priority,
-      const char* voice);
+      const char* speak_text, int priority);
 
 access_state_t *access_state_get_ptr(void);
 

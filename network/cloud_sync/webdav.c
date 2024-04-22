@@ -449,7 +449,7 @@ static char *webdav_get_auth_header(const char *method, const char *url)
 
 static void webdav_log_http_failure(const char *path, http_transfer_data_t *data)
 {
-    int i;
+    size_t i;
     RARCH_WARN("webdav failed: %s: HTTP %d\n", path, data->status);
     for (i = 0; data->headers && i < data->headers->size; i++)
         RARCH_WARN("%s\n", data->headers->elems[i].data);
@@ -469,7 +469,7 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
 
    if (data && data->status == 401 && data->headers && webdav_st->basic == true)
    {
-      int i;
+      size_t i;
       webdav_st->basic = false;
       for (i = 0; i < data->headers->size; i++)
       {

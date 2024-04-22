@@ -1886,6 +1886,17 @@ retry:
    vulkan_acquire_wait_fences(vk);
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+bool vulkan_is_hdr10_format(VkFormat format)
+{
+   return
+   (
+         format == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+      || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32
+   );
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval)
@@ -2067,11 +2078,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
       for (i = 0; i < format_count; i++)
       {
-         if (     (formats[i].format     == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+         if (     (vulkan_is_hdr10_format(formats[i].format))
                && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
          {
             format = formats[i];
             video_driver_set_hdr_support();
+            break;
          }
       }
 
@@ -2202,13 +2214,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.clipped                = VK_TRUE;
    info.oldSwapchain           = old_swapchain;
 
-#ifdef _WIN32
-   /* On Windows, do not try to reuse the swapchain.
-    * It causes a lot of issues on nVidia for some reason. */
    info.oldSwapchain = VK_NULL_HANDLE;
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
-#endif
 
    if (vkCreateSwapchainKHR(vk->context.device,
             &info, NULL, &vk->swapchain) != VK_SUCCESS)
@@ -2216,11 +2224,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
    }
-
-#ifndef _WIN32
-   if (old_swapchain != VK_NULL_HANDLE)
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
-#endif
 
    vk->context.swapchain_width        = swapchain_size.width;
    vk->context.swapchain_height       = swapchain_size.height;
@@ -2304,6 +2307,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
 #ifdef _WIN32
       vulkan_library = dylib_load("vulkan-1.dll");
+#elif IOS
+      vulkan_library = dylib_load("MoltenVK");
 #elif __APPLE__
       vulkan_library = dylib_load("libMoltenVK.dylib");
 #else

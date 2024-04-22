@@ -150,13 +150,6 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 
 #include <string.h>
 
-/**
- * cpu_features_get_perf_counter:
- *
- * Gets performance counter.
- *
- * @return Performance counter.
- **/
 retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
@@ -218,13 +211,6 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    return time_ticks;
 }
 
-/**
- * cpu_features_get_time_usec:
- *
- * Gets time in microseconds.
- *
- * @return Time in microseconds.
- **/
 retro_time_t cpu_features_get_time_usec(void)
 {
 #if defined(_WIN32)
@@ -503,13 +489,6 @@ static void cpulist_read_from(CpuList* list, const char* filename)
 
 #endif
 
-/**
- * cpu_features_get_core_amount:
- *
- * Gets the amount of available CPU cores.
- *
- * @return Amount of CPU cores available.
- **/
 unsigned cpu_features_get_core_amount(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
@@ -609,13 +588,6 @@ unsigned cpu_features_get_core_amount(void)
 #define VENDOR_INTEL_c  0x6c65746e
 #define VENDOR_INTEL_d  0x49656e69
 
-/**
- * cpu_features_get:
- *
- * Gets CPU features..
- *
- * @return Bitmask of all CPU features available.
- **/
 uint64_t cpu_features_get(void)
 {
    uint64_t cpu        = 0;

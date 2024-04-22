@@ -1579,7 +1579,6 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("cache_directory",               settings->paths.directory_cache, false, NULL, true);
    SETTING_PATH("audio_dsp_plugin",              settings->paths.path_audio_dsp_plugin, false, NULL, true);
    SETTING_PATH("audio_filter_dir",              settings->paths.directory_audio_filter, true, NULL, true);
-   SETTING_PATH("resampler_directory",           settings->paths.directory_resampler, false, NULL, true);
    SETTING_PATH("video_shader_dir",              settings->paths.directory_video_shader, true, NULL, true);
    SETTING_PATH("video_filter_dir",              settings->paths.directory_video_filter, true, NULL, true);
    SETTING_PATH("video_filter",                  settings->paths.path_softfilter_plugin, false, NULL, true);
@@ -1644,6 +1643,10 @@ static struct config_path_setting *populate_settings_path(
 
 #ifdef _3DS
    SETTING_PATH("bottom_assets_directory",       settings->paths.directory_bottom_assets, true, NULL, true);
+#endif
+
+#ifdef HAVE_TEST_DRIVERS
+   SETTING_PATH("test_input_file_joypad",        settings->paths.test_input_file_joypad, false, NULL, true);
 #endif
 
    SETTING_ARRAY("log_dir",                      settings->paths.log_dir, true, NULL, true);
@@ -1720,7 +1723,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("game_specific_options",         &settings->bools.game_specific_options, true, DEFAULT_GAME_SPECIFIC_OPTIONS, false);
    SETTING_BOOL("auto_overrides_enable",         &settings->bools.auto_overrides_enable, true, DEFAULT_AUTO_OVERRIDES_ENABLE, false);
    SETTING_BOOL("auto_remaps_enable",            &settings->bools.auto_remaps_enable, true, DEFAULT_AUTO_REMAPS_ENABLE, false);
-   SETTING_BOOL("initial_disk_change_enable",    &settings->bools.initial_disk_change_enable, true, DEFAULT_INITIAL_DISK_CHANGE_ENABLE, false);   
+   SETTING_BOOL("initial_disk_change_enable",    &settings->bools.initial_disk_change_enable, true, DEFAULT_INITIAL_DISK_CHANGE_ENABLE, false);
    SETTING_BOOL("global_core_options",           &settings->bools.global_core_options, true, DEFAULT_GLOBAL_CORE_OPTIONS, false);
    SETTING_BOOL("auto_shaders_enable",           &settings->bools.auto_shaders_enable, true, DEFAULT_AUTO_SHADERS_ENABLE, false);
    SETTING_BOOL("scan_without_core_match",       &settings->bools.scan_without_core_match, true, DEFAULT_SCAN_WITHOUT_CORE_MATCH, false);
@@ -1806,6 +1809,8 @@ static struct config_bool_setting *populate_settings_bool(
    /* Let implementation decide if automatic, or 1:1 PAR. */
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, DEFAULT_ASPECT_RATIO_AUTO, false);
 
+   SETTING_BOOL("video_scan_subframes",          &settings->bools.video_scan_subframes, true, DEFAULT_SCAN_SUBFRAMES, false);
+
    SETTING_BOOL("video_allow_rotate",            &settings->bools.video_allow_rotate, true, DEFAULT_ALLOW_ROTATE, false);
    SETTING_BOOL("video_windowed_fullscreen",     &settings->bools.video_windowed_fullscreen, true, DEFAULT_WINDOWED_FULLSCREEN, false);
    SETTING_BOOL("video_crop_overscan",           &settings->bools.video_crop_overscan, true, DEFAULT_CROP_OVERSCAN, false);
@@ -1851,6 +1856,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("notification_show_remap_load",  &settings->bools.notification_show_remap_load, true, DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, false);
    SETTING_BOOL("notification_show_config_override_load", &settings->bools.notification_show_config_override_load, true, DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD, false);
    SETTING_BOOL("notification_show_set_initial_disk", &settings->bools.notification_show_set_initial_disk, true, DEFAULT_NOTIFICATION_SHOW_SET_INITIAL_DISK, false);
+   SETTING_BOOL("notification_show_disk_control", &settings->bools.notification_show_disk_control, true, DEFAULT_NOTIFICATION_SHOW_DISK_CONTROL, false);
    SETTING_BOOL("notification_show_save_state",  &settings->bools.notification_show_save_state, true, DEFAULT_NOTIFICATION_SHOW_SAVE_STATE, false);
    SETTING_BOOL("notification_show_fast_forward", &settings->bools.notification_show_fast_forward, true, DEFAULT_NOTIFICATION_SHOW_FAST_FORWARD, false);
 #ifdef HAVE_SCREENSHOTS
@@ -2059,6 +2065,11 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_overlay_auto_rotate",     &settings->bools.input_overlay_auto_rotate, true, DEFAULT_OVERLAY_AUTO_ROTATE, false);
    SETTING_BOOL("input_overlay_auto_scale",      &settings->bools.input_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
    SETTING_BOOL("input_osk_overlay_auto_scale",  &settings->bools.input_osk_overlay_auto_scale, true, DEFAULT_INPUT_OVERLAY_AUTO_SCALE, false);
+   SETTING_BOOL("input_overlay_pointer_enable",  &settings->bools.input_overlay_pointer_enable, true, DEFAULT_INPUT_OVERLAY_POINTER_ENABLE, false);
+   SETTING_BOOL("input_overlay_lightgun_trigger_on_touch", &settings->bools.input_overlay_lightgun_trigger_on_touch, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH, false);
+   SETTING_BOOL("input_overlay_lightgun_allow_offscreen",  &settings->bools.input_overlay_lightgun_allow_offscreen, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN, false);
+   SETTING_BOOL("input_overlay_mouse_hold_to_drag", &settings->bools.input_overlay_mouse_hold_to_drag, true, DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG, false);
+   SETTING_BOOL("input_overlay_mouse_dtap_to_drag", &settings->bools.input_overlay_mouse_dtap_to_drag, true, DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG, false);
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
    SETTING_BOOL("input_touch_vmouse_pointer",    &settings->bools.input_touch_vmouse_pointer, true, DEFAULT_INPUT_TOUCH_VMOUSE_POINTER, false);
@@ -2077,7 +2088,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE, false);
    SETTING_BOOL("input_autodetect_enable",       &settings->bools.input_autodetect_enable, true, DEFAULT_INPUT_AUTODETECT_ENABLE, false);
    SETTING_BOOL("input_allow_turbo_dpad",        &settings->bools.input_allow_turbo_dpad, true, DEFAULT_ALLOW_TURBO_DPAD, false);
-   SETTING_BOOL("input_auto_mouse_grab",         &settings->bools.input_auto_mouse_grab, true, false, false);
+   SETTING_BOOL("input_auto_mouse_grab",         &settings->bools.input_auto_mouse_grab, true, DEFAULT_INPUT_AUTO_MOUSE_GRAB, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("input_hotkey_device_merge",     &settings->bools.input_hotkey_device_merge, true, DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, false);
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
@@ -2251,6 +2262,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_overlay_y_separation_portrait",   &settings->floats.input_overlay_y_separation_portrait, true, DEFAULT_INPUT_OVERLAY_Y_SEPARATION_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_x_offset_portrait",       &settings->floats.input_overlay_x_offset_portrait, true, DEFAULT_INPUT_OVERLAY_X_OFFSET_PORTRAIT, false);
    SETTING_FLOAT("input_overlay_y_offset_portrait",       &settings->floats.input_overlay_y_offset_portrait, true, DEFAULT_INPUT_OVERLAY_Y_OFFSET_PORTRAIT, false);
+   SETTING_FLOAT("input_overlay_mouse_speed",             &settings->floats.input_overlay_mouse_speed, true, DEFAULT_INPUT_OVERLAY_MOUSE_SPEED, false);
+   SETTING_FLOAT("input_overlay_mouse_swipe_threshold",   &settings->floats.input_overlay_mouse_swipe_threshold, true, DEFAULT_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD, false);
 #endif
 
 #ifdef _3DS
@@ -2500,9 +2513,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("ai_service_mode",              &settings->uints.ai_service_mode,            true, DEFAULT_AI_SERVICE_MODE, false);
    SETTING_UINT("ai_service_target_lang",       &settings->uints.ai_service_target_lang,     true, 0, false);
    SETTING_UINT("ai_service_source_lang",       &settings->uints.ai_service_source_lang,     true, 0, false);
-   SETTING_UINT("ai_service_poll_delay",        &settings->uints.ai_service_poll_delay,      true, DEFAULT_AI_SERVICE_POLL_DELAY, false);
-   SETTING_UINT("ai_service_text_position",     &settings->uints.ai_service_text_position,   true, DEFAULT_AI_SERVICE_TEXT_POSITION, false);
-   SETTING_UINT("ai_service_text_padding",      &settings->uints.ai_service_text_padding,    true, DEFAULT_AI_SERVICE_TEXT_PADDING, false);
 
 #ifdef HAVE_LIBNX
    SETTING_UINT("libnx_overclock",               &settings->uints.libnx_overclock, true, SWITCH_DEFAULT_CPU_PROFILE, false);
@@ -2528,6 +2538,15 @@ static struct config_uint_setting *populate_settings_uint(
 
 #ifdef HAVE_MIST
    SETTING_UINT("steam_rich_presence_format",    &settings->uints.steam_rich_presence_format, true, DEFAULT_STEAM_RICH_PRESENCE_FORMAT, false);
+#endif
+
+#ifdef HAVE_OVERLAY
+   SETTING_UINT("input_overlay_lightgun_trigger_delay",     &settings->uints.input_overlay_lightgun_trigger_delay, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY, false);
+   SETTING_UINT("input_overlay_lightgun_two_touch_input",   &settings->uints.input_overlay_lightgun_two_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
+   SETTING_UINT("input_overlay_lightgun_three_touch_input", &settings->uints.input_overlay_lightgun_three_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
+   SETTING_UINT("input_overlay_lightgun_four_touch_input",  &settings->uints.input_overlay_lightgun_four_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
+   SETTING_UINT("input_overlay_mouse_hold_msec",            &settings->uints.input_overlay_mouse_hold_msec, true, DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_MSEC, false);
+   SETTING_UINT("input_overlay_mouse_dtap_msec",            &settings->uints.input_overlay_mouse_dtap_msec, true, DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_MSEC, false);
 #endif
 
    *size = count;
@@ -2599,6 +2618,10 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("bottom_font_color_green",        &settings->ints.bottom_font_color_green,   true, DEFAULT_BOTTOM_FONT_COLOR, false);
    SETTING_INT("bottom_font_color_blue",         &settings->ints.bottom_font_color_blue,    true, DEFAULT_BOTTOM_FONT_COLOR, false);
    SETTING_INT("bottom_font_color_opacity",      &settings->ints.bottom_font_color_opacity, true, DEFAULT_BOTTOM_FONT_COLOR, false);
+#endif
+
+#ifdef HAVE_OVERLAY
+   SETTING_INT("input_overlay_lightgun_port",    &settings->ints.input_overlay_lightgun_port, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT, false);
 #endif
 
    *size = count;
@@ -2906,7 +2929,6 @@ void config_set_defaults(void *data)
 
    *settings->paths.path_libretro_info = '\0';
    *settings->paths.directory_libretro = '\0';
-   *settings->paths.directory_resampler = '\0';
    *settings->paths.directory_screenshot = '\0';
    *settings->paths.directory_system = '\0';
    *settings->paths.directory_cache = '\0';
@@ -3112,10 +3134,6 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.directory_screenshot,
             g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
-   if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RESAMPLER]))
-      configuration_set_string(settings,
-            settings->paths.directory_resampler,
-            g_defaults.dirs[DEFAULT_DIR_RESAMPLER]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
       configuration_set_string(settings,
             settings->paths.log_dir,
@@ -3758,9 +3776,11 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
+#if !IOS
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
+#endif
 
 #ifdef RARCH_CONSOLE
    if (conf)
@@ -4117,7 +4137,7 @@ static bool config_load_file(global_t *global,
     if (settings->bools.switch_oc == true) {
 	  fprintf(f, "1\n");
 	} else {
-	  fprintf(f, "0\n");	
+	  fprintf(f, "0\n");
     }
     fclose(f);
     if (settings->bools.switch_cec == true) {
@@ -4125,7 +4145,7 @@ static bool config_load_file(global_t *global,
 	  fprintf(f, "\n");
       fclose(f);
 	} else {
-	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);	
+	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);
     }
    if (settings->bools.bluetooth_ertm_disable == true) {
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
@@ -4136,8 +4156,8 @@ static bool config_load_file(global_t *global,
 	  fprintf(f, "0\n");
       fclose(f);
     }
-#endif   
- 
+#endif
+
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
    recording_driver_update_streaming_url();
 
@@ -4477,7 +4497,7 @@ bool config_unload_override(void)
    {
       /* This is for 'win32_common.c', so we don't save
        * fullscreen size and position if we're switching
-       * back to windowed mode. 
+       * back to windowed mode.
        * Might be useful for other devices as well? */
       if (      settings->bools.video_window_save_positions
             && !settings->bools.video_fullscreen)
@@ -4936,7 +4956,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
 }
 
 void config_get_autoconf_profile_filename(
-      const char *device_name, unsigned user, 
+      const char *device_name, unsigned user,
       char *buf, size_t len_buf)
 {
    static const char* invalid_filename_chars[] = {
@@ -5016,7 +5036,6 @@ end:
 bool config_save_autoconf_profile(const
       char *device_name, unsigned user)
 {
-   size_t len;
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
@@ -5087,6 +5106,7 @@ bool config_save_autoconf_profile(const
       }
    }
 
+   RARCH_LOG("[Autoconf]: Writing autoconf file for device \"%s\" to \"%s\".\n", device_name, autoconf_file);
    ret = config_file_write(conf, autoconf_file, false);
 
 end:

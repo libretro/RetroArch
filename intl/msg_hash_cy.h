@@ -114,10 +114,6 @@ MSG_HASH(
    "Agor y dewislen bwrdd gwaith traddodiadol."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Analluogi mod Kiosk (Ailgychwyn yn angenrheidiol)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Dangoswch yr holl gosodiadau sy'n gysylltiedig â chyfluniad."
    )
@@ -1170,6 +1166,12 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -1203,6 +1205,8 @@ MSG_HASH(
    )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
+
+
 
 
 /* Settings > User Interface > Views > Settings */

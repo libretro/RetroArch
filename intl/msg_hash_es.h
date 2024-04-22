@@ -139,7 +139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desactiva el modo quiosco (es necesario reiniciar)."
+   "Desactivar el modo quiosco (es necesario reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -504,6 +504,10 @@ MSG_HASH(
    "API gráficas necesarias"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Ruta completa del núcleo"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Soporte de guardados rápidos"
    )
@@ -633,6 +637,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Núcleos de la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT disponible"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1514,7 +1522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Selecciona el controlador de mandos que se utilizará."
+   "Selecciona el controlador de mando a usar (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1773,7 +1781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Selecciona el controlador de menú que se utilizará. Es necesario reiniciar."
+   "Selecciona el controlador de menú a usar (es necesario reiniciar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -2049,6 +2057,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Capturar pantalla mediante la GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Simulación de escalonamiento de líneas de barrido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Simula de forma básica el escalonamiento de las líneas de barrido a lo largo de varios subfotogramas diviendo la pantalla en partes verticales y renderizando cada una de las mismas en función de los subfotogramas que existan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simula de forma básica el escalonamiento de las líneas de barrido a lo largo de varios subfotogramas diviendo la pantalla en partes verticales y renderizando cada una de las mismas en función de los subfotogramas que existan, de arriba a abajo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -4086,6 +4106,10 @@ MSG_HASH(
    "Índice de ratón"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "El ratón físico tal y como lo reconoce RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "Botón B (abajo)"
    )
@@ -4677,7 +4701,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Utiliza el directorio de contenidos como directorio del sistema."
+   "Utiliza el directorio de contenidos como directorio del sistema/para BIOS."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
@@ -5298,6 +5322,30 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
    "Selecciona y ajusta una superposición de teclado."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Activar superposición para «lightguns», ratón y punteros"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Utiliza todas las acciones táctiles que no pulsen controles de la superposición para crear acciones de entrada de dispositivos de puntero para el núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "«Lightgun» mediante la superposición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Configura las acciones de entrada de «lightguns» enviadas a través de la superposición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "Ratón mediante la superposición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Configura las acciones de entrada del ratón transmitidas por la superposición. Nota: los toques con uno, dos y tres dedos enviarán pulsaciones en los botones izquierdo, derecho y central del ratón respectivamente."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -5324,6 +5372,120 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
    "Controla la opacidad de todos los elementos de la superposición de teclado."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Puerto de «lightgun»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Establece el puerto del núcleo que recibirá las acciones de entrada de la «lightgun» de la superposición."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "Cualquiera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Apretar el gatillo al tocar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Envía una señal del gatillo junto con la del puntero."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Retraso del gatillo (fotogramas)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Retrasa las acciones de entrada del gatillo para dar un margen de tiempo al cursor para que pueda desplazarse. Este retraso también sirve para contabilizar correctamente una acción táctil de varios dedos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Acción de dos dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Selecciona la acción de entrada que se enviará cuando haya dos punteros en pantalla. El retraso del gatillo debería tener un valor ajeno a 0 para poder distinguir una acción de la otra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Acción de tres dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Selecciona la acción de entrada que se enviará cuando haya tres punteros en pantalla. El retraso del gatillo debería tener un valor ajeno a 0 para poder distinguir una acción de la otra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Acción de cuatro dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Selecciona la acción de entrada que se enviará cuando haya cuatro punteros en pantalla. El retraso del gatillo debería tener un valor ajeno a 0 para poder distinguir una acción de la otra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Permitir apuntar fuera de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Permite apuntar fuera de los límites de la pantalla. Desactiva esta opción para limitar el apuntado fuera de pantalla al interior del borde."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Velocidad del ratón"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "Ajusta la velocidad del movimiento del cursor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Mantener pulsado para arrastrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Mantén pulsada la pantalla para mantener pulsado un botón."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Umbral de pulsación larga (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Ajusta el tiempo que debes mantener pulsada la pantalla para reconocer una pulsación larga."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Tocar dos veces para arrastrar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Toca la pantalla dos veces para empezar a mantener pulsado un botón con el segundo toque. Añadirá un retraso a las pulsaciones del ratón."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Umbral del toque doble (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Ajusta el margen de tiempo entre toques con el que se detectará uno doble."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Umbral de deslizamiento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Ajusta el rango de movimiento permitido a la hora de detectar una pulsación larga o un toque. Se representa como un porcentaje de la dimensión más pequeña de la pantalla."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -5506,6 +5668,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Muestra un mensaje en pantalla al restaurar automáticamente el último disco usado cuando se inicie un contenido con varios discos que utilice listas de reproducción M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Notificaciones de control de disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Muestra un mensaje en pantalla al insertar y expulsar discos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -6396,6 +6566,32 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Muestra la opción «Agregar a favoritos»."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Agregar a la lista de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Agrega el contenido a una lista de reproducción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Crear lista de reproducción nueva"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Se ha agregado a la lista de reproducción"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Error al añadir a lista de reproducción: la lista está llena"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Crea una lista de reproducción nueva y agrega a la misma el elemento actual."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostrar Asignar asociación de núcleo"
@@ -6728,7 +6924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Muestra las traducciones como una imagen superpuesta (Modo Imagen), audio directo (Voz), texto a voz (Narración) o una superposición de texto (Texto)."
+   "Muestra las traducciones como una imagen superpuesta (Modo Imagen), audio directo (Voz) o utiliza un narrador del sistema, como NVDA (Narración)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -6769,30 +6965,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Indica el idioma de destino de la traducción. En caso de seleccionar «Predeterminado», se traducirá a inglés."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
-   "Retraso al autosondear con el servicio de IA"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_POLL_DELAY,
-   "Indica el retraso mínimo (en ms) entre cada llamada automática. Reduce la reactividad, pero mejora el rendimiento de la CPU."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
-   "Personalizar posición de textos del servicio de IA"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_POSITION,
-   "Personaliza la posición de la superposición del modo Texto del servicio de IA."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
-   "Relleno de textos del servicio de IA (%)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
-   "Indica el relleno vertical que se añadirá a la superposición de textos cuando el servicio de IA esté configurado en el modo Texto. Si hay más relleno, el texto se desplazará hacia el centro de la pantalla."
    )
 
 /* Settings > Accessibility */
@@ -9785,6 +9957,18 @@ MSG_HASH(
    "Todas las solicitudes pendientes han sido sincronizadas con el servidor de RetroAchievements."
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "Identificando juego"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "Obteniendo datos del juego"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "Iniciando sesión"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "No se ha iniciado sesión"
 )
@@ -10020,26 +10204,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Modo narrador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE,
-   "Modo Texto"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE,
-   "Texto + Narración"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE,
-   "Imagen + Narración"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
-   "Giro de 180°"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
-   "Inicio"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -12793,22 +12957,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Error al instalar el núcleo"
    )
 MSG_HASH(
-   MSG_AI_VIDEO_DRIVER_NOT_SUPPORTED,
-   "El controlador de vídeo no es compatible con el servicio de IA."
-   )
-MSG_HASH(
-   MSG_AI_AUTO_MODE_ENABLED,
-   "Traducción automática activada."
-   )
-MSG_HASH(
-   MSG_AI_AUTO_MODE_DISABLED,
-   "Traducción automática desactivada."
-   )
-MSG_HASH(
-   MSG_AI_NOTHING_TO_TRANSLATE,
-   "No hay nada que traducir."
-   )
-MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Pulsa derecha cinco veces para eliminar todos los trucos."
    )
@@ -13220,6 +13368,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "Se ha guardado el perfil del mando."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Perfil de mando guardado en el directorio correspondiente como:\n«%s»"
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
@@ -13939,7 +14091,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Búsqueda de carpeta finalizada"
+   "Búsqueda de directorio finalizada."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -14299,19 +14451,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Búsqueda en el archivo finalizada"
+   "Búsqueda de archivos finalizada."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Se ha iniciado la búsqueda de trucos"
+   "Se ha iniciado la búsqueda de trucos."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Error al iniciar búsqueda de trucos"
+   "Error al iniciar búsqueda de trucos."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "La búsqueda no ha sido iniciada"
+   "La búsqueda no ha sido iniciada."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
@@ -14319,23 +14471,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Se han agregado %u coincidencias"
+   "Se han agregado %u coincidencias."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Error al agregar coincidencias"
+   "Error al agregar coincidencias."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Se ha creado el truco a partir de la coincidencia"
+   "Se ha creado el truco a partir de la coincidencia."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Error al crear truco"
+   "Error al crear truco."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Se ha eliminado la coincidencia"
+   "Se ha eliminado la coincidencia."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14375,7 +14527,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Error al asignar disco"
+   "Error al asignar disco."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
@@ -14383,23 +14535,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Error al conectarse al cliente"
+   "Error al conectarse al cliente."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Error al conectarse al servidor"
+   "Error al conectarse al servidor."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "El servidor de juego en red está lleno"
+   "El servidor de juego en red está lleno."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "No se te permite entrar a este servidor"
+   "No se te permite entrar a este servidor."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Error al recibir el encabezado del servidor"
+   "Error al recibir el encabezado del servidor."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14439,7 +14591,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Advertencia: faltan recursos, utiliza el actualizador en línea si está disponible"
+   "Advertencia: faltan recursos, utiliza el actualizador en línea si está disponible."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
@@ -14447,7 +14599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Advertencia: idioma no compatible, cambiando a inglés"
+   "Advertencia: idioma no compatible, cambiando a inglés."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -14487,7 +14639,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "El archivo DAT de arcade es demasiado grande (no hay memoria suficiente)"
+   "El archivo DAT de arcade es demasiado grande (no hay memoria suficiente)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,

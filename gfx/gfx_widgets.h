@@ -63,6 +63,8 @@ enum gfx_widgets_icon
 
    MENU_WIDGETS_ICON_HOURGLASS,
    MENU_WIDGETS_ICON_CHECK,
+   MENU_WIDGETS_ICON_ADD,
+   MENU_WIDGETS_ICON_EXIT,
 
    MENU_WIDGETS_ICON_INFO,
 
@@ -111,7 +113,10 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
    /* Unfold animation */
    DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
-   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7)
+   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
+   /* Color style */
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9)
 };
 
 /* There can only be one message animation at a time to 
@@ -212,6 +217,7 @@ typedef struct dispgfx_widget
    unsigned generic_message_height;
 
    unsigned msg_queue_height;
+   unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
@@ -236,8 +242,6 @@ typedef struct dispgfx_widget
 #ifdef HAVE_TRANSLATE
    unsigned ai_service_overlay_width;
    unsigned ai_service_overlay_height;
-   unsigned ai_service_text_position;
-   char ai_service_text[255];
 #endif
 
    uint8_t flags;
@@ -385,6 +389,7 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
 void gfx_widgets_clear_challenge_displays(void);
 void gfx_widget_set_achievement_progress(const char* badge, const char* progress);
 void gfx_widget_set_cheevos_disconnect(bool visible);
+void gfx_widget_set_cheevos_set_loading(bool visible);
 #endif
 
 /* TODO/FIXME/WARNING: Not thread safe! */
