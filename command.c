@@ -1784,6 +1784,7 @@ bool command_event_save_core_config(
 
          if (!path_is_valid(tmp))
          {
+            strlcpy(config_path, tmp, sizeof(config_path));
             new_path_available = true;
             break;
          }
@@ -1969,7 +1970,7 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
                /* TODO: Saving state during recording should associate the state with the replay. */
-               video_driver_state_t *video_st                 = 
+               video_driver_state_t *video_st                 =
                   video_state_get_ptr();
                bool savestate_auto_index                      =
                      settings->bools.savestate_auto_index;
@@ -2096,15 +2097,15 @@ void command_event_reinit(const int flags)
    bool adaptive_vsync            = settings->bools.video_adaptive_vsync;
    unsigned swap_interval_config  = settings->uints.video_swap_interval;
 #endif
-   enum input_game_focus_cmd_type 
+   enum input_game_focus_cmd_type
       game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
-   const input_device_driver_t 
+   const input_device_driver_t
       *joypad                     = input_st->primary_joypad;
 #ifdef HAVE_MFI
-   const input_device_driver_t 
+   const input_device_driver_t
       *sec_joypad                 = input_st->secondary_joypad;
 #else
-   const input_device_driver_t 
+   const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
 
