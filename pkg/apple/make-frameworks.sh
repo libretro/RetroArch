@@ -20,7 +20,7 @@ fi
 
 mkdir -p "$BASE_DIR"/Frameworks
 
-for dylib in "$BASE_DIR"/modules/*.dylib ; do
+for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$') ; do
     intermediate=$(basename "$dylib")
     intermediate="${intermediate/%.dylib/}"
     identifier="${intermediate/%$SUFFIX/}"
