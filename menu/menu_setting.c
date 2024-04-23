@@ -18842,7 +18842,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-#else
+#elif !defined(IOS)
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_quit_retroarch,
@@ -22030,6 +22030,7 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
+#ifdef HAVE_UPDATE_CORES
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.network_buildbot_show_experimental_cores,
@@ -22084,6 +22085,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].offset_by = 1;
                menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 500, 1, true, true);
          }
+#endif
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
