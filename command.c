@@ -1778,6 +1778,7 @@ bool command_event_save_core_config(
       for (i = 0; i < 16; i++)
       {
          size_t _len = strlcpy(tmp, config_path, sizeof(tmp));
+
          if (i)
             _len += snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
          strlcpy(tmp + _len, ".cfg", sizeof(tmp) - _len);
