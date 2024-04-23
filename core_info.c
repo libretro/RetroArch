@@ -737,7 +737,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
    /* Parse info cache file */
    if (!(parser = rjson_open_stream(file)))
    {
-      RARCH_ERR("[Core Info] Failed to create JSON parser\n");
+      RARCH_ERR("[Core Info]: Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -759,10 +759,10 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
          NULL) /* Unused null handler */
          != RJSON_DONE)
    {
-      RARCH_WARN("[Core Info] Error parsing chunk:\n---snip---\n%.*s\n---snip---\n",
+      RARCH_WARN("[Core Info]: Error parsing chunk:\n---snip---\n%.*s\n---snip---\n",
             rjson_get_source_context_len(parser),
             rjson_get_source_context_buf(parser));
-      RARCH_WARN("[Core Info] Error: Invalid JSON at line %d, column %d - %s.\n",
+      RARCH_WARN("[Core Info]: Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) 
@@ -795,8 +795,8 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
        || !string_is_equal(core_info_cache_list->version,
             CORE_INFO_CACHE_VERSION))
    {
-      RARCH_WARN("[Core Info] Core info cache has invalid version"
-            " - forcing refresh (required v%s, found v%s)\n",
+      RARCH_WARN("[Core Info]: Core info cache has invalid version"
+            " - forcing refresh (required v%s, found v%s).\n",
             CORE_INFO_CACHE_VERSION,
             core_info_cache_list->version);
 
@@ -842,14 +842,14 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
 
    if (!file)
    {
-      RARCH_ERR("[Core Info] Failed to write to core info cache file: %s\n", file_path);
+      RARCH_ERR("[Core Info]: Failed to write core info cache file: \"%s\".\n", file_path);
       return false;
    }
 
    /* Write info cache */
    if (!(writer = rjsonwriter_open_stream(file)))
    {
-      RARCH_ERR("[Core Info] Failed to create JSON writer\n");
+      RARCH_ERR("[Core Info]: Failed to create JSON writer.\n");
       goto end;
    }
 
@@ -1172,7 +1172,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_free(writer);
 
-   RARCH_LOG("[Core Info] Wrote to cache file: %s\n", file_path);
+   RARCH_LOG("[Core Info]: Wrote to cache file: \"%s\".\n", file_path);
    success = true;
 
    /* Remove 'force refresh' file, if required */
