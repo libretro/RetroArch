@@ -4545,7 +4545,7 @@ static unsigned menu_displaylist_parse_cores(
 #ifdef IOS
       /* For various reasons on iOS/tvOS, MoltenVK shows up
        * in the cores directory; exclude it here */
-      if (string_starts_with(path, "libMoltenVK"))
+      if (string_starts_with(path, "MoltenVK"))
          continue;
 #endif
 

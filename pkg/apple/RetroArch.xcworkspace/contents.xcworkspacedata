@@ -4,4 +4,7 @@
    <FileRef
       location = "container:RetroArch_Metal.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:RetroArch_iOS13.xcodeproj">
+   </FileRef>
 </Workspace>

@@ -25,6 +25,13 @@ else
     APPLE_DIR="${PROJECT_DIR}/pkg/apple"
 fi
 
+if [ "$1" = "-n" -o "$1" = "--dry-run" ] ; then
+    DRY_RUN=1
+    shift
+else
+    DRY_RUN=
+fi
+
 if [ "$1" = "tvos" -o "$1" = "--tvos" ] ; then
     CORES_DIR="${APPLE_DIR}/tvOS/modules"
     PLATFORM=tvos
@@ -45,6 +52,10 @@ NC='\033[0m'
 function update_dylib() {
     dylib=$1
     printf "Updating ${YELLOW}$dylib${NC}... "
+    if [ -n "$DRY_RUN" ] ; then
+        echo
+        return
+    fi
     if [ -f "$dylib" ] ; then
         mv "$dylib" "$dylib".bak
     fi
@@ -76,126 +87,135 @@ function get_all_cores() {
 }
 
 dylibs=()
+function add_dylib() {
+    if ! [[ "${dylibs[*]}" =~ "${1}" ]] ; then
+        dylibs+=("$1")
+    fi
+}
 function find_dylib() {
     if [[ "${allcores[*]}" =~ "${1}_libretro_${PLATFORM}.dylib" ]] ; then
-        dylibs+=("${1}_libretro_${PLATFORM}.dylib")
+        add_dylib "${1}_libretro_${PLATFORM}.dylib"
     elif [[ "${allcores[*]}" =~ "${1}_libretro.dylib" ]] ; then
-        dylibs+=("${1}_libretro.dylib")
+        add_dylib "${1}_libretro.dylib"
     elif [[ "${allcores[*]}" =~ "${1}" ]] ; then
-        dylibs+=("${1}")
+        add_dylib "${1}"
+    else
+        echo "Don't know how to handle '$1'."
     fi
 }
 
-if [ "$1" = "all" ] ; then
-    get_all_cores
-    dylibs=(${allcores[*]})
-elif [ "$1" = "appstore" ] ; then
-    get_all_cores
-    exports=(
-        mupen64plus_next
-        #kronos
-        pcsx_rearmed
-        easyrpg
-        dinothawr
-        sameboy
-        mgba
-        gpsp
-        mesen
-        mesen-s
-        genesis_plus_gx
-        genesis_plus_gx_wide
-        fbneo
-        bsnes
-        bsnes_hd_beta
-        #flycast
-        desmume
-        ppsspp
-        stella
-        stella2014
-        snes9x
-        snes9x2005
-        snes9x2010
-        vbam
-        vba_next
-        picodrive
-        np2kai
-        atari800
-        prosystem
-        cap32
-        crocods
-        pocketcdg
-        neocd
-        nestopia
-        fceumm
-        race
-        quicknes
-        smsplus
-        #blastem
-        vice_x128
-        vice_x64
-        vice_x64sc
-        vice_xcbm2
-        vice_xcbm5x0
-        vice_xpet
-        vice_xplus4
-        vice_xscpu64
-        vice_xvic
-        puae
-        mednafen_pce
-        mednafen_pce_fast
-        mednafen_supergrafx
-        mednafen_vb
-        mednafen_wswan
-        mednafen_psx
-        mednafen_psx_hw
-        mednafen_saturn
-        potator
-        vecx
-        tgbdual
-        gw
-        fuse
-        freechaf
-        gambatte
-        freeintv
-        gearsystem
-        gearboy
-        handy
-        tic80
-        wasm4
-        gme
-        tyrquake
-        theodore
-        a5200
-        #play
-        bluemsx
-        px68k
-        xrick
-        ep128emu_core
-        mojozork
-        numero
-        dirksimple
-        scummvm
-        virtualxt
-        geolith
-        vircon32
-        melondsds
-    )
-    for dylib in "${exports[@]}" ; do
-        find_dylib $dylib
-    done
-elif [ -n "$1" ]; then
-    get_all_cores
+get_all_cores
+
+if [ -z "$1" ] ; then
+    if find . -maxdepth 1 -iname \*_libretro\*.dylib | grep -q ^. ; then
+        dylibs=( *_libretro*.dylib )
+    fi
+else
     while [ -n "$1" ] ; do
-        find_dylib "$1"
+        if [ "$1" = "all" ] ; then
+            dylibs=(${allcores[*]})
+        elif [ "$1" = "appstore" ] ; then
+            exports=(
+                mupen64plus_next
+                kronos
+                pcsx_rearmed
+                easyrpg
+                dinothawr
+                sameboy
+                mgba
+                gpsp
+                mesen
+                mesen-s
+                genesis_plus_gx
+                genesis_plus_gx_wide
+                fbneo
+                bsnes
+                bsnes_hd_beta
+                #flycast
+                desmume
+                ppsspp
+                stella
+                stella2014
+                snes9x
+                snes9x2005
+                snes9x2010
+                vbam
+                vba_next
+                picodrive
+                np2kai
+                atari800
+                prosystem
+                cap32
+                crocods
+                pocketcdg
+                neocd
+                nestopia
+                fceumm
+                race
+                quicknes
+                smsplus
+                blastem
+                vice_x128
+                vice_x64
+                vice_x64sc
+                vice_xcbm2
+                vice_xcbm5x0
+                vice_xpet
+                vice_xplus4
+                vice_xscpu64
+                vice_xvic
+                puae
+                mednafen_pce
+                mednafen_pce_fast
+                mednafen_supergrafx
+                mednafen_vb
+                mednafen_wswan
+                mednafen_psx
+                mednafen_psx_hw
+                mednafen_saturn
+                potator
+                vecx
+                tgbdual
+                gw
+                fuse
+                freechaf
+                gambatte
+                freeintv
+                gearsystem
+                gearboy
+                handy
+                tic80
+                wasm4
+                gme
+                tyrquake
+                theodore
+                a5200
+                #play
+                bluemsx
+                px68k
+                xrick
+                ep128emu_core
+                mojozork
+                numero
+                dirksimple
+                scummvm
+                virtualxt
+                geolith
+                vircon32
+                melondsds
+            )
+            for dylib in "${exports[@]}" ; do
+                find_dylib $dylib
+            done
+        else
+            find_dylib "$1"
+        fi
         shift
     done
-elif find . -iname \*_libretro\*.dylib | grep -q ^. ; then
-    dylibs=( *_libretro*.dylib )
 fi
 
 if [[ -z "${dylibs[*]}" ]] ; then
     echo Available cores:
-    get_all_cores
     for i in "${allcores[@]}" ; do
         echo $i
     done
