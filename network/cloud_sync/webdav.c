@@ -42,7 +42,7 @@ typedef struct
    webdav_cb_state_t *cb_st;
 } webdav_mkdir_state_t;
 
-// TODO: all of this HTTP auth stuff should probably live in libretro-common/net?
+/* TODO: all of this HTTP auth stuff should probably live in libretro-common/net? */
 typedef struct
 {
    char url[PATH_MAX_LENGTH];
@@ -506,7 +506,7 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    if (string_is_empty(url))
       return false;
 
-   // TODO: LOCK?
+   /* TODO: LOCK? */
 
    if (!strstr(url, "://"))
        len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
@@ -533,7 +533,7 @@ static bool webdav_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
 {
    webdav_state_t *webdav_st = webdav_state_get_ptr();
 
-   // TODO: UNLOCK?
+   /* TODO: UNLOCK? */
 
    if (webdav_st->basic_auth_header)
       free(webdav_st->basic_auth_header);
@@ -558,10 +558,10 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data);
 
-   // TODO: it's possible we get a 401 here and need to redo the auth check with this request
+   /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (success && data->data && webdav_cb_st)
    {
-      // TODO: it would be better if writing to the file happened during the network reads
+      /* TODO: it would be better if writing to the file happened during the network reads */
       file = filestream_open(webdav_cb_st->file,
                              RETRO_VFS_FILE_ACCESS_READ_WRITE,
                              RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -608,7 +608,7 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
    if (!webdav_mkdir_st)
       return;
 
-   // TODO: it's possible we get a 401 here and need to redo the auth check with this request
+   /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    /* HTTP 405 on MKCOL means it's already there */
    if (!data || data->status < 200 || (data->status >= 400 && data->status != 405))
    {
@@ -662,7 +662,7 @@ static void webdav_update_cb(retro_task_t *task, void *task_data, void *user_dat
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data);
 
-   // TODO: it's possible we get a 401 here and need to redo the auth check with this request
+   /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (webdav_cb_st)
    {
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, success, webdav_cb_st->rfile);
@@ -688,7 +688,7 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
       return;
    }
 
-   // TODO: would be better to read file as it's being written to wire, this is very inefficient
+   /* TODO: would be better to read file as it's being written to wire, this is very inefficient */
    len = filestream_get_size(webdav_cb_st->rfile);
    buf = malloc((size_t)(len + 1));
    filestream_read(webdav_cb_st->rfile, buf, len);
@@ -708,7 +708,7 @@ static bool webdav_update(const char *path, RFILE *rfile, cloud_sync_complete_ha
    webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
    char               dir[PATH_MAX_LENGTH];
 
-   // TODO: if !settings->bools.cloud_sync_destructive, should move to deleted/ first
+   /* TODO: if !settings->bools.cloud_sync_destructive, should move to deleted/ first */
 
    webdav_cb_st->cb = cb;
    webdav_cb_st->user_data = user_data;
@@ -735,7 +735,7 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data, void *user_dat
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data);
 
-   // TODO: it's possible we get a 401 here and need to redo the auth check with this request
+   /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (webdav_cb_st)
    {
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, success, NULL);
@@ -752,7 +752,7 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data, void *user_dat
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data);
 
-   // TODO: it's possible we get a 401 here and need to redo the auth check with this request
+   /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (webdav_cb_st)
    {
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, success, NULL);
