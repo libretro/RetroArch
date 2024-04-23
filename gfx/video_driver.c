@@ -747,7 +747,7 @@ void video_monitor_compute_fps_statistics(uint64_t
    if (frame_time_count <
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
-      RARCH_LOG(
+      RARCH_DBG(
             "[Video]: Does not have enough samples for monitor refresh rate"
             " estimation. Requires to run for at least %u frames.\n",
             2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
@@ -756,7 +756,8 @@ void video_monitor_compute_fps_statistics(uint64_t
 
    if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
-      RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
+      RARCH_DBG(
+            "[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
             " deviation, based on %u last samples).\n",
             avg_fps, 100.0f * stddev, samples);
    }
