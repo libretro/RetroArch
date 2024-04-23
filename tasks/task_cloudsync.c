@@ -21,6 +21,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
+#include <retro_inline.h>
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -389,7 +390,7 @@ static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *syn
    list->list[idx].userdata = hash;
 }
 
-static inline int task_cloud_sync_key_cmp(struct item_file *left, struct item_file *right)
+static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_file *right)
 {
    char *left_key  = CS_FILE_KEY(left);
    char *right_key = CS_FILE_KEY(right);
