@@ -429,7 +429,14 @@ static int general_push(menu_displaylist_info_t *info,
    {
       /* Need to use the scratch buffer here */
       char tmp_str[PATH_MAX_LENGTH];
-      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
+#if IOS
+      char tmp_path[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(tmp_path, menu->scratch2_buf, sizeof(tmp_path));
+      const char *menu_path = tmp_path;
+#else
+      const char *menu_path = menu->scratch2_buf;
+#endif
+      fill_pathname_join_special(tmp_str, menu_path,
             menu->scratch_buf, sizeof(tmp_str));
 
       if (!string_is_empty(info->path))

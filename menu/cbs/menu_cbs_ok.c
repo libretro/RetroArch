@@ -1970,6 +1970,12 @@ static int file_load_with_detect_core_wrapper(
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
+#if IOS
+      char tmp_path[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+      menu_path = tmp_path;
+#endif
+
       if (!string_is_empty(menu_path))
          strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
@@ -2150,6 +2156,12 @@ static int generic_action_ok(const char *path,
 
    menu_entries_get_last_stack(&menu_path,
          &menu_label, NULL, &enum_idx, NULL);
+
+#if IOS
+   char tmp_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+   menu_path = tmp_path;
+#endif
 
    if (!string_is_empty(path))
       fill_pathname_join_special(action_path,
@@ -7552,6 +7564,12 @@ static int action_ok_load_archive_detect_core(const char *path,
 
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
+
+#if IOS
+   char tmp_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+   menu_path = tmp_path;
+#endif
 
    core_info_get_list(&list);
 
