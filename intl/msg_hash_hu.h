@@ -1887,10 +1887,6 @@ MSG_HASH(
    "Egy vagy több fekete képkocka beszúrása a mozgás tisztább visszaadásáért. Csak az aktuális képernyőfrissítéshez igazodó opció használható. Nem alkalmas olyan frissítési frekvenciához, ami nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, az alképkockákkal, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással. Átmeneti képbeégés esetén 120 Hz-en kikapcsolandó, magasabb Hz-en pedig a l[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Ki"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - 120 Hz-es képfrissítési frekvenciához"
    )
@@ -1973,10 +1969,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Egy vagy több plusz képkocka beszúrása olyan shader effektekhez, amelyek a tartalom frissítésénél gyorsabban kell fussanak. Csak a képernyő aktuális frissítési gyakoriságának megfelelő érték használható. Nem alkalmazható, ha ez nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, a fekete képkocka beszúrással, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazításával."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Ki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,

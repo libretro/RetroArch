@@ -6457,7 +6457,7 @@ static void setting_get_string_representation_black_frame_insertion(rarch_settin
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF), len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 1:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120), len);
@@ -6516,7 +6516,7 @@ static void setting_get_string_representation_shader_subframes(rarch_setting_t *
    switch (*setting->value.target.unsigned_integer)
    {
       case 1:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF), len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 2:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120), len);

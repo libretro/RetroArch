@@ -1875,10 +1875,6 @@ MSG_HASH(
    "Vkládá mezi snímky černý rámeček (rámečky) pro lepší zřetelnost pohybu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Nelze použít při obnovovací frekvenci, která není násobkem 60 Hz, jako je 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Výměna intervalu > 1, dílčími snímky, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého systémového VRR je v pořádku, jen ne toto nastavení. Pokud zaznamen[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Vypnuto"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - pro displeje s zobrazovací frekvenci 120Hz"
    )
@@ -1961,10 +1957,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Vkládá mezi snímky další snímky shaderu pro případné efekty shaderu, které jsou navrženy tak, aby běžely rychleji než rychlost obsahu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Není určeno pro použití při obnovovacích frekvencích, které nejsou násobkem 60 Hz, například 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Interval výměny > 1, BFI, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého [...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Vypnuto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,

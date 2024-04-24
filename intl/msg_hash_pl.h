@@ -1875,10 +1875,6 @@ MSG_HASH(
    "Wstawia czarne ramki pomiędzy ramkami w celu zwiększenia jasności ruchu. Użyj opcji tylko dla aktualnego wskaźnika odświeżania ekranu. Nie używać z szybkością odświeżania, które nie są wielokrotnościami 60Hz, takimi jak 144Hz, 165Hz itp. Nie łączyć z Interwalem Swap > 1, podramki, ramki Frame lub Synchronizuj z dokładną zawartością. Pozostawienie systemu VRR jest w porządku, a nie to ustawienie. Jeśli zauważysz dowolne tymczasowe zatrzymanie obrazu, powinieneś wyłącz[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Wyłączony"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - Dla tempa odświeżania ekranu 120Hz"
    )
@@ -1961,10 +1957,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Wstawia dodatkowe klatki shaderów pomiędzy klatkami dla wszelkich możliwych efektów shaderów, które są zaprojektowane do działania szybciej niż częstotliwość zawartości. Używaj tylko opcji wyznaczonej dla bieżącej częstotliwości odświeżania wyświetlacza. Nie używać przy częstotliwościach odświeżania, które nie są wielokrotnościami 60 Hz, takich jak 144 Hz, 165 Hz itp. Nie łączyć z opcjami Interwał zmiany klatek > 1, BFI, Opóźnienie klatek lub Synchronizuj do d[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Wyłączony"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
