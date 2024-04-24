@@ -2065,6 +2065,10 @@ MSG_HASH(
    "Інтэрпаляцыя выявы"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+   "Вызначыць метад інтэрпаляцыі выявы пры выключанай функцыі 'Цэлалікавы маштаб'. 'Метад бліжэйшага суседа' мае найменшы ўплыў на прадукцыйнасць."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
    "Метад бліжэйшага суседа"
    )
@@ -2134,6 +2138,10 @@ MSG_HASH(
    "Карэкцыя імпульсу"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "Прайдзіце праз гэтыя наладкі, каб наладзіць карэкцыю імпульсу для змены памеру выявы."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Выкарыстоўваць меню высокай раздзяляльнасці"
    )
@@ -2167,8 +2175,16 @@ MSG_HASH(
    "Паварот выявы"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   "Прымушае пэўны паварот выявы. Дадаецца да паваротаў, што задае ядро."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
    "Арыентацыя экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "Прымушае пэўную арыентацыю экрана паводле аперацыйнай сістэмы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -2183,8 +2199,16 @@ MSG_HASH(
    "Гарызантальны зрух экрана"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   "Прымушае пэўнае зрушэнне выявы па гарызанталі. Ужываецца глабальна."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    "Вертыкальны зрух экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   "Прымушае пэўнае зрушэнне выявы па вертыкалі. Ужываецца глабальна."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -2240,6 +2264,10 @@ MSG_HASH(
    "Вертыкальная частата абнаўлення"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "Задаць вертыкальную частату абнаўлення экрана. '50 Гц' дазволіць плаўную выяву пры запуску змесціва PAL."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
    "60 Гц"
    )
@@ -2290,6 +2318,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
    "Прымусовая раздзяляльнасць на UWP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   "Прымусовая раздзяляльнасць на памер усяго экрана; пры зададзеным 0 будзе ўжыта фіксаванае значэнне 3840 x 2160."
    )
 
 /* Settings > Video > Windowed Mode */
@@ -4125,7 +4157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
-   "Задаць сімвал для ўжывання ў якасці раздзяляльніка паміж складнікамі год/месяц/дзень, калі бягучая дата паказваецца ў меню."
+   "Вызначыць сімвал для ўжывання ў якасці раздзяляльніка паміж складнікамі год/месяц/дзень, калі бягучая дата паказваецца ў меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
