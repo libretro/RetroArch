@@ -29,15 +29,15 @@
 		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		073734A62A093ACA00BF7397 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 073734A52A093ACA00BF7397 /* AltKit */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
-		0778070B2BD2A70B00D13CD2 /* MoltenVK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0778070A2BD2A70B00D13CD2 /* MoltenVK.framework */; };
-		0778070C2BD2A70B00D13CD2 /* MoltenVK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0778070A2BD2A70B00D13CD2 /* MoltenVK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		077A8E202BCE31F3000ECA41 /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 077A8E1F2BCE31E5000ECA41 /* Frameworks */; };
 		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
-		07BC17D22BD2ACAE0005A0F2 /* MoltenVK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */; };
-		07BC17D32BD2ACAE0005A0F2 /* MoltenVK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 07E8EBE22BCCD1E10070B42D /* Frameworks */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
+		07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
+		07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		07FA26CA2BD8B74900E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
+		07FA26CB2BD8B74900E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -162,24 +162,24 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0778070D2BD2A70B00D13CD2 /* Embed Frameworks */ = {
+		07FA26C52BD8B01400E1AF91 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				0778070C2BD2A70B00D13CD2 /* MoltenVK.framework in Embed Frameworks */,
+				07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		07BC17D42BD2ACAE0005A0F2 /* Embed Frameworks */ = {
+		07FA26CC2BD8B74900E1AF91 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				07BC17D32BD2ACAE0005A0F2 /* MoltenVK.framework in Embed Frameworks */,
+				07FA26CB2BD8B74900E1AF91 /* MoltenVK.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -205,17 +205,16 @@
 		0712A7752B807AE400C9765F /* ContentProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ContentProvider.m; sourceTree = "<group>"; };
 		0712A7772B807AE400C9765F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0712A77F2B807F8F00C9765F /* RetroArchTopShelfExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTopShelfExtension.entitlements; sourceTree = "<group>"; };
-		0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = tvOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
 		0718BC5F2ABBA807001F2CBE /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		073DB2892B8706490001BA32 /* RetroArchTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTV.entitlements; sourceTree = "<group>"; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
-		0778070A2BD2A70B00D13CD2 /* MoltenVK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MoltenVK.framework; path = iOS/Frameworks/MoltenVK.framework; sourceTree = "<group>"; };
 		077A8E1F2BCE31E5000ECA41 /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Frameworks; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MoltenVK.framework; path = tvOS/Frameworks/MoltenVK.framework; sourceTree = "<group>"; };
 		07E8EBE22BCCD1E10070B42D /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Frameworks; path = iOS/Frameworks; sourceTree = SOURCE_ROOT; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
+		07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -488,7 +487,6 @@
 		92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		92DAF33E277A370600FE2A9E /* EmulatorTouchMouse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorTouchMouse.swift; sourceTree = "<group>"; };
 		92E5DCD3231A5786006491BF /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
-		92EDD1622982E40C00AD33B4 /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = iOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -525,12 +523,12 @@
 				9204BE161D319EF300BD49DB /* CoreLocation.framework in Frameworks */,
 				9204BE171D319EF300BD49DB /* CoreMedia.framework in Frameworks */,
 				9204BE181D319EF300BD49DB /* AVFoundation.framework in Frameworks */,
+				07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */,
 				9204BE191D319EF300BD49DB /* CoreVideo.framework in Frameworks */,
 				070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */,
 				9204BE1A1D319EF300BD49DB /* AudioToolbox.framework in Frameworks */,
 				9204BE1B1D319EF300BD49DB /* CoreAudio.framework in Frameworks */,
 				9204BE1C1D319EF300BD49DB /* UIKit.framework in Frameworks */,
-				0778070B2BD2A70B00D13CD2 /* MoltenVK.framework in Frameworks */,
 				9204BE1D1D319EF300BD49DB /* Foundation.framework in Frameworks */,
 				0789FC302A07847E00D042B7 /* AltKit in Frameworks */,
 				9204BE1E1D319EF300BD49DB /* CoreGraphics.framework in Frameworks */,
@@ -546,8 +544,8 @@
 				076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */,
 				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
 				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
+				07FA26CA2BD8B74900E1AF91 /* MoltenVK.xcframework in Frameworks */,
 				073734A62A093ACA00BF7397 /* AltKit in Frameworks */,
-				07BC17D22BD2ACAE0005A0F2 /* MoltenVK.framework in Frameworks */,
 				0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1259,11 +1257,10 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */,
 				076CA50C2B695C2C00840EA5 /* libz.tbd */,
 				0718BC5F2ABBA807001F2CBE /* Network.framework */,
 				070A88422A4E7AA9003161C0 /* OpenAL.framework */,
-				92EDD1622982E40C00AD33B4 /* libMoltenVK.dylib */,
-				0714E7132983A5AC00E6B45B /* libMoltenVK.dylib */,
 				9210C2F124B3A19100E6FE7C /* Metal.framework */,
 				07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */,
 				9210C2F024B3A19100E6FE7C /* MetalKit.framework */,
@@ -1282,7 +1279,6 @@
 				50E7189E184B88AA001956CE /* CoreVideo.framework */,
 				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,
 				96366C5416C9AC3300D64A22 /* CoreAudio.framework */,
-				0778070A2BD2A70B00D13CD2 /* MoltenVK.framework */,
 				96AFAE2916C1D4EA009DE44C /* UIKit.framework */,
 				96AFAE2B16C1D4EA009DE44C /* Foundation.framework */,
 				96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */,
@@ -1353,7 +1349,7 @@
 				9204BE271D319EF300BD49DB /* ShellScript */,
 				9204BE211D319EF300BD49DB /* Resources */,
 				9292D6F528F549D500E47A75 /* Embed Foundation Extensions */,
-				0778070D2BD2A70B00D13CD2 /* Embed Frameworks */,
+				07FA26C52BD8B01400E1AF91 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1378,7 +1374,7 @@
 				92CC057521FE2D4900FF79F0 /* ShellScript */,
 				926C77D521FD1E6500103EDE /* Resources */,
 				0712A77B2B807AE400C9765F /* Embed Foundation Extensions */,
-				07BC17D42BD2ACAE0005A0F2 /* Embed Frameworks */,
+				07FA26CC2BD8B74900E1AF91 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1930,10 +1926,7 @@
 					"-DHAVE_MATERIALUI",
 					"$(inherited)",
 				);
-				"OTHER_CFLAGS[sdk=iphoneos*]" = (
-					"-DHAVE_VULKAN",
-					"$(inherited)",
-				);
+				"OTHER_CFLAGS[sdk=iphoneos*]" = "$(inherited)";
 				"OTHER_CFLAGS[sdk=iphonesimulator*]" = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
@@ -2007,10 +2000,7 @@
 					"-DHAVE_IOS_TOUCHMOUSE",
 					"-DHAVE_MATERIALUI",
 				);
-				"OTHER_CFLAGS[sdk=iphoneos*]" = (
-					"-DHAVE_VULKAN",
-					"$(inherited)",
-				);
+				"OTHER_CFLAGS[sdk=iphoneos*]" = "$(inherited)";
 				"OTHER_CFLAGS[sdk=iphonesimulator*]" = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = RetroArch;
@@ -2103,10 +2093,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "$(inherited)";
-				"OTHER_CFLAGS[sdk=appletvos*]" = (
-					"-DHAVE_VULKAN",
-					"$(inherited)",
-				);
+				"OTHER_CFLAGS[sdk=appletvos*]" = "$(inherited)";
 				"OTHER_CFLAGS[sdk=appletvsimulator*]" = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2196,10 +2183,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = "$(inherited)";
-				"OTHER_CFLAGS[sdk=appletvos*]" = (
-					"-DHAVE_VULKAN",
-					"$(inherited)",
-				);
+				"OTHER_CFLAGS[sdk=appletvos*]" = "$(inherited)";
 				"OTHER_CFLAGS[sdk=appletvsimulator*]" = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2413,6 +2397,7 @@
 					"-DHAVE_GLSL",
 					"-DHAVE_GLSLANG",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_VULKAN",
 					"-DHAVE_HID",
 					"-DHAVE_IFINFO",
 					"-DHAVE_IMAGEVIEWER",
@@ -2541,6 +2526,7 @@
 					"-DHAVE_GLSL",
 					"-DHAVE_GLSLANG",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_VULKAN",
 					"-DHAVE_HID",
 					"-DHAVE_IFINFO",
 					"-DHAVE_IMAGEVIEWER",
