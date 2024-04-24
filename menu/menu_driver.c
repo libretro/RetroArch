@@ -6263,7 +6263,8 @@ void menu_driver_toggle(
     * struct is NULL
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
-   bool pause_libretro                = false;
+   bool menu_pause_libretro           = false;
+   bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = (runloop_st->flags &
@@ -6277,10 +6278,13 @@ void menu_driver_toggle(
    if (settings)
    {
 #ifdef HAVE_NETWORKING
-      pause_libretro                  = settings->bools.menu_pause_libretro &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+      menu_pause_libretro             = settings->bools.menu_pause_libretro
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
-      pause_libretro                  = settings->bools.menu_pause_libretro;
+      menu_pause_libretro             = settings->bools.menu_pause_libretro;
+#endif
+#ifdef HAVE_AUDIOMIXER
+      audio_enable_menu               = settings->bools.audio_enable_menu;
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6346,11 +6350,10 @@ void menu_driver_toggle(
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro)
+      if (menu_pause_libretro)
       {
-#ifdef PS2
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
-#endif
+         if (!audio_enable_menu)
+            command_event(CMD_EVENT_AUDIO_STOP, NULL);
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
@@ -6379,11 +6382,10 @@ void menu_driver_toggle(
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (pause_libretro)
+      if (menu_pause_libretro)
       {
-#ifdef PS2
-         command_event(CMD_EVENT_AUDIO_START, NULL);
-#endif
+         if (!audio_enable_menu)
+            command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
