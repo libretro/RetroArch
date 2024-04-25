@@ -29,10 +29,8 @@
 		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		073734A62A093ACA00BF7397 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 073734A52A093ACA00BF7397 /* AltKit */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
-		077A8E202BCE31F3000ECA41 /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 077A8E1F2BCE31E5000ECA41 /* Frameworks */; };
 		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
-		07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 07E8EBE22BCCD1E10070B42D /* Frameworks */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
 		07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
 		07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -208,11 +206,9 @@
 		0718BC5F2ABBA807001F2CBE /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		073DB2892B8706490001BA32 /* RetroArchTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTV.entitlements; sourceTree = "<group>"; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
-		077A8E1F2BCE31E5000ECA41 /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Frameworks; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MoltenVK.framework; path = tvOS/Frameworks/MoltenVK.framework; sourceTree = "<group>"; };
-		07E8EBE22BCCD1E10070B42D /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Frameworks; path = iOS/Frameworks; sourceTree = SOURCE_ROOT; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
 		07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -584,7 +580,6 @@
 		83D632D719ECFCC4009E3161 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
-				07E8EBE22BCCD1E10070B42D /* Frameworks */,
 				07F7FB012A2DA8B800037C04 /* filters */,
 				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
@@ -597,7 +592,6 @@
 		926C77D821FD1E6500103EDE /* tvOS */ = {
 			isa = PBXGroup;
 			children = (
-				077A8E1F2BCE31E5000ECA41 /* Frameworks */,
 				07B7872C29E8FE8F0088B74F /* filters */,
 				92E5DCD3231A5786006491BF /* modules */,
 				926C77E221FD1E6700103EDE /* Assets.xcassets */,
@@ -1476,7 +1470,6 @@
 				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
 				929784502200EEE400989A60 /* iOS/Resources/Icons.xcassets in Resources */,
-				07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */,
 				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1485,7 +1478,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				077A8E202BCE31F3000ECA41 /* Frameworks in Resources */,
 				07B7872D29E8FE8F0088B74F /* filters in Resources */,
 				92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9222F2002314BA7C0097C0FD /* assets.zip in Resources */,
