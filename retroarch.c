@@ -3861,23 +3861,50 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
+         {
+            bool menu_pause_libretro = false;
+            bool audio_enable_menu   = false;
+
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-         if (     settings->bools.audio_enable_menu
-               && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            return false;
+            audio_enable_menu        = settings->bools.audio_enable_menu
+                  && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
 #endif
-         if (!audio_driver_stop())
-            return false;
+#ifdef HAVE_NETWORKING
+            menu_pause_libretro      = settings->bools.menu_pause_libretro
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+            menu_pause_libretro      = settings->bools.menu_pause_libretro;
+#endif
+
+            if (audio_enable_menu || !menu_pause_libretro)
+               return false;
+
+            if (!audio_driver_stop())
+               return false;
+         }
          break;
       case CMD_EVENT_AUDIO_START:
+         {
+            bool menu_pause_libretro = false;
+            bool audio_enable_menu   = false;
+
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-         if (     settings->bools.audio_enable_menu
-               && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            return false;
+            audio_enable_menu        = settings->bools.audio_enable_menu
+                  && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
 #endif
-         if (!audio_driver_start(runloop_st->flags &
-                  RUNLOOP_FLAG_SHUTDOWN_INITIATED))
-            return false;
+#ifdef HAVE_NETWORKING
+            menu_pause_libretro      = settings->bools.menu_pause_libretro
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+            menu_pause_libretro      = settings->bools.menu_pause_libretro;
+#endif
+
+            if (audio_enable_menu && !menu_pause_libretro)
+               return false;
+
+            if (!audio_driver_start(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+               return false;
+         }
          break;
 #ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_STOP:
@@ -4664,19 +4691,22 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          {
 #ifdef HAVE_NETWORKING
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro
-               && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+            bool menu_pause_libretro = settings->bools.menu_pause_libretro
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+            bool menu_pause_libretro = settings->bools.menu_pause_libretro;
 #endif
+
             if (menu_pause_libretro)
             {
+               command_event(CMD_EVENT_AUDIO_STOP, NULL);
 #ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
             }
             else
             {
+               command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif

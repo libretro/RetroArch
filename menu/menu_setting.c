@@ -8640,9 +8640,15 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
 #ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
+         {
+            command_event(CMD_EVENT_AUDIO_START, NULL);
             audio_driver_load_system_sounds();
+         }
          else
+         {
             audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+            command_event(CMD_EVENT_AUDIO_STOP, NULL);
+         }
 #endif
          break;
       case MENU_ENUM_LABEL_MENU_SOUND_BGM:
