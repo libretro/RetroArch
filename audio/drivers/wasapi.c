@@ -395,22 +395,9 @@ static bool wasapi_alive(void *wh)
    return w->running;
 }
 
-static void wasapi_insert_silence(wasapi_t *w)
-{
-   int i;
-
-   for (i = 0; i < 12; i++)
-      audio_driver_menu_sample();
-}
-
 static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 {
    wasapi_t *w = (wasapi_t*)wh;
-
-   /* Since exclusive mode keeps repeating last sample while
-    * in paused menu, generate some silence first. */
-   if (!nonblock && w->exclusive)
-      wasapi_insert_silence(w);
 
    w->nonblock = nonblock;
 }
