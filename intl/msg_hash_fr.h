@@ -2031,6 +2031,14 @@ MSG_HASH(
    "Simulation de ligne de balayage roulante"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Simule une ligne de balayage roulante basique au cours de plusieurs sous-images en divisant l'écran verticalement et en rendant chaque partie de l'écran en fonction du nombre de sous-images disponibles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simule une ligne de balayage roulante basique au cours de plusieurs sous-images en divisant l'écran verticalement et en rendant chaque partie de l'écran en fonction du nombre de sous-images disponibles de haut en bas de l'écran."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Les captures d'écran capturent les shaders produits par le processeur graphique si disponibles."
    )
