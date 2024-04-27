@@ -794,6 +794,11 @@ static const char* frontend_darwin_get_cpu_model_name(void)
    return darwin_cpu_model_name;
 }
 
+static enum retro_language frontend_darwin_get_user_language(void)
+{
+   return retroarch_get_language_from_iso([[NSLocale preferredLanguages][0] UTF8String]);
+}
+
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
 static char* accessibility_mac_language_code(const char* language)
 {
@@ -960,7 +965,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
-   NULL,                            /* get_user_language   */
+   frontend_darwin_get_user_language, /* get_user_language   */
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
    is_narrator_running_macos,       /* is_narrator_running */
    accessibility_speak_macos,       /* accessibility_speak */
