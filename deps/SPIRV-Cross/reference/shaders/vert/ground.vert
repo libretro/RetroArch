@@ -1,4 +1,7 @@
 #version 310 es
+#ifdef GL_ARB_shader_draw_parameters
+#extension GL_ARB_shader_draw_parameters : enable
+#endif
 
 struct PatchData
 {
@@ -44,7 +47,11 @@ layout(binding = 1) uniform mediump sampler2D TexLOD;
 layout(binding = 0) uniform mediump sampler2D TexHeightmap;
 
 layout(location = 1) in vec4 LODWeights;
+#ifdef GL_ARB_shader_draw_parameters
+#define SPIRV_Cross_BaseInstance gl_BaseInstanceARB
+#else
 uniform int SPIRV_Cross_BaseInstance;
+#endif
 layout(location = 0) in vec2 Position;
 layout(location = 1) out vec3 EyeVec;
 layout(location = 0) out vec2 TexCoord;
@@ -67,7 +74,6 @@ vec2 warp_position()
     {
         _110 = 0u;
     }
-    uint _116 = _110;
     uint _120;
     if (uPosition.y < 32u)
     {
@@ -77,7 +83,7 @@ vec2 warp_position()
     {
         _120 = 0u;
     }
-    uvec2 rounding = uvec2(_116, _120);
+    uvec2 rounding = uvec2(_110, _120);
     vec4 lower_upper_snapped = vec4((uPosition + rounding).xyxy & (~mask).xxyy);
     return mix(lower_upper_snapped.xy, lower_upper_snapped.zw, vec2(fract_lod));
 }

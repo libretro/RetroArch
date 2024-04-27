@@ -34,6 +34,9 @@ retro_dsp_filter_t *retro_dsp_filter_new(const char *filter_config,
 
 void retro_dsp_filter_free(retro_dsp_filter_t *dsp);
 
+/**
+ * A struct that groups the input and output of a DSP filter.
+ */
 struct retro_dsp_data
 {
    float *input;

@@ -1,0 +1,36 @@
+name: CI Android
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [run_build]
+  
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Compile RA
+      run: |
+        cd pkg/android/phoenix
+        ./gradlew assembleDebug
+        find . -iname "*.apk" -exec ls -l "{}" \;
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: retroarch-android-${{ steps.slug.outputs.sha8 }}
+        path: |
+          pkg/android/phoenix/build/outputs/apk/normal/debug/phoenix-normal-debug.apk
+          pkg/android/phoenix/build/outputs/apk/aarch64/debug/phoenix-aarch64-debug.apk

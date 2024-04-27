@@ -13,10 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
@@ -102,7 +101,8 @@ static void task_wifi_connect_handler(retro_task_t *task)
    task_set_finished(task, true);
 }
 
-bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr) {
+bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
+{
    char msg[128];
    retro_task_t           *task = task_init();
    wifi_network_info_t *netinfo = (wifi_network_info_t*)netptr;

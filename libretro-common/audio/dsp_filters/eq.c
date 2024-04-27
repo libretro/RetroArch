@@ -34,12 +34,11 @@
 struct eq_data
 {
    fft_t *fft;
-   float buffer[8 * 1024];
-
    float *save;
    float *block;
    fft_complex_t *filter;
    fft_complex_t *fftblock;
+   float buffer[8 * 1024];
    unsigned block_size;
    unsigned block_ptr;
 };
@@ -88,11 +87,11 @@ static void eq_process(void *data, struct dspfilter_output *output,
 
       memcpy(eq->block + eq->block_ptr * 2, in, write_avail * 2 * sizeof(float));
 
-      in += write_avail * 2;
-      input_frames -= write_avail;
+      in            += write_avail * 2;
+      input_frames  -= write_avail;
       eq->block_ptr += write_avail;
 
-      // Convolve a new block.
+      /* Convolve a new block. */
       if (eq->block_ptr == eq->block_size)
       {
          unsigned i, c;
@@ -105,16 +104,16 @@ static void eq_process(void *data, struct dspfilter_output *output,
             fft_process_inverse(eq->fft, out + c, eq->fftblock, 2);
          }
 
-         // Overlap add method, so add in saved block now.
+         /* Overlap add method, so add in saved block now. */
          for (i = 0; i < 2 * eq->block_size; i++)
-            out[i] += eq->save[i];
+            out[i]      += eq->save[i];
 
-         // Save block for later.
+         /* Save block for later. */
          memcpy(eq->save, out + 2 * eq->block_size, 2 * eq->block_size * sizeof(float));
 
-         out += eq->block_size * 2;
+         out            += eq->block_size * 2;
          output->frames += eq->block_size;
-         eq->block_ptr = 0;
+         eq->block_ptr   = 0;
       }
    }
 }
@@ -184,8 +183,8 @@ static void generate_response(fft_complex_t *response,
          lerp = (freq - start_freq) / (end_freq - start_freq);
       gain = (1.0f - lerp) * start_gain + lerp * end_gain;
 
-      response[i].real = gain;
-      response[i].imag = 0.0f;
+      response[i].real               = gain;
+      response[i].imag               = 0.0f;
       response[2 * samples - i].real = gain;
       response[2 * samples - i].imag = 0.0f;
    }
@@ -196,10 +195,9 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
 {
    int i;
    int half_block_size = eq->block_size >> 1;
-   double window_mod = 1.0 / kaiser_window_function(0.0, beta);
-
-   fft_t *fft = fft_new(size_log2);
-   float *time_filter = (float*)calloc(eq->block_size * 2 + 1, sizeof(*time_filter));
+   double window_mod   = 1.0 / kaiser_window_function(0.0, beta);
+   fft_t *fft          = fft_new(size_log2);
+   float *time_filter  = (float*)calloc(eq->block_size * 2 + 1, sizeof(*time_filter));
    if (!fft || !time_filter)
       goto end;
 
@@ -228,8 +226,8 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    for (i = 0; i < (int)eq->block_size; i++)
    {
       /* Kaiser window. */
-      double phase = (double)i / eq->block_size;
-      phase = 2.0 * (phase - 0.5);
+      double phase    = (double)i / eq->block_size;
+      phase           = 2.0 * (phase - 0.5);
       time_filter[i] *= window_mod * kaiser_window_function(phase, beta);
    }
 
@@ -261,15 +259,15 @@ end:
 static void *eq_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
-   float *frequencies, *gain;
-   unsigned num_freq, num_gain, i, size;
    int size_log2;
    float beta;
-   struct eq_gain *gains = NULL;
-   char *filter_path = NULL;
+   float *frequencies, *gain;
+   unsigned num_freq, num_gain, i, size;
+   struct eq_gain *gains      = NULL;
+   char *filter_path          = NULL;
    const float default_freq[] = { 0.0f, info->input_rate };
    const float default_gain[] = { 0.0f, 0.0f };
-   struct eq_data *eq = (struct eq_data*)calloc(1, sizeof(*eq));
+   struct eq_data *eq         = (struct eq_data*)calloc(1, sizeof(*eq));
    if (!eq)
       return NULL;
 
@@ -289,8 +287,7 @@ static void *eq_init(const struct dspfilter_info *info,
 
    num_gain = num_freq = MIN(num_gain, num_freq);
 
-   gains = (struct eq_gain*)calloc(num_gain, sizeof(*gains));
-   if (!gains)
+   if (!(gains = (struct eq_gain*)calloc(num_gain, sizeof(*gains))))
       goto error;
 
    for (i = 0; i < num_gain; i++)
@@ -303,15 +300,15 @@ static void *eq_init(const struct dspfilter_info *info,
 
    eq->block_size = size;
 
-   eq->save     = (float*)calloc(    size, 2 * sizeof(*eq->save));
-   eq->block    = (float*)calloc(2 * size, 2 * sizeof(*eq->block));
-   eq->fftblock = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
-   eq->filter   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
+   eq->save       = (float*)calloc(    size, 2 * sizeof(*eq->save));
+   eq->block      = (float*)calloc(2 * size, 2 * sizeof(*eq->block));
+   eq->fftblock   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
+   eq->filter     = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
 
    /* Use an FFT which is twice the block size with zero-padding
     * to make circular convolution => proper convolution.
     */
-   eq->fft = fft_new(size_log2 + 1);
+   eq->fft        = fft_new(size_log2 + 1);
 
    if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
       goto error;
@@ -345,7 +342,6 @@ static const struct dspfilter_implementation eq_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)mask;
    return &eq_plug;
 }
 

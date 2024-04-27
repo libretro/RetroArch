@@ -47,7 +47,7 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
-#ifdef HAVE_COCOA
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 #define VK_USE_PLATFORM_MACOS_MVK
 #endif
 

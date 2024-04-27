@@ -88,7 +88,12 @@ def update(messages, template, source_messages):
         if tp_msg['key'] in messages and messages[tp_msg['key']] != source_messages[tp_msg['key']]:
             tp_msg_val = tp_msg['val']
             tl_msg_val = messages[tp_msg['key']]
-            tl_msg_val = tl_msg_val.replace('"', '\\\"').replace('\n', '')  # escape
+            # escape all \
+            tl_msg_val = tl_msg_val.replace('\\', r'\\')
+            # remove "double-dipping" on escape sequences
+            tl_msg_val = re.sub(r'\\\\(?=[nrt])', r'\\', tl_msg_val)
+            # escape other symbols
+            tl_msg_val = tl_msg_val.replace('"', '\\\"').replace('\n', '')
             if tp_msg['key'].find('_QT_') < 0:
                 tl_msg_val = c89_cut(tl_msg_val)
             # Replace last match, in case the key contains the value string

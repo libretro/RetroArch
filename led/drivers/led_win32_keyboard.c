@@ -1,33 +1,27 @@
-#include <stdio.h>
+#include <stdint.h>
 #include "../led_driver.h"
 #include "../led_defines.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
-#undef MAX_LEDS
-#define MAX_LEDS 3
-
-#ifdef _WIN32
 #include <windows.h>
-#endif
 
-static void key_translate(int *key)
+static int key_translate(int key)
 {
-#ifdef _WIN32
-   switch (*key)
+   switch (key)
    {
       case 0:
-         *key = VK_NUMLOCK;
-         break;
+         return VK_NUMLOCK;
       case 1:
-         *key = VK_CAPITAL;
-         break;
+         return VK_CAPITAL;
       case 2:
-         *key = VK_SCROLL;
+         return VK_SCROLL;
+      default:
          break;
    }
-#endif
+
+   return 0;
 }
 
 typedef struct
@@ -50,23 +44,20 @@ static int keyboard_led(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return -1;
 
-   key_translate(&key);
+   if (!(key = key_translate(key)))
+      return -1;
 
-#ifdef _WIN32
    status = GetKeyState(key);
-#endif
 
    if (state == -1)
       return status;
 
-   if ((state && !status) ||
-       (!state && status))
+   if (   ( state && !status)
+       || (!state &&  status))
    {
-#ifdef _WIN32
       keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0);
       keybd_event(key, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
       win32kb_cur->state[led] = state;
-#endif
    }
    return -1;
 }
@@ -81,9 +72,9 @@ static void keyboard_init(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      win32kb_cur->setup[i] = keyboard_led(i, -1);
-      win32kb_cur->state[i] = -1;
-      win32kb_cur->map[i]   = settings->uints.led_map[i];
+      win32kb_cur->setup[i]  = keyboard_led(i, -1);
+      win32kb_cur->state[i]  = -1;
+      win32kb_cur->map[i]    = settings->uints.led_map[i];
       if (win32kb_cur->map[i] < 0)
          win32kb_cur->map[i] = i;
    }

@@ -25,8 +25,24 @@ MSG_HASH(
    "היסטוריה"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   "תמונות"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    "מוזיקה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   "סרטונים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   "נטפליי"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   "עיין"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -62,6 +78,10 @@ MSG_HASH(
    "עדכון מקוון"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
+   "נטפליי"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
    "הגדרות"
    )
@@ -84,22 +104,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "עזרה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "אתחול RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "אתחול יישום."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "יציאה"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "יציאה."
    )
 
 /* Main Menu > Load Core */
@@ -129,6 +133,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    "מוזיקה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   "תמונות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   "סרטונים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   "עיין"
    )
 
 /* Main Menu > Online Updater */
@@ -190,13 +206,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "מאפייני מעבד"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "ארכיטקטורת מעבד:"
+   "ארכיטקטורת מעבד"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "ליבות מעבד:"
+   "ליבות מעבד"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -204,6 +220,10 @@ MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
 
 /* Main Menu > Information > Database Manager > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "הישגים"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    "סידורי"
@@ -273,12 +293,18 @@ MSG_HASH(
    "משתמש"
    )
 
+/* Core option category placeholders for icons */
+
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "קלט"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "וידאו"
@@ -295,6 +321,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "בחר התקן שמע."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    "מצלמה"
@@ -318,10 +346,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "תצורת תפריט"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "בחר התקן תצורת תפריט."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -348,6 +372,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
@@ -382,6 +408,8 @@ MSG_HASH(
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
    "דגימה מחודשת"
@@ -426,6 +454,14 @@ MSG_HASH(
    "התקן"
    )
 
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "התקן"
+   )
+#endif
+
 /* Settings > Audio > Resampler */
 
 
@@ -469,6 +505,8 @@ MSG_HASH(
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+#ifdef ANDROID
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "מקשי קיצור"
@@ -482,25 +520,27 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "יציאה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "אתחל את המשחק"
-   )
+
+
+
+
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
    "שמור צילום מסך"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "שלח נתוני ניפוי תקלות"
-   )
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "שירות תרגום"
+   )
+
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "שלח נתוני ניפוי תקלות"
    )
 
 /* Settings > Input > Port # Controls */
@@ -517,7 +557,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -551,6 +599,15 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -559,6 +616,8 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -580,7 +639,10 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
+
+
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -601,6 +663,12 @@ MSG_HASH(
    "הישגים"
    )
 
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
+
 /* Settings > Network */
 
 
@@ -613,7 +681,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "היסטוריה"
    )
-
+   
 /* Settings > Playlists > Playlist Management */
 
 
@@ -648,6 +716,13 @@ MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "סייר קבצים"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 
@@ -710,7 +785,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -733,10 +811,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "הסר"
-   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -766,6 +840,10 @@ MSG_HASH(
 
 /* RGUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   "יחס גובה-רוחב"
+   )
 
 /* RGUI: Settings Options */
 
@@ -822,6 +900,10 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
+   "נטפליי"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "עזרה"
    )
@@ -843,6 +925,7 @@ MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
 /* Notifications */
 
 
+
 /* Lakka */
 
 
@@ -856,19 +939,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "אתחול RetroArch"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else
 #endif
-#if defined(_3DS)
+#ifdef _3DS
 #endif
 #ifdef HAVE_QT
 #endif

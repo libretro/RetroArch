@@ -24,7 +24,6 @@
 #include <EGL/eglext.h>
 
 #include <retro_inline.h>
-#include <retro_assert.h>
 #include <gfx/math/matrix_3x3.h>
 #include <libretro.h>
 
@@ -46,37 +45,35 @@
 
 typedef struct
 {
-   bool should_resize;
-   bool keep_aspect;
-   bool mEglImageBuf;
-   bool mFontsOn;
+   void *mFontRenderer;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   const font_renderer_driver_t *font_driver;
+   char *mLastMsg;
 
-   float mScreenAspect;
+   VGint scissor[4];
+   VGImageFormat mTexType;
+   VGImage mImage;
+   EGLImageKHR last_egl_image;
 
+   VGFont mFont;
+   VGuint mMsgLength;
+   VGuint mGlyphIndices[1024];
+   VGPaint mPaintFg;
+   VGPaint mPaintBg;
    unsigned mTextureWidth;
    unsigned mTextureHeight;
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
    uint32_t mFontHeight;
+   float mScreenAspect;
+   math_matrix_3x3 mTransformMatrix; /* float alignment */
 
-   char *mLastMsg;
-
-   VGint scissor[4];
-   VGImageFormat mTexType;
-   VGImage mImage;
-   math_matrix_3x3 mTransformMatrix;
-   EGLImageKHR last_egl_image;
-
-   VGFont mFont;
-   void *mFontRenderer;
-   const font_renderer_driver_t *font_driver;
-   VGuint mMsgLength;
-   VGuint mGlyphIndices[1024];
-   VGPaint mPaintFg;
-   VGPaint mPaintBg;
-   void *ctx_data;
-   const gfx_ctx_driver_t *ctx_driver;
+   bool should_resize;
+   bool keep_aspect;
+   bool mEglImageBuf;
+   bool mFontsOn;
 } vg_t;
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
@@ -387,8 +384,6 @@ static void vg_copy_frame(void *data, const void *frame,
                0,
                &img);
 
-      retro_assert(img != EGL_NO_IMAGE_KHR);
-
       if (new_egl)
       {
          vgDestroyImage(vg->mImage);
@@ -416,10 +411,10 @@ static bool vg_frame(void *data, const void *frame,
    unsigned width                     = video_info->width;
    unsigned height                    = video_info->height;
 #ifdef HAVE_MENU
-   bool menu_is_alive                 = video_info->menu_is_alive;
+   bool menu_is_alive                 = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (     frame_width != vg->mRenderWidth
+   if (     frame_width  != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
          || vg->should_resize)
    {
@@ -521,16 +516,17 @@ video_driver_t video_vg = {
    vg_set_shader,
    vg_free,
    "vg",
-   NULL,                      /* set_viewport */
-   NULL,                      /* set_rotation */
-   NULL,                      /* viewport_info */
-   NULL,                      /* read_viewport */
-   NULL,                      /* read_frame_raw */
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL,                       /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   vg_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-  vg_get_poke_interface
 };

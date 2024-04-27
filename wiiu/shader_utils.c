@@ -98,7 +98,8 @@ void GX2SetShader(GX2Shader *shader)
       GX2SetGeometryShader(&shader->gs);
 }
 
-void dump_vs_data(GX2VertexShader* vs)
+#if 0
+static void dump_vs_data(GX2VertexShader* vs)
 {
    unsigned i;
 
@@ -153,7 +154,7 @@ void dump_vs_data(GX2VertexShader* vs)
    }
 }
 
-void dump_ps_data(GX2PixelShader* ps)
+static void dump_ps_data(GX2PixelShader* ps)
 {
    unsigned i;
 
@@ -197,10 +198,9 @@ void dump_ps_data(GX2PixelShader* ps)
       DEBUG_INT(ps->samplerVars[i].type);
       DEBUG_INT(ps->samplerVars[i].location);
    }
-
 }
 
-void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, const char *name)
+static void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, const char *name)
 {
    unsigned i;
 
@@ -225,7 +225,8 @@ void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, 
                 __builtin_bswap32(org[i]));
    }
 }
-void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 org_size, const char *name)
+
+static void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 org_size, const char *name)
 {
    unsigned i;
    bool different = false;
@@ -255,6 +256,7 @@ void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 or
 
    printf("\n");
 }
+#endif
 
 #define MAKE_MAGIC(c0,c1,c2,c3) ((c0 << 24) |(c1 << 16) |(c2 << 8) |(c3 << 0))
 
@@ -326,7 +328,7 @@ typedef struct
 
 void gfd_free(GFDFile* gfd)
 {
-   if(gfd)
+   if (gfd)
    {
       MEM2_free(gfd->data);
       free(gfd);
@@ -339,36 +341,24 @@ static bool gfd_relocate_block(GFDBlock* block)
    GFDRelocationHeader* rel = (GFDRelocationHeader*)(block->data + block->header.dataSize) - 1;
 
    if (rel->magic != GFD_BLOCK_RELOCATIONS_MAGIC)
-   {
-      printf("wrong relocations magic number.\n");
       return false;
-   }
 
-   if((rel->patchOffset & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA)
-   {
-      printf("wrong data relocations mask.\n");
+   if ((rel->patchOffset & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA)
       return false;
-   }
 
    u32* patches = (u32*)(block->data + (rel->patchOffset & GFD_RELOCATIONS_VALUE_MASK));
 
    for (i = 0; i < rel->patchCount; i++)
    {
-      if(patches[i])
+      if (patches[i])
       {
-         if((patches[i] & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA)
-         {
-            printf("wrong patch relocations mask.\n");
+         if ((patches[i] & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA)
             return false;
-         }
 
          u32* ptr = (u32*)(block->data + (patches[i] & GFD_RELOCATIONS_VALUE_MASK));
-         if((((*ptr) & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA) &&
+         if ((((*ptr) & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_DATA) &&
             (((*ptr) & GFD_RELOCATIONS_TYPE_MASK) != GFD_RELOCATIONS_TEXT))
-         {
-            printf("wrong relocations mask.\n");
             return false;
-         }
          *ptr = (u32)block->data + ((*ptr) & GFD_RELOCATIONS_VALUE_MASK);
       }
    }
@@ -378,14 +368,15 @@ static bool gfd_relocate_block(GFDBlock* block)
 
 GFDFile *gfd_open(const char *filename)
 {
-   GFDFile* gfd = calloc(1, sizeof(*gfd));
+   int size;
+   GFDFile* gfd = (GFDFile*)calloc(1, sizeof(*gfd));
    FILE     *fp = fopen(filename, "rb");
 
    if (!fp)
       goto error;
 
    fseek(fp, 0, SEEK_END);
-   int size = ftell(fp);
+   size      = ftell(fp);
    fseek(fp, 0, SEEK_SET);
    gfd->data = MEM2_alloc(size, GX2_SHADER_ALIGNMENT);
    fread(gfd->data, 1, size, fp);
@@ -394,130 +385,93 @@ GFDFile *gfd_open(const char *filename)
    GFDFileHeader *header = (GFDFileHeader *)gfd->data;
 
    if (header->magic != GFD_FILE_MAGIC)
-   {
-      printf("wrong file magic number.\n");
       goto error;
-   }
 
    if (header->headerSize != sizeof(GFDFileHeader))
-   {
-      printf("wrong file header size.\n");
       goto error;
-   }
 
    if (header->majorVersion != GFD_FILE_MAJOR_VERSION)
-   {
-      printf("file version not supported.\n");
       goto error;
-   }
 
    if (header->gpuVersion != GFD_FILE_GPU_VERSION)
-   {
-      printf("gpu version not supported.\n");
       goto error;
-   }
 
    if (!header->align)
-   {
-      printf("data is not aligned.\n");
       goto error;
-   }
 
    GFDBlock *block = (GFDBlock *)(gfd->data + header->headerSize);
 
    while (block->header.type != GFD_BLOCK_TYPE_END_OF_FILE)
    {
       if (block->header.magic != GFD_BLOCK_MAGIC)
-      {
-         printf("wrong block magic number.\n");
          goto error;
-      }
 
       if (block->header.headerSize != sizeof(GFDBlockHeader))
-      {
-         printf("wrong block header size.\n");
          goto error;
-      }
 
       if (block->header.majorVersion != GFD_BLOCK_MAJOR_VERSION)
-      {
-         printf("block version not supported.\n");
          goto error;
-      }
 
       switch (block->header.type)
       {
-      case GFD_BLOCK_TYPE_VERTEX_SHADER_HEADER:
-         if (gfd->vs)
-            continue;
+         case GFD_BLOCK_TYPE_VERTEX_SHADER_HEADER:
+            if (gfd->vs)
+               continue;
 
-         gfd->vs = (GX2VertexShader*)block->data;
-         if(!gfd_relocate_block(block))
-            goto error;
+            gfd->vs = (GX2VertexShader*)block->data;
+            if (!gfd_relocate_block(block))
+               goto error;
 
-         break;
+            break;
 
-      case GFD_BLOCK_TYPE_VERTEX_SHADER_PROGRAM:
-         if(gfd->vs->program)
-            continue;
+         case GFD_BLOCK_TYPE_VERTEX_SHADER_PROGRAM:
+            if (gfd->vs->program)
+               continue;
 
-         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, block->data, block->header.dataSize);
-         gfd->vs->program = block->data;
-         break;
+            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, block->data, block->header.dataSize);
+            gfd->vs->program = block->data;
+            break;
 
-      case GFD_BLOCK_TYPE_PIXEL_SHADER_HEADER:
-         if (gfd->ps)
-            continue;
+         case GFD_BLOCK_TYPE_PIXEL_SHADER_HEADER:
+            if (gfd->ps)
+               continue;
 
-         gfd->ps = (GX2PixelShader*)block->data;
-         if(!gfd_relocate_block(block))
-            goto error;
+            gfd->ps = (GX2PixelShader*)block->data;
+            if (!gfd_relocate_block(block))
+               goto error;
 
-         break;
+            break;
 
-      case GFD_BLOCK_TYPE_PIXEL_SHADER_PROGRAM:
-         if(gfd->ps->program)
-            continue;
+         case GFD_BLOCK_TYPE_PIXEL_SHADER_PROGRAM:
+            if (gfd->ps->program)
+               continue;
 
-         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, block->data, block->header.dataSize);
-         gfd->ps->program = block->data;
-         break;
+            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, block->data, block->header.dataSize);
+            gfd->ps->program = block->data;
+            break;
 
-      default:
-         break;
+         default:
+            break;
       }
 
       block = (GFDBlock *)((u8 *)block + block->header.headerSize + block->header.dataSize);
    }
 
-   if(!gfd->vs)
-   {
-      printf("vertex shader is missing.\n");
+   if (!gfd->vs)
       goto error;
-   }
 
-   if(!gfd->vs->program)
-   {
-      printf("vertex shader program is missing.\n");
+   if (!gfd->vs->program)
       goto error;
-   }
 
-   if(!gfd->ps)
-   {
-      printf("pixel shader is missing.\n");
+   if (!gfd->ps)
       goto error;
-   }
 
-   if(!gfd->ps->program)
-   {
-      printf("pixel shader program is missing.\n");
+   if (!gfd->ps->program)
       goto error;
-   }
 
    return gfd;
 
 error:
-   printf("failed to open file : %s\n", filename);
    gfd_free(gfd);
 
    return NULL;

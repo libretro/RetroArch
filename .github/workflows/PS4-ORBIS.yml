@@ -1,0 +1,48 @@
+name: CI PS4/ORBIS
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: 
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-orbis:latest
+      options: --user root
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        apk add ncurses-dev make bash python2
+        apk add libintl icu-dev wget
+        wget https://dot.net/v1/dotnet-install.sh && chmod 755 dotnet-install.sh && ./dotnet-install.sh -c 3.0 --install-dir ~/cli
+    
+    - name: Compile RA
+      run: |
+        export PATH=~/cli:$PATH # .net cli
+        make -f Makefile.orbis -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: bin-${{ steps.slug.outputs.sha8 }}
+        path: |
+          retroarch_orbis.elf
+          retroarch_orbis.oelf
+          retroarch_orbis.self
+
+    - name: Version of binaries
+      run: |
+        clang --version
+        orbis-ld --version

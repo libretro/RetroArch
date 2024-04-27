@@ -1,13 +1,32 @@
 #ifndef COCOA_APPLE_PLATFORM_H
 #define COCOA_APPLE_PLATFORM_H
 
+#if TARGET_OS_TV
+#include "config_file.h"
+extern config_file_t *open_userdefaults_config_file(void);
+extern void write_userdefaults_config_file(void);
+extern void update_topshelf(void);
+#endif
+
+#ifdef __OBJC__
+
 #ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 #endif
 
+typedef enum apple_view_type
+{
+   APPLE_VIEW_TYPE_NONE = 0,
+   APPLE_VIEW_TYPE_OPENGL_ES,
+   APPLE_VIEW_TYPE_OPENGL,
+   APPLE_VIEW_TYPE_VULKAN,
+   APPLE_VIEW_TYPE_METAL
+} apple_view_type_t;
+
 #if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
 @interface WindowListener : NSResponder<NSWindowDelegate>
+@property (nonatomic) NSWindow* window;
 @end
 #endif
 
@@ -28,19 +47,23 @@
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
+#if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
+- (void)updateWindowedMode;
+#endif
 @end
 
 #endif
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 extern id<ApplePlatform> apple_platform;
-
-id<ApplePlatform> apple_platform;
 #else
-id apple_platform;
+extern id apple_platform;
 #endif
 
 #if defined(HAVE_COCOATOUCH)
+void rarch_start_draw_observer(void);
+void rarch_stop_draw_observer(void);
+
 @interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
 UINavigationControllerDelegate> {
     UIView *_renderView;
@@ -50,6 +73,7 @@ UINavigationControllerDelegate> {
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
 @property (nonatomic) int menu_count;
+@property (nonatomic) NSDate *bgDate;
 
 + (RetroArch_iOS*)get;
 
@@ -78,6 +102,8 @@ UINavigationControllerDelegate> {
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end
+#endif
+
 #endif
 
 #endif

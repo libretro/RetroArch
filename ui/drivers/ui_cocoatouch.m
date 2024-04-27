@@ -28,56 +28,80 @@
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 #include "../ui_companion_driver.h"
+#include "../../audio/audio_driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
+#include "../../tasks/task_content.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
 #endif
 
 #import <AVFoundation/AVFoundation.h>
+#import <CoreFoundation/CoreFoundation.h>
+
+#import <MetricKit/MetricKit.h>
+#import <MetricKit/MXMetricManager.h>
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+#import "JITSupport.h"
 id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
 #endif
 static CFRunLoopObserverRef iterate_observer;
 
-/* Forward declaration */
-static void apple_rarch_exited(void);
-
-static void rarch_enable_ui(void)
-{
-   bool boolean = true;
-
-   ui_companion_set_foreground(true);
-
-   retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-   retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   retroarch_menu_running();
-}
-
-static void rarch_disable_ui(void)
-{
-   bool boolean = false;
-
-   ui_companion_set_foreground(false);
-
-   retroarch_ctl(RARCH_CTL_SET_PAUSED, &boolean);
-   retroarch_ctl(RARCH_CTL_SET_IDLE,   &boolean);
-   retroarch_menu_running_finished(false);
-}
-
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
+
+static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
+{
+   static struct string_list *list = NULL;
+   static dispatch_once_t onceToken;
+
+   dispatch_once(&onceToken, ^{
+         union string_list_elem_attr attr;
+         attr.i = 0;
+         NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
+         NSString *primary;
+#if TARGET_OS_TV
+         primary = iconfiles[@"CFBundlePrimaryIcon"];
+#else
+         primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
+#endif
+         list = string_list_new();
+         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+
+         NSArray<NSString *> *alts;
+#if TARGET_OS_TV
+         alts = iconfiles[@"CFBundleAlternateIcons"];
+#else
+         alts = [iconfiles[@"CFBundleAlternateIcons"] allKeys];
+#endif
+         NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+         for (NSString *str in sorted)
+            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+      });
+
+   return list;
+}
+
+static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
+{
+   NSString *str;
+   if (!string_is_equal(iconName, "Default"))
+      str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
+   [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
+}
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
+   uint32_t runloop_flags;
    int          ret   = runloop_iterate();
 
    task_queue_check();
@@ -87,12 +111,34 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       ui_companion_cocoatouch_event_command(
             NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
+      exit(0);
       return;
    }
 
-   if (retroarch_ctl(RARCH_CTL_IS_IDLE, NULL))
-      return;
-   CFRunLoopWakeUp(CFRunLoopGetMain());
+   runloop_flags = runloop_get_flags();
+   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+}
+
+void rarch_start_draw_observer(void)
+{
+   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
+       return;
+
+   if (iterate_observer != NULL)
+      CFRelease(iterate_observer);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                              true, 0, rarch_draw_observer, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+}
+
+void rarch_stop_draw_observer(void)
+{
+    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
+        return;
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
 }
 
 apple_frontend_settings_t apple_frontend_settings;
@@ -110,6 +156,7 @@ void get_ios_version(int *major, int *minor)
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
+#if !TARGET_OS_TV
    unsigned i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)
       input_state_get_ptr()->current_data;
@@ -130,6 +177,7 @@ static void handle_touch_event(NSArray* touches)
          apple->touches[apple->touch_count ++].screen_y = coord.y * scale;
       }
    }
+#endif
 }
 
 #ifndef HAVE_APPLE_STORE
@@ -160,14 +208,14 @@ static void handle_touch_event(NSArray* touches)
  * defined in any standard iOS header */
 enum
 {
-   NSAlphaShiftKeyMask = 1 << 16,
-   NSShiftKeyMask      = 1 << 17,
-   NSControlKeyMask    = 1 << 18,
-   NSAlternateKeyMask  = 1 << 19,
-   NSCommandKeyMask    = 1 << 20,
-   NSNumericPadKeyMask = 1 << 21,
-   NSHelpKeyMask       = 1 << 22,
-   NSFunctionKeyMask   = 1 << 23,
+   NSAlphaShiftKeyMask                  = 1 << 16,
+   NSShiftKeyMask                       = 1 << 17,
+   NSControlKeyMask                     = 1 << 18,
+   NSAlternateKeyMask                   = 1 << 19,
+   NSCommandKeyMask                     = 1 << 20,
+   NSNumericPadKeyMask                  = 1 << 21,
+   NSHelpKeyMask                        = 1 << 22,
+   NSFunctionKeyMask                    = 1 << 23,
    NSDeviceIndependentModifierFlagsMask = 0xffff0000U
 };
 
@@ -182,9 +230,9 @@ enum
     if (last_time_stamp == event.timestamp)
        return [super handleKeyUIEvent:event];
 
-    last_time_stamp = event.timestamp;
+    last_time_stamp        = event.timestamp;
 
-    /* If the _hidEvent is null, [event _keyCode] will crash.
+    /* If the _hidEvent is NULL, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
     if (event._hidEvent)
     {
@@ -293,7 +341,10 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-
+    if (@available(iOS 13.4, tvOS 13.4, *)) {
+        if (event.type == UIEventTypeHover)
+            return;
+    }
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
@@ -307,9 +358,9 @@ enum
          /* Keyboard event hack for iOS versions prior to iOS 7.
           *
           * Derived from:
-                  * http://nacho4d-nacho4d.blogspot.com/2012/01/
-                  * catching-keyboard-events-in-ios.html
-                  */
+	  * http://nacho4d-nacho4d.blogspot.com/2012/01/
+	  * catching-keyboard-events-in-ios.html
+	  */
          const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
          int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
@@ -328,11 +379,20 @@ enum
 
 @end
 
+#if TARGET_OS_IOS
+@interface RetroArch_iOS () <MXMetricManagerSubscriber>
+
+@end
+#endif
+
 @implementation RetroArch_iOS
 
 #pragma mark - ApplePlatform
 -(id)renderView { return _renderView; }
--(bool)hasFocus { return YES; }
+-(bool)hasFocus
+{
+    return [[UIApplication sharedApplication] applicationState] == UIApplicationStateActive;
+}
 
 - (void)setViewType:(apple_view_type_t)vt
 {
@@ -349,14 +409,14 @@ enum
    switch (vt)
    {
 #ifdef HAVE_COCOA_METAL
-      case APPLE_VIEW_TYPE_VULKAN:
+       case APPLE_VIEW_TYPE_VULKAN:
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
-            v.paused = YES;
+            v.paused                = YES;
             v.enableSetNeedsDisplay = NO;
 #if TARGET_OS_IOS
-            v.multipleTouchEnabled = YES;
+            v.multipleTouchEnabled  = YES;
 #endif
             _renderView = v;
          }
@@ -367,7 +427,7 @@ enum
          break;
 
        case APPLE_VIEW_TYPE_NONE:
-                         default:
+       default:
          return;
    }
 
@@ -378,6 +438,7 @@ enum
    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
    [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   [_renderView layoutIfNeeded];
 }
 
 - (apple_view_type_t)viewType { return _vt; }
@@ -386,7 +447,7 @@ enum
 {
 #ifdef HAVE_COCOA_METAL
    MetalView *metalView = (MetalView*) _renderView;
-   CGFloat scale = [[UIScreen mainScreen] scale];
+   CGFloat scale        = [[UIScreen mainScreen] scale];
    [metalView setDrawableSize:CGSizeMake(
          _renderView.bounds.size.width * scale,
          _renderView.bounds.size.height * scale
@@ -395,7 +456,15 @@ enum
 }
 
 - (void)setCursorVisible:(bool)v { /* no-op for iOS */ }
-- (bool)setDisableDisplaySleep:(bool)disable { /* no-op for iOS */ return NO; }
+- (bool)setDisableDisplaySleep:(bool)disable
+{
+#if TARGET_OS_TV
+   [[UIApplication sharedApplication] setIdleTimerDisabled:disable];
+   return YES;
+#else
+   return NO;
+#endif
+}
 + (RetroArch_iOS*)get { return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate]; }
 
 -(NSString*)documentsDirectory
@@ -403,19 +472,51 @@ enum
    if (_documentsDirectory == nil)
    {
 #if TARGET_OS_IOS
-      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+      NSArray *paths      = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 #elif TARGET_OS_TV
-      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSArray *paths      = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
 #endif
-
       _documentsDirectory = paths.firstObject;
    }
    return _documentsDirectory;
 }
 
+- (void)handleAudioSessionInterruption:(NSNotification *)notification
+{
+   NSNumber *type = notification.userInfo[AVAudioSessionInterruptionTypeKey];
+   if (![type isKindOfClass:[NSNumber class]])
+      return;
+
+   if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan)
+   {
+      RARCH_LOG("AudioSession Interruption Began\n");
+      audio_driver_stop();
+   }
+   else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
+   {
+      RARCH_LOG("AudioSession Interruption Ended\n");
+      audio_driver_start(false);
+   }
+}
+
+- (NSData *)pngForIcon:(NSString *)iconName
+{
+    UIImage *img;
+    NSData *png;
+    img = [UIImage imageNamed:iconName];
+    if (!img)
+        NSLog(@"could not load %@\n", iconName);
+    else
+    {
+        png = UIImagePNGRepresentation(img);
+        if (!png)
+            NSLog(@"could not get png for %@\n", iconName);
+    }
+    return png;
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   NSError *error;
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -427,17 +528,45 @@ enum
    self.window        = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
 
-   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
    [self refreshSystemConfig];
    [self showGameView];
 
-   if (rarch_main(argc, argv, NULL))
-      apple_rarch_exited();
+   jb_start_altkit();
 
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-         true, 0, rarch_draw_observer, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+   rarch_main(argc, argv, NULL);
+
+   uico_driver_state_t *uico_st     = uico_state_get_ptr();
+   rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
+   struct string_list *icons;
+   if (appicon_setting && uico_st->drv && uico_st->drv->get_app_icons && (icons = uico_st->drv->get_app_icons()) && icons->size > 1)
+   {
+      appicon_setting->default_value.string = icons->elems[0].data;
+      int len = 0, i = 0;
+      const char *iconName = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; // need to ask uico_st for this
+      for (; i < (int)icons->size; i++)
+      {
+         len += strlen(icons->elems[i].data) + 1;
+         if (string_is_equal(iconName, icons->elems[i].data))
+            appicon_setting->value.target.string = icons->elems[i].data;
+      }
+      char *options = (char*)calloc(len, sizeof(char));
+      string_list_join_concat(options, len, icons, "|");
+      if (appicon_setting->values)
+         free((void*)appicon_setting->values);
+      appicon_setting->values = options;
+   }
+
+   rarch_start_draw_observer();
+
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
+
+#if TARGET_OS_IOS
+   [MXMetricManager.sharedManager addSubscriber:self];
+#endif
 
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
@@ -445,38 +574,107 @@ enum
 #endif
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application { }
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
+   rarch_stop_draw_observer();
+}
 
 - (void)applicationWillTerminate:(UIApplication *)application
 {
-   CFRunLoopObserverInvalidate(iterate_observer);
-   CFRelease(iterate_observer);
-   iterate_observer = NULL;
+   rarch_stop_draw_observer();
+   retroarch_main_quit();
+}
+
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+   self.bgDate = [NSDate date];
+   rarch_stop_draw_observer();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+   rarch_start_draw_observer();
+   NSError *error;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
+   if (settings->bools.audio_respect_silent_mode)
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   else
+       [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+
    if (!ui_companion_start_on_boot)
       [self showGameView];
+
+#ifdef HAVE_CLOUDSYNC
+   if (self.bgDate)
+   {
+      if (   [[NSDate date] timeIntervalSinceDate:self.bgDate] > 60.0f
+          && (   !(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+              || retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)))
+         task_push_cloud_sync();
+      self.bgDate = nil;
+   }
+#endif
+}
+
+-(BOOL)openRetroArchURL:(NSURL *)url
+{
+   if ([url.host isEqualToString:@"topshelf"])
+   {
+      NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      NSString *ns_path, *ns_core_path;
+      char path[PATH_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      content_ctx_info_t content_info = { 0 };
+      for (NSURLQueryItem *q in comp.queryItems)
+      {
+         if ([q.name isEqualToString:@"path"])
+            ns_path = q.value;
+         else if ([q.name isEqualToString:@"core_path"])
+            ns_core_path = q.value;
+      }
+      if (!ns_path || !ns_core_path)
+         return NO;
+      fill_pathname_expand_special(path, [ns_path UTF8String], sizeof(path));
+      fill_pathname_expand_special(core_path, [ns_core_path UTF8String], sizeof(core_path));
+      RARCH_LOG("TopShelf told us to open %s with %s\n", path, core_path);
+      return task_push_load_content_with_new_core_from_companion_ui(core_path, path,
+                                                                    NULL, NULL, NULL,
+                                                                    &content_info, NULL, NULL);
+   }
+   return NO;
 }
 
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+    if ([[url scheme] isEqualToString:@"retroarch"])
+        return [self openRetroArchURL:url];
+
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
-   NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
-   
-   // copy file to documents directory if its not already inside of documents directory
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   /* Copy file to documents directory if it's not already
+    * inside Documents directory */
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])
-            if (![manager copyItemAtPath:[url path] toPath:destination error:&error])
-               printf("%s\n", [[error description] UTF8String]);
+            [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
+   task_push_dbscan(
+      settings->paths.directory_playlist,
+      settings->paths.path_content_database,
+      fullpath,
+      false,
+      false,
+      NULL);
    return true;
 }
 
@@ -495,27 +693,14 @@ enum
 #if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
+   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
 #endif
 
-   [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
-   rarch_disable_ui();
-}
-
-- (IBAction)showPauseMenu:(id)sender
-{
-   rarch_enable_ui();
-
-#if TARGET_OS_IOS
-   [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
-#endif
-
-   [[UIApplication sharedApplication] setIdleTimerDisabled:false];
-   [self.window setRootViewController:self];
 }
 
 - (void)refreshSystemConfig
@@ -535,20 +720,58 @@ enum
 }
 
 - (void)supportOtherAudioSessions { }
+
+#if TARGET_OS_IOS
+- (void)didReceiveMetricPayloads:(NSArray<MXMetricPayload *> *)payloads
+{
+    for (MXMetricPayload *payload in payloads)
+    {
+        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_LOG("Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+    }
+}
+
+- (void)didReceiveDiagnosticPayloads:(NSArray<MXDiagnosticPayload *> *)payloads
+{
+    for (MXDiagnosticPayload *payload in payloads)
+    {
+        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        RARCH_LOG("Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+    }
+}
+#endif
+
 @end
+
+ui_companion_driver_t ui_companion_cocoatouch = {
+   NULL, /* init */
+   NULL, /* deinit */
+   NULL, /* toggle */
+   ui_companion_cocoatouch_event_command,
+   NULL, /* notify_refresh */
+   NULL, /* msg_queue_push */
+   NULL, /* render_messagebox */
+   NULL, /* get_main_window */
+   NULL, /* log_msg */
+   NULL, /* is_active */
+   ui_companion_cocoatouch_get_app_icons,
+   ui_companion_cocoatouch_set_app_icon,
+   NULL, /* browser_window */
+   NULL, /* msg_window */
+   NULL, /* window */
+   NULL, /* application */
+   "cocoatouch",
+};
 
 int main(int argc, char *argv[])
 {
+#if TARGET_OS_IOS
+    if (jb_enable_ptrace_hack())
+        RARCH_LOG("Ptrace hack complete, JIT support is enabled.\n");
+    else
+        RARCH_WARN("Ptrace hack NOT available; Please use an app like Jitterbug.\n");
+#endif
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
    }
-}
-
-static void apple_rarch_exited(void)
-{
-   RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
-
-   if (!ap)
-      return;
-   [ap showPauseMenu:ap];
 }

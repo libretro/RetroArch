@@ -30,8 +30,15 @@
 
 RETRO_BEGIN_DECLS
 
+/**
+ * Computes a buffer's CRC32 checksum.
+ *
+ * @param crc The initial CRC32 value.
+ * @param buf The buffer to calculate the CRC32 checksum of.
+ * @param len The length of the data in \c buf.
+ * @return The CRC32 checksum of the given buffer.
+ */
 uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len);
-uint32_t file_crc32(uint32_t crc, const char *path);
 
 RETRO_END_DECLS
 

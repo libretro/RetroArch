@@ -14,7 +14,6 @@
  */
 
 #include <string.h>
-#include <errno.h>
 #include <file/nbio.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -80,8 +79,8 @@ void task_file_load_handler(retro_task_t *task)
                   nbio_begin_read(handle);
                   return;
                }
-               else
-                  task_set_cancelled(task, true);
+
+               task_set_cancelled(task, true);
             }
             break;
          case NBIO_STATUS_TRANSFER_PARSE:
@@ -126,7 +125,7 @@ void task_file_load_handler(retro_task_t *task)
 
    if (task_get_cancelled(task))
    {
-      task_set_error(task, strdup("Task canceled."));
+      task_set_error(task, strldup("Task canceled.", sizeof("Task canceled.")));
       task_set_finished(task, true);
    }
 }

@@ -228,7 +228,7 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
    /* Free font */
    if (screensaver->font_data.font)
    {
-      gfx_display_font_free(screensaver->font_data.font);
+      font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
 
@@ -260,7 +260,7 @@ void menu_screensaver_context_destroy(menu_screensaver_t *screensaver)
     * call of menu_screensaver_iterate()) */
    if (screensaver->font_data.font)
    {
-      gfx_display_font_free(screensaver->font_data.font);
+      font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
    }
@@ -428,7 +428,7 @@ static bool menu_screensaver_update_state(
       /* Free any existing font */
       if (screensaver->font_data.font)
       {
-         gfx_display_font_free(screensaver->font_data.font);
+         font_driver_free(screensaver->font_data.font);
          video_coord_array_free(&screensaver->font_data.raster_block.carr);
          screensaver->font_data.font = NULL;
       }
@@ -457,20 +457,16 @@ static bool menu_screensaver_update_state(
        !screensaver->font_data.font &&
        screensaver->font_enabled)
    {
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char font_file[PATH_MAX_LENGTH];
+#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
       char pkg_path[PATH_MAX_LENGTH];
-
-      font_file[0] = '\0';
-      pkg_path[0]  = '\0';
-
       /* Get font file path */
       if (!string_is_empty(dir_assets))
-         fill_pathname_join(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
+         fill_pathname_join_special(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
       else
          strlcpy(pkg_path, MENU_SS_PKG_DIR, sizeof(pkg_path));
 
-      fill_pathname_join(font_file, pkg_path, MENU_SS_FONT_FILE,
+      fill_pathname_join_special(font_file, pkg_path, MENU_SS_FONT_FILE,
             sizeof(font_file));
 
       /* Warn if font file is missing */
@@ -483,7 +479,6 @@ static bool menu_screensaver_update_state(
       /* On platforms without TTF support, there is
        * no need to generate a font path (a bitmap
        * font will be created automatically) */
-      char font_file[PATH_MAX_LENGTH];
       font_file[0] = '\0';
 #endif
 
@@ -567,11 +562,15 @@ void menu_screensaver_iterate(
             particle->a = particle->a + (float)(rand() % 16 - 9) * 0.01f;
             particle->b = particle->b + (float)(rand() % 16 - 7) * 0.01f;
 
-            particle->a = (particle->a < -0.4f) ? -0.4f : particle->a;
-            particle->a = (particle->a >  0.1f) ?  0.1f : particle->a;
+            if (particle->a < -0.4f)
+               particle->a = -0.4f;
+            else if (particle->a >  0.1f)
+               particle->a = 0.1f;
 
-            particle->b = (particle->b < -0.1f) ? -0.1f : particle->b;
-            particle->b = (particle->b >  0.4f) ?  0.4f : particle->b;
+            if (particle->b < -0.1f)
+               particle->b = -0.1f;
+            else if (particle->b >  0.4f)
+               particle->b = 0.4f;
 
             /* Update particle location */
             particle->x = particle->x + (global_speed_factor * particle->size * particle->a);
@@ -750,19 +749,23 @@ void menu_screensaver_iterate(
 void menu_screensaver_frame(menu_screensaver_t *screensaver,
       video_frame_info_t *video_info, gfx_display_t *p_disp)
 {
-   void *userdata = NULL;
    unsigned video_width;
    unsigned video_height;
-
+   video_driver_state_t *video_st = video_state_get_ptr();
+   void *userdata                 = NULL;
+   font_data_t *font              = NULL;
    if (!screensaver)
       return;
 
-   video_width  = video_info->width;
-   video_height = video_info->height;
-   userdata     = video_info->userdata;
+   font                           = screensaver->font_data.font;
+   video_width                    = video_info->width;
+   video_height                   = video_info->height;
+   userdata                       = video_info->userdata;
 
    /* Set viewport */
-   video_driver_set_viewport(video_width, video_height, true, false);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, true, false);
 
    /* Draw background */
    gfx_display_draw_quad(
@@ -777,11 +780,10 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
          NULL);
 
    /* Draw particle effect, if required */
-   if ((screensaver->effect != MENU_SCREENSAVER_BLANK) &&
-       screensaver->font_data.font &&
-       screensaver->particles)
+   if (  (screensaver->effect != MENU_SCREENSAVER_BLANK)
+       && font
+       && screensaver->particles)
    {
-      font_data_t *font     = screensaver->font_data.font;
       float y_centre_offset = screensaver->font_data.y_centre_offset;
       float particle_scale  = screensaver->particle_scale;
       size_t i;
@@ -810,12 +812,15 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       /* Flush text and unbind font */
       if (screensaver->font_data.raster_block.carr.coords.vertices != 0)
       {
-         font_driver_flush(video_width, video_height, font);
+         if (font->renderer && font->renderer->flush)
+            font->renderer->flush(video_width, video_height, font->renderer_data);
          screensaver->font_data.raster_block.carr.coords.vertices = 0;
       }
       font_driver_bind_block(font, NULL);
    }
 
    /* Unset viewport */
-   video_driver_set_viewport(video_width, video_height, false, true);
+   if (video_st->current_video && video_st->current_video->set_viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_width, video_height, false, true);
 }

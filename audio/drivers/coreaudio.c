@@ -31,9 +31,10 @@
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 
+#include <defines/cocoa_defines.h>
+
 #include "../audio_driver.h"
 #include "../../verbosity.h"
-#include "defines/cocoa_defines.h"
 
 typedef struct coreaudio
 {
@@ -50,10 +51,6 @@ typedef struct coreaudio
    bool is_paused;
    bool nonblock;
 } coreaudio_t;
-
-#if TARGET_OS_IOS
-static bool g_interrupted;
-#endif
 
 static void coreaudio_free(void *data)
 {
@@ -122,18 +119,10 @@ static OSStatus audio_write_cb(void *userdata,
    return noErr;
 }
 
-#if TARGET_OS_IPHONE
-static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
-{
-    (void)data;
-#if TARGET_OS_IOS
-    g_interrupted = (interrupt_state == kAudioSessionBeginInterruption);
-#endif
-}
-#else
+#if !TARGET_OS_IPHONE
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
-   unsigned i;
+   int i;
    UInt32 deviceCount;
    AudioObjectPropertyAddress propaddr;
    AudioDeviceID *devices              = NULL;
@@ -164,7 +153,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
 #endif
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
 
-   for (i = 0; i < deviceCount; i ++)
+   for (i = 0; i < (int)deviceCount; i ++)
    {
       char device_name[1024];
       device_name[0] = 0;
@@ -203,8 +192,6 @@ static void *coreaudio_init(const char *device,
 #endif
    AURenderCallbackStruct cb               = {0};
    AudioStreamBasicDescription stream_desc = {0};
-   bool component_unavailable              = false;
-   static bool session_initialized         = false;
 #if !HAS_MACOSX_10_12
    ComponentDescription desc               = {0};
 #else
@@ -215,46 +202,33 @@ static void *coreaudio_init(const char *device,
    if (!dev)
       return NULL;
 
-   (void)session_initialized;
-   (void)device;
-
    dev->lock = slock_new();
    dev->cond = scond_new();
 
-#if TARGET_OS_IOS
-   if (!session_initialized)
-   {
-      session_initialized = true;
-      AudioSessionInitialize(0, 0, coreaudio_interrupt_listener, 0);
-      AudioSessionSetActive(true);
-   }
-#endif
-
    /* Create AudioComponent */
-   desc.componentType = kAudioUnitType_Output;
+   desc.componentType         = kAudioUnitType_Output;
 #if TARGET_OS_IPHONE
-   desc.componentSubType = kAudioUnitSubType_RemoteIO;
+   desc.componentSubType      = kAudioUnitSubType_RemoteIO;
 #else
-   desc.componentSubType = kAudioUnitSubType_HALOutput;
+   desc.componentSubType      = kAudioUnitSubType_HALOutput;
 #endif
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
 #if !HAS_MACOSX_10_12
-   comp = FindNextComponent(NULL, &desc);
-#else
-   comp = AudioComponentFindNext(NULL, &desc);
-#endif
-   if (!comp)
+   if (!(comp = FindNextComponent(NULL, &desc)))
       goto error;
+#else
+   if (!(comp = AudioComponentFindNext(NULL, &desc)))
+      goto error;
+#endif
 
 #if !HAS_MACOSX_10_12
-   component_unavailable = (OpenAComponent(comp, &dev->dev) != noErr);
-#else
-   component_unavailable = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);
-#endif
-
-   if (component_unavailable)
+   if ((OpenAComponent(comp, &dev->dev) != noErr))
       goto error;
+#else
+   if ((AudioComponentInstanceNew(comp, &dev->dev) != noErr))
+      goto error;
+#endif
 
 #if !TARGET_OS_IPHONE
    if (device)
@@ -307,7 +281,7 @@ static void *coreaudio_init(const char *device,
 #endif
 
    /* Set callbacks and finish up. */
-   cb.inputProc = audio_write_cb;
+   cb.inputProc       = audio_write_cb;
    cb.inputProcRefCon = dev;
 
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,
@@ -321,8 +295,7 @@ static void *coreaudio_init(const char *device,
    fifo_size        *= 2 * sizeof(float);
    dev->buffer_size  = fifo_size;
 
-   dev->buffer       = fifo_new(fifo_size);
-   if (!dev->buffer)
+   if (!(dev->buffer = fifo_new(fifo_size)))
       goto error;
 
    RARCH_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n",
@@ -345,11 +318,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written     = 0;
 
-#if TARGET_OS_IOS
-   while (!g_interrupted && size > 0)
-#else
-   while (size > 0)
-#endif
+   while (!dev->is_paused && size > 0)
    {
       size_t write_avail;
 
@@ -372,8 +341,11 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 
 #if TARGET_OS_IOS
       if (write_avail == 0 && !scond_wait_timeout(
-               dev->cond, dev->lock, 3000000))
-         g_interrupted = true;
+               dev->cond, dev->lock, 300000))
+      {
+         slock_unlock(dev->lock);
+         break;
+      }
 #else
       if (write_avail == 0)
          scond_wait(dev->cond, dev->lock);
@@ -417,11 +389,7 @@ static bool coreaudio_start(void *data, bool is_shutdown)
    return dev->is_paused ? false : true;
 }
 
-static bool coreaudio_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool coreaudio_use_float(void *data) { return true; }
 
 static size_t coreaudio_write_avail(void *data)
 {

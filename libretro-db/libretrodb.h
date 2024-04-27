@@ -49,7 +49,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider, void 
 
 void libretrodb_close(libretrodb_t *db);
 
-int libretrodb_open(const char *path, libretrodb_t *db);
+int libretrodb_open(const char *path, libretrodb_t *db, bool write);
 
 int libretrodb_create_index(libretrodb_t *db, const char *name,
       const char *field_name);

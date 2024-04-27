@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 
 #include <formats/image.h>
@@ -266,9 +265,9 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       int RLE_repeating          = 0;
       int RLE_count              = 0;
       int read_next_pixel        = 1;
-      /* Needs to be at least 32 bytes to silence a GCC warning,
+      /* Needs to be at least 33 bytes to silence a GCC warning,
        * only 4 are actually used */
-      unsigned char raw_data[32] = {0};
+      unsigned char raw_data[33] = {0};
       unsigned char *tga_palette = NULL;
 
       /*   Do I need to load a palette? */

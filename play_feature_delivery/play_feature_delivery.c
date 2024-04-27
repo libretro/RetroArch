@@ -20,7 +20,6 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
-#include <retro_assert.h>
 #include <stdlib.h>
 #endif
 
@@ -207,13 +206,8 @@ void play_feature_delivery_init(void)
 #ifdef HAVE_THREADS
    if (!state->enabled_lock)
       state->enabled_lock = slock_new();
-
-   retro_assert(state->enabled_lock);
-
    if (!state->status_lock)
-      state->status_lock = slock_new();
-
-   retro_assert(state->status_lock);
+      state->status_lock  = slock_new();
 #endif
 
    /* Note: Would like to cache whether this
@@ -366,12 +360,11 @@ struct string_list *play_feature_delivery_available_cores(void)
       if (!string_is_empty(core_name))
       {
          char core_file[256];
-         core_file[0] = '\0';
-
          /* Generate core file name */
-         strlcpy(core_file, core_name, sizeof(core_file));
-         strlcat(core_file, "_libretro_android.so", sizeof(core_file));
-
+         size_t _len = strlcpy(core_file, core_name, sizeof(core_file));
+         strlcpy(core_file       + _len,
+               "_libretro_android.so",
+               sizeof(core_file) - _len);
          /* Add entry to list */
          if (!string_is_empty(core_file))
             string_list_append(core_list, core_file, attr);

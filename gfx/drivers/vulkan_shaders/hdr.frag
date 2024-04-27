@@ -24,7 +24,7 @@ vec3 InverseTonemap(vec3 sdr)
 {
    vec3 hdr;
       
-   if(global.inverse_tonemap > 0.0f)
+   if (global.inverse_tonemap > 0.0f)
    { 
       sdr = pow(abs(sdr), vec3(global.contrast / 2.2f));       /* Display Gamma - needs to be determined by calibration screen */
 
@@ -83,23 +83,19 @@ vec3 Hdr10(vec3 hdr)
 {
    vec3 hdr10;
 
-   if(global.hdr10 > 0.0f)
+   if (global.hdr10 > 0.0f)
    {
       /* Now convert into HDR10 */
       vec3 rec2020 = hdr * k709to2020;
 
-      if(global.expand_gamut > 0.0f)
-      {
-         rec2020 = hdr * kExpanded709to2020;
-      }
+      if (global.expand_gamut > 0.0f)
+         rec2020        = hdr * kExpanded709to2020;
 
       vec3 linearColour = rec2020 * (global.paper_white_nits / kMaxNitsFor2084);
       hdr10             = LinearToST2084(linearColour);
    }
    else
-   {
       hdr10 = hdr;
-   }
 
    return hdr10;
 }

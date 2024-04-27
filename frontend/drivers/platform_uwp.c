@@ -37,30 +37,28 @@
 #endif
 
 #include "../frontend_driver.h"
+
 #include "../../configuration.h"
 #include "../../defaults.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
-#include "../../paths.h"
 
 #include "../../uwp/uwp_func.h"
 
 static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 {
-   char buildStr[11]      = {0};
+   size_t _len;
+   char build_str[11]     = {0};
    bool server            = false;
    const char *arch       = "";
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
-   /* Windows 2000 and later */
    SYSTEM_INFO si         = {{0}};
    OSVERSIONINFOEX vi     = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
    GetSystemInfo(&si);
 
-   /* Available from NT 3.5 and Win95 */
    GetVersionEx((OSVERSIONINFO*)&vi);
 
    server = vi.wProductType != VER_NT_WORKSTATION;
@@ -82,13 +80,6 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       default:
          break;
    }
-#else
-   OSVERSIONINFO vi = {0};
-   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-
-   /* Available from NT 3.5 and Win95 */
-   GetVersionEx(&vi);
-#endif
 
    if (major)
       *major = vi.dwMajorVersion;
@@ -96,156 +87,91 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    if (minor)
       *minor = vi.dwMinorVersion;
 
-   if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(buildStr, sizeof(buildStr), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
-   else
-      snprintf(buildStr, sizeof(buildStr), "%lu", vi.dwBuildNumber);
+   snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
 
    switch (vi.dwMajorVersion)
    {
       case 10:
          if (server)
-            strcpy_literal(s, "Windows Server 2016");
+         {
+            if ((vi.dwBuildNumber >= 14393) && (vi.dwBuildNumber < 17763))
+               _len = strlcpy(s, "Windows Server 2016", len);
+            else if ((vi.dwBuildNumber >= 17763) && (vi.dwBuildNumber < 20348))
+               _len = strlcpy(s, "Windows Server 2019", len);
+            else if (vi.dwBuildNumber >= 20348)
+               _len = strlcpy(s, "Windows Server 2022", len);
+         }
          else
-            strcpy_literal(s, "Windows 10");
-         break;
-      case 6:
-         switch (vi.dwMinorVersion)
          {
-            case 3:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2012 R2");
-               else
-                  strcpy_literal(s, "Windows 8.1");
-               break;
-            case 2:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2012");
-               else
-                  strcpy_literal(s, "Windows 8");
-               break;
-            case 1:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2008 R2");
-               else
-                  strcpy_literal(s, "Windows 7");
-               break;
-            case 0:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2008");
-               else
-                  strcpy_literal(s, "Windows Vista");
-               break;
-            default:
-               break;
-         }
-         break;
-      case 5:
-         switch (vi.dwMinorVersion)
-         {
-            case 2:
-               if (server)
-                  strcpy_literal(s, "Windows Server 2003");
-               else
-               {
-                  /* Yes, XP Pro x64 is a higher version number than XP x86 */
-                  if (string_is_equal(arch, "x64"))
-                     strcpy_literal(s, "Windows XP");
-               }
-               break;
-            case 1:
-               strcpy_literal(s, "Windows XP");
-               break;
-            case 0:
-               strcpy_literal(s, "Windows 2000");
-               break;
-         }
-         break;
-      case 4:
-         switch (vi.dwMinorVersion)
-         {
-            case 0:
-               if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  strcpy_literal(s, "Windows 95");
-               else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  strcpy_literal(s, "Windows NT 4.0");
-               else
-                  strcpy_literal(s, "Unknown");
-               break;
-            case 90:
-               strcpy_literal(s, "Windows ME");
-               break;
-            case 10:
-               strcpy_literal(s, "Windows 98");
-               break;
+            if ((vi.dwBuildNumber >= 10240) && (vi.dwBuildNumber < 22000))
+               _len = strlcpy(s, "Windows 10", len);
+            else if (vi.dwBuildNumber >= 22000)
+               _len = strlcpy(s, "Windows 11", len);
          }
          break;
       default:
-         snprintf(s, len, "Windows %i.%i", *major, *minor);
+         _len = snprintf(s, len, "Windows %i.%i", *major, *minor);
          break;
    }
 
    if (!string_is_empty(arch))
    {
-      strlcat(s, " ", len);
-      strlcat(s, arch, len);
+      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   strlcat(s, " Build ", len);
-   strlcat(s, buildStr, len);
+   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy(s + _len, build_str, len - _len);
 
    if (!string_is_empty(vi.szCSDVersion))
    {
-      strlcat(s, " ", len);
-      strlcat(s, vi.szCSDVersion, len);
+      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 
    if (!string_is_empty(uwp_device_family))
    {
-      strlcat(s, " ", len);
-      strlcat(s, uwp_device_family, len);
+      _len += strlcpy(s + _len, " ", len - _len);
+      strlcpy(s + _len, uwp_device_family, len - _len);
    }
 }
 
-static void frontend_uwp_init(void *data)
-{
-}
+static void frontend_uwp_init(void *data) { }
 
 enum frontend_powerstate frontend_uwp_get_powerstate(
       int *seconds, int *percent)
 {
    SYSTEM_POWER_STATUS status;
-   enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+   enum frontend_powerstate 
+      ret         = FRONTEND_POWERSTATE_NONE;
 
-   if (!GetSystemPowerStatus(&status))
-      return ret;
+   if (GetSystemPowerStatus(&status))
+   {
+      if (status.BatteryFlag == 0xFF)
+         ret      = FRONTEND_POWERSTATE_NONE;
+      else if (status.BatteryFlag & (1 << 7))
+         ret      = FRONTEND_POWERSTATE_NO_SOURCE;
+      else if (status.BatteryFlag & (1 << 3))
+         ret      = FRONTEND_POWERSTATE_CHARGING;
+      else if (status.ACLineStatus == 1)
+         ret      = FRONTEND_POWERSTATE_CHARGED;
+      else
+         ret      = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
-   if (status.BatteryFlag == 0xFF)
-      ret = FRONTEND_POWERSTATE_NONE;
-   else if (status.BatteryFlag & (1 << 7))
-      ret = FRONTEND_POWERSTATE_NO_SOURCE;
-   else if (status.BatteryFlag & (1 << 3))
-      ret = FRONTEND_POWERSTATE_CHARGING;
-   else if (status.ACLineStatus == 1)
-      ret = FRONTEND_POWERSTATE_CHARGED;
-   else
-      ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
-
-   *percent  = (int)status.BatteryLifePercent;
-   *seconds  = (int)status.BatteryLifeTime;
+      *percent    = (int)status.BatteryLifePercent;
+      *seconds    = (int)status.BatteryLifeTime;
 
 #ifdef _WIN32
-   if (*percent == 255)
-      *percent = 0;
+      if (*percent == 255)
+         *percent = 0;
 #endif
+   }
 
    return ret;
 }
 
 enum frontend_architecture frontend_uwp_get_arch(void)
 {
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
-   /* Windows 2000 and later */
    SYSTEM_INFO si = {{0}};
 
    GetSystemInfo(&si);
@@ -263,7 +189,6 @@ enum frontend_architecture frontend_uwp_get_arch(void)
       default:
          break;
    }
-#endif
 
    return FRONTEND_ARCH_NONE;
 }
@@ -271,52 +196,55 @@ enum frontend_architecture frontend_uwp_get_arch(void)
 static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
+   int i;
    char home_dir[PATH_MAX_LENGTH];
    file_list_t            *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
          MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
    bool have_any_drives         = false;
+   DWORD drives                 = GetLogicalDrives();
    home_dir[0]                  = '\0';
 
    fill_pathname_home_dir(home_dir, sizeof(home_dir));
 
-   DWORD drives = GetLogicalDrives();
-   for (int i = 0; i < 26; i++)
+   for (i = 0; i < 26; i++)
    {
       if (drives & (1 << i))
       {
          TCHAR driveName[] = { TEXT('A') + i, TEXT(':'), TEXT('\\'), TEXT('\0') };
-         menu_entries_append_enum(list,
+         menu_entries_append(list,
             driveName,
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0);
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
          have_any_drives = true;
       }
    }
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
       home_dir,
       msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
       enum_idx,
-      FILE_TYPE_DIRECTORY, 0, 0);
+      FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
    if (!have_any_drives)
    {
-      menu_entries_append_enum(list,
+      menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
          MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0, NULL);
 
       if (string_is_equal(uwp_device_family, "Windows.Desktop"))
       {
-         menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
+         menu_entries_append(list,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS),
             MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0, NULL);
       }
    }
 #endif
@@ -339,8 +267,6 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
       "~\\cheats\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
       "~\\database\\rdb\\", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CURSOR],
-      "~\\database\\cursors\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
       "~\\playlists\\", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
@@ -357,10 +283,8 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
       "~\\thumbnails\\", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
       "~\\overlays\\", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-      "~\\layouts\\", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
+      "~\\overlays\\keyboards\\", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    /* This one is an exception: cores have to be loaded from
     * the install directory,
     * since this is the only place UWP apps can take .dlls from */
@@ -388,7 +312,7 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
-      strcpy_literal(g_defaults.settings_menu, "glui");
+      strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 #endif
 #endif
 
@@ -404,46 +328,18 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 
 static uint64_t frontend_uwp_get_total_mem(void)
 {
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
    return mem_info.ullTotalPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwTotalPhys;
-#endif
 }
 
 static uint64_t frontend_uwp_get_free_mem(void)
 {
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
    MEMORYSTATUSEX mem_info;
    mem_info.dwLength = sizeof(MEMORYSTATUSEX);
    GlobalMemoryStatusEx(&mem_info);
-   return ((frontend_uwp_get_total_mem() - mem_info.ullAvailPhys));
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return ((frontend_uwp_get_total_mem() - mem_info.dwAvailPhys));
-#endif
-}
-
-enum retro_language frontend_uwp_get_user_language(void)
-{
-   return uwp_get_language();
-}
-
-static const char* frontend_uwp_get_cpu_model_name(void)
-{
-   return uwp_get_cpu_model_name();
+   return (mem_info.ullTotalPhys - mem_info.ullAvailPhys);
 }
 
 frontend_ctx_driver_t frontend_ctx_uwp = {
@@ -475,8 +371,8 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
-   frontend_uwp_get_cpu_model_name, /* get_cpu_model_name  */
-   frontend_uwp_get_user_language,  /* get_user_language   */
+   uwp_get_cpu_model_name,          /* get_cpu_model_name  */
+   uwp_get_language,                /* get_user_language   */
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
    NULL,                            /* set_gamemode        */

@@ -72,26 +72,23 @@ static void *supertwoxsai_generic_create(const struct softfilter_config *config,
    if (!filt)
       return NULL;
 
-   (void)simd;
-   (void)config;
-   (void)userdata;
-
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
-   filt->threads = 1;
-   filt->in_fmt  = in_fmt;
-
-   if (!filt->workers)
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data))))
    {
       free(filt);
       return NULL;
    }
+   /* Apparently the code is not thread-safe,
+    * so force single threaded operation... */
+   filt->threads = 1;
+   filt->in_fmt  = in_fmt;
+
    return filt;
 }
 
 static void supertwoxsai_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   *out_width = width * SUPERTWOXSAI_SCALE;
+   *out_width  = width * SUPERTWOXSAI_SCALE;
    *out_height = height * SUPERTWOXSAI_SCALE;
 }
 
@@ -216,11 +213,12 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
       {
          supertwoxsai_declare_variables(uint32_t, in, nextline);
 
-         //---------------------------    B1 B2
-         //                             4  5  6 S2
-         //                             1  2  3 S1
-         //                               A1 A2
-         //--------------------------------------
+         /*---------------------------    B1 B2
+          *                             4  5  6 S2
+          *                             1  2  3 S1
+          *                               A1 A2
+          *--------------------------------------
+          */
 
          supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
       }
@@ -246,11 +244,12 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
       {
          supertwoxsai_declare_variables(uint16_t, in, nextline);
 
-         //---------------------------    B1 B2
-         //                             4  5  6 S2
-         //                             1  2  3 S1
-         //                               A1 A2
-         //--------------------------------------
+         /*---------------------------    B1 B2
+          *                             4  5  6 S2
+          *                             1  2  3 S1
+          *                               A1 A2
+          *--------------------------------------
+          */
 
          supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
       }
@@ -263,11 +262,10 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
 static void supertwoxsai_work_cb_rgb565(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   uint16_t *input = (uint16_t*)thr->in_data;
-   uint16_t *output = (uint16_t*)thr->out_data;
-   unsigned width = thr->width;
-   unsigned height = thr->height;
-
+   uint16_t *input                    = (uint16_t*)thr->in_data;
+   uint16_t *output                   = (uint16_t*)thr->out_data;
+   unsigned width                     = thr->width;
+   unsigned height                    = thr->height;
    supertwoxsai_generic_rgb565(width, height,
          thr->first, thr->last, input,
         (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
@@ -278,16 +276,15 @@ static void supertwoxsai_work_cb_rgb565(void *data, void *thread_data)
 static void supertwoxsai_work_cb_xrgb8888(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   uint32_t *input = (uint32_t*)thr->in_data;
-   uint32_t *output = (uint32_t*)thr->out_data;
-   unsigned width = thr->width;
-   unsigned height = thr->height;
-
+   uint32_t *input                    = (uint32_t*)thr->in_data;
+   uint32_t *output                   = (uint32_t*)thr->out_data;
+   unsigned width                     = thr->width;
+   unsigned height                    = thr->height;
    supertwoxsai_generic_xrgb8888(width, height,
          thr->first, thr->last, input,
-            (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
-            output,
-            (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
+	 (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
+	 output,
+	 (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
 }
 
 static void supertwoxsai_generic_packets(void *data,
@@ -302,23 +299,24 @@ static void supertwoxsai_generic_packets(void *data,
    {
       struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
 
-      unsigned y_start = (height * i) / filt->threads;
-      unsigned y_end = (height * (i + 1)) / filt->threads;
-      thr->out_data = (uint8_t*)output + y_start * SUPERTWOXSAI_SCALE * output_stride;
-      thr->in_data = (const uint8_t*)input + y_start * input_stride;
-      thr->out_pitch = output_stride;
-      thr->in_pitch = input_stride;
-      thr->width = width;
-      thr->height = y_end - y_start;
+      unsigned y_start       = (height * i) / filt->threads;
+      unsigned y_end         = (height * (i + 1)) / filt->threads;
+      thr->out_data          = (uint8_t*)output + y_start * SUPERTWOXSAI_SCALE * output_stride;
+      thr->in_data           = (const uint8_t*)input + y_start * input_stride;
+      thr->out_pitch         = output_stride;
+      thr->in_pitch          = input_stride;
+      thr->width             = width;
+      thr->height            = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
-      thr->first = y_start;
-      thr->last = y_end == height;
+      /* Workers need to know if they can access pixels 
+       * outside their given buffer. */
+      thr->first             = y_start;
+      thr->last              = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-         packets[i].work = supertwoxsai_work_cb_rgb565;
+         packets[i].work     = supertwoxsai_work_cb_rgb565;
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
-         packets[i].work = supertwoxsai_work_cb_xrgb8888;
+         packets[i].work     = supertwoxsai_work_cb_xrgb8888;
       packets[i].thread_data = thr;
    }
 }
@@ -340,7 +338,6 @@ static const struct softfilter_implementation supertwoxsai_generic = {
 
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &supertwoxsai_generic;
 }
 

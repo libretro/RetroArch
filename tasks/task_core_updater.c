@@ -16,9 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <boolean.h>
 
@@ -45,6 +45,7 @@
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
 #include "../menu/menu_entries.h"
+#include "../menu/menu_driver.h"
 #endif
 
 /* Get core updater list */
@@ -76,6 +77,7 @@ enum core_updater_download_status
    CORE_UPDATER_DOWNLOAD_START_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS,
+   CORE_UPDATER_DOWNLOAD_ERROR,
    CORE_UPDATER_DOWNLOAD_END
 };
 
@@ -132,6 +134,28 @@ typedef struct update_installed_cores_handle
    bool auto_backup;
 } update_installed_cores_handle_t;
 
+#if 0
+enum update_single_core_status
+{
+   UPDATE_SINGLE_CORE_BEGIN = 0,
+   UPDATE_SINGLE_CORE_WAIT_LIST,
+   UPDATE_SINGLE_CORE_UPDATE_CORE,
+   UPDATE_SINGLE_CORE_WAIT_DOWNLOAD,
+   UPDATE_SINGLE_CORE_END
+};
+
+typedef struct update_single_core_handle
+{
+   core_updater_list_t *core_list;
+   size_t auto_backup_history_size;
+   enum update_single_core_status status;
+   char path_core[PATH_MAX_LENGTH];
+   char path_dir_libretro[PATH_MAX_LENGTH];
+   char path_dir_core_assets[PATH_MAX_LENGTH];
+   bool auto_backup;
+} update_single_core_handle_t;
+#endif
+
 #if defined(ANDROID)
 /* Play feature delivery core install */
 enum play_feature_delivery_install_task_status
@@ -183,31 +207,24 @@ typedef struct play_feature_delivery_switch_cores_handle
 /* Returns CRC32 of specified core file */
 static uint32_t task_core_updater_get_core_crc(const char *core_path)
 {
-   if (string_is_empty(core_path))
-      return 0;
+   /* Open core file */
+   intfstream_t *core_file = intfstream_open_file(
+         core_path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-   if (path_is_valid(core_path))
+   if (core_file)
    {
-      /* Open core file */
-      intfstream_t *core_file = intfstream_open_file(
-            core_path, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      uint32_t crc = 0;
+      /* Get CRC value */
+      bool success = intfstream_get_crc(core_file, &crc);
 
-      if (core_file)
-      {
-         uint32_t crc = 0;
+      /* Close core file */
+      intfstream_close(core_file);
+      free(core_file);
+      core_file = NULL;
 
-         /* Get CRC value */
-         bool success = intfstream_get_crc(core_file, &crc);
-
-         /* Close core file */
-         intfstream_close(core_file);
-         free(core_file);
-         core_file = NULL;
-
-         if (success)
-            return crc;
-      }
+      if (success)
+         return crc;
    }
 
    return 0;
@@ -229,9 +246,7 @@ static void cb_http_task_core_updater_get_list(
    if (!transf)
       goto finish;
 
-   list_handle = (core_updater_list_handle_t*)transf->user_data;
-
-   if (!list_handle)
+   if (!(list_handle = (core_updater_list_handle_t*)transf->user_data))
       goto finish;
 
    task_set_data(task, NULL); /* going to pass ownership to list_handle */
@@ -242,7 +257,6 @@ static void cb_http_task_core_updater_get_list(
 
 
 finish:
-
    /* Log any error messages */
    if (!success)
       RARCH_ERR("[core updater] Download of core list '%s' failed: %s\n",
@@ -256,9 +270,6 @@ finish:
 static void free_core_updater_list_handle(
       core_updater_list_handle_t *list_handle)
 {
-   if (!list_handle)
-      return;
-
    if (list_handle->http_data)
    {
       /* since we took onwership, we have to destroy it ourself */
@@ -279,9 +290,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
    if (!task)
       goto task_finished;
 
-   list_handle = (core_updater_list_handle_t*)task->state;
-
-   if (!list_handle)
+   if (!(list_handle = (core_updater_list_handle_t*)task->state))
       goto task_finished;
 
    if (task_get_cancelled(task))
@@ -291,18 +300,15 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
    {
       case CORE_UPDATER_LIST_BEGIN:
          {
-            settings_t *settings    = config_get_ptr();
-            file_transfer_t *transf = NULL;
-            char *tmp_url           = NULL;
             char buildbot_url[PATH_MAX_LENGTH];
+            settings_t *settings         = config_get_ptr();
+            file_transfer_t *transf      = NULL;
+            char *tmp_url                = NULL;
             const char *net_buildbot_url = 
                settings->paths.network_buildbot_url;
 
-            buildbot_url[0] = '\0';
-
             /* Reset core updater list */
             core_updater_list_reset(list_handle->core_list);
-
             /* Get core listing URL */
             if (!settings)
                goto task_finished;
@@ -310,7 +316,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             if (string_is_empty(net_buildbot_url))
                goto task_finished;
 
-            fill_pathname_join(
+            fill_pathname_join_special(
                   buildbot_url,
                   net_buildbot_url,
                   ".index-extended",
@@ -327,9 +333,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                goto task_finished;
 
             /* Configure file transfer object */
-            transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
-
-            if (!transf)
+            if (!(transf = (file_transfer_t*)calloc(1,
+                        sizeof(file_transfer_t))))
                goto task_finished;
 
             /* > Seems to be required - not sure why the
@@ -339,7 +344,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             transf->user_data = (void*)list_handle;
 
             /* Push HTTP transfer task */
-            list_handle->http_task = (retro_task_t*)task_push_http_transfer_file(
+            list_handle->http_task = (retro_task_t*)
+               task_push_http_transfer_file(
                   buildbot_url, true, NULL,
                   cb_http_task_core_updater_get_list, transf);
 
@@ -357,12 +363,10 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             /* Otherwise, check if HTTP task is still running */
             else if (!list_handle->http_task_finished)
             {
-               list_handle->http_task_finished =
-                     task_get_finished(list_handle->http_task);
-
                /* If HTTP task is running, copy current
                 * progress value to *this* task */
-               if (!list_handle->http_task_finished)
+               if (!(list_handle->http_task_finished =
+                     task_get_finished(list_handle->http_task)))
                   task_set_progress(
                      task, task_get_progress(list_handle->http_task));
             }
@@ -400,9 +404,13 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             /* Enable menu refresh, if required */
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
             if (list_handle->refresh_menu)
-               menu_entries_ctl(
-                     MENU_ENTRIES_CTL_UNSET_REFRESH,
-                     &list_handle->refresh_menu);
+            {
+               struct menu_state *menu_st = menu_state_get_ptr();
+               if (list_handle->refresh_menu)
+                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+               else
+                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            }
 #endif
          }
          /* fall-through */
@@ -414,11 +422,11 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
       task_set_finished(task, true);
 
-   free_core_updater_list_handle(list_handle);
+   if (list_handle)
+      free_core_updater_list_handle(list_handle);
 }
 
 static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_data)
@@ -431,8 +439,7 @@ static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_dat
    if (task->handler != task_core_updater_get_list_handler)
       return false;
 
-   list_handle = (core_updater_list_handle_t*)task->state;
-   if (!list_handle)
+   if (!(list_handle = (core_updater_list_handle_t*)task->state))
       return false;
 
    return ((uintptr_t)user_data == (uintptr_t)list_handle->core_list);
@@ -477,9 +484,7 @@ void *task_push_get_core_updater_list(
       goto error;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Configure task */
@@ -505,7 +510,8 @@ error:
    }
 
    /* Clean up handle */
-   free_core_updater_list_handle(list_handle);
+   if (list_handle)
+      free_core_updater_list_handle(list_handle);
 
    return NULL;
 }
@@ -521,6 +527,11 @@ static void cb_task_core_updater_download(
    /* Reload core info files
     * > This must be done on the main thread */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   /* Force reload of contentless cores icons */
+   menu_contentless_cores_free();
+#endif
 }
 
 static void cb_decompress_task_core_updater_download(
@@ -563,27 +574,16 @@ void cb_http_task_core_updater_download(
    core_updater_download_handle_t *download_handle = NULL;
    char output_dir[PATH_MAX_LENGTH];
 
-   output_dir[0] = '\0';
-
    if (!data || !transf)
       goto finish;
-
    if (!data->data || string_is_empty(transf->path))
       goto finish;
 
-   download_handle = (core_updater_download_handle_t*)transf->user_data;
-
-   if (!download_handle)
+   if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
       goto finish;
 
-   /* Update download_handle task status
-    * NOTE: We set decompress_task_complete = true
-    * here to prevent any lock-ups in the event
-    * of errors (or lack of decompression support).
-    * decompress_task_complete will be set false
-    * if/when we actually call task_push_decompress() */
+   /* Update download_handle task status */
    download_handle->http_task_complete       = true;
-   download_handle->decompress_task_complete = true;
 
    /* Create output directory, if required */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
@@ -624,39 +624,37 @@ void cb_http_task_core_updater_download(
     * in such a way that this cannot happen... */
    if (path_is_compressed_file(transf->path))
    {
-      download_handle->decompress_task = (retro_task_t*)task_push_decompress(
+      if (!(download_handle->decompress_task = (retro_task_t*)task_push_decompress(
             transf->path, output_dir,
             NULL, NULL, NULL,
             cb_decompress_task_core_updater_download,
             (void*)download_handle,
-            NULL, true);
-
-      if (!download_handle->decompress_task)
+            NULL, true)))
       {
          err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
          goto finish;
       }
-
-      download_handle->decompress_task_complete = false;
    }
 #endif
 
 finish:
-
    /* Log any error messages */
    if (!string_is_empty(err))
+   {
       RARCH_ERR("[core updater] Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
-
+      download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+   }
    if (transf)
       free(transf);
+
+   /* if no decompress task was queued, mark it as completed */
+   if (!download_handle->decompress_task)
+      download_handle->decompress_task_complete = true;
 }
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
 {
-   if (!download_handle)
-      return;
-
    if (download_handle->path_dir_libretro)
       free(download_handle->path_dir_libretro);
 
@@ -689,9 +687,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
    if (!task)
       goto task_finished;
 
-   download_handle = (core_updater_download_handle_t*)task->state;
-
-   if (!download_handle)
+   if (!(download_handle = (core_updater_download_handle_t*)task->state))
       goto task_finished;
 
    if (task_get_cancelled(task))
@@ -703,8 +699,16 @@ static void task_core_updater_download_handler(retro_task_t *task)
          {
             /* Get CRC of existing core, if required */
             if (download_handle->local_crc == 0)
-               download_handle->local_crc = task_core_updater_get_core_crc(
-                     download_handle->local_core_path);
+            {
+               const char *local_core_path = 
+                  download_handle->local_core_path;
+               if (
+                       !string_is_empty(local_core_path)
+                     && path_is_valid  (local_core_path)
+                  )
+                  download_handle->local_crc = 
+                     task_core_updater_get_core_crc(local_core_path);
+            }
 
             /* Check whether existing core and remote core
              * have the same CRC */
@@ -741,17 +745,16 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             if (download_handle->backup_task)
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
+               size_t _len;
+               char task_title[128];
 
                /* Update task title */
                task_free_title(task);
 
-               strlcpy(
+               _len = strlcpy(
                      task_title, msg_hash_to_str(MSG_BACKING_UP_CORE),
                      sizeof(task_title));
-               strlcat(task_title, download_handle->display_name, sizeof(task_title));
+               strlcpy(task_title + _len, download_handle->display_name, sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
 
@@ -806,15 +809,13 @@ static void task_core_updater_download_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
          {
+            size_t _len;
             file_transfer_t *transf = NULL;
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
+            char task_title[128];
 
             /* Configure file transfer object */
-            transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
-
-            if (!transf)
+            if (!(transf = (file_transfer_t*)calloc(1,
+                        sizeof(file_transfer_t))))
                goto task_finished;
 
             strlcpy(
@@ -831,10 +832,10 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Update task title */
             task_free_title(task);
 
-            strlcpy(
+            _len = strlcpy(
                   task_title, msg_hash_to_str(MSG_DOWNLOADING_CORE),
                   sizeof(task_title));
-            strlcat(task_title, download_handle->display_name, sizeof(task_title));
+            strlcpy(task_title + _len, download_handle->display_name, sizeof(task_title) - _len);
 
             task_set_title(task, strdup(task_title));
 
@@ -878,17 +879,16 @@ static void task_core_updater_download_handler(retro_task_t *task)
              * callback to trigger */
             if (download_handle->http_task_complete)
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
+               size_t _len;
+               char task_title[128];
 
                /* Update task title */
                task_free_title(task);
 
-               strlcpy(
+               _len = strlcpy(
                      task_title, msg_hash_to_str(MSG_EXTRACTING_CORE),
                      sizeof(task_title));
-               strlcat(task_title, download_handle->display_name, sizeof(task_title));
+               strlcpy(task_title + _len, download_handle->display_name, sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
 
@@ -900,13 +900,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS:
          {
             /* If decompression task is NULL, then it either
-             * finished or an error occurred - in either case,
-             * just move on to the next state */
-            if (!download_handle->decompress_task)
-               download_handle->decompress_task_complete = true;
-            /* Otherwise, check if decompression task is still
-             * running */
-            else if (!download_handle->decompress_task_finished)
+             * hasn't been queued by the download task yet,
+             * or an error occurred. The latter should set
+             * the decompress_task_complete flag and we'll
+             * continue to the next state */
+            if (download_handle->decompress_task &&
+               !download_handle->decompress_task_finished)
             {
                download_handle->decompress_task_finished =
                      task_get_finished(download_handle->decompress_task);
@@ -936,21 +935,38 @@ static void task_core_updater_download_handler(retro_task_t *task)
                download_handle->status = CORE_UPDATER_DOWNLOAD_END;
          }
          break;
-      case CORE_UPDATER_DOWNLOAD_END:
+      case CORE_UPDATER_DOWNLOAD_ERROR:
          {
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
+            size_t _len;
+            char task_title[128];
 
             /* Set final task title */
             task_free_title(task);
 
-            strlcpy(
+            _len = strlcpy(task_title, msg_hash_to_str(MSG_CORE_INSTALL_FAILED), sizeof(task_title));
+            strlcpy(task_title + _len, download_handle->display_name,
+                  sizeof(task_title) - _len);
+
+            task_set_title(task, strdup(task_title));
+            task_set_progress(task, 100);
+            goto task_finished;
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_END:
+         {
+            size_t _len;
+            char task_title[128];
+
+            /* Set final task title */
+            task_free_title(task);
+
+            _len = strlcpy(
                   task_title,
                   download_handle->crc_match ?
                         msg_hash_to_str(MSG_LATEST_CORE_INSTALLED) : msg_hash_to_str(MSG_CORE_INSTALLED),
                   sizeof(task_title));
-            strlcat(task_title, download_handle->display_name, sizeof(task_title));
+            strlcpy(task_title + _len, download_handle->display_name,
+                  sizeof(task_title) - _len);
 
             task_set_title(task, strdup(task_title));
          }
@@ -967,24 +983,19 @@ task_finished:
    if (task)
       task_set_finished(task, true);
 
-   free_core_updater_download_handle(download_handle);
+   if (download_handle)
+      free_core_updater_download_handle(download_handle);
 }
 
 static bool task_core_updater_download_finder(retro_task_t *task, void *user_data)
 {
-   core_updater_download_handle_t *download_handle = NULL;
-
-   if (!task || !user_data)
-      return false;
-
-   if (task->handler != task_core_updater_download_handler)
-      return false;
-
-   download_handle = (core_updater_download_handle_t*)task->state;
-   if (!download_handle)
-      return false;
-
-   return string_is_equal((const char*)user_data, download_handle->remote_filename);
+   if (task && user_data && task->handler == task_core_updater_download_handler)
+   {
+      core_updater_download_handle_t *download_handle = NULL;
+      if ((download_handle = (core_updater_download_handle_t*)task->state))
+         return string_is_equal((const char*)user_data, download_handle->remote_filename);
+   }
+   return false;
 }
 
 void *task_push_core_updater_download(
@@ -994,8 +1005,9 @@ void *task_push_core_updater_download(
       const char *path_dir_libretro,
       const char *path_dir_core_assets)
 {
+   size_t _len;
    task_finder_data_t find_data;
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[128];
    char local_download_path[PATH_MAX_LENGTH];
    const core_updater_list_entry_t *list_entry     = NULL;
    retro_task_t *task                              = NULL;
@@ -1013,9 +1025,9 @@ void *task_push_core_updater_download(
 #endif
 
    /* Sanity check */
-   if (!core_list ||
-       string_is_empty(filename) ||
-       !download_handle)
+   if (   !core_list
+       || string_is_empty(filename)
+       || !download_handle)
       goto error;
 
    /* Get core updater list entry */
@@ -1041,12 +1053,9 @@ void *task_push_core_updater_download(
       /* If task is not muted, generate notification */
       if (!mute)
       {
-         char msg[PATH_MAX_LENGTH];
-
-         msg[0] = '\0';
-
-         strlcpy(msg, msg_hash_to_str(MSG_CORE_UPDATE_DISABLED), sizeof(msg));
-         strlcat(msg, list_entry->display_name, sizeof(msg));
+         char msg[128];
+         size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_UPDATE_DISABLED), sizeof(msg));
+         strlcpy(msg + _len, list_entry->display_name, sizeof(msg) - _len);
 
          runloop_msg_queue_push(msg, 1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1059,7 +1068,7 @@ void *task_push_core_updater_download(
    if (string_is_empty(path_dir_libretro))
       goto error;
 
-   fill_pathname_join(
+   fill_pathname_join_special(
          local_download_path,
          path_dir_libretro,
          list_entry->remote_filename,
@@ -1096,16 +1105,15 @@ void *task_push_core_updater_download(
       goto error;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Configure task */
-   strlcpy(
+   _len = strlcpy(
          task_title, msg_hash_to_str(MSG_UPDATING_CORE),
          sizeof(task_title));
-   strlcat(task_title, download_handle->display_name, sizeof(task_title));
+   strlcpy(task_title + _len, download_handle->display_name,
+         sizeof(task_title) - _len);
 
    task->handler          = task_core_updater_download_handler;
    task->state            = download_handle;
@@ -1130,7 +1138,8 @@ error:
    }
 
    /* Clean up handle */
-   free_core_updater_download_handle(download_handle);
+   if (download_handle)
+      free_core_updater_download_handle(download_handle);
 
    return NULL;
 }
@@ -1142,9 +1151,6 @@ error:
 static void free_update_installed_cores_handle(
       update_installed_cores_handle_t *update_installed_handle)
 {
-   if (!update_installed_handle)
-      return;
-
    if (update_installed_handle->path_dir_libretro)
       free(update_installed_handle->path_dir_libretro);
 
@@ -1251,14 +1257,12 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
             if (core_installed)
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
-
-               strlcpy(
+               char task_title[128];
+               size_t _len = strlcpy(
                      task_title, msg_hash_to_str(MSG_CHECKING_CORE),
                      sizeof(task_title));
-               strlcat(task_title, list_entry->display_name, sizeof(task_title));
+               strlcpy(task_title + _len, list_entry->display_name,
+                     sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
             }
@@ -1276,7 +1280,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
       case UPDATE_INSTALLED_CORES_UPDATE_CORE:
          {
             const core_updater_list_entry_t *list_entry = NULL;
-            uint32_t local_crc;
+            uint32_t local_crc                          = 0;
 
             /* Get list entry
              * > In the event of an error, just return
@@ -1309,8 +1313,15 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             }
 
             /* Get CRC of existing core */
-            local_crc = task_core_updater_get_core_crc(
-                  list_entry->local_core_path);
+            {
+               const char *local_core_path = list_entry->local_core_path;
+               if (
+                       !string_is_empty(local_core_path)
+                     && path_is_valid  (local_core_path)
+                  )
+                  local_crc = task_core_updater_get_core_crc(
+                        local_core_path);
+            }
 
             /* Check whether existing core and remote core
              * have the same CRC
@@ -1341,17 +1352,16 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
             else
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
-
+               size_t _len;
+               char task_title[128];
                /* Update task title */
                task_free_title(task);
 
-               strlcpy(
+               _len = strlcpy(
                      task_title, msg_hash_to_str(MSG_UPDATING_CORE),
                      sizeof(task_title));
-               strlcat(task_title, list_entry->display_name, sizeof(task_title));
+               strlcpy(task_title + _len, list_entry->display_name,
+                     sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
 
@@ -1394,9 +1404,10 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              *   successfully */
             if (update_installed_handle->list_size > 0)
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
+               char task_title[128];
+               size_t _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                     sizeof(task_title));
 
                /* > Generate final status message based on number
                 *   of cores that were updated/locked */
@@ -1404,28 +1415,28 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                {
                   if (update_installed_handle->num_locked > 0)
                      snprintf(
-                           task_title, sizeof(task_title), "%s [%s%u, %s%u]",
-                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           task_title         + _len,
+                           sizeof(task_title) - _len,
+                           " [%s%u, %s%u]",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated,
                            msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                            update_installed_handle->num_locked);
                   else
                      snprintf(
-                           task_title, sizeof(task_title), "%s [%s%u]",
-                           msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                           task_title         + _len,
+                           sizeof(task_title) - _len,
+                           " [%s%u]",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated);
                }
                else if (update_installed_handle->num_locked > 0)
                   snprintf(
-                        task_title, sizeof(task_title), "%s [%s%u]",
-                        msg_hash_to_str(MSG_ALL_CORES_UPDATED),
+                        task_title         + _len,
+                        sizeof(task_title) - _len,
+                        " [%s%u]",
                         msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                         update_installed_handle->num_locked);
-               else
-                  strlcpy(task_title, msg_hash_to_str(MSG_ALL_CORES_UPDATED),
-                        sizeof(task_title));
 
                task_set_title(task, strdup(task_title));
             }
@@ -1441,21 +1452,127 @@ static void task_update_installed_cores_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
       task_set_finished(task, true);
 
-   free_update_installed_cores_handle(update_installed_handle);
+   if (update_installed_handle)
+      free_update_installed_cores_handle(update_installed_handle);
 }
+
+#if 0
+static void task_update_single_core_handler(retro_task_t *task)
+{
+   update_single_core_handle_t *handle =
+      (update_single_core_handle_t*)task->state;
+
+   switch (handle->status)
+   {
+      case UPDATE_SINGLE_CORE_BEGIN:
+         {
+            if (task_push_get_core_updater_list(handle->core_list,
+                  true, false))
+               handle->status = UPDATE_SINGLE_CORE_WAIT_LIST;
+            else
+               handle->status = UPDATE_SINGLE_CORE_END;
+         }
+         break;
+      case UPDATE_SINGLE_CORE_WAIT_LIST:
+         {
+            task_finder_data_t find_data;
+
+            find_data.func     = task_core_updater_get_list_finder;
+            find_data.userdata = handle->core_list;
+            if (!task_queue_find(&find_data))
+               handle->status = UPDATE_SINGLE_CORE_UPDATE_CORE;
+         }
+         break;
+      case UPDATE_SINGLE_CORE_UPDATE_CORE:
+         {
+            uint32_t crc                           = 0;
+            const core_updater_list_entry_t *entry = NULL;
+
+            if (!core_updater_list_get_core(handle->core_list,
+                  handle->path_core, &entry))
+            {
+               handle->status = UPDATE_SINGLE_CORE_END;
+               break;
+            }
+
+            if (core_info_get_core_lock(entry->local_core_path, false))
+            {
+               handle->status = UPDATE_SINGLE_CORE_END;
+               break;
+            }
+
+            {
+               const char *local_core_path = entry->local_core_path;
+               if (
+                       !string_is_empty(local_core_path)
+                     && path_is_valid  (local_core_path)
+                  )
+                  crc = task_core_updater_get_core_crc(local_core_path);
+            }
+
+            if (!crc || crc == entry->crc)
+            {
+               handle->status = UPDATE_SINGLE_CORE_END;
+               break;
+            }
+
+            if (task_push_core_updater_download(handle->core_list,
+                  entry->remote_filename, crc, true,
+                  handle->auto_backup, handle->auto_backup_history_size,
+                  handle->path_dir_libretro, handle->path_dir_core_assets))
+               handle->status = UPDATE_SINGLE_CORE_WAIT_DOWNLOAD;
+            else
+               handle->status = UPDATE_SINGLE_CORE_END;
+         }
+         break;
+      case UPDATE_SINGLE_CORE_WAIT_DOWNLOAD:
+         {
+            task_finder_data_t find_data;
+            const core_updater_list_entry_t *entry = NULL;
+
+            if (!core_updater_list_get_core(handle->core_list,
+                  handle->path_core, &entry))
+            {
+               handle->status = UPDATE_SINGLE_CORE_END;
+               break;
+            }
+
+            find_data.func     = task_core_updater_download_finder;
+            find_data.userdata = entry->remote_filename;
+            if (!task_queue_find(&find_data))
+               handle->status = UPDATE_SINGLE_CORE_END;
+         }
+         break;
+      case UPDATE_SINGLE_CORE_END:
+      default:
+         task_set_progress(task, 100);
+         task_set_finished(task, true);
+         break;
+   }
+}
+
+static void task_update_single_core_cleanup(retro_task_t *task)
+{
+   update_single_core_handle_t *handle =
+      (update_single_core_handle_t*)task->state;
+
+   core_updater_list_free(handle->core_list);
+   free(handle);
+}
+#endif
 
 static bool task_update_installed_cores_finder(retro_task_t *task, void *user_data)
 {
-   if (!task)
-      return false;
-
-   if (task->handler == task_update_installed_cores_handler)
-      return true;
-
+   if (task)
+      if (     task->handler == task_update_installed_cores_handler
+#if 0
+            || task->handler == task_update_single_core_handler
+#endif
+            )
+         return true;
    return false;
 }
 
@@ -1478,8 +1595,8 @@ void task_push_update_installed_cores(
 #endif
 
    /* Sanity check */
-   if (!update_installed_handle ||
-       string_is_empty(path_dir_libretro))
+   if (  !update_installed_handle
+       || string_is_empty(path_dir_libretro))
       goto error;
 
    /* Configure handle */
@@ -1509,9 +1626,7 @@ void task_push_update_installed_cores(
       goto error;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Configure task */
@@ -1536,8 +1651,72 @@ error:
    }
 
    /* Clean up handle */
-   free_update_installed_cores_handle(update_installed_handle);
+   if (update_installed_handle)
+      free_update_installed_cores_handle(update_installed_handle);
 }
+
+#if 0
+bool task_push_update_single_core(
+      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro, const char *path_dir_core_assets)
+{
+   task_finder_data_t find_data;
+   core_updater_list_t *core_list;
+   update_single_core_handle_t *handle;
+   retro_task_t *task;
+
+   if (string_is_empty(path_core) || string_is_empty(path_dir_libretro))
+      return false;
+
+#ifdef ANDROID
+   /* Regular core updater is disabled in Play Store builds. */
+   if (play_feature_delivery_enabled())
+      return false;
+#endif
+
+   /* Only one instance of this task may run at a time. */
+   find_data.func     = task_update_installed_cores_finder;
+   find_data.userdata = NULL;
+   if (task_queue_find(&find_data))
+      return false;
+
+   core_list = core_updater_list_init();
+   handle    = (update_single_core_handle_t*)malloc(sizeof(*handle));
+   task      = task_init();
+   if (!core_list || !handle || !task)
+   {
+      core_updater_list_free(core_list);
+      free(handle);
+      free(task);
+
+      return false;
+   }
+
+   /* Configure handle */
+   handle->status                   = UPDATE_SINGLE_CORE_BEGIN;
+   handle->core_list                = core_list;
+   handle->auto_backup              = auto_backup;
+   handle->auto_backup_history_size = auto_backup_history_size;
+   strlcpy(handle->path_core, path_core, sizeof(handle->path_core));
+   strlcpy(handle->path_dir_libretro, path_dir_libretro,
+      sizeof(handle->path_dir_libretro));
+   if (!string_is_empty(path_dir_core_assets))
+      strlcpy(handle->path_dir_core_assets, path_dir_core_assets,
+         sizeof(handle->path_dir_core_assets));
+   else
+      handle->path_dir_core_assets[0] = '\0';
+
+   /* Configure task */
+   task->handler = task_update_single_core_handler;
+   task->cleanup = task_update_single_core_cleanup;
+   task->state   = handle;
+
+   /* Push task */
+   task_queue_push(task);
+
+   return true;
+}
+#endif
 
 #if defined(ANDROID)
 /**************************************/
@@ -1547,9 +1726,6 @@ error:
 static void free_play_feature_delivery_install_handle(
       play_feature_delivery_install_handle_t *pfd_install_handle)
 {
-   if (!pfd_install_handle)
-      return;
-
    if (pfd_install_handle->core_filename)
       free(pfd_install_handle->core_filename);
 
@@ -1566,16 +1742,16 @@ static void free_play_feature_delivery_install_handle(
    pfd_install_handle = NULL;
 }
 
-static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
+static void task_play_feature_delivery_core_install_handler(
+      retro_task_t *task)
 {
    play_feature_delivery_install_handle_t *pfd_install_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   pfd_install_handle = (play_feature_delivery_install_handle_t*)task->state;
-
-   if (!pfd_install_handle)
+   if (!(pfd_install_handle =
+            (play_feature_delivery_install_handle_t*)task->state))
       goto task_finished;
 
    if (task_get_cancelled(task))
@@ -1602,10 +1778,9 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
              * play feature delivery transaction */
             if (path_is_valid(pfd_install_handle->local_core_path))
             {
+               size_t _len;
                char backup_core_path[PATH_MAX_LENGTH];
                bool backup_successful = false;
-
-               backup_core_path[0] = '\0';
 
                /* Have to create a backup, in case install
                 * process fails
@@ -1613,10 +1788,12 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
                 *   run at a time, a UID is not required */
 
                /* Generate backup file name */
-               strlcpy(backup_core_path, pfd_install_handle->local_core_path,
+               _len = strlcpy(backup_core_path,
+                     pfd_install_handle->local_core_path,
                      sizeof(backup_core_path));
-               strlcat(backup_core_path, FILE_PATH_BACKUP_EXTENSION,
-                     sizeof(backup_core_path));
+               strlcpy(backup_core_path + _len,
+                     FILE_PATH_BACKUP_EXTENSION,
+                     sizeof(backup_core_path) - _len);
 
                if (!string_is_empty(backup_core_path))
                {
@@ -1657,15 +1834,12 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
          break;
       case PLAY_FEATURE_DELIVERY_INSTALL_WAIT:
          {
-            bool install_active;
+            size_t _len;
             enum play_feature_delivery_install_status install_status;
             unsigned install_progress;
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
-
+            char task_title[128];
             /* Get current install status */
-            install_active = play_feature_delivery_download_status(
+            bool install_active = play_feature_delivery_download_status(
                   &install_status, &install_progress);
 
             /* In all cases, update task progress */
@@ -1683,18 +1857,20 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
                   break;
                case PLAY_FEATURE_DELIVERY_DOWNLOADING:
                   task_free_title(task);
-                  strlcpy(task_title, msg_hash_to_str(MSG_DOWNLOADING_CORE),
+                  _len = strlcpy(task_title, msg_hash_to_str(MSG_DOWNLOADING_CORE),
                         sizeof(task_title));
-                  strlcat(task_title, pfd_install_handle->display_name,
-                        sizeof(task_title));
+                  strlcpy(task_title + _len,
+                        pfd_install_handle->display_name,
+                        sizeof(task_title) - _len);
                   task_set_title(task, strdup(task_title));
                   break;
                case PLAY_FEATURE_DELIVERY_INSTALLING:
                   task_free_title(task);
-                  strlcpy(task_title, msg_hash_to_str(MSG_INSTALLING_CORE),
+                  _len = strlcpy(task_title, msg_hash_to_str(MSG_INSTALLING_CORE),
                         sizeof(task_title));
-                  strlcat(task_title, pfd_install_handle->display_name,
-                        sizeof(task_title));
+                  strlcpy(task_title + _len,
+                        pfd_install_handle->display_name,
+                        sizeof(task_title) - _len);
                   task_set_title(task, strdup(task_title));
                   break;
                default:
@@ -1709,10 +1885,9 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
          break;
       case PLAY_FEATURE_DELIVERY_INSTALL_END:
          {
+            size_t _len;
+            char task_title[128];
             const char *msg_str = msg_hash_to_str(MSG_CORE_INSTALL_FAILED);
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
 
             /* Set final task title */
             task_free_title(task);
@@ -1722,9 +1897,10 @@ static void task_play_feature_delivery_core_install_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_LATEST_CORE_INSTALLED) :
                      msg_hash_to_str(MSG_CORE_INSTALLED);
 
-            strlcpy(task_title, msg_str, sizeof(task_title));
-            strlcat(task_title, pfd_install_handle->display_name,
-                  sizeof(task_title));
+            _len = strlcpy(task_title, msg_str, sizeof(task_title));
+            strlcpy(task_title + _len,
+                  pfd_install_handle->display_name,
+                  sizeof(task_title) - _len);
 
             task_set_title(task, strdup(task_title));
 
@@ -1769,19 +1945,15 @@ task_finished:
    if (task)
       task_set_finished(task, true);
 
-   free_play_feature_delivery_install_handle(pfd_install_handle);
+   if (pfd_install_handle)
+      free_play_feature_delivery_install_handle(pfd_install_handle);
 }
 
 static bool task_play_feature_delivery_core_install_finder(
       retro_task_t *task, void *user_data)
 {
-   if (!task)
-      return false;
-
-   if (task->handler == task_play_feature_delivery_core_install_handler)
-      return true;
-
-   return false;
+   return (task && task->handler ==
+         task_play_feature_delivery_core_install_handler);
 }
 
 void *task_push_play_feature_delivery_core_install(
@@ -1789,20 +1961,19 @@ void *task_push_play_feature_delivery_core_install(
       const char *filename,
       bool mute)
 {
+   size_t _len;
    task_finder_data_t find_data;
-   char task_title[PATH_MAX_LENGTH];
+   char task_title[128];
    const core_updater_list_entry_t *list_entry                = NULL;
    retro_task_t *task                                         = NULL;
    play_feature_delivery_install_handle_t *pfd_install_handle = (play_feature_delivery_install_handle_t*)
          calloc(1, sizeof(play_feature_delivery_install_handle_t));
 
-   task_title[0] = '\0';
-
    /* Sanity check */
-   if (!core_list ||
-       string_is_empty(filename) ||
-       !pfd_install_handle ||
-       !play_feature_delivery_enabled())
+   if (   !core_list
+       ||  string_is_empty(filename)
+       || !pfd_install_handle
+       || !play_feature_delivery_enabled())
       goto error;
 
    /* Get core updater list entry */
@@ -1810,8 +1981,8 @@ void *task_push_play_feature_delivery_core_install(
          core_list, filename, &list_entry))
       goto error;
 
-   if (string_is_empty(list_entry->local_core_path) ||
-       string_is_empty(list_entry->display_name))
+   if (   string_is_empty(list_entry->local_core_path)
+       || string_is_empty(list_entry->display_name))
       goto error;
 
    /* Only one core may be downloaded at a time */
@@ -1831,16 +2002,15 @@ void *task_push_play_feature_delivery_core_install(
    pfd_install_handle->status                 = PLAY_FEATURE_DELIVERY_INSTALL_BEGIN;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Configure task */
-   strlcpy(task_title, msg_hash_to_str(MSG_UPDATING_CORE),
+   _len = strlcpy(task_title, msg_hash_to_str(MSG_UPDATING_CORE),
          sizeof(task_title));
-   strlcat(task_title, pfd_install_handle->display_name,
-         sizeof(task_title));
+   strlcpy(task_title + _len,
+         pfd_install_handle->display_name,
+         sizeof(task_title) - _len);
 
    task->handler          = task_play_feature_delivery_core_install_handler;
    task->state            = pfd_install_handle;
@@ -1872,7 +2042,8 @@ error:
    }
 
    /* Clean up handle */
-   free_play_feature_delivery_install_handle(pfd_install_handle);
+   if (pfd_install_handle)
+      free_play_feature_delivery_install_handle(pfd_install_handle);
 
    return NULL;
 }
@@ -1884,9 +2055,6 @@ error:
 static void free_play_feature_delivery_switch_cores_handle(
       play_feature_delivery_switch_cores_handle_t *pfd_switch_cores_handle)
 {
-   if (!pfd_switch_cores_handle)
-      return;
-
    if (pfd_switch_cores_handle->path_dir_libretro)
       free(pfd_switch_cores_handle->path_dir_libretro);
 
@@ -1902,16 +2070,16 @@ static void free_play_feature_delivery_switch_cores_handle(
    pfd_switch_cores_handle = NULL;
 }
 
-static void task_play_feature_delivery_switch_cores_handler(retro_task_t *task)
+static void task_play_feature_delivery_switch_cores_handler(
+      retro_task_t *task)
 {
    play_feature_delivery_switch_cores_handle_t *pfd_switch_cores_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   pfd_switch_cores_handle = (play_feature_delivery_switch_cores_handle_t*)task->state;
-
-   if (!pfd_switch_cores_handle)
+   if (!(pfd_switch_cores_handle =
+            (play_feature_delivery_switch_cores_handle_t*)task->state))
       goto task_finished;
 
    if (task_get_cancelled(task))
@@ -1996,15 +2164,13 @@ static void task_play_feature_delivery_switch_cores_handler(retro_task_t *task)
 
             if (core_installed)
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
-
-               strlcpy(task_title, msg_hash_to_str(MSG_CHECKING_CORE),
+               char task_title[128];
+               size_t _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_CHECKING_CORE),
                      sizeof(task_title));
-               strlcat(task_title, list_entry->display_name,
-                     sizeof(task_title));
-
+               strlcpy(task_title + _len,
+                     list_entry->display_name,
+                     sizeof(task_title) - _len);
                task_set_title(task, strdup(task_title));
             }
             else
@@ -2063,17 +2229,18 @@ static void task_play_feature_delivery_switch_cores_handler(retro_task_t *task)
                      PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE;
             else
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0] = '\0';
+               size_t _len;
+               char task_title[128];
 
                /* Update task title */
                task_free_title(task);
 
-               strlcpy(task_title, msg_hash_to_str(MSG_UPDATING_CORE),
+               _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_UPDATING_CORE),
                      sizeof(task_title));
-               strlcat(task_title, list_entry->display_name,
-                     sizeof(task_title));
+               strlcpy(task_title + _len,
+                     list_entry->display_name,
+                     sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
 
@@ -2153,23 +2320,18 @@ static void task_play_feature_delivery_switch_cores_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
       task_set_finished(task, true);
 
-   free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
+   if (pfd_switch_cores_handle)
+      free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
 }
 
 static bool task_play_feature_delivery_switch_cores_finder(
       retro_task_t *task, void *user_data)
 {
-   if (!task)
-      return false;
-
-   if (task->handler == task_play_feature_delivery_switch_cores_handler)
-      return true;
-
-   return false;
+   return (task && task->handler ==
+         task_play_feature_delivery_switch_cores_handler);
 }
 
 void task_push_play_feature_delivery_switch_installed_cores(
@@ -2183,10 +2345,10 @@ void task_push_play_feature_delivery_switch_installed_cores(
                calloc(1, sizeof(play_feature_delivery_switch_cores_handle_t));
 
    /* Sanity check */
-   if (string_is_empty(path_dir_libretro) ||
-       string_is_empty(path_libretro_info) ||
-       !pfd_switch_cores_handle ||
-       !play_feature_delivery_enabled())
+   if (    string_is_empty(path_dir_libretro)
+       ||  string_is_empty(path_libretro_info)
+       || !pfd_switch_cores_handle
+       || !play_feature_delivery_enabled())
       goto error;
 
    /* Only one instance of this task my run at a time */
@@ -2211,9 +2373,7 @@ void task_push_play_feature_delivery_switch_installed_cores(
       goto error;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Configure task */
@@ -2229,7 +2389,6 @@ void task_push_play_feature_delivery_switch_installed_cores(
    return;
 
 error:
-
    /* Clean up task */
    if (task)
    {
@@ -2238,7 +2397,7 @@ error:
    }
 
    /* Clean up handle */
-   free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
+   if (pfd_switch_cores_handle)
+      free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
 }
-
 #endif

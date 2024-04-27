@@ -60,7 +60,7 @@ static void kb_key_callback(KBDKeyEvent *key)
 
    code                    = input_keymaps_translate_keysym_to_rk(
          key->scancode);
-   if (code < RETROK_LAST)
+   if (code && code < RETROK_LAST)
       keyboard_state[code] = pressed;
 
    if (key->modifier & KBD_WIIU_SHIFT)
@@ -106,7 +106,7 @@ static int16_t wiiu_input_state(
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
-         if (id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
+         if (id && id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
             return 1;
          break;
       case RETRO_DEVICE_POINTER:
@@ -152,10 +152,10 @@ static void* wiiu_input_init(const char *joypad_driver)
 
 static uint64_t wiiu_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG) |
-          (1 << RETRO_DEVICE_KEYBOARD) |
-          (1 << RETRO_DEVICE_POINTER);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_KEYBOARD)
+          | (1 << RETRO_DEVICE_POINTER);
 }
 
 input_driver_t input_wiiu = {
@@ -168,5 +168,6 @@ input_driver_t input_wiiu = {
    wiiu_input_get_capabilities,
    "wiiu",
    NULL,                            /* grab_mouse */
+   NULL,
    NULL
 };

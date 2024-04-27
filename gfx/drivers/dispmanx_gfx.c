@@ -28,7 +28,6 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
-#include "../font_driver.h"
 
 struct dispmanx_page
 {
@@ -85,32 +84,18 @@ struct dispmanx_video
 {
    DISPMANX_DISPLAY_HANDLE_T display;
    DISPMANX_UPDATE_HANDLE_T update;
-   uint32_t vc_image_ptr;
 
    struct dispmanx_surface *main_surface;
    struct dispmanx_surface *menu_surface;
    struct dispmanx_surface *back_surface;
 
    /* For console blanking */
-   int fb_fd;
    uint8_t *fb_addr;
-   unsigned int screensize;
    uint8_t *screen_bck;
-
-   /* Total dispmanx video dimensions. Not counting overscan settings. */
-   unsigned int dispmanx_width;
-   unsigned int dispmanx_height;
 
    /* For threading */
    scond_t *vsync_condition;
    slock_t *pending_mutex;
-   unsigned int pageflip_pending;
-
-   /* Menu */
-   bool menu_active;
-
-   bool rgb32;
-
    /* We use this to keep track of internal resolution changes
     * done by cores in the main surface or in the menu.
     * We need these outside the surface because we free surfaces
@@ -122,9 +107,23 @@ struct dispmanx_video
    int menu_width;
    int menu_height;
    int menu_pitch;
+   int fb_fd; /* For console blanking */
+
+   unsigned int screensize; /* For console blanking */
+   /* Total dispmanx video dimensions. Not counting overscan settings. */
+   unsigned int dispmanx_width;
+   unsigned int dispmanx_height;
+   unsigned int pageflip_pending; /* For threading */
+
+   uint32_t vc_image_ptr;
+
    /* Both main and menu surfaces are going to have the same aspect,
     * so we keep it here for future reference. */
    float aspect_ratio;
+
+   /* Menu */
+   bool menu_active;
+   bool rgb32;
 };
 
 /* If no free page is available when called, wait for a page flip. */
@@ -382,7 +381,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
    dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
 
-static void *dispmanx_gfx_init(const video_info_t *video,
+static void *dispmanx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));
@@ -432,21 +431,21 @@ static void *dispmanx_gfx_init(const video_info_t *video,
    return _dispvars;
 }
 
-static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
+static bool dispmanx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
    struct dispmanx_video *_dispvars = data;
    float                     aspect = video_driver_get_aspect_ratio();
    unsigned    max_swapchain_images = video_info->max_swapchain_images;
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
    if (!frame)
       return true;
 
-   if (  (width != _dispvars->core_width)   ||
-         (height != _dispvars->core_height) ||
-         (_dispvars->aspect_ratio != aspect))
+   if (     (width  != _dispvars->core_width)
+         || (height != _dispvars->core_height)
+         || (_dispvars->aspect_ratio != aspect))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -535,13 +534,13 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    dispmanx_surface_update_async(frame, _dispvars->menu_surface);
 }
 
-static void dispmanx_gfx_set_nonblock_state(void *a, bool b,
+static void dispmanx_set_nonblock_state(void *a, bool b,
       bool c, unsigned d) { }
 
-static bool dispmanx_gfx_alive(void *data) { return true; }
-static bool dispmanx_gfx_focus(void *data) { return true; }
+static bool dispmanx_alive(void *data) { return true; }
+static bool dispmanx_focus(void *data) { return true; }
 
-static void dispmanx_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void dispmanx_viewport_info(void *data, struct video_viewport *vp)
 {
    struct dispmanx_video *vid = data;
 
@@ -554,23 +553,9 @@ static void dispmanx_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->core_height;
 }
 
-static bool dispmanx_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static bool dispmanx_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+static bool dispmanx_suppress_screensaver(void *data, bool enable) { return false; }
+static bool dispmanx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static uint32_t dispmanx_get_flags(void *data)
 {
@@ -581,8 +566,8 @@ static uint32_t dispmanx_get_flags(void *data)
 
 static const video_poke_interface_t dispmanx_poke_interface = {
    dispmanx_get_flags,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
@@ -595,26 +580,25 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL, /* dispmanx_apply_state_changes */
    dispmanx_set_texture_frame,
    dispmanx_set_texture_enable,
-   NULL,                         /* set_osd_msg */
-   NULL,                         /* show_mouse */
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
-static void dispmanx_gfx_get_poke_interface(void *data,
+static void dispmanx_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &dispmanx_poke_interface;
 }
 
-static void dispmanx_gfx_free(void *data)
+static void dispmanx_free(void *data)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -639,27 +623,27 @@ static void dispmanx_gfx_free(void *data)
 }
 
 video_driver_t video_dispmanx = {
-   dispmanx_gfx_init,
-   dispmanx_gfx_frame,
-   dispmanx_gfx_set_nonblock_state,
-   dispmanx_gfx_alive,
-   dispmanx_gfx_focus,
-   dispmanx_gfx_suppress_screensaver,
+   dispmanx_init,
+   dispmanx_frame,
+   dispmanx_set_nonblock_state,
+   dispmanx_alive,
+   dispmanx_focus,
+   dispmanx_suppress_screensaver,
    NULL, /* has_windowed */
-   dispmanx_gfx_set_shader,
-   dispmanx_gfx_free,
+   dispmanx_set_shader,
+   dispmanx_free,
    "dispmanx",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
-   dispmanx_gfx_viewport_info,
+   dispmanx_viewport_info,
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   dispmanx_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-   dispmanx_gfx_get_poke_interface
 };

@@ -19,6 +19,7 @@
 #include <cstring>
 #include "modeline.h"
 
+
 #define CUSTOM_VIDEO_TIMING_MASK        0x00000ff0
 #define CUSTOM_VIDEO_TIMING_AUTO        0x00000000
 #define CUSTOM_VIDEO_TIMING_SYSTEM      0x00000010
@@ -61,7 +62,7 @@ public:
 			delete m_custom_video;
 			m_custom_video = nullptr;
 		}
-	}
+	};
 
 	custom_video *make(char *device_name, char *device_id, int method, custom_video_settings *vs);
 	virtual const char *api_name() { return "empty"; }
@@ -101,7 +102,6 @@ private:
 
 	custom_video *m_custom_video = 0;
 	int m_custom_method;
-
 };
 
 #endif

@@ -55,7 +55,7 @@ typedef struct monitor_range
 
 int monitor_fill_range(monitor_range *range, const char *specs_line);
 int monitor_show_range(monitor_range *range);
-int monitor_set_preset(char *type, monitor_range *range);
+int monitor_set_preset(const char *type, monitor_range *range);
 int monitor_fill_lcd_range(monitor_range *range, const char *specs_line);
 int monitor_fill_vesa_gtf(monitor_range *range, const char *max_lines);
 int monitor_fill_vesa_range(monitor_range *range, int lines_min, int lines_max);

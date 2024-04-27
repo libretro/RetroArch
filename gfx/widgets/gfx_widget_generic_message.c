@@ -18,7 +18,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 
 #define GENERIC_MESSAGE_FADE_DURATION MSG_QUEUE_ANIMATION_DURATION
 
@@ -44,7 +43,7 @@ struct gfx_widget_generic_message_state
 
    unsigned message_duration;
 
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
 
    float bg_x;
    float bg_y_start;
@@ -57,6 +56,8 @@ struct gfx_widget_generic_message_state
 
    float bg_color[16];
    float frame_color[16];
+
+   size_t message_len;
 
    enum gfx_widget_generic_message_status status;
 
@@ -90,6 +91,8 @@ static gfx_widget_generic_message_state_t p_w_generic_message_st = {
 
    COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f), /* bg_color */
    COLOR_HEX_TO_FLOAT(0x7A7A7A, 1.0f), /* frame_color */
+  
+   0,                                  /* message_len */
 
    GFX_WIDGET_GENERIC_MESSAGE_IDLE,    /* status */
 
@@ -172,13 +175,14 @@ void gfx_widget_set_generic_message(
       return;
 
    /* Cache message parameters */
-   strlcpy(state->message, msg, sizeof(state->message));
+   state->message_len      = strlcpy(state->message,
+         msg, sizeof(state->message));
    state->message_duration = duration;
 
    /* Get background width */
    text_width         = font_driver_get_message_width(
          font_msg_queue->font, state->message,
-         (unsigned)strlen(state->message), 1.0f);
+         state->message_len, 1.0f);
    if (text_width < 0)
       text_width      = 0;
    state->bg_width    = (state->text_padding * 2) + (unsigned)text_width;
@@ -272,7 +276,7 @@ static void gfx_widget_generic_message_layout(
    {
       text_width       = font_driver_get_message_width(
             font_msg_queue->font, state->message,
-            (unsigned)strlen(state->message), 1.0f);
+            state->message_len, 1.0f);
       if (text_width < 0)
          text_width       = 0;
 

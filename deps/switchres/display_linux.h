@@ -19,7 +19,7 @@ class linux_display : public display_manager
 	public:
 		linux_display(display_settings *ds);
 		~linux_display();
-		bool init();
+		bool init(void* = nullptr);
 		bool set_mode(modeline *mode);
 
 	private:

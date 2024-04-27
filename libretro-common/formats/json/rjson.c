@@ -24,7 +24,7 @@
 
 #include <stdio.h>  /* snprintf, vsnprintf */
 #include <stdarg.h> /* va_list */
-#include <string.h> /* memcpy, strlen */
+#include <string.h> /* memcpy */
 #include <stdint.h> /* int64_t */
 #include <stdlib.h> /* malloc, realloc, atof, atoi */
 
@@ -92,7 +92,8 @@ typedef unsigned int _rjson_char_t;
 static enum rjson_type _rjson_error(rjson_t *json, const char *fmt, ...)
 {
    va_list ap;
-   if (json->stack_top->type == RJSON_ERROR) return RJSON_ERROR;
+   if (json->stack_top->type == RJSON_ERROR)
+      return RJSON_ERROR;
    json->stack_top->type = RJSON_ERROR;
    va_start(ap, fmt);
    vsnprintf(json->error_text, sizeof(json->error_text), fmt, ap);
@@ -104,7 +105,8 @@ static enum rjson_type _rjson_error_char(rjson_t *json,
       const char *fmt, _rjson_char_t chr)
 {
    char buf[16];
-   if (json->stack_top->type == RJSON_ERROR) return RJSON_ERROR;
+   if (json->stack_top->type == RJSON_ERROR)
+      return RJSON_ERROR;
    snprintf(buf, sizeof(buf),
          (chr == _rJSON_EOF ? "end of stream" :
          (chr >= ' ' && chr <= '~' ? "'%c'" : "byte 0x%02X")), chr);
@@ -120,7 +122,8 @@ static enum rjson_type _rjson_error_token(rjson_t *json,
 
 static bool _rjson_io_input(rjson_t *json)
 {
-   if (json->input_end == json->input_buf) return false;
+   if (json->input_end == json->input_buf)
+      return false;
    json->source_column_p -= (json->input_end - json->input_buf);
    json->input_p = json->input_buf;
    json->input_end = json->input_buf +
@@ -138,16 +141,16 @@ static bool _rjson_grow_string(rjson_t *json)
    char *string;
    size_t new_string_cap = json->string_cap * 2;
    if (json->string != json->inline_string)
-      string = (char*)realloc(json->string, new_string_cap);
-   else if ((string = (char*)malloc(new_string_cap)) != NULL)
+      string             = (char*)realloc(json->string, new_string_cap);
+   else if ((string      = (char*)malloc(new_string_cap)) != NULL)
       memcpy(string, json->inline_string, sizeof(json->inline_string));
-   if (string == NULL)
+   if (!string)
    {
       _rjson_error(json, "out of memory");
       return false;
    }
-   json->string_cap = new_string_cap;
-   json->string = string;
+   json->string_cap      = new_string_cap;
+   json->string          = string;
    return true;
 }
 
@@ -166,7 +169,8 @@ static INLINE bool _rjson_pushchars(rjson_t *json,
       if (!_rjson_grow_string(json))
          return false;
    string = (unsigned char *)json->string;
-   while (len != new_len) string[len++] = *(from++);
+   while (len != new_len)
+      string[len++] = *(from++);
    json->string_len = new_len;
    return true;
 }
@@ -187,11 +191,14 @@ static unsigned int _rjson_get_unicode_cp(rjson_t *json)
       {
          case '0': case '1': case '2': case '3': case '4':
          case '5': case '6': case '7': case '8': case '9':
-            c -= '0'; break;
+            c -= '0';
+            break;
          case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-            c -= ('a' - 10); break;
+            c -= ('a' - 10);
+            break;
          case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-            c -= ('A' - 10); break;
+            c -= ('A' - 10);
+            break;
          case _rJSON_EOF:
             _rjson_error(json, "unterminated string literal in Unicode");
             return (unsigned int)-1;
@@ -201,7 +208,8 @@ static unsigned int _rjson_get_unicode_cp(rjson_t *json)
       }
       shift -= 4;
       cp |= ((unsigned int)c << shift);
-      if (!shift) return cp;
+      if (!shift)
+         return cp;
    }
 }
 
@@ -293,7 +301,8 @@ static bool _rjson_read_unicode(rjson_t *json)
    _rJSON_READ_UNICODE_REPLACE_OR_IGNORE
    _rjson_error(json, "unable to encode %04x as UTF-8", cp);
    return false;
-   replace_or_ignore:
+
+replace_or_ignore:
    return ((json->option_flags & RJSON_OPTION_IGNORE_INVALID_ENCODING) ||
          _rjson_pushchar(json, '?'));
    #undef _rJSON_READ_UNICODE_REPLACE_OR_IGNORE
@@ -312,64 +321,86 @@ static bool _rjson_validate_utf8(rjson_t *json)
 
    for (;;)
    {
-      if (from == to) return true;
+      if (from == to)
+         return true;
       first = *from;
-      if (first <= 0x7F) { from++; continue; } /* ascii */
-      p = from;
-      if (first <= 0xC1)
+      if (first <= 0x7F) /* ASCII */
       {
-         /* continuation or overlong encoding of an ASCII byte */
-         goto invalid_utf8;
+         from++;
+         continue;
       }
+      p = from;
+      /* Continuation or overlong encoding of an ASCII byte */
+      if (first <= 0xC1)
+         goto invalid_utf8;
       if (first <= 0xDF)
       {
-         if ((from = p + 2) > to) goto invalid_utf8;
-         continue_length_2:
+         if ((from = p + 2) > to)
+            goto invalid_utf8;
+continue_length_2:
          c = p[1];
          switch (first)
          {
-            case 0xE0: c = (c < 0xA0 || c > 0xBF); break;
-            case 0xED: c = (c < 0x80 || c > 0x9F); break;
-            case 0xF0: c = (c < 0x90 || c > 0xBF); break;
-            case 0xF4: c = (c < 0x80 || c > 0x8F); break;
-            default:   c = (c < 0x80 || c > 0xBF); break;
+            case 0xE0:
+               c = (c < 0xA0 || c > 0xBF);
+               break;
+            case 0xED:
+               c = (c < 0x80 || c > 0x9F);
+               break;
+            case 0xF0:
+               c = (c < 0x90 || c > 0xBF);
+               break;
+            case 0xF4:
+               c = (c < 0x80 || c > 0x8F);
+               break;
+            default:
+               c = (c < 0x80 || c > 0xBF);
+               break;
          }
-         if (c) goto invalid_utf8;
+         if (c)
+            goto invalid_utf8;
       }
       else if (first <= 0xEF)
       {
-         if ((from = p + 3) > to) goto invalid_utf8;
-         continue_length_3:
-         if ((c = p[2]) < 0x80 || c > 0xBF) goto invalid_utf8;
+         if ((from = p + 3) > to)
+            goto invalid_utf8;
+continue_length_3:
+         if ((c = p[2]) < 0x80 || c > 0xBF)
+            goto invalid_utf8;
          goto continue_length_2;
       }
       else if (first <= 0xF4)
       {
-         if ((from = p + 4) > to) goto invalid_utf8;
-         if ((c = p[3]) < 0x80 || c > 0xBF) goto invalid_utf8;
+         if ((from = p + 4) > to)
+            goto invalid_utf8;
+         if ((c = p[3]) < 0x80 || c > 0xBF)
+            goto invalid_utf8;
          goto continue_length_3;
       }
-      else goto invalid_utf8; /* length 5 or 6 or invalid UTF-8 */
+      else
+         goto invalid_utf8; /* length 5 or 6 or invalid UTF-8 */
       continue;
-      invalid_utf8:
+invalid_utf8:
       if (!(json->option_flags & RJSON_OPTION_REPLACE_INVALID_ENCODING))
       {
          _rjson_error(json, "invalid UTF-8 character in string");
          return false;
       }
-      from = p;
+      from    = p;
       *from++ = '?';
-      while (from != to && (*from & 0x80)) *from++ = '?';
+      while (from != to && (*from & 0x80))
+         *from++ = '?';
    }
 }
 
 static enum rjson_type _rjson_read_string(rjson_t *json)
 {
-   const unsigned char *p   = json->input_p, *raw = p;
-   const unsigned char *end = json->input_end;
-   unsigned char utf8mask = 0;
+   const unsigned char *p    = json->input_p, *raw = p;
+   const unsigned char *end  = json->input_end;
+   unsigned char utf8mask    = 0;
    json->string_pass_through = NULL;
-   json->string_len = 0;
+   json->string_len          = 0;
+
    for (;;)
    {
       if (_rJSON_LIKELY(p != end))
@@ -387,19 +418,14 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
             if (json->string_len == 0 && p + 1 != end)
             {
                /* raw string fully inside input buffer, pass through */
-               json->string_len = p - raw;
+               json->string_len          = p - raw;
                json->string_pass_through = (char*)raw;
             }
-            else if (raw != p && !_rjson_pushchars(json, raw, p))
-            {
-               /* out of memory */
+            else if (raw != p && !_rjson_pushchars(json, raw, p)) /* OOM */
                return RJSON_ERROR;
-            }
+            /* Contains invalid UTF-8 byte sequences */
             if ((utf8mask & 0x80) && !_rjson_validate_utf8(json))
-            {
-               /* contains invalid UTF-8 byte sequences */
                return RJSON_ERROR;
-            }
             return RJSON_STRING;
          }
          else if (c == '\\')
@@ -407,8 +433,9 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
             _rjson_char_t esc;
             if (raw != p)
             {
-               /* can't pass through string with escapes, use string buffer */
-               if (!_rjson_pushchars(json, raw, p)) return RJSON_ERROR;
+               /* Can't pass through string with escapes, use string buffer */
+               if (!_rjson_pushchars(json, raw, p))
+                  return RJSON_ERROR;
             }
             json->input_p = p + 1;
             esc = _rjson_char_get(json);
@@ -419,9 +446,15 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
                      return RJSON_ERROR;
                   break;
 
-               case 'b': esc = '\b'; goto escape_pushchar;
-               case 'f': esc = '\f'; goto escape_pushchar;
-               case 'n': esc = '\n'; goto escape_pushchar;
+               case 'b':
+                  esc = '\b';
+                  goto escape_pushchar;
+               case 'f':
+                  esc = '\f';
+                  goto escape_pushchar;
+               case 'n':
+                  esc = '\n';
+                  goto escape_pushchar;
                case 'r': 
                   if (!(json->option_flags & RJSON_OPTION_IGNORE_STRING_CARRIAGE_RETURN))
                   {
@@ -429,10 +462,13 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
                      goto escape_pushchar;
                   }
                   break;
-               case 't': esc = '\t'; goto escape_pushchar;
-
-               case '/': case '"': case '\\':
-                  escape_pushchar:
+               case 't':
+                  esc = '\t';
+                  goto escape_pushchar;
+               case '/':
+               case '"':
+               case '\\':
+escape_pushchar:
                   if (!_rjson_pushchar(json, esc))
                      return RJSON_ERROR;
                   break;
@@ -456,7 +492,8 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
          if (raw != p)
          {
             /* not fully inside input buffer, copy to string buffer */
-            if (!_rjson_pushchars(json, raw, p)) return RJSON_ERROR;
+            if (!_rjson_pushchars(json, raw, p))
+               return RJSON_ERROR;
          }
          if (!_rjson_io_input(json))
             return _rjson_error(json, "unterminated string literal");
@@ -495,7 +532,8 @@ static enum rjson_type _rjson_read_number(rjson_t *json)
       else
       {
          /* number sequences are always copied to the string buffer */
-         if (!_rjson_pushchars(json, start, p)) return RJSON_ERROR;
+         if (!_rjson_pushchars(json, start, p))
+            return RJSON_ERROR;
          if (!_rjson_io_input(json))
          {
             /* EOF here is not an error for a number */
@@ -511,33 +549,53 @@ static enum rjson_type _rjson_read_number(rjson_t *json)
    end = (p + json->string_len);
 
    /* validate json number */
-   if (*p == '-' && ++p == end) goto invalid_number;
+   if (*p == '-' && ++p == end)
+      goto invalid_number;
    if (*p == '0')
    {
-      if (++p == end) return RJSON_NUMBER;
+      if (++p == end)
+         return RJSON_NUMBER;
    }
    else
    {
-      if (*p < '1' || *p > '9') goto invalid_number;
-      do { if (++p == end) return RJSON_NUMBER; }
+      if (*p < '1' || *p > '9')
+         goto invalid_number;
+      do
+      {
+         if (++p == end)
+            return RJSON_NUMBER;
+      }
       while (*p >= '0' && *p <= '9');
    }
    if (*p == '.')
    {
-      if (++p == end) goto invalid_number;
-      if (*p < '0' || *p > '9') goto invalid_number;
-      do { if (++p == end) return RJSON_NUMBER; }
+      if (++p == end)
+         goto invalid_number;
+      if (*p < '0' || *p > '9')
+         goto invalid_number;
+      do 
+      {
+         if (++p == end)
+            return RJSON_NUMBER;
+      }
       while (*p >= '0' && *p <= '9');
    }
    if (((*p)|0x20) == 'e')
    {
-      if (++p == end) goto invalid_number;
-      if ((*p == '-' || *p == '+') && ++p == end) goto invalid_number;
-      if (*p < '0' || *p > '9') goto invalid_number;
-      do { if (++p == end) return RJSON_NUMBER; }
+      if (++p == end)
+         goto invalid_number;
+      if ((*p == '-' || *p == '+') && ++p == end)
+         goto invalid_number;
+      if (*p < '0' || *p > '9')
+         goto invalid_number;
+      do
+      {
+         if (++p == end)
+            return RJSON_NUMBER;
+      }
       while (*p >= '0' && *p <= '9');
    }
-   invalid_number:
+invalid_number:
    return _rjson_error_char(json, "unexpected %s in number",
          (p == json->input_end ? _rJSON_EOF : p[p == end ? -1 : 0]));
 }
@@ -561,10 +619,10 @@ static enum rjson_type _rjson_push_stack(rjson_t *json, enum _rjson_token t)
          new_stack = (struct _rjson_stack *)realloc(json->stack, stack_alloc);
       else if ((new_stack = (struct _rjson_stack*)malloc(stack_alloc)) != NULL)
          memcpy(new_stack, json->inline_stack, sizeof(json->inline_stack));
-      if (new_stack == NULL)
+      if (!new_stack)
          return _rjson_error(json, "out of memory");
 
-      json->stack = new_stack;
+      json->stack     = new_stack;
       json->stack_top = new_stack + json->stack_cap - 1;
       json->stack_cap = new_stack_cap;
    }
@@ -579,8 +637,10 @@ static enum rjson_type _rjson_read_name(rjson_t *json, const char *pattern, enum
    _rjson_char_t c;
    const char *p;
    for (p = pattern; *p; p++)
+   {
       if ((_rjson_char_t)*p != (c = _rjson_char_get(json)))
          return _rjson_error_char(json, "unexpected %s in value", c);
+   }
    return type;
 }
 
@@ -592,8 +652,8 @@ static bool _rjson_optional_skip(rjson_t *json, const unsigned char **p, const u
    if (skip == '/' && !(json->option_flags & RJSON_OPTION_ALLOW_COMMENTS))
       return false;
 
-   if (skip == 0xEF && (!(json->option_flags & RJSON_OPTION_ALLOW_UTF8BOM) ||
-         json->source_line != 1 || json->source_column_p != json->input_p))
+   if (     skip == 0xEF && (!(json->option_flags & RJSON_OPTION_ALLOW_UTF8BOM)
+         || json->source_line != 1 || json->source_column_p != json->input_p))
       return false;
 
    for (;;)
@@ -604,7 +664,7 @@ static bool _rjson_optional_skip(rjson_t *json, const unsigned char **p, const u
          {
             _rjson_error(json, "unfinished %s",
                   (skip == '/' ? "comment" : "utf8 byte order mark"));
-            return false;
+            break;
          }
          *p   = json->input_p;
          *end = json->input_end;
@@ -612,19 +672,30 @@ static bool _rjson_optional_skip(rjson_t *json, const unsigned char **p, const u
       c = *(*p)++;
       if (skip == '/')
       {
-         if      (state == 0 && c == '/') state = 1;
-         else if (state == 0 && c == '*') state = 2;
-         else if (state == 0) return false;
-         else if (state == 1 && c == '\n') return true;
-         else if (state == 2 && c == '*') state = 3;
-         else if (state == 3 && c == '/') return true;
-         else if (state == 3 && c != '*') state = 2;
+         if      (state == 0 && c == '/')
+            state = 1;
+         else if (state == 0 && c == '*')
+            state = 2;
+         else if (state == 0)
+            break;
+         else if (state == 1 && c == '\n')
+            return true;
+         else if (state == 2 && c == '*')
+            state = 3;
+         else if (state == 3 && c == '/')
+            return true;
+         else if (state == 3 && c != '*')
+            state = 2;
       }
       else if (skip == 0xEF)
       {
-         if      (state == 0 && c == 0xBB) state = 1;
-         else if (state == 1 && c == 0xBF) return true;
-         else return false;
+         /* Silence warning - state being set never used */
+         if      (state == 0 && c == 0xBB)
+            state = 1;
+         else if (state == 1 && c == 0xBF)
+            return true;
+         else
+            break;
       }
    }
    return false;
@@ -632,10 +703,10 @@ static bool _rjson_optional_skip(rjson_t *json, const unsigned char **p, const u
 
 enum rjson_type rjson_next(rjson_t *json)
 {
-   struct _rjson_stack *stack = json->stack_top;
-   const unsigned char *p   = json->input_p;
-   const unsigned char *end = json->input_end;
    unsigned char tok;
+   struct _rjson_stack *stack = json->stack_top;
+   const unsigned char *p     = json->input_p;
+   const unsigned char *end   = json->input_end;
    unsigned char passed_token = false;
 
    /* JSON token look-up-table */
@@ -677,12 +748,10 @@ enum rjson_type rjson_next(rjson_t *json)
             tok = token_lut[*p++];
             if (_rJSON_LIKELY(tok > _rJSON_TOK_OPTIONAL_SKIP))
             {
-               /* actual JSON token, process below */
+               /* Actual JSON token, process below */
             }
             else if (_rJSON_LIKELY(tok == _rJSON_TOK_WHITESPACE))
-            {
                continue;
-            }
             else if (tok == _rJSON_TOK_NEWLINE)
             {
                json->source_line++;
@@ -703,7 +772,7 @@ enum rjson_type rjson_next(rjson_t *json)
          }
          else
          {
-            p = json->input_end;
+            p   = json->input_end;
             tok = _rJSON_TOK_EOF;
          }
 
@@ -820,27 +889,27 @@ enum rjson_type rjson_next(rjson_t *json)
 
 void _rjson_setup(rjson_t *json, rjson_io_t io, void *user_data, int input_len)
 {
-   json->io = io;
-   json->user_data = user_data;
-   json->input_len = input_len;
-   json->input_p = json->input_end = json->input_buf + input_len;
+   json->io                  = io;
+   json->user_data           = user_data;
+   json->input_len           = input_len;
+   json->input_p             = json->input_end = json->input_buf + input_len;
 
-   json->stack = json->inline_stack;
-   json->stack_top = json->stack;
-   json->stack_top->type = RJSON_DONE;
-   json->stack_top->count = 0;
-   json->stack_cap = (unsigned int)(sizeof(json->inline_stack) / sizeof(json->inline_stack[0]));
-   json->stack_max = (unsigned int)50;
+   json->stack               = json->inline_stack;
+   json->stack_top           = json->stack;
+   json->stack_top->type     = RJSON_DONE;
+   json->stack_top->count    = 0;
+   json->stack_cap           = (unsigned int)(sizeof(json->inline_stack) / sizeof(json->inline_stack[0]));
+   json->stack_max           = (unsigned int)50;
 
-   json->string = json->inline_string;
+   json->string              = json->inline_string;
    json->string_pass_through = NULL;
-   json->string_len = 0;
-   json->string_cap = sizeof(json->inline_string);
+   json->string_len          = 0;
+   json->string_cap          = sizeof(json->inline_string);
 
-   json->source_line = 1;
-   json->source_column_p = json->input_p;
-   json->option_flags = 0;
-   json->decimal_sep = 0;
+   json->source_line         = 1;
+   json->source_column_p     = json->input_p;
+   json->option_flags        = 0;
+   json->decimal_sep         = 0;
 }
 
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size)
@@ -862,18 +931,19 @@ static int _rjson_buffer_io(void* buf, int len, void *user)
 
 rjson_t *rjson_open_buffer(const void *buffer, size_t size)
 {
-   rjson_t *json = (rjson_t *)malloc(sizeof(rjson_t) + sizeof(const char *)*2);
+   rjson_t *json   = (rjson_t *)malloc(sizeof(rjson_t) + sizeof(const char *)*2);
    const char **ud = (const char **)(json + 1);
-   if (!json) return NULL;
+   if (!json)
+      return NULL;
    ud[0] = (const char *)buffer;
    ud[1] = ud[0] + size;
    _rjson_setup(json, _rjson_buffer_io, (void*)ud, sizeof(json->input_buf));
    return json;
 }
 
-rjson_t *rjson_open_string(const char *string)
+rjson_t *rjson_open_string(const char *string, size_t len)
 {
-   return rjson_open_buffer(string, strlen(string));
+   return rjson_open_buffer(string, len);
 }
 
 static int _rjson_stream_io(void* buf, int len, void *user)
@@ -885,7 +955,7 @@ rjson_t *rjson_open_stream(struct intfstream_internal *stream)
 {
    /* Allocate an input buffer based on the file size */
    int64_t size = intfstream_get_size(stream);
-   int io_size =
+   int io_size  =
          (size > 1024*1024 ? 4096 :
          (size >  256*1024 ? 2048 : 1024));
    return rjson_open_user(_rjson_stream_io, stream, io_size);
@@ -918,9 +988,10 @@ void rjson_set_max_depth(rjson_t *json, unsigned int max_depth)
 
 const char *rjson_get_string(rjson_t *json, size_t *length)
 {
-   char* str = (json->string_pass_through ? json->string_pass_through : json->string);
-   if (length != NULL)
-      *length = json->string_len;
+   char* str             = (json->string_pass_through 
+         ? json->string_pass_through : json->string);
+   if (length)
+      *length            = json->string_len;
    str[json->string_len] = '\0';
    return str;
 }
@@ -942,9 +1013,9 @@ double rjson_get_double(rjson_t *json)
       if (json->decimal_sep != '.' && (p = strchr(str, '.')) != NULL)
       {
          double res;
-         *p = json->decimal_sep;
+         *p  = json->decimal_sep;
          res = atof(str);
-         *p = '.';
+         *p  = '.';
          return res;
       }
    }
@@ -982,7 +1053,7 @@ size_t rjson_get_source_column(rjson_t *json)
 int rjson_get_source_context_len(rjson_t *json)
 {
    const unsigned char *from = json->input_buf, *to = json->input_end, *p = json->input_p;
-   return ((p + 256 < to ? p + 256 : to) - (p > from + 256 ? p - 256 : from));
+   return (int)(((p + 256 < to ? p + 256 : to) - (p > from + 256 ? p - 256 : from)));
 }
 
 const char* rjson_get_source_context_buf(rjson_t *json)
@@ -990,7 +1061,11 @@ const char* rjson_get_source_context_buf(rjson_t *json)
    /* inside the input buffer, some " may have been replaced with \0. */
    const unsigned char *p = json->input_p, *from = json->input_buf;
    unsigned char *i = json->input_buf;
-   for (; i != json->input_end; i++) if (*i == '\0') *i = '"';
+   for (; i != json->input_end; i++)
+   {
+      if (*i == '\0')
+         *i = '"';
+   }
    return (const char*)(p > from + 256 ? p - 256 : from);
 }
 
@@ -1013,7 +1088,7 @@ bool rjson_check_context(rjson_t *json, unsigned int depth, ...)
 
 unsigned int rjson_get_context_depth(rjson_t *json)
 {
-   return json->stack_top - json->stack;
+   return (unsigned int)(json->stack_top - json->stack);
 }
 
 size_t rjson_get_context_count(rjson_t *json)
@@ -1123,7 +1198,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
    }
 }
 
-bool rjson_parse_quick(const char *string, void* context, char option_flags,
+bool rjson_parse_quick(const char *string, size_t len, void* context, char option_flags,
       bool (*object_member_handler)(void *context, const char *str, size_t len),
       bool (*string_handler       )(void *context, const char *str, size_t len),
       bool (*number_handler       )(void *context, const char *str, size_t len),
@@ -1138,7 +1213,7 @@ bool rjson_parse_quick(const char *string, void* context, char option_flags,
    const char *user_data[2];
    rjson_t json;
    user_data[0] = string;
-   user_data[1] = string + strlen(string);
+   user_data[1] = string + len;
    _rjson_setup(&json, _rjson_buffer_io, (void*)user_data, sizeof(json.input_buf));
    rjson_set_options(&json, option_flags);
    if (rjson_parse(&json, context,
@@ -1173,18 +1248,19 @@ struct rjsonwriter
 rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data)
 {
    rjsonwriter_t* writer = (rjsonwriter_t*)malloc(sizeof(rjsonwriter_t));
-   if (!writer) return NULL;
+   if (!writer)
+      return NULL;
 
-   writer->buf = writer->inline_buf;
-   writer->buf_num = 0;
-   writer->buf_cap = sizeof(writer->inline_buf);
+   writer->buf           = writer->inline_buf;
+   writer->buf_num       = 0;
+   writer->buf_cap       = sizeof(writer->inline_buf);
 
-   writer->error_text = NULL;
-   writer->option_flags = writer->decimal_sep = 0;
+   writer->error_text    = NULL;
+   writer->option_flags  = writer->decimal_sep = 0;
    writer->buf_is_output = writer->final_flush = false;
 
-   writer->io = io;
-   writer->user_data = user_data;
+   writer->io            = io;
+   writer->user_data     = user_data;
 
    return writer;
 }
@@ -1212,30 +1288,33 @@ rjsonwriter_t *rjsonwriter_open_rfile(RFILE *rfile)
 static int _rjsonwriter_memory_io(const void* buf, int len, void *user)
 {
    rjsonwriter_t *writer = (rjsonwriter_t *)user;
-   bool is_append    = (buf != writer->buf);
-   bool can_realloc  = (writer->buf != writer->inline_buf);
-   int new_cap       = writer->buf_num + (is_append ? len : 0) + 512;
+   bool is_append        = (buf != writer->buf);
+   int new_cap           = writer->buf_num + (is_append ? len : 0) + 512;
    if (!writer->final_flush && (is_append || new_cap > writer->buf_cap))
    {
-      char* new_buf = (char*)(can_realloc ? realloc(writer->buf, new_cap) : malloc(new_cap));
-      if (!new_buf) return 0;
-      if (!can_realloc) memcpy(new_buf, writer->buf, writer->buf_num);
+      bool can_realloc   = (writer->buf != writer->inline_buf);
+      char* new_buf      = (char*)(can_realloc ? realloc(writer->buf, new_cap) : malloc(new_cap));
+      if (!new_buf)
+         return 0;
+      if (!can_realloc)
+         memcpy(new_buf, writer->buf, writer->buf_num);
       if (is_append)
       {
          memcpy(new_buf + writer->buf_num, buf, len);
          writer->buf_num += len;
       }
-      writer->buf = new_buf;
-      writer->buf_cap = new_cap;
+      writer->buf        = new_buf;
+      writer->buf_cap    = new_cap;
    }
    return len;
 }
 
-rjsonwriter_t *rjsonwriter_open_memory()
+rjsonwriter_t *rjsonwriter_open_memory(void)
 {
    rjsonwriter_t *writer = rjsonwriter_open_user(_rjsonwriter_memory_io, NULL);
-   if (!writer) return NULL;
-   writer->user_data = writer;
+   if (!writer)
+      return NULL;
+   writer->user_data     = writer;
    writer->buf_is_output = true;
    return writer;
 }
@@ -1247,8 +1326,20 @@ char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len)
    if (writer->buf_num == writer->buf_cap)
       rjsonwriter_flush(writer);
    writer->buf[writer->buf_num] = '\0';
-   if (len) *len = writer->buf_num;
+   if (len)
+      *len = writer->buf_num;
    return writer->buf;
+}
+
+int rjsonwriter_count_memory_buffer(rjsonwriter_t *writer)
+{
+   return writer->buf_num;
+}
+
+void rjsonwriter_erase_memory_buffer(rjsonwriter_t *writer, int keep_len)
+{
+   if (keep_len <= writer->buf_num)
+      writer->buf_num = (keep_len < 0 ? 0 : keep_len);
 }
 
 bool rjsonwriter_free(rjsonwriter_t *writer)
@@ -1295,10 +1386,12 @@ void rjsonwriter_raw(rjsonwriter_t *writer, const char *buf, int len)
    else
    {
       int add = writer->buf_cap - writer->buf_num;
-      if (add > len) add = len;
+      if (add > len)
+         add = len;
       memcpy(writer->buf + writer->buf_num, buf, add);
       writer->buf_num += add;
-      if (len == add) return;
+      if (len == add)
+         return;
       rjsonwriter_flush(writer);
       len -= add;
       buf += add;
@@ -1322,7 +1415,8 @@ void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...)
    va_start(ap, fmt);
    need = vsnprintf(writer->buf + writer->buf_num, available, fmt, ap);
    va_end(ap);
-   if (need <= 0) return;
+   if (need <= 0)
+      return;
    if (need < available)
    {
       writer->buf_num += need;
@@ -1331,14 +1425,16 @@ void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...)
    rjsonwriter_flush(writer);
    if (writer->buf_num + need >= writer->buf_cap)
    {
-      int newcap = writer->buf_num + need + 1;
+      int newcap   = writer->buf_num + need + 1;
       char* newbuf = (char*)malloc(newcap);
       if (!newbuf)
       {
-         if (!writer->error_text) writer->error_text = "out of memory";
+         if (!writer->error_text)
+            writer->error_text = "out of memory";
          return;
       }
-      if (writer->buf_num) memcpy(newbuf, writer->buf, writer->buf_num);
+      if (writer->buf_num)
+         memcpy(newbuf, writer->buf, writer->buf_num);
       if (writer->buf != writer->inline_buf)
          free(writer->buf);
       writer->buf = newbuf;
@@ -1356,17 +1452,33 @@ void _rjsonwriter_add_escaped(rjsonwriter_t *writer, unsigned char c)
    const char* esc;
    switch (c)
    {
-      case '\b': esc = "\\b"; break;
-      case '\t': esc = "\\t"; break;
-      case '\n': esc = "\\n"; break;
-      case '\f': esc = "\\f"; break;
-      case '\r': esc = "\\r"; break;
-      case '\"': esc = "\\\""; break;
-      case '\\': esc = "\\\\"; break;
-      case '/': esc = "\\/"; break;
+      case '\b':
+         esc = "\\b";
+         break;
+      case '\t':
+         esc = "\\t";
+         break;
+      case '\n':
+         esc = "\\n";
+         break;
+      case '\f':
+         esc = "\\f";
+         break;
+      case '\r':
+         esc = "\\r";
+         break;
+      case '\"':
+         esc = "\\\"";
+         break;
+      case '\\':
+         esc = "\\\\";
+         break;
+      case '/':
+         esc = "\\/";
+         break;
       default:
          snprintf(esc_buf, sizeof(esc_buf), "\\u%04x", c);
-         esc = esc_buf;
+         esc     = esc_buf;
          esc_len = 6;
    }
    rjsonwriter_raw(writer, esc, esc_len);
@@ -1377,19 +1489,23 @@ void rjsonwriter_add_string(rjsonwriter_t *writer, const char *value)
    const char *p = (const char*)value, *raw = p;
    unsigned char c;
    rjsonwriter_raw(writer, "\"", 1);
-   if (!p) goto string_end;
+   if (!p)
+      goto string_end;
    while ((c = (unsigned char)*p++) != '\0')
    {
       /* forward slash is special, it should be escaped if the previous character
        * was a < (intended to avoid having </script> html tags in JSON files) */
-      if (c >= 0x20 && c != '\"' && c != '\\' &&
-            (c != '/' || p < value + 2 || p[-2] != '<')) continue;
-      if (raw != p - 1) rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
+      if (   c >= 0x20 && c != '\"' && c != '\\' &&
+            (c != '/' || p < value + 2 || p[-2] != '<'))
+         continue;
+      if (raw != p - 1)
+         rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
       _rjsonwriter_add_escaped(writer, c);
       raw = p;
    }
-   if (raw != p - 1) rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
-   string_end:
+   if (raw != p - 1)
+      rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
+string_end:
    rjsonwriter_raw(writer, "\"", 1);
 }
 
@@ -1400,13 +1516,16 @@ void rjsonwriter_add_string_len(rjsonwriter_t *writer, const char *value, int le
    while (p != end)
    {
       unsigned char c = (unsigned char)*p++;
-      if (c >= 0x20 && c != '\"' && c != '\\' &&
-            (c != '/' || p < value + 2 || p[-2] != '<')) continue;
-      if (raw != p - 1) rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
+      if (      c >= 0x20 && c != '\"' && c != '\\'
+            && (c != '/' || p < value + 2 || p[-2] != '<'))
+         continue;
+      if (raw != p - 1)
+         rjsonwriter_raw(writer, raw, (int)(p - 1 - raw));
       _rjsonwriter_add_escaped(writer, c);
       raw = p;
    }
-   if (raw != end) rjsonwriter_raw(writer, raw, (int)(end - raw));
+   if (raw != end)
+      rjsonwriter_raw(writer, raw, (int)(end - raw));
    rjsonwriter_raw(writer, "\"", 1);
 }
 
@@ -1422,10 +1541,12 @@ void rjsonwriter_add_double(rjsonwriter_t *writer, double value)
       {
          char test[4];
          snprintf(test, sizeof(test), "%.1f", 0.0f);
-         if ((writer->decimal_sep = test[1]) == '.') return;
+         if ((writer->decimal_sep = test[1]) == '.')
+            return;
       }
       str = writer->buf + (old_buf_num > writer->buf_num ? 0 : old_buf_num);
-      if ((p = strchr(str, writer->decimal_sep)) != NULL) *p = '.';
+      if ((p = strchr(str, writer->decimal_sep)) != NULL)
+         *p = '.';
    }
 }
 

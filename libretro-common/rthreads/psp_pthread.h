@@ -96,7 +96,7 @@ static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
 
 #ifdef VITA
    *mutex = sceKernelCreateMutex(name_buffer, 0, 0, 0);
-	 if(*mutex<0)
+	 if (*mutex<0)
 	 		return *mutex;
 	 return 0;
 #else
@@ -220,13 +220,13 @@ static INLINE int pthread_cond_init(pthread_cond_t *cond,
 
    pthread_mutex_init(&cond->mutex,NULL);
 
-   if(cond->mutex<0)
+   if (cond->mutex<0)
       return cond->mutex;
 
    snprintf(name_buffer, sizeof(name_buffer), "0x%08X", (unsigned int) cond);
    cond->sema = sceKernelCreateSema(name_buffer, 0, 0, 1, 0);
 
-   if(cond->sema < 0)
+   if (cond->sema < 0)
    {
       pthread_mutex_destroy(&cond->mutex);
       return cond->sema;
@@ -269,7 +269,7 @@ static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
 #ifdef VITA
    int ret = sceKernelDeleteSema(cond->sema);
-   if(ret < 0)
+   if (ret < 0)
     return ret;
 
    return sceKernelDeleteMutex(cond->mutex);

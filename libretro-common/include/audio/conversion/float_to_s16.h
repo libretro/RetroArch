@@ -31,22 +31,28 @@ RETRO_BEGIN_DECLS
 #include <stddef.h>
 
 /**
- * convert_float_to_s16:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
+ * Converts an array of floating-point audio samples
+ * to signed integer 16-bit audio samples,
+ * possibly using SIMD intrinsics.
  *
- * Converts floating point
- * to signed integer 16-bit.
+ * @param out The buffer that will be used to store the converted samples.
+ * @param in The buffer containing the samples to convert.
+ * Any number of channels is supported.
+ * @param samples The length of \c in in samples, \em not bytes or frames.
+ * \c out must be as large as <tt>sizeof(int16_t) * samples</tt>.
+ * @see convert_s16_to_float
  **/
 void convert_float_to_s16(int16_t *out,
       const float *in, size_t samples);
 
 /**
- * convert_float_to_s16_init_simd:
+ * Initializes any prerequisites for
+ * using SIMD implementations of \c convert_float_to_s16.
  *
- * Sets up function pointers for conversion
- * functions based on CPU features.
+ * If SIMD intrinsics are not available or no initialization is required,
+ * this function does nothing.
+ *
+ * @see convert_float_to_s16
  **/
 void convert_float_to_s16_init_simd(void);
 

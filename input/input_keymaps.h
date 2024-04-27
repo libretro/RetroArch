@@ -22,48 +22,13 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-RETRO_BEGIN_DECLS
-
-struct rarch_key_map
-{
-   unsigned sym;
-   enum retro_key rk;
-};
-
-struct input_key_map
-{
-   const char *str;
-   enum retro_key key;
-};
-
 #define RARCH_KEY_MAP_RWEBINPUT_SIZE 111
 
-extern const struct input_key_map input_config_key_map[];
-
-extern const struct rarch_key_map rarch_key_map_x11[];
-extern const struct rarch_key_map rarch_key_map_sdl[];
-extern const struct rarch_key_map rarch_key_map_sdl2[];
-extern const struct rarch_key_map rarch_key_map_dinput[];
-
- /* is generated at runtime so can't be const */
-extern struct rarch_key_map rarch_key_map_rwebinput[RARCH_KEY_MAP_RWEBINPUT_SIZE];
-
-extern const struct rarch_key_map rarch_key_map_linux[];
-extern const struct rarch_key_map rarch_key_map_apple_hid[];
-extern const struct rarch_key_map rarch_key_map_android[];
-extern const struct rarch_key_map rarch_key_map_qnx[];
-extern const struct rarch_key_map rarch_key_map_dos[];
-extern const struct rarch_key_map rarch_key_map_wiiu[];
-extern const struct rarch_key_map rarch_key_map_winraw[];
-#ifdef HAVE_LIBNX
-extern const struct rarch_key_map rarch_key_map_switch[];
-#endif
-#ifdef VITA
-extern const struct rarch_key_map rarch_key_map_vita[];
-#endif
+RETRO_BEGIN_DECLS
 
 #if defined(_WIN32) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
-enum winraw_scancodes {
+enum winraw_scancodes
+{
    SC_ESCAPE = 0x01,
    SC_1 = 0x02,
    SC_2 = 0x03,
@@ -224,6 +189,18 @@ enum winraw_scancodes {
 };
 #endif
 
+struct rarch_key_map
+{
+   unsigned sym;
+   enum retro_key rk;
+};
+
+struct input_key_map
+{
+   const char *str;
+   enum retro_key key;
+};
+
 /**
  * input_keymaps_init_keyboard_lut:
  * @map                   : Keyboard map.
@@ -254,7 +231,43 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
+/**
+ * input_translate_rk_to_ascii:
+ * @key : Retro key identifier
+ * @mod : retro_mod mask
+ *
+ * Translates a retro key identifier with mod mask to ASCII.
+ */
+uint8_t input_keymaps_translate_rk_to_ascii(enum retro_key key, enum retro_mod mod);
+
 extern enum retro_key rarch_keysym_lut[RETROK_LAST];
+
+extern const struct input_key_map input_config_key_map[];
+
+extern const struct rarch_key_map rarch_key_map_x11[];
+extern const struct rarch_key_map rarch_key_map_sdl[];
+extern const struct rarch_key_map rarch_key_map_sdl2[];
+extern const struct rarch_key_map rarch_key_map_dinput[];
+
+ /* is generated at runtime so can't be const */
+extern struct rarch_key_map rarch_key_map_rwebinput[RARCH_KEY_MAP_RWEBINPUT_SIZE];
+
+extern const struct rarch_key_map rarch_key_map_linux[];
+extern const struct rarch_key_map rarch_key_map_apple_hid[];
+extern const struct rarch_key_map rarch_key_map_android[];
+extern const struct rarch_key_map rarch_key_map_qnx[];
+extern const struct rarch_key_map rarch_key_map_dos[];
+extern const struct rarch_key_map rarch_key_map_wiiu[];
+extern const struct rarch_key_map rarch_key_map_winraw[];
+#ifdef HAVE_LIBNX
+extern const struct rarch_key_map rarch_key_map_switch[];
+#endif
+#ifdef VITA
+extern const struct rarch_key_map rarch_key_map_vita[];
+#endif
+#ifdef ORBIS
+extern const struct rarch_key_map rarch_key_map_ps4[];
+#endif
 
 RETRO_END_DECLS
 

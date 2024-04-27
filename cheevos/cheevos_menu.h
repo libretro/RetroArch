@@ -33,6 +33,7 @@ void rcheevos_menu_populate_hardcore_pause_submenu(void* data);
 bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size);
 bool rcheevos_menu_get_sublabel(unsigned menu_offset, char* buffer, size_t buffer_size);
 uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset);
+void rcheevos_menu_reset_badges(void);
 
 RETRO_END_DECLS
 

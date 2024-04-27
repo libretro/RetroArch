@@ -68,24 +68,17 @@ const static unsigned char unb64[]={
 */
 char* base64(const void* binaryData, int len, int *flen)
 {
-   const unsigned char* bin          = (const unsigned char*) binaryData;
    char* res;
-  
-   int rc = 0; /* result counter */
    int byteNo; /* I need this after the loop */
-  
-   int modulusLen = len % 3 ;
-
+   const unsigned char* bin = (const unsigned char*) binaryData;
+   int rc                   = 0; /* result counter */
+   int modulusLen           = len % 3 ;
    /* 2 gives 1 and 1 gives 2, but 0 gives 0. */
-   int pad = ((modulusLen&1)<<1) + ((modulusLen&2)>>1);
+   int pad                  = ((modulusLen&1)<<1) + ((modulusLen&2)>>1);
 
-   *flen = 4*(len + pad)/3;
-   res = (char*) malloc(*flen + 1); /* and one for the null */
-   if (!res)
-   {
-      /* ERROR: base64 could not allocate enough memory. */
+   *flen                    = 4*(len + pad)/3;
+   if (!(res = (char*) malloc(*flen + 1))) /* and one for the NULL */
       return 0;
-   }
   
    for (byteNo=0; byteNo <= len-3; byteNo+=3)
    {
@@ -120,34 +113,29 @@ char* base64(const void* binaryData, int len, int *flen)
 
 unsigned char* unbase64(const char* ascii, int len, int *flen)
 {
-   const unsigned char *safeAsciiPtr = (const unsigned char*) ascii;
-   unsigned char *bin;
-   int cb                            = 0;
    int charNo;
+   unsigned char *bin;
+   const unsigned char *safeAsciiPtr = (const unsigned char*) ascii;
+   int cb                            = 0;
    int pad                           = 0;
 
-   if (len < 2) { /* 2 accesses below would be OOB. */
+   if (len < 2) /* 2 accesses below would be OOB (Out Of Bounds). */
+   {
       /* catch empty string, return NULL as result. */
-
       /* ERROR: You passed an invalid base64 string (too short). 
        * You get NULL back. */
       *flen = 0;
       return 0;
    }
 
-   if(safeAsciiPtr[len-1]=='=')
+   if (safeAsciiPtr[len-1]=='=')
       ++pad;
-   if(safeAsciiPtr[len-2]=='=')
+   if (safeAsciiPtr[len-2]=='=')
       ++pad;
   
    *flen = 3*len/4 - pad;
-   bin = (unsigned char*)malloc(*flen);
-
-   if (!bin)
-   {
-      /* ERROR: unbase64 could not allocate enough memory. */
+   if (!(bin = (unsigned char*)malloc(*flen)))
       return 0;
-   }
   
    for (charNo=0; charNo <= len-4-pad; charNo+=4)
    {

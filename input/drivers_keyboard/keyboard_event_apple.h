@@ -169,6 +169,9 @@ RETRO_BEGIN_DECLS
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device);
 
+void apple_direct_input_keyboard_event(bool down,
+      unsigned code, uint32_t character, uint32_t mod, unsigned device);
+
 RETRO_END_DECLS
 
 #endif

@@ -29,14 +29,7 @@
     <CustomBuild Include="..\..\..\ui\drivers\qt\ui_qt_load_core_window.h">
       <Filter>QT</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\..\..\ui\drivers\qt\shaderparamsdialog.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\viewoptionsdialog.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\playlistentrydialog.h" />
     <CustomBuild Include="..\..\..\ui\drivers\qt\gridview.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\coreoptionsdialog.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\coreinfodialog.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\filedropwidget.h" />
-    <CustomBuild Include="..\..\..\ui\drivers\qt\settingswidgets.h" />
     <CustomBuild Include="..\..\..\ui\drivers\qt\qt_options.h" />
   </ItemGroup>
 </Project>

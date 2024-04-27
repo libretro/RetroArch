@@ -113,12 +113,12 @@ static void adapter_thread(void *data)
       slock_unlock(adapter->send_control_lock);
 
       libusb_interrupt_transfer(adapter->handle,
-            adapter->endpoint_in, &adapter->data[1],
+            adapter->endpoint_in, &adapter->data[0],
             adapter->endpoint_in_max_size, &size, 1000);
 
       if (adapter && hid && hid->slots && size)
          pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
-               adapter->data, size+1);
+               adapter->data, size);
    }
 }
 
@@ -493,7 +493,7 @@ static int16_t libusb_hid_joypad_axis(void *data,
       if (val < 0)
          return val;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       int16_t val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_POS_GET(joyaxis));

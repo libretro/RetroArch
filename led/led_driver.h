@@ -44,6 +44,7 @@ void led_driver_set_led(int led, int value);
 extern const led_driver_t overlay_led_driver;
 extern const led_driver_t rpi_led_driver;
 extern const led_driver_t keyboard_led_driver;
+extern const led_driver_t sys_led_driver;
 
 RETRO_END_DECLS
 

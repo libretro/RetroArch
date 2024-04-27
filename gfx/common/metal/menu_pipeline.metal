@@ -206,7 +206,7 @@ fragment float4 bokeh_fragment(FontFragmentIn        in         [[ stage_in ]],
         float  rad = 0.1 + 0.5 * siz + sin(pha + siz) / 4.0;
         float2 pos = float2(pox + sin(speed / 15. + pha + siz), - 1.0 - rad + (2.0 + 2.0 * rad) * fract(pha + 0.3 * (speed / 7.) * (0.2 + 0.8 * siz)));
         float  dis = length(uv - pos);
-        if(dis < rad)
+        if (dis < rad)
         {
             float3 col = mix(float3(0.194 * sin(speed / 6.0) + 0.3, 0.2, 0.3 * pha), float3(1.1 * sin(speed / 9.0) + 0.3, 0.2 * pha, 0.4), 0.5 + 0.5 * sin(float(i)));
             color +=  col.zyx * (1.0 - smoothstep(rad * 0.15, rad, dis));
@@ -225,22 +225,18 @@ float rand_float(float x)
 
 float snow(float3 pos, float2 uv, float o, float atime)
 {
-   float2 d = (pos.xy - uv);
-   float a = atan(d.y / d.x) + sin(atime*1.0 + o) * 10.0;
+   float2 d   = (pos.xy - uv);
+   float a    = atan(d.y / d.x) + sin(atime*1.0 + o) * 10.0;
 
    float dist = d.x*d.x + d.y*d.y;
 
-   if(dist < pos.z/400.0)
+   if (dist < pos.z/400.0)
    {
       float col = 0.0;
-      if(sin(a * 8.0) < 0.0)
-      {
-         col=1.0;
-      }
-      if(dist < pos.z/800.0)
-      {
-         col+=1.0;
-      }
+      if (sin(a * 8.0) < 0.0)
+         col = 1.0;
+      if (dist < pos.z/800.0)
+         col += 1.0;
       return col * pos.z;
    }
 

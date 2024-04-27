@@ -731,7 +731,7 @@ spv::BuiltIn TGlslangToSpvTraverser::TranslateBuiltInDecoration(glslang::TBuiltI
         builder.addExtension(spv::E_SPV_EXT_fragment_fully_covered);
         builder.addCapability(spv::CapabilityFragmentFullyCoveredEXT);
         return spv::BuiltInFullyCoveredEXT;
-#endif 
+#endif
     default:
         return spv::BuiltInMax;
     }
@@ -2101,7 +2101,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
             break;
         case 1:
             {
-                OpDecorations decorations = { precision, 
+                OpDecorations decorations = { precision,
                                               TranslateNoContractionDecoration(node->getType().getQualifier()),
                                               TranslateNonUniformDecoration(node->getType().getQualifier()) };
                 result = createUnaryOperation(
@@ -2204,7 +2204,7 @@ bool TGlslangToSpvTraverser::visitSelection(glslang::TVisit /* visit */, glslang
 
             // smear condition to vector, if necessary (AST is always scalar)
             if (builder.isVector(trueValue))
-                condition = builder.smearScalar(spv::NoPrecision, condition, 
+                condition = builder.smearScalar(spv::NoPrecision, condition,
                                                 builder.makeVectorType(builder.makeBoolType(),
                                                                        builder.getNumComponents(trueValue)));
 
@@ -2830,7 +2830,6 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 {
     // Name and decorate the non-hidden members
     int offset = -1;
-    int locationOffset = 0;  // for use within the members of this struct
     for (int i = 0; i < (int)glslangMembers->size(); i++) {
         glslang::TType& glslangMember = *(*glslangMembers)[i].type;
         int member = i;
@@ -2879,10 +2878,6 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         // ill-specified and decisions have been made to not allow this.
         if (! type.isArray() && memberQualifier.hasLocation())
             builder.addMemberDecoration(spvType, member, spv::DecorationLocation, memberQualifier.layoutLocation);
-
-        if (qualifier.hasLocation())      // track for upcoming inheritance
-            locationOffset += glslangIntermediate->computeTypeLocationSize(
-                                            glslangMember, glslangIntermediate->getStage());
 
         // component, XFB, others
         if (glslangMember.getQualifier().hasComponent())
@@ -3940,7 +3935,7 @@ spv::Id TGlslangToSpvTraverser::createImageTextureFunctionCall(glslang::TIntermO
         }
     }
 
-    std::vector<spv::Id> result( 1, 
+    std::vector<spv::Id> result( 1,
         builder.createTextureCall(precision, resultType(), sparse, cracked.fetch, cracked.proj, cracked.gather, noImplicitLod, params)
     );
 
@@ -5364,8 +5359,10 @@ spv::Id TGlslangToSpvTraverser::createAtomicOperation(glslang::TOperator op, spv
 // Create group invocation operations.
 spv::Id TGlslangToSpvTraverser::createInvocationsOperation(glslang::TOperator op, spv::Id typeId, std::vector<spv::Id>& operands, glslang::TBasicType typeProxy)
 {
+#ifdef AMD_EXTENSIONS
     bool isUnsigned = isTypeUnsignedInt(typeProxy);
-    bool isFloat = isTypeFloat(typeProxy);
+    bool isFloat    = isTypeFloat(typeProxy);
+#endif
 
     spv::Op opCode = spv::OpNop;
     std::vector<spv::Id> spvGroupOperands;
@@ -6911,7 +6908,7 @@ void OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, 
     out.open(baseName, std::ios::binary | std::ios::out);
     if (out.fail())
         printf("ERROR: Failed to open file: %s\n", baseName);
-    out << "\t// " << 
+    out << "\t// " <<
         glslang::GetSpirvGeneratorVersion() << "." << GLSLANG_MINOR_VERSION << "." << GLSLANG_PATCH_LEVEL <<
         std::endl;
     if (varName != nullptr) {

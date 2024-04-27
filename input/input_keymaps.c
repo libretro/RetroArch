@@ -20,7 +20,6 @@
 #include <ctype.h>
 
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -42,8 +41,13 @@
 #include <sys/keycodes.h>
 #endif
 
+#ifdef __PS3__
 #ifdef __PSL1GHT__
 #include <io/kb.h>
+#else
+#include <ps3_defines.h>
+#include <cell/keyboard.h>
+#endif
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
@@ -321,6 +325,146 @@ const struct rarch_key_map rarch_key_map_switch[] = {
 #ifdef VITA
 /* Vita scancodes are identical to USB 2.0 standard, e.g. SDL2 */
 const struct rarch_key_map rarch_key_map_vita[] = {
+   { 0x02A, RETROK_BACKSPACE },
+   { 0x02B, RETROK_TAB },
+   { 0x09C, RETROK_CLEAR },
+   { 0x028, RETROK_RETURN },
+   { 0x048, RETROK_PAUSE },
+   { 0x029, RETROK_ESCAPE },
+   { 0x02C, RETROK_SPACE },
+   /*{ ?, RETROK_EXCLAIM },*/
+   /*{ ?, RETROK_QUOTEDBL },*/
+   /*{ ?, RETROK_HASH },*/
+   /*{ ?, RETROK_DOLLAR },*/
+   /*{ ?, RETROK_AMPERSAND },*/
+   { 0x034, RETROK_QUOTE },
+   /*{ ?, RETROK_LEFTPAREN },*/
+   /*{ ?, RETROK_RIGHTPAREN },*/
+   /*{ ?, RETROK_ASTERISK },*/
+   /*{ ?, RETROK_PLUS },*/
+   { 0x036, RETROK_COMMA },
+   { 0x02D, RETROK_MINUS },
+   { 0x037, RETROK_PERIOD },
+   { 0x038, RETROK_SLASH },
+   { 0x027, RETROK_0 },
+   { 0x01E, RETROK_1 },
+   { 0x01F, RETROK_2 },
+   { 0x020, RETROK_3 },
+   { 0x021, RETROK_4 },
+   { 0x022, RETROK_5 },
+   { 0x023, RETROK_6 },
+   { 0x024, RETROK_7 },
+   { 0x025, RETROK_8 },
+   { 0x026, RETROK_9 },
+   /*{ ?, RETROK_COLON },*/
+   { 0x033, RETROK_SEMICOLON },
+   /*{ ?, RETROK_OEM_102 },*/
+   { 0x02E, RETROK_EQUALS },
+   /*{ ?, RETROK_GREATER },*/
+   /*{ ?, RETROK_QUESTION },*/
+   /*{ ?, RETROK_AT },*/
+   { 0x02F, RETROK_LEFTBRACKET },
+   { 0x031, RETROK_BACKSLASH },
+   { 0x030, RETROK_RIGHTBRACKET },
+   /*{ ?, RETROK_CARET },*/
+   /*{ ?, RETROK_UNDERSCORE },*/
+   { 0x035, RETROK_BACKQUOTE },
+   { 0x004, RETROK_a },
+   { 0x005, RETROK_b },
+   { 0x006, RETROK_c },
+   { 0x007, RETROK_d },
+   { 0x008, RETROK_e },
+   { 0x009, RETROK_f },
+   { 0x00A, RETROK_g },
+   { 0x00B, RETROK_h },
+   { 0x00C, RETROK_i },
+   { 0x00D, RETROK_j },
+   { 0x00E, RETROK_k },
+   { 0x00F, RETROK_l },
+   { 0x010, RETROK_m },
+   { 0x011, RETROK_n },
+   { 0x012, RETROK_o },
+   { 0x013, RETROK_p },
+   { 0x014, RETROK_q },
+   { 0x015, RETROK_r },
+   { 0x016, RETROK_s },
+   { 0x017, RETROK_t },
+   { 0x018, RETROK_u },
+   { 0x019, RETROK_v },
+   { 0x01A, RETROK_w },
+   { 0x01B, RETROK_x },
+   { 0x01C, RETROK_y },
+   { 0x01D, RETROK_z },
+   { 0x04C, RETROK_DELETE },
+   { 0x062, RETROK_KP0 },
+   { 0x059, RETROK_KP1 },
+   { 0x05A, RETROK_KP2 },
+   { 0x05B, RETROK_KP3 },
+   { 0x05C, RETROK_KP4 },
+   { 0x05D, RETROK_KP5 },
+   { 0x05E, RETROK_KP6 },
+   { 0x05F, RETROK_KP7 },
+   { 0x060, RETROK_KP8 },
+   { 0x061, RETROK_KP9 },
+   { 0x063, RETROK_KP_PERIOD },
+   { 0x054, RETROK_KP_DIVIDE },
+   { 0x055, RETROK_KP_MULTIPLY },
+   { 0x056, RETROK_KP_MINUS },
+   { 0x057, RETROK_KP_PLUS },
+   { 0x058, RETROK_KP_ENTER },
+   { 0x067, RETROK_KP_EQUALS },
+   { 0x052, RETROK_UP },
+   { 0x051, RETROK_DOWN },
+   { 0x04F, RETROK_RIGHT },
+   { 0x050, RETROK_LEFT },
+   { 0x049, RETROK_INSERT },
+   { 0x04A, RETROK_HOME },
+   { 0x04D, RETROK_END },
+   { 0x04B, RETROK_PAGEUP },
+   { 0x04E, RETROK_PAGEDOWN },
+   { 0x03A, RETROK_F1 },
+   { 0x03B, RETROK_F2 },
+   { 0x03C, RETROK_F3 },
+   { 0x03D, RETROK_F4 },
+   { 0x03E, RETROK_F5 },
+   { 0x03F, RETROK_F6 },
+   { 0x040, RETROK_F7 },
+   { 0x041, RETROK_F8 },
+   { 0x042, RETROK_F9 },
+   { 0x043, RETROK_F10 },
+   { 0x044, RETROK_F11 },
+   { 0x045, RETROK_F12 },
+   { 0x068, RETROK_F13 },
+   { 0x069, RETROK_F14 },
+   { 0x06A, RETROK_F15 },
+   { 0x053, RETROK_NUMLOCK },
+   { 0x039, RETROK_CAPSLOCK },
+   { 0x047, RETROK_SCROLLOCK },
+   { 0x0E5, RETROK_RSHIFT },
+   { 0x0E1, RETROK_LSHIFT },
+   { 0x0E4, RETROK_RCTRL },
+   { 0x0E0, RETROK_LCTRL },
+   { 0x0E6, RETROK_RALT },
+   { 0x0E2, RETROK_LALT },
+   /* { ?, RETROK_RMETA }, */
+   /* { ?, RETROK_LMETA }, */
+   { 0x0E3, RETROK_LSUPER },
+   { 0x0E7, RETROK_RSUPER },
+   /* { ?, RETROK_MODE },*/
+   { 0x075, RETROK_HELP },
+   { 0x046, RETROK_PRINT },
+   { 0x09A, RETROK_SYSREQ },
+   { 0x048, RETROK_BREAK },
+   { 0x076, RETROK_MENU },
+   { 0x066, RETROK_POWER },
+   /*{ ?, RETROK_EURO },*/
+   { 0x07A, RETROK_UNDO },
+   { 0, RETROK_UNKNOWN },
+};
+#endif
+
+#if defined(ORBIS)
+const struct rarch_key_map rarch_key_map_ps4[] = {
    { 0x02A, RETROK_BACKSPACE },
    { 0x02B, RETROK_TAB },
    { 0x09C, RETROK_CLEAR },
@@ -1319,7 +1463,7 @@ const struct rarch_key_map rarch_key_map_qnx[] = {
    { KEYCODE_RIGHT_CTRL, RETROK_RCTRL },
    { KEYCODE_LEFT_ALT, RETROK_LALT },
    { KEYCODE_RIGHT_ALT, RETROK_RALT },
-   // TODO/FIXME: Code for 'sym' key on BB keyboards. Figure out which sys/keycodes.h define this maps to.
+   /* TODO/FIXME: Code for 'sym' key on BB keyboards. Figure out which sys/keycodes.h define this maps to. */
    { 61651, RETROK_RSUPER },
    { KEYCODE_DOLLAR, RETROK_DOLLAR },
    { KEYCODE_MENU, RETROK_MENU },
@@ -1455,7 +1599,7 @@ const struct rarch_key_map rarch_key_map_apple_hid[] = {
    { KEY_RightAlt, RETROK_RALT },
    { KEY_LeftAlt, RETROK_LALT },
    { KEY_RightGUI, RETROK_RMETA },
-   { KEY_LeftGUI, RETROK_RMETA },
+   { KEY_LeftGUI, RETROK_LMETA },
    /* { ?, RETROK_LSUPER }, */
    /* { ?, RETROK_RSUPER }, */
    /* { ?, RETROK_MODE }, */
@@ -1568,8 +1712,8 @@ const struct rarch_key_map rarch_key_map_dos[] = {
 };
 #endif
 
-#ifdef __PSL1GHT__
-const struct rarch_key_map rarch_key_map_psl1ght[] = {
+#if defined(__PS3__)
+const struct rarch_key_map rarch_key_map_ps3[] = {
    { KB_RAWKEY_A, RETROK_a },
    { KB_RAWKEY_B, RETROK_b },
    { KB_RAWKEY_C, RETROK_c },
@@ -1899,7 +2043,6 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t siz
 {
    unsigned i;
 
-   retro_assert(size >= 2);
    *buf = '\0';
 
    if (key >= RETROK_a && key <= RETROK_z)
@@ -1917,4 +2060,107 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t siz
       strlcpy(buf, input_config_key_map[i].str, size);
       break;
    }
+}
+
+/**
+ * input_translate_rk_to_ascii:
+ * @key : Retro key identifier
+ * @mod : retro_mod mask
+ *
+ * Translates a retro key identifier with mod mask to ASCII.
+ */
+uint8_t input_keymaps_translate_rk_to_ascii(enum retro_key key, enum retro_mod mod)
+{
+   if (     key > RETROK_KP_EQUALS
+         || (mod & (RETROKMOD_ALT | RETROKMOD_CTRL | RETROKMOD_META)))
+      return 0;
+
+   /* keypad */
+   if (key >= RETROK_KP0)
+   {
+      if (key == RETROK_KP_ENTER)
+         return 10;  /* \n */
+
+      if (mod & RETROKMOD_NUMLOCK)
+      {
+         switch (key)
+         {
+            case RETROK_KP_PERIOD:
+               return 46;  /* . */
+            case RETROK_KP_DIVIDE:
+               return 47;  /* / */
+            case RETROK_KP_MULTIPLY:
+               return 42;  /* * */
+            case RETROK_KP_MINUS:
+               return 45;  /* - */
+            case RETROK_KP_PLUS:
+               return 43;  /* + */
+            case RETROK_KP_EQUALS:
+               return 61;  /* = */
+            default:  /* KP 0 - 9 */
+               return key - 208;
+         }
+      }
+
+      return 0;
+   }
+
+   /* symbols */
+   if (mod & RETROKMOD_SHIFT)
+   {
+      switch (key)
+      {
+         case RETROK_BACKQUOTE:
+            return 126; /* ~ */
+         case RETROK_1:
+            return 33;  /* ! */
+         case RETROK_2:
+            return 64;  /* @ */
+         case RETROK_3:
+            return 35;  /* # */
+         case RETROK_4:
+            return 36;  /* $ */
+         case RETROK_5:
+            return 37;  /* % */
+         case RETROK_6:
+            return 94;  /* ^ */
+         case RETROK_7:
+            return 38;  /* & */
+         case RETROK_8:
+            return 42;  /* * */
+         case RETROK_9:
+            return 40;  /* ( */
+         case RETROK_0:
+            return 41;  /* ) */
+         case RETROK_MINUS:
+            return 95;  /* _ */
+         case RETROK_EQUALS:
+            return 43;  /* + */
+         case RETROK_LEFTBRACKET:
+            return 123; /* { */
+         case RETROK_RIGHTBRACKET:
+            return 125; /* } */
+         case RETROK_BACKSLASH:
+            return 124; /* | */
+         case RETROK_SEMICOLON:
+            return 58;  /* : */
+         case RETROK_QUOTE:
+            return 34;  /* " */
+         case RETROK_COMMA:
+            return 60;  /* < */
+         case RETROK_PERIOD:
+            return 62;  /* > */
+         case RETROK_SLASH:
+            return 63;  /* ? */
+         default:
+            break;
+      }
+   }
+
+   /* shift & capslock */
+   if (     key >= RETROK_a && key <= RETROK_z
+         && ((mod & RETROKMOD_SHIFT) ^ ((mod & RETROKMOD_CAPSLOCK) >> 5)))
+      return key - 32;
+
+   return key;
 }

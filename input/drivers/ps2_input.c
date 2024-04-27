@@ -30,7 +30,8 @@ static void ps2_input_free_input(void *data) { }
 static void* ps2_input_initialize(const char *a) { return (void*)-1; }
 static uint64_t ps2_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
+   return (1 << RETRO_DEVICE_JOYPAD)
+       |  (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_ps2 = {
@@ -43,5 +44,6 @@ input_driver_t input_ps2 = {
    ps2_input_get_capabilities,
    "ps2",
    NULL,                         /* grab_mouse */
-   NULL 
+   NULL,
+   NULL
 };

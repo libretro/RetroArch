@@ -52,6 +52,9 @@ static const char *semantic_uniform_names[] = {
    "FinalViewportSize",
    "FrameCount",
    "FrameDirection",
+   "Rotation",
+   "TotalSubFrames",
+   "CurrentSubFrame",
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -243,8 +246,17 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
       case SLANG_SEMANTIC_FRAME_COUNT:
          return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
          /* int */
+      case SLANG_SEMANTIC_TOTAL_SUBFRAMES:
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
+         /* int */
+      case SLANG_SEMANTIC_CURRENT_SUBFRAME:
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
+         /* int */
       case SLANG_SEMANTIC_FRAME_DIRECTION:
          return type.basetype == SPIRType::Int   && type.vecsize == 1 && type.columns == 1;
+         /* uint */
+      case SLANG_SEMANTIC_ROTATION:
+         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
          return type.basetype == SPIRType::Float && type.vecsize == 1 && type.columns == 1;
@@ -336,6 +348,7 @@ static bool add_active_buffer_ranges(
       }
       else
       {
+         /* TODO - Try to print name */
          RARCH_ERR("[slang]: Unknown semantic found.\n");
          return false;
       }
@@ -368,15 +381,15 @@ bool slang_reflect(
 
    /* Validate use of unexpected types. */
    if (
-         !vertex.sampled_images.empty()    ||
-         !vertex.storage_buffers.empty()   ||
-         !vertex.subpass_inputs.empty()    ||
-         !vertex.storage_images.empty()    ||
-         !vertex.atomic_counters.empty()   ||
-         !fragment.storage_buffers.empty() ||
-         !fragment.subpass_inputs.empty()  ||
-         !fragment.storage_images.empty()  ||
-         !fragment.atomic_counters.empty())
+            !vertex.sampled_images.empty()
+         || !vertex.storage_buffers.empty()
+         || !vertex.subpass_inputs.empty()
+         || !vertex.storage_images.empty()
+         || !vertex.atomic_counters.empty()
+         || !fragment.storage_buffers.empty()
+         || !fragment.subpass_inputs.empty()
+         || !fragment.storage_images.empty()
+         || !fragment.atomic_counters.empty())
    {
       RARCH_ERR("[slang]: Invalid resource type detected.\n");
       return false;
@@ -439,10 +452,10 @@ bool slang_reflect(
       return false;
    }
 
-   uint32_t vertex_ubo    = vertex.uniform_buffers.empty() ? 0 : vertex.uniform_buffers[0].id;
-   uint32_t fragment_ubo  = fragment.uniform_buffers.empty() ? 0 : fragment.uniform_buffers[0].id;
-   uint32_t vertex_push   = vertex.push_constant_buffers.empty() ? 0 : vertex.push_constant_buffers[0].id;
-   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : fragment.push_constant_buffers[0].id;
+   uint32_t vertex_ubo    = vertex.uniform_buffers.empty() ? 0 : (uint32_t)vertex.uniform_buffers[0].id;
+   uint32_t fragment_ubo  = fragment.uniform_buffers.empty() ? 0 : (uint32_t)fragment.uniform_buffers[0].id;
+   uint32_t vertex_push   = vertex.push_constant_buffers.empty() ? 0 : (uint32_t)vertex.push_constant_buffers[0].id;
+   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : (uint32_t)fragment.push_constant_buffers[0].id;
 
    if (vertex_ubo &&
          vertex_compiler.get_decoration(
@@ -682,9 +695,9 @@ bool slang_reflect(
 
    {
       char buf[64];
-      buf[0] = '\0';
-      snprintf(buf, sizeof(buf),
-            "[slang]:\n%s [slang]:   Parameters:\n", FILE_PATH_LOG_INFO);
+      size_t _len = strlcpy(buf, "[slang]:\n", sizeof(buf));
+      _len       += strlcpy(buf + _len, FILE_PATH_LOG_INFO, sizeof(buf) - _len);
+      strlcpy(buf + _len, " [slang]:   Parameters:\n", sizeof(buf) - _len);
       RARCH_LOG(buf);
    }
 

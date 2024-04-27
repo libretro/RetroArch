@@ -170,13 +170,18 @@ static bool bluetoothctl_connect_device(void *data, unsigned idx)
    string_list_free(list);
 
    snprintf(btctl->command, sizeof(btctl->command), "\
-         bluetoothctl -- trust %s",
-         device);
+         bluetoothctl -- pairable on");
 
    pclose(popen(btctl->command, "r"));
 
    snprintf(btctl->command, sizeof(btctl->command), "\
          bluetoothctl -- pair %s",
+         device);
+
+   pclose(popen(btctl->command, "r"));
+
+   snprintf(btctl->command, sizeof(btctl->command), "\
+         bluetoothctl -- trust %s",
          device);
 
    pclose(popen(btctl->command, "r"));

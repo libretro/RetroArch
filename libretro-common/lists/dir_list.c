@@ -46,6 +46,22 @@ static int qstrcmp_plain(const void *a_, const void *b_)
    return strcasecmp(a->data, b->data);
 }
 
+static int qstrcmp_plain_noext(const void *a_, const void *b_)
+{
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
+
+   const char *ext_a = path_get_extension(a->data);
+   size_t l_a = string_is_empty(ext_a) ? strlen(a->data) : (size_t)(ext_a - a->data - 1);
+   const char *ext_b = path_get_extension(b->data);
+   size_t l_b = string_is_empty(ext_b) ? strlen(b->data) : (size_t)(ext_b - b->data - 1);
+
+   int rv = strncasecmp(a->data, b->data, MIN(l_a, l_b));
+   if (rv == 0 && l_a != l_b)
+       return (int)(l_a - l_b);
+   return rv;
+}
+
 static int qstrcmp_dir(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_;
@@ -59,13 +75,25 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    return strcasecmp(a->data, b->data);
 }
 
+static int qstrcmp_dir_noext(const void *a_, const void *b_)
+{
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
+   int a_type = a->attr.i;
+   int b_type = b->attr.i;
+
+   /* Sort directories before files. */
+   if (a_type != b_type)
+      return b_type - a_type;
+   return qstrcmp_plain_noext(a, b);
+}
+
 /**
  * dir_list_sort:
  * @list      : pointer to the directory listing.
  * @dir_first : move the directories in the listing to the top?
  *
  * Sorts a directory listing.
- *
  **/
 void dir_list_sort(struct string_list *list, bool dir_first)
 {
@@ -75,11 +103,24 @@ void dir_list_sort(struct string_list *list, bool dir_first)
 }
 
 /**
+ * dir_list_sort_ignore_ext:
+ * @list      : pointer to the directory listing.
+ * @dir_first : move the directories in the listing to the top?
+ *
+ * Sorts a directory listing. File extensions are ignored.
+ **/
+void dir_list_sort_ignore_ext(struct string_list *list, bool dir_first)
+{
+   if (list)
+      qsort(list->elems, list->size, sizeof(struct string_list_elem),
+            dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext);
+}
+
+/**
  * dir_list_free:
  * @list : pointer to the directory listing
  *
  * Frees a directory listing.
- *
  **/
 void dir_list_free(struct string_list *list)
 {
@@ -105,7 +146,7 @@ bool dir_list_deinitialize(struct string_list *list)
  *
  * Add files within a directory to an existing string list
  *
- * Returns: -1 on error, 0 on success.
+ * @return -1 on error, 0 on success.
  **/
 static int dir_list_read(const char *dir,
       struct string_list *list, struct string_list *ext_list,
@@ -139,11 +180,24 @@ static int dir_list_read(const char *dir,
             continue;
       }
 
-      file_path[0] = '\0';
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
+      fill_pathname_join_special(file_path, dir, name, sizeof(file_path));
 
       if (retro_dirent_is_dir(entry, NULL))
       {
+         /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
+#ifndef _WIN32
+         if (!include_hidden && strcmp(name, "System Volume Information") == 0)
+            continue;
+#endif
+#ifdef IOS
+         if (string_ends_with(name, ".framework"))
+         {
+            attr.i = RARCH_PLAIN_FILE;
+            if (!string_list_append(list, file_path, attr))
+               goto error;
+            continue;
+         }
+#endif
          if (recursive)
             dir_list_read(file_path, list, ext_list, include_dirs,
                   include_hidden, include_compressed, recursive);
@@ -206,7 +260,7 @@ error:
  *
  * Create a directory listing, appending to an existing list
  *
- * Returns: true success, false in case of error.
+ * @return Returns true on success, otherwise false.
  **/
 bool dir_list_append(struct string_list *list,
       const char *dir,
@@ -241,7 +295,7 @@ bool dir_list_append(struct string_list *list,
  *
  * Create a directory listing.
  *
- * Returns: pointer to a directory listing of type 'struct string_list *' on success,
+ * @return pointer to a directory listing of type 'struct string_list *' on success,
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir,
@@ -264,17 +318,20 @@ struct string_list *dir_list_new(const char *dir,
    return list;
 }
 
-/* Warning: 'list' must zero initialised before
- * calling this function, otherwise memory leaks/
- * undefined behaviour will occur */
+/**
+ * dir_list_initialize:
+ *
+ * NOTE: @list must zero initialised before
+ * calling this function, otherwise UB.
+ **/
 bool dir_list_initialize(struct string_list *list,
       const char *dir,
       const char *ext, bool include_dirs,
       bool include_hidden, bool include_compressed,
       bool recursive)
 {
-   if (!list || !string_list_initialize(list))
-      return false;
-   return dir_list_append(list, dir, ext, include_dirs,
+   if (list && string_list_initialize(list))
+      return dir_list_append(list, dir, ext, include_dirs,
             include_hidden, include_compressed, recursive);
+   return false;
 }

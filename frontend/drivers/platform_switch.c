@@ -1,10 +1,25 @@
+/* RetroArch - A frontend for libretro.
+ * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ * Copyright (C) 2011-2017 - Daniel De Matteis
+ *
+ * RetroArch is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Found-
+ * ation, either version 3 of the License, or (at your option) any later version.
+ *
+ * RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with RetroArch.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>
 #include <boolean.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <dirent.h>
 
 #include <file/nbio.h>
@@ -34,21 +49,25 @@
 #include <string/stdstring.h>
 
 #include "../frontend_driver.h"
-#include "../../verbosity.h"
 #include "../../defaults.h"
+#include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
-#include "../../file_path_special.h"
+#include "../../verbosity.h"
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+
+#if defined(HAVE_LIBNX) && defined(HAVE_NETWORKING)
+#include "../../network/netplay/netplay.h"
+#endif
 #endif
 
 #ifdef HAVE_LIBNX
 #define SD_PREFIX
-#include "../../gfx/common/switch_common.h"
+#include "../../gfx/common/switch_defines.h"
 #else
 #define SD_PREFIX "/sd"
 #endif
@@ -97,14 +116,12 @@ static void on_applet_hook(AppletHookType hook, void *param)
    switch (hook)
    {
       case AppletHookType_OnExitRequest:
-         RARCH_LOG("Got AppletHook OnExitRequest, exiting.\n");
          retroarch_main_quit();
          break;
 
          /* Focus state*/
       case AppletHookType_OnFocusState:
          focus_state = appletGetFocusState();
-         RARCH_LOG("Got AppletHook OnFocusState - new focus state is %d\n", focus_state);
          platform_switch_has_focus = focus_state == AppletFocusState_InFocus;
 
          if (!platform_switch_has_focus)
@@ -146,8 +163,7 @@ static void get_first_valid_core(char *path_return, size_t len)
 
    path_return[0] = '\0';
 
-   dir = opendir(SD_PREFIX "/retroarch/cores");
-   if (dir)
+   if ((dir = opendir(SD_PREFIX "/retroarch/cores")))
    {
       while ((ent = readdir(dir)))
       {
@@ -155,9 +171,11 @@ static void get_first_valid_core(char *path_return, size_t len)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy_literal(path_return, SD_PREFIX "/retroarch/cores");
-            strlcat(path_return, "/", len);
-            strlcat(path_return, ent->d_name, len);
+            size_t _len = strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
+            _len += strlcpy(path_return + _len,
+                  "/",
+                  len           - _len);
+            strlcpy(path_return + _len, ent->d_name, len - _len);
             break;
          }
       }
@@ -179,7 +197,6 @@ static void frontend_switch_get_env(
 #endif
 
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], SD_PREFIX "/retroarch/retroarch_switch.nro", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -217,9 +234,6 @@ static void frontend_switch_get_env(
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
 
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
-
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
 
@@ -233,12 +247,10 @@ static void frontend_switch_get_env(
                       "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+                      "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
 
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], g_defaults.dirs[DEFAULT_DIR_PORT],
-                      "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
@@ -304,46 +316,51 @@ static void frontend_switch_deinit(void *data)
 #ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
-   char game_path[PATH_MAX-4];
-   game_path[0]       = '\0';
+   if (!string_is_empty(path))
+   {
+      char args[PATH_MAX];
 
-   RARCH_LOG("Attempt to load core: [%s].\n", path);
+      strlcpy(args, path, sizeof(args));
 
 #ifndef IS_SALAMANDER
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
-   {
-      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
-      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
-   }
-#endif
-
-   if (path && path[0])
-   {
-#ifdef IS_SALAMANDER
-      struct stat sbuff;
-      bool file_exists = stat(path, &sbuff) == 0;
-
-      if (!file_exists)
-      {
-         char core_path[PATH_MAX];
-
-         /* find first valid core and load it if the target core doesnt exist */
-         get_first_valid_core(&core_path[0], PATH_MAX);
-
-         if (core_path[0] == '\0')
-            svcExitProcess();
-      }
-#endif
-      char *arg_buffer = (char *)malloc(PATH_MAX);
       if (should_load_game)
-         snprintf(arg_buffer, PATH_MAX, "%s \"%s\"", path, game_path);
-      else
       {
-         arg_buffer[0] = '\0';
-         strlcpy(arg_buffer, path, PATH_MAX);
+         const char *content = path_get(RARCH_PATH_CONTENT);
+#ifdef HAVE_NETWORKING
+         char *arg_data[NETPLAY_FORK_MAX_ARGS];
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
+               (void*)arg_data))
+         {
+            char buf[PATH_MAX];
+            char **arg = arg_data;
+            do
+            {
+               snprintf(buf, sizeof(buf), " \"%s\"", *arg);
+               strlcat(args, buf, sizeof(args));
+            } while (*(++arg));
+         }
+         else
+#endif
+         if (!string_is_empty(content))
+            snprintf(args, sizeof(args), "%s \"%s\"", path, content);
       }
+#else
+      {
+         struct stat sbuff;
 
-      envSetNextLoad(path, arg_buffer);
+         if (stat(path, &sbuff))
+         {
+            char core_path[PATH_MAX];
+
+            get_first_valid_core(core_path, sizeof(core_path));
+
+            if (string_is_empty(core_path))
+               svcExitProcess();
+         }
+      }
+#endif
+
+      envSetNextLoad(path, args);
    }
 }
 
@@ -353,15 +370,12 @@ static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
    case FRONTEND_FORK_CORE:
-      RARCH_LOG("FRONTEND_FORK_CORE\n");
       switch_fork_mode = fork_mode;
       break;
    case FRONTEND_FORK_CORE_WITH_ARGS:
-      RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
       switch_fork_mode = fork_mode;
       break;
    case FRONTEND_FORK_RESTART:
-      RARCH_LOG("FRONTEND_FORK_RESTART\n");
       /*  NOTE: We don't implement Salamander, so just turn
              this into FRONTEND_FORK_CORE. */
       switch_fork_mode = FRONTEND_FORK_CORE;
@@ -602,10 +616,10 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
    if (!list)
       return -1;
 
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "/", msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 
    return 0;
@@ -670,7 +684,7 @@ static void frontend_switch_get_os(
    ipc_request_t rq;
 #endif
 
-   strcpy_literal(s, "Horizon OS");
+   strlcpy(s, "Horizon OS", len);
 
 #ifdef HAVE_LIBNX
    *major     = 0;
@@ -708,8 +722,8 @@ fail:
 
 static void frontend_switch_get_name(char *s, size_t len)
 {
-   /* TODO: Add Mariko at some point */
-   strcpy_literal(s, "Nintendo Switch");
+   /* TODO/FIXME: Add Mariko at some point */
+   strlcpy(s, "Nintendo Switch", len);
 }
 
 void frontend_switch_process_args(int *argc, char *argv[])

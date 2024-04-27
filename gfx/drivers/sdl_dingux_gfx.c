@@ -22,9 +22,7 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_video.h>
 
-#include <retro_assert.h>
 #include <gfx/video_frame.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
@@ -339,7 +337,7 @@ static void sdl_dingux_gfx_free(void *data)
 }
 
 static void sdl_dingux_input_driver_init(
-      const char *input_driver_name, const char *joypad_driver_name,
+      const char *input_drv_name, const char *joypad_drv_name,
       input_driver_t **input, void **input_data)
 {
    /* Sanity check */
@@ -351,13 +349,13 @@ static void sdl_dingux_input_driver_init(
 
    /* If input driver name is empty, cannot
     * initialise anything... */
-   if (string_is_empty(input_driver_name))
+   if (string_is_empty(input_drv_name))
       return;
 
-   if (string_is_equal(input_driver_name, "sdl_dingux"))
+   if (string_is_equal(input_drv_name, "sdl_dingux"))
    {
       *input_data = input_driver_init_wrap(&input_sdl_dingux,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_sdl_dingux;
@@ -366,10 +364,10 @@ static void sdl_dingux_input_driver_init(
    }
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   if (string_is_equal(input_driver_name, "sdl"))
+   if (string_is_equal(input_drv_name, "sdl"))
    {
       *input_data = input_driver_init_wrap(&input_sdl,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_sdl;
@@ -379,10 +377,10 @@ static void sdl_dingux_input_driver_init(
 #endif
 
 #if defined(HAVE_UDEV)
-   if (string_is_equal(input_driver_name, "udev"))
+   if (string_is_equal(input_drv_name, "udev"))
    {
       *input_data = input_driver_init_wrap(&input_udev,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_udev;
@@ -392,10 +390,10 @@ static void sdl_dingux_input_driver_init(
 #endif
 
 #if defined(__linux__)
-   if (string_is_equal(input_driver_name, "linuxraw"))
+   if (string_is_equal(input_drv_name, "linuxraw"))
    {
       *input_data = input_driver_init_wrap(&input_linuxraw,
-            joypad_driver_name);
+            joypad_drv_name);
 
       if (*input_data)
          *input = &input_linuxraw;
@@ -422,11 +420,11 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 #endif
    enum dingux_ipu_filter_type ipu_filter_type   = (enum dingux_ipu_filter_type)
          settings->uints.video_dingux_ipu_filter_type;
-   const char *input_driver_name                 = settings->arrays.input_driver;
-   const char *joypad_driver_name                = settings->arrays.input_joypad_driver;
-   uint32_t surface_flags                        = (video->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
-         (SDL_HWSURFACE | SDL_FULLSCREEN);
+   const char *input_drv_name                    = settings->arrays.input_driver;
+   const char *joypad_drv_name                   = settings->arrays.input_joypad_driver;
+   uint32_t surface_flags                        = (video->vsync)
+         ? (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN)
+         : (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    /* Initialise graphics subsystem, if required */
    if (sdl_subsystem_flags == 0)
@@ -447,13 +445,15 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    dingux_ipu_set_downscaling_enable(true);
    dingux_ipu_set_scaling_mode(ipu_keep_aspect, ipu_integer_scaling);
    dingux_ipu_set_filter_type(ipu_filter_type);
+
+   vid->ff_frame_time_min = 16667;
 #if defined(DINGUX_BETA)
    /* Get current refresh rate */
-   refresh_rate_valid = dingux_get_video_refresh_rate(&current_refresh_rate);
+   refresh_rate_valid     = dingux_get_video_refresh_rate(&current_refresh_rate);
 
    /* Check if refresh rate needs to be updated */
-   if (!refresh_rate_valid ||
-       (current_refresh_rate != target_refresh_rate))
+   if (   !refresh_rate_valid
+       || (current_refresh_rate != target_refresh_rate))
       hw_refresh_rate = dingux_set_video_refresh_rate(target_refresh_rate);
    else
    {
@@ -477,19 +477,9 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    }
 
    vid->refresh_rate = target_refresh_rate;
-   switch (target_refresh_rate)
-   {
-      case DINGUX_REFRESH_RATE_50HZ:
-         vid->ff_frame_time_min = 20000;
-         break;
-      default:
-         vid->ff_frame_time_min = 16667;
-         break;
-   }
-
+   if (target_refresh_rate == DINGUX_REFRESH_RATE_50HZ)
+      vid->ff_frame_time_min = 20000;
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &hw_refresh_rate);
-#else
-   vid->ff_frame_time_min = 16667;
 #endif
 
    vid->screen = SDL_SetVideoMode(
@@ -518,16 +508,16 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    SDL_ShowCursor(SDL_DISABLE);
 
-   sdl_dingux_input_driver_init(input_driver_name,
-         joypad_driver_name, input, input_data);
+   sdl_dingux_input_driver_init(input_drv_name,
+         joypad_drv_name, input, input_data);
 
    /* Initialise OSD font */
    sdl_dingux_init_font_color(vid);
 
    vid->osd_font = bitmapfont_get_lut();
 
-   if (!vid->osd_font ||
-       vid->osd_font->glyph_max <
+   if (  !vid->osd_font
+       || vid->osd_font->glyph_max <
             (SDL_DINGUX_NUM_FONT_GLYPHS - 1))
    {
       RARCH_ERR("[SDL1]: Failed to init OSD font\n");
@@ -623,9 +613,9 @@ static void sdl_dingux_set_output(
 {
    unsigned sanitized_width;
    unsigned sanitized_height;
-   uint32_t surface_flags = (vid->vsync) ?
-         (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN) :
-         (SDL_HWSURFACE | SDL_FULLSCREEN);
+   uint32_t surface_flags = (vid->vsync)
+         ? (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN)
+         : (SDL_HWSURFACE | SDL_FULLSCREEN);
 
    /* Cache set parameters */
    vid->frame_width  = width;
@@ -767,6 +757,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+#ifdef HAVE_MENU
+   bool menu_is_alive      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#endif
 
    /* Return early if:
     * - Input sdl_dingux_video_t struct is NULL
@@ -798,7 +791,7 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info->menu_is_alive, video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (likely(!vid->menu_active))
@@ -806,9 +799,9 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       /* Update video mode if we were in the menu on
        * the previous frame, or width/height have changed */
       if (unlikely(
-            vid->was_in_menu ||
-            (vid->frame_width  != width) ||
-            (vid->frame_height != height)))
+                vid->was_in_menu
+            || (vid->frame_width  != width)
+            || (vid->frame_height != height)))
          sdl_dingux_set_output(vid, width, height, vid->rgb32);
 
       /* Must always lock SDL surface before
@@ -880,11 +873,8 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
 static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_screen)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
-
-   if (unlikely(!vid))
-      return;
-
-   vid->menu_active = state;
+   if (vid)
+      vid->menu_active = state;
 }
 
 static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,
@@ -893,10 +883,10 @@ static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
 
    if (unlikely(
-         !vid ||
-         rgb32 ||
-         (width > SDL_DINGUX_MENU_WIDTH) ||
-         (height > SDL_DINGUX_MENU_HEIGHT)))
+           !vid
+         || rgb32
+         || (width > SDL_DINGUX_MENU_WIDTH)
+         || (height > SDL_DINGUX_MENU_HEIGHT)))
       return;
 
    memcpy(vid->menu_texture, frame, width * height * sizeof(uint16_t));
@@ -974,17 +964,9 @@ static bool sdl_dingux_gfx_alive(void *data)
    return !vid->quitting;
 }
 
-static bool sdl_dingux_gfx_focus(void *data)
-{
-   return true;
-}
-
+static bool sdl_dingux_gfx_focus(void *data) { return true; }
+static bool sdl_dingux_gfx_has_windowed(void *data) { return false; }
 static bool sdl_dingux_gfx_suppress_screensaver(void *data, bool enable)
-{
-   return false;
-}
-
-static bool sdl_dingux_gfx_has_windowed(void *data)
 {
    return false;
 }
@@ -1052,15 +1034,15 @@ static void sdl_dingux_apply_state_changes(void *data)
       return;
 
    /* Update IPU scaling mode, if required */
-   if ((vid->keep_aspect != ipu_keep_aspect) ||
-       (vid->integer_scaling != ipu_integer_scaling))
+   if (   (vid->keep_aspect     != ipu_keep_aspect)
+       || (vid->integer_scaling != ipu_integer_scaling))
    {
+      unsigned sanitized_width;
+      unsigned sanitized_height;
       unsigned current_width  = vid->frame_width;
       unsigned current_height = vid->frame_height;
       unsigned screen_width   = vid->screen->w;
       unsigned screen_height  = vid->screen->h;
-      unsigned sanitized_width;
-      unsigned sanitized_height;
 
       dingux_ipu_set_scaling_mode(ipu_keep_aspect, ipu_integer_scaling);
       vid->keep_aspect     = ipu_keep_aspect;
@@ -1073,23 +1055,20 @@ static void sdl_dingux_apply_state_changes(void *data)
             current_width, current_height,
             &sanitized_width, &sanitized_height);
 
-      if ((screen_width  != sanitized_width) ||
-          (screen_height != sanitized_height))
+      if (   (screen_width  != sanitized_width)
+          || (screen_height != sanitized_height))
          sdl_dingux_set_output(vid,
                current_width, current_height, vid->rgb32);
    }
 }
 
-static uint32_t sdl_dingux_get_flags(void *data)
-{
-   return 0;
-}
+static uint32_t sdl_dingux_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t sdl_dingux_poke_interface = {
    sdl_dingux_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    sdl_dingux_get_refresh_rate,
    sdl_dingux_set_filtering,
    NULL, /* get_video_output_size */
@@ -1097,11 +1076,11 @@ static const video_poke_interface_t sdl_dingux_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   NULL,
+   NULL, /* set_aspect_ratio */
    sdl_dingux_apply_state_changes,
    sdl_dingux_set_texture_frame,
    sdl_dingux_set_texture_enable,
-   NULL,
+   NULL, /* set_osd_msg */
    NULL, /* sdl_show_mouse */
    NULL, /* sdl_grab_mouse_toggle */
    NULL, /* get_current_shader */
@@ -1135,16 +1114,17 @@ video_driver_t video_sdl_dingux = {
    sdl_dingux_gfx_set_shader,
    sdl_dingux_gfx_free,
    "sdl_dingux",
-   NULL,
+   NULL, /* set_viewport */
    NULL, /* set_rotation */
    sdl_dingux_gfx_viewport_info,
    NULL, /* read_viewport  */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL,
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   sdl_dingux_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-   sdl_dingux_get_poke_interface
 };

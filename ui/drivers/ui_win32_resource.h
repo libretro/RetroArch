@@ -1,6 +1,7 @@
 
 #define IDR_MENU                                101
 #define IDD_PICKCORE                            103
+#define IDR_ACCELERATOR1                        104
 #define ID_M_LOAD_CONTENT                       40001
 #define ID_CORELISTBOX                          40002
 #define ID_M_RESET                              40002
@@ -26,7 +27,16 @@
 #define ID_M_FULL_SCREEN                        40022
 #define ID_M_MOUSE_GRAB                         40023
 #define ID_M_STATE_INDEX_AUTO                   40024
-#define ID_M_TAKE_SCREENSHOT                    40025
-#define ID_M_MUTE_TOGGLE                        40026
-#define ID_M_TOGGLE_DESKTOP                     40027
-#define IDR_ACCELERATOR1                104
+#define ID_M_STATE_INDEX_0                      40025
+#define ID_M_STATE_INDEX_1                      40026
+#define ID_M_STATE_INDEX_2                      40027
+#define ID_M_STATE_INDEX_3                      40028
+#define ID_M_STATE_INDEX_4                      40029
+#define ID_M_STATE_INDEX_5                      40030
+#define ID_M_STATE_INDEX_6                      40031
+#define ID_M_STATE_INDEX_7                      40032
+#define ID_M_STATE_INDEX_8                      40033
+#define ID_M_STATE_INDEX_9                      40034
+#define ID_M_TAKE_SCREENSHOT                    40035
+#define ID_M_MUTE_TOGGLE                        40036
+#define ID_M_TOGGLE_DESKTOP                     40037

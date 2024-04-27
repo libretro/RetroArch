@@ -1,7 +1,11 @@
 *.o
+*.obj
+*.pdb
+*.exe
 *.bmpobj
 *.binobj
 *.so
+*.so.*
 *.dll
 *.a
 *.elf
@@ -10,13 +14,14 @@
 *.swp
 *.cache
 *.gcda
+*.lcbk
 *.gcno
 .tmp
 .tmp.c
 .tmp.cxx
 .moc.h
 .moc.cpp
-config.log
+*.log
 /.project
 /.externalToolBuilders/
 /retroarch
@@ -25,8 +30,6 @@ config.log
 /retroarch_debug.exe
 /config.h
 /config.mk
-/tools/retroarch-joyconfig
-/tools/retroarch-joyconfig.exe
 *.ncb
 *.sdf
 *.opensdf
@@ -94,6 +97,10 @@ database
 overlays
 playlists
 states
+cheats
+thumbnails
+docs/html
+system
 shaders/shaders_cg
 shaders/shaders_glsl
 shaders/shaders_slang
@@ -132,6 +139,7 @@ wiiu/wut/elf2rpl/elf2rpl
 
 # CLion
 /cmake-build-debug/
+.run
 
 # Android
 /pkg/android/phoenix/obj/
@@ -152,6 +160,7 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/shaders_cg/
 /media/libretrodb/
 
+compile_commands.json
 pkg/apple/iOS/build/
 pkg/apple/build/
 ui/drivers/qt/moc_*
@@ -160,23 +169,26 @@ ui/drivers/moc_*
 obj-unix/
 .vagrant/
 
-/pkg/msvc/Release Cg/*.exe
+# Visual Studio
 /pkg/msvc/Release Cg/*.iobj
 /pkg/msvc/Release Cg/*.ipdb
-/pkg/msvc/Release Cg/*.pdb
 /pkg/msvc/Release Cg/*.lpl
 /pkg/msvc/Release Cg/*.cfg
 /pkg/msvc/*.db
 /pkg/msvc/.vs
 /pkg/msvc/*/.vs
-/pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.tlog
-/pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.lastbuildstate
-/pkg/msvc/msvc-2010/Release Cg/*.log
-/pkg/msvc/msvc-2010/Release Cg/*.obj
-/pkg/msvc/msvc-2010/Release Cg/*.res
-/pkg/msvc/msvc-2010/Release Cg/*.pdb
+*.tlog
+*.lastbuildstate
+*.FileListAbsolute.txt
+*.res
 retroarch.cfg
 Makefile.local
+pkg/msvc/**/ARM
+pkg/msvc/**/ARM64
+pkg/msvc/**/* Cg
+pkg/msvc/**/* QT
+pkg/msvc/**/* QT+CG
+pkg/msvc/**/x64
 
 # Emscripten artifacts
 
@@ -201,6 +213,10 @@ retroarch_switch.nso
 *_irx.c
 
 # Wayland
+gfx/common/wayland/fractional-scale-v1.c
+gfx/common/wayland/fractional-scale-v1.h
+gfx/common/wayland/viewporter.c
+gfx/common/wayland/viewporter.h
 gfx/common/wayland/idle-inhibit-unstable-v1.c
 gfx/common/wayland/idle-inhibit-unstable-v1.h
 gfx/common/wayland/xdg-shell-unstable-v6.c
@@ -209,6 +225,12 @@ gfx/common/wayland/xdg-decoration-unstable-v1.h
 gfx/common/wayland/xdg-decoration-unstable-v1.c
 gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
+gfx/common/wayland/pointer-constraints-unstable-v1.c
+gfx/common/wayland/pointer-constraints-unstable-v1.h
+gfx/common/wayland/relative-pointer-unstable-v1.c
+gfx/common/wayland/relative-pointer-unstable-v1.h
+gfx/common/wayland/viewporter.c
+gfx/common/wayland/viewporter.h
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

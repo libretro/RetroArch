@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_socket.h).
@@ -23,9 +23,11 @@
 #ifndef _LIBRETRO_SDK_NET_SOCKET_H
 #define _LIBRETRO_SDK_NET_SOCKET_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
-#include <string.h>
+
+#include <net/net_compat.h>
 
 #include <retro_common_api.h>
 
@@ -58,7 +60,8 @@ typedef struct socket_target
    enum socket_protocol prot;
 } socket_target_t;
 
-int socket_init(void **address, uint16_t port, const char *server, enum socket_type type);
+int socket_init(void **address, uint16_t port, const char *server,
+      enum socket_type type, int family);
 
 int socket_next(void **address);
 
@@ -69,22 +72,38 @@ bool socket_set_block(int fd, bool block);
 /* TODO: all callers should be converted to socket_set_block() */
 bool socket_nonblock(int fd);
 
-int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
       fd_set *errorfds, struct timeval *timeout);
 
-int socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_signal);
+#ifdef NETWORK_HAVE_POLL
+int socket_poll(struct pollfd *fds, unsigned nfds, int timeout);
+#endif
+
+bool socket_wait(int fd, bool *rd, bool *wr, int timeout);
+
+bool socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_signal);
+
+bool socket_send_all_blocking_with_timeout(int fd,
+      const void *data_, size_t size,
+      int timeout, bool no_signal);
 
 ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
       bool no_signal);
 
-int socket_receive_all_blocking(int fd, void *data_, size_t size);
+bool socket_receive_all_blocking(int fd, void *data_, size_t size);
+
+bool socket_receive_all_blocking_with_timeout(int fd,
+      void *data_, size_t size,
+      int timeout);
 
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,
       void *data_, size_t size);
 
 bool socket_bind(int fd, void *data);
 
-int socket_connect(int fd, void *data, bool timeout_enable);
+int socket_connect(int fd, void *data);
+
+bool socket_connect_with_timeout(int fd, void *data, int timeout);
 
 int socket_create(
       const char *name,

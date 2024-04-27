@@ -24,7 +24,17 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "dynamic.h"
+
 RETRO_BEGIN_DECLS
+
+enum state_manager_rewind_st_flags
+{
+   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED     = (1 << 0),
+   STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED        = (1 << 1),
+   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED    = (1 << 2),
+   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED    = (1 << 3)
+};
 
 struct state_manager
 {
@@ -60,13 +70,14 @@ struct state_manager_rewind_state
    /* Rewind support. */
    state_manager_t *state;
    size_t size;
-   bool frame_is_reversed;
+   uint8_t flags;
 };
 
 bool state_manager_frame_is_reversed(void);
 
 void state_manager_event_deinit(
-      struct state_manager_rewind_state *rewind_st);
+      struct state_manager_rewind_state *rewind_st,
+      struct retro_core_t *current_core);
 
 void state_manager_event_init(struct state_manager_rewind_state *rewind_st,
       unsigned rewind_buffer_size);
@@ -79,6 +90,7 @@ void state_manager_event_init(struct state_manager_rewind_state *rewind_st,
  **/
 bool state_manager_check_rewind(
       struct state_manager_rewind_state *rewind_st,
+      struct retro_core_t *current_core,
       bool pressed,
       unsigned rewind_granularity, bool is_paused,
       char *s, size_t len, unsigned *time);

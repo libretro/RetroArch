@@ -22,7 +22,6 @@
 #include <libdrm/drm_fourcc.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <errno.h>
 
 #include <compat/strl.h>
 #include <rthreads/rthreads.h>
@@ -36,7 +35,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../common/drm_common.h"
@@ -277,7 +275,6 @@ static void drm_page_flip(struct drm_surface *surface)
    /* We alredy have the id of the FB_ID property of
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
-   int ret;
    static drmModeAtomicReqPtr req = NULL;
 
    req = drmModeAtomicAlloc();
@@ -285,12 +282,10 @@ static void drm_page_flip(struct drm_surface *surface)
    /* We add the buffer to the plane properties we want to
     * set on an atomically, in a single step.
     * We pass the plane id, the property id and the new fb id. */
-   ret = drmModeAtomicAddProperty(req,
+   if (drmModeAtomicAddProperty(req,
          drm.plane_id,
          drm.plane_fb_prop_id,
-         surface->pages[surface->flip_page].buf.fb_id);
-
-   if (ret < 0)
+         surface->pages[surface->flip_page].buf.fb_id) < 0)
    {
       RARCH_ERR ("DRM: failed to add atomic property for pageflip\n");
    }
@@ -301,11 +296,9 @@ static void drm_page_flip(struct drm_surface *surface)
     * pageflip is complete. If you don't want -12 errors
     * (ENOMEM), namely "Cannot allocate memory", then
     * you must drain the event queue of that fd. */
-   ret = drmModeAtomicCommit(drm.fd, req, 0, NULL);
-
-   if (ret < 0)
+   if (drmModeAtomicCommit(drm.fd, req, 0, NULL) < 0)
    {
-      RARCH_ERR ("DRM: failed to commit for pageflip: %s\n", strerror(errno));
+      RARCH_ERR ("DRM: failed to commit for pageflip\n");
    }
 
    surface->flip_page = !(surface->flip_page);
@@ -543,7 +536,7 @@ static void drm_plane_setup(struct drm_surface *surface)
             plane_flags, plane_x, plane_y, plane_w, plane_h,
             src_x<<16, src_y<<16, src_w<<16, src_h<<16))
    {
-      RARCH_ERR("[DRM]: failed to enable plane: %s\n", strerror(errno));
+      RARCH_ERR("[DRM]: failed to enable plane\n");
    }
 
    RARCH_LOG("[DRM]: src_w %d, src_h %d, plane_w %d, plane_h %d\n",
@@ -604,9 +597,8 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
 
 static bool init_drm(void)
 {
-   int ret;
-   drmModeConnector *connector;
    uint i;
+   drmModeConnector *connector;
 
    drm.fd = open("/dev/dri/card0", O_RDWR);
 
@@ -619,18 +611,16 @@ static bool init_drm(void)
    /* Programmer!! Save your sanity!!
     * VERY important or we won't get all the available planes on drmGetPlaneResources()!
     * We also need to enable the ATOMIC cap to see the atomic properties in objects!! */
-   ret = drmSetClientCap(drm.fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
-   if (ret)
+   if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1))
       RARCH_ERR ("DRM: can't set UNIVERSAL PLANES cap.\n");
    else
       RARCH_LOG ("DRM: UNIVERSAL PLANES cap set\n");
 
-   ret = drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1);
-   if (ret)
+   if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1))
    {
       /*If this happens, check kernel support and kernel parameters
        * (add i915.nuclear_pageflip=y to the kernel boot line for example) */
-      RARCH_ERR ("DRM: can't set ATOMIC caps: %s\n", strerror(errno));
+      RARCH_ERR ("DRM: can't set ATOMIC caps\n");
    }
    else
       RARCH_LOG ("DRM: ATOMIC caps set\n");
@@ -688,8 +678,7 @@ static bool init_drm(void)
    struct modeset_buf buf;
    buf.width = drm.current_mode->hdisplay;
    buf.height = drm.current_mode->vdisplay;
-   ret = modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888);
-   if (ret)
+   if (modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888))
    {
       RARCH_ERR ("DRM: can't create dumb fb\n");
    }
@@ -704,7 +693,7 @@ static bool init_drm(void)
    return true;
 }
 
-static void *drm_gfx_init(const video_info_t *video,
+static void *drm_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct drm_video *_drmvars = (struct drm_video*)
@@ -742,10 +731,8 @@ static void *drm_gfx_init(const video_info_t *video,
       free(_drmvars);
       return NULL;
    }
-   else
-   {
-      RARCH_LOG ("DRM: Init successful.\n");
-   }
+
+   RARCH_LOG ("DRM: Init successful.\n");
 
    _drmvars->kms_width  = drm.current_mode->hdisplay;
    _drmvars->kms_height = drm.current_mode->vdisplay;
@@ -753,17 +740,17 @@ static void *drm_gfx_init(const video_info_t *video,
    return _drmvars;
 }
 
-static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
+static bool drm_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
    struct drm_video *_drmvars = data;
 #ifdef HAVE_MENU
-   bool menu_is_alive         = video_info->menu_is_alive;
+   bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (  ( width != _drmvars->core_width) ||
-         (height != _drmvars->core_height))
+   if (   (width  != _drmvars->core_width)
+       || (height != _drmvars->core_height))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -783,7 +770,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
             _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,
-	    255,
+            255,
             _drmvars->current_aspect,
             3,
             0,
@@ -880,13 +867,11 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    drm_surface_update(_drmvars, frame_output, _drmvars->menu_surface);
 }
 
-static void drm_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static void drm_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool drm_alive(void *data) { return true; }
+static bool drm_focus(void *data) { return true; }
 
-static bool drm_gfx_alive(void *data) { return true; }
-
-static bool drm_gfx_focus(void *data) { return true; }
-
-static void drm_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void drm_viewport_info(void *data, struct video_viewport *vp)
 {
    struct drm_video *vid = data;
 
@@ -899,23 +884,9 @@ static void drm_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->core_height;
 }
 
-static bool drm_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static bool drm_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+static bool drm_suppress_screensaver(void *a, bool b) { return false; }
+static bool drm_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 {
@@ -937,8 +908,8 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 
 static const video_poke_interface_t drm_poke_interface = {
    NULL, /* get_flags */
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    drm_get_refresh_rate,
    NULL, /* set_filtering */
@@ -951,22 +922,21 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* drm_apply_state_changes */
    drm_set_texture_frame,
    drm_set_texture_enable,
-   NULL,                         /* drm_set_osd_msg */
-   NULL,                         /* drm_show_mouse */
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* drm_set_osd_msg */
+   NULL, /* drm_show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
-static void drm_gfx_get_poke_interface(void *data,
+static void drm_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &drm_poke_interface;
 }
 
@@ -993,27 +963,27 @@ static void drm_gfx_free(void *data)
 }
 
 video_driver_t video_drm = {
-   drm_gfx_init,
-   drm_gfx_frame,
-   drm_gfx_set_nonblock_state,
-   drm_gfx_alive,
-   drm_gfx_focus,
-   drm_gfx_suppress_screensaver,
+   drm_init,
+   drm_frame,
+   drm_set_nonblock_state,
+   drm_alive,
+   drm_focus,
+   drm_suppress_screensaver,
    NULL, /* has_windowed */
-   drm_gfx_set_shader,
+   drm_set_shader,
    drm_gfx_free,
    "drm",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
-   drm_gfx_viewport_info,
+   drm_viewport_info,
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-   NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   drm_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-   drm_gfx_get_poke_interface
 };

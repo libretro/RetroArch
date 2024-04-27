@@ -104,9 +104,11 @@ typedef struct
    uint32_t savestate_support_level;
    bool has_info;
    bool supports_no_game;
+   bool single_purpose;
    bool database_match_archive_member;
    bool is_experimental;
    bool is_locked;
+   bool is_standalone_exempt;
    bool is_installed;
 } core_info_t;
 
@@ -200,8 +202,6 @@ void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort
 bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *core_path);
 
-bool core_info_hw_api_supported(core_info_t *info);
-
 /* Convenience wrapper functions used to interpret
  * the 'savestate_support_level' parameter of
  * the currently loaded core. If no core is
@@ -227,6 +227,22 @@ bool core_info_set_core_lock(const char *core_path, bool lock);
  *   safe, but validity of specified core path
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path);
+
+/* Sets 'standalone exempt' status of specified core
+ * > A 'standalone exempt' core will not be shown
+ *   in the contentless cores menu when display type
+ *   is set to 'custom'
+ * > Returns true if successful
+ * > Returns false if core does not support
+ *   contentless operation
+ * > *Not* thread safe */
+bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt);
+/* Fetches 'standalone exempt' status of specified core
+ * > Returns true if core should be excluded from
+ *   the contentless cores menu when display type is
+ *   set to 'custom'
+ * > *Not* thread safe */
+bool core_info_get_core_standalone_exempt(const char *core_path);
 
 bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_path_b);
 

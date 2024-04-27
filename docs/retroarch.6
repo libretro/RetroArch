@@ -150,13 +150,13 @@ Allows specifying the exact output width and height of recording. This option wi
 The video input is scaled with point filtering before being encoded at the correct size.
 
 .TP
-\fB--bsvplay PATH, -P PATH\fR
-Play back a movie recorded in the .bsv format (bsnes). Cart ROM and movie file need to correspond.
+\fB--play-replay PATH, -P PATH\fR
+Play back a movie recorded in the .replay format. Cart ROM and movie file need to correspond.
 It also requires to play back with the same libretro backend that was used for recording.
 
 .TP
-\fB--bsvrecord PATH, -R PATH\fR
-Start recording a .bsv video to PATH immediately after startup.
+\fB--record-replay PATH, -R PATH\fR
+Start recording a .replay video to PATH immediately after startup.
 
 .TP
 \fB--sram-mode MODE, -M MODE\fR
@@ -190,7 +190,7 @@ Network port used for netplay. This defaults to 55435. This option affects both 
 \fB--spectate\fR
 If netplay is used, it will go into a spectator mode.
 Spectator mode allows one host to live stream game playback to multiple clients.
-Essentially, clients receive a live streamed BSV movie file.
+Essentially, clients receive a live streamed replay movie file.
 Clients can connect and disconnect at any time.
 Clients thus cannot interact as user 2.
 For spectating mode to work, both host and clients will need to use this flag.
@@ -227,12 +227,15 @@ If this flag is not specified, RetroArch will look for a .ips file with same bas
 Note that RetroArch cannot perform any error checking if patching was successful due to how IPS works.
 
 .TP
+\fB--xdelta PATCH\fR
+Attempts to apply an Xdelta patch to the current content image. No files are altered.
+If this flag is not specified, RetroArch will look for a .xdelta file with same basename as content specified.
+Only available if RetroArch was built with Xdelta support.
+
+.TP
 \fB--no-patch\fR
 Disables all kinds of content patching.
 
 .TP
 \fB-D, --detach\fR
 Detach from the current console. This is currently only relevant for Microsoft Windows.
-
-.SH "SEE ALSO"
-\fBretroarch-joyconfig\fR(6)

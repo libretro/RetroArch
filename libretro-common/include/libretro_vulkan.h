@@ -27,7 +27,7 @@
 #include <vulkan/vulkan.h>
 
 #define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 5
-#define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 1
+#define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 2
 
 struct retro_vulkan_image
 {
@@ -64,6 +64,8 @@ struct retro_vulkan_context
    uint32_t presentation_queue_family_index;
 };
 
+/* This is only used in v1 of the negotiation interface.
+ * It is deprecated since it cannot express PDF2 features or optional extensions. */
 typedef bool (*retro_vulkan_create_device_t)(
       struct retro_vulkan_context *context,
       VkInstance instance,
@@ -78,6 +80,32 @@ typedef bool (*retro_vulkan_create_device_t)(
 
 typedef void (*retro_vulkan_destroy_device_t)(void);
 
+/* v2 CONTEXT_NEGOTIATION_INTERFACE only. */
+typedef VkInstance (*retro_vulkan_create_instance_wrapper_t)(
+      void *opaque, const VkInstanceCreateInfo *create_info);
+
+/* v2 CONTEXT_NEGOTIATION_INTERFACE only. */
+typedef VkInstance (*retro_vulkan_create_instance_t)(
+      PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+      const VkApplicationInfo *app,
+      retro_vulkan_create_instance_wrapper_t create_instance_wrapper,
+      void *opaque);
+
+/* v2 CONTEXT_NEGOTIATION_INTERFACE only. */
+typedef VkDevice (*retro_vulkan_create_device_wrapper_t)(
+      VkPhysicalDevice gpu, void *opaque,
+      const VkDeviceCreateInfo *create_info);
+
+/* v2 CONTEXT_NEGOTIATION_INTERFACE only. */
+typedef bool (*retro_vulkan_create_device2_t)(
+      struct retro_vulkan_context *context,
+      VkInstance instance,
+      VkPhysicalDevice gpu,
+      VkSurfaceKHR surface,
+      PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+      retro_vulkan_create_device_wrapper_t create_device_wrapper,
+      void *opaque);
+
 /* Note on thread safety:
  * The Vulkan API is heavily designed around multi-threading, and
  * the libretro interface for it should also be threading friendly.
@@ -89,11 +117,24 @@ struct retro_hw_render_context_negotiation_interface_vulkan
 {
    /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN. */
    enum retro_hw_render_context_negotiation_interface_type interface_type;
-   /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION. */
+   /* Usually set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION,
+    * but can be lower depending on GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT. */
    unsigned interface_version;
 
    /* If non-NULL, returns a VkApplicationInfo struct that the frontend can use instead of
     * its "default" application info.
+    * VkApplicationInfo::apiVersion also controls the target core Vulkan version for instance level functionality.
+    * Lifetime of the returned pointer must remain until the retro_vulkan_context is initialized.
+    *
+    * NOTE: For optimal compatibility with e.g. Android which is very slow to update its loader,
+    * a core version of 1.1 should be requested. Features beyond that can be requested with extensions.
+    * Vulkan 1.0 is only appropriate for legacy cores, but is still supported.
+    * A frontend is free to bump the instance creation apiVersion as necessary if the frontend requires more advanced core features.
+    *
+    * v2: This function must not be NULL, and must not return NULL.
+    * v1: It was not clearly defined if this function could return NULL.
+    *     Frontends should be defensive and provide a default VkApplicationInfo
+    *     if this function returns NULL or if this function is NULL.
     */
    retro_vulkan_get_application_info_t get_application_info;
 
@@ -102,8 +143,8 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * The core must prepare a designated PhysicalDevice, Device, Queue and queue family index
     * which the frontend will use for its internal operation.
     *
-    * If gpu is not VK_NULL_HANDLE, the physical device provided to the frontend must be this PhysicalDevice.
-    * The core is still free to use other physical devices.
+    * If gpu is not VK_NULL_HANDLE, the physical device provided to the frontend must be this PhysicalDevice if the call succeeds.
+    * The core is still free to use other physical devices for other purposes that are private to the core.
     *
     * The frontend will request certain extensions and layers for a device which is created.
     * The core must ensure that the queue and queue_family_index support GRAPHICS and COMPUTE.
@@ -132,8 +173,64 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * tearing down its own device resources.
     *
     * Only auxillary resources should be freed here, i.e. resources which are not part of retro_vulkan_context.
+    * v2: Auxillary instance resources created during create_instance can also be freed here.
     */
    retro_vulkan_destroy_device_t destroy_device;
+
+   /* v2 API: If interface_version is < 2, fields below must be ignored.
+    * If the frontend does not support interface version 2, the v1 entry points will be used instead. */
+
+   /* If non-NULL, this is called to create an instance, otherwise a VkInstance is created by the frontend.
+    * v1 interface bug: The only way to enable instance features is through core versions signalled in VkApplicationInfo.
+    * The frontend may request that certain extensions and layers
+    * are enabled on the VkInstance. Application may add additional features.
+    * If app is non-NULL, apiVersion controls the minimum core version required by the application.
+    * Return a VkInstance or VK_NULL_HANDLE. The VkInstance is owned by the frontend.
+    *
+    * Rather than call vkCreateInstance directly, a core must call the CreateInstance wrapper provided with:
+    * VkInstance instance = create_instance_wrapper(opaque, &create_info);
+    * If the core wishes to create a private instance for whatever reason (relying on shared memory for example),
+    * it may call vkCreateInstance directly. */
+   retro_vulkan_create_instance_t create_instance;
+
+   /* If non-NULL and frontend recognizes negotiation interface >= 2, create_device2 takes precedence over create_device.
+    * Similar to create_device, but is extended to better understand new core versions and PDF2 feature enablement.
+    * Requirements for create_device2 are the same as create_device unless a difference is mentioned.
+    *
+    * v2 consideration:
+    * If the chosen gpu by frontend cannot be supported, a core must return false.
+    *
+    * NOTE: "Cannot be supported" is intentionally vaguely defined.
+    * Refusing to run on an iGPU for a very intensive core with desktop GPU as a minimum spec may be in the gray area.
+    * Not supporting optional features is not a good reason to reject a physical device, however.
+    *
+    * On device creation feature with explicit gpu, a frontend should fall back create_device2 with gpu == VK_NULL_HANDLE and let core
+    * decide on a supported device if possible.
+    *
+    * A core must assume that the explicitly provided GPU is the only guaranteed attempt it has to create a device.
+    * A fallback may not be attempted if there are particular reasons why only a specific physical device can work,
+    * but these situations should be esoteric and rare in nature, e.g. a libretro frontend is implemented with external memory
+    * and only LUID matching would work.
+    * Cores and frontends should ensure "best effort" when negotiating like this and appropriate logging is encouraged.
+    *
+    * v1 note: In the v1 version of create_device, it was never expected that create_device would fail like this,
+    * and frontends are not expected to attempt fall backs.
+    *
+    * Rather than call vkCreateDevice directly, a core must call the CreateDevice wrapper provided with:
+    * VkDevice device = create_device_wrapper(gpu, opaque, &create_info);
+    * If the core wishes to create a private device for whatever reason (relying on shared memory for example),
+    * it may call vkCreateDevice directly.
+    *
+    * This allows the frontend to add additional extensions that it requires as well as adjust the PDF2 pNext as required.
+    * It is also possible adjust the queue create infos in case the frontend desires to allocate some private queues.
+    *
+    * The get_instance_proc_addr provided in create_device2 must be the same as create_instance.
+    *
+    * NOTE: The frontend must not disable features requested by application.
+    * NOTE: The frontend must not add any robustness features as some API behavior may change (VK_EXT_descriptor_buffer comes to mind).
+    * I.e. robustBufferAccess and the like. (nullDescriptor from robustness2 is allowed to be enabled).
+    */
+   retro_vulkan_create_device2_t create_device2;
 };
 
 struct retro_hw_render_interface_vulkan

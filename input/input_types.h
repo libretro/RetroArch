@@ -19,6 +19,8 @@
 
 #include "../msg_hash.h"
 
+#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+
 enum input_auto_game_focus_type
 {
    AUTO_GAME_FOCUS_OFF = 0,
@@ -33,6 +35,21 @@ enum input_game_focus_cmd_type
    GAME_FOCUS_CMD_ON,
    GAME_FOCUS_CMD_TOGGLE,
    GAME_FOCUS_CMD_REAPPLY
+};
+
+/* Input config. */
+struct input_bind_map
+{
+   const char *base;
+   enum msg_hash_enums desc;
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+   uint8_t retro_key;
+   bool valid;
 };
 
 /* Turbo support. */
@@ -103,6 +120,8 @@ typedef struct input_game_focus_state
    bool core_requested;
 } input_game_focus_state_t;
 
+extern const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL];
+
 typedef struct rarch_joypad_driver input_device_driver_t;
 typedef struct input_keyboard_line input_keyboard_line_t;
 typedef struct rarch_joypad_info rarch_joypad_info_t;
@@ -110,4 +129,5 @@ typedef struct input_driver input_driver_t;
 typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
 typedef struct turbo_buttons turbo_buttons_t;
 typedef struct joypad_connection joypad_connection_t;
+
 #endif /* __INPUT_TYPES__H */

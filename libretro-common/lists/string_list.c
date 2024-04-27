@@ -62,7 +62,7 @@ static bool string_list_deinitialize_internal(struct string_list *list)
  *
  * Change maximum capacity of string list's size.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 static bool string_list_capacity(struct string_list *list, size_t cap)
 {
@@ -85,7 +85,7 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
  * @list             : pointer to string list object
  *
  * Frees a string list.
- */
+ **/
 void string_list_free(struct string_list *list)
 {
    if (!list)
@@ -113,8 +113,8 @@ bool string_list_deinitialize(struct string_list *list)
  *
  * Creates a new string list. Has to be freed manually.
  *
- * Returns: new string list if successful, otherwise NULL.
- */
+ * @return New string list if successful, otherwise NULL.
+ **/
 struct string_list *string_list_new(void)
 {
    struct string_list_elem *
@@ -164,7 +164,7 @@ bool string_list_initialize(struct string_list *list)
  *
  * Appends a new element to the string list.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
@@ -182,8 +182,7 @@ bool string_list_append(struct string_list *list, const char *elem,
                (list->cap > 0) ? (list->cap * 2) : 32))
       return false;
 
-   data_dup = strdup(elem);
-   if (!data_dup)
+   if (!(data_dup = strdup(elem)))
       return false;
 
    list->elems[list->size].data = data_dup;
@@ -202,7 +201,7 @@ bool string_list_append(struct string_list *list, const char *elem,
  *
  * Appends a new element to the string list.
  *
- * Returns: true (1) if successful, otherwise false (0).
+ * @return true if successful, otherwise false.
  **/
 bool string_list_append_n(struct string_list *list, const char *elem,
       unsigned length, union string_list_elem_attr attr)
@@ -213,9 +212,7 @@ bool string_list_append_n(struct string_list *list, const char *elem,
          !string_list_capacity(list, list->cap * 2))
       return false;
 
-   data_dup = (char*)malloc(length + 1);
-
-   if (!data_dup)
+   if (!(data_dup = (char*)malloc(length + 1)))
       return false;
 
    strlcpy(data_dup, elem, length + 1);
@@ -251,7 +248,7 @@ void string_list_set(struct string_list *list,
  *
  * A string list will be joined/concatenated as a
  * string to @buffer, delimited by @delim.
- */
+ **/
 void string_list_join_concat(char *buffer, size_t size,
       const struct string_list *list, const char *delim)
 {
@@ -261,7 +258,7 @@ void string_list_join_concat(char *buffer, size_t size,
    /* If buffer is already 'full', nothing
     * further can be added
     * > This condition will also be triggered
-    *   if buffer is not NUL-terminated,
+    *   if buffer is not NULL-terminated,
     *   in which case any attempt to increment
     *   buffer or decrement size would lead to
     *   undefined behaviour */
@@ -298,8 +295,7 @@ struct string_list *string_split(const char *str, const char *delim)
    if (!list)
       return NULL;
 
-   copy = strdup(str);
-   if (!copy)
+   if (!(copy = strdup(str)))
       goto error;
 
    tmp = strtok_r(copy, delim, &save);
@@ -334,8 +330,7 @@ bool string_split_noalloc(struct string_list *list,
    if (!list)
       return false;
 
-   copy            = strdup(str);
-   if (!copy)
+   if (!(copy = strdup(str)))
       return false;
 
    tmp             = strtok_r(copy, delim, &save);
@@ -367,8 +362,8 @@ bool string_split_noalloc(struct string_list *list,
  * Includes empty strings - i.e. two adjacent delimiters will resolve
  * to a string list element of "".
  *
- * Returns: new string list if successful, otherwise NULL.
- */
+ * @return New string list if successful, otherwise NULL.
+ **/
 struct string_list *string_separate(char *str, const char *delim)
 {
    char *token              = NULL;
@@ -377,15 +372,13 @@ struct string_list *string_separate(char *str, const char *delim)
 
    /* Sanity check */
    if (!str || string_is_empty(delim))
-      goto error;
+      return NULL;
+   if (!(list = string_list_new()))
+	   return NULL;
 
    str_ptr = &str;
-   list    = string_list_new();
+   token   = string_tokenize(str_ptr, delim);
 
-   if (!list)
-      goto error;
-
-   token = string_tokenize(str_ptr, delim);
    while (token)
    {
       union string_list_elem_attr attr;
@@ -393,22 +386,17 @@ struct string_list *string_separate(char *str, const char *delim)
       attr.i = 0;
 
       if (!string_list_append(list, token, attr))
-         goto error;
+      {
+         free(token);
+         string_list_free(list);
+         return NULL;
+      }
 
       free(token);
-      token = NULL;
-
       token = string_tokenize(str_ptr, delim);
    }
 
    return list;
-
-error:
-   if (token)
-      free(token);
-   if (list)
-      string_list_free(list);
-   return NULL;
 }
 
 bool string_separate_noalloc(
@@ -446,101 +434,97 @@ bool string_separate_noalloc(
 
 /**
  * string_list_find_elem:
- * @list             : pointer to string list
- * @elem             : element to find inside the string list.
+ *
+ * @param list
+ * Pointer to string list
+ * @param elem
+ * Element to find inside the string list.
  *
  * Searches for an element (@elem) inside the string list.
  *
- * Returns: true (1) if element could be found, otherwise false (0).
+ * @return Number of elements found, otherwise 0.
  */
 int string_list_find_elem(const struct string_list *list, const char *elem)
 {
-   size_t i;
-
-   if (!list)
-      return false;
-
-   for (i = 0; i < list->size; i++)
+   if (list)
    {
-      if (string_is_equal_noncase(list->elems[i].data, elem))
-         return (int)(i + 1);
+      size_t i;
+      for (i = 0; i < list->size; i++)
+      {
+         if (string_is_equal_noncase(list->elems[i].data, elem))
+            return (int)(i + 1);
+      }
    }
-
-   return false;
+   return 0;
 }
 
 /**
  * string_list_find_elem_prefix:
- * @list             : pointer to string list
- * @prefix           : prefix to append to @elem
- * @elem             : element to find inside the string list.
+ *
+ * @param list
+ * Pointer to string list
+ * @param prefix
+ * Prefix to append to @elem
+ * @param elem
+ * Element to find inside the string list.
  *
  * Searches for an element (@elem) inside the string list. Will
  * also search for the same element prefixed by @prefix.
  *
- * Returns: true (1) if element could be found, otherwise false (0).
+ * @return true if element could be found, otherwise false.
  */
 bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
-   size_t i;
-   char prefixed[255];
-
-   if (!list)
-      return false;
-
-   prefixed[0] = '\0';
-
-   strlcpy(prefixed, prefix, sizeof(prefixed));
-   strlcat(prefixed, elem,   sizeof(prefixed));
-
-   for (i = 0; i < list->size; i++)
+   if (list)
    {
-      if (string_is_equal_noncase(list->elems[i].data, elem) ||
-            string_is_equal_noncase(list->elems[i].data, prefixed))
-         return true;
+      size_t i;
+      char prefixed[255];
+      size_t _len  = strlcpy(prefixed, prefix, sizeof(prefixed));
+      strlcpy(prefixed + _len, elem, sizeof(prefixed) - _len);
+      for (i = 0; i < list->size; i++)
+      {
+         if (     string_is_equal_noncase(list->elems[i].data, elem)
+               || string_is_equal_noncase(list->elems[i].data, prefixed))
+            return true;
+      }
    }
-
    return false;
 }
 
-struct string_list *string_list_clone(
-      const struct string_list *src)
+struct string_list *string_list_clone(const struct string_list *src)
 {
-   unsigned i;
-   struct string_list_elem 
-      *elems              = NULL;
-   struct string_list 
-      *dest               = (struct string_list*)
+   size_t i;
+   struct string_list_elem *elems = NULL;
+   struct string_list *dest       = (struct string_list*)
       malloc(sizeof(struct string_list));
 
    if (!dest)
       return NULL;
 
-   dest->elems            = NULL;
-   dest->size             = src->size;
-   dest->cap              = src->cap;
-   if (dest->cap < dest->size)
-      dest->cap           = dest->size;
+   dest->elems                    = NULL;
+   dest->size                     = src->size;
+   if (src->cap < dest->size)
+      dest->cap                   = dest->size;
+   else 
+      dest->cap                   = src->cap;
 
-   elems                  = (struct string_list_elem*)
-      calloc(dest->cap, sizeof(struct string_list_elem));
-
-   if (!elems)
+   if (!(elems = (struct string_list_elem*)
+      calloc(dest->cap, sizeof(struct string_list_elem))))
    {
       free(dest);
       return NULL;
    }
 
-   dest->elems            = elems;
+   dest->elems                    = elems;
 
    for (i = 0; i < src->size; i++)
    {
-      const char *_src    = src->elems[i].data;
-      size_t      len     = _src ? strlen(_src) : 0;
+      const char *_src       = src->elems[i].data;
+      size_t      len        = _src ? strlen(_src) : 0;
 
-      dest->elems[i].data = NULL;
-      dest->elems[i].attr = src->elems[i].attr;
+      dest->elems[i].data    = NULL;
+      dest->elems[i].attr    = src->elems[i].attr;
 
       if (len != 0)
       {

@@ -24,7 +24,6 @@
 #define __LIBRETRO_SDK_FORMAT_RJSON_H__
 
 #include <retro_common_api.h>
-#include <retro_inline.h> /* INLINE */
 #include <boolean.h> /* bool */
 #include <stddef.h> /* size_t */
 
@@ -69,7 +68,7 @@ struct RFILE;
 rjson_t *rjson_open_stream(struct intfstream_internal *stream);
 rjson_t *rjson_open_rfile(struct RFILE *rfile);
 rjson_t *rjson_open_buffer(const void *buffer, size_t size);
-rjson_t *rjson_open_string(const char *string);
+rjson_t *rjson_open_string(const char *string, size_t len);
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size);
 
 /* Free the parser instance created with rjson_open_* */
@@ -157,7 +156,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
 /* A simpler interface to parse a JSON in memory. This will avoid any memory
  * allocations unless the document contains strings longer than 512 characters.
  * In the error handler, error will be "" if any of the other handlers aborted. */
-bool rjson_parse_quick(const char *string, void* context, char option_flags,
+bool rjson_parse_quick(const char *string, size_t len, void* context, char option_flags,
       bool (*object_member_handler)(void *context, const char *str, size_t len),
       bool (*string_handler       )(void *context, const char *str, size_t len),
       bool (*number_handler       )(void *context, const char *str, size_t len),
@@ -196,6 +195,14 @@ rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data);
  * Returned buffer is only valid until writer is modified or freed. */
 char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len);
 
+/* When opened with rjsonwriter_open_memory, will return current length */
+int rjsonwriter_count_memory_buffer(rjsonwriter_t *writer);
+
+/* When opened with rjsonwriter_open_memory, will clear the buffer.
+   The buffer will be partially erased if keep_len is > 0.
+   No memory is freed or re-allocated with this function. */
+void rjsonwriter_erase_memory_buffer(rjsonwriter_t *writer, int keep_len);
+
 /* Free rjsonwriter handle and return result of final rjsonwriter_flush call */
 bool rjsonwriter_free(rjsonwriter_t *writer);
 
@@ -224,49 +231,9 @@ void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...);
 void rjsonwriter_add_string(rjsonwriter_t *writer, const char *value);
 void rjsonwriter_add_string_len(rjsonwriter_t *writer, const char *value, int len);
 
-/* Add a signed or unsigned integer or a double number */
-static INLINE void rjsonwriter_add_int(rjsonwriter_t *writer, int value)
-      { rjsonwriter_rawf(writer, "%d", value); }
-
-static INLINE void rjsonwriter_add_unsigned(rjsonwriter_t *writer, unsigned value)
-      { rjsonwriter_rawf(writer, "%u", value); }
-
 void rjsonwriter_add_double(rjsonwriter_t *writer, double value);
 
-/* Functions to add JSON token characters */
-static INLINE void rjsonwriter_add_start_object(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, "{", 1); }
-
-static INLINE void rjsonwriter_add_end_object(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, "}", 1); }
-
-static INLINE void rjsonwriter_add_start_array(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, "[", 1); }
-
-static INLINE void rjsonwriter_add_end_array(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, "]", 1); }
-
-static INLINE void rjsonwriter_add_colon(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, ":", 1); }
-
-static INLINE void rjsonwriter_add_comma(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, ",", 1); }
-
-static INLINE void rjsonwriter_add_bool(rjsonwriter_t *writer, bool value)
-      { rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5)); }
-
-/* Functions to add whitespace characters */
-/* These do nothing with the option RJSONWRITER_OPTION_SKIP_WHITESPACE */
-static INLINE void rjsonwriter_add_newline(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, "\n", 1); }
-
-static INLINE void rjsonwriter_add_space(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, " ", 1); }
-
 void rjsonwriter_add_spaces(rjsonwriter_t *writer, int count);
-
-static INLINE void rjsonwriter_add_tab(rjsonwriter_t *writer)
-      { rjsonwriter_raw(writer, "\t", 1); }
 
 void rjsonwriter_add_tabs(rjsonwriter_t *writer, int count);
 

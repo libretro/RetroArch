@@ -313,14 +313,8 @@ static void classic_ctrl_event(struct connect_wii_classic_ctrl_t* cc, uint8_t* m
  */
 static void wiimote_handle_expansion(struct connect_wii_wiimote_t* wm, uint8_t* msg)
 {
-   switch (wm->exp.type)
-   {
-      case EXP_CLASSIC:
-         classic_ctrl_event(&wm->exp.cc.classic, msg);
-         break;
-      default:
-         break;
-   }
+   if (wm->exp.type == EXP_CLASSIC)
+      classic_ctrl_event(&wm->exp.cc.classic, msg);
 }
 
 /*
@@ -420,8 +414,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                /* estamos haciendo handshake o bien se necesita iniciar un
                 * nuevo handshake ya que se inserta(quita una expansion. */
                int attachment = 0;
-
-               if(event != WM_RPT_CTRL_STATUS)
+               if (event != WM_RPT_CTRL_STATUS)
                   return 0;
 
                /* Is an attachment connected to
@@ -440,7 +433,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
 
                   /* Send the initialization code for the attachment */
 
-                  if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+                  if (WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
                   {
                      /* Rehandshake. */
 
@@ -481,7 +474,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                   WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
                   wm->exp.type = EXP_NONE;
 
-                  if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
+                  if (WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE_COMPLETE))
                   {
                      WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
                      /* forzamos un handshake por si venimos
@@ -490,7 +483,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                   }
                }
 
-               if(!attachment &&  WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE))
+               if (!attachment &&  WIIMOTE_IS_SET(wm,WIIMOTE_STATE_HANDSHAKE))
                {
                   wm->handshake_state = 2;
                   continue;
@@ -536,7 +529,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
             }
             return 0;
          case 5:
-            if(event !=  WM_RPT_READ)
+            if (event !=  WM_RPT_READ)
                return 0;
 
             wiimote_classic_ctrl_handshake(wm, &wm->exp.cc.classic, data,len);
@@ -580,7 +573,7 @@ static void hidpad_wii_deinit(void *data)
 static void* hidpad_wii_init(void *data, uint32_t slot,
       hid_driver_t *driver)
 {
-   struct pad_connection *connection = (struct pad_connection*)data;
+   struct pad_connection *connection    = (struct pad_connection*)data;
    struct connect_wii_wiimote_t *device = (struct connect_wii_wiimote_t*)
       calloc(1, sizeof(struct connect_wii_wiimote_t));
 
@@ -609,26 +602,26 @@ static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
 
-   if (!device)
-      return 0;
-
-   switch (device->exp.type)
+   if (device)
    {
-      case EXP_CLASSIC:
-         switch (axis)
-         {
-            case 0:
-               return device->exp.cc.classic.ljs.x.value * 0x7FFF;
-            case 1:
-               return device->exp.cc.classic.ljs.y.value * 0x7FFF;
-            case 2:
-               return device->exp.cc.classic.rjs.x.value * 0x7FFF;
-            case 3:
-               return device->exp.cc.classic.rjs.y.value * 0x7FFF;
-         }
-         break;
-      default:
-         break;
+      switch (device->exp.type)
+      {
+         case EXP_CLASSIC:
+            switch (axis)
+            {
+               case 0:
+                  return device->exp.cc.classic.ljs.x.value * 0x7FFF;
+               case 1:
+                  return device->exp.cc.classic.ljs.y.value * 0x7FFF;
+               case 2:
+                  return device->exp.cc.classic.rjs.x.value * 0x7FFF;
+               case 3:
+                  return device->exp.cc.classic.rjs.y.value * 0x7FFF;
+            }
+            break;
+         default:
+            break;
+      }
    }
 
    return 0;
@@ -649,12 +642,12 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
-   uint8_t             *msg = packet + 2;
+   uint8_t             *msg = packet + 1;
 
    if (!device)
       return;
 
-   switch (packet[1])
+   switch (packet[0])
    {
       case WM_RPT_BTN:
          wiimote_pressed_buttons(device, msg);
@@ -676,13 +669,7 @@ static void hidpad_wii_packet_handler(void *data,
 }
 
 static void hidpad_wii_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-   /* TODO */
-   (void)data;
-   (void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
 /* TODO: implement hidpad_wii_button(). */
 

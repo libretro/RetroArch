@@ -1,0 +1,30 @@
+name: CI macOS
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Compile RA
+      run: |
+        set -o pipefail
+        xcodebuild -workspace pkg/apple/RetroArch.xcworkspace -scheme RetroArch -config Release -xcconfig pkg/apple/GitHubCI.xcconfig -derivedDataPath build | xcpretty --color
+
+    - name: Get short SHA
+      id: slug
+      run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: RetroArch-${{ steps.slug.outputs.sha8 }}
+        path: |
+          build/Build/Products/Release

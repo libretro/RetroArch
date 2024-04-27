@@ -86,7 +86,7 @@ bool TInputScanner::consumeComment()
         // a '//' style comment
         get();  // consume the second '/'
         c = get();
-        do {
+	for (;;) {
             while (c != EndOfInput && c != '\\' && c != '\r' && c != '\n')
                 c = get();
 
@@ -103,23 +103,20 @@ bool TInputScanner::consumeComment()
                 c = get();
 
                 // if it's a two-character newline, skip both characters
-                if (c == '\r' && peek() == '\n')
+                if ((c == '\r') && (peek() == '\n'))
                     get();
                 c = get();
             }
-        } while (true);
+        };
 
         // put back the last non-comment character
         if (c != EndOfInput)
             unget();
-
-        return true;
     } else if (c == '*') {
-
         // a '/*' style comment
         get();  // consume the '*'
         c = get();
-        do {
+	for (;;) {
             while (c != EndOfInput && c != '*')
                 c = get();
             if (c == '*') {
@@ -129,21 +126,22 @@ bool TInputScanner::consumeComment()
                 // not end of comment
             } else // end of input
                 break;
-        } while (true);
-
-        return true;
-    } else {
+        };
+    }
+    else
+    {
         // it's not a comment, put the '/' back
         unget();
 
         return false;
     }
+    return true;
 }
 
 // skip whitespace, then skip a comment, rinse, repeat
 void TInputScanner::consumeWhitespaceComment(bool& foundNonSpaceTab)
 {
-    do {
+    for (;;) {
         consumeWhiteSpace(foundNonSpaceTab);
 
         // if not starting a comment now, then done
@@ -153,10 +151,9 @@ void TInputScanner::consumeWhitespaceComment(bool& foundNonSpaceTab)
 
         // skip potential comment
         foundNonSpaceTab = true;
-        if (! consumeComment())
+        if (!consumeComment())
             return;
-
-    } while (true);
+    };
 }
 
 // Returns true if there was non-white space (e.g., a comment, newline) before the #version
@@ -184,21 +181,25 @@ bool TInputScanner::scanVersion(int& version, EProfile& profile, bool& notFirstT
     bool foundNonSpaceTab = false;
     bool lookingInMiddle = false;
     int c;
-    do {
+    for (;;) {
         if (lookingInMiddle) {
             notFirstToken = true;
             // make forward progress by finishing off the current line plus extra new lines
-            if (peek() == '\n' || peek() == '\r') {
-                while (peek() == '\n' || peek() == '\r')
+            if ((peek() == '\n') || (peek() == '\r'))
+	    {
+                while ((peek() == '\n') || (peek() == '\r'))
                     get();
-            } else
+            }
+	    else
+	    {
                 do {
                     c = get();
                 } while (c != EndOfInput && c != '\n' && c != '\r');
-                while (peek() == '\n' || peek() == '\r')
-                    get();
-                if (peek() == EndOfInput)
-                    return true;
+	    }
+	    while ((peek() == '\n') || (peek() == '\r'))
+		    get();
+	    if (peek() == EndOfInput)
+		    return true;
         }
         lookingInMiddle = true;
 
@@ -273,7 +274,7 @@ bool TInputScanner::scanVersion(int& version, EProfile& profile, bool& notFirstT
             profile = ECompatibilityProfile;
 
         return versionNotFirst;
-    } while (true);
+    }
 }
 
 // Fill this in when doing glslang-level scanning, to hand back to the parser.
@@ -723,7 +724,7 @@ void TScanContext::deleteKeywordMap()
 // Returning 0 implies end of input.
 int TScanContext::tokenize(TPpContext* pp, TParserToken& token)
 {
-    do {
+    for (;;) {
         parserToken = &token;
         TPpToken ppToken;
         int token = pp->tokenize(ppToken);
@@ -818,7 +819,7 @@ int TScanContext::tokenize(TPpContext* pp, TParserToken& token)
             _parseContext.error(loc, "unexpected token", buf, "");
             break;
         }
-    } while (true);
+    };
 }
 
 int TScanContext::tokenizeIdentifier()
