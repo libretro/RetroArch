@@ -2023,6 +2023,10 @@ MSG_HASH(
    "Zrzut ekranu GPU"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Symuluje prostą kroczącą linię skanującą na wielu podklatkach poprzez podzielenie ekranu w górę pionowo i renderowanie każdej części ekranu w zależności od liczby podklatek."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Zrzuty ekranu przechwytują przetworzony obraz z karty graficznej, jeśli jest to możliwe."
    )
