@@ -92,6 +92,9 @@
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif
+#ifdef IOS
+#include "../../ui/drivers/cocoa/apple_platform.h"
+#endif
 
 #if defined(ANDROID)
 #include "../../file_path_special.h"
@@ -956,9 +959,14 @@ int generic_action_ok_displaylist_push(
             content_path = menu->scratch_buf;
          }
          if (content_path)
-            fill_pathname_join_special(menu->detect_content_path,
-                  menu_path, content_path,
-                  sizeof(menu->detect_content_path));
+         {
+            if (path_is_absolute(content_path))
+               strlcpy(menu->detect_content_path, content_path, sizeof(menu->detect_content_path));
+            else
+               fill_pathname_join_special(menu->detect_content_path,
+                     menu_path, content_path,
+                     sizeof(menu->detect_content_path));
+         }
 
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
@@ -1981,12 +1989,22 @@ static int file_load_with_detect_core_wrapper(
 
       if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
-         fill_pathname_join_special(menu_path_new,
-               menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      {
+         if (path_is_absolute(menu->scratch_buf))
+            strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
+         else
+            fill_pathname_join_special(menu_path_new,
+                  menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      }
       else if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
-         fill_pathname_join_special(menu_path_new,
-               menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      {
+         if (path_is_absolute(menu->scratch_buf))
+            strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
+         else
+            fill_pathname_join_special(menu_path_new,
+                  menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      }
 
       core_info_get_list(&list);
 
@@ -6408,6 +6426,10 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if TARGET_OS_IOS
+   ios_show_file_sheet();
+   return 0;
+#else
    char *new_path = NULL;
    int ret        = generic_action_ok_displaylist_push(
          path, new_path,
@@ -6417,6 +6439,7 @@ static int action_ok_open_picker(const char *path,
 
    free(new_path);
    return ret;
+#endif
 }
 
 #ifdef HAVE_NETWORKING
@@ -7586,9 +7609,12 @@ static int action_ok_load_archive_detect_core(const char *path,
             new_core_path, sizeof(new_core_path)))
       ret = -1;
 
-   fill_pathname_join_special(
-         menu->detect_content_path, menu_path, content_path,
-         sizeof(menu->detect_content_path));
+   if (path_is_absolute(content_path))
+      strlcpy(menu->detect_content_path, content_path, sizeof(menu->detect_content_path));
+   else
+      fill_pathname_join_special(
+            menu->detect_content_path, menu_path, content_path,
+            sizeof(menu->detect_content_path));
 
    switch (ret)
    {

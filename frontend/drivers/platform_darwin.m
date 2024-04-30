@@ -736,6 +736,17 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    string_list_free(str_list);
 
+#if TARGET_OS_IOS
+   if (   filebrowser_get_type() == FILEBROWSER_NONE ||
+          filebrowser_get_type() == FILEBROWSER_SCAN_FILE ||
+          filebrowser_get_type() == FILEBROWSER_SELECT_FILE)
+      menu_entries_append(list,
+                          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+                          msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+                          MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+                          MENU_SETTING_ACTION, 0, 0, NULL);
+#endif
+
    ret = 0;
 #endif
 #endif
