@@ -71,6 +71,11 @@ static bool apple_gamecontroller_available(void)
     return true;
 }
 
+static bool mfi_controller_is_siri_remote(GCController *controller)
+{
+   return controller.microGamepad && !controller.extendedGamepad && [@"Remote" isEqualToString:controller.vendorName];
+}
+
 static void apple_gamecontroller_joypad_poll_internal(GCController *controller, uint32_t slot)
 {
     uint32_t *buttons        = &mfi_buttons[slot];
@@ -91,7 +96,36 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
     }
     memset(mfi_axes[slot], 0, sizeof(mfi_axes[0]));
 
-    if (controller.extendedGamepad)
+    if (@available(macOS 11, iOS 14, tvOS 14, *))
+    {
+        GCPhysicalInputProfile *profile = controller.physicalInputProfile;
+
+        *buttons |= [[profile.dpads[GCInputDirectionPad] up] isPressed]       ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)     : 0;
+        *buttons |= [[profile.dpads[GCInputDirectionPad] down] isPressed]     ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0;
+        *buttons |= [[profile.dpads[GCInputDirectionPad] left] isPressed]     ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0;
+        *buttons |= [[profile.dpads[GCInputDirectionPad] right] isPressed]    ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)  : 0;
+        *buttons |= [profile.buttons[GCInputButtonA] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_B)      : 0;
+        *buttons |= [profile.buttons[GCInputButtonB] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_A)      : 0;
+        *buttons |= [profile.buttons[GCInputButtonX] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)      : 0;
+        *buttons |= [profile.buttons[GCInputButtonY] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_X)      : 0;
+        *buttons |= [profile.buttons[GCInputLeftShoulder] isPressed]          ? (1 << RETRO_DEVICE_ID_JOYPAD_L)      : 0;
+        *buttons |= [profile.buttons[GCInputRightShoulder] isPressed]         ? (1 << RETRO_DEVICE_ID_JOYPAD_R)      : 0;
+        *buttons |= [profile.buttons[GCInputLeftTrigger] isPressed]           ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)     : 0;
+        *buttons |= [profile.buttons[GCInputRightTrigger] isPressed]          ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)     : 0;
+        *buttons |= [profile.buttons[GCInputLeftThumbstickButton] isPressed]  ? (1 << RETRO_DEVICE_ID_JOYPAD_L3)     : 0;
+        *buttons |= [profile.buttons[GCInputRightThumbstickButton] isPressed] ? (1 << RETRO_DEVICE_ID_JOYPAD_R3)     : 0;
+        *buttons |= [profile.buttons[GCInputButtonOptions] isPressed]         ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+        *buttons |= [profile.buttons[GCInputButtonMenu] isPressed]            ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
+        *buttons |= [profile.buttons[GCInputButtonHome] isPressed]            ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
+
+        mfi_axes[slot][0] = [[profile.dpads[GCInputLeftThumbstick] xAxis] value]  * 32767.0f;
+        mfi_axes[slot][1] = [[profile.dpads[GCInputLeftThumbstick] yAxis] value]  * 32767.0f;
+        mfi_axes[slot][2] = [[profile.dpads[GCInputRightThumbstick] xAxis] value] * 32767.0f;
+        mfi_axes[slot][3] = [[profile.dpads[GCInputRightThumbstick] yAxis] value] * 32767.0f;
+        mfi_axes[slot][4] = [profile.buttons[GCInputLeftTrigger] value]           * 32767.0f;
+        mfi_axes[slot][5] = [profile.buttons[GCInputRightTrigger] value]          * 32767.0f;
+    }
+    else if (controller.extendedGamepad)
     {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
 
@@ -185,7 +219,9 @@ static void apple_gamecontroller_joypad_poll(void)
     for (GCController *controller in [GCController controllers])
     {
        /* If we have not assigned a slot to this controller yet, ignore it. */
-       if (controller && (controller.playerIndex >= 0) && (controller.playerIndex < MAX_USERS))
+       if (  controller &&
+             (controller.playerIndex >= 0) && (controller.playerIndex < MAX_USERS) &&
+             !mfi_controller_is_siri_remote(controller))
           apple_gamecontroller_joypad_poll_internal(controller, (uint32_t)controller.playerIndex);
     }
 }
@@ -454,7 +490,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
               gc.playerIndex = newPlayerIndex++;
         }
 
-        if (controller.microGamepad && !controller.extendedGamepad)
+        if (mfi_controller_is_siri_remote(controller))
             return;
 
         apple_gamecontroller_joypad_register(controller);
