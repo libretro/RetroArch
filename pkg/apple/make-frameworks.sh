@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Prefer the expanded name, if available.
-CODE_SIGN_IDENTITY_FOR_ITEMS="${EXPANDED_CODE_SIGN_IDENTITY_NAME}"
+CODE_SIGN_IDENTITY_FOR_ITEMS="${EXPANDED_CODE_SIGN_IDENTITY}"
 if [ "${CODE_SIGN_IDENTITY_FOR_ITEMS}" = "" ] ; then
     # Fall back to old behavior.
     CODE_SIGN_IDENTITY_FOR_ITEMS="${CODE_SIGN_IDENTITY}"
@@ -37,7 +37,7 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
     fwDir="${OUTDIR}/${fwName}.framework"
     mkdir -p "$fwDir"
     lipo -create "$dylib" -output "$fwDir/$fwName"
-    echo "signing $fwName"
-    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
     sed -e "s,%CORE%,$fwName," -e "s,%IDENTIFIER%,$identifier," iOS/fw.tmpl > "$fwDir/Info.plist"
+    echo "signing $fwName"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der "$fwDir"
 done

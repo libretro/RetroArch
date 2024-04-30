@@ -807,7 +807,11 @@ static const char* frontend_darwin_get_cpu_model_name(void)
 
 static enum retro_language frontend_darwin_get_user_language(void)
 {
-   return retroarch_get_language_from_iso([[NSLocale preferredLanguages][0] UTF8String]);
+   char s[128];
+   CFArrayRef langs = CFLocaleCopyPreferredLanguages();
+   CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
+   CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   return retroarch_get_language_from_iso(s);
 }
 
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
