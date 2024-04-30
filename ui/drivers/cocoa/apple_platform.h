@@ -8,6 +8,10 @@ extern void write_userdefaults_config_file(void);
 extern void update_topshelf(void);
 #endif
 
+#if TARGET_OS_IOS
+extern void ios_show_file_sheet(void);
+#endif
+
 #ifdef __OBJC__
 
 #ifdef HAVE_METAL
