@@ -1962,9 +1962,7 @@ void win32_clip_window(bool state)
       ClipCursor(&clip_rect);
    }
    else
-   {
-       ClipCursor(NULL);
-   }
+      ClipCursor(NULL);
 }
 #endif
 
