@@ -1958,11 +1958,11 @@ void win32_clip_window(bool state)
          free(info);
       }
       info = NULL;
+
+      ClipCursor(&clip_rect);
    }
    else
-      GetWindowRect(GetDesktopWindow(), &clip_rect);
-
-   ClipCursor(&clip_rect);
+      ClipCursor(NULL);
 }
 #endif
 
