@@ -2184,7 +2184,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Выбраць відэакарту для выкарыстання."
+   "Выбраць графічную картку для выкарыстання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
@@ -2491,7 +2491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "Сінхранізаваць вывад відэа графічнай карты з частатой абнаўлення экрана. Рэкамендуецца."
+   "Сінхранізаваць вывад відэа графічнай карткі з частатой абнаўлення экрана. Рэкамендуецца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
@@ -3217,6 +3217,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
    "Замена кнопак прагорткі меню"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Кіраванне меню ўсімі карыстальнікамі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Дазволіць любым карыстальнікам кіраваць меню. Калі выключана, толькі Карыстальнік 1 здольны кіраваць меню."
+   )
 
 /* Settings > Input > Hotkeys */
 
@@ -3225,12 +3233,44 @@ MSG_HASH(
    "Уключальнік гарачых клавіш"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   "Затрымка ўключэння гарачых клавіш (у кадрах)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Аб'яднанне тыпаў прылад гарачых клавіш"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Выклік меню (камбінацыя кантролера)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   "Камбінацыя кнопак кантролера для выкліку меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    "Выклік меню"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   "Пераключае паміж меню ды бягучым змесцівам на бягучым дысплэі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   "Выхад (камбінацыя кантролера)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   "Камбінацыя кнопак кантролера для выхаду з RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "Выхад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   "Закрывае RetroArch з гарантыяй, што ўсе захаваныя даныя ды файлы канфігурацыі скінуты на дыск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -3253,8 +3293,16 @@ MSG_HASH(
    "Перамотка наперад (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   "Пераключэнне паміж перамоткай наперад ды звычайнай хуткасцю."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
    "Перамотка наперад (утрыманне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   "Уключае перамотку наперад падчас утрымання. Пры адцісканні змесціва выконваецца са звычайнай хуткасцю."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
