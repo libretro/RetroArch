@@ -1336,12 +1336,16 @@ static void input_remote_parse_packet(
    switch (msg->device)
    {
       case RETRO_DEVICE_JOYPAD:
-         input_state->buttons[user] &= ~(1 << msg->id);
-         if (msg->state)
-            input_state->buttons[user] |= 1 << msg->id;
+         if (msg->id < 16)
+         {
+            input_state->buttons[user] &= ~(1 << msg->id);
+            if (msg->state)
+               input_state->buttons[user] |= 1 << msg->id;
+         }
          break;
       case RETRO_DEVICE_ANALOG:
-         input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
+         if (msg->id<2 && msg->index<2)
+            input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
          break;
    }
 }
@@ -1606,7 +1610,7 @@ static int16_t input_state_device(
             if (id == RETRO_DEVICE_ID_ANALOG_Y)
                base += 1;
 #ifdef HAVE_NETWORKGAMEPAD
-            if (     input_st->remote
+            if (     input_st->remote && idx < RETRO_DEVICE_INDEX_ANALOG_BUTTON
                   && input_state && input_state->analog[base][port])
                res          = input_state->analog[base][port];
             else
