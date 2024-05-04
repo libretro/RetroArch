@@ -847,6 +847,7 @@ typedef struct settings
       bool quick_menu_show_replay;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
+      bool quick_menu_show_add_to_playlist;
       bool quick_menu_show_start_recording;
       bool quick_menu_show_start_streaming;
       bool quick_menu_show_set_core_association;

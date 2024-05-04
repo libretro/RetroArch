@@ -6,18 +6,6 @@ MSG_HASH(
 #endif
 
 MSG_HASH(
-   MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
-   "playlist_add"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST,
-   "deferred_add_to_playlist_list"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
-   "add_entry_to_playlist"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME,
    "accounts_cheevos_username"
    )
@@ -3475,6 +3463,22 @@ MSG_HASH(
    "favorites_add_playlist"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+   "playlist_add"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST,
+   "deferred_add_to_playlist_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
+   "add_entry_to_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
+   "playlist_create"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,
    "set_core_association"
    )
@@ -5221,6 +5225,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "quick_menu_show_add_to_favorites"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "quick_menu_show_add_to_playlist"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
