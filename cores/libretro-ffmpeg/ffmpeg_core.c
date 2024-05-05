@@ -65,6 +65,8 @@ extern "C" {
    s ##_version() >> 8 & 0xFF, \
    s ##_version() & 0xFF);
 
+#define HAVE_CH_LAYOUT (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100))
+
 static bool reset_triggered;
 static bool libretro_supports_bitmasks = false;
 
@@ -1726,8 +1728,14 @@ static void decode_thread(void *data)
    {
       swr[i] = swr_alloc();
 
+#if HAVE_CH_LAYOUT
+      AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
+      av_opt_set_chlayout(swr[i], "in_chlayout", &actx[i]->ch_layout, 0);
+      av_opt_set_chlayout(swr[i], "out_chlayout", &out_chlayout, 0);
+#else
       av_opt_set_int(swr[i], "in_channel_layout", actx[i]->channel_layout, 0);
       av_opt_set_int(swr[i], "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+#endif
       av_opt_set_int(swr[i], "in_sample_rate", actx[i]->sample_rate, 0);
       av_opt_set_int(swr[i], "out_sample_rate", media.sample_rate, 0);
       av_opt_set_int(swr[i], "in_sample_fmt", actx[i]->sample_fmt, 0);
