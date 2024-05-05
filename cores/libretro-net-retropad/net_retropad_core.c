@@ -586,7 +586,7 @@ static void open_UDP_socket()
    socket_target_t in_target;
 
    if (s && s != SOCKET_ERROR)
-      close(s);
+      socket_close(s);
 
    s = socket_create(
          "retropad",
