@@ -3794,12 +3794,15 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
-      if (  menu_entries_append(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
-            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
-            MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
-            MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
+      if (settings->bools.quick_menu_show_add_to_playlist)
+      {
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
+               MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+      }
 
       if (!settings->bools.kiosk_mode_enable)
       {
@@ -4049,15 +4052,19 @@ static int menu_displaylist_parse_horizontal_content_actions(
          menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
                msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST),
-               MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL);
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST,
+               FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL);
       }
 
-      /*  This is to add to playlist */
+      if (settings->bools.quick_menu_show_add_to_playlist)
+      {
          menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
-                  MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
-                  MENU_SETTING_ACTION, 0, 0, NULL);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
+               MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+               MENU_SETTING_ACTION, 0, 0, NULL);
+      }
+
       if (!settings->bools.kiosk_mode_enable)
       {
          if (settings->bools.quick_menu_show_set_core_association)
@@ -4650,17 +4657,6 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(
 
    /* Not necessary to check for NULL here */
    string_list_free(str_list);
-
-   /* Add favourites */
-   if (
-         settings->bools.quick_menu_show_add_to_favorites
-         && settings->bools.menu_content_show_favorites
-         && menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
-               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL)
-      )
-            count++;
 
    return count;
 }
@@ -10957,6 +10953,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,       PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS,                  PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY,                   PARSE_ONLY_BOOL},
 #ifdef HAVE_REWIND
