@@ -236,7 +236,27 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_POWER,         "Power"},
    {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
    {RETROK_UNDO,          "Undo"},
-   {RETROK_OEM_102,       "OEM-102"}
+   {RETROK_OEM_102,       "OEM-102"},
+
+   {RETROK_BROWSER_BACK,      "Back"},
+   {RETROK_BROWSER_FORWARD,   "Forward"},
+   {RETROK_BROWSER_REFRESH,   "Refresh"},
+   {RETROK_BROWSER_STOP,      "Stop"},
+   {RETROK_BROWSER_SEARCH,    "Search"},
+   {RETROK_BROWSER_FAVORITES, "Favorites"},
+   {RETROK_BROWSER_HOME,      "Home Page"},
+   {RETROK_VOLUME_MUTE,       "Mute"},
+   {RETROK_VOLUME_DOWN,       "Volume Up"},
+   {RETROK_VOLUME_UP,         "Volume Down"},
+   {RETROK_MEDIA_NEXT,        "Next Track"},
+   {RETROK_MEDIA_PREV,        "Previous Track"},
+   {RETROK_MEDIA_STOP,        "Media Stop"},
+   {RETROK_MEDIA_PLAY_PAUSE,  "Media Play"},
+   {RETROK_LAUNCH_MAIL,       "Launch Email"},
+   {RETROK_LAUNCH_MEDIA,      "Launch Media"},
+   {RETROK_LAUNCH_APP1,       "Launch App1"},
+   {RETROK_LAUNCH_APP2,       "Launch App2"}
+
 };
 
 static void *null_menu_init(void **userdata, bool video_is_threaded)
