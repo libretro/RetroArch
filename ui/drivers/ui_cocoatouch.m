@@ -68,13 +68,16 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
          attr.i = 0;
          NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
          NSString *primary;
+         const char *cstr;
 #if TARGET_OS_TV
          primary = iconfiles[@"CFBundlePrimaryIcon"];
 #else
          primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
 #endif
          list = string_list_new();
-         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+         cstr = [primary cStringUsingEncoding:kCFStringEncodingUTF8];
+         if (cstr)
+            string_list_append(list, cstr, attr);
 
          NSArray<NSString *> *alts;
 #if TARGET_OS_TV
@@ -84,7 +87,11 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
 #endif
          NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
          for (NSString *str in sorted)
-            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+         {
+            cstr = [str cStringUsingEncoding:kCFStringEncodingUTF8];
+            if (cstr)
+               string_list_append(list, cstr, attr);
+         }
       });
 
    return list;
