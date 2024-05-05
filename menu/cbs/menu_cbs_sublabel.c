@@ -965,6 +965,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_delete_entry,                       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_to_favorites,                      MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_add_to_playlist,                       MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_set_core_association,                  MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reset_core_association,                MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_download_pl_entry_thumbnails,          MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS)
@@ -1112,9 +1113,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_restart_content,    
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_close_content,         MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_savestate_submenu,     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_save_load_state,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_replay,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_replay,                MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_undo_save_load_state,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_add_to_favorites,      MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_add_to_playlist,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_start_recording,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_start_streaming,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_set_core_association,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION)
@@ -2925,6 +2927,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_add_to_favorites);
             break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_add_to_playlist);
+            break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_start_recording);
             break;
@@ -3470,6 +3475,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_to_favorites);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_PLAYLIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_to_playlist);
             break;
          case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_set_core_association);
