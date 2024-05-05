@@ -4337,7 +4337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   "Çekirdeğin Kapanmaması İçin Kukla Yükle"
+   "Çekirdek Kapatıldığında Benzerini Yükle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -4518,7 +4518,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
-   "Evrensel Çekirdek Seçenekleri Dosyalarını Kullan"
+   "Genel Çekirdek Seçenekleri Dosyasını Kullan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
@@ -11338,6 +11338,10 @@ MSG_HASH(
    "Düz Arayüz"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX,
+   "DüzArayüz"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
    "Tek Renk"
    )
@@ -14007,7 +14011,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-   "İçerik yok, kukla çekirdek başlatılıyor."
+   "İçerik yok, benzer çekirdek başlatılıyor."
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
@@ -14311,7 +14315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-   "Libretro kukla çekirdeği kullanılıyor. Kayıt atlanıyor."
+   "Libretro benzer çekirdeği kullanılıyor. Kayıt atlanıyor."
    )
 MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
