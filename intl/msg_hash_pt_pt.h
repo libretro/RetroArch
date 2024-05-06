@@ -2971,24 +2971,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Adicionar à lista de reprodução"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Adiciona o conteúdo a uma lista de reprodução."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Criar nova lista de reprodução"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
-   )
-
-
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
@@ -3487,6 +3469,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    "Remover esta entrada da lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Adicionar à lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Adiciona o conteúdo a uma lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Criar nova lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,

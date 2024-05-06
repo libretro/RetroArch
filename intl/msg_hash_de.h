@@ -6446,32 +6446,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Die Option \"Zu Favoriten hinzufügen\" anzeigen."
    )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Zur Wiedergabeliste hinzufügen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Den Inhalt einer Wiedergabeliste hinzufügen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Neue Wiedergabeliste erstellen"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Zur Wiedergabeliste hinzugefügt"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Fehler beim Hinzufügen zur Playlist: Playlist ist voll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Eine neue Wiedergabeliste erstellen und dieser den aktuellen Eintrag hinzufügen."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "\"Core zuordnen\" anzeigen"
@@ -8579,6 +8553,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Den Inhalt zu 'Favoriten' hinzufügen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Zur Wiedergabeliste hinzufügen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Den Inhalt einer Wiedergabeliste hinzufügen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Neue Wiedergabeliste erstellen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Eine neue Wiedergabeliste erstellen und dieser den aktuellen Eintrag hinzufügen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -12984,6 +12974,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Favorit kann nicht hinzugefügt werden: Wiedergabeliste voll"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Zur Wiedergabeliste hinzugefügt"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Fehler beim Hinzufügen zur Playlist: Playlist ist voll"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

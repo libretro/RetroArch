@@ -5134,8 +5134,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Visa alternativet 'Lägg till i favoriter'."
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Visa 'Ställ in kärnassociation'"

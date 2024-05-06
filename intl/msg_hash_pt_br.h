@@ -5384,38 +5384,20 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   "Mostrar 'Adicionar aos favoritos'"
+   "Mostrar \"Adicionar aos favoritos\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Mostre a opção \"Adicionar aos favoritos\"."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Adicionar em uma lista"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostrar \"Adicionar em uma lista\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Adiciona o conteúdo à lista de reprodução."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Exibe a opção \"Adicionar em uma lista\"."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Criar nova lista"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Adicionado"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Lista de reprodução cheia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cria uma nova lista de reprodução e adiciona o item atual nela."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostrar \"Definir núcleo\""
@@ -7323,6 +7305,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Adicionar o conteúdo aos \"Favoritos\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Adicionar em uma lista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Adiciona o conteúdo à lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Criar nova lista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Cria uma nova lista de reprodução e adiciona o item atual nela."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -11476,6 +11474,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Falha ao adicionar favorito: lista de reprodução cheia"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Adicionado"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Lista de reprodução cheia"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

@@ -3727,8 +3727,6 @@ MSG_HASH(
    "إظهار خيارات 'الأظلال'."
    )
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 

@@ -6462,32 +6462,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Mostra a opción \"Engadir a favoritos\"."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Engadir á lista de reprodución"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostrar 'Engadir á lista de reprodución'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Engade o contido a unha lista de reprodución."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostra a opción 'Engadir á lista de reprodución'."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Crear unha nova lista de reprodución"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Engadida á lista de reprodución"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Produciuse un erro ao engadir á lista de reprodución: lista de reprodución chea"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Produciuse un erro ao engadir á lista de reprodución: lista de reprodución chea."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostrar \"Set Core Association\""
@@ -8627,6 +8609,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Engade o contido a \"Favoritos\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Engadir á lista de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Engade o contido a unha lista de reprodución."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Crear unha nova lista de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Produciuse un erro ao engadir á lista de reprodución: lista de reprodución chea."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -13164,6 +13162,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Produciuse un erro ao engadir o favorito: lista de reprodución completa"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Engadida á lista de reprodución"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Produciuse un erro ao engadir á lista de reprodución: lista de reprodución chea"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

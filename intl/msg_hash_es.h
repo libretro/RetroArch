@@ -6558,32 +6558,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Muestra la opción «Agregar a favoritos»."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Agregar a la lista de reproducción"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostrar Agregar a la lista de reproducción"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Agrega el contenido a una lista de reproducción."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Muestra la opción «Agregar a la lista de reproducción»."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Crear lista de reproducción nueva"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Se ha agregado a la lista de reproducción"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Error al añadir a lista de reproducción: la lista está llena"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una lista de reproducción nueva y agrega a la misma el elemento actual."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostrar Asignar asociación de núcleo"
@@ -8743,6 +8725,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Agrega el contenido a la sección Favoritos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Agregar a la lista de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Agrega el contenido a una lista de reproducción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Crear lista de reproducción nueva"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Crea una lista de reproducción nueva y agrega a la misma el elemento actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -13312,6 +13310,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Error al añadir favorito: la lista de reproducción está llena."
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Se ha agregado a la lista de reproducción"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Error al añadir a lista de reproducción: la lista está llena"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

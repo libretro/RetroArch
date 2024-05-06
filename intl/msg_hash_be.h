@@ -4354,16 +4354,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Паказваць опцыю 'Дадаць да ўпадабанага'."
    )
-
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Дададзена да плэй-ліста"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Не ўдалося дадаць да плэй-ліста: плэй-ліст запоўнены"
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    "Паказ 'Сцягнуць мініяцюры'"
@@ -7832,6 +7822,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Не ўдалося дадаць да ўпадабанага: плэй-ліст запоўнены"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Дададзена да плэй-ліста"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Не ўдалося дадаць да плэй-ліста: плэй-ліст запоўнены"
    )
 MSG_HASH(
    MSG_APPLICATION_DIR,
