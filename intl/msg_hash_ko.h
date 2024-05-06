@@ -6594,32 +6594,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "'즐겨찾기에 추가' 항목을 표시합니다."
    )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "실행목록에 추가"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "이 콘텐츠를 실행목록에 추가합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "새 실행목록 만들기"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "실행목록에 추가됨"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "실행목록에 추가하지 못했습니다: 실행목록이 가득 참"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "새로운 실행목록을 만들고 현재 항목을 새 실행목록에 추가합니다."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "'코어 연결 설정' 표시"
@@ -8775,6 +8749,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "항목을 '즐겨찾기'에 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "실행목록에 추가"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "이 콘텐츠를 실행목록에 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "새 실행목록 만들기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "새로운 실행목록을 만들고 현재 항목을 새 실행목록에 추가합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -13392,6 +13382,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "즐겨찾기에 추가하지 못했습니다: 실행목록이 가득 참"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "실행목록에 추가됨"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "실행목록에 추가하지 못했습니다: 실행목록이 가득 참"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

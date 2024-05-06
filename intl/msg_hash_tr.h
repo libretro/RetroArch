@@ -6562,32 +6562,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "'Sık Kullanılanlara Ekle' seçeneğini gösterin."
    )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Oynatma Listesine Ekle"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "İçeriği bir oynatma listesine ekleyin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Yeni Oynatma Listesi Oluştur"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Oynatma listesine eklendi"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Oynatma listesine eklenemedi: liste dolu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Yeni bir oynatma listesi oluşturun ve mevcut kaydı buna ekleyin."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "'Çekirdek İlişkilendirmeyi Ayarlayı' Göster"
@@ -8751,6 +8725,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "İçeriği 'Sık Kullanılanlara' ekleyin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Oynatma Listesine Ekle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "İçeriği bir oynatma listesine ekleyin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Yeni Oynatma Listesi Oluştur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Yeni bir oynatma listesi oluşturun ve mevcut kaydı buna ekleyin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -13396,6 +13386,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Sık kullanılan eklenemedi: oynatma listesi dolu"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Oynatma listesine eklendi"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Oynatma listesine eklenemedi: liste dolu"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

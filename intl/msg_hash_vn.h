@@ -1743,8 +1743,6 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 

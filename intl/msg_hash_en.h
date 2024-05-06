@@ -1007,8 +1007,6 @@ MSG_HASH(
    "Show the 'Add to Favourites' option."
    )
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 

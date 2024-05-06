@@ -6518,32 +6518,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Afficher l'option 'Ajouter aux favoris'."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Ajouter à la liste de lecture"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Afficher 'Ajouter à la liste de lecture'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Ajouter le contenu à une liste de lecture."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Afficher l'option 'Ajouter à la liste de lecture'."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Créer une nouvelle liste de lecture"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Ajouté à la liste de lecture"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Échec de l'ajout à la liste de lecture : liste de lecture pleine"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Créer une nouvelle playlist et ajouter l'entrée courante à celle-ci."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Afficher 'Associer au cœur'"
@@ -8695,6 +8677,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Ajouter le contenu aux 'Favoris'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Ajouter à la liste de lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Ajouter le contenu à une liste de lecture."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Créer une nouvelle liste de lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Créer une nouvelle playlist et ajouter l'entrée courante à celle-ci."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -13272,6 +13270,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "Échec de l'ajout aux favoris : liste de lecture pleine"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Ajouté à la liste de lecture"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Échec de l'ajout à la liste de lecture : liste de lecture pleine"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,

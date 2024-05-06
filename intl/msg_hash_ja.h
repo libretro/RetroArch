@@ -6558,32 +6558,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "[お気に入りに追加] オプションを表示します。"
    )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "プレイリストに追加"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "プレイリストにコンテンツを追加します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "新しいプレイリストを作成"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "プレイリストに追加しました"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "プレイリストに追加できませんでした: プレイリストがいっぱいです"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "新しいプレイリストを作成し、現在のエントリーを追加します。"
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "[コアの関連付けを設定] を表示"
@@ -8735,6 +8709,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "[お気に入り] にコンテンツを追加します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "プレイリストに追加"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "プレイリストにコンテンツを追加します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "新しいプレイリストを作成"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "新しいプレイリストを作成し、現在のエントリーを追加します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -13256,6 +13246,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADD_TO_FAVORITES_FAILED,
    "お気に入りの追加に失敗しました: プレイリストがいっぱいです"
+   )
+MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "プレイリストに追加しました"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "プレイリストに追加できませんでした: プレイリストがいっぱいです"
    )
 MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
