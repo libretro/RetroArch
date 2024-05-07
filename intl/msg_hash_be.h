@@ -577,7 +577,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "Выдаліць гэтае ядро з дыска."
+   "Прыбраць гэтае ядро з дыска."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
@@ -601,7 +601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "Выдаліць файл са спісу архіваваных рэзервовых копій."
+   "Прыбраць файл са спісу архіваваных рэзервовых копій."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
@@ -2668,7 +2668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Прыбраць убудову DSP"
+   "Адкінуць убудову DSP"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
@@ -2887,7 +2887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   "Пачне прайграванне гукавой плыні. Па завяршэнні бягучыя гукавая плынь будзе выдалена з памяці."
+   "Пачне прайграванне гукавой плыні. Па завяршэнні бягучыя гукавая плынь будзе прыбрана з памяці."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
@@ -2911,7 +2911,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   "Спыніць прайграванне гукавой плыні, але не выдаляць яе з памяці. Можа быць запушчана зноў пры выбары 'Прайграць'."
+   "Спыніць прайграванне гукавой плыні, але не прыбіраць яе з памяці. Можа быць запушчана зноў пры выбары 'Прайграць'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
@@ -2919,7 +2919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   "Спыніць прайграванне гукавой плыні ды цалкам выдаліць яе з памяці."
+   "Спыніць прайграванне гукавой плыні ды цалкам прыбраць яе з памяці."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
@@ -2962,7 +2962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   "Уключыць гук 'OK'"
+   "Уключыць гук 'Згода'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
@@ -3211,7 +3211,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Замена кнопак кіравання меню OK ды Скасаванне"
+   "Замена кнопак кіравання меню Згода ды Скасаванне"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
@@ -3572,7 +3572,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Паказваць 'Кіраванне ядрамі'"
+   "Паказ 'Кіраванне ядрамі'"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "Паказваць опцыю 'Кіраванне ядрамі' ў галоўным меню."
 )
 
 MSG_HASH(
@@ -4019,7 +4023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-   "Паказваць опцыю 'Загрузіць ядро' у галоўным меню."
+   "Паказваць опцыю 'Загрузіць ядро' ў галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -4027,7 +4031,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-   "Паказваць опцыю 'Загрузіць змесціва' у галоўным меню."
+   "Паказваць опцыю 'Загрузіць змесціва' ў галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
@@ -4043,7 +4047,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
-   "Паказваць опцыю 'Дамп дыска' у галоўным меню."
+   "Паказваць опцыю 'Дамп дыска' ў галоўным меню."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -4077,7 +4081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-   "Паказваць опцыю 'Звесткі' у галоўным меню."
+   "Паказваць опцыю 'Звесткі' ў галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
@@ -4085,7 +4089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   "Паказваць опцыю 'Файл канфігурацыі' у галоўным меню."
+   "Паказваць опцыю 'Файл канфігурацыі' ў галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -4093,7 +4097,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-   "Паказваць опцыю 'Даведка' у галоўным меню."
+   "Паказваць опцыю 'Даведка' ў галоўным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
@@ -4355,6 +4359,14 @@ MSG_HASH(
    "Паказваць опцыю 'Дадаць да ўпадабанага'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Паказ 'Дадаць да плэй-ліста'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Паказваць опцыю 'Дадаць да плэй-ліста'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
    "Паказ 'Сцягнуць мініяцюры'"
    )
@@ -4404,6 +4416,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
    "Паказваць налады 'Увод'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+   "Паказ 'Латэнтнасць'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+   "Паказваць налады 'Латэнтнасць'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
@@ -4989,7 +5009,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-   "Дазволіць выдаляць запісы плэй-ліста."
+   "Дазволіць прыбіраць запісы плэй-ліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
@@ -5112,7 +5132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
-   "Выдаліць плэй-ліст з файлавай сістэмы."
+   "Прыбраць плэй-ліст з файлавай сістэмы."
    )
 
 /* Settings > User */
@@ -5616,7 +5636,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-   "Выдаліць гэты запіс з плэй-ліста."
+   "Прыбраць гэты запіс з плэй-ліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
@@ -5625,6 +5645,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Дадаць змесціва да 'Упадабанае'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Дадаць да плэй-ліста"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Дадаць змесціва да плэй-ліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -6155,6 +6183,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Назад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+   "Згода"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
@@ -7861,7 +7893,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
-   "Файл опцый ядра паспяховы выдалены."
+   "Файл опцый ядра паспяховы прыбраны."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
@@ -7973,7 +8005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
-   "Набор налад шэйдара паспяхова зняты."
+   "Набор налад шэйдара паспяхова прыбраны."
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
