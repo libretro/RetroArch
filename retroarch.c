@@ -4364,8 +4364,8 @@ bool command_event(enum event_command cmd, void *data)
          if (settings->bools.config_save_on_exit)
          {
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
+         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
          system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
 #else
@@ -4379,8 +4379,8 @@ bool command_event(enum event_command cmd, void *data)
          if (settings->bools.config_save_on_exit)
          {
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
+         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
          system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
 #else
