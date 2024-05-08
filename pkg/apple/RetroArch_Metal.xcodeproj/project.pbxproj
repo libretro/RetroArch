@@ -55,7 +55,6 @@
 		0720994B29B1258C001642BB /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 		0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0720994D29B1258C001642BB /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
-		0720994E29B1258C001642BB /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; };
 		0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
 		0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		0720995129B1258C001642BB /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
@@ -67,12 +66,16 @@
 		0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
 		0720995829B1258C001642BB /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		0720995929B1258C001642BB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
-		0720995B29B1258C001642BB /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
-		079371D0296392420059A71C /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
-		07B634D0296391FF00B3D78D /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; };
+		07EF0FF62BEB114000EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF0FF92BEB117000EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		07EF0FFC2BEB117400EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		07EF0FFF2BEB117900EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF10002BEB117900EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
 		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
@@ -94,17 +97,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		0536DF8D20A6BDAC00BBB67F /* Embed Libraries */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				079371D0296392420059A71C /* libMoltenVK.dylib in Embed Libraries */,
-			);
-			name = "Embed Libraries";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		053FC26721433F2200D98D46 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -125,15 +117,26 @@
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0720995A29B1258C001642BB /* Embed Libraries */ = {
+		07EF0FFB2BEB117000EDCA9B /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				0720995B29B1258C001642BB /* libMoltenVK.dylib in Embed Libraries */,
+				07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
 			);
-			name = "Embed Libraries";
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07EF0FFE2BEB117400EDCA9B /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -523,7 +526,7 @@
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
-		07B634CF296391FF00B3D78D /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = Frameworks/MoltenVK/dylib/macOS/libMoltenVK.dylib; sourceTree = "<group>"; };
+		07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
@@ -572,6 +575,7 @@
 				053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */,
 				05422E4A2140C8DB00F09961 /* QuartzCore.framework in Frameworks */,
 				05422E4B2140C8DB00F09961 /* IOSurface.framework in Frameworks */,
+				07EF0FF62BEB114000EDCA9B /* MoltenVK.xcframework in Frameworks */,
 				05422E4C2140C8DB00F09961 /* Metal.framework in Frameworks */,
 				05422E4D2140C8DB00F09961 /* MetalKit.framework in Frameworks */,
 				05422E4E2140C8DB00F09961 /* libz.dylib in Frameworks */,
@@ -590,7 +594,6 @@
 				0720994B29B1258C001642BB /* AudioToolbox.framework in Frameworks */,
 				0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */,
 				0720994D29B1258C001642BB /* GameController.framework in Frameworks */,
-				0720994E29B1258C001642BB /* libMoltenVK.dylib in Frameworks */,
 				0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */,
 				0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */,
 				0720995129B1258C001642BB /* IOSurface.framework in Frameworks */,
@@ -599,6 +602,7 @@
 				0720995429B1258C001642BB /* MetalKit.framework in Frameworks */,
 				0720995529B1258C001642BB /* libz.dylib in Frameworks */,
 				070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */,
+				07EF0FFC2BEB117400EDCA9B /* MoltenVK.xcframework in Frameworks */,
 				0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */,
 				0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */,
 				0720995829B1258C001642BB /* AppKit.framework in Frameworks */,
@@ -613,7 +617,6 @@
 				D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */,
 				072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */,
 				0746953A2997393000CCB7BD /* GameController.framework in Frameworks */,
-				07B634D0296391FF00B3D78D /* libMoltenVK.dylib in Frameworks */,
 				D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */,
 				05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */,
 				05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */,
@@ -622,6 +625,7 @@
 				05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
 				070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */,
+				07EF0FF92BEB117000EDCA9B /* MoltenVK.xcframework in Frameworks */,
 				84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */,
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
@@ -1425,11 +1429,11 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */,
 				070A883F2A4E7A1B003161C0 /* OpenAL.framework */,
 				0795A8C6299A095300D5035D /* CoreHaptics.framework */,
 				074695362995C03900CCB7BD /* GameController.framework */,
 				D27C50892228360D00113BC0 /* AudioToolbox.framework */,
-				07B634CF296391FF00B3D78D /* libMoltenVK.dylib */,
 				072976DC296284F600D6E00C /* OpenGL.framework */,
 				D27C50872228360000113BC0 /* AVFoundation.framework */,
 				053FC25521433F1700D98D46 /* QtConcurrent.framework */,
@@ -1500,8 +1504,8 @@
 				0720993D29B1258C001642BB /* Resources */,
 				0720994329B1258C001642BB /* Sources */,
 				0720994A29B1258C001642BB /* Frameworks */,
-				0720995A29B1258C001642BB /* Embed Libraries */,
 				0720995C29B1258C001642BB /* ShellScript */,
+				07EF0FFE2BEB117400EDCA9B /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1521,8 +1525,8 @@
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
-				0536DF8D20A6BDAC00BBB67F /* Embed Libraries */,
 				07B7872F29EA3B7D0088B74F /* ShellScript */,
+				07EF0FFB2BEB117000EDCA9B /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1938,10 +1942,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
 					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
-					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -2023,10 +2024,7 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
 					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
-					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
