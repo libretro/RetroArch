@@ -2045,6 +2045,10 @@ MSG_HASH(
    "Enhet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "WASAPI eksklusiv modus"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "Tillat RetroArch å ta eksklusiv kontroll over mikrofonenheten når du bruker WASAPI mikrofondriveren. Hvis deaktivert, bruker RetroArch delt modus i stedet."
    )
@@ -2092,6 +2096,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    "Stopp"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   "Fjern"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
@@ -2168,12 +2176,20 @@ MSG_HASH(
    "Klassisk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Android frakoblings løsning"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
    "Bekreft avslutning"
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   "Vibrer ved tastetrykk"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Vibrasjonsstyrke"
@@ -2223,6 +2239,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
    "Starter nåværende innhold fra begynnelsen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   "Spol tilbake"
    )
 
 MSG_HASH(
@@ -2281,6 +2301,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
    "Nettspilling ping (Veksle)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Nettspill spiller chat"
+   )
 
 
 /* Settings > Input > Port # Controls */
@@ -2299,7 +2323,23 @@ MSG_HASH(
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Noen kjerner har en avslutningsfunksjon, innlasting av en dummy-kjerne vil hindre at RetroArch slås av."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   "Start en kjerne automatisk"
+   )
 #ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Alltid start kjerne pånytt ved Kjør innhold"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Start RetroArch på nytt når du starter innhold, selv om den forespurte kjernen allerede er lastet. Dette kan forbedre systemstabiliteten på bekostning av lengre lastetider."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
@@ -2312,6 +2352,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
    "Administrer kjerner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+   "Utfør nett-frakoblede oppgaver for vedlikehold av installerte kjerner (sikkerhetskopiering, gjenoppretting, sletting osv.) og vis kjerneinformasjon."
    )
 #ifdef HAVE_MIST
 MSG_HASH(
@@ -2368,6 +2412,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "Lagre endringer i konfigurasjonsfilen ved avslutning."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Bytt til sist brukte disk ved oppstart av multidisk-innhold."
+   )
 
 /* Settings > Saving */
 
@@ -2396,6 +2444,10 @@ MSG_HASH(
 
 /* Settings > Frame Throttle */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   "Spol tilbake"
+   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -2450,8 +2502,16 @@ MSG_HASH(
    "Lokal"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   "Egendefinert"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    "Strømmekvalitet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   "Egendefinert"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
@@ -2464,6 +2524,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    "Høy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "Egendefinert strømmekonfigurasjon"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -2489,6 +2553,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Overlegg"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Skalering av alle brukergrensesnittelementene til overlegget ved bruk av landskapsvisning av vinduer."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -2581,6 +2649,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    "Kiosk-modus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   "Angi passord for deaktivering av Kiosk modus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Sett innholdet på pause når menyen er aktiv"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Pauser det nåværende innholdet som kjører når menyen er aktiv."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
