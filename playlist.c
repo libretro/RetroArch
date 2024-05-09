@@ -1131,11 +1131,23 @@ void playlist_resolve_path(enum playlist_file_mode mode,
           string_starts_with(path, ":/modules/") &&
           string_ends_with(path, ".dylib"))
       {
+         /* iOS cores used to be packaged as .dylib files in the modules
+          * directory; App Store rules require turning them into Frameworks and
+          * putting them in the Frameworks directory. Because some playlists
+          * include the old core path, we'll translate it here.
+          */
          path[string_index_last_occurance(path, '.')] = '\0';
          if (string_ends_with(path, "_ios"))
             path[string_index_last_occurance(path, '_')] = '\0';
          strlcpy(tmp, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
          strlcpy(tmp + STRLEN_CONST(":/Frameworks/"), path + STRLEN_CONST(":/modules/"), sizeof(tmp) - STRLEN_CONST(":/Frameworks/"));
+         /* iOS framework names, to quote Apple:
+          * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
+          *
+          * Since core names include underscore, which is not allowed, but not dot,
+          * which is, we change underscore to dot.
+          */
+         string_replace_all_chars(tmp, '_', '.');
          strlcat(tmp, ".framework", sizeof(tmp));
          fill_pathname_expand_special(path, tmp, len);
       }
