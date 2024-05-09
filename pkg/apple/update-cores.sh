@@ -154,7 +154,7 @@ else
                 race
                 quicknes
                 smsplus
-                blastem
+                #blastem
                 vice_x128
                 vice_x64
                 vice_x64sc
@@ -202,7 +202,8 @@ else
                 virtualxt
                 geolith
                 vircon32
-                melondsds
+                #melondsds
+                2048
             )
             for dylib in "${exports[@]}" ; do
                 find_dylib $dylib
