@@ -2,17 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>RetroArch URL</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>retroarch</string>
-			</array>
-		</dict>
-	</array>
 	<key>ALTBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>ALTDeviceID</key>
@@ -21,6 +10,30 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>RetroArch</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>ROM</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.libretro.rom</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>All Files</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,16 +46,19 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>RetroArch URL</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>retroarch</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.games</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
 	<key>GCSupportedGameControllers</key>
 	<array>
 		<dict>
@@ -60,25 +76,15 @@
 	</array>
 	<key>GCSupportsControllerUserInteraction</key>
 	<true/>
-	<key>CFBundleDocumentTypes</key>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.games</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>ROM</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.libretro.rom</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>All Files</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>public.data</string>
-				<string>public.content</string>
-			</array>
-		</dict>
+		<string>arm64</string>
 	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>

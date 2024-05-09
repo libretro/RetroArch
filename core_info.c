@@ -1552,6 +1552,15 @@ static bool core_info_get_file_id(const char *core_filename,
    /* > Remove extension */
    strlcpy(core_file_id, core_filename, len);
    path_remove_extension(core_file_id);
+#if IOS
+   /* iOS framework names, to quote Apple:
+    * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
+    *
+    * Since core names include underscore, which is not allowed, but not dot,
+    * which is, we change underscore to dot. Here, we need to change it back.
+    */
+   string_replace_all_chars(core_file_id, '.', '_');
+#endif
 
    /* > Remove suffix */
    last_underscore = (char*)strrchr(core_file_id, '_');

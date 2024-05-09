@@ -15,6 +15,8 @@
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>ROM</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.libretro.rom</string>
@@ -23,6 +25,8 @@
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>All Files</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.data</string>
@@ -48,6 +52,25 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>GCSupportedGameControllers</key>
+	<array>
+		<dict>
+			<key>ProfileName</key>
+			<string>ExtendedGamepad</string>
+		</dict>
+		<dict>
+			<key>ProfileName</key>
+			<string>DirectionalGamepad</string>
+		</dict>
+		<dict>
+			<key>ProfileName</key>
+			<string>MicroGamepad</string>
+		</dict>
+	</array>
+	<key>GCSupportsControllerUserInteraction</key>
+	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.games</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -61,8 +84,10 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RetroArch uses the local network to find local Netplay participants.</string>
-	<key>UIApplicationExitsOnSuspend</key>
-	<false/>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>ConfigurationIntent</string>
+	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -91,23 +116,6 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>GCSupportedGameControllers</key>
-	<array>
-		<dict>
-			<key>ProfileName</key>
-			<string>ExtendedGamepad</string>
-		</dict>
-		<dict>
-			<key>ProfileName</key>
-			<string>DirectionalGamepad</string>
-		</dict>
-		<dict>
-			<key>ProfileName</key>
-			<string>MicroGamepad</string>
-		</dict>
-	</array>
-	<key>GCSupportsControllerUserInteraction</key>
-	<true/>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>

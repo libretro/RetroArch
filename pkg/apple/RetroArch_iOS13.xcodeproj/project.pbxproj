@@ -120,7 +120,6 @@
 		92CC05B921FE3C1700FF79F0 /* GCDWebServerDataRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC059B21FE3C1700FF79F0 /* GCDWebServerDataRequest.m */; };
 		92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC059C21FE3C1700FF79F0 /* GCDWebServerFileRequest.m */; };
 		92CC05BB21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC059C21FE3C1700FF79F0 /* GCDWebServerFileRequest.m */; };
-		92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		92CC05BE21FE3C1700FF79F0 /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC05A121FE3C1700FF79F0 /* GCDWebUploader.m */; };
 		92CC05BF21FE3C1700FF79F0 /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC05A121FE3C1700FF79F0 /* GCDWebUploader.m */; };
@@ -1467,7 +1466,6 @@
 				07F7FB022A2DA8B800037C04 /* filters in Resources */,
 				9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */,
 				9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */,
-				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
 				929784502200EEE400989A60 /* iOS/Resources/Icons.xcassets in Resources */,
 				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
@@ -1755,7 +1753,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchTopShelfExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchTopShelfExtension;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1822,7 +1822,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchTopShelfExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchTopShelfExtension;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

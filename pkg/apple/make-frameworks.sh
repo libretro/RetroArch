@@ -29,15 +29,14 @@ mkdir -p "$OUTDIR"
 for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$') ; do
     intermediate=$(basename "$dylib")
     intermediate="${intermediate/%.dylib/}"
-    identifier="${intermediate/%$SUFFIX/}"
-    intermediate="${identifier/%_libretro/}"
-    fwName="${intermediate}_libretro"
+    intermediate="${intermediate/%$SUFFIX/}"
+    fwName="${intermediate//_/.}"
     echo Making framework $fwName from $dylib
 
     fwDir="${OUTDIR}/${fwName}.framework"
     mkdir -p "$fwDir"
     lipo -create "$dylib" -output "$fwDir/$fwName"
-    sed -e "s,%CORE%,$fwName," -e "s,%IDENTIFIER%,$identifier," iOS/fw.tmpl > "$fwDir/Info.plist"
+    sed -e "s,%CORE%,$fwName," -e "s,%BUNDLE%,$fwName," -e "s,%IDENTIFIER%,$fwName," iOS/fw.tmpl > "$fwDir/Info.plist"
     echo "signing $fwName"
-    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" --timestamp=none --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der "$fwDir"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
 done
