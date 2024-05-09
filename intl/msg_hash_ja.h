@@ -2059,6 +2059,10 @@ MSG_HASH(
    "GPU スクリーンショット"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "ローリングスキャンラインシミュレーション"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "利用可能な場合、スクリーンショットは GPU シェーディングされた画像をキャプチャします。"
    )
@@ -6557,6 +6561,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "[お気に入りに追加] オプションを表示します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "[プレイリストに追加] を表示"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "[プレイリストに追加] オプションを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
@@ -15015,7 +15027,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "フレーム提示のあと、できるだけスリープさせること垂直同期の CPU 使用率の軽減を試みます。主にサードパーティのスキャンライン同期用に設計されています。"
+   "フレーム提示のあと、できるだけスリープさせることで垂直同期の CPU 使用率の軽減を試みます。主にサードパーティのスキャンライン同期用に設計されています。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
