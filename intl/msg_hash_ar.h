@@ -138,6 +138,10 @@ MSG_HASH(
    "افتح قائمة سطح المكتب التقليدية."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "تعطيل وضع الكشك (مطلوب إعادة التشغيل)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "إظهار كافة الإعدادات ذات الصلة بالتهيئات."
    )
@@ -194,8 +198,24 @@ MSG_HASH(
    "إعادة التشغيل"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "إعادة تشغيل تطبيق RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "خروج"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج مفعل."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج معطل."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "إنهاء RetroArch. إحباط البرنامج بأي طريقة صعبة (مثل SIGKILL، إلخ.) سيتم إنهاء RetroArch دون حفظ التكوين، إلخ. على أمثال يونكس، يسمح SIGINT/SIGTERM بإزالة التشكيلات النظيفة مما يتضمن حفظ الإعدادات عندما يكون مفعلاً."
    )
 
 /* Main Menu > Load Core */
@@ -483,6 +503,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
    "مطلوب الرسومات API"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "المسار الكامل للأساس"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "دعم حفظ الحالة"
