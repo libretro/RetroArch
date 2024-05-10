@@ -521,11 +521,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "Серыялізаваная (захаванне/загрузка, перамотка)"
+   "Серыялізаваная (захаванне/загрузка, перамотка назад)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Дэтэрмінаваная (захаванне/загрузка, забяганне, сеткавая гульня)"
+   "Дэтэрмінаваная (захаванне/загрузка, перамотка назад, забяганне, сеткавая гульня)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
@@ -3305,8 +3305,24 @@ MSG_HASH(
    "Уключае перамотку наперад падчас утрымання. Пры адцісканні змесціва выконваецца са звычайнай хуткасцю."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   "Запаволены рух (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
+   "Пераключэнне паміж запаволенай ды звычайнай хуткасцю."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Запаволены рух (утрыманне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
+   "Уключае запаволеных рух падчас утрымання. Пры адцісканні змесціва выконваецца са звычайнай хуткасцю."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   "Перамотка"
+   "Перамотка назад"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -3662,7 +3678,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   "Перамотка"
+   "Перамотка назад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+   "Паказчык запаволенага руху"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -3677,11 +3697,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   "Падтрымка перамоткі"
+   "Падтрымка перамоткі назад"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-   "Кадры перамоткі"
+   "Кадры перамоткі назад"
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -4360,11 +4380,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   "Паказ 'Перамотка'"
+   "Паказ 'Перамотка назад'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Паказваць опцыю 'Перамотка'."
+   "Паказваць опцыю 'Перамотка назад'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -8053,7 +8073,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Уключаны рэжым хардкору, захаванне стану ды перамотка адключаныя."
+   "Уключаны рэжым хардкору, захаванне стану ды перамотка назад адключаныя."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -8146,6 +8166,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
    "Набор налад шэйдара паспяхова захаваны."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION,
+   "Запаволены рух."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION_REWIND,
+   "Запаволеная перамотка назад."
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
