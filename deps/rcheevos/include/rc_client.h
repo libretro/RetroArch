@@ -252,6 +252,11 @@ enum {
 };
 
 /**
+ * Determines if a game was successfully identified and loaded.
+ */
+RC_EXPORT int RC_CCONV rc_client_is_game_loaded(const rc_client_t* client);
+
+/**
  * Unloads the current game.
  */
 RC_EXPORT void RC_CCONV rc_client_unload_game(rc_client_t* client);
@@ -266,6 +271,7 @@ typedef struct rc_client_game_t {
 
 /**
  * Get information about the current game. Returns NULL if no game is loaded.
+ * NOTE: returns a dummy game record if an unidentified game is loaded.
  */
 RC_EXPORT const rc_client_game_t* RC_CCONV rc_client_get_game_info(const rc_client_t* client);
 

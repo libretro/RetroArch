@@ -139,6 +139,10 @@ static int rc_parse_operator(const char** memaddr) {
       ++(*memaddr);
       return RC_OPERATOR_XOR;
 
+    case '%':
+      ++(*memaddr);
+      return RC_OPERATOR_MOD;
+
     case '\0':/* end of string */
     case '_': /* next condition */
     case 'S': /* next condset */
@@ -226,6 +230,7 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     case RC_OPERATOR_DIV:
     case RC_OPERATOR_AND:
     case RC_OPERATOR_XOR:
+    case RC_OPERATOR_MOD:
       /* modifying operators are only valid on modifying statements */
       if (can_modify)
         break;
@@ -550,6 +555,10 @@ void rc_evaluate_condition_value(rc_typed_value_t* value, rc_condition_t* self, 
       rc_typed_value_convert(value, RC_VALUE_TYPE_UNSIGNED);
       rc_typed_value_convert(&amount, RC_VALUE_TYPE_UNSIGNED);
       value->value.u32 ^= amount.value.u32;
+      break;
+
+    case RC_OPERATOR_MOD:
+      rc_typed_value_modulus(value, &amount);
       break;
   }
 }

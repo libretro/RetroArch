@@ -3,6 +3,7 @@
 #include <string.h> /* memset */
 #include <ctype.h> /* isdigit */
 #include <float.h> /* FLT_EPSILON */
+#include <math.h> /* fmod */
 
 static void rc_parse_cond_value(rc_value_t* self, const char** memaddr, rc_parse_state_t* parse) {
   rc_condset_t** next_clause;
@@ -112,6 +113,7 @@ void rc_parse_legacy_value(rc_value_t* self, const char** memaddr, rc_parse_stat
       case RC_OPERATOR_DIV:
       case RC_OPERATOR_AND:
       case RC_OPERATOR_XOR:
+      case RC_OPERATOR_MOD:
       case RC_OPERATOR_NONE:
         break;
 
@@ -626,6 +628,72 @@ void rc_typed_value_divide(rc_typed_value_t* value, const rc_typed_value_t* amou
 
   rc_typed_value_convert(value, RC_VALUE_TYPE_FLOAT);
   value->value.f32 /= amount->value.f32;
+}
+
+void rc_typed_value_modulus(rc_typed_value_t* value, const rc_typed_value_t* amount) {
+  rc_typed_value_t converted;
+
+  switch (amount->type)
+  {
+  case RC_VALUE_TYPE_UNSIGNED:
+    if (amount->value.u32 == 0) { /* divide by zero */
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+
+    switch (value->type) {
+    case RC_VALUE_TYPE_UNSIGNED: /* integer math */
+      value->value.u32 %= amount->value.u32;
+      return;
+    case RC_VALUE_TYPE_SIGNED: /* integer math */
+      value->value.i32 %= (int)amount->value.u32;
+      return;
+    case RC_VALUE_TYPE_FLOAT:
+      amount = rc_typed_value_convert_into(&converted, amount, RC_VALUE_TYPE_FLOAT);
+      break;
+    default:
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+    break;
+
+  case RC_VALUE_TYPE_SIGNED:
+    if (amount->value.i32 == 0) { /* divide by zero */
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+
+    switch (value->type) {
+    case RC_VALUE_TYPE_SIGNED: /* integer math */
+      value->value.i32 %= amount->value.i32;
+      return;
+    case RC_VALUE_TYPE_UNSIGNED: /* integer math */
+      value->value.u32 %= (unsigned)amount->value.i32;
+      return;
+    case RC_VALUE_TYPE_FLOAT:
+      amount = rc_typed_value_convert_into(&converted, amount, RC_VALUE_TYPE_FLOAT);
+      break;
+    default:
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+    break;
+
+  case RC_VALUE_TYPE_FLOAT:
+    break;
+
+  default:
+    value->type = RC_VALUE_TYPE_NONE;
+    return;
+  }
+
+  if (amount->value.f32 == 0.0) { /* divide by zero */
+    value->type = RC_VALUE_TYPE_NONE;
+    return;
+  }
+
+  rc_typed_value_convert(value, RC_VALUE_TYPE_FLOAT);
+  value->value.f32 = (float)fmod(value->value.f32, amount->value.f32);
 }
 
 static int rc_typed_value_compare_floats(float f1, float f2, char oper) {

@@ -1947,13 +1947,13 @@ static void rc_client_fetch_game_data_callback(const rc_api_server_response_t* s
       if (!subset->public_.title) {
         const char* core_subset_title = rc_client_subset_extract_title(load_state->game, load_state->game->public_.title);
         if (core_subset_title) {
-           rc_client_subset_info_t* scan = load_state->game->subsets;
-           for (; scan; scan = scan->next) {
-              if (scan->public_.title == load_state->game->public_.title) {
-                 scan->public_.title = core_subset_title;
-                 break;
-              }
-           }
+          scan = load_state->game->subsets;
+          for (; scan; scan = scan->next) {
+            if (scan->public_.title == load_state->game->public_.title) {
+              scan->public_.title = core_subset_title;
+              break;
+            }
+          }
         }
 
         subset->public_.title = rc_buffer_strcpy(&load_state->game->buffer, fetch_game_data_response.title);
@@ -2058,8 +2058,15 @@ static void rc_client_begin_fetch_game_data(rc_client_load_state_t* load_state)
 #endif /* RC_CLIENT_SUPPORTS_HASH */
 
     if (load_state->hash->game_id == 0) {
+      rc_client_subset_info_t* subset;
+
+      subset = (rc_client_subset_info_t*)rc_buffer_alloc(&load_state->game->buffer, sizeof(rc_client_subset_info_t));
+      memset(subset, 0, sizeof(*subset));
+      subset->public_.title = "";
+
       load_state->game->public_.title = "Unknown Game";
       load_state->game->public_.badge_name = "";
+      load_state->game->subsets = subset;
       client->game = load_state->game;
       load_state->game = NULL;
 
@@ -2403,6 +2410,23 @@ int rc_client_get_load_game_state(const rc_client_t* client)
   }
 
   return state;
+}
+
+int rc_client_is_game_loaded(const rc_client_t* client)
+{
+  const rc_client_game_t* game;
+
+  if (!client)
+    return 0;
+
+#ifdef RC_CLIENT_SUPPORTS_EXTERNAL
+  if (client->state.external_client && client->state.external_client->get_game_info)
+    game = client->state.external_client->get_game_info();
+  else
+#endif
+    game = client->game ? &client->game->public_ : NULL;
+
+  return (game && game->id != 0);
 }
 
 static void rc_client_game_mark_ui_to_be_hidden(rc_client_t* client, rc_client_game_info_t* game)
