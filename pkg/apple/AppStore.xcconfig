@@ -1,0 +1,10 @@
+//
+//  AppStore.xcconfig
+//  RetroArch
+//
+//
+
+#include "Metal.xcconfig"
+INFOPLIST_FILE = $(SRCROOT)/OSX/Info_AppStore.plist
+DEVELOPMENT_TEAM=UK699V5ZS8
+OTHER_CFLAGS = $(inherited) -DHAVE_APPLE_STORE
