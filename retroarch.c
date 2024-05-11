@@ -8362,6 +8362,8 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"en", RETRO_LANGUAGE_ENGLISH},
       {"hu", RETRO_LANGUAGE_HUNGARIAN},
       {"be", RETRO_LANGUAGE_BELARUSIAN},
+      {"gl", RETRO_LANGUAGE_GALICIAN},
+      {"no", RETRO_LANGUAGE_NORWEGIAN},
    };
 
    if (string_is_empty(iso639))

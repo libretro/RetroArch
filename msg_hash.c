@@ -130,6 +130,10 @@ const char *get_user_language_iso639_1(bool limit)
          return "hu";
       case RETRO_LANGUAGE_BELARUSIAN:
          return "be";
+      case RETRO_LANGUAGE_GALICIAN:
+          return "gl";
+      case RETRO_LANGUAGE_NORWEGIAN:
+          return "no";
    }
    return "en";
 }
@@ -519,6 +523,30 @@ static const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
    return "null";
 }
 
+static const char *msg_hash_to_str_gl(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_gl.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_no(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_no.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 #endif
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
@@ -623,6 +651,12 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_BELARUSIAN:
          ret = msg_hash_to_str_be(msg);
+         break;
+      case RETRO_LANGUAGE_GALICIAN:
+         ret = msg_hash_to_str_gl(msg);
+         break;
+      case RETRO_LANGUAGE_NORWEGIAN:
+         ret = msg_hash_to_str_no(msg);
          break;
       default:
          break;
