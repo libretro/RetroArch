@@ -3333,6 +3333,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    "Språk"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   "Angi språket til brukergrensesnittet."
+   )
 
 /* Settings > User > Privacy */
 
