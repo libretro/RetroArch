@@ -181,6 +181,7 @@ void rc_typed_value_convert(rc_typed_value_t* value, char new_type);
 void rc_typed_value_add(rc_typed_value_t* value, const rc_typed_value_t* amount);
 void rc_typed_value_multiply(rc_typed_value_t* value, const rc_typed_value_t* amount);
 void rc_typed_value_divide(rc_typed_value_t* value, const rc_typed_value_t* amount);
+void rc_typed_value_modulus(rc_typed_value_t* value, const rc_typed_value_t* amount);
 void rc_typed_value_negate(rc_typed_value_t* value);
 int rc_typed_value_compare(const rc_typed_value_t* value1, const rc_typed_value_t* value2, char oper);
 void rc_typed_value_from_memref_value(rc_typed_value_t* value, const rc_memref_value_t* memref);

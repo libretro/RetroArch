@@ -339,8 +339,7 @@ static rcheevos_racheevo_t* rcheevos_find_cheevo(unsigned id)
 static bool rcheevos_is_game_loaded(void)
 {
 #ifdef HAVE_RC_CLIENT
-   const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
-   return (game && game->id);
+   return rc_client_is_game_loaded(rcheevos_locals.client);
 #else
    return rcheevos_locals.loaded;
 #endif
@@ -1189,7 +1188,13 @@ void rcheevos_refresh_memory(void)
 bool rcheevos_hardcore_active(void)
 {
 #ifdef HAVE_RC_CLIENT
-   return rcheevos_locals.client && rc_client_get_hardcore_enabled(rcheevos_locals.client);
+   /* normal hardcore check */
+   if (rcheevos_locals.client && rc_client_get_hardcore_enabled(rcheevos_locals.client))
+      return true;
+
+   /* if we're trying to enable hardcore, pretend it's on so the caller can decide to disable
+    * it (by calling rcheevos_pause_hardcore) before we actually turn it on. */
+   return rcheevos_locals.hardcore_allowed;
 #else
    return rcheevos_locals.hardcore_active;
 #endif
