@@ -505,7 +505,7 @@ static void NETRETROPAD_CORE_PREFIX(update_keyboard_cb)(bool down, unsigned keyc
           (keycode >= 123  && keycode < 127) ||
           (keycode == 272) ||
           (keycode >= 294  && keycode < 297) ||
-          (keycode >= 309  && keycode < 323))
+          (keycode >= 309  && keycode < RETROK_LAST))
       {
          snprintf(buf, sizeof(buf), "Key pressed: %d",keycode);
             message.msg = buf;

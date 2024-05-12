@@ -167,6 +167,26 @@ enum xfvk_key
    XFVK_FK23           = 201,
    XFVK_FK24           = 202,
 
+   /* Multimedia keys */
+   XFVK_MUTE           = 121,
+   XFVK_VOUP           = 122,
+   XFVK_VODN           = 123, 
+   XFVK_BSTP           = 136,
+   XFVK_APP1           = 156,
+   XFVK_APP2           = 157,
+   XFVK_MAIL           = 163,
+   XFVK_FAVO           = 164,
+   XFVK_BBAC           = 166,
+   XFVK_BFWD           = 167,
+   XFVK_CDNX           = 171,
+   XFVK_PLAY           = 172,
+   XFVK_CDPR           = 173,
+   XFVK_CDST           = 174,
+   XVFK_HOMP           = 180,
+   XFVK_REFR           = 181,
+   XFVK_BSEA           = 225,
+   XFVK_MDIA           = 234,
+
    XFVK_LAST,
    XFVK_DUMMY          = 255
 };
