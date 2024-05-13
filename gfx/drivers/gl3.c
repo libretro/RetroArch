@@ -2585,7 +2585,7 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
 
-   /* Sub-frame info for multiframe shaders (per real content frame). 
+   /* Sub-frame info for multiframe shaders (per real content frame).
       Should always be 1 for non-use of subframes*/
    if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
    {
@@ -2604,7 +2604,7 @@ static bool gl3_frame(void *data, const void *frame,
            gl->filter_chain, 1);
    }
 
-#ifdef GL3_ROLLING_SCANLINE_SIMULATION  
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
    if (      (video_info->shader_subframes > 1)
          &&  (video_info->scan_subframes)
          &&  !video_info->black_frame_insertion
@@ -2620,8 +2620,8 @@ static bool gl3_frame(void *data, const void *frame,
    {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, false);
-   }   
-#endif // GL3_ROLLING_SCANLINE_SIMULATION  
+   }
+#endif // GL3_ROLLING_SCANLINE_SIMULATION
 
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
@@ -2845,23 +2845,43 @@ static struct video_shader *gl3_get_current_shader(void *data)
 static int video_texture_load_wrap_gl3_mipmap(void *data)
 {
    GLuint id = 0;
+   gl3_t *gl = (gl3_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl3((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl3((struct texture_image*)data,
+            TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
 static int video_texture_load_wrap_gl3(void *data)
 {
    GLuint id = 0;
+   gl3_t *gl = (gl3_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl3((struct texture_image*)data,
-         TEXTURE_FILTER_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl3((struct texture_image*)data,
+            TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl3(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+   gl3_t    *gl = (gl3_t*)video_driver_get_ptr();
+
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -2873,12 +2893,7 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl3_t                    *gl = (gl3_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl3;
-
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
-
       switch (filter_type)
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
@@ -2888,7 +2903,7 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -2900,15 +2915,15 @@ static void gl3_unload_texture(void *data, bool threaded,
       uintptr_t id)
 {
    GLuint glid;
-   gl3_t                *gl = (gl3_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl3;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 

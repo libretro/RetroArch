@@ -1211,7 +1211,7 @@ uintptr_t d3d9_load_texture(void *video_data, void *data,
 
 #ifdef HAVE_THREADS
    if (threaded)
-      return video_thread_texture_load(&info,
+      return video_thread_texture_handle(&info,
             d3d9_video_texture_load_wrap_d3d);
 #endif
 

@@ -2130,11 +2130,29 @@ static void video_texture_load_gl1(
 static int video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id = 0;
-   if (!data)
-      return 0;
-   video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_NEAREST, &id);
+   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+
+   if (gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl1((struct texture_image*)data,
+            TEXTURE_FILTER_NEAREST, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl1(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+
+   if (gl1 && gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -2149,10 +2167,7 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
       gl1_t                   *gl1 = (gl1_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl1;
 
-      if (gl1->ctx_driver->make_current)
-         gl1->ctx_driver->make_current(false);
-
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -2171,15 +2186,15 @@ static void gl1_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;
-   gl1_t *gl1 = (gl1_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl1->ctx_driver->make_current)
-         gl1->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl1;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 
