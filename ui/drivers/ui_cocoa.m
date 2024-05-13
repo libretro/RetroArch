@@ -1117,6 +1117,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* is_active */
    NULL, /* get_app_icons */
    NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,
