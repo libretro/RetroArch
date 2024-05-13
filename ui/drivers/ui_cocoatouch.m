@@ -105,6 +105,40 @@ static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
 }
 
+static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
+{
+   static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
+   static dispatch_once_t once;
+   dispatch_once(&once, ^{
+      textures = [NSMutableDictionary dictionaryWithCapacity:6];
+   });
+
+   NSString *iconName = [NSString stringWithUTF8String:icon];
+   if (!textures[iconName])
+   {
+      UIImage *img = [UIImage imageNamed:iconName];
+      if (!img)
+      {
+         RARCH_LOG("could not load %s\n", icon);
+         return NULL;
+      }
+      NSData *png = UIImagePNGRepresentation(img);
+      if (!png)
+      {
+         RARCH_LOG("could not get png for %s\n", icon);
+         return NULL;
+      }
+
+      uintptr_t item;
+      gfx_display_reset_textures_list_buffer(&item, TEXTURE_FILTER_MIPMAP_LINEAR,
+                                             (void*)[png bytes], (unsigned int)[png length], IMAGE_TYPE_PNG,
+                                             NULL, NULL);
+      textures[iconName] = [NSNumber numberWithUnsignedLong:item];
+   }
+
+   return [textures[iconName] unsignedLongValue];
+}
+
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
@@ -506,22 +540,6 @@ enum
    }
 }
 
-- (NSData *)pngForIcon:(NSString *)iconName
-{
-    UIImage *img;
-    NSData *png;
-    img = [UIImage imageNamed:iconName];
-    if (!img)
-        NSLog(@"could not load %@\n", iconName);
-    else
-    {
-        png = UIImagePNGRepresentation(img);
-        if (!png)
-            NSLog(@"could not get png for %@\n", iconName);
-    }
-    return png;
-}
-
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    char arguments[]   = "retroarch";
@@ -763,6 +781,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* is_active */
    ui_companion_cocoatouch_get_app_icons,
    ui_companion_cocoatouch_set_app_icon,
+   ui_companion_cocoatouch_get_app_icon_texture,
    NULL, /* browser_window */
    NULL, /* msg_window */
    NULL, /* window */
