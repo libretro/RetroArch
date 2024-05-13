@@ -3973,6 +3973,14 @@ MSG_HASH(
    "Змяніць адлюстраванне элементаў меню RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   "Выгляд"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   "Змяніць налады выгляду экраннага меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    "Значок праграмы"
    )
@@ -4841,7 +4849,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-   "Вонкавы выгляд"
+   "Выгляд"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
@@ -7945,7 +7953,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CAPABILITIES,
-   "Здольнасці"
+   "Магчымасці"
    )
 MSG_HASH(
    MSG_FETCHING_CORE_LIST,
