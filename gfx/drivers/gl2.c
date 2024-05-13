@@ -5156,23 +5156,43 @@ static void video_texture_load_gl2(
 static int video_texture_load_wrap_gl2_mipmap(void *data)
 {
    uintptr_t id = 0;
+   gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl2((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl2((struct texture_image*)data,
+            TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
 static int video_texture_load_wrap_gl2(void *data)
 {
    uintptr_t id = 0;
+   gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl2((struct texture_image*)data,
-         TEXTURE_FILTER_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl2((struct texture_image*)data,
+            TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl2(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+   gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
+
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -5184,12 +5204,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl2_t *gl                    = (gl2_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl2;
-
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
-
       switch (filter_type)
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
@@ -5199,7 +5214,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -5217,10 +5232,9 @@ static void gl2_unload_texture(void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl2_t *gl = (gl2_t*)data;
-      if (gl && gl->ctx_driver)
-         if (gl->ctx_driver->make_current)
-            gl->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl2;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 

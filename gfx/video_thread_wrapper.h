@@ -61,7 +61,7 @@ enum thread_cmd
    CMD_POKE_SET_HDR_MAX_NITS,
    CMD_POKE_SET_HDR_PAPER_WHITE_NITS,
    CMD_POKE_SET_HDR_CONTRAST,
-   CMD_POKE_SET_HDR_EXPAND_GAMUT,   
+   CMD_POKE_SET_HDR_EXPAND_GAMUT,
 
    CMD_DUMMY = INT_MAX
 };
@@ -270,7 +270,7 @@ bool video_thread_font_init(
       custom_font_command_method_t func,
       bool is_threaded);
 
-unsigned video_thread_texture_load(void *data,
+unsigned video_thread_texture_handle(void *data,
       custom_command_method_t func);
 
 RETRO_END_DECLS
