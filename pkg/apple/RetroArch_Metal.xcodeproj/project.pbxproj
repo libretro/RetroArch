@@ -15,7 +15,6 @@
 		053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		05422E402140C8DB00F09961 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
 		05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
@@ -42,10 +41,8 @@
 		070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		0720993E29B1258C001642BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		0720993F29B1258C001642BB /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		0720994029B1258C001642BB /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		0720994129B1258C001642BB /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
-		0720994229B1258C001642BB /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
 		0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
 		0720994529B1258C001642BB /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
@@ -68,6 +65,10 @@
 		0720995929B1258C001642BB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
+		0790F6792BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
+		0790F67A2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
+		0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
+		0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		07EF0FF62BEB114000EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
 		07EF0FF92BEB117000EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
@@ -77,7 +78,6 @@
 		07EF0FFF2BEB117900EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
 		07EF10002BEB117900EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		07F2BBC72BE83A4700FD1295 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		07F2BBC92BE83A4700FD1295 /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
 		07F2BBCC2BE83A4700FD1295 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
@@ -108,7 +108,6 @@
 		84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
 		84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
 		84DD5EB51A89E737007336C1 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
-		84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		9254B33125FA0BA300A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		9254B33825FA72F100A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
@@ -117,8 +116,6 @@
 		D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 		D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
 		D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
-		F0B12390270D73A90006E60F /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
-		F0B12391270D73A90006E60F /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -562,6 +559,7 @@
 		072976DC296284F600D6E00C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
+		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppStore.xcconfig; sourceTree = "<group>"; };
@@ -580,7 +578,6 @@
 		84DD5EB01A89E664007336C1 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cg.framework; path = /Library/Frameworks/Cg.framework; sourceTree = "<absolute>"; };
 		84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		84DD5EB41A89E737007336C1 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
-		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9254B2E625F5516A00A1E0DA /* GitLabCI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GitLabCI.xcconfig; sourceTree = "<group>"; };
 		9254B33025FA0BA300A1E0DA /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = assets.zip; path = OSX/assets.zip; sourceTree = "<group>"; };
@@ -1485,10 +1482,10 @@
 			isa = PBXGroup;
 			children = (
 				071051BE2BEFEFBA009C29D8 /* Info_AppStore.plist */,
-				84DD5EB71A89F1C7007336C1 /* retroarch.icns */,
 				A90205FD4D5979BD8B7E4DD6 /* Info_Metal.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 				A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */,
+				0790F6782BF282B400AA58C9 /* Media.xcassets */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -1660,10 +1657,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */,
-				05422E402140C8DB00F09961 /* retroarch.icns in Resources */,
 				9254B33825FA72F100A1E0DA /* assets.zip in Resources */,
 				0502387C2179713000789627 /* MainMenu_Metal.xib in Resources */,
-				F0B12391270D73A90006E60F /* connect in Resources */,
+				0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1672,10 +1668,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				0720993E29B1258C001642BB /* InfoPlist.strings in Resources */,
-				0720993F29B1258C001642BB /* retroarch.icns in Resources */,
 				0720994029B1258C001642BB /* assets.zip in Resources */,
 				0720994129B1258C001642BB /* MainMenu_Metal.xib in Resources */,
-				0720994229B1258C001642BB /* connect in Resources */,
+				0790F67A2BF282B400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1684,9 +1679,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */,
-				07F2BBC72BE83A4700FD1295 /* retroarch.icns in Resources */,
 				07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */,
 				07F2BBC92BE83A4700FD1295 /* MainMenu_Metal.xib in Resources */,
+				0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1695,10 +1690,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
-				84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */,
 				9254B33125FA0BA300A1E0DA /* assets.zip in Resources */,
 				A90209ED44A1161587F10CA4 /* MainMenu_Metal.xib in Resources */,
-				F0B12390270D73A90006E60F /* connect in Resources */,
+				0790F6792BF282B400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1927,6 +1921,8 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
@@ -1966,6 +1962,8 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
@@ -2003,6 +2001,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Debug;
 		};
@@ -2010,6 +2010,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Release;
 		};
@@ -2017,6 +2019,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -2030,6 +2034,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -2043,6 +2049,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Debug;
 		};
@@ -2050,6 +2058,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Release;
 		};
