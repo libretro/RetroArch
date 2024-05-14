@@ -3064,7 +3064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "Выбор устройства вывода (зависит от драйвера). Значение 'ВЫКЛ' отключает вывод MIDI. Также может быть указано имя устройства."
+   "Выбор устройства ввода (зависит от драйвера). Значение 'ВЫКЛ' отключает ввод MIDI. Также может быть указано имя устройства."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -5469,11 +5469,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   "Перетаскивание долгим тапом"
+   "Перетаскивать долгим нажатием"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   "Сделайте долгий тап по экрану, чтобы начать удерживание кнопки."
+   "Сделайте долгое нажатие по экрану для удерживания кнопки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
@@ -5481,23 +5481,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
-   "Время удерживания, необходимое для долгого нажатия (тапа)."
+   "Время удерживания, необходимое для долгого нажатия."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Перетаскивание двойным тапом"
+   "Перетаскивать двойным нажатием"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Сделайте двойной тап по экрану для удерживания кнопки после второго касания. Добавляет задержку к кликам мыши."
+   "Дважды коснитесь экрана для удерживания кнопки после второго нажатия. Добавляет задержку к кликам мыши."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   "Задержка двойного тапа (мс)"
+   "Задержка двойного нажатия (мс)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   "Допустимая задержка между касаниями для срабатывания двойного тапа."
+   "Допустимая задержка между касаниями для обработки двойного нажатия."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
