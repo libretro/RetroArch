@@ -220,6 +220,7 @@ typedef struct rcheevos_locals_t
 
 #ifdef HAVE_RC_CLIENT
    bool hardcore_allowed;             /* prevents enabling hardcore if illegal settings detected */
+   bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */
 #else
 
 #ifdef HAVE_GFX_WIDGETS

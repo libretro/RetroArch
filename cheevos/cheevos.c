@@ -108,6 +108,7 @@ static rcheevos_locals_t rcheevos_locals =
 #endif
 #ifdef HAVE_RC_CLIENT
    true, /* hardcore_allowed */
+   false,/* hardcore_being_enabled */
 #else
  #ifdef HAVE_GFX_WIDGETS
    0,    /* active_lboard_trackers */
@@ -1194,7 +1195,7 @@ bool rcheevos_hardcore_active(void)
 
    /* if we're trying to enable hardcore, pretend it's on so the caller can decide to disable
     * it (by calling rcheevos_pause_hardcore) before we actually turn it on. */
-   return rcheevos_locals.hardcore_allowed;
+   return rcheevos_locals.hardcore_being_enabled;
 #else
    return rcheevos_locals.hardcore_active;
 #endif
@@ -1532,6 +1533,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
    if (!was_enabled)
    {
 #ifdef HAVE_RC_CLIENT
+      locals->hardcore_being_enabled = true;
       locals->hardcore_allowed = true;
 #else
       /* Activate hardcore */
@@ -1542,7 +1544,10 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       rcheevos_validate_config_settings();
 #ifdef HAVE_RC_CLIENT
       if (!locals->hardcore_allowed)
+      {
+         locals->hardcore_being_enabled = false;
          return;
+      }
 #else
       if (!locals->hardcore_active)
          return;
@@ -1553,8 +1558,11 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       cheat_manager_apply_cheats();
  #ifdef HAVE_RC_CLIENT
       if (!locals->hardcore_allowed)
+      {
+         locals->hardcore_being_enabled = false;
          return;
- #else
+      }
+#else
       if (!locals->hardcore_active)
          return;
  #endif
@@ -1596,6 +1604,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
       }
 
 #ifdef HAVE_RC_CLIENT
+      locals->hardcore_being_enabled = false;
       rc_client_set_hardcore_enabled(locals->client, 1);
 #endif
    }
