@@ -1408,6 +1408,18 @@ MSG_HASH(
    "Meny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB er et RetroArch grafisk grensesnitt som ligner en 7. generasjons konsoll-meny. Den kan støtte de samme funksjonene som Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone er det standard grafiske grensesnittet for RetroArch på de fleste plattformer. Den er optimalisert for navigasjon med en spillkontroller."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "RGUI er et enkelt innebygd grafisk grensesnitt for RetroArch. Den har det laveste ytelseskravet av menydrivere, og kan brukes på skjermer med lav oppløsning."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Opptak"
    )
@@ -1596,6 +1608,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Bla gjennom disse valgene for å justere \"porch\" innstillingene for å endre bildestørrelsen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Bruk meny med høy oppløsning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -5226,12 +5242,24 @@ MSG_HASH(
    "Skjermoppløsning: Standard"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Skjermoppløsning: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Skjermoppløsning: %dx%d - %s"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
    "Aktiverer: Standard"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
    "Tilbakestiller til: Standard"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Velg visningsmodus (Omstart kreves)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,

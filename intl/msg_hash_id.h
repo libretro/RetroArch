@@ -966,7 +966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   "Perangkat Keras Peningkatan"
+   "Peranti Keras Peningkat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
@@ -1268,10 +1268,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Stik Kendali"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "Kandar stik kendali yang dipilih. (Perlu Mulai ulang)"
+   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Driver Video yang digunakan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Kandar video DRM biasa. Ini kandar video aras rendah dengan libdrm untuk penskalaan peranti keras dengan hamparan GPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "Kandar OpenVG. Menggunakan API grafis vektor 2D bepercepatan peranti keras OpenVG."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1310,6 +1322,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    "Driver Lokasi yang digunakan."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Kandar menu yang dipilih. (Perlu Mulai ulang)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1577,6 +1593,10 @@ MSG_HASH(
    "Pilih layar tampilan mana yang akan digunakan."
    )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimalkan untuk Wii U GamePad (Perlu Mulai Ulang)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1842,6 +1862,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Pangkas Lebihan Pindai (Perlu Mulai Ulang)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2289,6 +2313,10 @@ MSG_HASH(
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Nonaktifkan Hotkey Windows (Perlu Mulai Ulang)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Kombinasi tombil Win-key hanya tersedia di aplikasi."
    )
@@ -2505,6 +2533,10 @@ MSG_HASH(
    "Tutup Konten"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   "Mengulang konten saat ini dari awal mula lagi."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
    "Gerak Lambat (Mati/Nyala)"
    )
@@ -2619,6 +2651,10 @@ MSG_HASH(
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "Konteks Bagi-Bagi Peranti Keras"
+   )
 #ifndef HAVE_DYNAMIC
 #endif
 MSG_HASH(
@@ -2846,6 +2882,14 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Tampilkan 'Mulai Ulang'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Menampilkan opsi mulai ulang konten."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
    "Tampilkan 'Mulai Siar Alir'"
@@ -3400,6 +3444,14 @@ MSG_HASH(
 /* Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Mulai Ulang"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "Mengulang konten dari awal mula."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tutup Konten"
    )
@@ -3463,9 +3515,17 @@ MSG_HASH(
 
 /* Quick Menu > Cheats */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   "Perubahan cheat akan diterapkan."
+   )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "Mulai atau Ulangi Cari Cheat"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
@@ -3501,6 +3561,10 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   "Perubahan pada setelan pencorak akan diterapkan. Gunakan ini jika ingin mengubah jumlah laluan pencorak, penyaringan, skala FBO, dll."
+   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -3650,9 +3714,17 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Urut Daftar Main Setelah Pemenggalan Nama (Perlu Mulai Ulang)"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Ikon Daftar Main (Perlu Mulai Ulang)"
+   )
 
 /* MaterialUI: Settings Options */
 
@@ -3724,6 +3796,10 @@ MSG_HASH(
    "Galat Jejaring"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   "Mohon mulai ulang program untuk menerapkan perubahan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,
    "Hentikan"
    )
@@ -3766,6 +3842,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
    "(dipisah spasi; termasuk semua secara bawaan)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+   "RetroArch berhasil diperbarui. Mohon mulai ulang aplikasi untuk menerapkan perubahan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_REMOVE,
@@ -4008,6 +4088,10 @@ MSG_HASH(
    "Cakram telah dikeluarkan."
    )
 MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Mengulang perekaman karena reinsial kandar."
+   )
+MSG_HASH(
    MSG_REWINDING,
    "Bergerak mundur."
    )
@@ -4075,7 +4159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "Jalankan Ulang RetroArch"
+   "Mulai Ulang RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
@@ -4115,6 +4199,10 @@ MSG_HASH(
 #endif
 #ifdef HAVE_ODROIDGO2
 #else
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Penskalaan konteks peranti keras (jika ada)."
+   )
 #endif
 #ifdef _3DS
 MSG_HASH(
