@@ -240,7 +240,7 @@
 #include "lakka.h"
 #endif
 
-#if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
+#if TARGET_OS_IPHONE
 #include "JITSupport.h"
 #endif
 
@@ -3502,7 +3502,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
-#if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
+#if TARGET_OS_IPHONE
             *(bool*)data             = jit_available();
 #else
             *(bool*)data             = true;

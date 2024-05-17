@@ -1471,7 +1471,7 @@ bool config_overlay_enable_default(void)
 {
    if (g_defaults.overlay_set)
       return g_defaults.overlay_enable;
-#if defined(RARCH_MOBILE)
+#if defined(RARCH_MOBILE) && !TARGET_OS_TV
    return true;
 #else
    return false;

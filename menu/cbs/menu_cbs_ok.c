@@ -1980,8 +1980,11 @@ static int file_load_with_detect_core_wrapper(
 
 #if IOS
       char tmp_path[PATH_MAX_LENGTH];
-      fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
-      menu_path = tmp_path;
+      if (menu_path)
+      {
+         fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+         menu_path = tmp_path;
+      }
 #endif
 
       if (!string_is_empty(menu_path))
