@@ -543,6 +543,11 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
          {
             const char *content_path        = (state->state & STATE_RELOAD) ?
                data->current.content_path : data->content_paths.elems[0].data;
+#if IOS
+            char tmp[PATH_MAX_LENGTH];
+            fill_pathname_expand_special(tmp, content_path, sizeof(tmp));
+            content_path = tmp;
+#endif
 #ifdef HAVE_DYNAMIC
             content_ctx_info_t content_info = {0};
 

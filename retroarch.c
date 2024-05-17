@@ -8371,7 +8371,7 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
 
    for (i = 0; i < ARRAY_SIZE(pairs); i++)
    {
-      if (strcasestr(iso639, pairs[i].iso639))
+      if (string_starts_with_case_insensitive(iso639, pairs[i].iso639))
       {
          lang = pairs[i].lang;
          break;
