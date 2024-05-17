@@ -1125,6 +1125,8 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       rdir->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
    else
       rdir->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+#else
+   (void)include_hidden;
 #endif
 
    if (rdir->directory && !dirent_check_error(rdir))
