@@ -1763,7 +1763,7 @@ enum retro_mod
 /**
  * Gets an interface that the core can use for raw MIDI I/O.
  *
- * @param[out] data <tt>struct retro_midi_interface **</tt>.
+ * @param[out] data <tt>struct retro_midi_interface *</tt>.
  * Pointer to the MIDI interface.
  * May be \c NULL.
  * @return \c true if the environment call is available,
