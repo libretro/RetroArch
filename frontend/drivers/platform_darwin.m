@@ -721,7 +721,11 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 
    if (list->size == 0)
       menu_entries_append(list,
+#if TARGET_OS_TV
+            "~/Library/Caches/RetroArch",
+#else
             "~/Documents/RetroArch",
+#endif
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
@@ -811,6 +815,8 @@ static enum retro_language frontend_darwin_get_user_language(void)
    CFArrayRef langs = CFLocaleCopyPreferredLanguages();
    CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
    CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   /* iOS and OS X only support the language ID syntax consisting of a language designator and optional region or script designator. */
+   string_replace_all_chars(s, '-', '_');
    return retroarch_get_language_from_iso(s);
 }
 

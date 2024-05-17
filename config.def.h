@@ -1413,7 +1413,14 @@
 #define DEFAULT_FASTFORWARD_FRAMESKIP true
 
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
+#ifdef IOS
+/* FIXME: coreaudio will cause the main thread to hang on backgrounding, causing
+ * a crash. the fix is to turn off audio synchronization. with that off, we need
+ * this on */
+#define DEFAULT_VRR_RUNLOOP_ENABLE true
+#else
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
+#endif
 
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 #define DEFAULT_RUN_AHEAD_FRAMES 1
