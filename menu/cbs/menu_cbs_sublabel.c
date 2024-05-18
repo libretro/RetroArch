@@ -478,6 +478,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_index,               MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_index,                MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_adc_type,                   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_reservation_type,    MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_reserved_device_name, MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_all,                   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_save_autoconfig,            MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_defaults,              MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS)
@@ -5645,6 +5647,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             MENU_ENUM_LABEL_INPUT_DEVICE_INDEX,
             NULL
          },*/
+         {
+            MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE,
+            action_bind_sublabel_input_device_reservation_type
+         },
+         {
+            MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+            action_bind_sublabel_input_device_reserved_device_name
+         },
          {
             MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
             action_bind_sublabel_input_mouse_index

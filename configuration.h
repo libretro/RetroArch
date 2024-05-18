@@ -151,6 +151,7 @@ typedef struct settings
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
+      unsigned input_device_reservation_type[MAX_USERS];
 
       unsigned input_remap_ports[MAX_USERS];
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
@@ -475,6 +476,8 @@ typedef struct settings
 #ifdef ANDROID
       char input_android_physical_keyboard[255];
 #endif
+
+      char input_reserved_devices[MAX_USERS][255];
 
       char audio_device[255];
       char camera_device[255];

@@ -292,6 +292,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE;
 #ifdef ANDROID
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD;
@@ -843,6 +845,15 @@ int generic_action_ok_displaylist_push(
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
 #ifdef ANDROID
@@ -7310,6 +7321,65 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_input_select_reserved_device(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+    char* device;
+    const char *no_device;
+    const char *reserved_device_name;
+    enum msg_hash_enums enum_idx;
+    rarch_setting_t *setting     = NULL;
+    settings_t *settings         = config_get_ptr();
+    const char *menu_path        = NULL;
+    struct menu_state *menu_st   = menu_state_get_ptr();
+    unsigned user;
+
+    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+    enum_idx = (enum msg_hash_enums)atoi(menu_path);
+    setting  = menu_setting_find_enum(enum_idx);
+    user     = enum_idx - MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME;
+
+    if (!setting)
+        return -1;
+
+    reserved_device_name = path;
+    no_device = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+
+    if (string_is_equal(reserved_device_name, no_device))
+       settings->arrays.input_reserved_devices[user][0] = '\0';
+    else
+    {
+       int i;
+       for (i = 0; i < MAX_INPUT_DEVICES; i++)
+       {
+          const char* device_name = input_config_get_device_display_name(i)
+                                    ? input_config_get_device_display_name(i)
+                                    : input_config_get_device_name(i);
+
+          if (string_is_equal(device_name, reserved_device_name))
+          {
+             uint16_t vendor_id = input_config_get_device_vid(i);
+             uint16_t product_id = input_config_get_device_pid(i);
+             snprintf(settings->arrays.input_reserved_devices[user],
+                   sizeof(settings->arrays.input_reserved_devices[user]),
+                   "%04x:%04x %s",
+                   vendor_id, product_id, reserved_device_name);
+             break;
+          }
+       }
+    }
+    settings->modified = true;
+
+    command_event(CMD_EVENT_REINIT, NULL);
+
+    /* Refresh menu */
+    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                     | MENU_ST_FLAG_PREVENT_POPULATE;
+
+    return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+
 #ifdef ANDROID
 static int action_ok_push_dropdown_item_input_select_physical_keyboard(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -9241,6 +9311,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_device_type);
             break;
+          case MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE:
+              BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_select_reserved_device);
+              break;
 #ifdef ANDROID
           case MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD:
               BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_select_physical_keyboard);
