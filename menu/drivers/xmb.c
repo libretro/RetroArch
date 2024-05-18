@@ -3532,22 +3532,22 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             option in Input # Binds */
          input_id++;
 #endif
-         if (type == input_id + 1)
+         if (type >= input_id + 1 && type <= input_id + 3)
             return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
-         if (type == input_id + 2)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
-         if (type == input_id + 3)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
          if (type == input_id + 4)
-            return xmb->textures.list[XMB_TEXTURE_RELOAD];
+            return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
          if (type == input_id + 5)
+            return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
+         if (type == input_id + 6)
+            return xmb->textures.list[XMB_TEXTURE_RELOAD];
+         if (type == input_id + 7)
             return xmb->textures.list[XMB_TEXTURE_SAVING];
-         if ((type > (input_id + 29)) && (type < (input_id + 41)))
+         if ((type > (input_id + 31)) && (type < (input_id + 43)))
             return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
-         if (type == input_id + 41)
+         if (type == input_id + 43)
             return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
          /* Align to use the same code of Quickmenu controls */
-         input_id = input_id + 6;
+         input_id = input_id + 8;
       }
       else
       {

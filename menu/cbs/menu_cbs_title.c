@@ -334,6 +334,16 @@ static int action_get_title_dropdown_item(
 								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
 							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
 
+						   /* Device Reservation Type */
+						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE) &&
+								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST))
+							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE;
+
+						   /* Reserved Device Name */
+						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME) &&
+								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME_LAST))
+							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME;
+
 						   /* Mouse Index */
 						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
 								   (enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST))
@@ -1832,6 +1842,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,                        action_get_title_dropdown_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,                        action_get_title_dropdown_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,                    action_get_title_dropdown_input_description_kbd},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE,             action_get_title_dropdown_item},
 #ifdef ANDROID
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,           action_get_title_dropdown_item},
 #endif

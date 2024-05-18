@@ -184,6 +184,10 @@
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_string(a, b, c, d, e, f, g, h, i, j, k, l)
 
+#define CONFIG_STRING_ALT(a, b, c, d, e, f, g, h, i, j, k, l) \
+   if (SETTINGS_LIST_APPEND(a, b)) \
+      config_string_alt(a, b, c, d, e, f, g, h, i, j, k, l)
+
 #define CONFIG_FLOAT(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_float(a, b, c, d, e, f, g, h, i, j, k, l)
@@ -2398,6 +2402,26 @@ static void config_string(
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, SHORT_enum_idx);
 }
 
+static void config_string_alt(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      char *target, size_t len,
+      char *label,
+      char* shortname,
+      const char *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler)
+{
+   (*list)[list_info->index++] = setting_string_setting(ST_STRING,
+         label,
+         shortname,
+         target, (unsigned)len, default_value, "",
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler, true);
+}
+
 static void config_string_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -2749,6 +2773,20 @@ static int setting_action_ok_select_physical_keyboard(
     return 0;
 }
 #endif
+
+static int setting_action_ok_select_reserved_device(
+        rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+    char enum_idx[16];
+    if (!setting)
+        return -1;
+    snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+    generic_action_ok_displaylist_push(
+            enum_idx, /* we will pass the enumeration index of the string as a path */
+            NULL, NULL, 0, idx, 0,
+            ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE);
+    return 0;
+}
 
 #if !defined(RARCH_CONSOLE)
 static int setting_string_action_ok_audio_device(
@@ -5705,6 +5743,27 @@ static int setting_action_left_input_device_index(
    return 0;
 }
 
+static int setting_action_left_input_device_reservation_type(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
+
+   if (!setting || !settings)
+      return -1;
+
+   p = &settings->uints.input_device_reservation_type[setting->index_offset];
+
+   if (*p)
+      (*p)--;
+   else
+      *p = INPUT_DEVICE_RESERVATION_LAST - 1;
+
+   settings->modified = true;
+   return 0;
+}
+
+
 static int setting_action_left_input_mouse_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -7649,6 +7708,32 @@ static int setting_action_start_input_device_index(rarch_setting_t *setting)
    return 0;
 }
 
+static int setting_action_start_input_device_reservation_type(rarch_setting_t *setting)
+{
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting || !settings)
+      return -1;
+
+   configuration_set_uint(settings,
+         settings->uints.input_device_reservation_type[setting->index_offset],
+         INPUT_DEVICE_RESERVATION_NONE);
+   return 0;
+}
+
+static int setting_action_start_input_device_reserved_device_name(rarch_setting_t *setting)
+{
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting || !settings)
+      return -1;
+
+   configuration_set_string(settings,
+         settings->arrays.input_reserved_devices[setting->index_offset],
+         "");
+   return 0;
+}
+
 static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 {
    video_viewport_t vp;
@@ -7913,6 +7998,26 @@ static int setting_action_right_input_device_index(
    return 0;
 }
 
+static int setting_action_right_input_device_reservation_type(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
+
+   if (!setting || !settings)
+      return -1;
+
+   p = &settings->uints.input_device_reservation_type[setting->index_offset];
+
+   if (*p < INPUT_DEVICE_RESERVATION_LAST - 1)
+      (*p)++;
+   else
+      *p = 0;
+
+   settings->modified = true;
+   return 0;
+}
+
 static int setting_action_right_input_mouse_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -8016,6 +8121,50 @@ static void get_string_representation_input_device_index(
 
    if (string_is_empty(s))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+}
+
+static void get_string_representation_input_device_reservation_type(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned map              = 0;
+
+   if (!setting || !settings)
+      return;
+
+   map = settings->uints.input_device_reservation_type[setting->index_offset];
+
+   if (map == INPUT_DEVICE_RESERVATION_NONE)
+   {
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE), len);
+   }
+   else if (map == INPUT_DEVICE_RESERVATION_PREFERRED)
+   {
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED), len);
+   }
+   else if (map == INPUT_DEVICE_RESERVATION_RESERVED)
+   {
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED), len);
+   }
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+}
+
+static void setting_get_string_representation_input_device_reserved_device_name(
+        rarch_setting_t *setting,
+        char *s, size_t len)
+{
+    settings_t *settings = config_get_ptr();
+    int dev_vendor_id;
+    int dev_product_id;
+
+    if (!setting)
+        return;
+
+    if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
+        strlcpy(s, setting->value.target.string, len);
+    else
+        strlcpy(s, &setting->value.target.string[10], len);
 }
 
 static void get_string_representation_input_mouse_index(
@@ -9331,6 +9480,8 @@ static bool setting_append_list_input_player_options(
 
    {
       static char device_index[MAX_USERS][64];
+      static char device_reservation_type[MAX_USERS][64];
+      static char device_reserved_device[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
       static char analog_to_digital[MAX_USERS][64];
       static char bind_all[MAX_USERS][64];
@@ -9338,6 +9489,8 @@ static bool setting_append_list_input_player_options(
       static char bind_defaults[MAX_USERS][64];
 
       static char label_device_index[MAX_USERS][64];
+      static char label_device_reservation_type[MAX_USERS][64];
+      static char label_device_reserved_device[MAX_USERS][64];
       static char label_mouse_index[MAX_USERS][64];
       static char label_analog_to_digital[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
@@ -9350,17 +9503,21 @@ static bool setting_append_list_input_player_options(
 #endif
 
       snprintf(analog_to_digital[user],        sizeof(analog_to_digital[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), user + 1);
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),     user + 1);
       snprintf(device_index[user],             sizeof(device_index[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),            user + 1);
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX),                user + 1);
+      snprintf(device_reservation_type[user], sizeof(device_reservation_type[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE),     user + 1);
+      snprintf(device_reserved_device[user],  sizeof(device_reserved_device[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME), user + 1);
       snprintf(mouse_index[user],              sizeof(mouse_index[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),             user + 1);
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),                 user + 1);
       snprintf(bind_all[user],                 sizeof(bind_all[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),          user + 1);
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),              user + 1);
       snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),   user + 1);
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),       user + 1);
       snprintf(bind_defaults[user],            sizeof(bind_defaults[user]),
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),     user + 1);
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),         user + 1);
 
       strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
@@ -9368,6 +9525,12 @@ static bool setting_append_list_input_player_options(
       strlcpy(label_device_index[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX),
             sizeof(label_device_index[user]));
+      strlcpy(label_device_reservation_type[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE),
+            sizeof(label_device_reservation_type[user]));
+      strlcpy(label_device_reserved_device[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME),
+            sizeof(label_device_reserved_device[user]));
       strlcpy(label_mouse_index[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
             sizeof(label_mouse_index[user]));
@@ -9460,6 +9623,54 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_INDEX + user));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_device_reservation_type[user],
+            device_reservation_type[user],
+            label_device_reservation_type[user],
+            INPUT_DEVICE_RESERVATION_NONE,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_device_reservation_type;
+      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_device_reservation_type;
+      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_device_reservation_type;
+      (*list)[list_info->index - 1].action_select = &setting_action_right_input_device_reservation_type;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].get_string_representation =
+            &get_string_representation_input_device_reservation_type;
+      menu_settings_list_current_add_range(list, list_info, 0, INPUT_DEVICE_RESERVATION_LAST - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE + user));
+
+      CONFIG_STRING_ALT(
+            list, list_info,
+            settings->arrays.input_reserved_devices[user],
+            sizeof(settings->arrays.input_reserved_devices[user]),
+            device_reserved_device[user],
+            label_device_reserved_device[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_select_reserved_device;
+      (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_input_device_reserved_device_name;
+      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_device_reserved_device_name;
+
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME + user));
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, 
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME));
 
       CONFIG_UINT_ALT(
             list, list_info,

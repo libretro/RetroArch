@@ -44,6 +44,7 @@
 #endif
 
 #define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
+#define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
@@ -71,8 +72,8 @@ typedef struct
 
 static input_test_step_t input_test_steps[MAX_TEST_STEPS];
 
-static unsigned current_frame         = 0;
-static unsigned next_teststep_frame   = 0;
+static uint32_t current_frame         = 0;
+static uint32_t next_teststep_frame   = 0;
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
 static uint32_t input_state_validated = 0;
@@ -286,20 +287,35 @@ static const char *test_joypad_name(unsigned pad)
    if (pad >= MAX_USERS || string_is_empty(test_joypads[pad].name))
       return NULL;
 
-   return test_joypads[pad].name;
+   if (strstr(test_joypads[pad].name, ") "))
+      return strstr(test_joypads[pad].name, ") ") + 2;
+   else
+      return test_joypads[pad].name;
 }
-
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
 {
+   int vid = 0;
+   int pid = 0;
+
+   sscanf(strstr(test_joypads[autoconf_pad].name, "(") + 1, "%04x:%04x", &vid, &pid);
+   RARCH_DBG("[Test input driver]: Autoconf vid/pid %x:%x\n",vid,pid);
+
    input_autoconfigure_connect(
          test_joypad_name(autoconf_pad),
          NULL,
          "test",
          autoconf_pad,
-         0,
-         0
+         vid,
+         pid
          );
+}
+
+static void test_joypad_autodetect_remove(unsigned autoconf_pad)
+{
+   RARCH_DBG("[Test input driver]: Autoremove port %d\n", autoconf_pad);
+
+   input_autoconfigure_disconnect(autoconf_pad, test_joypad_name(autoconf_pad));
 }
 
 static void *test_joypad_init(void *data)
@@ -403,6 +419,11 @@ static void test_joypad_poll(void)
          {
             test_joypads[input_test_steps[i].param_num].name = input_test_steps[i].param_str;
             test_joypad_autodetect_add(input_test_steps[i].param_num);
+            input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER)
+         {
+            test_joypad_autodetect_remove(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
          }
          else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST &&
