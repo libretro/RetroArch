@@ -22,6 +22,7 @@
     <None Include="cores\$(Platform)\cores\*.lck" />
     <None Include="cores\$(Platform)\*.dll" />
     <None Include="MESA\$(Platform)\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
     <None Include="RetroArch-msvcUWP_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
