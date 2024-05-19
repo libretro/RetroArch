@@ -813,6 +813,10 @@ float cocoa_screen_get_native_scale(void)
             ret              = screen.scale;
     }
 
+#if TARGET_OS_TV
+    if (ret < 1.0f)
+       ret = 1.0f;
+#endif
     return ret;
 }
 #endif
