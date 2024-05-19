@@ -274,6 +274,10 @@
       <DeploymentContent>true</DeploymentContent>
       <Link>cores\%(Filename)%(Extension)</Link>
     </None>
+    <None Include="cores\$(Platform)\cores\*.lck">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>cores\%(Filename)%(Extension)</Link>
+    </None>
     <None Include="cores\$(Platform)\*.dll">
       <DeploymentContent>true</DeploymentContent>
       <Link>%(Filename)%(Extension)</Link>
