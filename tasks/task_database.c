@@ -197,7 +197,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
    if (detect_system(fd, &system_name, filename) >= 1)
    {
       size_t system_len = strlen(system_name);
-      if (string_starts_with_size(system_name, "Sony", system_len))
+      if (string_starts_with_size(system_name, "Sony", STRLEN_CONST("Sony")))
       {
          if (string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
@@ -215,7 +215,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
                return 1;
          }
       }
-      else if (string_starts_with_size(system_name, "Nintendo", system_len))
+      else if (string_starts_with_size(system_name, "Nintendo", STRLEN_CONST("Nintendo")))
       {
          if (string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
@@ -228,7 +228,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
                return 1;
          }
       }
-      else if (string_starts_with_size(system_name, "Sega", system_len))
+      else if (string_starts_with_size(system_name, "Sega", STRLEN_CONST("Sega")))
       {
          if (string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
