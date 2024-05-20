@@ -22,7 +22,7 @@ function debug() {
 if [ -z "$PROJECT_DIR" ] ; then
     APPLE_DIR=$(dirname $0)
 else
-    APPLE_DIR="${PROJECT_DIR}/pkg/apple"
+    APPLE_DIR="${PROJECT_DIR}"
 fi
 
 if [ "$1" = "-n" -o "$1" = "--dry-run" ] ; then
@@ -204,6 +204,12 @@ else
                 vircon32
                 #melondsds
                 2048
+                mu
+                dosbox_pure
+                pokemini
+                nxengine
+                prboom
+                mednafen_ngp
             )
             for dylib in "${exports[@]}" ; do
                 find_dylib $dylib
