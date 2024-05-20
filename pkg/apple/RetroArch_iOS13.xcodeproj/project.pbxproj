@@ -201,10 +201,10 @@
 		0712A7742B807AE400C9765F /* ContentProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ContentProvider.h; sourceTree = "<group>"; };
 		0712A7752B807AE400C9765F /* ContentProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ContentProvider.m; sourceTree = "<group>"; };
 		0712A7772B807AE400C9765F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0712A77F2B807F8F00C9765F /* RetroArchTopShelfExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTopShelfExtension.entitlements; sourceTree = "<group>"; };
 		0718BC5F2ABBA807001F2CBE /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		073DB2892B8706490001BA32 /* RetroArchTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTV.entitlements; sourceTree = "<group>"; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
+		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MoltenVK.framework; path = tvOS/Frameworks/MoltenVK.framework; sourceTree = "<group>"; };
@@ -560,7 +560,6 @@
 		0712A7732B807AE400C9765F /* RetroArchTopShelfExtension */ = {
 			isa = PBXGroup;
 			children = (
-				0712A77F2B807F8F00C9765F /* RetroArchTopShelfExtension.entitlements */,
 				0712A7742B807AE400C9765F /* ContentProvider.h */,
 				0712A7752B807AE400C9765F /* ContentProvider.m */,
 				0712A7772B807AE400C9765F /* Info.plist */,
@@ -1216,6 +1215,7 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */,
 				0789FC2D2A07845300D042B7 /* Packages */,
 				96AFAE9C16C1D976009DE44C /* Main Entry Core */,
 				92B9EAE024E04F8800E6CFB2 /* Sources */,
@@ -1566,7 +1566,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./make-frameworks.sh\n#./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
+			shellScript = "if [ -n \"${APPSTORE_BUILD}\" ] ; then\n    rm -f ${SRCROOT}/iOS/modules/*.dylib\n    ./update-cores.sh appstore\n    ./rebuild-assets.sh -d -i -o -x\nfi\n\n./make-frameworks.sh\n#./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
 		};
 		92CC057521FE2D4900FF79F0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1584,7 +1584,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./make-frameworks.sh tvos\n#./code-sign-cores.sh tvos\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
+			shellScript = "if [ -n \"${APPSTORE_BUILD}\" ] ; then\n    rm -f ${SRCROOT}/tvOS/modules/*.dylib\n    ./update-cores.sh --tvos appstore\n    ./rebuild-assets.sh -d -i -o -x\nfi\n\n./make-frameworks.sh tvos\n#./code-sign-cores.sh tvos\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1710,19 +1710,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_ENTITLEMENTS = RetroArchTopShelfExtension/RetroArchTopShelfExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_CODE_SIGN_ENTITLEMENTS)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchTopShelfExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchTopShelfExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch.RetroArchTopShelfExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER).RetroArchTopShelfExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
 				SKIP_INSTALL = YES;
@@ -1737,19 +1738,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_ENTITLEMENTS = RetroArchTopShelfExtension/RetroArchTopShelfExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_CODE_SIGN_ENTITLEMENTS)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchTopShelfExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchTopShelfExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch.RetroArchTopShelfExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER).RetroArchTopShelfExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
 				SKIP_INSTALL = YES;
@@ -1783,8 +1785,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/iOS/Frameworks",
@@ -1822,7 +1822,7 @@
 				);
 				"OTHER_CFLAGS[sdk=iphoneos*]" = "$(inherited)";
 				"OTHER_CFLAGS[sdk=iphonesimulator*]" = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArch;
 				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 			};
@@ -1870,7 +1870,7 @@
 				);
 				"OTHER_CFLAGS[sdk=iphoneos*]" = "$(inherited)";
 				"OTHER_CFLAGS[sdk=iphonesimulator*]" = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArch;
 				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 			};
@@ -1881,6 +1881,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_CODE_SIGN_ENTITLEMENTS)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/Frameworks",
@@ -1911,11 +1912,10 @@
 					"$(PROJECT_DIR)/tvOS/modules",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -1924,6 +1924,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_CODE_SIGN_ENTITLEMENTS)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/Frameworks",
@@ -1954,11 +1955,10 @@
 					"$(PROJECT_DIR)/tvOS/modules",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
@@ -1979,7 +1979,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER).RetroArchWidgetExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -2003,7 +2003,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER).RetroArchWidgetExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -2038,7 +2038,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1.18.0;
+				CURRENT_PROJECT_VERSION = 1;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -2058,6 +2058,7 @@
 				HEADER_SEARCH_PATHS = ../;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/iOS/modules",
@@ -2162,6 +2163,9 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
+				TVOS_CODE_SIGN_ENTITLEMENTS = "";
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -2191,7 +2195,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1.18.0;
+				CURRENT_PROJECT_VERSION = 1;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2210,6 +2214,7 @@
 				HEADER_SEARCH_PATHS = ../;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/iOS/modules",
@@ -2314,6 +2319,9 @@
 				SRCBASE = "$(SRCROOT)/../..";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
+				TVOS_CODE_SIGN_ENTITLEMENTS = "";
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
