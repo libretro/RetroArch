@@ -46,7 +46,11 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
          "\n",    STRLEN_CONST("\n"),
          "\n \n", STRLEN_CONST("\n \n"));
 
-   strlcpy(s, temp, len);
+   if (temp)
+   {
+      strlcpy(s, temp, len);
+      free(temp);
+   }
    return ret;
 }
 
