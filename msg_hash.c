@@ -49,7 +49,7 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    if (temp)
    {
       strlcpy(s, temp, len);
-      free(temp);
+      free((void*)temp);
    }
    return ret;
 }
