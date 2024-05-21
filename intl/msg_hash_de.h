@@ -9443,7 +9443,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Voreinstellung vor aktuell gelandende Voreinstellungen stellen."
+   "Voreinstellung vor aktuell geladene Voreinstellung stellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
@@ -9451,7 +9451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Voreinstellung hinter aktuell gelandende Voreinstellungen hängen."
+   "Voreinstellung hinter aktuell geladene Voreinstellung hängen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
