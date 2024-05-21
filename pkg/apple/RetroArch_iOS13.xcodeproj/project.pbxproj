@@ -231,7 +231,7 @@
 		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
 		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
-		926C77D721FD1E6500103EDE /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		926C77D721FD1E6500103EDE /* RetroArchTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		926C77E221FD1E6700103EDE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		926C77E421FD1E6700103EDE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		926C77EC21FD261600103EDE /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.1.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
@@ -1240,7 +1240,7 @@
 			isa = PBXGroup;
 			children = (
 				9204BE2B1D319EF300BD49DB /* RetroArch.app */,
-				926C77D721FD1E6500103EDE /* RetroArch.app */,
+				926C77D721FD1E6500103EDE /* RetroArchTV.app */,
 				9292D6E128F549D000E47A75 /* RetroArchWidgetExtensionExtension.appex */,
 				0712A7702B807AE400C9765F /* RetroArchTopShelfExtension.appex */,
 			);
@@ -1379,7 +1379,7 @@
 				073734A52A093ACA00BF7397 /* AltKit */,
 			);
 			productName = RetroArchTV;
-			productReference = 926C77D721FD1E6500103EDE /* RetroArch.app */;
+			productReference = 926C77D721FD1E6500103EDE /* RetroArchTV.app */;
 			productType = "com.apple.product-type.application";
 		};
 		9292D6E028F549D000E47A75 /* RetroArchWidgetExtensionExtension */ = {
@@ -1913,7 +1913,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_NAME = RetroArchTV;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
 			};
@@ -1956,7 +1956,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = RetroArch;
+				PRODUCT_NAME = RetroArchTV;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
 			};

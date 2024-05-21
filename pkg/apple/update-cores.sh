@@ -202,7 +202,7 @@ else
                 virtualxt
                 geolith
                 vircon32
-                #melondsds
+                melondsds
                 2048
                 mu
                 dosbox_pure
