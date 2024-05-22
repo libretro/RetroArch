@@ -26,6 +26,7 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
+#import <AVFoundation/AVFoundation.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -820,7 +821,7 @@ static enum retro_language frontend_darwin_get_user_language(void)
    return retroarch_get_language_from_iso(s);
 }
 
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+#if defined(OSX)
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -901,10 +902,6 @@ static bool accessibility_speak_macos(int speed,
    char* language_speaker = accessibility_mac_language_code(voice);
    char* speeds[10]       = {"80",  "100", "125", "150", "170", "210",
                              "260", "310", "380", "450"};
-   if (speed < 1)
-      speed               = 1;
-   else if (speed > 10)
-      speed               = 10;
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -954,7 +951,59 @@ static bool accessibility_speak_macos(int speed,
    }
    return true;
 }
+
 #endif
+
+static bool frontend_darwin_is_narrator_running(void)
+{
+   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+      return true;
+#if OSX
+   return is_narrator_running_macos();
+#else
+   return false;
+#endif
+}
+
+static bool frontend_darwin_accessibility_speak(int speed,
+      const char* speak_text, int priority)
+{
+   if (speed < 1)
+      speed               = 1;
+   else if (speed > 10)
+      speed               = 10;
+
+   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+   {
+      static dispatch_once_t once;
+      static AVSpeechSynthesizer *synth;
+      dispatch_once(&once, ^{
+         synth = [[AVSpeechSynthesizer alloc] init];
+      });
+      if ([synth isSpeaking])
+      {
+         if (priority < 10)
+            return true;
+         else
+            [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+      }
+
+      AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
+      if (!utterance)
+         return false;
+      utterance.rate = (float)speed / 10.0f;
+      const char *language = get_user_language_iso639_1(false);
+      utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
+      [synth speakUtterance:utterance];
+      return true;
+   }
+
+#if defined(OSX)
+   return accessibility_speak_macos(speed, speak_text, priority);
+#else
+   return false;
+#endif
+}
 
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_env,         /* get_env */
@@ -987,13 +1036,8 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    frontend_darwin_get_user_language, /* get_user_language   */
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-   is_narrator_running_macos,       /* is_narrator_running */
-   accessibility_speak_macos,       /* accessibility_speak */
-#else
-   NULL,                            /* is_narrator_running */
-   NULL,                            /* accessibility_speak */
-#endif
+   frontend_darwin_is_narrator_running, /* is_narrator_running */
+   frontend_darwin_accessibility_speak, /* accessibility_speak */
    NULL,                            /* set_gamemode        */
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */
