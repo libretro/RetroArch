@@ -74,6 +74,10 @@
 #include "ui/drivers/cocoa/apple_platform.h"
 #endif
 
+#ifdef HAVE_LAKKA
+#include <time.h>
+#endif
+
 enum video_driver_enum
 {
    VIDEO_GL                 = 0,
