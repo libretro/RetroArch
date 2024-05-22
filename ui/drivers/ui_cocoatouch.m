@@ -120,13 +120,13 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
       if (!img)
       {
          RARCH_LOG("could not load %s\n", icon);
-         return NULL;
+         return 0;
       }
       NSData *png = UIImagePNGRepresentation(img);
       if (!png)
       {
          RARCH_LOG("could not get png for %s\n", icon);
-         return NULL;
+         return 0;
       }
 
       uintptr_t item;
@@ -373,6 +373,60 @@ enum
    }
 
    return [super _keyCommandForEvent:event];
+}
+#else
+- (void)handleUIPress:(UIPress *)press withEvent:(UIPressesEvent *)event down:(BOOL)down
+{
+   NSString       *ch = (NSString*)press.key.characters;
+   uint32_t character = 0;
+   uint32_t mod       = 0;
+   NSUInteger mods    = event.modifierFlags;
+
+   if (mods & UIKeyModifierAlphaShift)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (mods & UIKeyModifierShift)
+      mod |= RETROKMOD_SHIFT;
+   if (mods & UIKeyModifierControl)
+      mod |= RETROKMOD_CTRL;
+   if (mods & UIKeyModifierAlternate)
+      mod |= RETROKMOD_ALT;
+   if (mods & UIKeyModifierCommand)
+      mod |= RETROKMOD_META;
+   if (mods & UIKeyModifierNumericPad)
+      mod |= RETROKMOD_NUMLOCK;
+
+   if (ch && ch.length != 0)
+   {
+      unsigned i;
+      character = [ch characterAtIndex:0];
+
+      apple_input_keyboard_event(down,
+                                 (uint32_t)press.key.keyCode, 0, mod,
+                                 RETRO_DEVICE_KEYBOARD);
+
+      for (i = 1; i < ch.length; i++)
+         apple_input_keyboard_event(down,
+                                    0, [ch characterAtIndex:i], mod,
+                                    RETRO_DEVICE_KEYBOARD);
+   }
+
+   apple_input_keyboard_event(down,
+                              (uint32_t)press.key.keyCode, character, mod,
+                              RETRO_DEVICE_KEYBOARD);
+}
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+   for (UIPress *press in presses)
+      [self handleUIPress:press withEvent:event down:YES];
+   [super pressesBegan:presses withEvent:event];
+}
+
+- (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+   for (UIPress *press in presses)
+      [self handleUIPress:press withEvent:event down:NO];
+   [super pressesEnded:presses withEvent:event];
 }
 #endif
 
