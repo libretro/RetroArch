@@ -5503,6 +5503,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Допуск нажатия"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Отрегулируйте допустимый диапазон дрифта при обнаружении долгого нажатия или клика. Выражается в процентах меньшего разрешения экрана."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
