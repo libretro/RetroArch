@@ -391,7 +391,7 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
 {
    glslang_meta meta;
    struct string_list lines = {0};
-   
+
    if (!string_list_initialize(&lines))
       goto error;
 
@@ -457,7 +457,7 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
-#ifdef ENABLE_HLSL
+#ifdef HAVE_HLSL
             vs_compiler = new CompilerHLSL(output.vertex);
             ps_compiler = new CompilerHLSL(output.fragment);
 #endif
@@ -497,7 +497,7 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
-#ifdef ENABLE_HLSL
+#ifdef HAVE_HLSL
             {
                CompilerHLSL::Options options;
                CompilerHLSL*         vs = (CompilerHLSL*)vs_compiler;

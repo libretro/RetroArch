@@ -1843,10 +1843,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DENABLE_HLSL
-      GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
-   endif
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
    GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
@@ -1857,7 +1853,6 @@ else ifeq ($(HAVE_GLSLANG),1)
            $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
-           $(GLSLANG_HLSL_LIBS) \
            $(GLSLANG_SPIRV_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_LIBS)
