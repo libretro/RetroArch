@@ -4,7 +4,6 @@
 //
 //
 
-OTHER_CFLAGS = $(inherited) -DENABLE_HLSL
 OTHER_CFLAGS = $(inherited) -DFLAC__HAS_OGG=0
 OTHER_CFLAGS = $(inherited) -DGLSLANG_OSINCLUDE_UNIX
 OTHER_CFLAGS = $(inherited) -DHAVE_7ZIP
