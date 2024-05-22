@@ -119,7 +119,6 @@ public:
     bool relaxedErrors()    const { return (messages & EShMsgRelaxedErrors) != 0; }
     bool suppressWarnings() const { return (messages & EShMsgSuppressWarnings) != 0; }
     bool isReadingHLSL()    const { return (messages & EShMsgReadHlsl) == EShMsgReadHlsl; }
-    bool hlslEnable16BitTypes() const { return (messages & EShMsgHlslEnable16BitTypes) != 0; }
 
     TInfoSink& infoSink;
 
