@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "926C77D621FD1E6500103EDE"
-               BuildableName = "RetroArch.app"
+               BuildableName = "RetroArchTV.app"
                BlueprintName = "RetroArchTV"
                ReferencedContainer = "container:RetroArch_iOS13.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "926C77D621FD1E6500103EDE"
-            BuildableName = "RetroArch.app"
+            BuildableName = "RetroArchTV.app"
             BlueprintName = "RetroArchTV"
             ReferencedContainer = "container:RetroArch_iOS13.xcodeproj">
          </BuildableReference>
@@ -54,7 +54,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "926C77D621FD1E6500103EDE"
-            BuildableName = "RetroArch.app"
+            BuildableName = "RetroArchTV.app"
             BlueprintName = "RetroArchTV"
             ReferencedContainer = "container:RetroArch_iOS13.xcodeproj">
          </BuildableReference>
@@ -71,7 +71,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "926C77D621FD1E6500103EDE"
-            BuildableName = "RetroArch.app"
+            BuildableName = "RetroArchTV.app"
             BlueprintName = "RetroArchTV"
             ReferencedContainer = "container:RetroArch_iOS13.xcodeproj">
          </BuildableReference>
