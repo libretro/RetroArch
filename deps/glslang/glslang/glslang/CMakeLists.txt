@@ -90,10 +90,6 @@ if(WIN32 AND BUILD_SHARED_LIBS)
     set_target_properties(glslang PROPERTIES PREFIX "")
 endif()
 
-if(ENABLE_HLSL)
-    target_link_libraries(glslang HLSL)
-endif()
-
 if(WIN32)
     source_group("Public" REGULAR_EXPRESSION "Public/*")
     source_group("MachineIndependent" REGULAR_EXPRESSION "MachineIndependent/[^/]*")

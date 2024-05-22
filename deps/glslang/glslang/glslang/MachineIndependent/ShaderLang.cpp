@@ -50,12 +50,6 @@
 #include "Scan.h"
 #include "ScanContext.h"
 
-#ifdef ENABLE_HLSL
-#include "../../hlsl/hlslParseHelper.h"
-#include "../../hlsl/hlslParseables.h"
-#include "../../hlsl/hlslScanContext.h"
-#endif
-
 #include "../Include/ShHandle.h"
 #include "../../OGLCompilersDLL/InitializeDll.h"
 
@@ -80,9 +74,6 @@ TBuiltInParseables* CreateBuiltInParseables(TInfoSink& infoSink, EShSource sourc
 {
     switch (source) {
     case EShSourceGlsl: return new TBuiltIns();              // GLSL builtIns
-#ifdef ENABLE_HLSL
-    case EShSourceHlsl: return new TBuiltInParseablesHlsl(); // HLSL intrinsics
-#endif
 
     default:
         infoSink.info.message(EPrefixInternalError, "Unable to determine source language");
@@ -105,11 +96,6 @@ TParseContextBase* CreateParseContext(TSymbolTable& symbolTable, TIntermediate& 
         return new TParseContext(symbolTable, intermediate, parsingBuiltIns, version, profile, spvVersion,
                                  language, infoSink, forwardCompatible, messages, &entryPoint);
     }
-#ifdef ENABLE_HLSL
-    case EShSourceHlsl:
-        return new HlslParseContext(symbolTable, intermediate, parsingBuiltIns, version, profile, spvVersion,
-                                    language, infoSink, sourceEntryPointName.c_str(), forwardCompatible, messages);
-#endif
     default:
         infoSink.info.message(EPrefixInternalError, "Unable to determine source language");
         return nullptr;
@@ -1206,9 +1192,6 @@ int ShInitialize()
         PerProcessGPA = new TPoolAllocator();
 
     glslang::TScanContext::fillInKeywordMap();
-#ifdef ENABLE_HLSL
-    glslang::HlslScanContext::fillInKeywordMap();
-#endif
 
     return 1;
 }
@@ -1308,9 +1291,6 @@ int __fastcall ShFinalize()
     }
 
     glslang::TScanContext::deleteKeywordMap();
-#ifdef ENABLE_HLSL
-    glslang::HlslScanContext::deleteKeywordMap();
-#endif
 
     DetachProcess();
     return 1;
