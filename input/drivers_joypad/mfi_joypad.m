@@ -22,6 +22,7 @@
 
 #include <AvailabilityMacros.h>
 
+#include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 #import <GameController/GameController.h>
