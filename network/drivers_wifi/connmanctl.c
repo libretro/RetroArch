@@ -20,6 +20,7 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "../wifi_driver.h"
 
