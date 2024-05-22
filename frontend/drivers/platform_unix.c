@@ -1302,7 +1302,7 @@ static void frontend_unix_set_screen_brightness(int value)
 
    /* Device tree should have 'label = "backlight";' if control is desirable */
    filestream_read_file("/sys/class/backlight/backlight/max_brightness",
-                        &buffer, NULL);
+                        (void **)&buffer, NULL);
    if (buffer)
    {
       sscanf(buffer, "%u", &max_brightness);
