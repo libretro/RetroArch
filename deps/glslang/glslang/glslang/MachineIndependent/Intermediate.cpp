@@ -1193,10 +1193,6 @@ TIntermTyped* TIntermediate::addShapeConversion(const TType& type, TIntermTyped*
 
             const bool isSimple = (node->getAsSymbolNode() != nullptr) || (node->getAsConstantUnion() != nullptr);
 
-            if (!isSimple) {
-                assert(0); // TODO: use node replicator service when available.
-            }
-            
             for (int x=0; x<matSize; ++x)
                 rhsAggregate->getSequence().push_back(node);
 
@@ -3822,9 +3818,9 @@ const char* TIntermediate::getResourceName(TResourceType res)
     case EResSsbo:    return "shift-ssbo-binding";
     case EResUav:     return "shift-uav-binding";
     default:
-        assert(0); // internal error: should only be called with valid resource types.
-        return nullptr;
+	break;
     }
+    return nullptr;
 }
 
 

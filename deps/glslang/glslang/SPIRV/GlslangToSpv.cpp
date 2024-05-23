@@ -246,7 +246,7 @@ protected:
 //
 
 // Translate glslang profile to SPIR-V source language.
-spv::SourceLanguage TranslateSourceLanguage(glslang::EShSource source, EProfile profile)
+static spv::SourceLanguage TranslateSourceLanguage(glslang::EShSource source, EProfile profile)
 {
     switch (source) {
     case glslang::EShSourceGlsl:
@@ -258,17 +258,18 @@ spv::SourceLanguage TranslateSourceLanguage(glslang::EShSource source, EProfile 
         case EEsProfile:
             return spv::SourceLanguageESSL;
         default:
-            return spv::SourceLanguageUnknown;
+	    break;
         }
     case glslang::EShSourceHlsl:
         return spv::SourceLanguageHLSL;
     default:
-        return spv::SourceLanguageUnknown;
+	break;
     }
+    return spv::SourceLanguageUnknown;
 }
 
 // Translate glslang language (stage) to SPIR-V execution model.
-spv::ExecutionModel TranslateExecutionModel(EShLanguage stage)
+static spv::ExecutionModel TranslateExecutionModel(EShLanguage stage)
 {
     switch (stage) {
     case EShLangVertex:           return spv::ExecutionModelVertex;
@@ -278,13 +279,13 @@ spv::ExecutionModel TranslateExecutionModel(EShLanguage stage)
     case EShLangFragment:         return spv::ExecutionModelFragment;
     case EShLangCompute:          return spv::ExecutionModelGLCompute;
     default:
-        assert(0);
-        return spv::ExecutionModelFragment;
+	break;
     }
+    return spv::ExecutionModelFragment;
 }
 
 // Translate glslang sampler type to SPIR-V dimensionality.
-spv::Dim TranslateDimensionality(const glslang::TSampler& sampler)
+static spv::Dim TranslateDimensionality(const glslang::TSampler& sampler)
 {
     switch (sampler.dim) {
     case glslang::Esd1D:      return spv::Dim1D;
@@ -295,30 +296,30 @@ spv::Dim TranslateDimensionality(const glslang::TSampler& sampler)
     case glslang::EsdBuffer:  return spv::DimBuffer;
     case glslang::EsdSubpass: return spv::DimSubpassData;
     default:
-        assert(0);
-        return spv::Dim2D;
+	 break;
     }
+    return spv::Dim2D;
 }
 
 // Translate glslang precision to SPIR-V precision decorations.
-spv::Decoration TranslatePrecisionDecoration(glslang::TPrecisionQualifier glslangPrecision)
+static spv::Decoration TranslatePrecisionDecoration(glslang::TPrecisionQualifier glslangPrecision)
 {
     switch (glslangPrecision) {
     case glslang::EpqLow:    return spv::DecorationRelaxedPrecision;
     case glslang::EpqMedium: return spv::DecorationRelaxedPrecision;
-    default:
-        return spv::NoPrecision;
+    default: break;
     }
+    return spv::NoPrecision;
 }
 
 // Translate glslang type to SPIR-V precision decorations.
-spv::Decoration TranslatePrecisionDecoration(const glslang::TType& type)
+static spv::Decoration TranslatePrecisionDecoration(const glslang::TType& type)
 {
     return TranslatePrecisionDecoration(type.getQualifier().precision);
 }
 
 // Translate glslang type to SPIR-V block decorations.
-spv::Decoration TranslateBlockDecoration(const glslang::TType& type, bool useStorageBuffer)
+static spv::Decoration TranslateBlockDecoration(const glslang::TType& type, bool useStorageBuffer)
 {
     if (type.getBasicType() == glslang::EbtBlock) {
         switch (type.getQualifier().storage) {
@@ -327,7 +328,6 @@ spv::Decoration TranslateBlockDecoration(const glslang::TType& type, bool useSto
         case glslang::EvqVaryingIn:    return spv::DecorationBlock;
         case glslang::EvqVaryingOut:   return spv::DecorationBlock;
         default:
-            assert(0);
             break;
         }
     }
@@ -385,7 +385,6 @@ spv::Decoration TranslateLayoutDecoration(const glslang::TType& type, glslang::T
                 assert(type.getQualifier().layoutPacking == glslang::ElpNone);
                 return spv::DecorationMax;
             default:
-                assert(0);
                 return spv::DecorationMax;
             }
         }
@@ -431,21 +430,19 @@ spv::Decoration TGlslangToSpvTraverser::TranslateAuxiliaryStorageDecoration(cons
 }
 
 // If glslang type is invariant, return SPIR-V invariant decoration.
-spv::Decoration TranslateInvariantDecoration(const glslang::TQualifier& qualifier)
+static spv::Decoration TranslateInvariantDecoration(const glslang::TQualifier& qualifier)
 {
     if (qualifier.invariant)
         return spv::DecorationInvariant;
-    else
-        return spv::DecorationMax;
+    return spv::DecorationMax;
 }
 
 // If glslang type is noContraction, return SPIR-V NoContraction decoration.
-spv::Decoration TranslateNoContractionDecoration(const glslang::TQualifier& qualifier)
+static spv::Decoration TranslateNoContractionDecoration(const glslang::TQualifier& qualifier)
 {
     if (qualifier.noContraction)
         return spv::DecorationNoContraction;
-    else
-        return spv::DecorationMax;
+    return spv::DecorationMax;
 }
 
 // If glslang type is nonUniform, return SPIR-V NonUniform decoration.
@@ -898,7 +895,6 @@ spv::StorageClass TGlslangToSpvTraverser::TranslateStorageClass(const glslang::T
     case glslang::EvqConstReadOnly: return spv::StorageClassFunction;
     case glslang::EvqTemporary:     return spv::StorageClassFunction;
     default:
-        assert(0);
         break;
     }
 
@@ -943,7 +939,7 @@ void TGlslangToSpvTraverser::addIndirectionIndexCapabilities(const glslang::TTyp
 
 // Return whether or not the given type is something that should be tied to a
 // descriptor set.
-bool IsDescriptorResource(const glslang::TType& type)
+static bool IsDescriptorResource(const glslang::TType& type)
 {
     // uniform and buffer blocks are included, unless it is a push_constant
     if (type.getBasicType() == glslang::EbtBlock)
@@ -960,7 +956,7 @@ bool IsDescriptorResource(const glslang::TType& type)
     return false;
 }
 
-void InheritQualifiers(glslang::TQualifier& child, const glslang::TQualifier& parent)
+static void InheritQualifiers(glslang::TQualifier& child, const glslang::TQualifier& parent)
 {
     if (child.layoutMatrix == glslang::ElmNone)
         child.layoutMatrix = parent.layoutMatrix;
@@ -993,7 +989,7 @@ void InheritQualifiers(glslang::TQualifier& child, const glslang::TQualifier& pa
         child.writeonly = true;
 }
 
-bool HasNonLayoutQualifiers(const glslang::TType& type, const glslang::TQualifier& qualifier)
+static bool HasNonLayoutQualifiers(const glslang::TType& type, const glslang::TQualifier& qualifier)
 {
     // This should list qualifiers that simultaneous satisfy:
     // - struct members might inherit from a struct declaration
@@ -1026,28 +1022,6 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion, const gl
     builder.setSource(TranslateSourceLanguage(glslangIntermediate->getSource(), glslangIntermediate->getProfile()),
                       glslangIntermediate->getVersion());
 
-    if (options.generateDebugInfo) {
-        builder.setEmitOpLines();
-        builder.setSourceFile(glslangIntermediate->getSourceFile());
-
-        // Set the source shader's text. If for SPV version 1.0, include
-        // a preamble in comments stating the OpModuleProcessed instructions.
-        // Otherwise, emit those as actual instructions.
-        std::string text;
-        const std::vector<std::string>& processes = glslangIntermediate->getProcesses();
-        for (int p = 0; p < (int)processes.size(); ++p) {
-            if (glslangIntermediate->getSpv().spv < 0x00010100) {
-                text.append("// OpModuleProcessed ");
-                text.append(processes[p]);
-                text.append("\n");
-            } else
-                builder.addModuleProcessed(processes[p]);
-        }
-        if (glslangIntermediate->getSpv().spv < 0x00010100 && (int)processes.size() > 0)
-            text.append("#line 1\n");
-        text.append(glslangIntermediate->getSourceText());
-        builder.setSourceText(text);
-    }
     stdBuiltins = builder.import("GLSL.std.450");
     builder.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
     shaderEntry = builder.makeEntryPoint(glslangIntermediate->getEntryPointName().c_str());
@@ -2457,7 +2431,6 @@ bool TGlslangToSpvTraverser::visitBranch(glslang::TVisit /* visit */, glslang::T
         break;
 
     default:
-        assert(0);
         break;
     }
 
@@ -2528,7 +2501,6 @@ spv::Id TGlslangToSpvTraverser::getSampledType(const glslang::TSampler& sampler)
         case glslang::EbtInt:      return builder.makeIntType(32);
         case glslang::EbtUint:     return builder.makeUintType(32);
         default:
-            assert(0);
             return builder.makeFloatType(32);
     }
 }
@@ -2682,7 +2654,6 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
         }
         break;
     default:
-        assert(0);
         break;
     }
 
@@ -3582,7 +3553,6 @@ spv::Id TGlslangToSpvTraverser::createImageTextureFunctionCall(glslang::TIntermO
         case glslang::EOpSparseTexelsResident:
             return builder.createUnaryOp(spv::OpImageSparseTexelsResident, builder.makeBoolType(), arguments[0]);
         default:
-            assert(0);
             break;
         }
     }
@@ -4377,7 +4347,6 @@ spv::Id TGlslangToSpvTraverser::createBinaryMatrixOperation(spv::Op op, OpDecora
         return result;
     }
     default:
-        assert(0);
         return spv::NoResult;
     }
 }
@@ -5315,7 +5284,6 @@ spv::Id TGlslangToSpvTraverser::createAtomicOperation(glslang::TOperator op, spv
         opCode = spv::OpAtomicLoad;
         break;
     default:
-        assert(0);
         break;
     }
 
@@ -5727,7 +5695,7 @@ spv::Id TGlslangToSpvTraverser::createSubgroupOperation(glslang::TOperator op, s
         builder.addCapability(spv::CapabilityGroupNonUniformPartitionedNV);
         break;
 #endif
-    default: assert(0 && "Unhandled subgroup operation!");
+    default: break;
     }
 
     const bool isUnsigned = typeProxy == glslang::EbtUint || typeProxy == glslang::EbtUint64;
@@ -5869,7 +5837,7 @@ spv::Id TGlslangToSpvTraverser::createSubgroupOperation(glslang::TOperator op, s
     case glslang::EOpSubgroupQuadSwapHorizontal:
     case glslang::EOpSubgroupQuadSwapVertical:
     case glslang::EOpSubgroupQuadSwapDiagonal:   opCode = spv::OpGroupNonUniformQuadSwap; break;
-    default: assert(0 && "Unhandled subgroup operation!");
+    default: break;
     }
 
     std::vector<spv::Id> spvGroupOperands;
@@ -6245,11 +6213,8 @@ spv::Id TGlslangToSpvTraverser::createMiscOperation(glslang::TOperator op, spv::
         switch (consumedOperands) {
         case 0:
             // should all be handled by visitAggregate and createNoArgOperation
-            assert(0);
-            return 0;
         case 1:
             // should all be handled by createUnaryOperation
-            assert(0);
             return 0;
         case 2:
             id = builder.createBinOp(opCode, typeId, operands[0], operands[1]);
@@ -6655,7 +6620,6 @@ spv::Id TGlslangToSpvTraverser::createSpvConstantFromConstUnionArray(const glsla
                 spvConsts.push_back(builder.makeBoolConstant(zero ? false : consts[nextConst].getBConst()));
                 break;
             default:
-                assert(0);
                 break;
             }
             ++nextConst;
@@ -6702,7 +6666,6 @@ spv::Id TGlslangToSpvTraverser::createSpvConstantFromConstUnionArray(const glsla
             scalar = builder.makeBoolConstant(zero ? false : consts[nextConst].getBConst(), specConstant);
             break;
         default:
-            assert(0);
             break;
         }
         ++nextConst;
@@ -6864,14 +6827,6 @@ spv::Id TGlslangToSpvTraverser::getExtBuiltins(const char* name)
 
 namespace glslang {
 
-void GetSpirvVersion(std::string& version)
-{
-    const int bufSize = 100;
-    char buf[bufSize];
-    snprintf(buf, bufSize, "0x%08x, Revision %d", spv::Version, spv::Revision);
-    version = buf;
-}
-
 // For low-order part of the generator's magic number. Bump up
 // when there is a change in the style (e.g., if SSA form changes,
 // or a different instruction sequence to do something gets used).
@@ -6885,52 +6840,6 @@ int GetSpirvGeneratorVersion()
     // return 6; // revert version 5 change, which makes a different (new) kind of incorrect code,
                  // versions 4 and 6 each generate OpArrayLength as it has long been done
     return 7; // GLSL volatile keyword maps to both SPIR-V decorations Volatile and Coherent
-}
-
-// Write SPIR-V out to a binary file
-void OutputSpvBin(const std::vector<unsigned int>& spirv, const char* baseName)
-{
-    std::ofstream out;
-    out.open(baseName, std::ios::binary | std::ios::out);
-    if (out.fail())
-        printf("ERROR: Failed to open file: %s\n", baseName);
-    for (int i = 0; i < (int)spirv.size(); ++i) {
-        unsigned int word = spirv[i];
-        out.write((const char*)&word, 4);
-    }
-    out.close();
-}
-
-// Write SPIR-V out to a text file with 32-bit hexadecimal words
-void OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, const char* varName)
-{
-    std::ofstream out;
-    out.open(baseName, std::ios::binary | std::ios::out);
-    if (out.fail())
-        printf("ERROR: Failed to open file: %s\n", baseName);
-    out << "\t// " <<
-        glslang::GetSpirvGeneratorVersion() << "." << GLSLANG_MINOR_VERSION << "." << GLSLANG_PATCH_LEVEL <<
-        std::endl;
-    if (varName != nullptr) {
-        out << "\t #pragma once" << std::endl;
-        out << "const uint32_t " << varName << "[] = {" << std::endl;
-    }
-    const int WORDS_PER_LINE = 8;
-    for (int i = 0; i < (int)spirv.size(); i += WORDS_PER_LINE) {
-        out << "\t";
-        for (int j = 0; j < WORDS_PER_LINE && i + j < (int)spirv.size(); ++j) {
-            const unsigned int word = spirv[i + j];
-            out << "0x" << std::hex << std::setw(8) << std::setfill('0') << word;
-            if (i + j + 1 < (int)spirv.size()) {
-                out << ",";
-            }
-        }
-        out << std::endl;
-    }
-    if (varName != nullptr) {
-        out << "};";
-    }
-    out.close();
 }
 
 //

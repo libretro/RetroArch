@@ -5734,7 +5734,7 @@ void TBuiltIns::initialize(int version, EProfile profile, const SpvVersion& spvV
 
     // GL_ARB_shader_ballot
     if (profile != EEsProfile && version >= 450) {
-        const char* ballotDecls = 
+        const char* ballotDecls =
             "uniform uint gl_SubGroupSizeARB;"
             "in uint     gl_SubGroupInvocationARB;"
             "in uint64_t gl_SubGroupEqMaskARB;"
@@ -5743,7 +5743,7 @@ void TBuiltIns::initialize(int version, EProfile profile, const SpvVersion& spvV
             "in uint64_t gl_SubGroupLeMaskARB;"
             "in uint64_t gl_SubGroupLtMaskARB;"
             "\n";
-        const char* fragmentBallotDecls = 
+        const char* fragmentBallotDecls =
             "uniform uint gl_SubGroupSizeARB;"
             "flat in uint     gl_SubGroupInvocationARB;"
             "flat in uint64_t gl_SubGroupEqMaskARB;"
@@ -5770,7 +5770,7 @@ void TBuiltIns::initialize(int version, EProfile profile, const SpvVersion& spvV
 
     // GL_KHR_shader_subgroup
     if (spvVersion.vulkan > 0) {
-        const char* ballotDecls = 
+        const char* ballotDecls =
             "in mediump uint  gl_SubgroupSize;"
             "in mediump uint  gl_SubgroupInvocationID;"
             "in highp   uvec4 gl_SubgroupEqMask;"
@@ -5779,7 +5779,7 @@ void TBuiltIns::initialize(int version, EProfile profile, const SpvVersion& spvV
             "in highp   uvec4 gl_SubgroupLeMask;"
             "in highp   uvec4 gl_SubgroupLtMask;"
             "\n";
-        const char* fragmentBallotDecls = 
+        const char* fragmentBallotDecls =
             "flat in mediump uint  gl_SubgroupSize;"
             "flat in mediump uint  gl_SubgroupInvocationID;"
             "flat in highp   uvec4 gl_SubgroupEqMask;"
@@ -5806,9 +5806,6 @@ void TBuiltIns::initialize(int version, EProfile profile, const SpvVersion& spvV
             "flat in highp uint gl_ViewID_OVR;"     // GL_OVR_multiview, GL_OVR_multiview2
             "\n");
     }
-
-    // printf("%s\n", commonBuiltins.c_str());
-    // printf("%s\n", stageBuiltins[EShLangFragment].c_str());
 }
 
 //
@@ -5936,9 +5933,8 @@ void TBuiltIns::add2ndGenerationSamplingImaging(int version, EProfile profile, c
     // sparseTexelsResidentARB()
     //
 
-    if (profile != EEsProfile && version >= 450) {
+    if (profile != EEsProfile && version >= 450)
         commonBuiltins.append("bool sparseTexelsResidentARB(int code);\n");
-    }
 }
 
 //
@@ -7573,7 +7569,7 @@ void TBuiltIns::identifyBuiltIns(int version, EProfile profile, const SpvVersion
             symbolTable.setVariableExtensions("gl_ViewIndex", 1, &E_GL_EXT_multiview);
             BuiltInVariable("gl_ViewIndex", EbvViewIndex, symbolTable);
         }
-        
+
         // GL_KHR_shader_subgroup
         if (spvVersion.vulkan > 0) {
             symbolTable.setVariableExtensions("gl_SubgroupSize",         1, &E_GL_KHR_shader_subgroup_basic);

@@ -129,8 +129,6 @@ void TIntermediate::merge(TInfoSink& infoSink, TIntermediate& unit)
             error(infoSink, "Contradictory layout max_vertices values");
         else if (language == EShLangTessControl)
             error(infoSink, "Contradictory layout vertices values");
-        else
-            assert(0);
     }
 
     if (vertexSpacing == EvsNone)
@@ -497,8 +495,8 @@ void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
             error(infoSink, "At least one shader must specify a layout(max_vertices = value)");
         break;
     case EShLangFragment:
-        // for GL_ARB_post_depth_coverage, EarlyFragmentTest is set automatically in 
-        // ParseHelper.cpp. So if we reach here, this must be GL_EXT_post_depth_coverage 
+        // for GL_ARB_post_depth_coverage, EarlyFragmentTest is set automatically in
+        // ParseHelper.cpp. So if we reach here, this must be GL_EXT_post_depth_coverage
         // requiring explicit early_fragment_tests
         if (getPostDepthCoverage() && !getEarlyFragmentTests())
             error(infoSink, "post_depth_coverage requires early_fragment_tests");
@@ -968,7 +966,6 @@ int TIntermediate::computeTypeLocationSize(const TType& type, EShLanguage stage)
         return type.getMatrixCols() * computeTypeLocationSize(columnType, stage);
     }
 
-    assert(0);
     return 1;
 }
 
@@ -1083,10 +1080,8 @@ unsigned int TIntermediate::computeTypeXfbSize(const TType& type, bool& contains
         numComponents = type.getVectorSize();
     else if (type.isMatrix())
         numComponents = type.getMatrixCols() * type.getMatrixRows();
-    else {
-        assert(0);
+    else
         numComponents = 1;
-    }
 
     if (type.getBasicType() == EbtDouble) {
         containsDouble = true;
@@ -1268,7 +1263,6 @@ int TIntermediate::getBaseAlignment(const TType& type, int& size, int& stride, b
         return alignment;
     }
 
-    assert(0);  // all cases should be covered above
     size = baseAlignmentVec4Std140;
     return baseAlignmentVec4Std140;
 }
