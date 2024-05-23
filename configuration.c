@@ -70,7 +70,7 @@
 #include "switch_performance_profiles.h"
 #endif
 
-#if TARGET_OS_TV
+#if IOS
 #include "ui/drivers/cocoa/apple_platform.h"
 #endif
 
@@ -2878,6 +2878,11 @@ void config_set_defaults(void *data)
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
    configuration_set_bool(settings, settings->bools.localap_enable, false);
    load_timezone(settings->arrays.timezone);
+#endif
+
+#if IOS
+   configuration_set_bool(settings,
+         settings->bools.accessibility_enable, UIAccessibilityIsVoiceOverRunning());
 #endif
 
 #ifdef HAVE_MENU
