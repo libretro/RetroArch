@@ -1191,8 +1191,6 @@ TIntermTyped* TIntermediate::addShapeConversion(const TType& type, TIntermTyped*
             const int matSize = type.getMatrixRows() * type.getMatrixCols();
             TIntermAggregate* rhsAggregate = new TIntermAggregate();
 
-            const bool isSimple = (node->getAsSymbolNode() != NULL) || (node->getAsConstantUnion() != NULL);
-
             for (int x=0; x<matSize; ++x)
                 rhsAggregate->getSequence().push_back(node);
 
