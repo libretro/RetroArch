@@ -201,12 +201,6 @@ class TUnorderedMap : public std::unordered_map<K, D, HASH, PRED, pool_allocator
 typedef std::basic_string<char> TPersistString;
 
 //
-// templatized min and max functions.
-//
-template <class T> T Min(const T a, const T b) { return a < b ? a : b; }
-template <class T> T Max(const T a, const T b) { return a > b ? a : b; }
-
-//
 // Create a TString object from an integer.
 //
 #if defined _MSC_VER || defined MINGW_HAS_SECURE_API

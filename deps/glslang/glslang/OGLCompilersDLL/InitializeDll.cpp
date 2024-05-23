@@ -65,22 +65,16 @@ bool InitProcess()
     ThreadInitializeIndex = OS_AllocTLSIndex();
 
     if (ThreadInitializeIndex == OS_INVALID_TLS_INDEX) {
-        assert(0 && "InitProcess(): Failed to allocate TLS area for init flag");
-
         glslang::ReleaseGlobalLock();
         return false;
     }
 
     if (! InitializePoolIndex()) {
-        assert(0 && "InitProcess(): Failed to initialize global pool");
-
         glslang::ReleaseGlobalLock();
         return false;
     }
 
     if (! InitThread()) {
-        assert(0 && "InitProcess(): Failed to initialize thread");
-
         glslang::ReleaseGlobalLock();
         return false;
     }
@@ -98,7 +92,6 @@ bool InitThread()
     // This function is re-entrant
     //
     if (ThreadInitializeIndex == OS_INVALID_TLS_INDEX) {
-        assert(0 && "InitThread(): Process hasn't been initalised.");
         return false;
     }
 
@@ -106,7 +99,6 @@ bool InitThread()
         return true;
 
     if (! OS_SetTLSValue(ThreadInitializeIndex, (void *)1)) {
-        assert(0 && "InitThread(): Unable to set init flag.");
         return false;
     }
 
@@ -131,10 +123,8 @@ bool DetachThread()
     // Function is re-entrant and this thread may not have been initialized.
     //
     if (OS_GetTLSValue(ThreadInitializeIndex) != 0) {
-        if (!OS_SetTLSValue(ThreadInitializeIndex, (void *)0)) {
-            assert(0 && "DetachThread(): Unable to clear init flag.");
+        if (!OS_SetTLSValue(ThreadInitializeIndex, (void *)0))
             success = false;
-        }
     }
 
     return success;

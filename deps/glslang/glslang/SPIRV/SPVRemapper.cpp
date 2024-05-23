@@ -256,8 +256,6 @@ namespace spv {
 
     spv::Id spirvbin_t::localId(spv::Id id, spv::Id newId)
     {
-        //assert(id != spv::NoResult && newId != spv::NoResult);
-
         if (id > bound()) {
             error(std::string("ID out of range: ") + std::to_string(id));
             return spirvbin_t::unused;
@@ -596,7 +594,8 @@ namespace spv {
                 return nextInst;
 
             case spv::OperandVariableLiteralId: {
-                if (opCode == OpSwitch) {
+                if (opCode == OpSwitch)
+		{
                     // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
                     // In case the IDs are currently being remapped, we get the word[-2] ID from
                     // the circular idBuffer.
@@ -611,8 +610,6 @@ namespace spv {
                         word += literalSize;  // literal
                         idFn(asId(word++));   // label
                     }
-                } else {
-                    assert(0); // currentely, only OpSwitch uses OperandVariableLiteralId
                 }
 
                 return nextInst;
@@ -662,7 +659,6 @@ namespace spv {
                 break;
 
             default:
-                assert(0 && "Unhandled Operand Class");
                 break;
             }
         }

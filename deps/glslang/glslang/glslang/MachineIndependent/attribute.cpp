@@ -41,7 +41,7 @@
 namespace glslang {
 
 // extract integers out of attribute arguments stored in attribute aggregate
-bool TAttributeArgs::getInt(int& value, int argNum) const 
+bool TAttributeArgs::getInt(int& value, int argNum) const
 {
     const TConstUnion* intConst = getConstUnion(EbtInt, argNum);
 
@@ -54,7 +54,7 @@ bool TAttributeArgs::getInt(int& value, int argNum) const
 
 // extract strings out of attribute arguments stored in attribute aggregate.
 // convert to lower case if converToLower is true (for case-insensitive compare convenience)
-bool TAttributeArgs::getString(TString& value, int argNum, bool convertToLower) const 
+bool TAttributeArgs::getString(TString& value, int argNum, bool convertToLower) const
 {
     const TConstUnion* stringConst = getConstUnion(EbtString, argNum);
 
@@ -107,8 +107,7 @@ TAttributeType TParseContext::attributeFromName(const TString& name) const
         return EatDependencyInfinite;
     else if (name == "dependency_length")
         return EatDependencyLength;
-    else
-        return EatNone;
+    return EatNone;
 }
 
 // Make an initial leaf for the grammar from a no-argument attribute

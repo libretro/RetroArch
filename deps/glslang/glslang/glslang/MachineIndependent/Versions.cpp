@@ -786,7 +786,7 @@ void TParseVersions::updateExtensionBehavior(const char* extension, TExtensionBe
                 warn(getCurrentLoc(), "extension not supported:", "#extension", extension);
                 break;
             default:
-                assert(0 && "unexpected behavior");
+		break;
             }
 
             return;
