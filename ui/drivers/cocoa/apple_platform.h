@@ -3,7 +3,7 @@
 
 #if TARGET_OS_IPHONE
 /* this comes from UIKit but you cannot #include UIKit from C */
-extern bool UIAccessibilityIsVoiceOverRunning(void);
+extern bool RAIsVoiceOverRunning(void);
 #endif
 
 #if TARGET_OS_TV

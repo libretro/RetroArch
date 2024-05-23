@@ -2882,7 +2882,7 @@ void config_set_defaults(void *data)
 
 #if IOS
    configuration_set_bool(settings,
-         settings->bools.accessibility_enable, UIAccessibilityIsVoiceOverRunning());
+         settings->bools.accessibility_enable, RAIsVoiceOverRunning());
 #endif
 
 #ifdef HAVE_MENU
