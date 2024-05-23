@@ -666,7 +666,7 @@ int TPpContext::tStringInput::scan(TPpToken* ppToken)
 
 #ifdef AMD_EXTENSIONS
                     nextCh = getch();
-                    if ((nextCh == 's' || nextCh == 'S') && 
+                    if ((nextCh == 's' || nextCh == 'S') &&
                                 pp->_parseContext.intermediate.getSource() == EShSourceGlsl) {
                         if (len < MaxTokenLength)
                             ppToken->name[len++] = (char)nextCh;
@@ -679,7 +679,7 @@ int TPpContext::tStringInput::scan(TPpToken* ppToken)
                         ppToken->name[len++] = (char)ch;
                     isInt64 = true;
 #ifdef AMD_EXTENSIONS
-                } else if ((ch == 's' || ch == 'S') && 
+                } else if ((ch == 's' || ch == 'S') &&
                                 pp->_parseContext.intermediate.getSource() == EShSourceGlsl) {
                     if (len < MaxTokenLength)
                         ppToken->name[len++] = (char)ch;
@@ -1118,7 +1118,6 @@ int TPpContext::tokenPaste(int token, TPpToken& ppToken)
 
         // next token has to be ##
         token = scanToken(&pastedPpToken);
-        assert(token == PpAtomPaste);
 
         // This covers end of macro expansion
         if (endOfReplacementList()) {

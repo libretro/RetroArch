@@ -102,7 +102,6 @@ std::string to_string(const T& val) {
 #include <algorithm>
 #include <string>
 #include <cstdio>
-#include <cassert>
 
 #include "PoolAlloc.h"
 
@@ -257,13 +256,11 @@ template <class T> bool IsPow2(T powerOf2)
 // a power, just a number that must be a power of 2.
 template <class T> void RoundToPow2(T& number, int powerOf2)
 {
-    assert(IsPow2(powerOf2));
     number = (number + powerOf2 - 1) & ~(powerOf2 - 1);
 }
 
 template <class T> bool IsMultipleOfPow2(T number, int powerOf2)
 {
-    assert(IsPow2(powerOf2));
     return ! (number & (powerOf2 - 1));
 }
 

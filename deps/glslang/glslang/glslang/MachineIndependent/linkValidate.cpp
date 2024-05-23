@@ -235,7 +235,6 @@ void TIntermediate::mergeLinkerObjects(TInfoSink& infoSink, TIntermSequence& lin
         for (std::size_t linkObj = 0; linkObj < initialNumLinkerObjects; ++linkObj) {
             TIntermSymbol* symbol = linkerObjects[linkObj]->getAsSymbolNode();
             TIntermSymbol* unitSymbol = unitLinkerObjects[unitLinkObj]->getAsSymbolNode();
-            assert(symbol && unitSymbol);
             if (symbol->getName() == unitSymbol->getName()) {
                 // filter out copy
                 merge = false;
@@ -720,10 +719,6 @@ TIntermSequence& TIntermediate::findLinkerObjects() const
 {
     // Get the top-level globals
     TIntermSequence& globals = treeRoot->getAsAggregate()->getSequence();
-
-    // Get the last member of the sequences, expected to be the linker-object lists
-    assert(globals.back()->getAsAggregate()->getOp() == EOpLinkerObjects);
-
     return globals.back()->getAsAggregate()->getSequence();
 }
 
@@ -1008,7 +1003,6 @@ int TIntermediate::addXfbBufferOffset(const TType& type)
 {
     const TQualifier& qualifier = type.getQualifier();
 
-    assert(qualifier.hasXfbOffset() && qualifier.hasXfbBuffer());
     TXfbBuffer& buffer = xfbBuffers[qualifier.layoutXfbBuffer];
 
     // compute the range
@@ -1044,7 +1038,6 @@ unsigned int TIntermediate::computeTypeXfbSize(const TType& type, bool& contains
 
     if (type.isArray()) {
         // TODO: perf: this can be flattened by using getCumulativeArraySize(), and a deref that discards all arrayness
-        assert(type.isSizedArray());
         TType elementType(type, 0);
         return type.getOuterArraySize() * computeTypeXfbSize(elementType, containsDouble);
     }

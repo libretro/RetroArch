@@ -187,7 +187,7 @@ struct TSampler {   // misnomer now; includes images, textures without sampler, 
                  sampler == right.sampler &&
                 external == right.external &&
               vectorSize == right.vectorSize &&
-       structReturnIndex == right.structReturnIndex;            
+       structReturnIndex == right.structReturnIndex;
     }
 
     bool operator!=(const TSampler& right) const
@@ -1179,7 +1179,6 @@ public:
                                 sampler.clear();
                                 qualifier.clear();
                                 qualifier.storage = q;
-                                assert(!(isMatrix() && vectorSize != 0));  // prevent vectorSize != 0 on matrices
                             }
     // for explicit precision qualifier
     TType(TBasicType t, TStorageQualifier q, TPrecisionQualifier p, int vs = 1, int mc = 0, int mr = 0,
@@ -1191,8 +1190,6 @@ public:
                                 qualifier.clear();
                                 qualifier.storage = q;
                                 qualifier.precision = p;
-                                assert(p >= EpqNone && p <= EpqHigh);
-                                assert(!(isMatrix() && vectorSize != 0));  // prevent vectorSize != 0 on matrices
                             }
     // for turning a TPublicType into a TType, using a shallow copy
     explicit TType(const TPublicType& p) :
@@ -1328,13 +1325,11 @@ public:
     virtual void setFieldName(const TString& n) { fieldName = NewPoolTString(n.c_str()); }
     virtual const TString& getTypeName() const
     {
-        assert(typeName);
         return *typeName;
     }
 
     virtual const TString& getFieldName() const
     {
-        assert(fieldName);
         return *fieldName;
     }
 
@@ -1363,9 +1358,9 @@ public:
     virtual bool isArray()  const { return arraySizes != nullptr; }
     virtual bool isSizedArray() const { return isArray() && arraySizes->isSized(); }
     virtual bool isUnsizedArray() const { return isArray() && !arraySizes->isSized(); }
-    virtual bool isArrayVariablyIndexed() const { assert(isArray()); return arraySizes->isVariablyIndexed(); }
-    virtual void setArrayVariablyIndexed() { assert(isArray()); arraySizes->setVariablyIndexed(); }
-    virtual void updateImplicitArraySize(int size) { assert(isArray()); arraySizes->updateImplicitSize(size); }
+    virtual bool isArrayVariablyIndexed() const { return arraySizes->isVariablyIndexed(); }
+    virtual void setArrayVariablyIndexed() { arraySizes->setVariablyIndexed(); }
+    virtual void updateImplicitArraySize(int size) { arraySizes->updateImplicitSize(size); }
     virtual bool isStruct() const { return structure != nullptr; }
     virtual bool isFloatingDomain() const { return basicType == EbtFloat || basicType == EbtDouble || basicType == EbtFloat16; }
     virtual bool isIntegerDomain() const
@@ -1487,8 +1482,6 @@ public:
     {
         // For when we may already be sharing existing array descriptors,
         // keeping the pointers the same, just updating the contents.
-        assert(arraySizes != nullptr);
-        assert(type.arraySizes != nullptr);
         *arraySizes = *type.arraySizes;
     }
     void copyArraySizes(const TArraySizes& s)
@@ -1855,7 +1848,6 @@ public:
     // See if two type's arrayness match in everything except their outer dimension
     bool sameInnerArrayness(const TType& right) const
     {
-        assert(arraySizes != nullptr && right.arraySizes != nullptr);
         return arraySizes->sameInnerArrayness(*right.arraySizes);
     }
 

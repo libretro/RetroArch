@@ -89,7 +89,6 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #endif
 
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
@@ -176,7 +175,6 @@ void TPpContext::TokenStream::ungetSubtoken()
 void TPpContext::TokenStream::putToken(int atom, TPpToken* ppToken)
 {
     // save the atom
-    assert((atom & ~0xff) == 0);
     putSubtoken(static_cast<char>(atom));
 
     // save the backing name string

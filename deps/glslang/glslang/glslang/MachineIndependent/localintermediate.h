@@ -70,13 +70,11 @@ public:
     }
     void resize(int s)
     {
-        assert(s <= size_);
         size_ = s;
     }
     int size() const { return size_; }
     selectorType operator[](int i) const
     {
-        assert(i < MaxSwizzleSelectors);
         return components[i];
     }
 

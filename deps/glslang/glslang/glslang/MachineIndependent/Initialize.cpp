@@ -6255,7 +6255,6 @@ void TBuiltIns::addSamplingFunctions(TSampler sampler, const TString& typeName, 
                                     compare = true;
                                     totalDims = 4;
                                 }
-                                assert(totalDims <= 4);
 
                                 if (extraProj && ! proj)
                                     continue;
@@ -8059,7 +8058,6 @@ void TBuiltIns::identifyBuiltIns(int version, EProfile profile, const SpvVersion
         break;
 
     default:
-        assert(false && "Language not supported");
         break;
     }
 
@@ -8568,7 +8566,7 @@ void TBuiltIns::identifyBuiltIns(int version, EProfile profile, const SpvVersion
         break;
 
     default:
-        assert(false && "Language not supported");
+	break;
     }
 }
 

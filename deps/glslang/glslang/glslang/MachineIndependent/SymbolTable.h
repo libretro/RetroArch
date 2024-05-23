@@ -105,8 +105,6 @@ public:
     virtual int getUniqueId() const { return uniqueId; }
     virtual void setExtensions(int num, const char* const exts[])
     {
-        assert(extensions == 0);
-        assert(num > 0);
         numExtensions = num;
         extensions = NewPoolObject(exts[0], num);
         for (int e = 0; e < num; ++e)
@@ -161,10 +159,10 @@ public:
     virtual TVariable* getAsVariable() { return this; }
     virtual const TVariable* getAsVariable() const { return this; }
     virtual const TType& getType() const { return type; }
-    virtual TType& getWritableType() { assert(writable); return type; }
+    virtual TType& getWritableType() { return type; }
     virtual bool isUserType() const { return userType; }
     virtual const TConstUnionArray& getConstArray() const { return constArray; }
-    virtual TConstUnionArray& getWritableConstArray() { assert(writable); return constArray; }
+    virtual TConstUnionArray& getWritableConstArray() { return constArray; }
     virtual void setConstArray(const TConstUnionArray& array) { constArray = array; }
     virtual void setConstSubtree(TIntermTyped* subtree) { constSubtree = subtree; }
     virtual TIntermTyped* getConstSubtree() const { return constSubtree; }
@@ -239,7 +237,6 @@ public:
     // mangled name.
     virtual void addParameter(TParameter& p)
     {
-        assert(writable);
         parameters.push_back(p);
         p.type->appendMangledName(mangledName);
 
@@ -264,7 +261,6 @@ public:
 
     virtual void removePrefix(const TString& prefix)
     {
-        assert(mangledName.compare(0, prefix.size(), prefix) == 0);
         mangledName.erase(0, prefix.size());
     }
 
@@ -272,15 +268,15 @@ public:
     virtual const TType& getType() const override { return returnType; }
     virtual TBuiltInVariable getDeclaredBuiltInType() const { return declaredBuiltIn; }
     virtual TType& getWritableType() override { return returnType; }
-    virtual void relateToOperator(TOperator o) { assert(writable); op = o; }
+    virtual void relateToOperator(TOperator o) { op = o; }
     virtual TOperator getBuiltInOp() const { return op; }
-    virtual void setDefined() { assert(writable); defined = true; }
+    virtual void setDefined() { defined = true; }
     virtual bool isDefined() const { return defined; }
-    virtual void setPrototyped() { assert(writable); prototyped = true; }
+    virtual void setPrototyped() { prototyped = true; }
     virtual bool isPrototyped() const { return prototyped; }
-    virtual void setImplicitThis() { assert(writable); implicitThis = true; }
+    virtual void setImplicitThis() { implicitThis = true; }
     virtual bool hasImplicitThis() const { return implicitThis; }
-    virtual void setIllegalImplicitThis() { assert(writable); illegalImplicitThis = true; }
+    virtual void setIllegalImplicitThis() { illegalImplicitThis = true; }
     virtual bool hasIllegalImplicitThis() const { return illegalImplicitThis; }
 
     // Return total number of parameters
@@ -290,7 +286,7 @@ public:
     // Return number of fixed parameters (without default values)
     virtual int getFixedParamCount() const { return getParamCount() - getDefaultParamCount(); }
 
-    virtual TParameter& operator[](int i) { assert(writable); return parameters[i]; }
+    virtual TParameter& operator[](int i) { return parameters[i]; }
     virtual const TParameter& operator[](int i) const { return parameters[i]; }
 
     virtual void dump(TInfoSink &infoSink) const override;
@@ -340,7 +336,6 @@ public:
 
     virtual TType& getWritableType()
     {
-        assert(writable);
         const TTypeList& types = *anonContainer.getType().getStruct();
         return *types[memberNumber].type;
     }
@@ -598,7 +593,6 @@ public:
     // symbol finds.
     void pushThis(TSymbol& thisSymbol)
     {
-        assert(thisSymbol.getName().size() == 0);
         table.push_back(new TSymbolTableLevel);
         table.back()->setThisLevel();
         insert(thisSymbol);
@@ -670,7 +664,6 @@ public:
             return copy;
         } else {
             const TAnonMember* anon = shared->getAsAnonMember();
-            assert(anon);
             TVariable* container = anon->getAnonContainer().clone();
             container->changeName(NewPoolTString(""));
             container->setUniqueId(anon->getAnonContainer().getUniqueId());

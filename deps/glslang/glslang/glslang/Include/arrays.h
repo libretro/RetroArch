@@ -107,21 +107,16 @@ struct TSmallArrayVector {
 
     unsigned int frontSize() const
     {
-        assert(sizes != nullptr && sizes->size() > 0);
         return sizes->front().size;
     }
 
     TIntermTyped* frontNode() const
     {
-        assert(sizes != nullptr && sizes->size() > 0);
         return sizes->front().node;
     }
 
     void changeFront(unsigned int s)
     {
-        assert(sizes != nullptr);
-        // this should only happen for implicitly sized arrays, not specialization constants
-        assert(sizes->front().node == nullptr);
         sizes->front().size = s;
     }
 
@@ -140,7 +135,6 @@ struct TSmallArrayVector {
 
     void pop_front()
     {
-        assert(sizes != nullptr && sizes->size() > 0);
         if (sizes->size() == 1)
             dealloc();
         else
@@ -153,7 +147,6 @@ struct TSmallArrayVector {
     // one dimension.)
     void copyNonFront(const TSmallArrayVector& rhs)
     {
-        assert(sizes == nullptr);
         if (rhs.size() > 1) {
             alloc();
             sizes->insert(sizes->begin(), rhs.sizes->begin() + 1, rhs.sizes->end());
@@ -162,20 +155,16 @@ struct TSmallArrayVector {
 
     unsigned int getDimSize(int i) const
     {
-        assert(sizes != nullptr && (int)sizes->size() > i);
         return (*sizes)[i].size;
     }
 
     void setDimSize(int i, unsigned int size) const
     {
-        assert(sizes != nullptr && (int)sizes->size() > i);
-        assert((*sizes)[i].node == nullptr);
         (*sizes)[i].size = size;
     }
 
     TIntermTyped* getDimNode(int i) const
     {
-        assert(sizes != nullptr && (int)sizes->size() > i);
         return (*sizes)[i].node;
     }
 
@@ -246,7 +235,6 @@ struct TArraySizes {
         int size = 1;
         for (int d = 0; d < sizes.size(); ++d) {
             // this only makes sense in paths that have a known array size
-            assert(sizes.getDimSize(d) != UnsizedArraySize);
             size *= sizes.getDimSize(d);
         }
         return size;
@@ -296,7 +284,6 @@ struct TArraySizes {
     void dereference() { sizes.pop_front(); }
     void copyDereferenced(const TArraySizes& rhs)
     {
-        assert(sizes.size() == 0);
         if (rhs.sizes.size() > 1)
             sizes.copyNonFront(rhs.sizes);
     }

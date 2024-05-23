@@ -306,8 +306,6 @@ public:
 
             if (base->getType().isArray()) {
                 TType derefType(base->getType(), 0);
-
-                assert(! anonymous);
                 for (int e = 0; e < base->getType().getCumulativeArraySize(); ++e)
                     blockIndex = addBlockName(blockName + "[" + String(e) + "]", derefType,
                                               getBlockSize(base->getType()));

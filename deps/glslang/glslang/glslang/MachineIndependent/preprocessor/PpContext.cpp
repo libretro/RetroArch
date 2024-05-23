@@ -107,8 +107,6 @@ TPpContext::~TPpContext()
 
 void TPpContext::setInput(TInputScanner& input, bool versionWillBeError)
 {
-    assert(inputStack.size() == 0);
-
     pushInput(new tStringInput(this, input));
 
     errorOnVersion = versionWillBeError;
