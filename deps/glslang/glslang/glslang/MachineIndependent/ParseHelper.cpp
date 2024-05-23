@@ -491,8 +491,6 @@ void TParseContext::fixIoArraySize(const TSourceLoc& loc, TType& type)
     if (! type.isArray() || type.getQualifier().patch || symbolTable.atBuiltInLevel())
         return;
 
-    assert(! isIoResizeArray(type));
-
     if (type.getQualifier().storage != EvqVaryingIn || type.getQualifier().patch)
         return;
 
@@ -526,7 +524,6 @@ void TParseContext::ioArrayCheck(const TSourceLoc& loc, const TType& type, const
 void TParseContext::handleIoResizeArrayAccess(const TSourceLoc& /*loc*/, TIntermTyped* base)
 {
     TIntermSymbol* symbolNode = base->getAsSymbolNode();
-    assert(symbolNode);
     if (! symbolNode)
         return;
 
@@ -1395,7 +1392,6 @@ void TParseContext::builtInOpCheck(const TSourceLoc& loc, const TFunction& fnCan
         if (argp->size() > 0)
             arg0 = (*argp)[0]->getAsTyped();
     } else {
-        assert(callNode.getAsUnaryNode());
         unaryArg = callNode.getAsUnaryNode()->getOperand();
         arg0 = unaryArg;
     }
@@ -1726,8 +1722,6 @@ void TParseContext::nonOpBuiltInCheck(const TSourceLoc& loc, const TFunction& fn
 
     // If PureOperatorBuiltins == true, then all built-ins should be mapped
     // to a TOperator, and this function would then never get called.
-
-    assert(PureOperatorBuiltins == false);
 
     // built-in texturing functions get their return value precision from the precision of the sampler
     if (fnCandidate.getType().getQualifier().precision == EpqNone &&
@@ -2969,8 +2963,6 @@ int TParseContext::computeSamplerTypeIndex(TSampler& sampler)
 
     int flattened = EsdNumDims * (EbtNumTypes * (2 * (2 * (2 * (2 * arrayIndex + msIndex) + imageIndex) + shadowIndex) +
                                                  externalIndex) + sampler.type) + sampler.dim;
-    assert(flattened < maxSamplerIndex);
-
     return flattened;
 }
 
@@ -3136,8 +3128,6 @@ void TParseContext::structArrayCheck(const TSourceLoc& /*loc*/, const TType& typ
 void TParseContext::arraySizesCheck(const TSourceLoc& loc, const TQualifier& qualifier, TArraySizes* arraySizes,
     const TIntermTyped* initializer, bool lastMember)
 {
-    assert(arraySizes);
-
     // always allow special built-in ins/outs sized to topologies
     if (parsingBuiltins)
         return;
@@ -3945,9 +3935,7 @@ void TParseContext::arrayLimitCheck(const TSourceLoc& loc, const TString& identi
 void TParseContext::limitCheck(const TSourceLoc& loc, int value, const char* limit, const char* feature)
 {
     TSymbol* symbol = symbolTable.find(limit);
-    assert(symbol->getAsVariable());
     const TConstUnionArray& constArray = symbol->getAsVariable()->getConstArray();
-    assert(! constArray.empty());
     if (value > constArray[0].getIConst())
         error(loc, "must be less than or equal to", feature, "%s (%d)", limit, constArray[0].getIConst());
 }
@@ -4112,8 +4100,6 @@ void TParseContext::setLayoutQualifier(const TSourceLoc& loc, TPublicType& publi
             }
 #endif
         } else {
-            assert(language == EShLangTessEvaluation);
-
             // input primitive
             if (id == TQualifier::getGeometryString(ElgTriangles)) {
                 publicType.shaderQualifiers.geometry = ElgTriangles;
@@ -5598,7 +5584,6 @@ TIntermNode* TParseContext::executeInitializer(const TSourceLoc& loc, TIntermTyp
         // We either have a folded constant in getAsConstantUnion, or we have to use
         // the initializer's subtree in the AST to represent the computation of a
         // specialization constant.
-        assert(initializer->getAsConstantUnion() || initializer->getType().getQualifier().isSpecConstant());
         if (initializer->getAsConstantUnion())
             variable->setConstArray(initializer->getAsConstantUnion()->getConstArray());
         else {
@@ -6487,7 +6472,6 @@ void TParseContext::invariantCheck(const TSourceLoc& loc, const TQualifier& qual
 void TParseContext::updateStandaloneQualifierDefaults(const TSourceLoc& loc, const TPublicType& publicType)
 {
     if (publicType.shaderQualifiers.vertices != TQualifier::layoutNotSet) {
-        assert(language == EShLangTessControl || language == EShLangGeometry);
         const char* id = (language == EShLangTessControl) ? "vertices" : "max_vertices";
 
         if (publicType.qualifier.storage != EvqVaryingOut)

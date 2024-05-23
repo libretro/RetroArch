@@ -1582,10 +1582,8 @@ static bool canSignedIntTypeRepresentAllUnsignedValues(TBasicType sintType, TBas
         case EbtUint16:
         case EbtUint:
         case EbtUint64:
-            return false;
         default:
-            assert(false);
-            return false;
+	    break;
         }
         break;
     case EbtInt16:
@@ -1595,10 +1593,8 @@ static bool canSignedIntTypeRepresentAllUnsignedValues(TBasicType sintType, TBas
         case EbtUint16:
         case EbtUint:
         case EbtUint64:
-            return false;
         default:
-            assert(false);
-            return false;
+	    break;
         }
         break;
     case EbtInt:
@@ -1607,10 +1603,8 @@ static bool canSignedIntTypeRepresentAllUnsignedValues(TBasicType sintType, TBas
         case EbtUint16:
             return true;
         case EbtUint:
-            return false;
         default:
-            assert(false);
-            return false;
+	    break;
         }
         break;
     case EbtInt64:
@@ -1620,16 +1614,14 @@ static bool canSignedIntTypeRepresentAllUnsignedValues(TBasicType sintType, TBas
         case EbtUint:
             return true;
         case EbtUint64:
-            return false;
         default:
-            assert(false);
-            return false;
+	    break;
         }
         break;
     default:
-        assert(false);
-        return false;
+	break;
     }
+    return false;
 }
 
 
@@ -1644,9 +1636,9 @@ static TBasicType getCorrespondingUnsignedType(TBasicType type) {
     case EbtInt64:
         return EbtUint64;
     default:
-        assert(false);
-        return EbtNumTypes;
+	break;
     }
+    return EbtNumTypes;
 }
 
 // Implements the following rules
@@ -2363,8 +2355,6 @@ TIntermConstantUnion* TIntermediate::addConstantUnion(bool b, const TSourceLoc& 
 
 TIntermConstantUnion* TIntermediate::addConstantUnion(double d, TBasicType baseType, const TSourceLoc& loc, bool literal) const
 {
-    assert(baseType == EbtFloat || baseType == EbtDouble || baseType == EbtFloat16);
-
     TConstUnionArray unionArray(1);
     unionArray[0].setDConst(d);
 
@@ -3742,7 +3732,6 @@ TIntermTyped* TIntermediate::promoteConstantUnion(TBasicType promoteTo, TIntermC
 
 void TIntermAggregate::setPragmaTable(const TPragmaTable& pTable)
 {
-    assert(pragmaTable == nullptr);
     pragmaTable = new TPragmaTable;
     *pragmaTable = pTable;
 }
@@ -3768,8 +3757,6 @@ struct TextureUpgradeAndSamplerRemovalTransform : public TIntermTraverser {
         TQualifierList& qual = ag->getQualifierList();
 
         // qual and seq are indexed using the same indices, so we have to modify both in lock-step
-        assert(seq.size() == qual.size() || qual.empty());
-
         size_t write = 0;
         for (size_t i = 0; i < seq.size(); ++i) {
             TIntermSymbol* symbol = seq[i]->getAsSymbolNode();

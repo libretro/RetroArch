@@ -15,7 +15,6 @@
 #ifndef LIBSPIRV_UTIL_HEX_FLOAT_H_
 #define LIBSPIRV_UTIL_HEX_FLOAT_H_
 
-#include <cassert>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -421,7 +420,6 @@ class HexFloat {
       new_value = static_cast<uint_type>(new_value | sign_mask);
     }
     exponent = static_cast<int_type>(exponent + exponent_bias);
-    assert(exponent >= 0);
 
     // put it all together
     exponent = static_cast<uint_type>((exponent << exponent_left_shift) &
@@ -638,11 +636,6 @@ class HexFloat {
 
  private:
   T value_;
-
-  static_assert(num_used_bits ==
-                    Traits::num_exponent_bits + Traits::num_fraction_bits + 1,
-                "The number of bits do not fit");
-  static_assert(sizeof(T) == sizeof(uint_type), "The type sizes do not match");
 };
 
 // Returns 4 bits represented by the hex character.
@@ -651,15 +644,13 @@ inline uint8_t get_nibble_from_character(int character) {
   const char* lower = "abcdef";
   const char* upper = "ABCDEF";
   const char* p = nullptr;
-  if ((p = strchr(dec, character))) {
+  if ((p = strchr(dec, character)))
     return static_cast<uint8_t>(p - dec);
-  } else if ((p = strchr(lower, character))) {
+  else if ((p = strchr(lower, character)))
     return static_cast<uint8_t>(p - lower + 0xa);
-  } else if ((p = strchr(upper, character))) {
+  else if ((p = strchr(upper, character)))
     return static_cast<uint8_t>(p - upper + 0xa);
-  }
 
-  assert(false && "This was called with a non-hex character");
   return 0;
 }
 
@@ -669,13 +660,6 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   typedef HexFloat<T, Traits> HF;
   typedef typename HF::uint_type uint_type;
   typedef typename HF::int_type int_type;
-
-  static_assert(HF::num_used_bits != 0,
-                "num_used_bits must be non-zero for a valid float");
-  static_assert(HF::num_exponent_bits != 0,
-                "num_exponent_bits must be non-zero for a valid float");
-  static_assert(HF::num_fraction_bits != 0,
-                "num_fractin_bits must be non-zero for a valid float");
 
   const uint_type bits = spvutils::BitwiseCast<uint_type>(value.value());
   const char* const sign = (bits & HF::sign_mask) ? "-" : "";

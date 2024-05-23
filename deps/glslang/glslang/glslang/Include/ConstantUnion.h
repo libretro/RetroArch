@@ -264,7 +264,7 @@ public:
 
             break;
         default:
-            assert(false && "Default missing");
+            break;
         }
 
         return false;
@@ -327,118 +327,97 @@ public:
 
     bool operator>(const TConstUnion& constant) const
     {
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:
             if (i8Const > constant.i8Const)
                 return true;
-
-            return false;
+            break;
         case EbtUint8:
             if (u8Const > constant.u8Const)
                 return true;
-
-            return false;
+            break;
         case EbtInt16:
             if (i16Const > constant.i16Const)
                 return true;
-
-            return false;
+            break;
         case EbtUint16:
             if (u16Const > constant.u16Const)
                 return true;
-
-            return false;
+            break;
         case EbtInt:
             if (iConst > constant.iConst)
                 return true;
-
-            return false;
+            break;
         case EbtUint:
             if (uConst > constant.uConst)
                 return true;
-
-            return false;
+            break;
         case EbtInt64:
             if (i64Const > constant.i64Const)
                 return true;
-
-            return false;
+            break;
         case EbtUint64:
             if (u64Const > constant.u64Const)
                 return true;
-
-            return false;
+            break;
         case EbtDouble:
             if (dConst > constant.dConst)
                 return true;
-
-            return false;
+            break;
         default:
-            assert(false && "Default missing");
-            return false;
+            break;
         }
+        return false;
     }
 
     bool operator<(const TConstUnion& constant) const
     {
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:
             if (i8Const < constant.i8Const)
                 return true;
-
-            return false;
+            break;
         case EbtUint8:
             if (u8Const < constant.u8Const)
                 return true;
-
-            return false;
+            break;
        case EbtInt16:
             if (i16Const < constant.i16Const)
                 return true;
-
-            return false;
+            break;
         case EbtUint16:
             if (u16Const < constant.u16Const)
                 return true;
-
-            return false;
+            break;
         case EbtInt:
             if (iConst < constant.iConst)
                 return true;
-
-            return false;
+            break;
         case EbtUint:
             if (uConst < constant.uConst)
                 return true;
-
-            return false;
+            break;
         case EbtInt64:
             if (i64Const < constant.i64Const)
                 return true;
-
-            return false;
+            break;
         case EbtUint64:
             if (u64Const < constant.u64Const)
                 return true;
-
-            return false;
+            break;
         case EbtDouble:
             if (dConst < constant.dConst)
                 return true;
-
-            return false;
+            break;
         default:
-            assert(false && "Default missing");
-            return false;
+            break;
         }
+        return false;
     }
 
     TConstUnion operator+(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const + constant.i8Const); break;
         case EbtInt16:  returnValue.setI16Const(i16Const + constant.i16Const); break;
@@ -449,7 +428,7 @@ public:
         case EbtUint:   returnValue.setUConst(uConst + constant.uConst); break;
         case EbtUint64: returnValue.setU64Const(u64Const + constant.u64Const); break;
         case EbtDouble: returnValue.setDConst(dConst + constant.dConst); break;
-        default: assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -458,7 +437,6 @@ public:
     TConstUnion operator-(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const - constant.i8Const); break;
         case EbtInt16:  returnValue.setI16Const(i16Const - constant.i16Const); break;
@@ -469,7 +447,7 @@ public:
         case EbtUint:   returnValue.setUConst(uConst - constant.uConst); break;
         case EbtUint64: returnValue.setU64Const(u64Const - constant.u64Const); break;
         case EbtDouble: returnValue.setDConst(dConst - constant.dConst); break;
-        default: assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -478,7 +456,6 @@ public:
     TConstUnion operator*(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const * constant.i8Const); break;
         case EbtInt16:  returnValue.setI16Const(i16Const * constant.i16Const); break;
@@ -489,7 +466,7 @@ public:
         case EbtUint:   returnValue.setUConst(uConst * constant.uConst); break;
         case EbtUint64: returnValue.setU64Const(u64Const * constant.u64Const); break;
         case EbtDouble: returnValue.setDConst(dConst * constant.dConst); break;
-        default: assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -498,7 +475,6 @@ public:
     TConstUnion operator%(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const % constant.i8Const); break;
         case EbtInt16:  returnValue.setI8Const(i8Const % constant.i16Const); break;
@@ -508,7 +484,7 @@ public:
         case EbtUint16: returnValue.setU16Const(u16Const % constant.u16Const); break;
         case EbtUint:   returnValue.setUConst(uConst % constant.uConst); break;
         case EbtUint64: returnValue.setU64Const(u64Const % constant.u64Const); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -528,7 +504,7 @@ public:
             case EbtUint:   returnValue.setI8Const(i8Const >> constant.uConst);   break;
             case EbtInt64:  returnValue.setI8Const(i8Const >> constant.i64Const); break;
             case EbtUint64: returnValue.setI8Const(i8Const >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint8:
@@ -541,7 +517,7 @@ public:
             case EbtUint:   returnValue.setU8Const(u8Const >> constant.uConst);   break;
             case EbtInt64:  returnValue.setU8Const(u8Const >> constant.i64Const); break;
             case EbtUint64: returnValue.setU8Const(u8Const >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtInt16:
@@ -554,7 +530,7 @@ public:
             case EbtUint:   returnValue.setI16Const(i16Const >> constant.uConst);   break;
             case EbtInt64:  returnValue.setI16Const(i16Const >> constant.i64Const); break;
             case EbtUint64: returnValue.setI16Const(i16Const >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint16:
@@ -567,7 +543,7 @@ public:
             case EbtUint:   returnValue.setU16Const(u16Const >> constant.uConst);   break;
             case EbtInt64:  returnValue.setU16Const(u16Const >> constant.i64Const); break;
             case EbtUint64: returnValue.setU16Const(u16Const >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtInt:
@@ -580,7 +556,7 @@ public:
             case EbtUint:   returnValue.setIConst(iConst >> constant.uConst);   break;
             case EbtInt64:  returnValue.setIConst(iConst >> constant.i64Const); break;
             case EbtUint64: returnValue.setIConst(iConst >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint:
@@ -593,7 +569,7 @@ public:
             case EbtUint:   returnValue.setUConst(uConst >> constant.uConst);   break;
             case EbtInt64:  returnValue.setUConst(uConst >> constant.i64Const); break;
             case EbtUint64: returnValue.setUConst(uConst >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
          case EbtInt64:
@@ -606,7 +582,7 @@ public:
             case EbtUint:   returnValue.setI64Const(i64Const >> constant.uConst);   break;
             case EbtInt64:  returnValue.setI64Const(i64Const >> constant.i64Const); break;
             case EbtUint64: returnValue.setI64Const(i64Const >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint64:
@@ -619,10 +595,10 @@ public:
             case EbtUint:   returnValue.setU64Const(u64Const >> constant.uConst);   break;
             case EbtInt64:  returnValue.setU64Const(u64Const >> constant.i64Const); break;
             case EbtUint64: returnValue.setU64Const(u64Const >> constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -642,7 +618,7 @@ public:
             case EbtUint:   returnValue.setI8Const(i8Const << constant.uConst);   break;
             case EbtInt64:  returnValue.setI8Const(i8Const << constant.i64Const); break;
             case EbtUint64: returnValue.setI8Const(i8Const << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint8:
@@ -655,7 +631,7 @@ public:
             case EbtUint:   returnValue.setU8Const(u8Const << constant.uConst);   break;
             case EbtInt64:  returnValue.setU8Const(u8Const << constant.i64Const); break;
             case EbtUint64: returnValue.setU8Const(u8Const << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtInt16:
@@ -668,7 +644,7 @@ public:
             case EbtUint:   returnValue.setI16Const(i16Const << constant.uConst);   break;
             case EbtInt64:  returnValue.setI16Const(i16Const << constant.i64Const); break;
             case EbtUint64: returnValue.setI16Const(i16Const << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint16:
@@ -681,7 +657,7 @@ public:
             case EbtUint:   returnValue.setU16Const(u16Const << constant.uConst);   break;
             case EbtInt64:  returnValue.setU16Const(u16Const << constant.i64Const); break;
             case EbtUint64: returnValue.setU16Const(u16Const << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtInt:
@@ -694,7 +670,7 @@ public:
             case EbtUint:   returnValue.setIConst(iConst << constant.uConst);   break;
             case EbtInt64:  returnValue.setIConst(iConst << constant.i64Const); break;
             case EbtUint64: returnValue.setIConst(iConst << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint:
@@ -707,7 +683,7 @@ public:
             case EbtUint:   returnValue.setUConst(uConst << constant.uConst);   break;
             case EbtInt64:  returnValue.setUConst(uConst << constant.i64Const); break;
             case EbtUint64: returnValue.setUConst(uConst << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
          case EbtInt64:
@@ -720,7 +696,7 @@ public:
             case EbtUint:   returnValue.setI64Const(i64Const << constant.uConst);   break;
             case EbtInt64:  returnValue.setI64Const(i64Const << constant.i64Const); break;
             case EbtUint64: returnValue.setI64Const(i64Const << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
         case EbtUint64:
@@ -733,10 +709,10 @@ public:
             case EbtUint:   returnValue.setU64Const(u64Const << constant.uConst);   break;
             case EbtInt64:  returnValue.setU64Const(u64Const << constant.i64Const); break;
             case EbtUint64: returnValue.setU64Const(u64Const << constant.u64Const); break;
-            default:       assert(false && "Default missing");
+            default: break;
             }
             break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -745,7 +721,6 @@ public:
     TConstUnion operator&(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const & constant.i8Const); break;
         case EbtUint8:  returnValue.setU8Const(u8Const & constant.u8Const); break;
@@ -755,7 +730,7 @@ public:
         case EbtUint:   returnValue.setUConst(uConst & constant.uConst); break;
         case EbtInt64:  returnValue.setI64Const(i64Const & constant.i64Const); break;
         case EbtUint64: returnValue.setU64Const(u64Const & constant.u64Const); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -764,7 +739,6 @@ public:
     TConstUnion operator|(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const | constant.i8Const); break;
         case EbtUint8:  returnValue.setU8Const(u8Const | constant.u8Const); break;
@@ -774,7 +748,7 @@ public:
         case EbtUint:   returnValue.setUConst(uConst | constant.uConst); break;
         case EbtInt64:  returnValue.setI64Const(i64Const | constant.i64Const); break;
         case EbtUint64: returnValue.setU64Const(u64Const | constant.u64Const); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -783,7 +757,6 @@ public:
     TConstUnion operator^(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtInt8:   returnValue.setI8Const(i8Const ^ constant.i8Const); break;
         case EbtUint8:  returnValue.setU8Const(u8Const ^ constant.u8Const); break;
@@ -793,7 +766,7 @@ public:
         case EbtUint:   returnValue.setUConst(uConst ^ constant.uConst); break;
         case EbtInt64:  returnValue.setI64Const(i64Const ^ constant.i64Const); break;
         case EbtUint64: returnValue.setU64Const(u64Const ^ constant.u64Const); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -811,7 +784,7 @@ public:
         case EbtUint:   returnValue.setUConst(~uConst); break;
         case EbtInt64:  returnValue.setI64Const(~i64Const); break;
         case EbtUint64: returnValue.setU64Const(~u64Const); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -820,10 +793,9 @@ public:
     TConstUnion operator&&(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtBool: returnValue.setBConst(bConst && constant.bConst); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -832,10 +804,9 @@ public:
     TConstUnion operator||(const TConstUnion& constant) const
     {
         TConstUnion returnValue;
-        assert(type == constant.type);
         switch (type) {
         case EbtBool: returnValue.setBConst(bConst || constant.bConst); break;
-        default:     assert(false && "Default missing");
+        default: break;
         }
 
         return returnValue;
@@ -917,12 +888,9 @@ public:
 
     double dot(const TConstUnionArray& rhs)
     {
-        assert(rhs.unionArray->size() == unionArray->size());
         double sum = 0.0;
-
         for (size_t comp = 0; comp < unionArray->size(); ++comp)
             sum += (*this)[comp].getDConst() * rhs[comp].getDConst();
-
         return sum;
     }
 

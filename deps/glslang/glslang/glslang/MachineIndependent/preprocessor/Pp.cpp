@@ -855,7 +855,6 @@ int TPpContext::CPPextension(TPpToken* ppToken)
     if (token != PpAtomIdentifier)
         _parseContext.ppError(ppToken->loc, "extension name expected", "#extension", "");
 
-    assert(strlen(ppToken->name) <= MaxTokenLength);
     strcpy(extensionName, ppToken->name);
 
     token = scanToken(ppToken);
@@ -1063,7 +1062,6 @@ int TPpContext::tMacroInput::scan(TPpToken* ppToken)
 
     if (prepaste) {
         // already know we should be on a ##, verify
-        assert(token == PpAtomPaste);
         prepaste = false;
         postpaste = true;
     }

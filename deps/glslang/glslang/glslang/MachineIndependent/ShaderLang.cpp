@@ -131,9 +131,6 @@ int MapVersionToIndex(int version)
     case 460: index = 16; break;
     default: break;
     }
-
-    assert(index < VersionCount);
-
     return index;
 }
 
@@ -147,9 +144,6 @@ int MapSpvVersionToIndex(const SpvVersion& spvVersion)
         index = 1;
     else if (spvVersion.vulkan > 0)
         index = 2;
-
-    assert(index < SpvVersionCount);
-
     return index;
 }
 
@@ -166,9 +160,6 @@ int MapProfileToIndex(EProfile profile)
     case EEsProfile:            index = 3; break;
     default:                               break;
     }
-
-    assert(index < ProfileCount);
-
     return index;
 }
 
@@ -183,9 +174,6 @@ int MapSourceToIndex(EShSource source)
     case EShSourceHlsl: index = 1; break;
     default:                       break;
     }
-
-    assert(index < SourceCount);
-
     return index;
 }
 
@@ -866,7 +854,6 @@ bool ProcessDeferred(
     strings[1] = customPreamble;
     lengths[1] = strlen(strings[1]);
     names[1] = nullptr;
-    assert(2 == numPre);
     if (requireNonempty) {
         const int postIndex = numStrings + numPre;
         strings[postIndex] = "\n int;";
@@ -1253,7 +1240,6 @@ int __fastcall ShFinalize()
 {
     glslang::GetGlobalLock();
     --NumberOfClients;
-    assert(NumberOfClients >= 0);
     bool finalize = NumberOfClients == 0;
     glslang::ReleaseGlobalLock();
     if (! finalize)
