@@ -581,7 +581,7 @@ static void retropad_update_input(void)
    }
 }
 
-static void open_UDP_socket()
+static void netretropad_open_udp_socket(void)
 {
    socket_target_t in_target;
 
@@ -702,7 +702,7 @@ void NETRETROPAD_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
 {
    netretropad_check_variables();
-   open_UDP_socket();
+   netretropad_open_udp_socket();
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)
@@ -985,7 +985,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    netretropad_check_variables();
-   open_UDP_socket();
+   netretropad_open_udp_socket();
 
    /* If a .ratst file is given (only possible via command line),
     * initialize test sequence. */
