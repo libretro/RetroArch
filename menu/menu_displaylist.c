@@ -486,7 +486,7 @@ static int filebrowser_parse(
 
 #ifdef IOS
    {
-      // check if we're allowed to escape our sandbox
+      /* Check if we're allowed to escape our sandbox */
       struct string_list *str_list = string_list_new();
       dir_list_append(str_list, "/private/var", NULL, true, false, false, false);
       if (str_list->size <= 0)
