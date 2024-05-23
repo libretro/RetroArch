@@ -2556,6 +2556,14 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY 79
 
+/**
+ * Enable or disable mouse grab.
+ *
+ * Pointer to a single \c bool that indicates whether this frontend should grab the mouse, or release it.
+ * @returns \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_SET_MOUSE_GRAB 80
+
 /**@}*/
 
 /**

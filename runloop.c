@@ -3572,6 +3572,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_SET_MOUSE_GRAB:
+         {
+            bool grab_mouse = *(const bool*)data;
+            bool ret = grab_mouse ? input_driver_grab_mouse() : input_driver_ungrab_mouse();
+            RARCH_LOG("[Input]: %s => %s\n",
+                  msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
+                  ret ? "ON" : "OFF");
+            return ret;
+         }
+         break;
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
