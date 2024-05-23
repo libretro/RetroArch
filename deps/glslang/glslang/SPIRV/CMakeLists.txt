@@ -2,13 +2,10 @@ set(SOURCES
     GlslangToSpv.cpp
     InReadableOrder.cpp
     Logger.cpp
-    SpvBuilder.cpp
-    doc.cpp
-    disassemble.cpp)
+    SpvBuilder.cpp)
 
 set(SPVREMAP_SOURCES
-    SPVRemapper.cpp
-    doc.cpp)
+    SPVRemapper.cpp)
 
 set(HEADERS
     bitutils.h
@@ -20,13 +17,10 @@ set(HEADERS
     hex_float.h
     Logger.h
     SpvBuilder.h
-    spvIR.h
-    doc.h
-    disassemble.h)
+    spvIR.h)
 
 set(SPVREMAP_HEADERS
-    SPVRemapper.h
-    doc.h)
+    SPVRemapper.h)
 
 if(ENABLE_AMD_EXTENSIONS)
     list(APPEND

@@ -53,11 +53,6 @@ class Float16 {
   Float16(const Float16& other) { val = other.val; }
   uint16_t get_value() const { return val; }
 
-  // Returns the maximum normal value.
-  static Float16 max() { return Float16(0x7bff); }
-  // Returns the lowest normal value.
-  static Float16 lowest() { return Float16(0xfbff); }
-
  private:
   uint16_t val;
 };
@@ -74,37 +69,16 @@ struct FloatProxyTraits {
 template <>
 struct FloatProxyTraits<float> {
   typedef uint32_t uint_type;
-  static bool isNan(float f) { return std::isnan(f); }
-  // Returns true if the given value is any kind of infinity.
-  static bool isInfinity(float f) { return std::isinf(f); }
-  // Returns the maximum normal value.
-  static float max() { return std::numeric_limits<float>::max(); }
-  // Returns the lowest normal value.
-  static float lowest() { return std::numeric_limits<float>::lowest(); }
 };
 
 template <>
 struct FloatProxyTraits<double> {
   typedef uint64_t uint_type;
-  static bool isNan(double f) { return std::isnan(f); }
-  // Returns true if the given value is any kind of infinity.
-  static bool isInfinity(double f) { return std::isinf(f); }
-  // Returns the maximum normal value.
-  static double max() { return std::numeric_limits<double>::max(); }
-  // Returns the lowest normal value.
-  static double lowest() { return std::numeric_limits<double>::lowest(); }
 };
 
 template <>
 struct FloatProxyTraits<Float16> {
   typedef uint16_t uint_type;
-  static bool isNan(Float16 f) { return Float16::isNan(f); }
-  // Returns true if the given value is any kind of infinity.
-  static bool isInfinity(Float16 f) { return Float16::isInfinity(f); }
-  // Returns the maximum normal value.
-  static Float16 max() { return Float16::max(); }
-  // Returns the lowest normal value.
-  static Float16 lowest() { return Float16::lowest(); }
 };
 
 // Since copying a floating point number (especially if it is NaN)
@@ -142,15 +116,15 @@ class FloatProxy {
   // Returns true if the value represents any type of NaN.
   bool isNan() { return FloatProxyTraits<T>::isNan(getAsFloat()); }
   // Returns true if the value represents any type of infinity.
-  bool isInfinity() { return FloatProxyTraits<T>::isInfinity(getAsFloat()); }
+  bool isInfinity() { return std::isinf(getAsFloat()); }
 
   // Returns the maximum normal value.
   static FloatProxy<T> max() {
-    return FloatProxy<T>(FloatProxyTraits<T>::max());
+    return FloatProxy<T>(std::numeric_limits<float>::max());
   }
   // Returns the lowest normal value.
   static FloatProxy<T> lowest() {
-    return FloatProxy<T>(FloatProxyTraits<T>::lowest());
+    return FloatProxy<T>(std::numeric_limits<float>::lowest());
   }
 
  private:
@@ -803,7 +777,7 @@ ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
   // Overflow on 16-bit behaves the same as for 32- and 64-bit: set the
   // fail bit and set the lowest or highest value.
   if (Float16::isInfinity(value.value().getAsFloat())) {
-    value.set_value(value.isNegative() ? Float16::lowest() : Float16::max());
+    value.set_value(value.isNegative() ? Float16(0xfbff) : Float16(0x7bff));
     is.setstate(std::ios_base::failbit);
   }
   return is;
