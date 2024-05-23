@@ -701,7 +701,7 @@ TIntermTyped* TIntermConstantUnion::fold(TOperator op, const TType& returnType) 
 //
 TIntermTyped* TIntermediate::fold(TIntermAggregate* aggrNode)
 {
-    if (aggrNode == nullptr)
+    if (aggrNode == NULL)
         return aggrNode;
 
     if (! areAllChildConst(aggrNode))

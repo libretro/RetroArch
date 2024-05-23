@@ -102,7 +102,7 @@ bool InitThread()
         return false;
     }
 
-    glslang::SetThreadPoolAllocator(nullptr);
+    glslang::SetThreadPoolAllocator(NULL);
 
     return true;
 }

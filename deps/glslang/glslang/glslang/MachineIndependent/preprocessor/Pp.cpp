@@ -86,6 +86,8 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cctype>
 #include <climits>
 
+#include <compat/strl.h>
+
 #include "PpContext.h"
 #include "PpTokens.h"
 
@@ -159,7 +161,7 @@ int TPpContext::CPPdefine(TPpToken* ppToken)
 
     // check for duplicate definition
     MacroSymbol* existing = lookupMacroDef(defAtom);
-    if (existing != nullptr) {
+    if (existing != NULL) {
         if (! existing->undef) {
             // Already defined -- need to make sure they are identical:
             // "Two replacement lists are identical if and only if the preprocessing tokens in both have the same number,
@@ -205,7 +207,7 @@ int TPpContext::CPPundef(TPpToken* ppToken)
     _parseContext.reservedPpErrorCheck(ppToken->loc, ppToken->name, "#undef");
 
     MacroSymbol* macro = lookupMacroDef(atomStrings.getAtom(ppToken->name));
-    if (macro != nullptr)
+    if (macro != NULL)
         macro->undef = 1;
     token = scanToken(ppToken);
     if (token != '\n')
@@ -422,7 +424,7 @@ int TPpContext::eval(int token, int precedence, bool shortCircuit, int& res, boo
             }
 
             MacroSymbol* macro = lookupMacroDef(atomStrings.getAtom(ppToken->name));
-            res = macro != nullptr ? !macro->undef : 0;
+            res = macro != NULL ? !macro->undef : 0;
             token = scanToken(ppToken);
             if (needclose) {
                 if (token != ')') {
@@ -584,7 +586,7 @@ int TPpContext::CPPifdef(int defined, TPpToken* ppToken)
             while (token != '\n' && token != EndOfInput)
                 token = scanToken(ppToken);
         }
-        if (((macro != nullptr && !macro->undef) ? 1 : 0) != defined)
+        if (((macro != NULL && !macro->undef) ? 1 : 0) != defined)
             token = CPPelse(1, ppToken);
     }
 
@@ -628,17 +630,17 @@ int TPpContext::CPPinclude(TPpToken* ppToken)
 
     // Find the inclusion, first look in "Local" ("") paths, if requested,
     // otherwise, only search the "System" (<>) paths.
-    TShader::Includer::IncludeResult* res = nullptr;
+    TShader::Includer::IncludeResult* res = NULL;
     if (startWithLocalSearch)
         res = includer.includeLocal(filename.c_str(), currentSourceFile.c_str(), includeStack.size() + 1);
-    if (res == nullptr || res->headerName.empty()) {
+    if (res == NULL || res->headerName.empty()) {
         includer.releaseInclude(res);
         res = includer.includeSystem(filename.c_str(), currentSourceFile.c_str(), includeStack.size() + 1);
     }
 
     // Process the results
-    if (res != nullptr && !res->headerName.empty()) {
-        if (res->headerData != nullptr && res->headerLength > 0) {
+    if (res != NULL && !res->headerName.empty()) {
+        if (res->headerData != NULL && res->headerLength > 0) {
             // path for processing one or more tokens from an included header, hand off 'res'
             const bool forNextLine = _parseContext.lineDirectiveShouldSetNextLine();
             std::ostringstream prologue;
@@ -656,7 +658,7 @@ int TPpContext::CPPinclude(TPpToken* ppToken)
     } else {
         // error path, clean up
         std::string message =
-            res != nullptr ? std::string(res->headerData, res->headerLength)
+            res != NULL ? std::string(res->headerData, res->headerLength)
                            : std::string("Could not process include directive");
         _parseContext.ppError(directiveLoc, message.c_str(), "#include", "for header name: %s", filename.c_str());
         includer.releaseInclude(res);
@@ -683,7 +685,7 @@ int TPpContext::CPPline(TPpToken* ppToken)
     int lineToken = 0;
     bool hasFile = false;
     int fileRes = 0; // Source file number after macro expansion.
-    const char* sourceName = nullptr; // Optional source file name.
+    const char* sourceName = NULL; // Optional source file name.
     bool lineErr = false;
     bool fileErr = false;
     token = eval(token, MIN_PRECEDENCE, false, lineRes, lineErr, ppToken);
@@ -820,7 +822,7 @@ int TPpContext::CPPversion(TPpToken* ppToken)
     token = scanToken(ppToken);
 
     if (token == '\n') {
-        _parseContext.notifyVersion(line, versionNumber, nullptr);
+        _parseContext.notifyVersion(line, versionNumber, NULL);
         return token;
     } else {
         int profileAtom = atomStrings.getAtom(ppToken->name);
@@ -1000,7 +1002,7 @@ int TPpContext::scanHeaderName(TPpToken* ppToken, char delimit)
 
 // Macro-expand a macro argument 'arg' to create 'expandedArg'.
 // Does not replace 'arg'.
-// Returns nullptr if no expanded argument is created.
+// Returns NULL if no expanded argument is created.
 TPpContext::TokenStream* TPpContext::PrescanMacroArg(TokenStream& arg, TPpToken* ppToken, bool newLineOkay)
 {
     // expand the argument
@@ -1020,7 +1022,7 @@ TPpContext::TokenStream* TPpContext::PrescanMacroArg(TokenStream& arg, TPpToken*
     if (token == EndOfInput) {
         // MacroExpand ate the marker, so had bad input, recover
         delete expandedArg;
-        expandedArg = nullptr;
+        expandedArg = NULL;
     } else {
         // remove the marker
         popInput();
@@ -1084,7 +1086,7 @@ int TPpContext::tMacroInput::scan(TPpToken* ppToken)
                 break;
         if (i >= 0) {
             TokenStream* arg = expandedArgs[i];
-            if (arg == nullptr || pasting)
+            if (arg == NULL || pasting)
                 arg = args[i];
             pp->pushTokenStreamInput(*arg, prepaste);
 
@@ -1135,7 +1137,7 @@ int TPpContext::MacroExpand(TPpToken* ppToken, bool expandUndef, bool newLineOka
         if (_parseContext.getCurrentLoc().name)
             _parseContext.ppRequireExtensions(ppToken->loc, 1, &E_GL_GOOGLE_cpp_style_line_directive, "filename-based __FILE__");
         ppToken->ival = _parseContext.getCurrentLoc().string;
-        snprintf(ppToken->name, sizeof(ppToken->name), "%s", ppToken->loc.getStringNameOrNum().c_str());
+        strlcpy(ppToken->name, ppToken->loc.getStringNameOrNum().c_str(), sizeof(ppToken->name));
         UngetToken(PpAtomConstInt, ppToken);
         return 1;
     }
@@ -1150,19 +1152,19 @@ int TPpContext::MacroExpand(TPpToken* ppToken, bool expandUndef, bool newLineOka
         break;
     }
 
-    MacroSymbol* macro = macroAtom == 0 ? nullptr : lookupMacroDef(macroAtom);
+    MacroSymbol* macro = macroAtom == 0 ? NULL : lookupMacroDef(macroAtom);
     int depth = 0;
 
     // no recursive expansions
-    if (macro != nullptr && macro->busy)
+    if (macro != NULL && macro->busy)
         return 0;
 
     // not expanding undefined macros
-    if ((macro == nullptr || macro->undef) && ! expandUndef)
+    if ((macro == NULL || macro->undef) && ! expandUndef)
         return 0;
 
     // 0 is the value of an undefined macro
-    if ((macro == nullptr || macro->undef) && expandUndef) {
+    if ((macro == NULL || macro->undef) && expandUndef) {
         pushInput(new tZeroInput(this));
         return -1;
     }
@@ -1187,7 +1189,7 @@ int TPpContext::MacroExpand(TPpToken* ppToken, bool expandUndef, bool newLineOka
             in->args[i] = new TokenStream;
         in->expandedArgs.resize(in->mac->args.size());
         for (size_t i = 0; i < in->mac->args.size(); i++)
-            in->expandedArgs[i] = nullptr;
+            in->expandedArgs[i] = NULL;
         size_t arg = 0;
         bool tokenRecorded = false;
         do {

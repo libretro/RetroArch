@@ -139,12 +139,12 @@ bool TParseContextBase::lValueErrorCheck(const TSourceLoc& loc, const char* op, 
         return true;
     }
 
-    const char* symbol = nullptr;
+    const char* symbol = NULL;
     TIntermSymbol* symNode = node->getAsSymbolNode();
-    if (symNode != nullptr)
+    if (symNode != NULL)
         symbol = symNode->getName().c_str();
 
-    const char* message = nullptr;
+    const char* message = NULL;
     switch (node->getQualifier().storage) {
     case EvqConst:          message = "can't modify a const";        break;
     case EvqConstReadOnly:  message = "can't modify a const";        break;
@@ -173,7 +173,7 @@ bool TParseContextBase::lValueErrorCheck(const TSourceLoc& loc, const char* op, 
         }
     }
 
-    if (message == nullptr && binaryNode == nullptr && symNode == nullptr) {
+    if (message == NULL && binaryNode == NULL && symNode == NULL) {
         error(loc, " l-value required", op, "", "");
 
         return true;
@@ -182,7 +182,7 @@ bool TParseContextBase::lValueErrorCheck(const TSourceLoc& loc, const char* op, 
     //
     // Everything else is okay, no error.
     //
-    if (message == nullptr)
+    if (message == NULL)
         return false;
 
     //
@@ -276,15 +276,15 @@ void TParseContextBase::makeEditable(TSymbol*& symbol)
 
 // Return a writable version of the variable 'name'.
 //
-// Return nullptr if 'name' is not found.  This should mean
+// Return NULL if 'name' is not found.  This should mean
 // something is seriously wrong (e.g., compiler asking self for
 // built-in that doesn't exist).
 TVariable* TParseContextBase::getEditableVariable(const char* name)
 {
     bool builtIn;
     TSymbol* symbol = symbolTable.find(name, &builtIn);
-    if (symbol == nullptr)
-        return nullptr;
+    if (symbol == NULL)
+        return NULL;
 
     if (builtIn)
         makeEditable(symbol);
@@ -398,7 +398,7 @@ const TFunction* TParseContextBase::selectFunction(
 
     // 2. none viable...
     if (viableCandidates.size() == 0)
-        return nullptr;
+        return NULL;
 
     // 3. only one viable...
     if (viableCandidates.size() == 1)
@@ -558,7 +558,7 @@ void TParseContextBase::parseSwizzleSelector(const TSourceLoc& loc, const TStrin
 void TParseContextBase::growGlobalUniformBlock(const TSourceLoc& loc, TType& memberType, const TString& memberName, TTypeList* typeList)
 {
     // Make the global block, if not yet made.
-    if (globalUniformBlock == nullptr) {
+    if (globalUniformBlock == NULL) {
         TQualifier blockQualifier;
         blockQualifier.clear();
         blockQualifier.storage = EvqUniform;

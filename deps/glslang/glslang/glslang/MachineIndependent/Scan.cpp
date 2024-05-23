@@ -302,8 +302,8 @@ namespace {
 
 // A single global usable by all threads, by all versions, by all languages.
 // After a single process-level initialization, this is read only and thread safe
-std::unordered_map<const char*, int, str_hash, str_eq>* KeywordMap = nullptr;
-std::unordered_set<const char*, str_hash, str_eq>* ReservedSet = nullptr;
+std::unordered_map<const char*, int, str_hash, str_eq>* KeywordMap = NULL;
+std::unordered_set<const char*, str_hash, str_eq>* ReservedSet = NULL;
 
 };
 
@@ -311,7 +311,7 @@ namespace glslang {
 
 void TScanContext::fillInKeywordMap()
 {
-    if (KeywordMap != nullptr) {
+    if (KeywordMap != NULL) {
         // this is really an error, as this should called only once per process
         // but, the only risk is if two threads called simultaneously
         return;
@@ -715,9 +715,9 @@ void TScanContext::fillInKeywordMap()
 void TScanContext::deleteKeywordMap()
 {
     delete KeywordMap;
-    KeywordMap = nullptr;
+    KeywordMap = NULL;
     delete ReservedSet;
-    ReservedSet = nullptr;
+    ReservedSet = NULL;
 }
 
 // Called by yylex to get the next token.
@@ -1519,7 +1519,7 @@ int TScanContext::identifierOrType()
         return IDENTIFIER;
 
     parserToken->sType.lex.symbol = _parseContext.symbolTable.find(*parserToken->sType.lex.string);
-    if ((afterType == false && afterStruct == false) && parserToken->sType.lex.symbol != nullptr) {
+    if ((afterType == false && afterStruct == false) && parserToken->sType.lex.symbol != NULL) {
         if (const TVariable* variable = parserToken->sType.lex.symbol->getAsVariable()) {
             if (variable->isUserType()) {
                 afterType = true;

@@ -294,7 +294,7 @@ TVariable::TVariable(const TVariable& copyOf) : TSymbol(copyOf)
     }
 
     // don't support specialization-constant subtrees in cloned tables
-    constSubtree = nullptr;
+    constSubtree = NULL;
 }
 
 TVariable* TVariable::clone() const

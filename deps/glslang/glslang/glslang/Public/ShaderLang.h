@@ -474,7 +474,7 @@ public:
         // and include depth.
         // On success, returns an IncludeResult containing the resolved name
         // and content of the include.
-        // On failure, returns a nullptr, or an IncludeResult
+        // On failure, returns a NULL, or an IncludeResult
         // with an empty string for the headerName and error details in the
         // header field.
         // The Includer retains ownership of the contents
@@ -489,14 +489,14 @@ public:
         // For the "system" or <>-style includes; search the "system" paths.
         virtual IncludeResult* includeSystem(const char* /*headerName*/,
                                              const char* /*includerName*/,
-                                             size_t /*inclusionDepth*/) { return nullptr; }
+                                             size_t /*inclusionDepth*/) { return NULL; }
 
         // For the "local"-only aspect of a "" include. Should not search in the
         // "system" paths, because on returning a failure, the parser will
         // call includeSystem() to look in the "system" locations.
         virtual IncludeResult* includeLocal(const char* /*headerName*/,
                                             const char* /*includerName*/,
-                                            size_t /*inclusionDepth*/) { return nullptr; }
+                                            size_t /*inclusionDepth*/) { return NULL; }
 
         // Signals that the parser will no longer use the contents of the
         // specified IncludeResult.

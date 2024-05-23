@@ -127,7 +127,7 @@ public:
 
     virtual void visitSymbol(TIntermSymbol* base)
     {
-        TVarLiveMap* target = nullptr;
+        TVarLiveMap* target = NULL;
         if (base->getQualifier().storage == EvqVaryingIn)
             target = &inputList;
         else if (base->getQualifier().storage == EvqVaryingOut)
@@ -359,7 +359,7 @@ struct TDefaultIoResolverBase : public glslang::TIoMapResolver
     { }
 
     int getBaseBinding(TResourceType res, unsigned int set) const {
-        return selectBaseBinding(intermediate.getShiftBinding(res), 
+        return selectBaseBinding(intermediate.getShiftBinding(res),
                                  intermediate.getShiftBindingForSet(res, set));
     }
 
@@ -535,7 +535,7 @@ protected:
     }
 
     static bool isTextureType(const glslang::TType& type) {
-        return (type.getBasicType() == glslang::EbtSampler && 
+        return (type.getBasicType() == glslang::EbtSampler &&
                 (type.getSampler().isTexture() || type.getSampler().isSubpass()));
     }
 
@@ -634,7 +634,7 @@ t - for shader resource views (SRV)
    BYTEADDRESSBUFFER
    BUFFER
    TBUFFER
-    
+
 s - for samplers
    SAMPLER
    SAMPLER1D
@@ -738,21 +738,21 @@ bool TIoMapper::addStage(EShLanguage stage, TIntermediate &intermediate, TInfoSi
             intermediate.hasShiftBindingForSet(TResourceType(res));
     }
 
-    if (!somethingToDo && resolver == nullptr)
+    if (!somethingToDo && resolver == NULL)
         return true;
 
     if (intermediate.getNumEntryPoints() != 1 || intermediate.isRecursive())
         return false;
 
     TIntermNode* root = intermediate.getTreeRoot();
-    if (root == nullptr)
+    if (root == NULL)
         return false;
 
     // if no resolver is provided, use the default resolver with the given shifts and auto map settings
     TDefaultIoResolver defaultResolver(intermediate);
     TDefaultHlslIoResolver defaultHlslResolver(intermediate);
 
-    if (resolver == nullptr) {
+    if (resolver == NULL) {
         // TODO: use a passed in IO mapper for this
         if (intermediate.usingHlslIoMapping())
             resolver = &defaultHlslResolver;

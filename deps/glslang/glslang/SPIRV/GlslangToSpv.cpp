@@ -1019,7 +1019,7 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion, const gl
                                                spv::SpvBuildLogger* buildLogger, glslang::SpvOptions& options)
     : TIntermTraverser(true, false, true),
       options(options),
-      shaderEntry(nullptr), currentFunction(nullptr),
+      shaderEntry(NULL), currentFunction(NULL),
       sequenceDepth(0), logger(buildLogger),
       builder(spvVersion, (glslang::GetKhronosToolId() << 16) | GetSpirvGeneratorVersion(), logger),
       inEntryPoint(false), entryPointTerminated(false), linkageOnly(false),
@@ -2122,8 +2122,8 @@ bool TGlslangToSpvTraverser::visitSelection(glslang::TVisit /* visit */, glslang
     // false otherwise.
     const auto bothSidesPolicy = [&]() -> bool {
         // do we have both sides?
-        if (node->getTrueBlock()  == nullptr ||
-            node->getFalseBlock() == nullptr)
+        if (node->getTrueBlock()  == NULL ||
+            node->getFalseBlock() == NULL)
             return false;
 
         // required? (unless we write additional code to look for side effects
@@ -2223,13 +2223,13 @@ bool TGlslangToSpvTraverser::visitSelection(glslang::TVisit /* visit */, glslang
         spv::Builder::If ifBuilder(condition, control, builder);
 
         // emit the "then" statement
-        if (node->getTrueBlock() != nullptr) {
+        if (node->getTrueBlock() != NULL) {
             node->getTrueBlock()->traverse(this);
             if (result != spv::NoResult)
                 builder.createStore(accessChainLoad(node->getTrueBlock()->getAsTyped()->getType()), result);
         }
 
-        if (node->getFalseBlock() != nullptr) {
+        if (node->getFalseBlock() != NULL) {
             ifBuilder.makeBeginElse();
             // emit the "else" statement
             node->getFalseBlock()->traverse(this);
@@ -2288,7 +2288,7 @@ bool TGlslangToSpvTraverser::visitSwitch(glslang::TVisit /* visit */, glslang::T
     // statements between the last case and the end of the switch statement
     if ((caseValues.size() && (int)codeSegments.size() == valueIndexToSegment[caseValues.size() - 1]) ||
         (int)codeSegments.size() == defaultSegment)
-        codeSegments.push_back(nullptr);
+        codeSegments.push_back(NULL);
 
     // make the switch statement
     std::vector<spv::Block*> segmentBlocks; // returned, as the blocks allocated in the call
@@ -2873,7 +2873,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         // nonuniform
         builder.addMemberDecoration(spvType, member, TranslateNonUniformDecoration(glslangMember.getQualifier()));
 
-        if (glslangIntermediate->getHlslFunctionality1() && memberQualifier.semanticName != nullptr) {
+        if (glslangIntermediate->getHlslFunctionality1() && memberQualifier.semanticName != NULL) {
             builder.addExtension("SPV_GOOGLE_hlsl_functionality1");
             builder.addMemberDecoration(spvType, member, (spv::Decoration)spv::DecorationHlslSemanticGOOGLE,
                                         memberQualifier.semanticName);
@@ -2920,7 +2920,7 @@ spv::Id TGlslangToSpvTraverser::makeArraySizeId(const glslang::TArraySizes& arra
 {
     // First, see if this is sized with a node, meaning a specialization constant:
     glslang::TIntermTyped* specNode = arraySizes.getDimNode(dim);
-    if (specNode != nullptr) {
+    if (specNode != NULL) {
         builder.clearAccessChain();
         specNode->traverse(this);
         return accessChainLoad(specNode->getAsTyped()->getType());
@@ -6434,7 +6434,7 @@ spv::Id TGlslangToSpvTraverser::getSymbolId(const glslang::TIntermSymbol* symbol
     }
 #endif
 
-    if (glslangIntermediate->getHlslFunctionality1() && symbol->getType().getQualifier().semanticName != nullptr) {
+    if (glslangIntermediate->getHlslFunctionality1() && symbol->getType().getQualifier().semanticName != NULL) {
         builder.addExtension("SPV_GOOGLE_hlsl_functionality1");
         builder.addDecoration(id, (spv::Decoration)spv::DecorationHlslSemanticGOOGLE,
                               symbol->getType().getQualifier().semanticName);
@@ -6631,15 +6631,15 @@ spv::Id TGlslangToSpvTraverser::createSpvConstantFromConstUnionArray(const glsla
 bool TGlslangToSpvTraverser::isTrivialLeaf(const glslang::TIntermTyped* node)
 {
     // don't know what this is
-    if (node == nullptr)
+    if (node == NULL)
         return false;
 
     // a constant is safe
-    if (node->getAsConstantUnion() != nullptr)
+    if (node->getAsConstantUnion() != NULL)
         return true;
 
     // not a symbol means non-trivial
-    if (node->getAsSymbolNode() == nullptr)
+    if (node->getAsSymbolNode() == NULL)
         return false;
 
     // a symbol, depends on what's being read
@@ -6663,7 +6663,7 @@ bool TGlslangToSpvTraverser::isTrivialLeaf(const glslang::TIntermTyped* node)
 // Return true if trivial.
 bool TGlslangToSpvTraverser::isTrivial(const glslang::TIntermTyped* node)
 {
-    if (node == nullptr)
+    if (node == NULL)
         return false;
 
     // count non scalars as trivial, as well as anything coming from HLSL
@@ -6679,7 +6679,7 @@ bool TGlslangToSpvTraverser::isTrivial(const glslang::TIntermTyped* node)
     // not a simple operation
     const glslang::TIntermBinary* binaryNode = node->getAsBinaryNode();
     const glslang::TIntermUnary* unaryNode = node->getAsUnaryNode();
-    if (binaryNode == nullptr && unaryNode == nullptr)
+    if (binaryNode == NULL && unaryNode == NULL)
         return false;
 
     // not on leaf nodes
@@ -6796,7 +6796,7 @@ void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsign
         return;
 
     glslang::SpvOptions defaultOptions;
-    if (options == nullptr)
+    if (options == NULL)
         options = &defaultOptions;
 
     glslang::GetThreadPoolAllocator().push();

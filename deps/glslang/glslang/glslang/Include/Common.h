@@ -222,12 +222,12 @@ inline const TString String(const int i, const int /*base*/ = 10)
 #endif
 
 struct TSourceLoc {
-    void init() { name = nullptr; string = 0; line = 0; column = 0; }
+    void init() { name = NULL; string = 0; line = 0; column = 0; }
     void init(int stringNum) { init(); string = stringNum; }
     // Returns the name if it exists. Otherwise, returns the string number.
     std::string getStringNameOrNum(bool quoteStringName = true) const
     {
-        if (name != nullptr)
+        if (name != NULL)
             return quoteStringName ? ("\"" + std::string(name) + "\"") : name;
         return std::to_string((long long)string);
     }

@@ -1083,7 +1083,7 @@ fully_specified_type
         }
 
         if ($2.arraySizes && parseContext.arrayQualifierError($2.loc, $1.qualifier))
-            $2.arraySizes = nullptr;
+            $2.arraySizes = NULL;
 
         parseContext.checkNoShaderLayouts($2.loc, $1.shaderQualifiers);
         $2.shaderQualifiers.merge($1.shaderQualifiers);
@@ -3546,7 +3546,7 @@ translation_unit
         parseContext.intermediate.setTreeRoot($$);
     }
     | translation_unit external_declaration {
-        if ($2 != nullptr) {
+        if ($2 != NULL) {
             $$ = parseContext.intermediate.growAggregate($1, $2);
             parseContext.intermediate.setTreeRoot($$);
         }
@@ -3562,8 +3562,8 @@ external_declaration
     }
     | SEMICOLON {
         parseContext.requireProfile($1.loc, ~EEsProfile, "extraneous semicolon");
-        parseContext.profileRequires($1.loc, ~EEsProfile, 460, nullptr, "extraneous semicolon");
-        $$ = nullptr;
+        parseContext.profileRequires($1.loc, ~EEsProfile, 460, NULL, "extraneous semicolon");
+        $$ = NULL;
     }
     ;
 
