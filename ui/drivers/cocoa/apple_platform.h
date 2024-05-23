@@ -1,6 +1,11 @@
 #ifndef COCOA_APPLE_PLATFORM_H
 #define COCOA_APPLE_PLATFORM_H
 
+#if TARGET_OS_IPHONE
+/* this comes from UIKit but you cannot #include UIKit from C */
+extern bool UIAccessibilityIsVoiceOverRunning(void);
+#endif
+
 #if TARGET_OS_TV
 #include "config_file.h"
 extern config_file_t *open_userdefaults_config_file(void);
