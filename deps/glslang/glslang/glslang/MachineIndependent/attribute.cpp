@@ -45,7 +45,7 @@ bool TAttributeArgs::getInt(int& value, int argNum) const
 {
     const TConstUnion* intConst = getConstUnion(EbtInt, argNum);
 
-    if (intConst == nullptr)
+    if (intConst == NULL)
         return false;
 
     value = intConst->getIConst();
@@ -58,7 +58,7 @@ bool TAttributeArgs::getString(TString& value, int argNum, bool convertToLower) 
 {
     const TConstUnion* stringConst = getConstUnion(EbtString, argNum);
 
-    if (stringConst == nullptr)
+    if (stringConst == NULL)
         return false;
 
     value = *stringConst->getSConst();
@@ -73,21 +73,21 @@ bool TAttributeArgs::getString(TString& value, int argNum, bool convertToLower) 
 // How many arguments were supplied?
 int TAttributeArgs::size() const
 {
-    return args == nullptr ? 0 : (int)args->getSequence().size();
+    return args == NULL ? 0 : (int)args->getSequence().size();
 }
 
-// Helper to get attribute const union.  Returns nullptr on failure.
+// Helper to get attribute const union.  Returns NULL on failure.
 const TConstUnion* TAttributeArgs::getConstUnion(TBasicType basicType, int argNum) const
 {
-    if (args == nullptr)
-        return nullptr;
+    if (args == NULL)
+        return NULL;
 
     if (argNum >= (int)args->getSequence().size())
-        return nullptr;
+        return NULL;
 
     const TConstUnion* constVal = &args->getSequence()[argNum]->getAsConstantUnion()->getConstArray()[0];
-    if (constVal == nullptr || constVal->getType() != basicType)
-        return nullptr;
+    if (constVal == NULL || constVal->getType() != basicType)
+        return NULL;
 
     return constVal;
 }
@@ -113,9 +113,9 @@ TAttributeType TParseContext::attributeFromName(const TString& name) const
 // Make an initial leaf for the grammar from a no-argument attribute
 TAttributes* TParseContext::makeAttributes(const TString& identifier) const
 {
-    TAttributes *attributes = nullptr;
+    TAttributes *attributes = NULL;
     attributes = NewPoolObject(attributes);
-    TAttributeArgs args = { attributeFromName(identifier), nullptr };
+    TAttributeArgs args = { attributeFromName(identifier), NULL };
     attributes->push_back(args);
     return attributes;
 }
@@ -123,7 +123,7 @@ TAttributes* TParseContext::makeAttributes(const TString& identifier) const
 // Make an initial leaf for the grammar from a one-argument attribute
 TAttributes* TParseContext::makeAttributes(const TString& identifier, TIntermNode* node) const
 {
-    TAttributes *attributes = nullptr;
+    TAttributes *attributes = NULL;
     attributes = NewPoolObject(attributes);
 
     // for now, node is always a simple single expression, but other code expects
@@ -148,7 +148,7 @@ TAttributes* TParseContext::mergeAttributes(TAttributes* attr1, TAttributes* att
 void TParseContext::handleSelectionAttributes(const TAttributes& attributes, TIntermNode* node)
 {
     TIntermSelection* selection = node->getAsSelectionNode();
-    if (selection == nullptr)
+    if (selection == NULL)
         return;
 
     for (auto it = attributes.begin(); it != attributes.end(); ++it) {
@@ -177,7 +177,7 @@ void TParseContext::handleSelectionAttributes(const TAttributes& attributes, TIn
 void TParseContext::handleSwitchAttributes(const TAttributes& attributes, TIntermNode* node)
 {
     TIntermSwitch* selection = node->getAsSwitchNode();
-    if (selection == nullptr)
+    if (selection == NULL)
         return;
 
     for (auto it = attributes.begin(); it != attributes.end(); ++it) {
@@ -206,17 +206,17 @@ void TParseContext::handleSwitchAttributes(const TAttributes& attributes, TInter
 void TParseContext::handleLoopAttributes(const TAttributes& attributes, TIntermNode* node)
 {
     TIntermLoop* loop = node->getAsLoopNode();
-    if (loop == nullptr) {
+    if (loop == NULL) {
         // the actual loop might be part of a sequence
         TIntermAggregate* agg = node->getAsAggregate();
-        if (agg == nullptr)
+        if (agg == NULL)
             return;
         for (auto it = agg->getSequence().begin(); it != agg->getSequence().end(); ++it) {
             loop = (*it)->getAsLoopNode();
-            if (loop != nullptr)
+            if (loop != NULL)
                 break;
         }
-        if (loop == nullptr)
+        if (loop == NULL)
             return;
     }
 

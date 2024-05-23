@@ -56,12 +56,12 @@ extern bool SameSpecializationConstants(TIntermTyped*, TIntermTyped*);
 // size and specialization constant nodes are the same.
 struct TArraySize {
     unsigned int size;
-    TIntermTyped* node;  // nullptr means no specialization constant node
+    TIntermTyped* node;  // NULL means no specialization constant node
     bool operator==(const TArraySize& rhs) const
     {
         if (size != rhs.size)
             return false;
-        if (node == nullptr || rhs.node == nullptr)
+        if (node == NULL || rhs.node == NULL)
             return node == rhs.node;
 
         return SameSpecializationConstants(node, rhs.node);
@@ -82,14 +82,14 @@ struct TSmallArrayVector {
     //
     POOL_ALLOCATOR_NEW_DELETE(GetThreadPoolAllocator())
 
-    TSmallArrayVector() : sizes(nullptr) { }
+    TSmallArrayVector() : sizes(NULL) { }
     virtual ~TSmallArrayVector() { dealloc(); }
 
     // For breaking into two non-shared copies, independently modifiable.
     TSmallArrayVector& operator=(const TSmallArrayVector& from)
     {
-        if (from.sizes == nullptr)
-            sizes = nullptr;
+        if (from.sizes == NULL)
+            sizes = NULL;
         else {
             alloc();
             *sizes = *from.sizes;
@@ -100,7 +100,7 @@ struct TSmallArrayVector {
 
     int size() const
     {
-        if (sizes == nullptr)
+        if (sizes == NULL)
             return 0;
         return (int)sizes->size();
     }
@@ -170,9 +170,9 @@ struct TSmallArrayVector {
 
     bool operator==(const TSmallArrayVector& rhs) const
     {
-        if (sizes == nullptr && rhs.sizes == nullptr)
+        if (sizes == NULL && rhs.sizes == NULL)
             return true;
-        if (sizes == nullptr || rhs.sizes == nullptr)
+        if (sizes == NULL || rhs.sizes == NULL)
             return false;
         return *sizes == *rhs.sizes;
     }
@@ -183,13 +183,13 @@ protected:
 
     void alloc()
     {
-        if (sizes == nullptr)
+        if (sizes == NULL)
             sizes = new TVector<TArraySize>;
     }
     void dealloc()
     {
         delete sizes;
-        sizes = nullptr;
+        sizes = NULL;
     }
 
     TVector<TArraySize>* sizes; // will either hold such a pointer, or in the future, hold the two array sizes
@@ -240,7 +240,7 @@ struct TArraySizes {
         return size;
     }
     void addInnerSize() { addInnerSize((unsigned)UnsizedArraySize); }
-    void addInnerSize(int s) { addInnerSize((unsigned)s, nullptr); }
+    void addInnerSize(int s) { addInnerSize((unsigned)s, NULL); }
     void addInnerSize(int s, TIntermTyped* n) { sizes.push_back((unsigned)s, n); }
     void addInnerSize(TArraySize pair) { sizes.push_back(pair.size, pair.node); }
     void addInnerSizes(const TArraySizes& s) { sizes.push_back(s.sizes); }
@@ -268,7 +268,7 @@ struct TArraySizes {
     bool isInnerSpecialization() const
     {
         for (int d = 1; d < sizes.size(); ++d) {
-            if (sizes.getDimNode(d) != nullptr)
+            if (sizes.getDimNode(d) != NULL)
                 return true;
         }
 
@@ -276,7 +276,7 @@ struct TArraySizes {
     }
     bool isOuterSpecialization()
     {
-        return sizes.getDimNode(0) != nullptr;
+        return sizes.getDimNode(0) != NULL;
     }
 
     bool hasUnsized() const { return getOuterSize() == UnsizedArraySize || isInnerUnsized(); }

@@ -81,8 +81,8 @@ bool DeinitializePoolIndex()
 TPoolAllocator::TPoolAllocator(int growthIncrement, int allocationAlignment) :
     pageSize(growthIncrement),
     alignment(allocationAlignment),
-    freeList(nullptr),
-    inUseList(nullptr),
+    freeList(NULL),
+    inUseList(NULL),
     numCalls(0)
 {
     //

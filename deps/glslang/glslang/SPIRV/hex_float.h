@@ -643,7 +643,7 @@ inline uint8_t get_nibble_from_character(int character) {
   const char* dec = "0123456789";
   const char* lower = "abcdef";
   const char* upper = "ABCDEF";
-  const char* p = nullptr;
+  const char* p = NULL;
   if ((p = strchr(dec, character)))
     return static_cast<uint8_t>(p - dec);
   else if ((p = strchr(lower, character)))

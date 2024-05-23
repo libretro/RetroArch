@@ -388,7 +388,7 @@ void TIntermediate::mergeErrorCheck(TInfoSink& infoSink, const TIntermSymbol& sy
 //
 void TIntermediate::finalCheck(TInfoSink& infoSink, bool keepUncalled)
 {
-    if (getTreeRoot() == nullptr)
+    if (getTreeRoot() == NULL)
         return;
 
     if (numEntryPoints < 1) {
@@ -679,9 +679,9 @@ void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
     if (! keepUncalled) {
         for (int f = 0; f < (int)functionSequence.size(); ++f) {
             if (! reachable[f])
-                functionSequence[f] = nullptr;
+                functionSequence[f] = NULL;
         }
-        functionSequence.erase(std::remove(functionSequence.begin(), functionSequence.end(), nullptr), functionSequence.end());
+        functionSequence.erase(std::remove(functionSequence.begin(), functionSequence.end(), NULL), functionSequence.end());
     }
 }
 

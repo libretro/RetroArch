@@ -274,7 +274,7 @@ TSymbolDefinitionCollectingTraverser::TSymbolDefinitionCollectingTraverser(
     : TIntermTraverser(true, false, false), symbol_definition_mapping_(*symbol_definition_mapping),
       precise_objects_(*precise_objects), precise_return_nodes_(*precise_return_nodes),
       current_object_(), accesschain_mapping_(*accesschain_mapping),
-      current_function_definition_node_(nullptr) {}
+      current_function_definition_node_(NULL) {}
 
 // Visits a symbol node, set the current_object_ to the
 // current node symbol ID, and record a mapping from this node to the current
@@ -462,7 +462,7 @@ class TNoContractionAssigneeCheckingTraverser : public glslang::TIntermTraverser
 public:
     TNoContractionAssigneeCheckingTraverser(const AccessChainMapping& accesschain_mapping)
         : TIntermTraverser(true, false, false), accesschain_mapping_(accesschain_mapping),
-          precise_object_(nullptr) {}
+          precise_object_(NULL) {}
 
     // Checks the preciseness of a given assignment node with a precise object
     // represented as access chain. The precise object shares the same symbol
@@ -654,7 +654,7 @@ protected:
             // Gets the struct dereference index that leads to 'precise' object.
             ObjectAccessChain precise_accesschain_index_str =
                 getFrontElement(remained_accesschain_);
-            unsigned precise_accesschain_index = (unsigned)strtoul(precise_accesschain_index_str.c_str(), nullptr, 10);
+            unsigned precise_accesschain_index = (unsigned)strtoul(precise_accesschain_index_str.c_str(), NULL, 10);
             // Gets the node pointed by the access chain index extracted before.
             glslang::TIntermTyped* potential_precise_node =
                 node->getSequence()[precise_accesschain_index]->getAsTyped();

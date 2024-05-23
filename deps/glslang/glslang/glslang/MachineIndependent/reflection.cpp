@@ -372,7 +372,7 @@ public:
             return base;
         TIntermBinary* left = node->getLeft()->getAsBinaryNode();
         if (! left)
-            return nullptr;
+            return NULL;
 
         return findBase(left);
     }
@@ -781,7 +781,7 @@ void TReflection::buildCounterIndices(const TIntermediate& intermediate)
 // Returns false if the input is too malformed to do this.
 bool TReflection::addStage(EShLanguage stage, const TIntermediate& intermediate)
 {
-    if (intermediate.getTreeRoot() == nullptr ||
+    if (intermediate.getTreeRoot() == NULL ||
         intermediate.getNumEntryPoints() != 1 ||
         intermediate.isRecursive())
         return false;

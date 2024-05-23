@@ -92,7 +92,7 @@ using namespace glslang;
 
 # ifndef YY_NULL
 #  if defined __cplusplus && 201103L <= __cplusplus
-#   define YY_NULL nullptr
+#   define YY_NULL NULL
 #  else
 #   define YY_NULL 0
 #  endif
@@ -5304,7 +5304,7 @@ yyreduce:
         }
 
         if ((yyvsp[0].interm.type).arraySizes && parseContext.arrayQualifierError((yyvsp[0].interm.type).loc, (yyvsp[-1].interm.type).qualifier))
-            (yyvsp[0].interm.type).arraySizes = nullptr;
+            (yyvsp[0].interm.type).arraySizes = NULL;
 
         parseContext.checkNoShaderLayouts((yyvsp[0].interm.type).loc, (yyvsp[-1].interm.type).shaderQualifiers);
         (yyvsp[0].interm.type).shaderQualifiers.merge((yyvsp[-1].interm.type).shaderQualifiers);
@@ -9710,7 +9710,7 @@ yyreduce:
   case 546:
 #line 3548 "MachineIndependent/glslang.y" /* yacc.c:1646  */
     {
-        if ((yyvsp[0].interm.intermNode) != nullptr) {
+        if ((yyvsp[0].interm.intermNode) != NULL) {
             (yyval.interm.intermNode) = parseContext.intermediate.growAggregate((yyvsp[-1].interm.intermNode), (yyvsp[0].interm.intermNode));
             parseContext.intermediate.setTreeRoot((yyval.interm.intermNode));
         }
@@ -9738,8 +9738,8 @@ yyreduce:
 #line 3563 "MachineIndependent/glslang.y" /* yacc.c:1646  */
     {
         parseContext.requireProfile((yyvsp[0].lex).loc, ~EEsProfile, "extraneous semicolon");
-        parseContext.profileRequires((yyvsp[0].lex).loc, ~EEsProfile, 460, nullptr, "extraneous semicolon");
-        (yyval.interm.intermNode) = nullptr;
+        parseContext.profileRequires((yyvsp[0].lex).loc, ~EEsProfile, 460, NULL, "extraneous semicolon");
+        (yyval.interm.intermNode) = NULL;
     }
 #line 9749 "MachineIndependent/glslang_tab.cpp" /* yacc.c:1646  */
     break;

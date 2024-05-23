@@ -273,7 +273,7 @@ public:
     MacroSymbol* lookupMacroDef(int atom)
     {
         auto existingMacroIt = macroDefs.find(atom);
-        return (existingMacroIt == macroDefs.end()) ? nullptr : &(existingMacroIt->second);
+        return (existingMacroIt == macroDefs.end()) ? NULL : &(existingMacroIt->second);
     }
     void addMacroDef(int atom, MacroSymbol& macroDef) { macroDefs[atom] = macroDef; }
 
@@ -527,7 +527,7 @@ protected:
               epilogue_(epilogue),
               includedFile_(includedFile),
               scanner(3, strings, lengths, names, 0, 0, true),
-              prevScanner(nullptr),
+              prevScanner(NULL),
               stringInput(pp, scanner)
         {
               strings[0] = prologue_.data();

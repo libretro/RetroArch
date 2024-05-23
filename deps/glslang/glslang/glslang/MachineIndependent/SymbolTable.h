@@ -151,7 +151,7 @@ public:
     TVariable(const TString *name, const TType& t, bool uT = false )
         : TSymbol(name),
           userType(uT),
-          constSubtree(nullptr),
+          constSubtree(NULL),
           anonId(-1) { type.shallowCopy(t); }
     virtual TVariable* clone() const;
     virtual ~TVariable() { }
@@ -240,7 +240,7 @@ public:
         parameters.push_back(p);
         p.type->appendMangledName(mangledName);
 
-        if (p.defaultValue != nullptr)
+        if (p.defaultValue != NULL)
             defaultParamCount++;
     }
 
@@ -248,7 +248,7 @@ public:
     // 'this' is reflected in the list of parameters, but not the mangled name.
     virtual void addThisParameter(TType& type, const char* name)
     {
-        TParameter p = { NewPoolTString(name), new TType, nullptr };
+        TParameter p = { NewPoolTString(name), new TType, NULL };
         p.type->shallowCopy(type);
         parameters.insert(parameters.begin(), p);
     }
@@ -695,13 +695,13 @@ public:
                 ++thisDepth;
             symbol = table[level]->find(name);
             --level;
-        } while (symbol == nullptr && level >= 0);
+        } while (symbol == NULL && level >= 0);
         level++;
         if (builtIn)
             *builtIn = isBuiltInLevel(level);
         if (currentScope)
             *currentScope = isGlobalLevel(currentLevel()) || level == currentLevel();  // consider shared levels as "current scope" WRT user globals
-        if (thisDepthP != nullptr) {
+        if (thisDepthP != NULL) {
             if (! table[level]->isThisLevel())
                 thisDepth = 0;
             *thisDepthP = thisDepth;

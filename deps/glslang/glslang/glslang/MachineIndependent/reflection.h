@@ -62,7 +62,7 @@ public:
     const TType* const getType() const { return type; }
     int getBinding() const
     {
-        if (type == nullptr || !type->getQualifier().hasBinding())
+        if (type == NULL || !type->getQualifier().hasBinding())
             return -1;
         return type->getQualifier().layoutBinding;
     }
@@ -76,7 +76,7 @@ public:
     int counterIndex;
 
 protected:
-    TObjectReflection() : offset(-1), glDefineType(-1), size(-1), index(-1), type(nullptr) { }
+    TObjectReflection() : offset(-1), glDefineType(-1), size(-1), index(-1), type(NULL) { }
 
     const TType* type;
 };

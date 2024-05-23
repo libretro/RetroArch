@@ -467,7 +467,7 @@ const char* ImageChannelOrderString(int format)
     case 17: return "sRGBA";
     case 18: return "sBGRA";
 
-    default: 
+    default:
         return "Bad";
     }
 }
@@ -739,7 +739,7 @@ const char* CapabilityString(int info)
     case 22: return "Int16";
     case 23: return "TessellationPointSize";
     case 24: return "GeometryPointSize";
-    case 25: return "ImageGatherExtended"; 
+    case 25: return "ImageGatherExtended";
     case 26: return "Bad";
     case 27: return "StorageImageMultisample";
     case 28: return "UniformBufferArrayDynamicIndexing";
@@ -1371,37 +1371,37 @@ void Parameterize()
     DecorationOperands[DecorationAlignment].push(OperandLiteralNumber, "'Alignment'");
 
     OperandClassParams[OperandSource].set(0, SourceString, 0);
-    OperandClassParams[OperandExecutionModel].set(0, ExecutionModelString, nullptr);
-    OperandClassParams[OperandAddressing].set(0, AddressingString, nullptr);
-    OperandClassParams[OperandMemory].set(0, MemoryString, nullptr);
+    OperandClassParams[OperandExecutionModel].set(0, ExecutionModelString, NULL);
+    OperandClassParams[OperandAddressing].set(0, AddressingString, NULL);
+    OperandClassParams[OperandMemory].set(0, MemoryString, NULL);
     OperandClassParams[OperandExecutionMode].set(ExecutionModeCeiling, ExecutionModeString, ExecutionModeParams);
     OperandClassParams[OperandExecutionMode].setOperands(ExecutionModeOperands);
-    OperandClassParams[OperandStorage].set(0, StorageClassString, nullptr);
-    OperandClassParams[OperandDimensionality].set(0, DimensionString, nullptr);
-    OperandClassParams[OperandSamplerAddressingMode].set(0, SamplerAddressingModeString, nullptr);
-    OperandClassParams[OperandSamplerFilterMode].set(0, SamplerFilterModeString, nullptr);
-    OperandClassParams[OperandSamplerImageFormat].set(0, ImageFormatString, nullptr);
-    OperandClassParams[OperandImageChannelOrder].set(0, ImageChannelOrderString, nullptr);
-    OperandClassParams[OperandImageChannelDataType].set(0, ImageChannelDataTypeString, nullptr);
+    OperandClassParams[OperandStorage].set(0, StorageClassString, NULL);
+    OperandClassParams[OperandDimensionality].set(0, DimensionString, NULL);
+    OperandClassParams[OperandSamplerAddressingMode].set(0, SamplerAddressingModeString, NULL);
+    OperandClassParams[OperandSamplerFilterMode].set(0, SamplerFilterModeString, NULL);
+    OperandClassParams[OperandSamplerImageFormat].set(0, ImageFormatString, NULL);
+    OperandClassParams[OperandImageChannelOrder].set(0, ImageChannelOrderString, NULL);
+    OperandClassParams[OperandImageChannelDataType].set(0, ImageChannelDataTypeString, NULL);
     OperandClassParams[OperandImageOperands].set(ImageOperandsCeiling, ImageOperandsString, ImageOperandsParams, true);
-    OperandClassParams[OperandFPFastMath].set(0, FPFastMathString, nullptr, true);
-    OperandClassParams[OperandFPRoundingMode].set(0, FPRoundingModeString, nullptr);
-    OperandClassParams[OperandLinkageType].set(0, LinkageTypeString, nullptr);
-    OperandClassParams[OperandFuncParamAttr].set(0, FuncParamAttrString, nullptr);
-    OperandClassParams[OperandAccessQualifier].set(0, AccessQualifierString, nullptr);
+    OperandClassParams[OperandFPFastMath].set(0, FPFastMathString, NULL, true);
+    OperandClassParams[OperandFPRoundingMode].set(0, FPRoundingModeString, NULL);
+    OperandClassParams[OperandLinkageType].set(0, LinkageTypeString, NULL);
+    OperandClassParams[OperandFuncParamAttr].set(0, FuncParamAttrString, NULL);
+    OperandClassParams[OperandAccessQualifier].set(0, AccessQualifierString, NULL);
     OperandClassParams[OperandDecoration].set(DecorationCeiling, DecorationString, DecorationParams);
     OperandClassParams[OperandDecoration].setOperands(DecorationOperands);
-    OperandClassParams[OperandBuiltIn].set(0, BuiltInString, nullptr);
+    OperandClassParams[OperandBuiltIn].set(0, BuiltInString, NULL);
     OperandClassParams[OperandSelect].set(SelectControlCeiling, SelectControlString, SelectionControlParams, true);
     OperandClassParams[OperandLoop].set(LoopControlCeiling, LoopControlString, LoopControlParams, true);
     OperandClassParams[OperandFunction].set(FunctionControlCeiling, FunctionControlString, FunctionControlParams, true);
-    OperandClassParams[OperandMemorySemantics].set(0, MemorySemanticsString, nullptr, true);
-    OperandClassParams[OperandMemoryAccess].set(0, MemoryAccessString, nullptr, true);
-    OperandClassParams[OperandScope].set(0, ScopeString, nullptr);
-    OperandClassParams[OperandGroupOperation].set(0, GroupOperationString, nullptr);
-    OperandClassParams[OperandKernelEnqueueFlags].set(0, KernelEnqueueFlagsString, nullptr);
-    OperandClassParams[OperandKernelProfilingInfo].set(0, KernelProfilingInfoString, nullptr, true);
-    OperandClassParams[OperandCapability].set(0, CapabilityString, nullptr);
+    OperandClassParams[OperandMemorySemantics].set(0, MemorySemanticsString, NULL, true);
+    OperandClassParams[OperandMemoryAccess].set(0, MemoryAccessString, NULL, true);
+    OperandClassParams[OperandScope].set(0, ScopeString, NULL);
+    OperandClassParams[OperandGroupOperation].set(0, GroupOperationString, NULL);
+    OperandClassParams[OperandKernelEnqueueFlags].set(0, KernelEnqueueFlagsString, NULL);
+    OperandClassParams[OperandKernelProfilingInfo].set(0, KernelProfilingInfoString, NULL, true);
+    OperandClassParams[OperandCapability].set(0, CapabilityString, NULL);
     OperandClassParams[OperandOpcode].set(OpCodeMask + 1, OpcodeString, 0);
 
     // set name of operator, an initial set of <id> style operands, and the description
@@ -1943,11 +1943,11 @@ void Parameterize()
     InstructionDesc[OpBitFieldSExtract].operands.push(OperandId, "'Base'");
     InstructionDesc[OpBitFieldSExtract].operands.push(OperandId, "'Offset'");
     InstructionDesc[OpBitFieldSExtract].operands.push(OperandId, "'Count'");
-    
+
     InstructionDesc[OpBitFieldUExtract].operands.push(OperandId, "'Base'");
     InstructionDesc[OpBitFieldUExtract].operands.push(OperandId, "'Offset'");
     InstructionDesc[OpBitFieldUExtract].operands.push(OperandId, "'Count'");
-    
+
     InstructionDesc[OpBitReverse].operands.push(OperandId, "'Base'");
 
     InstructionDesc[OpBitCount].operands.push(OperandId, "'Base'");

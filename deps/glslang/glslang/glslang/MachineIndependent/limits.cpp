@@ -133,7 +133,7 @@ void TParseContext::inductiveLoopBodyCheck(TIntermNode* body, int loopId, TSymbo
 {
     TInductiveTraverser it(loopId, symbolTable);
 
-    if (body == nullptr)
+    if (body == NULL)
         return;
 
     body->traverse(&it);
