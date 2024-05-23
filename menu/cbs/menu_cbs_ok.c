@@ -1479,13 +1479,26 @@ int generic_action_ok_displaylist_push(
          parent_dir[0]  = '\0';
 
          if (path && menu_path)
+         {
+#if IOS
+            fill_pathname_expand_special(parent_dir, menu_path, sizeof(parent_dir));
+            fill_pathname_join_special(tmp,
+                  parent_dir, path, sizeof(tmp));
+#else
             fill_pathname_join_special(tmp,
                   menu_path, path, sizeof(tmp));
+#endif
+         }
 
          fill_pathname_parent_dir(parent_dir,
                tmp, sizeof(parent_dir));
          fill_pathname_parent_dir(parent_dir,
                parent_dir, sizeof(parent_dir));
+
+#if IOS
+         fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
+         strlcpy(parent_dir, tmp, sizeof(parent_dir));
+#endif
 
          info.type          = type;
          info.directory_ptr = idx;
