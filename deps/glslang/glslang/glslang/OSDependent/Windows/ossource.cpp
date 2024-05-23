@@ -114,9 +114,4 @@ void ReleaseGlobalLock()
     ReleaseMutex(GlobalLock);
 }
 
-unsigned int __stdcall EnterGenericThread (void* entry)
-{
-    return ((TThreadEntrypoint)entry)(0);
-}
-
 } // namespace glslang

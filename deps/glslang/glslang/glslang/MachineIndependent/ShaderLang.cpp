@@ -1226,7 +1226,7 @@ void ShDestruct(ShHandle handle)
     TShHandleBase* base = static_cast<TShHandleBase*>(handle);
 
     if (base->getAsCompiler())
-        DeleteCompiler(base->getAsCompiler());
+        delete base->getAsCompiler();
     else if (base->getAsLinker())
         DeleteLinker(base->getAsLinker());
     else if (base->getAsUniformMap())
