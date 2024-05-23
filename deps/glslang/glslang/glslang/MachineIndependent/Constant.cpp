@@ -191,9 +191,9 @@ TIntermTyped* TIntermConstantUnion::fold(TOperator op, const TIntermTyped* right
                 break;
 
             case EbtUint8:
-                if (rightUnionArray[i] == 0) {
+                if (rightUnionArray[i] == 0)
                     newConstArray[i].setU8Const(0xFF);
-                } else
+                else
                     newConstArray[i].setU8Const(leftUnionArray[i].getU8Const() / rightUnionArray[i].getU8Const());
                 break;
 
@@ -207,9 +207,9 @@ TIntermTyped* TIntermConstantUnion::fold(TOperator op, const TIntermTyped* right
                 break;
 
             case EbtUint16:
-                if (rightUnionArray[i] == 0) {
+                if (rightUnionArray[i] == 0)
                     newConstArray[i].setU16Const(0xFFFF);
-                } else
+                else
                     newConstArray[i].setU16Const(leftUnionArray[i].getU16Const() / rightUnionArray[i].getU16Const());
                 break;
 
