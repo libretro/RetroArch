@@ -173,9 +173,8 @@ void TType::buildMangledName(TString& mangledName) const
 void TVariable::dump(TInfoSink& infoSink) const
 {
     infoSink.debug << getName().c_str() << ": " << type.getStorageQualifierString() << " " << type.getBasicTypeString();
-    if (type.isArray()) {
+    if (type.isArray())
         infoSink.debug << "[0]";
-    }
     infoSink.debug << "\n";
 }
 
@@ -299,15 +298,13 @@ TVariable::TVariable(const TVariable& copyOf) : TSymbol(copyOf)
 
 TVariable* TVariable::clone() const
 {
-    TVariable *variable = new TVariable(*this);
-
-    return variable;
+    return new TVariable(*this);
 }
 
 TFunction::TFunction(const TFunction& copyOf) : TSymbol(copyOf)
 {
     for (unsigned int i = 0; i < copyOf.parameters.size(); ++i) {
-        TParameter param;
+        TParameter param = {};
         parameters.push_back(param);
         parameters.back().copyParam(copyOf.parameters[i]);
     }

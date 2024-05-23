@@ -105,46 +105,50 @@ namespace {
     // be saved (restored)?
     bool SaveName(int atom)
     {
-        switch (atom) {
-        case PpAtomIdentifier:
-        case PpAtomConstString:
-        case PpAtomConstInt:
-        case PpAtomConstUint:
-        case PpAtomConstInt64:
-        case PpAtomConstUint64:
-    #ifdef AMD_EXTENSIONS
-        case PpAtomConstInt16:
-        case PpAtomConstUint16:
-    #endif
-        case PpAtomConstFloat:
-        case PpAtomConstDouble:
-        case PpAtomConstFloat16:
-            return true;
-        default:
-            return false;
-        }
+	    switch (atom)
+	    {
+		    case PpAtomIdentifier:
+		    case PpAtomConstString:
+		    case PpAtomConstInt:
+		    case PpAtomConstUint:
+		    case PpAtomConstInt64:
+		    case PpAtomConstUint64:
+#ifdef AMD_EXTENSIONS
+		    case PpAtomConstInt16:
+		    case PpAtomConstUint16:
+#endif
+		    case PpAtomConstFloat:
+		    case PpAtomConstDouble:
+		    case PpAtomConstFloat16:
+			    return true;
+		    default:
+			    break;
+	    }
+	    return false;
     }
 
     // When recording (and playing back) should the numeric value
     // be saved (restored)?
     bool SaveValue(int atom)
     {
-        switch (atom) {
-        case PpAtomConstInt:
-        case PpAtomConstUint:
-        case PpAtomConstInt64:
-        case PpAtomConstUint64:
-    #ifdef AMD_EXTENSIONS
-        case PpAtomConstInt16:
-        case PpAtomConstUint16:
-    #endif
-        case PpAtomConstFloat:
-        case PpAtomConstDouble:
-        case PpAtomConstFloat16:
-            return true;
-        default:
-            return false;
-        }
+	    switch (atom)
+	    {
+		    case PpAtomConstInt:
+		    case PpAtomConstUint:
+		    case PpAtomConstInt64:
+		    case PpAtomConstUint64:
+#ifdef AMD_EXTENSIONS
+		    case PpAtomConstInt16:
+		    case PpAtomConstUint16:
+#endif
+		    case PpAtomConstFloat:
+		    case PpAtomConstDouble:
+		    case PpAtomConstFloat16:
+			    return true;
+		    default:
+			    break;
+	    }
+	    return false;
     }
 }
 
@@ -178,7 +182,8 @@ void TPpContext::TokenStream::putToken(int atom, TPpToken* ppToken)
     putSubtoken(static_cast<char>(atom));
 
     // save the backing name string
-    if (SaveName(atom)) {
+    if (SaveName(atom))
+    {
         const char* s = ppToken->name;
         while (*s)
             putSubtoken(*s++);
@@ -186,7 +191,8 @@ void TPpContext::TokenStream::putToken(int atom, TPpToken* ppToken)
     }
 
     // save the numeric value
-    if (SaveValue(atom)) {
+    if (SaveValue(atom))
+    {
         const char* n = reinterpret_cast<const char*>(&ppToken->i64val);
         for (size_t i = 0; i < sizeof(ppToken->i64val); ++i)
             putSubtoken(*n++);
@@ -207,15 +213,20 @@ int TPpContext::TokenStream::getToken(TParseContextBase& _parseContext, TPpToken
     ppToken->loc = _parseContext.getCurrentLoc();
 
     // get the backing name string
-    if (SaveName(atom)) {
+    if (SaveName(atom))
+    {
         int ch = getSubtoken();
         int len = 0;
-        while (ch != 0 && ch != EndOfInput) {
-            if (len < MaxTokenLength) {
+        while (ch != 0 && ch != EndOfInput)
+	{
+            if (len < MaxTokenLength)
+	    {
                 ppToken->name[len] = (char)ch;
                 len++;
                 ch = getSubtoken();
-            } else {
+            }
+	    else
+	    {
                 _parseContext.error(ppToken->loc, "token too long", "", "");
                 break;
             }
@@ -224,13 +235,17 @@ int TPpContext::TokenStream::getToken(TParseContextBase& _parseContext, TPpToken
     }
 
     // Check for ##, unless the current # is the last character
-    if (atom == '#') {
-        if (current < data.size()) {
-            if (getSubtoken() == '#') {
+    if (atom == '#')
+    {
+        if (current < data.size())
+	{
+            if (getSubtoken() == '#')
+	    {
                 _parseContext.requireProfile(ppToken->loc, ~EEsProfile, "token pasting (##)");
                 _parseContext.profileRequires(ppToken->loc, ~EEsProfile, 130, 0, "token pasting (##)");
                 atom = PpAtomPaste;
-            } else
+            }
+	    else
                 ungetSubtoken();
         }
     }
@@ -273,15 +288,17 @@ bool TPpContext::TokenStream::peekTokenizedPasting(bool lastTokenPastes)
     // Are we at the last non-whitespace token?
     savePos = current;
     bool moreTokens = false;
-    do {
+    for (;;)
+    {
         subtoken = getSubtoken();
         if (subtoken == EndOfInput)
             break;
-        if (subtoken != ' ') {
+        if (subtoken != ' ')
+	{
             moreTokens = true;
             break;
         }
-    } while (true);
+    }
     current = savePos;
 
     return !moreTokens;
@@ -323,9 +340,9 @@ int TPpContext::tUngotTokenInput::scan(TPpToken* ppToken)
     if (done)
         return EndOfInput;
 
-    int ret = token;
+    int ret  = token;
     *ppToken = lval;
-    done = true;
+    done     = true;
 
     return ret;
 }

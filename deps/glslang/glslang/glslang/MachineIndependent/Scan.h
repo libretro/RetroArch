@@ -107,12 +107,12 @@ public:
         // N.B. Sources can have a length of 0.
         int sourceToRead = currentSource;
         size_t charToRead = currentChar;
-        while(charToRead >= lengths[sourceToRead]) {
+        while(charToRead >= lengths[sourceToRead])
+        {
             charToRead = 0;
             sourceToRead += 1;
-            if (sourceToRead >= numSources) {
+            if (sourceToRead >= numSources)
                 return EndOfInput;
-            }
         }
 
         // Here, we care about making negative valued characters positive
@@ -130,15 +130,16 @@ public:
             --currentChar;
             --loc[currentSource].column;
             --logicalSourceLoc.column;
-            if (loc[currentSource].column < 0) {
+            if (loc[currentSource].column < 0)
+            {
                 // We've moved back past a new line. Find the
                 // previous newline (or start of the file) to compute
                 // the column count on the now current line.
                 size_t chIndex = currentChar;
-                while (chIndex > 0) {
-                    if (sources[currentSource][chIndex] == '\n') {
+                while (chIndex > 0)
+                {
+                    if (sources[currentSource][chIndex] == '\n')
                         break;
-                    }
                     --chIndex;
                 }
                 logicalSourceLoc.column = (int)(currentChar - chIndex);
@@ -148,10 +149,10 @@ public:
             do {
                 --currentSource;
             } while (currentSource > 0 && lengths[currentSource] == 0);
-            if (lengths[currentSource] == 0) {
+            if (lengths[currentSource] == 0)
                 // set to 0 if we've backed up to the start of an empty string
                 currentChar = 0;
-            } else
+            else
                 currentChar = lengths[currentSource] - 1;
         }
         if (peek() == '\n') {
@@ -207,11 +208,9 @@ public:
 
     const TSourceLoc& getSourceLoc() const
     {
-        if (singleLogical) {
+        if (singleLogical)
             return logicalSourceLoc;
-        } else {
-            return loc[std::max(0, std::min(currentSource, numSources - finale - 1))];
-        }
+        return loc[std::max(0, std::min(currentSource, numSources - finale - 1))];
     }
     // Returns the index (starting from 0) of the most recent valid source string we are reading from.
     int getLastValidSourceIndex() const { return std::min(currentSource, numSources - 1); }

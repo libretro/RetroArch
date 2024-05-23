@@ -164,7 +164,8 @@ TStringAtomMap::TStringAtomMap()
     char t[2];
 
     t[1] = '\0';
-    while (*s) {
+    while (*s)
+    {
         t[0] = *s;
         addAtomFixed(t, s[0]);
         s++;
