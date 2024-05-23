@@ -121,11 +121,17 @@ static void call_auto_translate_task(
          return;
 
       mode                               = (int*)malloc(sizeof(int));
-      *mode                              = ai_service_mode;
 
+      t->user_data                       = NULL;
       t->handler                         = task_auto_translate_handler;
-      t->user_data                       = mode;
       t->mute                            = true;
+
+      if (mode)
+      {
+         *mode                           = ai_service_mode;
+         t->user_data                    = mode;
+      }
+
       task_queue_push(t);
    }
 }
@@ -361,9 +367,10 @@ static void handle_translation_cb(
                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
             raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
-            memcpy(raw_image_data,
-                   raw_image_file_data + 54       * sizeof(uint8_t),
-                   image_width * image_height * 3 * sizeof(uint8_t));
+            if (raw_image_data)
+               memcpy(raw_image_data,
+                     raw_image_file_data + 54       * sizeof(uint8_t),
+                     image_width * image_height * 3 * sizeof(uint8_t));
          }
          /* PNG coming back from the url */
          else if (raw_image_file_data[1] == 'P'
@@ -835,10 +842,14 @@ bool run_translation_service(settings_t *settings, bool paused)
          lbl       = path_basename(path_get(RARCH_PATH_BASENAME));
       lbl_len      = strlen(lbl);
       sys_lbl      = (char*)malloc(lbl_len + sys_id_len + 3);
-      memcpy(sys_lbl, sys_id, sys_id_len);
-      memcpy(sys_lbl + sys_id_len, "__", 2);
-      memcpy(sys_lbl + 2 + sys_id_len, lbl, lbl_len);
-      sys_lbl[sys_id_len + 2 + lbl_len] = '\0';
+
+      if (sys_lbl)
+      {
+         memcpy(sys_lbl, sys_id, sys_id_len);
+         memcpy(sys_lbl + sys_id_len, "__", 2);
+         memcpy(sys_lbl + 2 + sys_id_len, lbl, lbl_len);
+         sys_lbl[sys_id_len + 2 + lbl_len] = '\0';
+      }
    }
 
    if (!scaler)
@@ -1144,6 +1155,7 @@ finish:
       free(bmp64_buffer);
    if (sys_lbl)
       free(sys_lbl);
+   sys_lbl = NULL;
    if (jsonwriter)
       rjsonwriter_free(jsonwriter);
    return !error;

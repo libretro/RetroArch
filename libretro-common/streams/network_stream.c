@@ -243,6 +243,8 @@ bool netstream_write(netstream_t *stream, const void *data, size_t len)
    {
       if (!stream->size)
       {
+         if (stream->buf)
+            free(stream->buf);
          stream->buf  = malloc(len);
          if (!stream->buf)
             return false;

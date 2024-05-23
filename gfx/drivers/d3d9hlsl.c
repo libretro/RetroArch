@@ -469,11 +469,15 @@ static bool d3d9_hlsl_load_program_from_file(
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
+   {
       RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
+      listing_f->lpVtbl->Release(listing_f);
+   }
    if (listing_v)
+   {
       RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
-   listing_f->lpVtbl->Release(listing_f);
-   listing_v->lpVtbl->Release(listing_v);
+      listing_v->lpVtbl->Release(listing_v);
+   }
 
    return false;
 }
@@ -518,12 +522,15 @@ static bool d3d9_hlsl_load_program(
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
+   {
       RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
+      listing_f->lpVtbl->Release(listing_f);
+   }
    if (listing_v)
+   {
       RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
-   listing_f->lpVtbl->Release(listing_f);
-   listing_v->lpVtbl->Release(listing_v);
-
+      listing_v->lpVtbl->Release(listing_v);
+   }
    return false;
 }
 

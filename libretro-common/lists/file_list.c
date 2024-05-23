@@ -92,21 +92,24 @@ bool file_list_insert(file_list_t *list,
       struct item_file *copy = (struct item_file*)
          malloc(sizeof(struct item_file));
 
-      copy->path             = NULL;
-      copy->label            = NULL;
-      copy->alt              = NULL;
-      copy->type             = 0;
-      copy->directory_ptr    = 0;
-      copy->entry_idx        = 0;
-      copy->userdata         = NULL;
-      copy->actiondata       = NULL;
+      if (copy)
+      {
+         copy->path             = NULL;
+         copy->label            = NULL;
+         copy->alt              = NULL;
+         copy->type             = 0;
+         copy->directory_ptr    = 0;
+         copy->entry_idx        = 0;
+         copy->userdata         = NULL;
+         copy->actiondata       = NULL;
 
-      memcpy(copy, &list->list[i-1], sizeof(struct item_file));
+         memcpy(copy, &list->list[i-1], sizeof(struct item_file));
 
-      memcpy(&list->list[i-1], &list->list[i], sizeof(struct item_file));
-      memcpy(&list->list[i],             copy, sizeof(struct item_file));
+         memcpy(&list->list[i-1], &list->list[i], sizeof(struct item_file));
+         memcpy(&list->list[i],             copy, sizeof(struct item_file));
 
-      free(copy);
+         free(copy);
+      }
    }
 
    list->list[idx].path          = NULL;
@@ -318,8 +321,8 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
    for (i = 0; i < list->size; i++)
    {
       const char *str = NULL;
-      const char *alt = list->list[i].alt 
-            ? list->list[i].alt 
+      const char *alt = list->list[i].alt
+            ? list->list[i].alt
             : list->list[i].path;
 
       if (!alt)
