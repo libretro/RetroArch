@@ -681,7 +681,7 @@ void TIntermediate::checkCallGraphBodies(TInfoSink& infoSink, bool keepUncalled)
             if (! reachable[f])
                 functionSequence[f] = NULL;
         }
-        functionSequence.erase(std::remove(functionSequence.begin(), functionSequence.end(), NULL), functionSequence.end());
+        functionSequence.erase(std::remove(functionSequence.begin(), functionSequence.end(), nullptr), functionSequence.end());
     }
 }
 
