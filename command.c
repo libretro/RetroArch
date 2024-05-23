@@ -230,7 +230,7 @@ static void command_network_poll(command_t *handle)
 command_t* command_network_new(uint16_t port)
 {
    struct addrinfo     *res  = NULL;
-   command_t            *cmd = (command_t*)calloc(1, sizeof(command_t));
+   command_t            *cmd = (command_t*)calloc(1, sizeof(*cmd));
    command_network_t *netcmd = (command_network_t*)calloc(
                                    1, sizeof(command_network_t));
    int fd                    = socket_init(

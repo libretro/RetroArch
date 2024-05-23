@@ -239,7 +239,10 @@ static bool screenshot_dump(
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
-   /* If fullpath is true, name_base already contains a 
+   if (!state)
+      return false;
+
+   /* If fullpath is true, name_base already contains a
     * static path + filename to save the screenshot to. */
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
@@ -261,7 +264,7 @@ static bool screenshot_dump(
 #endif
    if (savestate)
       state->flags              |= SS_TASK_FLAG_SILENCE;
-   
+
    if (history_list_enable)
       state->flags              |= SS_TASK_FLAG_HISTORY_LIST_ENABLE;
    state->pixel_format_type      = pixel_format_type;
@@ -329,7 +332,7 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t len = strlcpy(state->shotname, 
+            size_t len = strlcpy(state->shotname,
                   path_basename_nocompression(name_base),
                   sizeof(state->shotname));
             strlcpy(state->shotname       + len,
@@ -548,7 +551,7 @@ bool take_screenshot(
    bool ret                       = false;
    uint32_t runloop_flags         = runloop_get_flags();
    settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr(); 
+   video_driver_state_t *video_st = video_state_get_ptr();
    bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
    bool supports_viewport_read    = video_st->current_video->read_viewport
          && (video_st->current_video->viewport_info);

@@ -443,7 +443,7 @@ struct retro_core_options_v2 *core_option_manager_convert_v2_intl(
             options_v2_us->categories[i].desc : local_desc;
       option_v2_cats[i].info = string_is_empty(local_info) ?
             options_v2_us->categories[i].info : local_info;
-      
+
    }
 
    /* Loop through options... */
@@ -1404,7 +1404,7 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
    nested_list_item_t *category_item = NULL;
    nested_list_t *option_list        = NULL;
 
-   if (  !opt 
+   if (  !opt
        || string_is_empty(key))
       return false;
 
@@ -1649,7 +1649,7 @@ const char *core_option_manager_get_val_label(core_option_manager_t *opt,
 {
    struct core_option *option = NULL;
 
-   if (   !opt 
+   if (   !opt
        || (idx >= opt->size))
       return NULL;
 
