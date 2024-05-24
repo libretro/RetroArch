@@ -246,30 +246,6 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok_help(path, label, type, idx, entry_idx, _id, _id2); \
 }
 
-#ifdef HAVE_NETWORKING
-#ifdef HAVE_LAKKA
-static char *lakka_get_project(void)
-{
-#ifndef HAVE_LAKKA_CANARY
-   size_t len;
-   static char lakka_project[128];
-   FILE *command_file = popen("cat /etc/release | cut -d - -f 1", "r");
-
-   fgets(lakka_project, sizeof(lakka_project), command_file);
-   len = strlen(lakka_project);
-
-   if (len > 0 && lakka_project[len-1] == '\n')
-      lakka_project[--len] = '\0';
-
-   pclose(command_file);
-   return lakka_project;
-#else
-   return "/";
-#endif
-}
-#endif
-#endif
-
 static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
@@ -5049,7 +5025,7 @@ static int generic_action_ok_network(const char *path,
          /* TODO unhardcode this path */
          fill_pathname_join_special(url_path,
                FILE_PATH_LAKKA_URL,
-               lakka_get_project(), sizeof(url_path));
+               LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join_special(url_path, url_path,
                FILE_PATH_INDEX_URL,
                sizeof(url_path));
@@ -5340,7 +5316,7 @@ static int action_ok_download_generic(const char *path,
 #ifdef HAVE_LAKKA
          /* TODO unhardcode this path*/
          fill_pathname_join_special(s, FILE_PATH_LAKKA_URL,
-               lakka_get_project(), sizeof(s));
+               LAKKA_PROJECT, sizeof(s));
 #endif
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
