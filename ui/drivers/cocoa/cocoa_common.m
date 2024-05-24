@@ -62,6 +62,14 @@ extern bool RAIsVoiceOverRunning(void)
 {
    return UIAccessibilityIsVoiceOverRunning();
 }
+#elif OSX
+#import <AppKit/AppKit.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+   if (@available(macOS 10.13, *))
+      return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+   return false;
+}
 #endif
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
