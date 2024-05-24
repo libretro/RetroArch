@@ -1198,9 +1198,10 @@ static void gfx_widgets_draw_task_msg(
    float *msg_queue_current_background;
    float *msg_queue_current_bar;
 
+   size_t _len                       = 0;
    char task_percentage[256]         = "";
    bool draw_msg_new                 = false;
-   unsigned task_percentage_offset   = 0;
+   size_t task_percentage_offset     = 0;
 
    if (msg->msg_new)
       draw_msg_new                   = !string_is_equal(msg->msg_new, msg->msg);
@@ -1208,14 +1209,14 @@ static void gfx_widgets_draw_task_msg(
    if (msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
    {
       if (msg->flags & DISPWIDG_FLAG_TASK_ERROR)
-         strlcpy(task_percentage, msg_hash_to_str(MSG_ERROR), sizeof(task_percentage));
+         _len = strlcpy(task_percentage, msg_hash_to_str(MSG_ERROR), sizeof(task_percentage));
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
-      snprintf(task_percentage, sizeof(task_percentage),
+      _len = snprintf(task_percentage, sizeof(task_percentage),
             "%i%%", msg->task_progress);
 
-   task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * strlen(task_percentage);
-   rect_width             = p_dispwidget->msg_queue_padding * 5.0f + msg->width + task_percentage_offset;
+   task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * _len;
+   rect_width             = p_dispwidget->msg_queue_padding * 5.0f + msg->width  + task_percentage_offset;
    bar_width              = rect_width * msg->task_progress/100.0f;
    text_color             = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
 
@@ -1588,7 +1589,7 @@ void gfx_widgets_frame(void *data)
       0.00, 1.00, 0.00, 1.00,
       0.00, 1.00, 0.00, 1.00,
       };
-      
+
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
       if (p_dispwidget->ai_service_overlay_texture)
@@ -1669,7 +1670,7 @@ void gfx_widgets_frame(void *data)
             video_height,
             outline_color,
             NULL
-            );     
+            );
       if (p_dispwidget->ai_service_overlay_state == 2)
           p_dispwidget->ai_service_overlay_state = 3;
    }
