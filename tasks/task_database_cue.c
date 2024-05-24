@@ -638,7 +638,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (     pre_game_id[0] == 'T' 
+   if (     pre_game_id[0] == 'T'
          && pre_game_id[1] == '-')
    {
       if (region_id == 'U' || region_id == 'J')
@@ -662,7 +662,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (pre_game_id[0] == 'G' 
+   else if (pre_game_id[0] == 'G'
          && pre_game_id[1] == '-')
    {
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
@@ -823,7 +823,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    raw_game_id[10] = '\0';
 
    /** Scrub files with bad data and log **/
-   if (     raw_game_id[0] == '\0' 
+   if (     raw_game_id[0] == '\0'
          || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
@@ -1016,7 +1016,7 @@ int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    raw_game_id[6] = '\0';
 
    /** Scrub files with bad data and log **/
-   if (     raw_game_id[0] == '\0' 
+   if (     raw_game_id[0] == '\0'
          || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
@@ -1132,7 +1132,7 @@ static int64_t intfstream_get_file_size(const char *path)
 
 static bool update_cand(int64_t *cand_index, int64_t *last_index,
       uint64_t *largest, char *last_file, uint64_t *offset,
-      uint64_t *size, char *track_path, uint64_t max_len)
+      size_t *size, char *track_path, uint64_t max_len)
 {
    if (*cand_index != -1)
    {
@@ -1141,7 +1141,7 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
          *largest    = *last_index - *cand_index;
          strlcpy(track_path, last_file, (size_t)max_len);
          *offset     = *cand_index;
-         *size       = *largest;
+         *size       = (size_t)*largest;
          *cand_index = -1;
          return true;
       }
@@ -1151,7 +1151,7 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
 }
 
 int cue_find_track(const char *cue_path, bool first,
-      uint64_t *offset, uint64_t *size, char *track_path, uint64_t max_len)
+      uint64_t *offset, size_t *size, char *track_path, uint64_t max_len)
 {
    int rv;
    intfstream_info_t info;
