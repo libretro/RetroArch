@@ -1056,22 +1056,20 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      DEFINES += -DHAVE_LAKKA_PROJECT=\"${HAVE_LAKKA_PROJECT}\"
+   else
+      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      DEFINES += -DHAVE_LAKKA_SERVER=\"${HAVE_LAKKA_SERVER}\"
+   else
+      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER)
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
-endif
-
-ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
-   DEFINES += -DHAVE_LAKKA_NIGHTLY
-endif
-
-ifneq ($(HAVE_LAKKA_CANARY),)
-   DEFINES += -DHAVE_LAKKA_CANARY=\"${HAVE_LAKKA_CANARY}\"
-endif
-
-ifeq ($(HAVE_LAKKA_DEVBUILD), 1)
-   DEFINES += -DHAVE_LAKKA_DEVBUILD
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
