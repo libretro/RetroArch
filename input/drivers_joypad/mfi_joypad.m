@@ -438,13 +438,38 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
 
     /* Prevent same controller getting set twice */
     if ([mfiControllers containsObject:controller])
+    {
+        RARCH_DBG("[mfi] got connected notice for controller already connected\n");
         return;
+    }
+
+    if (@available(macOS 11, iOS 14, tvOS 14, *))
+    {
+        RARCH_DBG("[mfi] new controller connected:\n");
+        RARCH_DBG("[mfi]    name: %s\n", [controller.vendorName UTF8String]);
+        RARCH_DBG("[mfi]    category: %s\n", [controller.productCategory UTF8String]);
+        RARCH_DBG("[mfi]    has battery info: %s\n", controller.battery != nil ? "yes" : "no");
+        RARCH_DBG("[mfi]    has haptics: %s\n", controller.haptics != nil ? "yes" : "no");
+        RARCH_DBG("[mfi]    has light: %s\n", controller.light != nil ? "yes" : "no");
+        RARCH_DBG("[mfi]    has motion: %s\n", controller.motion != nil ? "yes" : "no");
+        RARCH_DBG("[mfi]    has microGamepad: %s\n", controller.microGamepad != nil ? "yes" : "no");
+        RARCH_DBG("[mfi]    has extendedGamepad: %s\n", controller.extendedGamepad != nil ? "yes" : "no");
+        RARCH_DBG("[mfi]    input profile:\n");
+        for (NSString *elem in controller.physicalInputProfile.elements.allKeys)
+        {
+            RARCH_DBG("[mfi]       %s\n", [elem UTF8String]);
+            GCControllerElement *element = controller.physicalInputProfile.elements[elem];
+            RARCH_DBG("[mfi]          analog: %s\n", element.analog ? "yes" : "no");
+            RARCH_DBG("[mfi]          localizedName: %s\n", [element.localizedName UTF8String]);
+        }
+    }
 
     if (mfi_controllers[desired_index] != (uint32_t)controller.hash)
     {
         /* Desired slot is unused, take it */
         if (!mfi_controllers[desired_index])
         {
+            RARCH_LOG("[mfi] controller given desired index %d\n", desired_index);
             controller.playerIndex = desired_index;
             mfi_controllers[desired_index] = (uint32_t)controller.hash;
         }
@@ -458,46 +483,58 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
                 if (mfi_controllers[i])
                     continue;
 
+                RARCH_LOG("[mfi] controller reassigned from desired %d to %d\n", desired_index, i);
                 mfi_controllers[i]     = (uint32_t)controller.hash;
                 controller.playerIndex = i;
                 break;
             }
+
+            if (i == MAX_MFI_CONTROLLERS)
+            {
+                /* shouldn't ever get here, this is an Apple limit */
+                RARCH_ERR("[mfi] too many connected controllers, ignoring\n");
+                return;
+            }
         }
-
-        [mfiControllers addObject:controller];
-
-        /* Move any non-game controllers (like the Siri remote) to the end */
-        if (mfiControllers.count > 1)
-        {
-           int newPlayerIndex                        = 0;
-           NSInteger connectedNonGameControllerIndex = NSNotFound;
-           NSUInteger index                          = 0;
-
-           for (GCController *connectedController in mfiControllers)
-           {
-              if (     connectedController.microGamepad    != nil
-                    && connectedController.extendedGamepad == nil )
-                 connectedNonGameControllerIndex = index;
-              index++;
-           }
-
-           if (connectedNonGameControllerIndex != NSNotFound)
-           {
-              GCController *nonGameController = [mfiControllers objectAtIndex:connectedNonGameControllerIndex];
-              [mfiControllers removeObjectAtIndex:connectedNonGameControllerIndex];
-              [mfiControllers addObject:nonGameController];
-           }
-           for (GCController *gc in mfiControllers)
-              gc.playerIndex = newPlayerIndex++;
-        }
-
-        if (mfi_controller_is_siri_remote(controller))
-            return;
-
-        apple_gamecontroller_joypad_register(controller);
-        apple_gamecontroller_joypad_setup_haptics(controller);
-        mfi_joypad_autodetect_add((unsigned)controller.playerIndex, [controller.vendorName cStringUsingEncoding:NSUTF8StringEncoding]);
     }
+
+    [mfiControllers addObject:controller];
+
+    /* Move any non-game controllers (like the Siri remote) to the end */
+    if (mfiControllers.count > 1)
+    {
+        int newPlayerIndex                        = 0;
+        NSInteger connectedNonGameControllerIndex = NSNotFound;
+        NSUInteger index                          = 0;
+
+        for (GCController *connectedController in mfiControllers)
+        {
+            if (     connectedController.microGamepad    != nil
+                     && connectedController.extendedGamepad == nil )
+                connectedNonGameControllerIndex = index;
+            index++;
+        }
+
+        if (connectedNonGameControllerIndex != NSNotFound)
+        {
+            GCController *nonGameController = [mfiControllers objectAtIndex:connectedNonGameControllerIndex];
+            [mfiControllers removeObjectAtIndex:connectedNonGameControllerIndex];
+            [mfiControllers addObject:nonGameController];
+        }
+        for (GCController *gc in mfiControllers)
+            gc.playerIndex = newPlayerIndex++;
+    }
+
+    if (mfi_controller_is_siri_remote(controller))
+    {
+        RARCH_WARN("[mfi] ignoring siri remote as a controller\n");
+        return;
+    }
+
+    RARCH_LOG("[mfi] controller connected, beginning setup and autodetect\n");
+    apple_gamecontroller_joypad_register(controller);
+    apple_gamecontroller_joypad_setup_haptics(controller);
+    mfi_joypad_autodetect_add((unsigned)controller.playerIndex, [controller.vendorName cStringUsingEncoding:NSUTF8StringEncoding]);
 }
 
 static void apple_gamecontroller_joypad_disconnect(GCController* controller)

@@ -10,8 +10,8 @@ APPSTORE_BUILD = 1
 // the app store version must be major.minor.patch and always incrementing,
 // so any follow up/hotfix releases will necessarily have the patch version
 // drift a little bit
-MARKETING_VERSION = 1.18.2
-CURRENT_PROJECT_VERSION = 8
+MARKETING_VERSION = 1.18.3
+CURRENT_PROJECT_VERSION = 12
 
 OTHER_CFLAGS = $(inherited) -DHAVE_APPLE_STORE
 OTHER_CFLAGS = $(inherited) -DkRetroArchAppGroup=@\"group.com.libretro.dist.RetroArchGroup\"
