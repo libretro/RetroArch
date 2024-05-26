@@ -5185,11 +5185,13 @@ static int video_texture_unload_wrap_gl2(void *data)
 {
    GLuint  glid;
    uintptr_t id = (uintptr_t)data;
+#if 0
+   /*FIXME: crash on reinit*/
    gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
 
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
-
+#endif
    glid = (GLuint)id;
    glDeleteTextures(1, &glid);
    return 0;
