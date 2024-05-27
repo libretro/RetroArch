@@ -771,7 +771,7 @@ static uint64_t frontend_darwin_get_total_mem(void)
     task_vm_info_data_t vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-       return vmInfo.resident_size_peak;
+       return vmInfo.phys_footprint + vmInfo.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -798,7 +798,7 @@ static uint64_t frontend_darwin_get_free_mem(void)
     task_vm_info_data_t vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-        return vmInfo.resident_size_peak - vmInfo.resident_size;
+        return vmInfo.limit_bytes_remaining;
 #endif
     return 0;
 }
