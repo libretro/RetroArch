@@ -4302,6 +4302,7 @@ float input_get_sensor_state(unsigned port, unsigned id)
    settings_t *settings                   = config_get_ptr();
    bool input_sensors_enable              = settings->bools.input_sensors_enable;
    float sensitivity;
+   int remapped_port=settings->uints.input_sensor_index[port];
    
    if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
       sensitivity=settings->floats.input_sensor_accelerometer_sensitivity;
@@ -4309,7 +4310,6 @@ float input_get_sensor_state(unsigned port, unsigned id)
       sensitivity=settings->floats.input_sensor_gyroscope_sensitivity;
    else 
       sensitivity=1.f;
-   int remapped_port=settings->uints.input_sensor_index[port];
    return input_driver_get_sensor(remapped_port, input_sensors_enable, id)*((float)pow(2,sensitivity));
 }
 
