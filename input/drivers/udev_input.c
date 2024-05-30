@@ -758,7 +758,6 @@ static udev_input_device_t *udev_get_pointer_device(
 static udev_input_device_t *udev_get_sensor_device(
       const struct udev_input *udev, unsigned port)
 {
-   unsigned sensor_index      = 0;
    int dev_index             = -1;
    settings_t *settings      = config_get_ptr();
 
@@ -766,9 +765,8 @@ static udev_input_device_t *udev_get_sensor_device(
    if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
-   sensor_index = settings->uints.input_sensor_index[port];
-   if (sensor_index < MAX_INPUT_DEVICES)
-      dev_index = udev->sensors[sensor_index];
+   if (port < MAX_INPUT_DEVICES)
+      dev_index = udev->sensors[port];
    if (dev_index < 0)
       return NULL;
    else if(udev->devices[dev_index]->type == UDEV_INPUT_SENSOR)

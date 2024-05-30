@@ -653,12 +653,12 @@ static bool sdl_input_set_sensor_state (void *data, unsigned port, enum retro_se
 }
 static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
    sdl_input_t * sdl = (sdl_input_t *)data;
-
    SDL_GameController * gamepad=NULL;
    SDL_Sensor * sensor=NULL;
    SDL_SensorType sensor_type;
    int i;
    float sensor_data[3],sensor_value;
+
    if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
       (id == RETRO_SENSOR_ACCELEROMETER_Y) | 
       (id == RETRO_SENSOR_ACCELEROMETER_Z)
@@ -714,15 +714,12 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
    RARCH_DBG(
       "[udev] sensor:\n"
       "\t%f\n"
-      /*
       "\t%d\n"
-      "\t%d\n"
-      */
-      "\t%f\n",
+      "\t%d\n",
       sensor_value,
-      /*limits.min,
-      limits.max,*/
-      sensor_value
+      port,
+      id
+
    );
    return sensor_value;
    
