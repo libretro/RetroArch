@@ -91,6 +91,10 @@ extern "C" {
 #include "../../version_git.h"
 #endif
 
+#ifdef HAVE_WAYLAND
+#include "../../gfx/common/wayland_common.h"
+#endif
+
 #ifndef CXX_BUILD
 }
 #endif
@@ -4230,6 +4234,10 @@ static void* ui_application_qt_initialize(void)
 
 #ifdef Q_OS_UNIX
    setlocale(LC_NUMERIC, "C");
+#ifdef HAVE_WAYLAND
+   // This needs to match the name of the .desktop file in order for windows to be correctly associated on Wayland
+   ui_application.app->setDesktopFileName(WAYLAND_APP_ID);
+#endif
 #endif
    {
       /* Can't declare the pixmap at the top, because: "QPixmap: Must construct a QGuiApplication before a QPixmap" */
