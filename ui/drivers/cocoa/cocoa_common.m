@@ -170,65 +170,78 @@ void cocoa_file_load_with_detect_core(const char *filename);
     return true;
 }
 
+- (bool)isSiri:(GCController *)controller
+{
+    return (controller.microGamepad && !controller.extendedGamepad && [@"Remote" isEqualToString:controller.vendorName]);
+}
+
 - (bool)didMicroGamepadPress:(UIPressType)type
 {
-    NSArray<GCController*>* controllers = [GCController controllers];
-    if ([controllers count] == 1)
-        return !controllers[0].extendedGamepad;
-
     /* Are these presses that controllers send? */
     if (@available(tvOS 14.3, *))
         if (type == UIPressTypePageUp || type == UIPressTypePageDown)
             return true;
 
-    bool microPress = false;
-    bool extendedPress = false;
-    for (GCController *controller in [GCController controllers]) {
-        if (controller.extendedGamepad)
-        {
-            if (type == UIPressTypeUpArrow)
-                extendedPress |= controller.extendedGamepad.dpad.up.pressed
-                              || controller.extendedGamepad.leftThumbstick.up.pressed
-                              || controller.extendedGamepad.rightThumbstick.up.pressed;
-            else if (type == UIPressTypeDownArrow)
-                extendedPress |= controller.extendedGamepad.dpad.down.pressed
-                              || controller.extendedGamepad.leftThumbstick.down.pressed
-                              || controller.extendedGamepad.rightThumbstick.down.pressed;
-            else if (type == UIPressTypeLeftArrow)
-                extendedPress |= controller.extendedGamepad.dpad.left.pressed
-                              || controller.extendedGamepad.leftShoulder.pressed
-                              || controller.extendedGamepad.leftTrigger.pressed
-                              || controller.extendedGamepad.leftThumbstick.left.pressed
-                              || controller.extendedGamepad.rightThumbstick.left.pressed;
-            else if (type == UIPressTypeRightArrow)
-                extendedPress |= controller.extendedGamepad.dpad.right.pressed
-                              || controller.extendedGamepad.rightShoulder.pressed
-                              || controller.extendedGamepad.rightTrigger.pressed
-                              || controller.extendedGamepad.leftThumbstick.right.pressed
-                              || controller.extendedGamepad.rightThumbstick.right.pressed;
-            else if (type == UIPressTypeSelect)
-                extendedPress |= controller.extendedGamepad.buttonA.pressed;
-            else if (type == UIPressTypeMenu)
-                extendedPress |= controller.extendedGamepad.buttonB.pressed;
-            else if (type == UIPressTypePlayPause)
-                extendedPress |= controller.extendedGamepad.buttonX.pressed;
+    NSArray<GCController*>* controllers = [GCController controllers];
 
-        }
-        else if (controller.microGamepad)
+    bool foundSiri = false;
+    bool nonSiriPress = false;
+    for (GCController *controller in controllers) {
+        if ([self isSiri:controller])
         {
+            foundSiri = true;
             if (type == UIPressTypeSelect)
-                microPress |= controller.microGamepad.buttonA.pressed;
+                return controller.microGamepad.buttonA.pressed;
             else if (type == UIPressTypePlayPause)
-                microPress |= controller.microGamepad.buttonX.pressed;
+               return controller.microGamepad.buttonX.pressed;
             else if (@available(tvOS 13, *)) {
                 if (type == UIPressTypeMenu)
-                    extendedPress |= controller.microGamepad.buttonMenu.pressed ||
-                    controller.microGamepad.buttonMenu.isPressed;
+                   return controller.microGamepad.buttonMenu.pressed ||
+                          controller.microGamepad.buttonMenu.isPressed;
             }
+        }
+        else if (controller.extendedGamepad)
+        {
+            if (type == UIPressTypeUpArrow)
+                nonSiriPress |= controller.extendedGamepad.dpad.up.pressed
+                             || controller.extendedGamepad.leftThumbstick.up.pressed
+                             || controller.extendedGamepad.rightThumbstick.up.pressed;
+            else if (type == UIPressTypeDownArrow)
+                nonSiriPress |= controller.extendedGamepad.dpad.down.pressed
+                             || controller.extendedGamepad.leftThumbstick.down.pressed
+                             || controller.extendedGamepad.rightThumbstick.down.pressed;
+            else if (type == UIPressTypeLeftArrow)
+                nonSiriPress |= controller.extendedGamepad.dpad.left.pressed
+                             || controller.extendedGamepad.leftShoulder.pressed
+                             || controller.extendedGamepad.leftTrigger.pressed
+                             || controller.extendedGamepad.leftThumbstick.left.pressed
+                             || controller.extendedGamepad.rightThumbstick.left.pressed;
+            else if (type == UIPressTypeRightArrow)
+                nonSiriPress |= controller.extendedGamepad.dpad.right.pressed
+                             || controller.extendedGamepad.rightShoulder.pressed
+                             || controller.extendedGamepad.rightTrigger.pressed
+                             || controller.extendedGamepad.leftThumbstick.right.pressed
+                            || controller.extendedGamepad.rightThumbstick.right.pressed;
+            else if (type == UIPressTypeSelect)
+                nonSiriPress |= controller.extendedGamepad.buttonA.pressed;
+            else if (type == UIPressTypeMenu)
+                nonSiriPress |= controller.extendedGamepad.buttonB.pressed;
+            else if (type == UIPressTypePlayPause)
+                nonSiriPress |= controller.extendedGamepad.buttonX.pressed;
+        }
+        else
+        {
+            /* we have a remote that is not extended. some of these remotes send
+             * spurious presses. the only way to get them to work properly is to
+             * make the siri remote work improperly. */
+            nonSiriPress = true;
         }
     }
 
-    return microPress || !extendedPress;
+    if (!foundSiri || [controllers count] == 1)
+        return foundSiri;
+
+    return !nonSiriPress;
 }
 
 - (void)sendKeyForPress:(UIPressType)type down:(bool)down
