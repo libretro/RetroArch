@@ -4235,8 +4235,10 @@ static void* ui_application_qt_initialize(void)
 #ifdef Q_OS_UNIX
    setlocale(LC_NUMERIC, "C");
 #ifdef HAVE_WAYLAND
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
    // This needs to match the name of the .desktop file in order for windows to be correctly associated on Wayland
    ui_application.app->setDesktopFileName(WAYLAND_APP_ID);
+#endif
 #endif
 #endif
    {
