@@ -194,11 +194,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
                 return controller.microGamepad.buttonA.pressed;
             else if (type == UIPressTypePlayPause)
                return controller.microGamepad.buttonX.pressed;
-            else if (@available(tvOS 13, *)) {
-                if (type == UIPressTypeMenu)
-                   return controller.microGamepad.buttonMenu.pressed ||
-                          controller.microGamepad.buttonMenu.isPressed;
-            }
         }
         else if (controller.extendedGamepad)
         {
