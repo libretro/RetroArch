@@ -2075,6 +2075,10 @@ MSG_HASH(
    "在多个子帧上模拟基本的滚动扫描线，方法是垂直分割屏幕，并根据子帧的数量渲染屏幕的每个部分。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "在多个子帧上模拟基本的滚动扫描线，方法是垂直分割屏幕，并根据从屏幕顶部向下的子帧数量渲染屏幕的每个部分。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "如果可以的话，截取 GPU 渲染材质的输出。"
    )
@@ -6589,6 +6593,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "显示「收藏」选项。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "显示‘添加到播放列表’"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "显示‘添加到播放列表’选项"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
