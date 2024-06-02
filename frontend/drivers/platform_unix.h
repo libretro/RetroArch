@@ -180,6 +180,9 @@ struct android_app
    jmethodID getVolumePath;
    jmethodID inputGrabMouse;
 
+   jmethodID isScreenReaderEnabled;
+   jmethodID accessibilitySpeak;
+
    struct
    {
       unsigned width, height;
