@@ -2885,6 +2885,11 @@ void config_set_defaults(void *data)
          settings->bools.accessibility_enable, RAIsVoiceOverRunning());
 #endif
 
+#ifdef ANDROID
+   configuration_set_bool(settings,
+         settings->bools.accessibility_enable, is_narrator_running(true));
+#endif
+
 #ifdef HAVE_MENU
    if (first_initialized)
       configuration_set_bool(settings,
