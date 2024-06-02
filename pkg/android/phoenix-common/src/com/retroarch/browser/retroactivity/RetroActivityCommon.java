@@ -611,7 +611,6 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   public boolean isScreenReaderEnabled() {
-    getWindow().getDecorView().announceForAccessibility("Hello world!");
     AccessibilityManager accessibilityManager = (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
     boolean isAccessibilityEnabled = accessibilityManager.isEnabled();
     boolean isExploreByTouchEnabled = accessibilityManager.isTouchExplorationEnabled();
