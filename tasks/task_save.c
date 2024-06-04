@@ -53,10 +53,15 @@
 /* Filesystem is in-memory anyway, use huge chunks since each
    read/write is a possible suspend to JS code */
 #define SAVE_STATE_CHUNK 4096 * 4096
-#elif defined(HAVE_LIBNX) || defined(_3DS)
-#define SAVE_STATE_CHUNK 4096 * 10
 #else
-#define SAVE_STATE_CHUNK 4096
+/* A low common denominator write chunk size.  On a slow 
+  (speed class 6) SD card, we can write 6MB/s.  That gives us 
+  roughly 100KB/frame, which is rounded up to 128 KB/s.  
+  This means we can write savestates with one syscall for cores 
+  with less than 128KB of state. Class 10 is the standard now 
+  even for lousy cards and supports 10MB/s, so you may prefer 
+  to double this. */
+#define SAVE_STATE_CHUNK 128 * 1024
 #endif
 
 #define RASTATE_VERSION 1
