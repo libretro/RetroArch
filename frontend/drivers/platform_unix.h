@@ -366,6 +366,9 @@ extern JNIEnv *jni_thread_getenv(void);
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
+
+bool RAIsTalkbackRunning(void);
+
 #endif
 
 #endif

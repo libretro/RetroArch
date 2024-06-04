@@ -2906,7 +2906,7 @@ void config_set_defaults(void *data)
 
 #ifdef ANDROID
    configuration_set_bool(settings,
-         settings->bools.accessibility_enable, is_narrator_running(true));
+         settings->bools.accessibility_enable, RAIsTalkbackRunning());
 #endif
 
 #ifdef HAVE_MENU
