@@ -2966,7 +2966,7 @@ end:
 #endif
 
 #ifdef ANDROID
-static bool is_narrator_running_android(void)
+bool RAIsTalkbackRunning(void)
 {
    JNIEnv *env = jni_thread_getenv();
    jboolean                  jbool   = JNI_FALSE;
@@ -2976,6 +2976,13 @@ static bool is_narrator_running_android(void)
             g_android->activity->clazz, g_android->isScreenReaderEnabled);
 
    return jbool == JNI_TRUE;
+}
+
+static bool is_narrator_running_android(void)
+{
+   /* Screen reader is speaking on Android is controlled by the operating
+    * system, so return false to align with the rest of the API. */
+   return false;
 }
 
 static bool accessibility_speak_android(int speed,
