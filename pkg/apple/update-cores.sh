@@ -210,6 +210,7 @@ else
                 nxengine
                 prboom
                 mednafen_ngp
+                DoubleCherryGB
             )
             for dylib in "${exports[@]}" ; do
                 find_dylib $dylib
