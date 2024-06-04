@@ -56,12 +56,15 @@
 #else
 /* A low common denominator write chunk size.  On a slow 
   (speed class 6) SD card, we can write 6MB/s.  That gives us 
-  roughly 100KB/frame, which is rounded up to 128 KB/s.  
+  roughly 100KB/frame.  
   This means we can write savestates with one syscall for cores 
-  with less than 128KB of state. Class 10 is the standard now 
+  with less than 100KB of state. Class 10 is the standard now 
   even for lousy cards and supports 10MB/s, so you may prefer 
-  to double this. */
-#define SAVE_STATE_CHUNK 128 * 1024
+  to put this to 170KB. This all assumes that task_save's loop
+  is iterated once per frame at 60 FPS; if it's updated less
+  frequently this number could be doubled or quadrupled depending
+  on the tickrate. */
+#define SAVE_STATE_CHUNK 100 * 1024
 #endif
 
 #define RASTATE_VERSION 1
