@@ -13454,7 +13454,7 @@ static bool setting_append_list(
                 menu_settings_list_current_add_range(list, list_info, 5, 100, 5, true, true);
             }
 
-#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__) && !defined(__APPLE__)
             CONFIG_BOOL(
                   list, list_info,
                   video_driver_get_threaded(),
