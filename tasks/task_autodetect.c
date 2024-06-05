@@ -383,7 +383,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
 
    for (player = 0; player < MAX_USERS; player++)
    {
-      if (first_free_player_slot > settings->uints.input_max_users && 
+      if (first_free_player_slot > MAX_USERS && 
             ( detected_port == settings->uints.input_joypad_index[player] ||
               !input_config_get_device_name(settings->uints.input_joypad_index[player])) &&
           settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_RESERVED )
@@ -437,8 +437,21 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
 
          if (device_has_reserved_slot)
          {
-            RARCH_DBG("[Autoconf]: Reserved device matched\n");
-            break;
+            unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
+            if ( detected_port != prev_assigned_port && 
+                 !string_is_empty(input_config_get_device_name(prev_assigned_port)) &&
+                 (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port) &&
+                    settings_value_product_id == input_config_get_device_pid(prev_assigned_port)) ||
+                  strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
+            {
+               RARCH_DBG("[Autoconf]: Same type of device already took this slot, continuing search\n");
+               device_has_reserved_slot = false;
+            }
+            else
+            {
+               RARCH_DBG("[Autoconf]: Reserved device matched\n");
+               break;
+            }
          }
       }
    }
@@ -481,7 +494,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    }
    else
    {
-      RARCH_DBG("[Autoconf]: Device \"%s\" (%d:%d) is not reserved for "
+      RARCH_DBG("[Autoconf]: Device \"%s\" (%x:%x) is not reserved for "
                 "any player slot.\n",
                 device_name, vendor_id, product_id);
       /* Fallback in case no reservation is set up at all - to preserve any previous setup where input_joypad_index may have been customized. */
