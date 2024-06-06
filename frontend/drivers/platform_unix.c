@@ -2966,7 +2966,7 @@ end:
 #endif
 
 #ifdef ANDROID
-bool RAIsTalkbackRunning(void)
+bool is_screen_reader_enabled(void)
 {
    JNIEnv *env = jni_thread_getenv();
    jboolean                  jbool   = JNI_FALSE;
