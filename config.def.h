@@ -925,7 +925,7 @@
 #define DEFAULT_SYSTEMFILES_IN_CONTENT_DIR false
 #define DEFAULT_SCREENSHOTS_IN_CONTENT_DIR false
 
-#if defined(RS90) || defined(RETROFW) || defined(MIYOO) || defined(SWITCH) || defined(ORBIS) || defined(__WINRT__)
+#if defined(RS90) || defined(RETROFW) || defined(MIYOO) || defined(SWITCH) || defined(ORBIS) || defined(__WINRT__)  || defined(WIIU)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_START_SELECT
 #elif defined(_XBOX1) || defined(__PS3__) || defined(_XBOX360) || defined(DINGUX)
 #define DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO INPUT_COMBO_L3_R3

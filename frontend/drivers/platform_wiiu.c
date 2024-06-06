@@ -58,9 +58,10 @@
 
 #include "wiiu_dbg.h"
 
-#include <coreinit/title.h>
 #include <coreinit/dynload.h>
+#include <coreinit/memory.h>
 #include <proc_ui/procui.h>
+#include <proc_ui/memory.h>
 #include <sysapp/launch.h>
 #include <gx2/event.h>
 #include <coreinit/foreground.h>
@@ -79,10 +80,10 @@
  */
 
 #ifndef IS_SALAMANDER
-static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
-static bool have_libfat_usb = false;
-static bool have_libfat_sdcard = false;
-static bool have_wfs_usb = false;
+static enum frontend_fork wiiu_fork_mode     = FRONTEND_FORK_NONE;
+static bool               have_libfat_usb    = false;
+static bool               have_libfat_sdcard = false;
+static bool               have_wfs_usb       = false;
 #endif
 static bool in_exec = false;
 
@@ -215,26 +216,26 @@ static int frontend_wiiu_parse_drive_list(void* data, bool load_content)
    return 0;
 }
 
-static void frontend_wiiu_exec(const char *path, bool should_load_content)
+static void frontend_wiiu_exec(const char* path, bool should_load_content)
 {
    /* goal: make one big buffer with all the argv's, seperated by NUL. we can
     * then pass this thru sysapp! */
-   char *argv_buf;
+   char*  argv_buf;
    size_t n, argv_len = strlen(path) + 1; /* argv[0] plus null */
 
 #ifndef IS_SALAMANDER
-   const char *content = path_get(RARCH_PATH_CONTENT);
-   const char *content_args[2] = {content, NULL};
+   const char* content         = path_get(RARCH_PATH_CONTENT);
+   const char* content_args[2] = {content, NULL};
 #ifdef HAVE_NETWORKING
-   const char *netplay_args[NETPLAY_FORK_MAX_ARGS];
+   const char* netplay_args[NETPLAY_FORK_MAX_ARGS];
 #endif
 #endif
    /* args will select between content_args, netplay_args, or no args (default) */
-   const char **args = NULL;
+   const char** args = NULL;
 
    /* and some other stuff (C89) */
-   MochaRPXLoadInfo load_info = {0};
-   MochaUtilsStatus ret;
+   MochaRPXLoadInfo  load_info = {0};
+   MochaUtilsStatus  ret;
    SYSStandardArgsIn std_args = {0};
 
 #ifndef IS_SALAMANDER
@@ -242,38 +243,40 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
    {
 #ifdef HAVE_NETWORKING
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
-            (void *) netplay_args))
+                             (void*)netplay_args))
       {
-         const char **cur_arg = netplay_args;
+         const char** cur_arg = netplay_args;
 
          do
             argv_len += strnlen(*cur_arg, PATH_MAX_LENGTH) + 1;
          while (*(++cur_arg));
 
          args = netplay_args;
-      } else
-#endif
-      if (!string_is_empty(content))
-      {
-         argv_len += strnlen(content, PATH_MAX_LENGTH) + 1;
-         args = content_args;
       }
+      else
+#endif
+         if (!string_is_empty(content))
+         {
+            argv_len += strnlen(content, PATH_MAX_LENGTH) + 1;
+            args = content_args;
+         }
    }
 #endif
 
-   argv_buf = malloc(argv_len);
+   argv_buf    = malloc(argv_len);
    argv_buf[0] = '\0';
 
    n = strlcpy(argv_buf, path, argv_len);
    n++; /* leave room for the NUL */
    if (args)
    {
-      const char **cur_arg = args;
+      const char** cur_arg = args;
       do
       {
          n += strlcpy(argv_buf + n, *cur_arg, argv_len - n);
          n++;
-      } while (*(++cur_arg));
+      }
+      while (*(++cur_arg));
    }
 
    if (string_starts_with(path, "fs:/vol/external01/"))
@@ -287,13 +290,13 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
       goto cleanup;
 
    load_info.target = LOAD_RPX_TARGET_SD_CARD;
-   ret = Mocha_PrepareRPXLaunch(&load_info);
+   ret              = Mocha_PrepareRPXLaunch(&load_info);
    if (ret != MOCHA_RESULT_SUCCESS)
       goto cleanup;
 
    std_args.argString = argv_buf;
-   std_args.size = argv_len;
-   ret = Mocha_LaunchHomebrewWrapperEx(&std_args);
+   std_args.size      = argv_len;
+   ret                = Mocha_LaunchHomebrewWrapperEx(&std_args);
    if (ret != MOCHA_RESULT_SUCCESS)
    {
       MochaRPXLoadInfo load_info_revert;
@@ -304,47 +307,47 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
 
    in_exec = true;
 
-   cleanup:
+cleanup:
    free(argv_buf);
    argv_buf = NULL;
 }
 
-static void frontend_wiiu_exitspawn(char *s, size_t len, char *args)
+/* ProcUI lifetime: this gets called from main_exit/salamander_main, which we call from main
+ * This is BEFORE the final shutdown loop so we can just exec cores and it'll handle the mess */
+#ifdef IS_SALAMANDER
+static void frontend_wiiu_exitspawn(char* s, size_t len, char* args)
 {
-   bool should_load_content = false;
-#ifndef IS_SALAMANDER
-   if (wiiu_fork_mode == FRONTEND_FORK_NONE)
-      return;
-
-   switch (wiiu_fork_mode)
-   {
-      case FRONTEND_FORK_CORE_WITH_ARGS:
-         should_load_content = true;
-         break;
-      default:
-         break;
-   }
-#endif
-   frontend_wiiu_exec(s, should_load_content);
+   frontend_wiiu_exec(s, false);
 }
+#else /* ifndef IS_SALAMANDER */
+static void frontend_wiiu_exitspawn(char* s, size_t len, char* args)
+{
+   if (wiiu_fork_mode != FRONTEND_FORK_NONE)
+   {
+      /* Load a core */
+      bool should_load_content = wiiu_fork_mode == FRONTEND_FORK_CORE_WITH_ARGS;
+      frontend_wiiu_exec(s, should_load_content);
+   }
+}
+#endif /* IS_SALAMANDER */
 
 #ifndef IS_SALAMANDER
 static bool frontend_wiiu_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
-      case FRONTEND_FORK_CORE:
-      case FRONTEND_FORK_CORE_WITH_ARGS:
-         wiiu_fork_mode = fork_mode;
-         break;
-      case FRONTEND_FORK_RESTART:
-         /* NOTE: We don't implement Salamander, so just turn
-          * this into FRONTEND_FORK_CORE. */
-         wiiu_fork_mode = FRONTEND_FORK_CORE;
-         break;
-      case FRONTEND_FORK_NONE:
-      default:
-         return false;
+   case FRONTEND_FORK_CORE:
+   case FRONTEND_FORK_CORE_WITH_ARGS:
+      wiiu_fork_mode = fork_mode;
+      break;
+   case FRONTEND_FORK_RESTART:
+      /* NOTE: We don't implement Salamander, so just turn
+       * this into FRONTEND_FORK_CORE. */
+      wiiu_fork_mode = FRONTEND_FORK_CORE;
+      break;
+   case FRONTEND_FORK_NONE:
+   default:
+      return false;
    }
 
    return true;
@@ -357,7 +360,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    frontend_wiiu_init,
    frontend_wiiu_deinit,
    frontend_wiiu_exitspawn,
-   NULL,                     /* process_args */
+   NULL, /* process_args */
    frontend_wiiu_exec,
 #ifdef IS_SALAMANDER
    NULL, /* set_fork */
@@ -397,7 +400,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
 /* main() and its supporting functions */
 
 static void main_setup(void);
-static void get_arguments(int *argc, char ***argv);
+static void get_arguments(int* argc, char*** argv);
 #ifndef IS_SALAMANDER
 static void main_loop(void);
 #endif
@@ -428,8 +431,26 @@ int main(int argc, char** argv)
    main_loop();
    main_exit(NULL);
 #endif /* IS_SALAMANDER */
-   main_teardown();
 
+   if (!ProcUIInShutdown())
+   {
+      /* Final proc loop to negotiate shutdown */
+      ProcUIStatus os_status;
+      while ((os_status = ProcUIProcessMessages(TRUE)) != PROCUI_STATUS_EXITING)
+      {
+         /* If nobody has requested a new app already (e.g. a core switch), we'll still be in foreground
+          * We should exit to menu */
+         if (os_status == PROCUI_STATUS_IN_FOREGROUND)
+            SYSLaunchMenu();
+            /* Core switch puts us here, we're good to release */
+         else if (os_status == PROCUI_STATUS_RELEASE_FOREGROUND)
+            ProcUIDrawDoneRelease();
+         else
+            DEBUG_LINE(); /* BUG */
+      }
+   }
+
+   main_teardown();
    proc_exit();
    /* We always return 0 because if we don't, it can prevent loading a
     * different RPX/ELF in HBL. */
@@ -454,31 +475,26 @@ static void main_teardown(void)
    deinit_os_exceptions();
 }
 
-// https://github.com/devkitPro/wut/blob/7d9fa9e416bffbcd747f1a8e5701fd6342f9bc3d/libraries/libwhb/src/proc.c
+static bool  in_aroma             = false;
+static void* procui_mem1Storage   = NULL;
+static void* procui_bucketStorage = NULL;
 
-#define HBL_TITLE_ID (0x0005000013374842)
-#define MII_MAKER_JPN_TITLE_ID (0x000500101004A000)
-#define MII_MAKER_USA_TITLE_ID (0x000500101004A100)
-#define MII_MAKER_EUR_TITLE_ID (0x000500101004A200)
+static uint32_t proc_acquired(void* param)
+{
+   (void)param;
+   init_os_exceptions();
+   return 0;
+}
 
-static bool in_hbl = false;
-static bool in_aroma = false;
+static uint32_t proc_release(void* param)
+{
+   (void)param;
+   deinit_os_exceptions();
+   return 0;
+}
 
 static void proc_setup(void)
 {
-   uint64_t titleID = OSGetTitleID();
-
-   /* Homebrew Launcher does not like the standard ProcUI application loop, sad! */
-   if (titleID == HBL_TITLE_ID ||
-       titleID == MII_MAKER_JPN_TITLE_ID ||
-       titleID == MII_MAKER_USA_TITLE_ID ||
-       titleID == MII_MAKER_EUR_TITLE_ID)
-   {
-      /* Important: OSEnableHomeButtonMenu must come before ProcUIInitEx. */
-      OSEnableHomeButtonMenu(FALSE);
-      in_hbl = true;
-   }
-
    /* Detect Aroma explicitly (it's possible to run under H&S while using Tiramisu) */
    OSDynLoad_Module rpx_module;
    if (OSDynLoad_Acquire("homebrew_rpx_loader", &rpx_module) == OS_DYNLOAD_OK)
@@ -488,33 +504,41 @@ static void proc_setup(void)
    }
 
    ProcUIInit(&proc_save_callback);
+   ProcUIRegisterCallback(PROCUI_CALLBACK_ACQUIRE, proc_acquired, NULL, 1);
+   ProcUIRegisterCallback(PROCUI_CALLBACK_RELEASE, proc_release, NULL, 1);
+
+   uint32_t addr = 0;
+   uint32_t size = 0;
+   if (OSGetMemBound(OS_MEM1, &addr, &size) == 0)
+   {
+      procui_mem1Storage = malloc(size);
+      if (procui_mem1Storage)
+      {
+         ProcUISetMEM1Storage(procui_mem1Storage, size);
+      }
+   }
+   if (OSGetForegroundBucketFreeArea(&addr, &size))
+   {
+      procui_bucketStorage = malloc(size);
+      if (procui_bucketStorage)
+      {
+         ProcUISetBucketStorage(procui_bucketStorage, size);
+      }
+   }
 }
 
 static void proc_exit(void)
 {
-   /* If we're doing a normal exit while running under HBL, we must SYSRelaunchTitle.
-    * If we're in an exec (i.e. launching mocha homebrew wrapper) we must *not* do that. yay! */
-   if (in_hbl && !in_exec)
-      SYSRelaunchTitle(0, NULL);
-
-   /* Similar deal for Aroma, but exit to menu. */
-   if (!in_hbl && !in_exec)
-      SYSLaunchMenu();
-
-   /* Now just tell the OS that we really are ok to exit */
-   if (!ProcUIInShutdown())
+   if (procui_mem1Storage)
    {
-      for (;;)
-      {
-         ProcUIStatus status;
-         status = ProcUIProcessMessages(TRUE);
-         if (status == PROCUI_STATUS_EXITING)
-            break;
-         else if (status == PROCUI_STATUS_RELEASE_FOREGROUND)
-            ProcUIDrawDoneRelease();
-      }
+      free(procui_mem1Storage);
+      procui_mem1Storage = NULL;
    }
-
+   if (procui_bucketStorage)
+   {
+      free(procui_bucketStorage);
+      procui_bucketStorage = NULL;
+   }
    ProcUIShutdown();
 }
 
@@ -523,9 +547,9 @@ static void proc_save_callback(void)
    OSSavesDone_ReadyToRelease();
 }
 
-static void sysapp_arg_cb(SYSDeserializeArg *arg, void *usr)
+static void sysapp_arg_cb(SYSDeserializeArg* arg, void* usr)
 {
-   SYSStandardArgs *std_args = (SYSStandardArgs *) usr;
+   SYSStandardArgs* std_args = (SYSStandardArgs*)usr;
 
    if (_SYSDeserializeStandardArg(arg, std_args))
       return;
@@ -534,14 +558,14 @@ static void sysapp_arg_cb(SYSDeserializeArg *arg, void *usr)
       SYSDeserializeSysArgsFromBlock(arg->data, arg->size, sysapp_arg_cb, usr);
 }
 
-static void get_arguments(int *argc, char ***argv)
+static void get_arguments(int* argc, char*** argv)
 {
 #ifdef HAVE_NETWORKING
-   static char *_argv[1 + NETPLAY_FORK_MAX_ARGS];
+   static char* _argv[1 + NETPLAY_FORK_MAX_ARGS];
 #else
    static char* _argv[2];
 #endif
-   int _argc = 0;
+   int             _argc    = 0;
    SYSStandardArgs std_args = {0};
 
    /* we could do something more rich with the content path and things here -
@@ -549,7 +573,7 @@ static void get_arguments(int *argc, char ***argv)
     * just emulate argc/argv */
    SYSDeserializeSysArgs(sysapp_arg_cb, &std_args);
 
-   char *argv_buf = std_args.anchorData;
+   char*  argv_buf = std_args.anchorData;
    size_t argv_len = std_args.anchorSize;
    if (!argv_buf || argv_len == 0)
       return;
@@ -557,7 +581,7 @@ static void get_arguments(int *argc, char ***argv)
    size_t n = 0;
    while (n < argv_len && _argc < ARRAY_SIZE(_argv))
    {
-      char *s = argv_buf + n;
+      char* s        = argv_buf + n;
       _argv[_argc++] = s;
       n += strlen(s);
       n++; /* skip the null */
@@ -579,24 +603,47 @@ static bool swap_is_pending(void* start_time)
 
 static void main_loop(void)
 {
-   OSTime start_time;
-   int    status;
+   OSTime       start_time;
+   ProcUIStatus os_status;
+   int          status;
 
-   for (;;)
+   OSEnableHomeButtonMenu(TRUE);
+
+   while ((os_status = ProcUIProcessMessages(TRUE)) != PROCUI_STATUS_EXITING)
    {
-      if (video_driver_get_ptr())
+      if (os_status == PROCUI_STATUS_IN_BACKGROUND) continue;
+
+      if (os_status == PROCUI_STATUS_IN_FOREGROUND)
       {
-         start_time = OSGetSystemTime();
-         task_queue_wait(swap_is_pending, &start_time);
+         if (video_driver_get_ptr())
+         {
+            start_time = OSGetSystemTime();
+            task_queue_wait(swap_is_pending, &start_time);
+         }
+         else
+            task_queue_wait(NULL, NULL);
+
+         status = runloop_iterate();
+         if (status == -1)
+         {
+            /* RetroArch requested core switch or exit */
+            break;
+         }
       }
-      else
-         task_queue_wait(NULL, NULL);
-
-      status = runloop_iterate();
-
-      if (status == -1)
-         break;
+      else if (os_status == PROCUI_STATUS_RELEASE_FOREGROUND)
+      {
+         /* Home menu opened - also open RA menu
+          * This could also be like, an OS poweroff, but it doesn't really matter if we open the menu for 1 frame in
+          * that case*/
+         if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+         {
+            command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         }
+         ProcUIDrawDoneRelease();
+      }
    }
+
+   OSEnableHomeButtonMenu(FALSE);
 }
 #endif
 
@@ -635,9 +682,9 @@ static void deinit_logging(void)
 static ssize_t wiiu_log_write(struct _reent* r,
                               void*          fd, const char* ptr, size_t len)
 {
-   // Do a bit of line buffering to try and make the log output nicer
-   // we just truncate if a line goes over
-   static char   linebuf[2048]; //match wut's PRINTF_BUFFER_LENGTH
+   /* Do a bit of line buffering to try and make the log output nicer
+    * we just truncate if a line goes over */
+   static char   linebuf[2048]; /* match wut's PRINTF_BUFFER_LENGTH */
    static size_t linebuf_pos = 0;
 
    snprintf(linebuf + linebuf_pos, sizeof(linebuf) - linebuf_pos - 1, "%.*s",

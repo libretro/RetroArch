@@ -38,6 +38,7 @@
 #include <formats/image.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <proc_ui/procui.h>
 
 #include "../../driver.h"
 #include "../../configuration.h"
@@ -1575,19 +1576,21 @@ static void gx2_free(void *data)
    if (!wiiu)
       return;
 
-   /* clear leftover image */
-   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
-   GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
-   GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_TV);
+   if (ProcUIInForeground()) {
+      /* clear leftover image */
+      GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
+      GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
+      GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_TV);
 
-   GX2SwapScanBuffers();
-   GX2Flush();
-   GX2DrawDone();
-   GX2WaitForVsync();
+      GX2SwapScanBuffers();
+      GX2Flush();
+      GX2DrawDone();
+      GX2WaitForVsync();
+
+      GX2SetTVEnable(GX2_DISABLE);
+      GX2SetDRCEnable(GX2_DISABLE);
+   }
    GX2Shutdown();
-
-   GX2SetTVEnable(GX2_DISABLE);
-   GX2SetDRCEnable(GX2_DISABLE);
 
    GX2DestroyShader(&frame_shader);
    GX2DestroyShader(&tex_shader);
