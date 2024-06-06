@@ -2887,7 +2887,7 @@ void config_set_defaults(void *data)
 
 #ifdef ANDROID
    configuration_set_bool(settings,
-         settings->bools.accessibility_enable, RAIsTalkbackRunning());
+         settings->bools.accessibility_enable, is_screen_reader_enabled());
 #endif
 
 #ifdef HAVE_MENU
