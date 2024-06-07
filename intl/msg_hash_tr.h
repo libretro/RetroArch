@@ -4062,6 +4062,34 @@ MSG_HASH(
    "RetroArch tarafından tanınan fiziksel kontrolcü."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Bu Oyuncu için Ayrılmış Cihaz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Bu kontrolcü, rezervasyon kipine göre bu oynatıcı için ayrılacaktır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Ayrılmamış"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "Tercihen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "Ayrılmış"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "Cihaz Ayırma Türü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "Tercih edilen: Belirtilen cihaz mevcutsa bu oynatıcı için ayrılacaktır. Ayrılmış: Bu oynatıcı için başka bir kontrol cihazı ayrılmayacak."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Eşlenmiş Port"
    )

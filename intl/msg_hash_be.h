@@ -7561,7 +7561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
-   "Звесткі ядраў"
+   "Звесткі ядра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
