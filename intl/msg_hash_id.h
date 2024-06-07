@@ -812,7 +812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   "Dukungan Tipe Bebas"
+   "Dukungan FreeType"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
@@ -1344,7 +1344,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Keluaran asli, sinyal beresolusi rendah untuk layar CRT."
+   "Berkeluaran lokal, sinyal beresolusi rendah untuk layar CRT."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -1400,7 +1400,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Meningkatkan kinerja dengan meningkatkan latensi dan lebih banyak gagap video. Gunakan hanya jika kecepatan penuh tidak dapat diperoleh."
+   "Meningkatkan kinerja tapi akan banyak latensi dan video patah-patah. Gunakan hanya jika tidak dapat berkecepatan penuh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -1480,7 +1480,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-   "Pemfilteran Bilinear"
+   "Penyaringan Bilinear"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1489,15 +1489,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Menentukan metode interpolasi gambar saat menskala konten melalui IPU internal. 'Bicubic' atau 'Bilinear' dianjurkan jika penyaring video bertenaga CPU digunakan. Opsi ini tidak berdampak ke kinerja."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   "Bikubic"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   "Tetangga Terdekat"
+   "Menentukan metode interpolasi gambar saat menskala konten melalui IPU internal. 'Bicubic' atau 'Bilinear' dianjurkan jika saring video bertenaga CPU digunakan. Opsi ini tidak berdampak ke kinerja."
    )
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
@@ -1506,11 +1498,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Menentukan metode interpolasi gambar saat 'Skala Bilang Bulat' dinonaktifkan. 'Nearest Neighbor' berpengaruh kecil pada kinerja."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   "Penskalaan Terdekat"
+   "Menentukan metode interpolasi gambar saat 'Skala Bilang Bulat' nonaktif. 'Nearest Neighbor' berdampak kecil pada kinerja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
@@ -1524,19 +1512,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Tentukan nilai tunda pemuatan shader otomatis (satuan milidetik). Dapat mengatasi masalah glitch pada grafis ketika memakai aplikasi penangkap layar."
+   "Menunda muat-langsung 'shader' (dalam milidetik). Dapat mengatasi 'glitch' grafis saat menggunakan aplikasi 'screen grab'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   "Saring Video"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Menerapkan penyaring video berdaya CPU. Akan menguras tinggi kinerja perangkat. Beberapa penyaring mungkin hanya cocok pada 'core' yang memakai warna 16/32 bit."
+   "Menerapkan saring video berdaya CPU. Akan menguras tinggi kinerja perangkat. Beberapa saring mungkin hanya cocok pada 'core' dengan warna 16/32 bit."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   "Hapus Filter Video"
+   "Hapus Saring Video"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   "Matikan semua video filter berbasis pemrosesan CPU."
+   "Melepas saring video bertenaga CPU yang aktif."
    )
 
 /* Settings > Video > CRT SwitchRes */
@@ -1551,7 +1543,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   "Ganti ke resolusi asli atau ke resolusi super ultra lebar."
+   "Mengganti ke resolusi lokal atau super ultra lebar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
@@ -1682,7 +1674,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Nonaktifkan dukungan sRGB FBO secara paksa. Beberapa driver Intel OpenGL di Windows memiliki masalah video dengan FBO sRGB. Mengaktifkan ini dapat mengatasinya."
+   "Menonaktifkan paksa dukungan FBO sRGB. Beberapa kandar OpenGL Intel di Windows bermasalah video dengan FBO sRGB. Aktifkan ini untuk mengatasinya."
    )
 
 /* Settings > Video > Fullscreen Mode */
@@ -1693,7 +1685,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Mulai di layar penuh. Dapat diubah saat wakutu jalan. Dapat ditimpa alihan baris perintah."
+   "Mulai di layar penuh. Dapat diubah saat waktu jalan. Dapat ditimpa alihan baris perintah."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -1888,7 +1880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Atur maksimal pancaran cahaya layar (dalam satuan cd/m2) yang dapat dihasilkan dari monitor/TV. Kunjungi situs RTings sebagai acuan."
+   "Mengatur maksimal pancaran cahaya layar (dalam cd/m2) dari monitor/TV. Kunjungi situs RTings untuk rujukan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -1927,7 +1919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync diaktifkan hingga performa turun di bawah kecepatan refresh target. Dapat meminimalkan kegagapan saat performa turun di bawah waktu nyata, dan lebih hemat energi."
+   "VSync akan aktif sampai kinerja kurang dari laju segar yang dituju. Dapat mengurangi patah-patah saat kinerja kurang dari waktu nyata, dan lebih hemat tenaga."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -1959,7 +1951,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Setel berapa banyak bingkai yang dapat dijalankan CPU di depan GPU saat menggunakan 'Sinkronisasi Hard GPU'."
+   "Atur berapa laju bingkai yang dapat dijalankan CPU lebih dari GPU saat 'Sinkron Hard GPU' aktif."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -2111,7 +2103,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Latensi audio yang diinginkan dalam milidetik. Mungkin tidak dihormati jika driver audio tidak dapat memberikan latensi yang diberikan."
+   "Latensi audio sekeinginan dalam milidetik. Mungkin akan diabaikan jika kandar audio tidak mendukung latensi ini."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2122,11 +2114,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   "Kualitas Sampel Ulang"
+   "Mutu Percontoh Ulang"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-   "Turunkan nilai ini untuk mendukung kinerja/latensi yang lebih rendah daripada kualitas audio, tingkatkan kualitas audio yang lebih baik dengan mengorbankan kinerja/latensi yang lebih rendah."
+   "Turunkan nilai ini untuk mengutamakan kinerja/latensi rendah daripada mutu audio, tingkatkan untuk mutu audio lebih baik tapi kinerja/latensi akan susah."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -2150,11 +2142,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   "Kualitas Sampel Ulang"
+   "Mutu Percontoh Ulang"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   "Turunkan nilai ini untuk mendukung kinerja/latensi yang lebih rendah daripada kualitas audio, tingkatkan kualitas audio yang lebih baik dengan mengorbankan kinerja/latensi yang lebih rendah."
+   "Turunkan nilai ini untuk mengutamakan kinerja/latensi rendah daripada mutu audio, tingkatkan untuk mutu audio lebih baik tapi kinerja/latensi akan susah."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -2495,7 +2487,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Semua pengguna jadi boleh mengendalikan menu. Jika dimatikan, hanya Pengguna 1 yang mengendalikan menu."
+   "Mengizinkan semua pengguna mengatur menu. Jika dinonaktifkan, hanya Pengguna 1 yang mengatur menu."
    )
 
 /* Settings > Input > Hotkeys */
@@ -2514,7 +2506,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   "Menutup semua hotkey dari jenis papan ketik dan stik kendali lain jika ada yang diatur 'Hotkey Nyala'."
+   "Menutup semua hotkey dari jenis papan ketik dan stik kendali lain jika ada yang diatur 'Hotkey Aktif'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -2633,6 +2625,22 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Perangkat Tempahan untuk Pemain Ini"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Tanpa Tempahan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "Pilihan"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "Tempahan"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Simpan Profil Stik Kendali"
@@ -3156,6 +3164,10 @@ MSG_HASH(
 
 /* Settings > User > Privacy */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
+   "Mengizinkan Discord menampilkan data tentang apa yang dimainkan.\nHanya tersedia dengan klien desktop lokal."
+   )
 
 /* Settings > User > Accounts */
 
@@ -3563,7 +3575,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "Perubahan pada setelan pencorak akan diterapkan. Gunakan ini jika ingin mengubah jumlah laluan pencorak, penyaringan, skala FBO, dll."
+   "Ubahan pada konfigurasi 'shader' akan diterapkan. Gunakan ini jika ingin mengubah jumlah laluan 'shader', penyaringan, skala FBO, dll."
    )
 
 /* Quick Menu > Shaders > Save */
@@ -3991,6 +4003,10 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH(
+   MSG_NATIVE,
+   "Lokal"
+   )
+MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
    "Berkasnya sudah ada. Menyimpan ke penyangga cadangan"
    )
@@ -4000,7 +4016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "Kawan (peer) Netplay bermain di versi lama RetroArch. Tak bisa bersambung."
+   "Kawan (peer) Netplay bermain di versi lama RetroArch. Tidak dapat sambung."
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
