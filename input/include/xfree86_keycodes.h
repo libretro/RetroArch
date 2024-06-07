@@ -182,7 +182,7 @@ enum xfvk_key
    XFVK_PLAY           = 172,
    XFVK_CDPR           = 173,
    XFVK_CDST           = 174,
-   XVFK_HOMP           = 180,
+   XFVK_HOMP           = 180,
    XFVK_REFR           = 181,
    XFVK_BSEA           = 225,
    XFVK_MDIA           = 234,
