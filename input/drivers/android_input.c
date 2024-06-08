@@ -60,15 +60,14 @@ enum {
     AMOTION_EVENT_BUTTON_BACK = 1 << 3,
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
-    AMOTION_EVENT_ACTION_HOVER_MOVE = 7
+    AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
+    AINPUT_SOURCE_STYLUS = 0x00004000
+};
 #endif
 /* If using an NDK lower than 16b then add missing definition */
 #ifndef __ANDROID_API_O_MR1__
 enum {
    AINPUT_SOURCE_MOUSE_RELATIVE = 0x00020000 | AINPUT_SOURCE_CLASS_NAVIGATION
-};
-#endif
-    AINPUT_SOURCE_STYLUS = 0x00004000
 };
 #endif
 
@@ -1514,6 +1513,7 @@ static void android_input_poll_input_default(android_input_t *android)
                   engine_handle_touchpad(android_app, event, port);
                /* Only handle events from a touchscreen or mouse */
                else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
+                           | AINPUT_SOURCE_MOUSE_RELATIVE
                            | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
                         port, source);
