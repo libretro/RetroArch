@@ -3712,6 +3712,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "Allow any user to control the menu. If disabled, only User 1 can control the menu."
    )
+#ifdef WIIU
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_WIIU_ENABLE_HBM,
+   "Allow Wii U HOME menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_WIIU_ENABLE_HBM,
+   "Enable the Wii U's HOME menu overlay. If disabled, the Home button toggles the RetroArch menu."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    "Single-Click Playlists"

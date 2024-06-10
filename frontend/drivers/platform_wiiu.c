@@ -29,6 +29,7 @@
 
 #include <string/stdstring.h>
 
+#include "../configuration.h"
 #include "../frontend.h"
 #include "../frontend_driver.h"
 #include "../../file_path_special.h"
@@ -493,6 +494,19 @@ static uint32_t proc_release(void* param)
    return 0;
 }
 
+static bool in_main = false;
+
+static uint32_t proc_home_button_deny(void* param)
+{
+   (void)param;
+
+   /* Don't toggle the menu in, like, the middle of a core switch */
+   if (in_main)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+
+   return 0;
+}
+
 static void proc_setup(void)
 {
    /* Detect Aroma explicitly (it's possible to run under H&S while using Tiramisu) */
@@ -506,6 +520,7 @@ static void proc_setup(void)
    ProcUIInit(&proc_save_callback);
    ProcUIRegisterCallback(PROCUI_CALLBACK_ACQUIRE, proc_acquired, NULL, 1);
    ProcUIRegisterCallback(PROCUI_CALLBACK_RELEASE, proc_release, NULL, 1);
+   ProcUIRegisterCallback(PROCUI_CALLBACK_HOME_BUTTON_DENIED, &proc_home_button_deny, NULL, 1000);
 
    uint32_t addr = 0;
    uint32_t size = 0;
@@ -606,8 +621,9 @@ static void main_loop(void)
    OSTime       start_time;
    ProcUIStatus os_status;
    int          status;
+   settings_t*  settings = config_get_ptr();
 
-   OSEnableHomeButtonMenu(TRUE);
+   in_main = true;
 
    while ((os_status = ProcUIProcessMessages(TRUE)) != PROCUI_STATUS_EXITING)
    {
@@ -641,8 +657,12 @@ static void main_loop(void)
          }
          ProcUIDrawDoneRelease();
       }
+
+      if (OSIsHomeButtonMenuEnabled() != settings->bools.input_wiiu_enable_hbm)
+         OSEnableHomeButtonMenu(settings->bools.input_wiiu_enable_hbm);
    }
 
+   in_main = false;
    OSEnableHomeButtonMenu(FALSE);
 }
 #endif

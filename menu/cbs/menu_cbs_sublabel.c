@@ -553,6 +553,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_camera_allow,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_location_allow,                MENU_ENUM_SUBLABEL_LOCATION_ALLOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_poll_type_behavior,      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR)
+#ifdef WIIU
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_wiiu_enable_hbm,         MENU_ENUM_SUBLABEL_INPUT_WIIU_ENABLE_HBM)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_hold,               MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
@@ -4808,6 +4811,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_volume);
 #endif
             break;
+#ifdef WIIU
+         case MENU_ENUM_LABEL_INPUT_WIIU_ENABLE_HBM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_wiiu_enable_hbm);
+            break;
+#endif
          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_poll_type_behavior);
             break;

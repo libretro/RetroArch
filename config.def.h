@@ -976,6 +976,12 @@
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
 #endif
 
+#if defined(WIIU)
+/* On Wii U, whether the HOME button should open the OS's HOME menu, or simply toggle the RetroArch menu (as it did in
+ * older HBL/Tiramisu builds of RetroArch) */
+#define DEFAULT_WIIU_ENABLE_HBM true
+#endif
+
 #define DEFAULT_QUIT_PRESS_TWICE true
 
 #define DEFAULT_LOG_TO_FILE false
