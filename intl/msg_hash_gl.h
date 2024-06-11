@@ -61,7 +61,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Acceso rápido ás configuracións relevantes durante o xogo."
+   "Accede rápido ás configuracións relevantes do xogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -69,11 +69,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Escolla que núcleo empregar."
+   "Escolla o núcleo a empregar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Busca unha implementación do núcleo de libretro. O lugar onde se inicia o navegador depende da ruta do directorio principal. Se está en branco, comezará na raíz.\nlf Core Directory é un directorio, o menú empregarao como cartafol superior. Se Core Directory é unha ruta completa, comezará no cartafol onde está o ficheiro."
+   "Navega por unha implementación do núcleo libretro. O lugar onde comeza o navegador depende da túa ruta do Directorio de Núcleos.\nlf Se está en branco, comezará na raíz. Se o Directorio de Núcleos é un directorio, o menú usará ese como carpeta principal. Se o Directorio de Núcleos é unha ruta completa, comezará na carpeta onde está o arquivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
