@@ -14976,6 +14976,10 @@ MSG_HASH(
    "Achievement Unlocked"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Rare Achievement Unlocked"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Leaderboard attempt started"
    )

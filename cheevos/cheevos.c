@@ -452,8 +452,29 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 #if defined(HAVE_GFX_WIDGETS)
       if (gfx_widgets_ready())
       {
-         gfx_widgets_push_achievement(msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
-            cheevo->title, cheevo->badge_name);
+         char title[128], subtitle[96];
+         float rarity = rc_client_get_hardcore_enabled(rcheevos_locals.client) ?
+            cheevo->rarity_hardcore : cheevo->rarity;
+
+         if (rarity >= 10.0)
+         {
+            snprintf(title, sizeof(title), "%s - %0.2f%%",
+               msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), rarity);
+         }
+         else if (rarity > 0.0)
+         {
+            snprintf(title, sizeof(title), "%s - %0.2f%%",
+               msg_hash_to_str(MSG_RARE_ACHIEVEMENT_UNLOCKED), rarity);
+         }
+         else
+         {
+            snprintf(title, sizeof(title), "%s",
+               msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED));
+         }
+
+         snprintf(subtitle, sizeof(subtitle), "%s (%d)", cheevo->title, cheevo->points);
+
+         gfx_widgets_push_achievement(title, subtitle, cheevo->badge_name);
       }
       else
 #endif
