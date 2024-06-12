@@ -5384,7 +5384,7 @@ size_t rc_client_progress_size(rc_client_t* client)
     return client->state.external_client->progress_size();
 #endif
 
-  if (!client->game)
+  if (!rc_client_is_game_loaded(client))
     return 0;
 
   rc_mutex_lock(&client->state.mutex);

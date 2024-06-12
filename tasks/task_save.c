@@ -448,8 +448,20 @@ bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
 {
    rastate_size_info_t size;
    size_t len = content_get_rastate_size(&size, true);
-   if (len == 0 || len > buffer_size)
+   if (len == 0)
       return false;
+   if (len > buffer_size)
+   {
+#ifdef DEBUG
+      static size_t last_reported_len = 0;
+      if (len != last_reported_len)
+      {
+         last_reported_len = len;
+         RARCH_WARN("Rewind state size exceeds frame size (%zu > %zu).\n", len, buffer_size);
+      }
+#endif
+      return false;
+   }
    return content_write_serialized_state(buffer, &size, true);
 }
 
