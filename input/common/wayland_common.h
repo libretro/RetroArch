@@ -45,6 +45,8 @@
 #define FRACTIONAL_SCALE_V1_DEN 120
 #define FRACTIONAL_SCALE_MULT(v, scale_num) \
    (((v) * (scale_num) + FRACTIONAL_SCALE_V1_DEN / 2) / FRACTIONAL_SCALE_V1_DEN)
+#define FRACTIONAL_SCALE_MULT_DOUBLE(v, scale_num) \
+   (((double)(v) * (double)(scale_num) + (double)FRACTIONAL_SCALE_V1_DEN / 2.0) / (double)FRACTIONAL_SCALE_V1_DEN)
 
 #define UDEV_KEY_MAX            0x2ff
 #define UDEV_MAX_KEYS           (UDEV_KEY_MAX + 7) / 8
@@ -195,6 +197,8 @@ typedef struct gfx_ctx_wayland_data
       struct wl_cursor_theme *theme;
       struct wl_surface *surface;
       uint32_t serial;
+      char *theme_name;
+      int size;
       bool visible;
    } cursor;
 
