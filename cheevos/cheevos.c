@@ -457,20 +457,14 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
             cheevo->rarity_hardcore : cheevo->rarity;
 
          if (rarity >= 10.0)
-         {
             snprintf(title, sizeof(title), "%s - %0.2f%%",
                msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), rarity);
-         }
          else if (rarity > 0.0)
-         {
             snprintf(title, sizeof(title), "%s - %0.2f%%",
                msg_hash_to_str(MSG_RARE_ACHIEVEMENT_UNLOCKED), rarity);
-         }
          else
-         {
-            snprintf(title, sizeof(title), "%s",
-               msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED));
-         }
+            strlcpy(title,
+               msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), sizeof(title));
 
          snprintf(subtitle, sizeof(subtitle), "%s (%d)", cheevo->title, cheevo->points);
 
