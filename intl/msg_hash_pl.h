@@ -12836,6 +12836,10 @@ MSG_HASH(
    "Osiągnięcie odblokowane"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Rzadkie Osiągnięcia odblokowane"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Przesłano %s dla %s" /* Submitted [value] for [leaderboard name] */
    )
