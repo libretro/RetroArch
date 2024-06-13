@@ -4258,6 +4258,7 @@ static void *gl2_init(const video_info_t *video,
    unsigned temp_width                  = 0;
    unsigned temp_height                 = 0;
    bool force_smooth                    = false;
+   bool force_fullscreen                = false;
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
    const char *version                  = NULL;
@@ -4280,6 +4281,13 @@ static void *gl2_init(const video_info_t *video,
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
                &mode_width, &mode_height);
+
+   if (!video->fullscreen && !gl->ctx_driver->has_windowed)
+   {
+      RARCH_DBG("[GL]: Config requires windowed mode, but context driver does not support it. "
+                "Forcing fullscreen for this session.\n");
+      force_fullscreen = true;
+   }
 
 #if defined(DINGUX)
    mode_width  = 320;
@@ -4311,17 +4319,23 @@ static void *gl2_init(const video_info_t *video,
       win_width  = full_x;
       win_height = full_y;
    }
+   /* If fullscreen had to be forced, video->width/height is incorrect */
+   else if (force_fullscreen)
+   {
+      win_width  = settings->uints.video_fullscreen_x;
+      win_height = settings->uints.video_fullscreen_y;
+   }
 
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
 #if defined(__APPLE__) && !defined(IOS) && !defined(HAVE_COCOA_METAL)
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
 #endif
 
@@ -4446,7 +4460,7 @@ static void *gl2_init(const video_info_t *video,
    gl2_begin_debug(gl);
 #endif
 
-   if (video->fullscreen)
+   if (video->fullscreen || force_fullscreen)
       gl->flags  |=  GL2_FLAG_FULLSCREEN;
 
    mode_width     = 0;

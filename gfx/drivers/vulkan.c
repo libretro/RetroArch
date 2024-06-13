@@ -3318,6 +3318,7 @@ static void *vulkan_init(const video_info_t *video,
    int interval                       = 0;
    unsigned temp_width                = 0;
    unsigned temp_height               = 0;
+   bool force_fullscreen              = false;
    const gfx_ctx_driver_t *ctx_driver = NULL;
    settings_t *settings               = config_get_ptr();
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -3351,6 +3352,13 @@ static void *vulkan_init(const video_info_t *video,
       vk->ctx_driver->get_video_size(vk->ctx_data,
             &mode_width, &mode_height);
 
+   if (!video->fullscreen && !vk->ctx_driver->has_windowed)
+   {
+      RARCH_DBG("[Vulkan]: Config requires windowed mode, but context driver does not support it. "
+                "Forcing fullscreen for this session.\n");
+      force_fullscreen = true;
+   }
+
    full_x                             = mode_width;
    full_y                             = mode_height;
    mode_width                         = 0;
@@ -3376,10 +3384,16 @@ static void *vulkan_init(const video_info_t *video,
       win_width  = full_x;
       win_height = full_y;
    }
+   /* If fullscreen had to be forced, video->width/height is incorrect */
+   else if (force_fullscreen)
+   {
+      win_width  = settings->uints.video_fullscreen_x;
+      win_height = settings->uints.video_fullscreen_y;
+   }
 
    if (     !vk->ctx_driver->set_video_mode
          || !vk->ctx_driver->set_video_mode(vk->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
    {
       RARCH_ERR("[Vulkan]: Failed to set video mode.\n");
       goto error;
@@ -3412,7 +3426,7 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         |=  VK_FLAG_VSYNC;
    else
       vk->flags         &= ~VK_FLAG_VSYNC;
-   if (video->fullscreen)
+   if (video->fullscreen || force_fullscreen)
       vk->flags         |=  VK_FLAG_FULLSCREEN;
    else
       vk->flags         &= ~VK_FLAG_FULLSCREEN;
