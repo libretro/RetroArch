@@ -1688,6 +1688,14 @@ error:
    return false;
 }
 
+const char *audio_driver_get_ident(void)
+{
+   audio_driver_state_t *audio_st  = &audio_driver_st;
+   if (!audio_st->current_audio)
+      return NULL;
+   return audio_st->current_audio->ident;
+}
+
 bool audio_driver_stop(void)
 {
    bool stopped;
