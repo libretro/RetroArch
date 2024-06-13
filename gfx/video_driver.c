@@ -1243,7 +1243,8 @@ void video_switch_refresh_rate_maybe(
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
    unsigned shader_subframes          = settings->uints.video_shader_subframes;
    bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
-   bool exclusive_fullscreen          = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+   bool exclusive_fullscreen          = (video_st->flags | VIDEO_FLAG_FORCE_FULLSCREEN) || (
+                                        settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen);
    bool windowed_fullscreen           = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
