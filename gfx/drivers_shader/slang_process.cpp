@@ -232,7 +232,10 @@ static bool slang_process_reflection(
             {
                size = sizeof(names) / sizeof(*names);
                if (semantic < size)
-                  snprintf(texture.id, sizeof(texture.id), "%s%d", names[_semantic], index);
+               {
+                  size_t _len = strlcpy(texture.id, names[_semantic], sizeof(texture.id));
+                  snprintf(texture.id + _len, sizeof(texture.id) - _len, "%d", index);
+               }
                else
                   strlcpy(texture.id, get_semantic_name(sl_reflection.texture_semantic_map, _semantic, index), sizeof(texture.id));
             }
@@ -279,7 +282,10 @@ static bool slang_process_reflection(
             {
                int size = sizeof(names) / sizeof(*names);
                if (semantic < size)
-                  snprintf(uniform.id, sizeof(uniform.id), "%s%d", names[_semantic], index);
+               {
+                  size_t _len = strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
+                  snprintf(uniform.id + _len, sizeof(uniform.id) - _len, "%d", index);
+               }
                else
                   strlcpy(uniform.id, get_semantic_name(sl_reflection.texture_semantic_uniform_map, _semantic, index), sizeof(uniform.id));
             }
