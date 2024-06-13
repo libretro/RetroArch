@@ -14204,6 +14204,10 @@ MSG_HASH(
    "Открыто достижение"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Открыто редкое достижение"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Попытка войти в таблицу лидеров начата"
    )
