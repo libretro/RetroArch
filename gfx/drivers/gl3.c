@@ -1770,6 +1770,7 @@ static void *gl3_init(const video_info_t *video,
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
+   bool force_fullscreen                = false;
    int interval                         = 0;
    unsigned mode_width                  = 0;
    unsigned mode_height                 = 0;
@@ -1799,6 +1800,13 @@ static void *gl3_init(const video_info_t *video,
       gl->ctx_driver->get_video_size(gl->ctx_data,
                &mode_width, &mode_height);
 
+   if (!video->fullscreen && !gl->ctx_driver->has_windowed)
+   {
+      RARCH_DBG("[GLCore]: Config requires windowed mode, but context driver does not support it. "
+                "Forcing fullscreen for this session.\n");
+      force_fullscreen = true;
+   }
+
    full_x      = mode_width;
    full_y      = mode_height;
    mode_width  = 0;
@@ -1827,10 +1835,16 @@ static void *gl3_init(const video_info_t *video,
       win_width  = full_x;
       win_height = full_y;
    }
+   /* If fullscreen had to be forced, video->width/height is incorrect */
+   else if (force_fullscreen)
+   {
+      win_width  = settings->uints.video_fullscreen_x;
+      win_height = settings->uints.video_fullscreen_y;
+   }
 
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
@@ -1889,7 +1903,7 @@ static void *gl3_init(const video_info_t *video,
 
    if (video->vsync)
       gl->flags   |= GL3_FLAG_VSYNC;
-   if (video->fullscreen)
+   if (video->fullscreen || force_fullscreen)
       gl->flags   |= GL3_FLAG_FULLSCREEN;
    if (video->force_aspect)
       gl->flags   |= GL3_FLAG_KEEP_ASPECT;
