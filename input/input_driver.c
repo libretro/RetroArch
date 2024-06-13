@@ -3755,8 +3755,11 @@ void input_config_get_bind_string_joykey(
          fill_pathname_join_delim(buf,
                bind->joykey_label, suffix, ' ', size);
       else
-         snprintf(buf, size, "%s%u",
-               "Button ", (unsigned)bind->joykey);
+      {
+         size_t _len = strlcpy(buf, "Button ", size);
+         snprintf(buf + _len, size - _len, "%u",
+               (unsigned)bind->joykey);
+      }
    }
 }
 
