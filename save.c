@@ -427,10 +427,9 @@ static bool dump_to_file_desperate(const void *data,
       strftime(timebuf, 256 * sizeof(char),
             "%Y-%m-%d-%H-%M-%S", &tm_);
 
-      _len = strlcat(path, "/RetroArch-recovery-", sizeof(path));
-
-      snprintf(path + _len, sizeof(path) - _len,
-            "%u%s", type, timebuf);
+      _len  = strlcat(path, "/RetroArch-recovery-", sizeof(path));
+      _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
+      strlcpy(path + _len, timebuf, sizeof(path) - _len);
 
       /* Fallback (emergency) saves are always
        * uncompressed
