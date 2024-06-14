@@ -654,7 +654,6 @@ static void setup_video_mode(gx_video_t *gx)
 static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
       unsigned g_filter)
 {
-   size_t fb_pitch;
    unsigned fb_width, fb_height;
    GXTexObj *fb_ptr   	   = (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	   = (GXTexObj*)&menu_tex.obj;
@@ -668,7 +667,6 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
 
    fb_width                = p_disp->framebuf_width;
    fb_height               = p_disp->framebuf_height;
-   fb_pitch                = p_disp->framebuf_pitch;
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32)
@@ -744,8 +742,8 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
       }
    }
 
-   DCFlushRange(g_tex.data, (g_tex.width *
-         g_tex.height * video->rgb32) ? 4 : 2);
+   DCFlushRange(g_tex.data, ((g_tex.width *
+         g_tex.height) * video->rgb32) ? 4 : 2);
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
