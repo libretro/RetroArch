@@ -649,7 +649,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
-#ifdef TARGET_OS_IOS
+#ifdef IOS
       bool audio_respect_silent_mode;
 #endif
 
@@ -1072,7 +1072,7 @@ typedef struct settings
       bool android_input_disconnect_workaround;
 #endif
 
-#if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
+#if defined(HAVE_COCOATOUCH)
       bool gcdwebserver_alert;
 #endif
    } bools;
