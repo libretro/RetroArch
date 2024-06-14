@@ -884,25 +884,21 @@ static void udev_handle_mouse(void *data,
             case BTN_LEFT:
                mouse->l = event->value;
                break;
-
             case BTN_RIGHT:
                mouse->r = event->value;
                break;
-
             case BTN_MIDDLE:
                mouse->m = event->value;
                break;
             case BTN_TOUCH:
                mouse->pp = event->value;
                break;
-#if 0
-            case BTN_??:
+            case BTN_SIDE:
                mouse->b4 = event->value;
                break;
-            case BTN_??:
+            case BTN_EXTRA:
                mouse->b5 = event->value;
                break;
-#endif
             default:
                break;
          }
