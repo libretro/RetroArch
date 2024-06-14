@@ -413,7 +413,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
                (long long)(input_st->bsv_movie_state_handle->identifier),
                input_st->bsv_movie_state.flags);
       else
-         snprintf(value_dynamic, sizeof(value_dynamic), "0 0");
+         strlcpy(value_dynamic, "0 0", sizeof(value_dynamic));
    }
    #endif
    /* TODO: query any string */
@@ -919,7 +919,6 @@ bool command_get_status(command_t *cmd, const char* arg)
    {
       /* add some content info */
       runloop_state_t *runloop_st = runloop_state_get_ptr();
-      const char *status          = "PLAYING";
       const char *content_name    = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
       int content_crc32           = content_get_crc();
       const char* system_id       = NULL;
@@ -929,15 +928,20 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       core_info_get_current_core(&core_info);
 
-      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-         status                   = "PAUSED";
       if (core_info)
          system_id                = core_info->system_id;
       if (!system_id)
          system_id                = runloop_st->system.info.library_name;
-
-      _len = snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
-            status, system_id, content_name, content_crc32);
+      _len  = strlcpy(reply, "GET_STATUS ",       sizeof(reply));
+      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         _len += strlcpy(reply + _len, "PAUSED",  sizeof(reply) - _len);
+      else
+         _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, " ",          sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, system_id,    sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, ",",          sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, content_name, sizeof(reply) - _len);
+      _len += snprintf(reply + _len, sizeof(reply) - _len, ",crc32=%x\n", content_crc32);
    }
    else
        _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
