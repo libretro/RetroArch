@@ -137,13 +137,13 @@ void path_linked_list_add_path(struct path_linked_list *in_path_linked_list,
       char *path)
 {
     /* If the first item does not have a path this is
-      a list which has just been created, so we just fill 
+      a list which has just been created, so we just fill
       the path for the first item
    */
    if (!in_path_linked_list->path)
       in_path_linked_list->path = strdup(path);
    else
-   {  
+   {
       struct path_linked_list *node = (struct path_linked_list*) malloc(sizeof(*node));
 
       if (node)
@@ -620,7 +620,7 @@ void path_parent_dir(char *path, size_t len)
 {
    if (!path)
       return;
-   
+
    if (len && PATH_CHAR_IS_SLASH(path[len - 1]))
    {
       bool path_was_absolute = path_is_absolute(path);
@@ -697,7 +697,7 @@ bool path_is_absolute(const char *path)
       /* Many roads lead to Rome...
        * Note: Drive letter can only be 1 character long */
       return ( string_starts_with_size(path,     "\\\\", STRLEN_CONST("\\\\"))
-            || string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/")) 
+            || string_starts_with_size(path + 1, ":/",   STRLEN_CONST(":/"))
             || string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")));
 #elif defined(__wiiu__) || defined(VITA)
       {
@@ -842,7 +842,7 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
             tmp[t++] = *p++;
       }
    }while(next < buf_end);
-   
+
 
 end:
    tmp[t] = '\0';
@@ -880,11 +880,11 @@ size_t path_relative_to(char *out,
    if (
             path
          && base
-         && path[0] != '\0' 
+         && path[0] != '\0'
          && path[1] != '\0'
          && base[0] != '\0'
          && base[1] != '\0'
-         && path[1] == ':' 
+         && path[1] == ':'
          && base[1] == ':'
          && path[0] != base[0])
       return strlcpy(out, path, size);
@@ -1156,7 +1156,7 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  *
  * Leaf function.
  *
- * Changes the slashes to the correct kind for the OS 
+ * Changes the slashes to the correct kind for the OS
  * So forward slash on linux and backslash on Windows
  **/
 void pathname_conform_slashes_to_os(char *path)
@@ -1174,7 +1174,7 @@ void pathname_conform_slashes_to_os(char *path)
  *
  * Leaf function.
  *
- * Change all slashes to forward so they are more 
+ * Change all slashes to forward so they are more
  * portable between Windows and Linux
  **/
 void pathname_make_slashes_portable(char *path)
@@ -1215,9 +1215,9 @@ static int get_pathname_num_slashes(const char *in_path)
 /**
  * fill_pathname_abbreviated_or_relative:
  *
- * Fills the supplied path with either the abbreviated path or 
+ * Fills the supplied path with either the abbreviated path or
  * the relative path, which ever one has less depth / number of slashes
- * 
+ *
  * If lengths of abbreviated and relative paths are the same,
  * the relative path will be used
  * @in_path can be an absolute, relative or abbreviated path
@@ -1233,7 +1233,7 @@ size_t fill_pathname_abbreviated_or_relative(char *out_path,
    char absolute_path[PATH_MAX_LENGTH];
    char relative_path[PATH_MAX_LENGTH];
    char abbreviated_path[PATH_MAX_LENGTH];
-   
+
    expanded_path[0]        = '\0';
    absolute_path[0]        = '\0';
    relative_path[0]        = '\0';
@@ -1267,7 +1267,7 @@ size_t fill_pathname_abbreviated_or_relative(char *out_path,
          absolute_path, sizeof(abbreviated_path));
 
    /* Use the shortest path, preferring the relative path*/
-   if (  get_pathname_num_slashes(relative_path) <= 
+   if (  get_pathname_num_slashes(relative_path) <=
          get_pathname_num_slashes(abbreviated_path))
       return strlcpy(out_path, relative_path, size);
    return strlcpy(out_path, abbreviated_path, size);
@@ -1348,7 +1348,7 @@ void fill_pathname_application_path(char *s, size_t len)
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
 #ifdef HAVE_COCOATOUCH
       {
-         /* This needs to be done so that the path becomes 
+         /* This needs to be done so that the path becomes
           * /private/var/... and this
           * is used consistently throughout for the iOS bundle path */
          char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
@@ -1364,7 +1364,7 @@ void fill_pathname_application_path(char *s, size_t len)
       CFRelease(bundle_path);
       CFRelease(bundle_url);
 #ifndef HAVE_COCOATOUCH
-      /* Not sure what this does but it breaks 
+      /* Not sure what this does but it breaks
        * stuff for iOS, so skipping */
       strlcat(s, "nobin", len);
 #endif
@@ -1388,20 +1388,19 @@ void fill_pathname_application_path(char *s, size_t len)
    free(buff);
 #else
    {
-      pid_t pid;
       static const char *exts[] = { "exe", "file", "path/a.out" };
       char link_path[255];
+      pid_t pid   = getpid();
+      size_t _len = snprintf(link_path, sizeof(link_path), "/proc/%u/",
+            (unsigned)pid);
 
-      link_path[0] = *s = '\0';
-      pid       = getpid();
+      *s           = '\0';
 
       /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)
       {
          ssize_t ret;
-
-         snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
-               (unsigned)pid, exts[i]);
+         strlcpy(link_path + _len, exts[i], sizeof(link_path) - _len);
 
          if ((ret = readlink(link_path, s, len - 1)) >= 0)
          {

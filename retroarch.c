@@ -3206,7 +3206,7 @@ bool command_event(enum event_command cmd, void *data)
                   gfx_widgets_ai_service_overlay_unload();
 #endif
                }
-               else 
+               else
                {
                   command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
                }
@@ -8112,64 +8112,80 @@ bool retroarch_override_setting_is_set(
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *str_out, size_t str_len)
 {
+   size_t _len = 0;
    switch (type)
    {
       case RARCH_CAPABILITIES_CPU:
          {
             uint64_t cpu = cpu_features_get();
-            snprintf(str_out, str_len,
-               "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
-               cpu & RETRO_SIMD_MMX ? "MMX " : "",
-               cpu & RETRO_SIMD_MMXEXT ? "MMXEXT " : "",
-               cpu & RETRO_SIMD_SSE ? "SSE " : "",
-               cpu & RETRO_SIMD_SSE2 ? "SSE2 " : "",
-               cpu & RETRO_SIMD_SSE3 ? "SSE3 " : "",
-               cpu & RETRO_SIMD_SSSE3 ? "SSSE3 " : "",
-               cpu & RETRO_SIMD_SSE4 ? "SSE4 " : "",
-               cpu & RETRO_SIMD_SSE42 ? "SSE42 " : "",
-               cpu & RETRO_SIMD_AES ? "AES " : "",
-               cpu & RETRO_SIMD_AVX ? "AVX " : "",
-               cpu & RETRO_SIMD_AVX2 ? "AVX2 " : "",
-               cpu & RETRO_SIMD_NEON ? "NEON " : "",
-               cpu & RETRO_SIMD_VFPV3 ? "VFPV3 " : "",
-               cpu & RETRO_SIMD_VFPV4 ? "VFPV4 " : "",
-               cpu & RETRO_SIMD_VMX ? "VMX " : "",
-               cpu & RETRO_SIMD_VMX128 ? "VMX128 " : "",
-               cpu & RETRO_SIMD_VFPU ? "VFPU " : "",
-               cpu & RETRO_SIMD_PS ? "PS " : "",
-               cpu & RETRO_SIMD_ASIMD ? "ASIMD " : "");
+            if (cpu & RETRO_SIMD_MMX)
+               _len += strlcpy(str_out + _len, "MMX ", str_len - _len);
+            if (cpu & RETRO_SIMD_MMXEXT)
+               _len += strlcpy(str_out + _len, "MMXEXT ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE)
+               _len += strlcpy(str_out + _len, "SSE ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE2)
+               _len += strlcpy(str_out + _len, "SSE2 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE3)
+               _len += strlcpy(str_out + _len, "SSE3 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSSE3)
+               _len += strlcpy(str_out + _len, "SSSE3 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE4)
+               _len += strlcpy(str_out + _len, "SSE4 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE42)
+               _len += strlcpy(str_out + _len, "SSE42 ", str_len - _len);
+            if (cpu & RETRO_SIMD_AES)
+               _len += strlcpy(str_out + _len, "AES ", str_len - _len);
+            if (cpu & RETRO_SIMD_AVX)
+               _len += strlcpy(str_out + _len, "AVX ", str_len - _len);
+            if (cpu & RETRO_SIMD_AVX2)
+               _len += strlcpy(str_out + _len, "AVX2 ", str_len - _len);
+            if (cpu & RETRO_SIMD_NEON)
+               _len += strlcpy(str_out + _len, "NEON ", str_len - _len);
+            if (cpu & RETRO_SIMD_VFPV3)
+               _len += strlcpy(str_out + _len, "VFPV3 ", str_len - _len);
+            if (cpu & RETRO_SIMD_VFPV4)
+               _len += strlcpy(str_out + _len, "VFPV4 ", str_len - _len);
+            if (cpu & RETRO_SIMD_VMX)
+               _len += strlcpy(str_out + _len, "VMX ", str_len - _len);
+            if (cpu & RETRO_SIMD_VMX128)
+               _len += strlcpy(str_out + _len, "VMX128 ", str_len - _len);
+            if (cpu & RETRO_SIMD_VFPU)
+               _len += strlcpy(str_out + _len, "VFPU ", str_len - _len);
+            if (cpu & RETRO_SIMD_PS)
+               _len += strlcpy(str_out + _len, "PS ", str_len - _len);
+            if (cpu & RETRO_SIMD_ASIMD)
+               _len += strlcpy(str_out + _len, "ASIMD ", str_len - _len);
             break;
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         snprintf(str_out, str_len, "%s: MSVC (%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               _MSC_VER, (unsigned)
-               (CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": MSVC (%d)",
+               _MSC_VER);
 #elif defined(__SNC__)
-         snprintf(str_out, str_len, "%s: SNC (%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _Len, ": SNC (%d)",
+               __SN_VER__);
 #elif defined(_WIN32) && defined(__GNUC__)
-         snprintf(str_out, str_len, "%s: MinGW (%d.%d.%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
-               (CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": MinGW (%d.%d.%d)",
+               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #elif defined(__clang__)
-         snprintf(str_out, str_len, "%s: Clang/LLVM (%s) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += strlcpy(str_out + _len, ": Clang/LLVM (", str_len - _len);
+         _len += strlcpy(str_out + _len, __clang_version__, str_len - _len);
+         _len += strlcpy(str_out + _len, ")", str_len - _len);
 #elif defined(__GNUC__)
-         snprintf(str_out, str_len, "%s: GCC (%d.%d.%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
-               (CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": GCC (%d.%d.%d)",
+               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #else
-         snprintf(str_out, str_len, "%s %u-bit",
-               msg_hash_to_str(MSG_UNKNOWN_COMPILER),
-               (unsigned)(CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_UNKNOWN_COMPILER), str_len);
 #endif
+         snprintf(str_out + _len, str_len - _len, " %u-bit",
+               (unsigned)(CHAR_BIT * sizeof(size_t)));
          break;
       default:
       case RARCH_CAPABILITIES_NONE:
