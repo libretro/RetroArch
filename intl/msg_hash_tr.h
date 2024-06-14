@@ -14284,6 +14284,10 @@ MSG_HASH(
    "Başarım Kilidi Açıldı"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Nadir Başarım Kilidi Açıldı"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Skor tablosu denemesi başladı"
    )

@@ -3432,8 +3432,16 @@ MSG_HASH(
    "Наступны дыск"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Павялічвае бягучы індэкс дыска. Віртуальны латок дыска мусіць быць адкрытым."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Папярэдні дыск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "Паніжае бягучы індэкс дыска. Віртуальны латок дыска мусіць быць адкрытым."
    )
 
 MSG_HASH(
@@ -8378,6 +8386,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Раскрыта дасягненне"
+   )
+MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Раскрыта рэдкае дасягненне"
    )
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,

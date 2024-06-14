@@ -14188,6 +14188,10 @@ MSG_HASH(
    "Logro desbloqueado"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Logro poco frecuente desbloqueado"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Intento de entrar en tabla de clasificación iniciado"
    )

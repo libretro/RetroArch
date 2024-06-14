@@ -127,7 +127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Tampilkan semua pengaturan terkait konfigurasi."
+   "Menampilkan semua pengaturan terkait konfigurasi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -2853,6 +2853,14 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   "NYALA (Biasa)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   "NYALA (Cepat)"
+   )
 
 /* Settings > User Interface */
 
@@ -2887,6 +2895,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    "Menu Daftar Main"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   "Semua"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "Sekali Pakai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   "Kustom"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   "Munculkan Layar Mulai"
+   )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
@@ -2918,12 +2942,20 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Tampilkan 'Capaian'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Menampilkan pengaturan 'Capaian'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
    "Tampilkan 'Jejaring'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   "Tampilkan pengaturan 'Jejaring'."
+   "Menampilkan pengaturan 'Jejaring'."
    )
 
 
@@ -2954,7 +2986,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Pencapaian"
+   "Capaian"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -2962,7 +2994,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Secara berkala mengirim info permainan berkonteks ke situs web RetroAchievements. Tidak berpengaruh jika 'Mode Garis Keras' dinyalakan."
+   "Secara berkala mengirim konteks info permainan ke situs web RetroAchievements. Tidak berpengaruh jika 'Mode Garis Keras' diaktifkan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   "Uji Capaian Belum Resmi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   "Menggunakan capaian dan/atau fitur belum resmi untuk menguji coba."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Memutar suara saat capaian terbuka."
    )
 
 /* Settings > Achievements > Appearance */
@@ -2971,12 +3015,16 @@ MSG_HASH(
 /* Settings > Achievements > Visibility */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "Permainan dengan Capaian"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
    "Indikator Kemajuan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   "Menampilkan indikator kemajuan di layar ketika melakukan pencapaian tertentu."
+   "Menampilkan indikator kemajuan di layar ketika melakukan capaian tertentu."
    )
 
 /* Settings > Network */
@@ -3065,7 +3113,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   "Menampilan ikon spesifik di masing-masing entri daftar main riwayat dan kesukaan. Berdampak beragam ke kinerja."
+   "Menampilan ikon spesifik di tiap-tiap entri daftar main riwayat dan kesukaan. Berdampak beragam ke kinerja."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
@@ -3329,7 +3377,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
-   "Dari Pencapaian"
+   "Dari Capaian"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
@@ -3505,7 +3553,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "Pencapaian"
+   "Capaian"
    )
 
 /* Quick Menu > Options */
@@ -3594,6 +3642,22 @@ MSG_HASH(
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   "Tidak Tampilkan Capaian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   "Batalkan Jeda di Mode Garis Keras Capaian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   "Batalkan Lanjut di Mode Garis Keras Capaian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   "Jedakan Mode Garis Keras Capaian"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
    "Galat Jejaring"
@@ -3953,6 +4017,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Deskripsi"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
+   "Capaian (Garis Keras)"
+   )
 
 /* Unused (Needs Confirmation) */
 
@@ -4122,6 +4190,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
    "Gerak mundur lambat."
+   )
+MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Capaian Terbuka"
+   )
+MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Capaian Langka Terbuka"
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
