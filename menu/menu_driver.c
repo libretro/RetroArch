@@ -4605,11 +4605,10 @@ void menu_entries_get_core_title(char *s, size_t len)
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
-
+   _len += strlcpy(s + _len, " - ",     len - _len);
+   _len += strlcpy(s + _len, core_name, len - _len);
    if (!string_is_empty(core_version))
-      snprintf(s + _len, len - _len, " - %s (%s)", core_name, core_version);
-   else
-      snprintf(s + _len, len - _len, " - %s", core_name);
+      snprintf(s + _len, len - _len, " (%s)", core_version);
 }
 
 static bool menu_driver_init_internal(
