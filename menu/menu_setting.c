@@ -8154,7 +8154,6 @@ static void setting_get_string_representation_input_device_reserved_device_name(
         rarch_setting_t *setting,
         char *s, size_t len)
 {
-    settings_t *settings = config_get_ptr();
     int dev_vendor_id;
     int dev_product_id;
 

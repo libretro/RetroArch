@@ -7324,7 +7324,6 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
 static int action_ok_push_dropdown_item_input_select_reserved_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-    char* device;
     const char *no_device;
     const char *reserved_device_name;
     enum msg_hash_enums enum_idx;
