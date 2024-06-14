@@ -572,8 +572,16 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          frontend_driver_get_cpu_architecture_str(frontend_architecture_tmp,
             sizeof(frontend_architecture_tmp));
       if (frontend_drv)
-         snprintf(ad_packet_buffer.frontend, sizeof(ad_packet_buffer.frontend),
-            "%s %s", frontend_drv->ident, frontend_architecture_tmp);
+      {
+         size_t _len = strlcpy(ad_packet_buffer.frontend, frontend_drv->ident,
+               sizeof(ad_packet_buffer.frontend));
+         _len += strlcpy(ad_packet_buffer.frontend + _len,
+               " ",
+               sizeof(ad_packet_buffer.frontend)   - _len);
+         strlcpy(ad_packet_buffer.frontend         + _len,
+               frontend_architecture_tmp,
+               sizeof(ad_packet_buffer.frontend)   - _len);
+      }
       else
          strlcpy(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
@@ -1152,9 +1160,12 @@ static void netplay_handshake_ready(netplay_t *netplay,
       netplay->force_send_savestate = true;
    }
    else
-      snprintf(msg, sizeof(msg), "%s: \"%s\"",
-         msg_hash_to_str(MSG_CONNECTED_TO),
-         connection->nick);
+   {
+      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONNECTED_TO),
+            sizeof(msg));
+      snprintf(msg + _len, sizeof(msg) - _len, ": \"%s\"",
+            connection->nick);
+   }
 
    RARCH_LOG("[Netplay] %s\n", msg);
    /* Useful notification to the client in figuring out
@@ -4206,8 +4217,8 @@ static void netplay_hangup(netplay_t *netplay,
 
          if (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
          {
-            /* This special mode keeps the connection object 
-               alive long enough to send the disconnection 
+            /* This special mode keeps the connection object
+               alive long enough to send the disconnection
                message at the correct time */
             connection->mode         = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
             connection->delay_frame  = netplay->read_frame_count[client_num];

@@ -122,8 +122,9 @@ static void task_database_scan_console_output(const char *label, const char *db_
       unsigned green  = FOREGROUND_GREEN;
       unsigned yellow = FOREGROUND_RED | FOREGROUND_GREEN;
       unsigned reset  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-
-      snprintf(string, sizeof(string), " %s ", prefix);
+      size_t _len     = strlcpy(string, " ", sizeof(string));
+      _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
+      strlcpy(string + _len, " ", sizeof(string) - _len);
       SetConsoleTextAttribute(con, (add) ? green : (db_name) ? yellow : red);
       WriteConsole(con, string, strlen(string), NULL, NULL);
       SetConsoleTextAttribute(con, reset);
@@ -135,14 +136,23 @@ static void task_database_scan_console_output(const char *label, const char *db_
       const char *green  = "\x1B[32m";
       const char *yellow = "\x1B[33m";
       const char *reset  = "\x1B[0m";
-
-      snprintf(string, sizeof(string), "%s %s %s", (add) ? green : (db_name) ? yellow : red, prefix, reset);
+      size_t _len        = 0;
+      if (add)
+         _len += strlcpy(string + _len, green, sizeof(string) - _len);
+      else
+         _len += strlcpy(string + _len, (db_name) ? yellow : red, sizeof(string) - _len);
+      _len    += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      _len    += strlcpy(string + _len, prefix, sizeof(string) - _len);
+      _len    += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      strlcpy(string + _len, reset,  sizeof(string) - _len);
       fputs(string, stdout);
    }
 #endif
    else
    {
-      snprintf(string, sizeof(string), " %s ", prefix);
+      size_t _len     = strlcpy(string, " ", sizeof(string));
+      _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
+      strlcpy(string + _len, " ", sizeof(string) - _len);
       fputs(string, stdout);
    }
 
