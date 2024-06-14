@@ -14152,6 +14152,10 @@ MSG_HASH(
    "Succès débloqué"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Succès rare débloqué"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Tentative d'entrée au tableau de classement démarrée"
    )

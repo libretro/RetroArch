@@ -13868,6 +13868,10 @@ MSG_HASH(
    "Errungenschaft freigeschaltet"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Seltene Errungenschaft freigeschaltet"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Ranglistenversuch gestartet"
    )
