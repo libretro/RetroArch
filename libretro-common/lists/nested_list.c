@@ -518,7 +518,7 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
  * @address   : a delimited list of item identifiers,
  *              corresponding to item 'levels'
  * @len       : length of supplied @address char array
- 
+
  * Fetches a compound @address string corresponding to
  * the specified item's 'position' in the top level
  * nested list of which it is a member. The resultant

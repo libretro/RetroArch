@@ -55,37 +55,43 @@ static int file_archive_get_file_list_cb(
 
    if (valid_exts)
    {
-      size_t path_len              = strlen(path);
-      /* Checks if this entry is a directory or a file. */
-      char last_char               = path[path_len - 1];
-      struct string_list ext_list  = {0};
+      char *tok, *save;
+      bool found_ext               = false;
+      char *valid_exts_cpy         = NULL;
+      size_t path_len              = 0;
+      char last_char               = 0;
+      const char *file_ext         = path_get_extension(path);
 
-      /* Skip if directory. */
-      if (last_char == '/' || last_char == '\\' )
+      if (!file_ext)
          return 1;
-      
-      string_list_initialize(&ext_list);
-      if (string_split_noalloc(&ext_list, valid_exts, "|"))
+
+      path_len                     = strlen(path);
+      last_char                    = path[path_len - 1];
+
+      /* Checks if this entry is a directory or a file. */
+      /* Skip if directory. */
+      if (last_char == '/' || last_char == '\\')
+         return 1;
+
+      valid_exts_cpy = strdup(valid_exts);
+      tok            = strtok_r(valid_exts_cpy, "|", &save);
+
+      while (tok)
       {
-         const char *file_ext = path_get_extension(path);
-
-         if (!file_ext)
+         if (string_is_equal_noncase(tok, file_ext))
          {
-            string_list_deinitialize(&ext_list);
-            return 1;
+            found_ext = true;
+            break;
          }
-
-         if (!string_list_find_elem_prefix(&ext_list, ".", file_ext))
-         {
-            /* keep iterating */
-            string_list_deinitialize(&ext_list);
-            return -1;
-         }
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
+         tok = strtok_r(NULL, "|", &save);
       }
+      free(valid_exts_cpy);
 
-      string_list_deinitialize(&ext_list);
+      /* keep iterating */
+      if (!found_ext)
+         return -1;
+
+      attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
    }
 
    return string_list_append(userdata->list, path, attr);
@@ -531,7 +537,7 @@ int file_archive_compressed_read(
       const char * path, void **buf,
       const char* optional_filename, int64_t *length)
 {
-   const struct 
+   const struct
       file_archive_file_backend *backend = NULL;
    struct string_list *str_list          = NULL;
 
