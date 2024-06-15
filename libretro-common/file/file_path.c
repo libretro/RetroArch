@@ -71,27 +71,27 @@
 
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
-void strftime_am_pm(char *s, size_t len, const char* format,
+size_t strftime_am_pm(char *s, size_t len, const char* format,
       const void *ptr)
 {
-   char *local = NULL;
+   size_t _len              = 0;
+   char *local              = NULL;
    const struct tm *timeptr = (const struct tm*)ptr;
-
    /* Ensure correct locale is set
     * > Required for localised AM/PM strings */
    setlocale(LC_TIME, "");
-
-   strftime(s, len, format, timeptr);
+   _len = strftime(s, len, format, timeptr);
 #if !(defined(__linux__) && !defined(ANDROID))
    if ((local = local_to_utf8_string_alloc(s)))
    {
       if (!string_is_empty(local))
-         strlcpy(s, local, len);
+         _len = strlcpy(s, local, len);
 
       free(local);
       local = NULL;
    }
 #endif
+   return _len;
 }
 
 /**
@@ -1422,7 +1422,7 @@ void fill_pathname_application_dir(char *s, size_t len)
 #endif
 }
 
-void fill_pathname_home_dir(char *s, size_t len)
+size_t fill_pathname_home_dir(char *s, size_t len)
 {
 #ifdef __WINRT__
    const char *home = uwp_dir_data;
@@ -1430,9 +1430,9 @@ void fill_pathname_home_dir(char *s, size_t len)
    const char *home = getenv("HOME");
 #endif
    if (home)
-      strlcpy(s, home, len);
-   else
-      *s = 0;
+      return strlcpy(s, home, len);
+   *s = 0;
+   return 0;
 }
 #endif
 
