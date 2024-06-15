@@ -129,8 +129,10 @@ protected:
     int numExtensions;
     const char** extensions; // an array of pointers to existing constant char strings
 
+    //
     // N.B.: Non-const functions that will be generally used should assert on this,
     // to avoid overwriting shared symbol-table information.
+    //
     bool writable;
 };
 
@@ -398,7 +400,8 @@ public:
         // Only supporting amend of anonymous blocks so far.
         if (IsAnonymous(symbol.getName()))
             return insertAnonymousMembers(symbol, firstNewMember);
-        return false;
+        else
+            return false;
     }
 
     bool insertAnonymousMembers(TSymbol& symbol, int firstMember)
@@ -418,7 +421,8 @@ public:
         tLevel::const_iterator it = level.find(name);
         if (it == level.end())
             return 0;
-        return (*it).second;
+        else
+            return (*it).second;
     }
 
     void findFunctionNameList(const TString& name, TVector<const TFunction*>& list)
@@ -529,8 +533,12 @@ protected:
 
 class TSymbolTable {
 public:
-   // This symbol table cannot be used until push() is called.
-    TSymbolTable() : uniqueId(0), noBuiltInRedeclarations(false), separateNameSpaces(false), adoptedLevels(0) { }
+    TSymbolTable() : uniqueId(0), noBuiltInRedeclarations(false), separateNameSpaces(false), adoptedLevels(0)
+    {
+        //
+        // This symbol table cannot be used until push() is called.
+        //
+    }
     ~TSymbolTable()
     {
         // this can be called explicitly; safest to code it so it can be called multiple times
@@ -669,8 +677,10 @@ public:
         table[globalLevel]->insert(*copy, separateNameSpaces);
         if (shared->getAsVariable())
             return copy;
-        // return the copy of the anonymous member
-        return table[globalLevel]->find(shared->getName());
+        else {
+            // return the copy of the anonymous member
+            return table[globalLevel]->find(shared->getName());
+        }
     }
 
     // Normal find of a symbol, that can optionally say whether the symbol was found

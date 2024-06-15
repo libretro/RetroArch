@@ -334,7 +334,8 @@ int TPpContext::lFloatConst(int len, int ch, TPpToken* ppToken)
         return PpAtomConstDouble;
     else if (isFloat16)
         return PpAtomConstFloat16;
-    return PpAtomConstFloat;
+    else
+        return PpAtomConstFloat;
 }
 
 // Recognize a character literal.
@@ -348,9 +349,10 @@ int TPpContext::characterLiteral(TPpToken* ppToken)
     ppToken->name[0] = 0;
     ppToken->ival = 0;
 
-    // illegal, except in macro definition, for which case we report the character
-    if (_parseContext.intermediate.getSource() != EShSourceHlsl)
+    if (_parseContext.intermediate.getSource() != EShSourceHlsl) {
+        // illegal, except in macro definition, for which case we report the character
         return '\'';
+    }
 
     int ch = getChar();
     switch (ch) {
@@ -444,8 +446,7 @@ int TPpContext::tStringInput::scan(TPpToken* ppToken)
     ppToken->i64val = 0;
     ppToken->space = false;
     ch = getch();
-    for (;;)
-    {
+    for (;;) {
         while (ch == ' ' || ch == '\t') {
             ppToken->space = true;
             ch = getch();
@@ -849,37 +850,49 @@ int TPpContext::tStringInput::scan(TPpToken* ppToken)
             }
         case '*':
             ch = getch();
-            if (ch == '=')
+            if (ch == '=') {
                 return PPAtomMulAssign;
-	    ungetch();
-	    return '*';
+            } else {
+                ungetch();
+                return '*';
+            }
         case '%':
             ch = getch();
-            if (ch == '=')
+            if (ch == '=') {
                 return PPAtomModAssign;
-	    ungetch();
-	    return '%';
+            } else {
+                ungetch();
+                return '%';
+            }
         case '^':
             ch = getch();
-            if (ch == '^')
+            if (ch == '^') {
                 return PpAtomXor;
-            if (ch == '=')
-                return PpAtomXorAssign;
-            ungetch();
-            return '^';
+            } else {
+                if (ch == '=')
+                    return PpAtomXorAssign;
+                else{
+                    ungetch();
+                    return '^';
+                }
+            }
 
         case '=':
             ch = getch();
-            if (ch == '=')
+            if (ch == '=') {
                 return PpAtomEQ;
-            ungetch();
-            return '=';
+            } else {
+                ungetch();
+                return '=';
+            }
         case '!':
             ch = getch();
-            if (ch == '=')
+            if (ch == '=') {
                 return PpAtomNE;
-            ungetch();
-            return '!';
+            } else {
+                ungetch();
+                return '!';
+            }
         case '|':
             ch = getch();
             if (ch == '|') {
@@ -1030,18 +1043,14 @@ int TPpContext::tokenize(TPpToken& ppToken)
             return EndOfInput;
         }
         if (token == '#') {
-            if (previous_token == '\n')
-	    {
+            if (previous_token == '\n') {
                 token = readCPPline(&ppToken);
-                if (token == EndOfInput)
-		{
+                if (token == EndOfInput) {
                     missingEndifCheck();
                     return EndOfInput;
                 }
                 continue;
-            }
-	    else
-	    {
+            } else {
                 _parseContext.ppError(ppToken.loc, "preprocessor directive cannot be preceded by another token", "#", "");
                 return EndOfInput;
             }
@@ -1096,8 +1105,7 @@ int TPpContext::tokenize(TPpToken& ppToken)
 int TPpContext::tokenPaste(int token, TPpToken& ppToken)
 {
     // starting with ## is illegal, skip to next token
-    if (token == PpAtomPaste)
-    {
+    if (token == PpAtomPaste) {
         _parseContext.ppError(ppToken.loc, "unexpected location", "##", "");
         return scanToken(&ppToken);
     }
@@ -1105,16 +1113,14 @@ int TPpContext::tokenPaste(int token, TPpToken& ppToken)
     int resultToken = token; // "foo" pasted with "35" is an identifier, not a number
 
     // ## can be chained, process all in the chain at once
-    while (peekPasting())
-    {
+    while (peekPasting()) {
         TPpToken pastedPpToken;
 
         // next token has to be ##
         token = scanToken(&pastedPpToken);
 
         // This covers end of macro expansion
-        if (endOfReplacementList())
-	{
+        if (endOfReplacementList()) {
             _parseContext.ppError(ppToken.loc, "unexpected location; end of replacement list", "##", "");
             break;
         }
@@ -1129,36 +1135,35 @@ int TPpContext::tokenPaste(int token, TPpToken& ppToken)
         }
 
         // get the token text
-	switch (resultToken)
-	{
-		case PpAtomIdentifier:
-			// already have the correct text in token.names
-			break;
-		case '=':
-		case '!':
-		case '-':
-		case '~':
-		case '+':
-		case '*':
-		case '/':
-		case '%':
-		case '<':
-		case '>':
-		case '|':
-		case '^':
-		case '&':
-		case PpAtomRight:
-		case PpAtomLeft:
-		case PpAtomAnd:
-		case PpAtomOr:
-		case PpAtomXor:
-			strcpy(ppToken.name, atomStrings.getString(resultToken));
-			strcpy(pastedPpToken.name, atomStrings.getString(token));
-			break;
-		default:
-			_parseContext.ppError(ppToken.loc, "not supported for these tokens", "##", "");
-			return resultToken;
-	}
+        switch (resultToken) {
+        case PpAtomIdentifier:
+            // already have the correct text in token.names
+            break;
+        case '=':
+        case '!':
+        case '-':
+        case '~':
+        case '+':
+        case '*':
+        case '/':
+        case '%':
+        case '<':
+        case '>':
+        case '|':
+        case '^':
+        case '&':
+        case PpAtomRight:
+        case PpAtomLeft:
+        case PpAtomAnd:
+        case PpAtomOr:
+        case PpAtomXor:
+            strcpy(ppToken.name, atomStrings.getString(resultToken));
+            strcpy(pastedPpToken.name, atomStrings.getString(token));
+            break;
+        default:
+            _parseContext.ppError(ppToken.loc, "not supported for these tokens", "##", "");
+            return resultToken;
+        }
 
         // combine the tokens
         if (strlen(ppToken.name) + strlen(pastedPpToken.name) > MaxTokenLength) {
@@ -1168,8 +1173,7 @@ int TPpContext::tokenPaste(int token, TPpToken& ppToken)
         strncat(ppToken.name, pastedPpToken.name, MaxTokenLength - strlen(ppToken.name));
 
         // correct the kind of token we are making, if needed (identifiers stay identifiers)
-        if (resultToken != PpAtomIdentifier)
-	{
+        if (resultToken != PpAtomIdentifier) {
             int newToken = atomStrings.getAtom(ppToken.name);
             if (newToken > 0)
                 resultToken = newToken;

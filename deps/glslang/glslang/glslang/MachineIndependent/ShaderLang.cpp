@@ -65,23 +65,20 @@ namespace { // anonymous namespace for file-local functions and symbols
 
 // Total number of successful initializers of glslang: a refcount
 // Shared global; access should be protected by a global mutex/critical section.
-static int NumberOfClients = 0;
+int NumberOfClients = 0;
 
 using namespace glslang;
 
 // Create a language specific version of parseables.
-TBuiltInParseables* CreateBuiltInParseables(
-		TInfoSink& infoSink, EShSource source)
+TBuiltInParseables* CreateBuiltInParseables(TInfoSink& infoSink, EShSource source)
 {
-    switch (source)
-    {
-	    case EShSourceGlsl:
-		    return new TBuiltIns(); // GLSL builtIns
-	    default:
-		    infoSink.info.message(EPrefixInternalError, "Unable to determine source language");
-		    break;
+    switch (source) {
+    case EShSourceGlsl: return new TBuiltIns();              // GLSL builtIns
+
+    default:
+        infoSink.info.message(EPrefixInternalError, "Unable to determine source language");
+        return NULL;
     }
-    return NULL;
 }
 
 // Create a language specific version of a parse context.
@@ -1236,7 +1233,7 @@ void ShDestruct(ShHandle handle)
 //
 // Cleanup symbol tables
 //
-int __fastcall ShFinalize(void)
+int __fastcall ShFinalize()
 {
     glslang::GetGlobalLock();
     --NumberOfClients;
@@ -1319,15 +1316,15 @@ int ShCompile(
 
     TIntermediate intermediate(compiler->getLanguage());
     TShader::ForbidIncluder includer;
-    bool success = CompileDeferred(compiler, shaderStrings, numStrings, inputLengths, NULL, "", optLevel, resources, defaultVersion, ENoProfile, false,
-	forwardCompatible, messages, intermediate, includer);
+    bool success = CompileDeferred(compiler, shaderStrings, numStrings, inputLengths, NULL,
+                                   "", optLevel, resources, defaultVersion, ENoProfile, false,
+                                   forwardCompatible, messages, intermediate, includer);
 
+    //
     // Call the machine dependent compiler
-    if (   success
-	&& intermediate.getTreeRoot()
-	&& optLevel != EShOptNoGeneration)
-        success = compiler->compile(intermediate.getTreeRoot(),
-	intermediate.getVersion(), intermediate.getProfile());
+    //
+    if (success && intermediate.getTreeRoot() && optLevel != EShOptNoGeneration)
+        success = compiler->compile(intermediate.getTreeRoot(), intermediate.getVersion(), intermediate.getProfile());
 
     intermediate.removeTree();
 
@@ -1354,13 +1351,13 @@ int ShLinkExt(
 
     THandleList cObjects;
 
-    for (int i = 0; i < numHandles; ++i)
-    {
+    for (int i = 0; i < numHandles; ++i) {
         if (compHandles[i] == 0)
             return 0;
         TShHandleBase* base = reinterpret_cast<TShHandleBase*>(compHandles[i]);
-        if (base->getAsLinker())
+        if (base->getAsLinker()) {
             cObjects.push_back(base->getAsLinker());
+        }
         if (base->getAsCompiler())
             cObjects.push_back(base->getAsCompiler());
 
@@ -1378,28 +1375,33 @@ int ShLinkExt(
 
     linker->infoSink.info.erase();
 
-    for (int i = 0; i < numHandles; ++i)
-    {
-        if (cObjects[i]->getAsCompiler())
-	{
-            if (! cObjects[i]->getAsCompiler()->linkable())
-	    {
+    for (int i = 0; i < numHandles; ++i) {
+        if (cObjects[i]->getAsCompiler()) {
+            if (! cObjects[i]->getAsCompiler()->linkable()) {
                 linker->infoSink.info.message(EPrefixError, "Not all shaders have valid object code.");
                 return 0;
             }
         }
     }
 
-    return linker->link(cObjects) ? 1 : 0;
+    bool ret = linker->link(cObjects);
+
+    return ret ? 1 : 0;
 }
 
 //
 // ShSetEncrpytionMethod is a place-holder for specifying
 // how source code is encrypted.
 //
-void ShSetEncryptionMethod(ShHandle handle) { }
+void ShSetEncryptionMethod(ShHandle handle)
+{
+    if (handle == 0)
+        return;
+}
 
+//
 // Return any compiler/linker/uniformmap log of messages for the application.
+//
 const char* ShGetInfoLog(const ShHandle handle)
 {
     if (handle == 0)
@@ -1534,19 +1536,30 @@ namespace glslang {
 #define QUOTE(s) #s
 #define STR(n) QUOTE(n)
 
-const char* GetEsslVersionString(void)
+const char* GetEsslVersionString()
 {
     return "OpenGL ES GLSL 3.20 glslang Khronos. " STR(GLSLANG_MINOR_VERSION) "." STR(GLSLANG_PATCH_LEVEL);
 }
 
-const char* GetGlslVersionString(void)
+const char* GetGlslVersionString()
 {
     return "4.60 glslang Khronos. " STR(GLSLANG_MINOR_VERSION) "." STR(GLSLANG_PATCH_LEVEL);
 }
 
-int GetKhronosToolId(void)   { return 8; }
-bool InitializeProcess(void) { return ShInitialize() != 0; }
-void FinalizeProcess(void)   { ShFinalize(); }
+int GetKhronosToolId()
+{
+    return 8;
+}
+
+bool InitializeProcess()
+{
+    return ShInitialize() != 0;
+}
+
+void FinalizeProcess()
+{
+    ShFinalize();
+}
 
 class TDeferredCompiler : public TCompiler {
 public:
@@ -1585,20 +1598,19 @@ void TShader::setStrings(const char* const* s, int n)
     lengths = NULL;
 }
 
-void TShader::setStringsWithLengths(
-	const char* const* s, const int* l, int n)
+void TShader::setStringsWithLengths(const char* const* s, const int* l, int n)
 {
-    strings     = s;
-    numStrings  = n;
-    lengths     = l;
+    strings = s;
+    numStrings = n;
+    lengths = l;
 }
 
 void TShader::setStringsWithLengthsAndNames(
     const char* const* s, const int* l, const char* const* names, int n)
 {
-    strings     = s;
-    numStrings  = n;
-    lengths     = l;
+    strings = s;
+    numStrings = n;
+    lengths = l;
     stringNames = names;
 }
 
@@ -1659,10 +1671,8 @@ void TShader::setTextureSamplerTransformMode(EShTextureSamplerTransformMode mode
 //
 // Returns true for success.
 //
-bool TShader::parse(const TBuiltInResource* builtInResources,
-	int defaultVersion, EProfile defaultProfile,
-	bool forceDefaultVersionAndProfile,
-	bool forwardCompatible, EShMessages messages, Includer& includer)
+bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion, EProfile defaultProfile, bool forceDefaultVersionAndProfile,
+                    bool forwardCompatible, EShMessages messages, Includer& includer)
 {
     if (! InitThread())
         return false;
@@ -1672,20 +1682,20 @@ bool TShader::parse(const TBuiltInResource* builtInResources,
         preamble = "";
 
     return CompileDeferred(compiler, strings, numStrings, lengths, stringNames,
-	  preamble, EShOptNone, builtInResources, defaultVersion,
-          defaultProfile, forceDefaultVersionAndProfile,
-	  forwardCompatible, messages, *intermediate, includer, sourceEntryPointName,
-	  &environment);
+                           preamble, EShOptNone, builtInResources, defaultVersion,
+                           defaultProfile, forceDefaultVersionAndProfile,
+                           forwardCompatible, messages, *intermediate, includer, sourceEntryPointName,
+                           &environment);
 }
 
 // Fill in a string with the result of preprocessing ShaderStrings
 // Returns true if all extensions, pragmas and version strings were valid.
 bool TShader::preprocess(const TBuiltInResource* builtInResources,
-     int defaultVersion, EProfile defaultProfile,
-     bool forceDefaultVersionAndProfile,
-     bool forwardCompatible, EShMessages message,
-     std::string* output_string,
-     Includer& includer)
+                         int defaultVersion, EProfile defaultProfile,
+                         bool forceDefaultVersionAndProfile,
+                         bool forwardCompatible, EShMessages message,
+                         std::string* output_string,
+                         Includer& includer)
 {
     if (! InitThread())
         return false;
@@ -1694,20 +1704,18 @@ bool TShader::preprocess(const TBuiltInResource* builtInResources,
     if (! preamble)
         preamble = "";
 
-    return PreprocessDeferred(
-	compiler, strings, numStrings, lengths, stringNames, preamble,
-	EShOptNone, builtInResources, defaultVersion,
-	defaultProfile, forceDefaultVersionAndProfile,
-	forwardCompatible, message, includer,
-	*intermediate, output_string);
+    return PreprocessDeferred(compiler, strings, numStrings, lengths, stringNames, preamble,
+                              EShOptNone, builtInResources, defaultVersion,
+                              defaultProfile, forceDefaultVersionAndProfile,
+                              forwardCompatible, message, includer, *intermediate, output_string);
 }
 
-const char* TShader::getInfoLog(void)
+const char* TShader::getInfoLog()
 {
     return infoSink->info.c_str();
 }
 
-const char* TShader::getInfoDebugLog(void)
+const char* TShader::getInfoDebugLog()
 {
     return infoSink->debug.c_str();
 }
@@ -1716,9 +1724,8 @@ TProgram::TProgram() : reflection(0), ioMapper(NULL), linked(false)
 {
     pool = new TPoolAllocator;
     infoSink = new TInfoSink;
-    for (int s = 0; s < EShLangCount; ++s)
-    {
-        intermediate[s]      = 0;
+    for (int s = 0; s < EShLangCount; ++s) {
+        intermediate[s] = 0;
         newedIntermediate[s] = false;
     }
 }
@@ -1781,32 +1788,28 @@ bool TProgram::linkStage(EShLanguage stage, EShMessages messages)
             numNonEsShaders++;
     }
 
-    if (numEsShaders > 0 && numNonEsShaders > 0)
-    {
+    if (numEsShaders > 0 && numNonEsShaders > 0) {
         infoSink->info.message(EPrefixError, "Cannot mix ES profile with non-ES profile shaders");
         return false;
-    }
-
-    if (numEsShaders > 1)
-    {
+    } else if (numEsShaders > 1) {
         infoSink->info.message(EPrefixError, "Cannot attach multiple ES shaders of the same type to a single program");
         return false;
     }
 
+    //
     // Be efficient for the common single compilation unit per stage case,
     // reusing it's TIntermediate instead of merging into a new one.
+    //
     TIntermediate *firstIntermediate = stages[stage].front()->intermediate;
     if (stages[stage].size() == 1)
         intermediate[stage] = firstIntermediate;
-    else
-    {
+    else {
         intermediate[stage] = new TIntermediate(stage,
-			firstIntermediate->getVersion(),
-			firstIntermediate->getProfile());
+                                                firstIntermediate->getVersion(),
+                                                firstIntermediate->getProfile());
 
 
-        // The new TIntermediate must use the same
-	// origin as the original TIntermediates.
+        // The new TIntermediate must use the same origin as the original TIntermediates.
         // Otherwise linking will fail due to different coordinate systems.
         if (firstIntermediate->getOriginUpperLeft())
             intermediate[stage]->setOriginUpperLeft();
@@ -1853,10 +1856,8 @@ bool TProgram::buildReflection(void)
 
     reflection = new TReflection;
 
-    for (int s = 0; s < EShLangCount; ++s)
-    {
-        if (intermediate[s])
-	{
+    for (int s = 0; s < EShLangCount; ++s) {
+        if (intermediate[s]) {
             if (! reflection->addStage((EShLanguage)s, *intermediate[s]))
                 return false;
         }
@@ -1894,10 +1895,8 @@ bool TProgram::mapIO(TIoMapResolver* resolver)
 
     ioMapper = new TIoMapper;
 
-    for (int s = 0; s < EShLangCount; ++s)
-    {
-        if (intermediate[s])
-	{
+    for (int s = 0; s < EShLangCount; ++s) {
+        if (intermediate[s]) {
             if (! ioMapper->addStage((EShLanguage)s, *intermediate[s], *infoSink, resolver))
                 return false;
         }

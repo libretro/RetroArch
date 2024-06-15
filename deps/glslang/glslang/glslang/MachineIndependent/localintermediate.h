@@ -267,7 +267,7 @@ public:
         shiftBinding[res] = shift;
 
         const char* name = getResourceName(res);
-        if (name)
+        if (name != NULL)
             processes.addIfNonZero(name, shift);
     }
 
