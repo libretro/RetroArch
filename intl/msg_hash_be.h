@@ -3499,8 +3499,16 @@ MSG_HASH(
    "Запіс (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
+   "Пачынае/спыняе запіс бягучага сеанса ў лакальны відэафайл."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
    "Трансляцыя (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   "Пачынае/спыняе трансляцыю бягучага сеанса на анлайнавай відэаплатформе."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
@@ -3541,6 +3549,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
    "Паніжае бягучы індэкс слота паўтору."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "Захоп мышы (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
+   "Захапляе або вызваляе мыш. Пры захопе сістэмны курсор схаваны ды абмежаваны акном RetroArch, тым самым паляпшаючы адносны ўвод мышы."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Гульнявы фокус (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -8350,6 +8370,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
    "Не атрымалася ўключыць гук."
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_ON,
+   "Гульнявы фокус уключаны"
+   )
+MSG_HASH(
+   MSG_GAME_FOCUS_OFF,
+   "Гульнявы фокус выключаны"
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
