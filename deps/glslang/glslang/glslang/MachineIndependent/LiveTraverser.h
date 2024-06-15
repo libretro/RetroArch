@@ -104,8 +104,7 @@ protected:
             return true; // traverse all code
 
         TIntermConstantUnion* constant = node->getCondition()->getAsConstantUnion();
-        if (constant)
-        {
+        if (constant) {
             // cull the path that is dead
             if (constant->getConstArray()[0].getBConst() == true && node->getTrueBlock())
                 node->getTrueBlock()->traverse(this);
@@ -113,8 +112,8 @@ protected:
                 node->getFalseBlock()->traverse(this);
 
             return false; // don't traverse any more, we did it all above
-        }
-        return true; // traverse the whole subtree
+        } else
+            return true; // traverse the whole subtree
     }
 
     // Track live functions as well as uniforms, so that we don't visit dead functions

@@ -93,9 +93,8 @@ bool isDereferenceOperation(glslang::TOperator op)
     case glslang::EOpMatrixSwizzle:
         return true;
     default:
-	break;
+        return false;
     }
-    return false;
 }
 
 // Returns true if the opcode leads to an assignment operation.
@@ -124,9 +123,8 @@ bool isAssignOperation(glslang::TOperator op)
     case glslang::EOpPreDecrement:
         return true;
     default:
-	break;
+        return false;
     }
-    return false;
 }
 
 // A helper function to get the unsigned int from a given constant union node.
@@ -182,9 +180,8 @@ bool isArithmeticOperation(glslang::TOperator op)
     case glslang::EOpPreDecrement:
         return true;
     default:
-	break;
+        return false;
     }
-    return false;
 }
 
 // A helper class to help manage the populating_initial_no_contraction_ flag.
@@ -235,11 +232,10 @@ ObjectAccessChain getSubAccessChainAfterPrefix(const ObjectAccessChain& chain,
 //
 class TSymbolDefinitionCollectingTraverser : public glslang::TIntermTraverser {
 public:
-    TSymbolDefinitionCollectingTraverser(
-		    NodeMapping* symbol_definition_mapping,
-		    AccessChainMapping* accesschain_mapping,
-		    ObjectAccesschainSet* precise_objects,
-		    ReturnBranchNodeSet* precise_return_nodes);
+    TSymbolDefinitionCollectingTraverser(NodeMapping* symbol_definition_mapping,
+                                         AccessChainMapping* accesschain_mapping,
+                                         ObjectAccesschainSet* precise_objects,
+                                         ReturnBranchNodeSet* precise_return_nodes);
 
     bool visitUnary(glslang::TVisit, glslang::TIntermUnary*) override;
     bool visitBinary(glslang::TVisit, glslang::TIntermBinary*) override;
@@ -292,7 +288,7 @@ void TSymbolDefinitionCollectingTraverser::visitSymbol(glslang::TIntermSymbol* n
 
 // Visits an aggregate node, traverses all of its children.
 bool TSymbolDefinitionCollectingTraverser::visitAggregate(glslang::TVisit,
-		glslang::TIntermAggregate* node)
+                                                          glslang::TIntermAggregate* node)
 {
     // This aggregate node might be a function definition node, in which case we need to
     // cache this node, so we can get the preciseness information of the return value
@@ -314,13 +310,11 @@ bool TSymbolDefinitionCollectingTraverser::visitAggregate(glslang::TVisit,
 }
 
 bool TSymbolDefinitionCollectingTraverser::visitBranch(glslang::TVisit,
-		glslang::TIntermBranch* node)
+                                                       glslang::TIntermBranch* node)
 {
-    if (   node->getFlowOp() == glslang::EOpReturn
-	&& node->getExpression()
-        && current_function_definition_node_
-        && current_function_definition_node_->getType().getQualifier().noContraction)
-    {
+    if (node->getFlowOp() == glslang::EOpReturn && node->getExpression() &&
+        current_function_definition_node_ &&
+        current_function_definition_node_->getType().getQualifier().noContraction) {
         // This node is a return node with an expression, and its function has a
         // precise return value. We need to find the involved objects in its
         // expression and add them to the set of initial precise objects.
@@ -331,20 +325,17 @@ bool TSymbolDefinitionCollectingTraverser::visitBranch(glslang::TVisit,
 }
 
 // Visits a unary node. This might be an implicit assignment like i++, i--. etc.
-bool TSymbolDefinitionCollectingTraverser::visitUnary(
-		glslang::TVisit visit,
-		glslang::TIntermUnary* node)
+bool TSymbolDefinitionCollectingTraverser::visitUnary(glslang::TVisit /* visit */,
+                                                      glslang::TIntermUnary* node)
 {
     current_object_.clear();
     node->getOperand()->traverse(this);
-    if (isAssignOperation(node->getOp()))
-    {
+    if (isAssignOperation(node->getOp())) {
         // We should always be able to get an access chain of the operand node.
 
         // If the operand node object is 'precise', we collect its access chain
         // for the initial set of 'precise' objects.
-        if (isPreciseObjectNode(node->getOperand()))
-	{
+        if (isPreciseObjectNode(node->getOperand())) {
             // The operand node is an 'precise' object node, add its
             // access chain to the set of 'precise' objects. This is to collect
             // the initial set of 'precise' objects.
@@ -363,8 +354,8 @@ bool TSymbolDefinitionCollectingTraverser::visitUnary(
 
 // Visits a binary node and updates the mapping from symbol IDs to the definition
 // nodes. Also collects the access chains for the initial precise objects.
-bool TSymbolDefinitionCollectingTraverser::visitBinary(glslang::TVisit visit,
-		glslang::TIntermBinary* node)
+bool TSymbolDefinitionCollectingTraverser::visitBinary(glslang::TVisit /* visit */,
+                                                       glslang::TIntermBinary* node)
 {
     // Traverses the left node to build the access chain info for the object.
     current_object_.clear();
@@ -423,19 +414,21 @@ bool TSymbolDefinitionCollectingTraverser::visitBinary(glslang::TVisit visit,
 std::tuple<NodeMapping, AccessChainMapping, ObjectAccesschainSet, ReturnBranchNodeSet>
 getSymbolToDefinitionMappingAndPreciseSymbolIDs(const glslang::TIntermediate& intermediate)
 {
-    auto result_tuple = std::make_tuple(NodeMapping(), AccessChainMapping(),
-		    ObjectAccesschainSet(), ReturnBranchNodeSet());
+    auto result_tuple = std::make_tuple(NodeMapping(), AccessChainMapping(), ObjectAccesschainSet(),
+                                        ReturnBranchNodeSet());
+
     TIntermNode* root = intermediate.getTreeRoot();
     if (root == 0)
         return result_tuple;
 
-    NodeMapping& symbol_definition_mapping    = std::get<0>(result_tuple);
-    AccessChainMapping& accesschain_mapping   = std::get<1>(result_tuple);
-    ObjectAccesschainSet& precise_objects     = std::get<2>(result_tuple);
+    NodeMapping& symbol_definition_mapping = std::get<0>(result_tuple);
+    AccessChainMapping& accesschain_mapping = std::get<1>(result_tuple);
+    ObjectAccesschainSet& precise_objects = std::get<2>(result_tuple);
     ReturnBranchNodeSet& precise_return_nodes = std::get<3>(result_tuple);
 
     // Traverses the AST and populate the results.
-    TSymbolDefinitionCollectingTraverser collector(&symbol_definition_mapping, &accesschain_mapping, &precise_objects, &precise_return_nodes);
+    TSymbolDefinitionCollectingTraverser collector(&symbol_definition_mapping, &accesschain_mapping,
+                                                   &precise_objects, &precise_return_nodes);
     root->traverse(&collector);
 
     return result_tuple;
