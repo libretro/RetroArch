@@ -267,7 +267,7 @@ public:
         shiftBinding[res] = shift;
 
         const char* name = getResourceName(res);
-        if (name != NULL)
+        if (name != nullptr)
             processes.addIfNonZero(name, shift);
     }
 
@@ -281,7 +281,7 @@ public:
         shiftBindingForSet[res][set] = shift;
 
         const char* name = getResourceName(res);
-        if (name != NULL) {
+        if (name != nullptr) {
             processes.addProcess(name);
             processes.addArgument(shift);
             processes.addArgument(set);
@@ -618,7 +618,7 @@ public:
         return semanticNameSet.insert(name).first->c_str();
     }
 
-    void setSourceFile(const char* file) { if (file != NULL) sourceFile = file; }
+    void setSourceFile(const char* file) { if (file != nullptr) sourceFile = file; }
     const std::string& getSourceFile() const { return sourceFile; }
     void addSourceText(const char* text) { sourceText = sourceText + text; }
     const std::string& getSourceText() const { return sourceText; }

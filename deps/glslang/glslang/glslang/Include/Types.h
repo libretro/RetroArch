@@ -431,7 +431,7 @@ public:
     // drop qualifiers that don't belong in a temporary variable
     void makeTemporary()
     {
-        semanticName = NULL;
+        semanticName = nullptr;
         storage = EvqTemporary;
         builtIn = EbvNone;
         clearInterstage();
@@ -1119,8 +1119,8 @@ public:
         vectorSize = 1;
         matrixRows = 0;
         matrixCols = 0;
-        arraySizes = NULL;
-        userDef    = NULL;
+        arraySizes = nullptr;
+        userDef = nullptr;
         loc = l;
     }
 
@@ -1155,7 +1155,7 @@ public:
 
     bool isScalar() const
     {
-        return matrixCols == 0 && vectorSize == 1 && arraySizes == NULL && userDef == NULL;
+        return matrixCols == 0 && vectorSize == 1 && arraySizes == nullptr && userDef == nullptr;
     }
 
     // "Image" is a superset of "Subpass"
@@ -1174,7 +1174,7 @@ public:
     explicit TType(TBasicType t = EbtVoid, TStorageQualifier q = EvqTemporary, int vs = 1, int mc = 0, int mr = 0,
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
-                            arraySizes(NULL), structure(NULL), fieldName(NULL), typeName(NULL)
+                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1184,7 +1184,7 @@ public:
     TType(TBasicType t, TStorageQualifier q, TPrecisionQualifier p, int vs = 1, int mc = 0, int mr = 0,
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
-                            arraySizes(NULL), structure(NULL), fieldName(NULL), typeName(NULL)
+                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1195,7 +1195,7 @@ public:
     explicit TType(const TPublicType& p) :
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
-                            arraySizes(p.arraySizes), structure(NULL), fieldName(NULL), typeName(NULL)
+                            arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1208,9 +1208,9 @@ public:
                                 }
                             }
     // for construction of sampler types
-    TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = NULL) :
+    TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-        arraySizes(as), structure(NULL), fieldName(NULL), typeName(NULL),
+        arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr),
         sampler(sampler)
     {
         qualifier.clear();
@@ -1224,7 +1224,7 @@ public:
                                 if (type.isArray()) {
                                     shallowCopy(type);
                                     if (type.getArraySizes()->getNumDims() == 1) {
-                                        arraySizes = NULL;
+                                        arraySizes = nullptr;
                                     } else {
                                         // want our own copy of the array, so we can edit it
                                         arraySizes = new TArraySizes;
@@ -1258,7 +1258,7 @@ public:
     // for making structures, ...
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-                            arraySizes(NULL), structure(userDef), fieldName(NULL)
+                            arraySizes(nullptr), structure(userDef), fieldName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1267,7 +1267,7 @@ public:
     // For interface blocks
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-                            qualifier(q), arraySizes(NULL), structure(userDef), fieldName(NULL)
+                            qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1346,7 +1346,7 @@ public:
     virtual int getOuterArraySize()  const { return arraySizes->getOuterSize(); }
     virtual TIntermTyped*  getOuterArrayNode() const { return arraySizes->getOuterNode(); }
     virtual int getCumulativeArraySize()  const { return arraySizes->getCumulativeSize(); }
-    virtual bool isArrayOfArrays() const { return arraySizes != NULL && arraySizes->getNumDims() > 1; }
+    virtual bool isArrayOfArrays() const { return arraySizes != nullptr && arraySizes->getNumDims() > 1; }
     virtual int getImplicitArraySize() const { return arraySizes->getImplicitSize(); }
     virtual const TArraySizes* getArraySizes() const { return arraySizes; }
     virtual       TArraySizes* getArraySizes()       { return arraySizes; }
@@ -1355,13 +1355,13 @@ public:
     virtual bool isScalarOrVec1() const { return isScalar() || vector1; }
     virtual bool isVector() const { return vectorSize > 1 || vector1; }
     virtual bool isMatrix() const { return matrixCols ? true : false; }
-    virtual bool isArray()  const { return arraySizes != NULL; }
+    virtual bool isArray()  const { return arraySizes != nullptr; }
     virtual bool isSizedArray() const { return isArray() && arraySizes->isSized(); }
     virtual bool isUnsizedArray() const { return isArray() && !arraySizes->isSized(); }
     virtual bool isArrayVariablyIndexed() const { return arraySizes->isVariablyIndexed(); }
     virtual void setArrayVariablyIndexed() { arraySizes->setVariablyIndexed(); }
     virtual void updateImplicitArraySize(int size) { arraySizes->updateImplicitSize(size); }
-    virtual bool isStruct() const { return structure != NULL; }
+    virtual bool isStruct() const { return structure != nullptr; }
     virtual bool isFloatingDomain() const { return basicType == EbtFloat || basicType == EbtDouble || basicType == EbtFloat16; }
     virtual bool isIntegerDomain() const
     {
@@ -1498,15 +1498,15 @@ public:
     }
     void clearArraySizes()
     {
-        arraySizes = NULL;
+        arraySizes = nullptr;
     }
 
     // Add inner array sizes, to any existing sizes, via copy; the
     // sizes passed in can still be reused for other purposes.
     void copyArrayInnerSizes(const TArraySizes* s)
     {
-        if (s != NULL) {
-            if (arraySizes == NULL)
+        if (s != nullptr) {
+            if (arraySizes == nullptr)
                 copyArraySizes(*s);
             else
                 arraySizes->addInnerSizes(*s);
@@ -1783,7 +1783,7 @@ public:
         else
             components = vectorSize;
 
-        if (arraySizes != NULL) {
+        if (arraySizes != nullptr) {
             components *= arraySizes->getCumulativeSize();
         }
 
@@ -1807,12 +1807,12 @@ public:
     //
     bool sameStructType(const TType& right) const
     {
-        // Most commonly, they are both NULL, or the same pointer to the same actual structure
+        // Most commonly, they are both nullptr, or the same pointer to the same actual structure
         if (structure == right.structure)
             return true;
 
-        // Both being NULL was caught above, now they both have to be structures of the same number of elements
-        if (structure == NULL || right.structure == NULL ||
+        // Both being nullptr was caught above, now they both have to be structures of the same number of elements
+        if (structure == nullptr || right.structure == nullptr ||
             structure->size() != right.structure->size())
             return false;
 
@@ -1841,8 +1841,8 @@ public:
     // See if two type's arrayness match
     bool sameArrayness(const TType& right) const
     {
-        return ((arraySizes == NULL && right.arraySizes == NULL) ||
-                (arraySizes != NULL && right.arraySizes != NULL && *arraySizes == *right.arraySizes));
+        return ((arraySizes == nullptr && right.arraySizes == nullptr) ||
+                (arraySizes != nullptr && right.arraySizes != nullptr && *arraySizes == *right.arraySizes));
     }
 
     // See if two type's arrayness match in everything except their outer dimension
@@ -1927,8 +1927,8 @@ protected:
                                // from a scalar.
     TQualifier qualifier;
 
-    TArraySizes* arraySizes;    // NULL unless an array; can be shared across types
-    TTypeList* structure;       // NULL unless this is a struct; can be shared across types
+    TArraySizes* arraySizes;    // nullptr unless an array; can be shared across types
+    TTypeList* structure;       // nullptr unless this is a struct; can be shared across types
     TString *fieldName;         // for structure field names
     TString *typeName;          // for structure type name
     TSampler sampler;

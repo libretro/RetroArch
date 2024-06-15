@@ -1158,7 +1158,7 @@ public:
     // it is essential to use "symbol = sym" to assign to symbol
     TIntermSymbol(int i, const TString& n, const TType& t)
         : TIntermTyped(t), id(i),
-        constSubtree(NULL)
+        constSubtree(nullptr)
           { name = n; }
     virtual int getId() const { return id; }
     virtual const TString& getName() const { return name; }
@@ -1471,8 +1471,8 @@ typedef TVector<TStorageQualifier> TQualifierList;
 //
 class TIntermAggregate : public TIntermOperator {
 public:
-    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(NULL) { }
-    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(NULL) { }
+    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(nullptr) { }
+    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(nullptr) { }
     ~TIntermAggregate() { delete pragmaTable; }
     virtual       TIntermAggregate* getAsAggregate()       { return this; }
     virtual const TIntermAggregate* getAsAggregate() const { return this; }

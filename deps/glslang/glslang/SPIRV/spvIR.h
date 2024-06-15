@@ -84,8 +84,8 @@ const MemorySemanticsMask MemorySemanticsAllMemory =
 
 class Instruction {
 public:
-    Instruction(Id resultId, Id typeId, Op opCode) : resultId(resultId), typeId(typeId), opCode(opCode), block(NULL) { }
-    explicit Instruction(Op opCode) : resultId(NoResult), typeId(NoType), opCode(opCode), block(NULL) { }
+    Instruction(Id resultId, Id typeId, Op opCode) : resultId(resultId), typeId(typeId), opCode(opCode), block(nullptr) { }
+    explicit Instruction(Op opCode) : resultId(NoResult), typeId(NoType), opCode(opCode), block(nullptr) { }
     virtual ~Instruction() {}
     void addIdOperand(Id id) { operands.push_back(id); }
     void addImmediateOperand(unsigned int immediate) { operands.push_back(immediate); }
@@ -182,17 +182,16 @@ public:
     bool isUnreachable() const { return unreachable; }
     // Returns the block's merge instruction, if one exists (otherwise null).
     const Instruction* getMergeInstruction() const {
-        if (instructions.size() < 2) return NULL;
+        if (instructions.size() < 2) return nullptr;
         const Instruction* nextToLast = (instructions.cend() - 2)->get();
-        switch (nextToLast->getOpCode())
-        {
+        switch (nextToLast->getOpCode()) {
             case OpSelectionMerge:
             case OpLoopMerge:
                 return nextToLast;
             default:
-                break;
+                return nullptr;
         }
-        return NULL;
+        return nullptr;
     }
 
     bool isTerminated() const

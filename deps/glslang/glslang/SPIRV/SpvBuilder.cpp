@@ -1506,7 +1506,7 @@ Id Builder::smearScalar(Decoration precision, Id scalar, Id vectorType)
     if (numComponents == 1)
         return scalar;
 
-    Instruction* smear = NULL;
+    Instruction* smear = nullptr;
     if (generatingOpCodeForSpecConst) {
         auto members = std::vector<spv::Id>(numComponents, scalar);
         // Sometime even in spec-constant-op mode, the temporary vector created by

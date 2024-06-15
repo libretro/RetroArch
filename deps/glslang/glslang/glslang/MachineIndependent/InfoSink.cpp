@@ -41,7 +41,7 @@ namespace glslang {
 void TInfoSinkBase::append(const char* s)
 {
     if (outputStream & EString) {
-        if (s == NULL)
+        if (s == nullptr)
             sink.append("(null)");
         else {
             checkMem(strlen(s));
