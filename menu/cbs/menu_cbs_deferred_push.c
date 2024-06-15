@@ -506,38 +506,20 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
          {
-            union string_list_elem_attr attr;
             char newstr1[PATH_MAX_LENGTH];
             struct string_list str_list2      = {0};
+            size_t _len                       = 0;
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
             newstr1[0]                        = '\0';
-            attr.i                            = 0;
 
             string_list_initialize(&str_list2);
 
-            if (sysinfo)
-            {
-               if (!string_is_empty(sysinfo->valid_extensions))
-               {
-                  unsigned x;
-                  struct string_list  str_list    = {0};
-
-                  string_list_initialize(&str_list);
-                  string_split_noalloc(&str_list,
+            if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
+                  string_split_noalloc(&str_list2,
                         sysinfo->valid_extensions, "|");
-
-                  for (x = 0; x < str_list.size; x++)
-                  {
-                     const char *elem = str_list.elems[x].data;
-                     string_list_append(&str_list2, elem, attr);
-                  }
-
-                  string_list_deinitialize(&str_list);
-               }
-            }
 
             if (!filter_by_current_core)
             {
@@ -546,14 +528,21 @@ static int general_push(menu_displaylist_info_t *info,
                if (list && !string_is_empty(list->all_ext))
                {
                   unsigned x;
+                  union string_list_elem_attr attr;
                   struct string_list str_list  = {0};
                   string_list_initialize(&str_list);
+                  attr.i                        = 0;
 
                   string_split_noalloc(&str_list,
                         list->all_ext, "|");
 
                   for (x = 0; x < str_list.size; x++)
                   {
+                     /* Is extension not already added to
+                      * str_list2? This is the case if
+                      * the current core already supports
+                      * this extension. If so, it was added
+                      * in the loop above this one */
                      if (!string_list_find_elem(&str_list2,
                               str_list.elems[x].data))
                      {
@@ -568,42 +557,43 @@ static int general_push(menu_displaylist_info_t *info,
 
             string_list_join_concat(newstr1, sizeof(newstr1),
                   &str_list2, "|");
+            string_list_deinitialize(&str_list2);
 
-            {
-               struct string_list  str_list3  = {0};
-               string_list_initialize(&str_list3);
-               string_split_noalloc(&str_list3, newstr1, "|");
-
+            _len += strlcpy(newstr2 + _len, newstr1, sizeof(newstr2) - _len);
 #if defined(HAVE_AUDIOMIXER)
-               if (multimedia_builtin_mediaplayer_enable)
-               {
-                  union string_list_elem_attr attr;
-                  attr.i = 0;
+            if (multimedia_builtin_mediaplayer_enable)
+            {
 #if defined(HAVE_DR_MP3)
-                  string_list_append(&str_list3, "mp3", attr);
+               if (newstr2[_len-1] != '\0')
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "mp3", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_STB_VORBIS)
-                  string_list_append(&str_list3, "ogg", attr);
+               if (newstr2[_len-1] != '\0')
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "ogg", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_DR_FLAC)
-                  string_list_append(&str_list3, "flac", attr);
+               if (newstr2[_len-1] != '\0')
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "flac", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_RWAV)
-                  string_list_append(&str_list3, "wav", attr);
+               if (newstr2[_len-1] != '\0')
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "wav", sizeof(newstr2) - _len);
 #endif
 #ifdef HAVE_IBXM
-
-                  string_list_append(&str_list3, "s3m", attr);
-                  string_list_append(&str_list3, "mod", attr);
-                  string_list_append(&str_list3, "xm", attr);
+               if (newstr2[_len-1] != '\0')
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "s3m", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "mod", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+               _len    += strlcpy(newstr2 + _len, "xm", sizeof(newstr2) - _len);
 #endif
-               }
-#endif
-               string_list_join_concat(newstr2, sizeof(newstr2),
-                     &str_list3, "|");
-               string_list_deinitialize(&str_list3);
             }
-            string_list_deinitialize(&str_list2);
+#endif
          }
          break;
    }
