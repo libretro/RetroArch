@@ -83,6 +83,11 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#if (defined(_MSC_VER) && _MSC_VER < 1900 /*vs2015*/)
+#ifndef snprintf
+#define snprintf sprintf_s
+#endif
+#endif
 
 #include <cstdlib>
 #include <cstring>
@@ -158,7 +163,8 @@ int TPpContext::TokenStream::getSubtoken()
 {
     if (current < data.size())
         return data[current++];
-    return EndOfInput;
+    else
+        return EndOfInput;
 }
 
 // back up one position in the stream
@@ -339,6 +345,11 @@ int TPpContext::tUngotTokenInput::scan(TPpToken* ppToken)
     done     = true;
 
     return ret;
+}
+
+void TPpContext::UngetToken(int token, TPpToken* ppToken)
+{
+    pushInput(new tUngotTokenInput(this, token, ppToken));
 }
 
 } // end namespace glslang

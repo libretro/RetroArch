@@ -406,6 +406,7 @@ protected:
     // From PpTokens.cpp
     //
     void pushTokenStreamInput(TokenStream&, bool pasting = false);
+    void UngetToken(int token, TPpToken*);
 
     class tTokenInput : public tInput {
     public:

@@ -1173,7 +1173,7 @@ int TPpContext::MacroExpand(TPpToken* ppToken, bool expandUndef, bool newLineOka
     case PpAtomLineMacro:
         ppToken->ival = _parseContext.getCurrentLoc().line;
         snprintf(ppToken->name, sizeof(ppToken->name), "%d", ppToken->ival);
-	pushInput(new tUngotTokenInput(this, PpAtomConstInt, ppToken));
+        UngetToken(PpAtomConstInt, ppToken);
         return 1;
 
     case PpAtomFileMacro: {
@@ -1181,14 +1181,14 @@ int TPpContext::MacroExpand(TPpToken* ppToken, bool expandUndef, bool newLineOka
             _parseContext.ppRequireExtensions(ppToken->loc, 1, &E_GL_GOOGLE_cpp_style_line_directive, "filename-based __FILE__");
         ppToken->ival = _parseContext.getCurrentLoc().string;
         strlcpy(ppToken->name, ppToken->loc.getStringNameOrNum().c_str(), sizeof(ppToken->name));
-	pushInput(new tUngotTokenInput(this, PpAtomConstInt, ppToken));
+        UngetToken(PpAtomConstInt, ppToken);
         return 1;
     }
 
     case PpAtomVersionMacro:
         ppToken->ival = _parseContext.version;
         snprintf(ppToken->name, sizeof(ppToken->name), "%d", ppToken->ival);
-	pushInput(new tUngotTokenInput(this, PpAtomConstInt, ppToken));
+        UngetToken(PpAtomConstInt, ppToken);
         return 1;
 
     default:
@@ -1223,7 +1223,7 @@ int TPpContext::MacroExpand(TPpToken* ppToken, bool expandUndef, bool newLineOka
                 token = scanToken(ppToken);
         }
         if (token != '(') {
-	    pushInput(new tUngotTokenInput(this, token, ppToken));
+            UngetToken(token, ppToken);
             delete in;
             return 0;
         }
