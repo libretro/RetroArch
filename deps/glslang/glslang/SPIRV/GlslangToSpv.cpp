@@ -305,7 +305,7 @@ static spv::Dim TranslateDimensionality(const glslang::TSampler& sampler)
 static spv::Decoration TranslatePrecisionDecoration(glslang::TPrecisionQualifier glslangPrecision)
 {
     switch (glslangPrecision) {
-    case glslang::EpqLow:
+    case glslang::EpqLow:    return spv::DecorationRelaxedPrecision;
     case glslang::EpqMedium: return spv::DecorationRelaxedPrecision;
     default: break;
     }
@@ -321,14 +321,11 @@ static spv::Decoration TranslatePrecisionDecoration(const glslang::TType& type)
 // Translate glslang type to SPIR-V block decorations.
 static spv::Decoration TranslateBlockDecoration(const glslang::TType& type, bool useStorageBuffer)
 {
-    if (type.getBasicType() == glslang::EbtBlock)
-    {
+    if (type.getBasicType() == glslang::EbtBlock) {
         switch (type.getQualifier().storage) {
-        case glslang::EvqBuffer:
-		if (!useStorageBuffer) return spv::DecorationBufferBlock;
-		/* fallthrough */
-        case glslang::EvqUniform:
-        case glslang::EvqVaryingIn:
+        case glslang::EvqUniform:      return spv::DecorationBlock;
+        case glslang::EvqBuffer:       return useStorageBuffer ? spv::DecorationBlock : spv::DecorationBufferBlock;
+        case glslang::EvqVaryingIn:    return spv::DecorationBlock;
         case glslang::EvqVaryingOut:   return spv::DecorationBlock;
         default:
             break;
@@ -358,8 +355,7 @@ void TranslateMemoryDecoration(const glslang::TQualifier& qualifier, std::vector
 // Translate glslang type to SPIR-V layout decorations.
 spv::Decoration TranslateLayoutDecoration(const glslang::TType& type, glslang::TLayoutMatrix matrixLayout)
 {
-    if (type.isMatrix())
-    {
+    if (type.isMatrix()) {
         switch (matrixLayout) {
         case glslang::ElmRowMajor:
             return spv::DecorationRowMajor;
@@ -367,14 +363,12 @@ spv::Decoration TranslateLayoutDecoration(const glslang::TType& type, glslang::T
             return spv::DecorationColMajor;
         default:
             // opaque layouts don't need a majorness
-	    break;
+            return spv::DecorationMax;
         }
-    }
-    else
-    {
+    } else {
         switch (type.getBasicType()) {
         default:
-            break;
+            return spv::DecorationMax;
         case glslang::EbtBlock:
             switch (type.getQualifier().storage) {
             case glslang::EvqUniform:
@@ -382,17 +376,16 @@ spv::Decoration TranslateLayoutDecoration(const glslang::TType& type, glslang::T
                 switch (type.getQualifier().layoutPacking) {
                 case glslang::ElpShared:  return spv::DecorationGLSLShared;
                 case glslang::ElpPacked:  return spv::DecorationGLSLPacked;
-                default: break;
+                default:
+                    return spv::DecorationMax;
                 }
-		break;
             case glslang::EvqVaryingIn:
             case glslang::EvqVaryingOut:
             default:
-		break;
+                return spv::DecorationMax;
             }
         }
     }
-    return spv::DecorationMax;
 }
 
 // Translate glslang type to SPIR-V interpolation decorations.
@@ -426,12 +419,11 @@ spv::Decoration TGlslangToSpvTraverser::TranslateAuxiliaryStorageDecoration(cons
         return spv::DecorationPatch;
     else if (qualifier.centroid)
         return spv::DecorationCentroid;
-    else if (qualifier.sample)
-    {
+    else if (qualifier.sample) {
         builder.addCapability(spv::CapabilitySampleRateShading);
         return spv::DecorationSample;
-    }
-    return spv::DecorationMax;
+    } else
+        return spv::DecorationMax;
 }
 
 // If glslang type is invariant, return SPIR-V invariant decoration.

@@ -113,6 +113,11 @@ class FloatProxy {
   // Returns the raw data.
   uint_type data() const { return data_; }
 
+  // Returns true if the value represents any type of NaN.
+  bool isNan() { return FloatProxyTraits<T>::isNan(getAsFloat()); }
+  // Returns true if the value represents any type of infinity.
+  bool isInfinity() { return std::isinf(getAsFloat()); }
+
   // Returns the maximum normal value.
   static FloatProxy<T> max() {
     return FloatProxy<T>(std::numeric_limits<float>::max());
@@ -319,14 +324,13 @@ class HexFloat {
   // If the number was normalized, returns the unbiased exponent.
   // If the number was denormal, normalize the exponent first.
   const int_type getUnbiasedNormalizedExponent() const {
-    if ((getBits() & ~sign_mask) == 0)  // special case if everything is 0
+    if ((getBits() & ~sign_mask) == 0) {  // special case if everything is 0
       return 0;
+    }
     int_type exp = getUnbiasedExponent();
-    if (exp == min_exponent)
-    {  // We are in denorm land.
+    if (exp == min_exponent) {  // We are in denorm land.
       uint_type significand_bits = getSignificandBits();
-      while ((significand_bits & (first_exponent_bit >> 1)) == 0)
-      {
+      while ((significand_bits & (first_exponent_bit >> 1)) == 0) {
         significand_bits = static_cast<uint_type>(significand_bits << 1);
         exp = static_cast<int_type>(exp - 1);
       }
@@ -336,12 +340,12 @@ class HexFloat {
   }
 
   // Returns the signficand after it has been normalized.
-  const uint_type getNormalizedSignificand() const
-  {
+  const uint_type getNormalizedSignificand() const {
     int_type unbiased_exponent = getUnbiasedNormalizedExponent();
     uint_type significand = getSignificandBits();
-    for (int_type i = unbiased_exponent; i <= min_exponent; ++i)
+    for (int_type i = unbiased_exponent; i <= min_exponent; ++i) {
       significand = static_cast<uint_type>(significand << 1);
+    }
     significand &= fraction_encode_mask;
     return significand;
   }
@@ -386,8 +390,9 @@ class HexFloat {
     }
 
     uint_type new_value = 0;
-    if (negative)
+    if (negative) {
       new_value = static_cast<uint_type>(new_value | sign_mask);
+    }
     exponent = static_cast<int_type>(exponent + exponent_bias);
 
     // put it all together
@@ -405,8 +410,7 @@ class HexFloat {
   // All significands and to_increment are assumed to be within the bounds
   // for a valid significand.
   static uint_type incrementSignificand(uint_type significand,
-        uint_type to_increment, bool* carry)
-  {
+                                        uint_type to_increment, bool* carry) {
     significand = static_cast<uint_type>(significand + to_increment);
     *carry = false;
     if (significand & first_exponent_bit) {
@@ -427,16 +431,18 @@ class HexFloat {
   template <typename int_type>
   uint_type negatable_left_shift(int_type N, uint_type val)
   {
-    if (N >= 0)
+    if(N >= 0)
       return val << N;
+
     return val >> -N;
   }
 
   template <typename int_type>
   uint_type negatable_right_shift(int_type N, uint_type val)
   {
-    if (N >= 0)
+    if(N >= 0)
       return val >> N;
+
     return val << -N;
   }
 
@@ -479,15 +485,15 @@ class HexFloat {
 
     // If every non-representable bit is 0, then we don't have any casting to
     // do.
-    if ((significand & throwaway_mask) == 0)
+    if ((significand & throwaway_mask) == 0) {
       return static_cast<other_uint_type>(
           negatable_right_shift(num_throwaway_bits, significand));
+    }
 
     bool round_away_from_zero = false;
     // We actually have to narrow the significand here, so we have to follow the
     // rounding rules.
-    switch (dir)
-    {
+    switch (dir) {
       case kRoundToZero:
         break;
       case kRoundToPositiveInfinity:
@@ -498,18 +504,17 @@ class HexFloat {
         break;
       case kRoundToNearestEven:
         // Have to round down, round bit is 0
-        if ((first_rounded_bit & significand) == 0)
+        if ((first_rounded_bit & significand) == 0) {
           break;
-        if (((significand & throwaway_mask) & ~first_rounded_bit) != 0)
-        {
+        }
+        if (((significand & throwaway_mask) & ~first_rounded_bit) != 0) {
           // If any subsequent bit of the rounded portion is non-0 then we round
           // up.
           round_away_from_zero = true;
           break;
         }
         // We are exactly half-way between 2 numbers, pick even.
-        if ((significand & last_significant_bit) != 0)
-        {
+        if ((significand & last_significant_bit) != 0) {
           // 1 for our last bit, round up.
           round_away_from_zero = true;
           break;
@@ -517,12 +522,14 @@ class HexFloat {
         break;
     }
 
-    if (round_away_from_zero)
+    if (round_away_from_zero) {
       return static_cast<other_uint_type>(
           negatable_right_shift(num_throwaway_bits, incrementSignificand(
               significand, last_significant_bit, carry_bit)));
-    return static_cast<other_uint_type>(
-         negatable_right_shift(num_throwaway_bits, significand));
+    } else {
+      return static_cast<other_uint_type>(
+          negatable_right_shift(num_throwaway_bits, significand));
+    }
   }
 
   // Casts this value to another HexFloat. If the cast is widening,
@@ -535,10 +542,10 @@ class HexFloat {
   void castTo(other_T& other, round_direction round_dir) {
     other = other_T(static_cast<typename other_T::native_type>(0));
     bool negate = isNegative();
-    if (getUnsignedBits() == 0)
-    {
-      if (negate)
+    if (getUnsignedBits() == 0) {
+      if (negate) {
         other.set_value(-other.value());
+      }
       return;
     }
     uint_type significand = getSignificandBits();
@@ -649,11 +656,9 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   // If we are denorm, then start shifting, and decreasing the exponent until
   // our leading bit is 1.
 
-  if (is_denorm)
-  {
-    while ((fraction & HF::fraction_top_bit) == 0)
-    {
-      fraction     = static_cast<uint_type>(fraction << 1);
+  if (is_denorm) {
+    while ((fraction & HF::fraction_top_bit) == 0) {
+      fraction = static_cast<uint_type>(fraction << 1);
       int_exponent = static_cast<int_type>(int_exponent - 1);
     }
     // Since this is denormalized, we have to consume the leading 1 since it
@@ -675,11 +680,12 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   const auto saved_fill = os.fill();
 
   os << sign << "0x" << (is_zero ? '0' : '1');
-  // Make sure to keep the leading 0s in place, since this is the fractional
-  // part.
-  if (fraction_nibbles)
+  if (fraction_nibbles) {
+    // Make sure to keep the leading 0s in place, since this is the fractional
+    // part.
     os << "." << std::setw(static_cast<int>(fraction_nibbles))
        << std::setfill('0') << std::hex << fraction;
+  }
   os << "p" << std::dec << (int_exponent >= 0 ? "+" : "") << int_exponent;
 
   os.flags(saved_flags);
@@ -693,13 +699,10 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
 // on the stream and set the value to the zero value for its type.
 template <typename T, typename Traits>
 inline bool RejectParseDueToLeadingSign(std::istream& is, bool negate_value,
-      HexFloat<T, Traits>& value)
-{
-  if (negate_value)
-  {
+                                        HexFloat<T, Traits>& value) {
+  if (negate_value) {
     auto next_char = is.peek();
-    if (next_char == '-' || next_char == '+')
-    {
+    if (next_char == '-' || next_char == '+') {
       // Fail the parse.  Emulate standard behaviour by setting the value to
       // the zero value, and set the fail bit on the stream.
       value = HexFloat<T, Traits>(typename HexFloat<T, Traits>::uint_type(0));
@@ -722,23 +725,21 @@ inline bool RejectParseDueToLeadingSign(std::istream& is, bool negate_value,
 // In particular, the Microsoft C++ runtime appears to be out of spec.
 template <typename T, typename Traits>
 inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
-      HexFloat<T, Traits>& value)
-{
-  T val;
-  if (RejectParseDueToLeadingSign(is, negate_value, value))
+                                      HexFloat<T, Traits>& value) {
+  if (RejectParseDueToLeadingSign(is, negate_value, value)) {
     return is;
-
+  }
+  T val;
   is >> val;
-  if (negate_value)
+  if (negate_value) {
     val = -val;
+  }
   value.set_value(val);
   // In the failure case, map -0.0 to 0.0.
-  if (is.fail() && value.getUnsignedBits() == 0u)
+  if (is.fail() && value.getUnsignedBits() == 0u) {
     value = HexFloat<T, Traits>(typename HexFloat<T, Traits>::uint_type(0));
-
-  // Does the value represents any type of infinity?
-  if (std::isinf(val.getAsFloat()))
-  {
+  }
+  if (val.isInfinity()) {
     // Fail the parse.  Emulate standard behaviour by setting the value to
     // the closest normal value, and set the fail bit on the stream.
     value.set_value((value.isNegative() | negate_value) ? T::lowest()
@@ -775,8 +776,7 @@ ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
 
   // Overflow on 16-bit behaves the same as for 32- and 64-bit: set the
   // fail bit and set the lowest or highest value.
-  if (Float16::isInfinity(value.value().getAsFloat()))
-  {
+  if (Float16::isInfinity(value.value().getAsFloat())) {
     value.set_value(value.isNegative() ? Float16(0xfbff) : Float16(0x7bff));
     is.setstate(std::ios_base::failbit);
   }
@@ -803,47 +803,45 @@ ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
 //    0x1p+129 (+inf)
 //    -0x1p+129 (-inf)
 template <typename T, typename Traits>
-std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
-{
-  using HF        = HexFloat<T, Traits>;
+std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
+  using HF = HexFloat<T, Traits>;
   using uint_type = typename HF::uint_type;
-  using int_type  = typename HF::int_type;
+  using int_type = typename HF::int_type;
 
   value.set_value(static_cast<typename HF::native_type>(0.f));
 
-  if (is.flags() & std::ios::skipws)
-  {
+  if (is.flags() & std::ios::skipws) {
     // If the user wants to skip whitespace , then we should obey that.
-    while (std::isspace(is.peek()))
+    while (std::isspace(is.peek())) {
       is.get();
+    }
   }
 
   auto next_char = is.peek();
   bool negate_value = false;
 
-  if (next_char != '-' && next_char != '0')
+  if (next_char != '-' && next_char != '0') {
     return ParseNormalFloat(is, negate_value, value);
+  }
 
-  if (next_char == '-')
-  {
+  if (next_char == '-') {
     negate_value = true;
     is.get();
     next_char = is.peek();
   }
 
-  if (next_char == '0')
-  {
+  if (next_char == '0') {
     is.get();  // We may have to unget this.
     auto maybe_hex_start = is.peek();
-    if (maybe_hex_start != 'x' && maybe_hex_start != 'X')
-    {
+    if (maybe_hex_start != 'x' && maybe_hex_start != 'X') {
       is.unget();
       return ParseNormalFloat(is, negate_value, value);
+    } else {
+      is.get();  // Throw away the 'x';
     }
-    is.get();  // Throw away the 'x';
-  }
-  else
+  } else {
     return ParseNormalFloat(is, negate_value, value);
+  }
 
   // This "looks" like a hex-float so treat it as one.
   bool seen_p = false;
@@ -854,32 +852,29 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
   int_type exponent = HF::exponent_bias;
 
   // Strip off leading zeros so we don't have to special-case them later.
-  while ((next_char = is.peek()) == '0')
+  while ((next_char = is.peek()) == '0') {
     is.get();
+  }
 
-  // Assume denorm "representation" until we hear otherwise.
-  // NB: This does not mean the value is actually denorm,
-  // it just means that it was written 0.
-  bool is_denorm    = true;
+  bool is_denorm =
+      true;  // Assume denorm "representation" until we hear otherwise.
+             // NB: This does not mean the value is actually denorm,
+             // it just means that it was written 0.
   bool bits_written = false;  // Stays false until we write a bit.
-  while (!seen_p && !seen_dot)
-  {
+  while (!seen_p && !seen_dot) {
     // Handle characters that are left of the fractional part.
-    if (next_char == '.')
+    if (next_char == '.') {
       seen_dot = true;
-    else if (next_char == 'p')
+    } else if (next_char == 'p') {
       seen_p = true;
-    else if (::isxdigit(next_char))
-    {
+    } else if (::isxdigit(next_char)) {
       // We know this is not denormalized since we have stripped all leading
       // zeroes and we are not a ".".
       is_denorm = false;
       int number = get_nibble_from_character(next_char);
-      for (int i = 0; i < 4; ++i, number <<= 1)
-      {
+      for (int i = 0; i < 4; ++i, number <<= 1) {
         uint_type write_bit = (number & 0x8) ? 0x1 : 0x0;
-        if (bits_written)
-        {
+        if (bits_written) {
           // If we are here the bits represented belong in the fractional
           // part of the float, and we have to adjust the exponent accordingly.
           fraction = static_cast<uint_type>(
@@ -890,9 +885,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
         }
         bits_written |= write_bit != 0;
       }
-    }
-    else
-    {
+    } else {
       // We have not found our exponent yet, so we have to fail.
       is.setstate(std::ios::failbit);
       return is;
@@ -901,32 +894,28 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
     next_char = is.peek();
   }
   bits_written = false;
-  while (seen_dot && !seen_p)
-  {
+  while (seen_dot && !seen_p) {
     // Handle only fractional parts now.
-    if (next_char == 'p')
+    if (next_char == 'p') {
       seen_p = true;
-    else if (::isxdigit(next_char))
-    {
+    } else if (::isxdigit(next_char)) {
       int number = get_nibble_from_character(next_char);
-      for (int i = 0; i < 4; ++i, number <<= 1)
-      {
+      for (int i = 0; i < 4; ++i, number <<= 1) {
         uint_type write_bit = (number & 0x8) ? 0x01 : 0x00;
         bits_written |= write_bit != 0;
-        // Handle modifying the exponent here this way we can handle
-        // an arbitrary number of hex values without overflowing our
-        // integer.
-        if (is_denorm && !bits_written)
+        if (is_denorm && !bits_written) {
+          // Handle modifying the exponent here this way we can handle
+          // an arbitrary number of hex values without overflowing our
+          // integer.
           exponent = static_cast<int_type>(exponent - 1);
-        else
+        } else {
           fraction = static_cast<uint_type>(
               fraction |
               static_cast<uint_type>(
                   write_bit << (HF::top_bit_left_shift - fraction_index++)));
+        }
       }
-    }
-    else
-    {
+    } else {
       // We still have not found our 'p' exponent yet, so this is not a valid
       // hex-float.
       is.setstate(std::ios::failbit);
@@ -939,28 +928,22 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
   bool seen_sign = false;
   int8_t exponent_sign = 1;
   int_type written_exponent = 0;
-
-  for (;;)
-  {
-    if ((next_char == '-' || next_char == '+'))
-    {
-      if (seen_sign)
-      {
+  while (true) {
+    if ((next_char == '-' || next_char == '+')) {
+      if (seen_sign) {
         is.setstate(std::ios::failbit);
         return is;
       }
-      seen_sign     = true;
+      seen_sign = true;
       exponent_sign = (next_char == '-') ? -1 : 1;
-    }
-    else if (::isdigit(next_char))
-    {
+    } else if (::isdigit(next_char)) {
       // Hex-floats express their exponent as decimal.
       written_exponent = static_cast<int_type>(written_exponent * 10);
       written_exponent =
           static_cast<int_type>(written_exponent + (next_char - '0'));
-    }
-    else
+    } else {
       break;
+    }
     is.get();
     next_char = is.peek();
   }
@@ -969,16 +952,14 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
   exponent = static_cast<int_type>(exponent + written_exponent);
 
   bool is_zero = is_denorm && (fraction == 0);
-  if (is_denorm && !is_zero)
-  {
+  if (is_denorm && !is_zero) {
     fraction = static_cast<uint_type>(fraction << 1);
     exponent = static_cast<int_type>(exponent - 1);
-  }
-  else if (is_zero)
+  } else if (is_zero) {
     exponent = 0;
+  }
 
-  if (exponent <= 0 && !is_zero)
-  {
+  if (exponent <= 0 && !is_zero) {
     fraction = static_cast<uint_type>(fraction >> 1);
     fraction |= static_cast<uint_type>(1) << HF::top_bit_left_shift;
   }
@@ -989,14 +970,12 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
       SetBits<uint_type, 0, HF::num_exponent_bits>::get;
 
   // Handle actual denorm numbers
-  while (exponent < 0 && !is_zero)
-  {
+  while (exponent < 0 && !is_zero) {
     fraction = static_cast<uint_type>(fraction >> 1);
     exponent = static_cast<int_type>(exponent + 1);
 
     fraction &= HF::fraction_encode_mask;
-    if (fraction == 0)
-    {
+    if (fraction == 0) {
       // We have underflowed our fraction. We should clamp to zero.
       is_zero = true;
       exponent = 0;
@@ -1004,8 +983,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
   }
 
   // We have overflowed so we should be inf/-inf.
-  if (exponent > max_exponent)
-  {
+  if (exponent > max_exponent) {
     exponent = max_exponent;
     fraction = 0;
   }
@@ -1030,31 +1008,26 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value)
 // enough digits to fully reproduce the value.  Other values (subnormal,
 // NaN, and infinity) are printed as a hex float.
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const FloatProxy<T>& value)
-{
+std::ostream& operator<<(std::ostream& os, const FloatProxy<T>& value) {
   auto float_val = value.getAsFloat();
-  switch (std::fpclassify(float_val))
-  {
-     case FP_ZERO:
-     case FP_NORMAL:
-        {
-           auto saved_precision = os.precision();
-           os.precision(std::numeric_limits<T>::digits10);
-           os << float_val;
-           os.precision(saved_precision);
-        }
-        break;
-     default:
-        os << HexFloat<FloatProxy<T>>(value);
-        break;
+  switch (std::fpclassify(float_val)) {
+    case FP_ZERO:
+    case FP_NORMAL: {
+      auto saved_precision = os.precision();
+      os.precision(std::numeric_limits<T>::digits10);
+      os << float_val;
+      os.precision(saved_precision);
+    } break;
+    default:
+      os << HexFloat<FloatProxy<T>>(value);
+      break;
   }
   return os;
 }
 
 template <>
 inline std::ostream& operator<<<Float16>(std::ostream& os,
-      const FloatProxy<Float16>& value)
-{
+                                         const FloatProxy<Float16>& value) {
   os << HexFloat<FloatProxy<Float16>>(value);
   return os;
 }
