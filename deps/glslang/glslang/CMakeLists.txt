@@ -87,6 +87,9 @@ function(glslang_set_link_args TARGET)
     endif()
 endfunction(glslang_set_link_args)
 
+# We depend on these for later projects, so they should come first.
+add_subdirectory(External)
+
 if(NOT TARGET SPIRV-Tools-opt)
     set(ENABLE_OPT OFF)
 endif()
