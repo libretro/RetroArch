@@ -63,6 +63,22 @@
 
 namespace glslang {
 
+// If we are using guard blocks, we must track each individual
+// allocation.  If we aren't using guard blocks, these
+// never get instantiated, so won't have any impact.
+//
+
+class TAllocation {
+public:
+    TAllocation(size_t size, unsigned char* mem, TAllocation* prev = 0) :
+        size(size), mem(mem), prevAlloc(prev) { }
+
+private:
+    size_t size;                  // size of the user data area
+    unsigned char* mem;           // beginning of our allocation (pts to header)
+    TAllocation* prevAlloc;       // prior allocation in the chain
+};
+
 //
 // There are several stacks.  One is to track the pushing and popping
 // of the user, and not yet implemented.  The others are simply a
