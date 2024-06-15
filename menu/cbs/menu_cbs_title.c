@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
@@ -808,28 +807,24 @@ static int action_get_title_generic(char *s, size_t len,
 {
    if (!string_is_empty(path))
    {
-      struct string_list list_path = {0};
-      string_list_initialize(&list_path);
-      if (string_split_noalloc(&list_path, path, "|"))
+      char *tok, *save;
+      char *path_cpy = strdup(path);
+
+      if ((tok = strtok_r(path_cpy, "|", &save)))
       {
          size_t _len;
-         char elem0_path[255];
-         if (list_path.size > 0)
-            strlcpy(elem0_path, list_path.elems[0].data,
-                  sizeof(elem0_path));
-         string_list_deinitialize(&list_path);
-
+         char elem0_path[256];
+         strlcpy(elem0_path, tok, sizeof(elem0_path));
          _len      = strlcpy(s, text, len);
-         if (!string_is_empty(elem0_path))
-         {
-            path_remove_extension(elem0_path);
-            s[  _len] = ':';
-            s[++_len] = ' ';
-            s[++_len] = '\0';
-            strlcpy(s + _len, path_basename(elem0_path), len - _len);
-         }
+         path_remove_extension(elem0_path);
+         s[  _len] = ':';
+         s[++_len] = ' ';
+         s[++_len] = '\0';
+         strlcpy(s + _len, path_basename(elem0_path), len - _len);
+         free(path_cpy);
          return 0;
       }
+      free(path_cpy);
    }
 
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -933,29 +928,22 @@ static int action_get_title_group_settings(const char *path, const char *label,
 
    {
       size_t _len;
-      char elem0[255];
-      char elem1[255];
-      struct string_list list_label = {0};
-      string_list_initialize(&list_label);
-      string_split_noalloc(&list_label, label, "|");
+      char *tok, *save;
+      char *label_cpy = strdup(label);
 
-      if (list_label.size > 0)
+      if ((tok = strtok_r(label_cpy, "|", &save)))
       {
-         strlcpy(elem0, list_label.elems[0].data, sizeof(elem0));
-         if (list_label.size > 1)
-            strlcpy(elem1, list_label.elems[1].data, sizeof(elem1));
+         _len = strlcpy(s, tok, len);
+         if ((tok = strtok_r(NULL, "|", &save)))
+         {
+            s[  _len] = ' ';
+            s[++_len] = '-';
+            s[++_len] = ' ';
+            s[++_len] = '\0';
+            strlcpy(s + _len, tok, len - _len);
+         }
       }
-      string_list_deinitialize(&list_label);
-
-      _len = strlcpy(s, elem0, len);
-      if (!string_is_empty(elem1))
-      {
-         s[  _len] = ' ';
-         s[++_len] = '-';
-         s[++_len] = ' ';
-         s[++_len] = '\0';
-         strlcpy(s + _len, elem1, len - _len);
-      }
+      free(label_cpy);
    }
 
    return 0;
