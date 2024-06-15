@@ -6127,7 +6127,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (timedate_enable)
    {
       gfx_display_ctx_datetime_t datetime;
-      char timedate[255];
+      char timedate[256];
+      size_t _len  = 0;
       size_t x_pos = 0;
 
       if (percent_width)
@@ -6169,10 +6170,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       datetime.time_mode      = settings->uints.menu_timedate_style;
       datetime.date_separator = settings->uints.menu_timedate_date_separator;
 
-      menu_display_timedate(&datetime);
+      _len = menu_display_timedate(&datetime);
 
       title_header_max_width = x_pos + font_driver_get_message_width(
-            xmb->font, timedate, strlen(timedate), 1.0f);
+            xmb->font, timedate, _len, 1.0f);
 
       xmb_draw_text(shadows_enable, xmb, settings, timedate,
             video_width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,

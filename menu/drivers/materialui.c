@@ -5859,7 +5859,7 @@ static void materialui_render_header(
       gfx_display_ctx_datetime_t datetime;
       char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
 
-      timedate_str[0] = '\0';
+      timedate_str[0]         = '\0';
 
       datetime.s              = timedate_str;
       datetime.len            = sizeof(timedate_str);
@@ -5874,7 +5874,7 @@ static void materialui_render_header(
       if (!string_is_equal(timedate_str, mui->sys_bar_cache.timedate_str))
       {
          /* Cache new string */
-         strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
+         size_t _len = strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
                MUI_TIMEDATE_MAX_LENGTH * sizeof(char));
 
          /* Cache width */
@@ -5882,7 +5882,7 @@ static void materialui_render_header(
             = font_driver_get_message_width(
                mui->font_data.hint.font,
                mui->sys_bar_cache.timedate_str,
-               strlen(mui->sys_bar_cache.timedate_str),
+               _len,
                1.0f);
       }
 
