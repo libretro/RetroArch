@@ -227,7 +227,7 @@ enum TBuiltInVariable {
     EbvPositionPerViewNV,
     EbvViewportMaskPerViewNV,
     EbvFragFullyCoveredNV,
-#endif
+#endif 
 
     // HLSL built-ins that live only temporarily, until they get remapped
     // to one of the above.
@@ -365,7 +365,7 @@ __inline const char* GetBuiltInVariableString(TBuiltInVariable v)
     case EbvPositionPerViewNV:          return "PositionPerViewNV";
     case EbvViewportMaskPerViewNV:      return "ViewportMaskPerViewNV";
     case EbvFragFullyCoveredNV:         return "FragFullyCoveredNV";
-#endif
+#endif 
     default:                      return "unknown built-in variable";
     }
 }
@@ -453,6 +453,7 @@ __inline int getTypeRank(TBasicType type) {
         res = 3;
         break;
     default:
+        assert(false);
         break;
     }
     return res;

@@ -38,6 +38,7 @@
 #define STRICT
 #define VC_EXTRALEAN 1
 #include <windows.h>
+#include <cassert>
 #include <process.h>
 #include <psapi.h>
 #include <cstdio>
@@ -85,6 +86,7 @@ bool OS_SetTLSValue(OS_TLSIndex nIndex, void *lpvValue)
 
 void* OS_GetTLSValue(OS_TLSIndex nIndex)
 {
+    assert(nIndex != OS_INVALID_TLS_INDEX);
     return TlsGetValue(ToNativeTLSIndex(nIndex));
 }
 

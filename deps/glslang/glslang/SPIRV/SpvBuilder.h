@@ -179,31 +179,37 @@ public:
     int getScalarTypeWidth(Id typeId) const
     {
         Id scalarTypeId = getScalarTypeId(typeId);
+        assert(getTypeClass(scalarTypeId) == OpTypeInt || getTypeClass(scalarTypeId) == OpTypeFloat);
         return module.getInstruction(scalarTypeId)->getImmediateOperand(0);
     }
 
     int getTypeNumColumns(Id typeId) const
     {
+        assert(isMatrixType(typeId));
         return getNumTypeConstituents(typeId);
     }
     int getNumColumns(Id resultId) const { return getTypeNumColumns(getTypeId(resultId)); }
     int getTypeNumRows(Id typeId) const
     {
+        assert(isMatrixType(typeId));
         return getNumTypeComponents(getContainedTypeId(typeId));
     }
     int getNumRows(Id resultId) const { return getTypeNumRows(getTypeId(resultId)); }
 
     Dim getTypeDimensionality(Id typeId) const
     {
+        assert(isImageType(typeId));
         return (Dim)module.getInstruction(typeId)->getImmediateOperand(1);
     }
     Id getImageType(Id resultId) const
     {
         Id typeId = getTypeId(resultId);
+        assert(isImageType(typeId) || isSampledImageType(typeId));
         return isSampledImageType(typeId) ? module.getInstruction(typeId)->getIdOperand(0) : typeId;
     }
     bool isArrayedImageType(Id typeId) const
     {
+        assert(isImageType(typeId));
         return module.getInstruction(typeId)->getImmediateOperand(3) != 0;
     }
 
@@ -513,6 +519,7 @@ public:
     // set new base as an l-value base
     void setAccessChainLValue(Id lValue)
     {
+        assert(isPointer(lValue));
         accessChain.base = lValue;
     }
 

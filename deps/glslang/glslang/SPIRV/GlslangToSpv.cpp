@@ -369,6 +369,7 @@ spv::Decoration TranslateLayoutDecoration(const glslang::TType& type, glslang::T
         switch (type.getBasicType()) {
         default:
             return spv::DecorationMax;
+            break;
         case glslang::EbtBlock:
             switch (type.getQualifier().storage) {
             case glslang::EvqUniform:
@@ -381,6 +382,8 @@ spv::Decoration TranslateLayoutDecoration(const glslang::TType& type, glslang::T
                 }
             case glslang::EvqVaryingIn:
             case glslang::EvqVaryingOut:
+                assert(type.getQualifier().layoutPacking == glslang::ElpNone);
+                return spv::DecorationMax;
             default:
                 return spv::DecorationMax;
             }
@@ -734,6 +737,8 @@ spv::BuiltIn TGlslangToSpvTraverser::TranslateBuiltInDecoration(glslang::TBuiltI
 // Translate glslang image layout format to SPIR-V image format.
 spv::ImageFormat TGlslangToSpvTraverser::TranslateImageFormat(const glslang::TType& type)
 {
+    assert(type.getBasicType() == glslang::EbtSampler);
+
     // Check for capabilities
     switch (type.getQualifier().layoutFormat) {
     case glslang::ElfRg32f:
@@ -1314,6 +1319,9 @@ bool TGlslangToSpvTraverser::visitBinary(glslang::TVisit /* visit */, glslang::T
                 rValue = createBinaryOperation(node->getOp(), decorations,
                                                convertGlslangToSpvType(node->getType()), leftRValue, rValue,
                                                node->getType().getBasicType());
+
+                // these all need their counterparts in createBinaryOperation()
+                assert(rValue != spv::NoResult);
             }
 
             // store the result
@@ -1350,6 +1358,7 @@ bool TGlslangToSpvTraverser::visitBinary(glslang::TVisit /* visit */, glslang::T
                     // This may be, e.g., an anonymous block-member selection, which generally need
                     // index remapping due to hidden members in anonymous blocks.
                     std::vector<int>& remapper = memberRemapper[node->getLeft()->getType().getStruct()];
+                    assert(remapper.size() > 0);
                     spvIndex = remapper[glslangIndex];
                 }
 
@@ -1579,6 +1588,7 @@ bool TGlslangToSpvTraverser::visitUnary(glslang::TVisit /* visit */, glslang::TI
             spv::Id result = createBinaryOperation(op, decorations,
                                                    convertGlslangToSpvType(node->getType()), operand, one,
                                                    node->getType().getBasicType());
+            assert(result != spv::NoResult);
 
             // The result of operation is always stored, but conditionally the
             // consumed result.  The consumed result is always an r-value.
@@ -1637,6 +1647,8 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
     bool isMatrix = false;
     bool noReturnValue = false;
     bool atomic = false;
+
+    assert(node->getOp());
 
     spv::Decoration precision = TranslatePrecisionDecoration(node->getOperationPrecision());
 
@@ -1713,6 +1725,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
         builder.setLine(node->getLoc().line);
         if (node->isUserDefined())
             result = handleUserFunctionCall(node);
+        // assert(result);  // this can happen for bad shaders because the call graph completeness checking is not yet done
         if (result) {
             builder.clearAccessChain();
             builder.setAccessChainRValue(result);
@@ -1949,6 +1962,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
     if (binOp != glslang::EOpNull) {
         glslang::TIntermTyped* left = node->getSequence()[0]->getAsTyped();
         glslang::TIntermTyped* right = node->getSequence()[1]->getAsTyped();
+        assert(left && right);
 
         builder.clearAccessChain();
         left->traverse(this);
@@ -1967,6 +1981,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
                                        left->getType().getBasicType(), reduceComparison);
 
         // code above should only make binOp that exists in createBinaryOperation
+        assert(result != spv::NoResult);
         builder.clearAccessChain();
         builder.setAccessChainRValue(result);
 
@@ -2123,6 +2138,9 @@ bool TGlslangToSpvTraverser::visitSelection(glslang::TVisit /* visit */, glslang
         if ((!node->getType().isScalar() && !node->getType().isVector()) ||
             node->getBasicType() == glslang::EbtVoid)
             return false;
+
+        assert(node->getType() == node->getTrueBlock() ->getAsTyped()->getType() &&
+               node->getType() == node->getFalseBlock()->getAsTyped()->getType());
 
         // return true if a single operand to ? : is okay for OpSelect
         const auto operandOkay = [](glslang::TIntermTyped* node) {
@@ -2535,6 +2553,7 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
     switch (type.getBasicType()) {
     case glslang::EbtVoid:
         spvType = builder.makeVoidType();
+        assert (! type.isArray());
         break;
     case glslang::EbtFloat:
         spvType = builder.makeFloatType(32);
@@ -2914,6 +2933,7 @@ spv::Id TGlslangToSpvTraverser::makeArraySizeId(const glslang::TArraySizes& arra
 
     // Otherwise, need a compile-time (front end) size, get it:
     int size = arraySizes.getDimSize(dim);
+    assert(size > 0);
     return builder.makeUintConstant(size);
 }
 
@@ -3034,6 +3054,8 @@ void TGlslangToSpvTraverser::multiTypeStore(const glslang::TType& type, spv::Id 
             multiTypeStore(glslangElementType, elementRValue);
         }
     } else {
+        assert(type.isStruct());
+
         // loop over structure members
         const glslang::TTypeList& members = *type.getStruct();
         for (int m = 0; m < (int)members.size(); ++m) {
@@ -3201,6 +3223,10 @@ bool TGlslangToSpvTraverser::isShaderEntryPoint(const glslang::TIntermAggregate*
 // qualifiers such that we should have only in/out/inout/constreadonly here.
 bool TGlslangToSpvTraverser::writableParam(glslang::TStorageQualifier qualifier) const
 {
+    assert(qualifier == glslang::EvqIn ||
+           qualifier == glslang::EvqOut ||
+           qualifier == glslang::EvqInOut ||
+           qualifier == glslang::EvqConstReadOnly);
     return qualifier != glslang::EvqConstReadOnly;
 }
 
@@ -3678,6 +3704,8 @@ spv::Id TGlslangToSpvTraverser::createImageTextureFunctionCall(glslang::TIntermO
 #ifdef AMD_EXTENSIONS
     // Check for fragment mask functions other than queries
     if (cracked.fragMask) {
+        assert(sampler.ms);
+
         auto opIt = arguments.begin();
         std::vector<spv::Id> operands;
 
@@ -4027,6 +4055,7 @@ spv::Id TGlslangToSpvTraverser::createBinaryOperation(glslang::TOperator op, OpD
         if (isFloat && (builder.isVector(left) || builder.isVector(right))) {
             if (builder.isVector(right))
                 std::swap(left, right);
+            assert(builder.isScalar(right));
             needMatchingVectors = false;
             binOp = spv::OpVectorTimesScalar;
         } else
@@ -4122,6 +4151,7 @@ spv::Id TGlslangToSpvTraverser::createBinaryOperation(glslang::TOperator op, OpD
 
     // handle mapped binary operations (should be non-comparison)
     if (binOp != spv::OpNop) {
+        assert(comparison == false);
         if (builder.isMatrix(left) || builder.isMatrix(right))
             return createBinaryMatrixOperation(binOp, decorations, typeId, left, right);
 
@@ -4245,10 +4275,19 @@ spv::Id TGlslangToSpvTraverser::createBinaryMatrixOperation(spv::Op op, OpDecora
     case spv::OpMatrixTimesScalar:
         if (builder.isMatrix(right))
             std::swap(left, right);
+        assert(builder.isScalar(right));
         break;
     case spv::OpVectorTimesMatrix:
+        assert(builder.isVector(left));
+        assert(builder.isMatrix(right));
+        break;
     case spv::OpMatrixTimesVector:
+        assert(builder.isMatrix(left));
+        assert(builder.isVector(right));
+        break;
     case spv::OpMatrixTimesMatrix:
+        assert(builder.isMatrix(left));
+        assert(builder.isMatrix(right));
         break;
     default:
         firstClass = false;
@@ -4797,6 +4836,7 @@ spv::Id TGlslangToSpvTraverser::createIntWidthConversion(glslang::TOperator op, 
         break;
 
     default:
+        assert(false && "Default missing");
         break;
     }
 
@@ -5142,6 +5182,7 @@ spv::Id TGlslangToSpvTraverser::createConversion(glslang::TOperator op, OpDecora
                 zero = builder.makeUint64Constant(0);
                 break;
             default:
+                assert(false && "Default missing");
                 break;
             }
             zero = makeSmearedConstant(zero, vectorSize);
@@ -5490,12 +5531,28 @@ spv::Id TGlslangToSpvTraverser::createInvocationsOperation(glslang::TOperator op
         return spv::NoResult;
     }
 
+    assert(opCode != spv::OpNop);
     return builder.createOp(opCode, typeId, spvGroupOperands);
 }
 
 // Create group invocation operations on a vector
 spv::Id TGlslangToSpvTraverser::CreateInvocationsVectorOperation(spv::Op op, spv::GroupOperation groupOperation, spv::Id typeId, std::vector<spv::Id>& operands)
 {
+#ifdef AMD_EXTENSIONS
+    assert(op == spv::OpGroupFMin || op == spv::OpGroupUMin || op == spv::OpGroupSMin ||
+           op == spv::OpGroupFMax || op == spv::OpGroupUMax || op == spv::OpGroupSMax ||
+           op == spv::OpGroupFAdd || op == spv::OpGroupIAdd || op == spv::OpGroupBroadcast ||
+           op == spv::OpSubgroupReadInvocationKHR ||
+           op == spv::OpGroupFMinNonUniformAMD || op == spv::OpGroupUMinNonUniformAMD || op == spv::OpGroupSMinNonUniformAMD ||
+           op == spv::OpGroupFMaxNonUniformAMD || op == spv::OpGroupUMaxNonUniformAMD || op == spv::OpGroupSMaxNonUniformAMD ||
+           op == spv::OpGroupFAddNonUniformAMD || op == spv::OpGroupIAddNonUniformAMD);
+#else
+    assert(op == spv::OpGroupFMin || op == spv::OpGroupUMin || op == spv::OpGroupSMin ||
+           op == spv::OpGroupFMax || op == spv::OpGroupUMax || op == spv::OpGroupSMax ||
+           op == spv::OpGroupFAdd || op == spv::OpGroupIAdd || op == spv::OpGroupBroadcast ||
+           op == spv::OpSubgroupReadInvocationKHR);
+#endif
+
     // Handle group invocation operations scalar by scalar.
     // The result type is the same type as the original type.
     // The algorithm is to:
@@ -5937,10 +5994,10 @@ spv::Id TGlslangToSpvTraverser::createMiscOperation(glslang::TOperator op, spv::
         builder.promoteScalar(precision, operands.front(), operands[2]);
         break;
     case glslang::EOpMix:
-        if (! builder.isBoolType(builder.getScalarTypeId(builder.getTypeId(operands.back()))))
+        if (! builder.isBoolType(builder.getScalarTypeId(builder.getTypeId(operands.back())))) {
+            assert(isFloat);
             libCall = spv::GLSLstd450FMix;
-        else
-	{
+        } else {
             opCode = spv::OpSelect;
             std::swap(operands.front(), operands.back());
         }
@@ -6023,6 +6080,7 @@ spv::Id TGlslangToSpvTraverser::createMiscOperation(glslang::TOperator op, spv::
     case glslang::EOpFrexp:
         {
             libCall = spv::GLSLstd450FrexpStruct;
+            assert(builder.isPointerType(typeId1));
             typeId1 = builder.getContainedTypeId(typeId1);
             int width = builder.getScalarTypeWidth(typeId1);
 #ifdef AMD_EXTENSIONS
@@ -6163,6 +6221,7 @@ spv::Id TGlslangToSpvTraverser::createMiscOperation(glslang::TOperator op, spv::
             break;
         default:
             // anything 3 or over doesn't have l-value operands, so all should be consumed
+            assert(consumedOperands == operands.size());
             id = builder.createOp(opCode, typeId, operands);
             break;
         }
@@ -6182,6 +6241,7 @@ spv::Id TGlslangToSpvTraverser::createMiscOperation(glslang::TOperator op, spv::
         break;
     case glslang::EOpFrexp:
         {
+            assert(operands.size() == 2);
             if (builder.isFloatType(builder.getScalarTypeId(typeId1))) {
                 // "exp" is floating-point type (from HLSL intrinsic)
                 spv::Id member1 = builder.createCompositeExtract(id, frexpIntType, 1);
@@ -6441,9 +6501,12 @@ spv::Id TGlslangToSpvTraverser::getSymbolId(const glslang::TIntermSymbol* symbol
 //  - when running into a non-spec-constant, switch to createSpvConstant()
 spv::Id TGlslangToSpvTraverser::createSpvConstant(const glslang::TIntermTyped& node)
 {
+    assert(node.getQualifier().isConstant());
+
     // Handle front-end constants first (non-specialization constants).
     if (! node.getQualifier().specConstant) {
         // hand off to the non-spec-constant path
+        assert(node.getAsConstantUnion() != nullptr || node.getAsSymbolNode() != nullptr);
         int nextConst = 0;
         return createSpvConstantFromConstUnionArray(node.getType(), node.getAsConstantUnion() ? node.getAsConstantUnion()->getConstArray() : node.getAsSymbolNode()->getConstArray(),
                                  nextConst, false);

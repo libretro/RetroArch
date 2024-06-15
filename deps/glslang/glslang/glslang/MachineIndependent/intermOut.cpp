@@ -1112,6 +1112,7 @@ static void OutputDouble(TInfoSink& out, double value, TOutputTraverser::EExtraO
         if (fabs(value) > 0.0 && (fabs(value) < 1e-5 || fabs(value) > 1e12))
             format = "%-.13e";
         int len = snprintf(buf, maxSize, format, value);
+        assert(len < maxSize);
 
         // remove a leading zero in the 100s slot in exponent; it is not portable
         // pattern:   XX...XXXe+0XX or XX...XXXe-0XX

@@ -80,6 +80,7 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <cassert>
 #include <cstdlib>
 #include <cstring>
 

@@ -41,6 +41,7 @@
 #else // defined (use_cpp11)
 
 #include <algorithm>
+#include <cassert>
 #include "../glslang/Include/Common.h"
 
 namespace spv {
@@ -316,6 +317,8 @@ namespace spv {
 
                 if (errorLatch)
                     return;
+
+                assert(id != unused && id != unmapped);
             }
         );
     }
@@ -456,6 +459,7 @@ namespace spv {
                     fnStart = start;
                     fnRes   = asId(start + 2);
                 } else if (opCode == spv::Op::OpFunctionEnd) {
+                    assert(fnRes != spv::NoResult);
                     if (fnStart == 0) {
                         error("function end without function start");
                         return false;
@@ -467,9 +471,12 @@ namespace spv {
                     if (errorLatch)
                         return false;
 
+                    assert(asId(start + 2) != spv::NoResult);
                     typeConstPos.insert(start);
-                } else if (isTypeOp(opCode))
+                } else if (isTypeOp(opCode)) {
+                    assert(asId(start + 1) != spv::NoResult);
                     typeConstPos.insert(start);
+                }
 
                 return false;
             },
@@ -1222,6 +1229,8 @@ namespace spv {
                 spir.begin() + typeStart + std::min(range.second, wordCount),
                 gdata.begin() + range.first);
         };
+
+        assert(isTypeOp(opCode) || isConstOp(opCode));
 
         switch (opCode) {
         case spv::OpTypeOpaque:       // TODO: disable until we compare the literal strings.

@@ -38,6 +38,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 #include <iomanip>
 #include <stack>
 #include <sstream>
@@ -534,6 +535,8 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
             numOperands -= disassembleString();
             break;
         default:
+            assert(operandClass >= OperandSource && operandClass < OperandOpcode);
+
             if (OperandClassParams[operandClass].bitmask)
                 outputMask(operandClass, stream[word++]);
             else

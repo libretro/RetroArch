@@ -289,6 +289,7 @@ TVariable::TVariable(const TVariable& copyOf) : TSymbol(copyOf)
         setExtensions(copyOf.numExtensions, copyOf.extensions);
 
     if (! copyOf.constArray.empty()) {
+        assert(! copyOf.type.isStruct());
         TConstUnionArray newArray(copyOf.constArray, 0, copyOf.constArray.size());
         constArray = newArray;
     }
@@ -367,6 +368,8 @@ TSymbolTableLevel* TSymbolTableLevel::clone() const
 
 void TSymbolTable::copyTable(const TSymbolTable& copyOf)
 {
+    assert(adoptedLevels == copyOf.adoptedLevels);
+
     uniqueId = copyOf.uniqueId;
     noBuiltInRedeclarations = copyOf.noBuiltInRedeclarations;
     separateNameSpaces = copyOf.separateNameSpaces;
