@@ -12825,14 +12825,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_DATABASE_ENTRY:
             menu_entries_clear(info->list);
             {
+               char *elem0                  = NULL;
+               char *elem1                  = NULL;
 #ifdef HAVE_LIBRETRODB
                bool parse_database          = false;
 #endif
-               struct string_list *str_list = NULL;
-
                if (!string_is_empty(info->label))
                {
-                  str_list     = string_split(info->label, "|");
+                  char *tok, *save;
+                  char *info_label_cpy = strdup(info->label);
+
+                  if ((tok = strtok_r(info_label_cpy, "|", &save)))
+                     elem0     = strdup(tok);
+                  if ((tok = strtok_r(NULL, "|", &save)))
+                     elem1     = strdup(tok);
+                  free(info_label_cpy);
                   free(info->label);
                   info->label  = NULL;
                }
@@ -12842,22 +12849,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   info->path_b = NULL;
                }
 
-               if (str_list)
+               if (     !string_is_empty(elem0)
+                     && !string_is_empty(elem1))
                {
-                  if (str_list->size > 1)
-                  {
-                     if (     !string_is_empty(str_list->elems[0].data)
-                           && !string_is_empty(str_list->elems[1].data))
-                     {
-                        info->path_b   = strdup(str_list->elems[1].data);
-                        info->label    = strdup(str_list->elems[0].data);
+                  info->path_b   = elem1;
+                  info->label    = elem0;
 #ifdef HAVE_LIBRETRODB
-                        parse_database = true;
+                  parse_database = true;
 #endif
-                     }
-                  }
-
-                  string_list_free(str_list);
                }
 
 #ifdef HAVE_LIBRETRODB
@@ -14967,43 +14966,54 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
-               struct string_list str_list = {0};
                char new_exts[PATH_MAX_LENGTH];
-               union string_list_elem_attr attr;
-               attr.i = 0;
+               size_t _len = 0;
                new_exts[0] = '\0';
-               string_list_initialize(&str_list);
                filebrowser_clear_type();
                switch (type)
                {
                   case DISPLAYLIST_SHADER_PRESET:
                      info->type_default = FILE_TYPE_SHADER_PRESET;
                      if (video_shader_is_supported(RARCH_SHADER_CG))
-                        string_list_append(&str_list, "cgp", attr);
+                        _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                      if (video_shader_is_supported(RARCH_SHADER_GLSL))
-                        string_list_append(&str_list, "glslp", attr);
+                     {
+                        if (new_exts[_len-1] != '\0')
+                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                        _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+                     }
                      if (video_shader_is_supported(RARCH_SHADER_SLANG))
-                        string_list_append(&str_list, "slangp", attr);
+                     {
+                        if (new_exts[_len-1] != '\0')
+                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                        _len    += strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                     }
                      break;
 
                   case DISPLAYLIST_SHADER_PASS:
                      info->type_default = FILE_TYPE_SHADER;
                      if (video_shader_is_supported(RARCH_SHADER_CG))
-                        string_list_append(&str_list, "cg", attr);
+                        _len    += strlcpy(new_exts + _len, "cg", sizeof(new_exts) - _len);
                      if (video_shader_is_supported(RARCH_SHADER_GLSL))
-                        string_list_append(&str_list, "glsl", attr);
+                     {
+                        if (new_exts[_len-1] != '\0')
+                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                        _len    += strlcpy(new_exts + _len, "glsl", sizeof(new_exts) - _len);
+                     }
                      if (video_shader_is_supported(RARCH_SHADER_SLANG))
-                        string_list_append(&str_list, "slang", attr);
+                     {
+                        if (new_exts[_len-1] != '\0')
+                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                        _len    += strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                     }
                      break;
                   default:
                      break;
                }
 
-               string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
                if (!string_is_empty(info->exts))
                   free(info->exts);
-               info->exts = strdup(new_exts);
-               string_list_deinitialize(&str_list);
+               info->exts         = strdup(new_exts);
                use_filebrowser    = true;
             }
 #endif
@@ -15013,25 +15023,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
-               struct string_list str_list = {0};
                char new_exts[PATH_MAX_LENGTH];
-               union string_list_elem_attr attr;
-               attr.i = 0;
+               size_t _len = 0;
                new_exts[0] = '\0';
-               string_list_initialize(&str_list);
                filebrowser_clear_type();
                info->type_default = FILE_TYPE_SHADER_PRESET;
                if (video_shader_is_supported(RARCH_SHADER_CG))
-                  string_list_append(&str_list, "cgp", attr);
+                  _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                if (video_shader_is_supported(RARCH_SHADER_GLSL))
-                  string_list_append(&str_list, "glslp", attr);
+               {
+                  if (new_exts[_len-1] != '\0')
+                     _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                  _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+               }
                if (video_shader_is_supported(RARCH_SHADER_SLANG))
-                  string_list_append(&str_list, "slangp", attr);
-               string_list_join_concat(new_exts, sizeof(new_exts), &str_list, "|");
+               {
+                  if (new_exts[_len-1] != '\0')
+                     _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                  _len    += strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+               }
                if (!string_is_empty(info->exts))
                   free(info->exts);
                info->exts = strdup(new_exts);
-               string_list_deinitialize(&str_list);
                use_filebrowser    = true;
             }
 #endif
@@ -15043,30 +15056,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                filebrowser_clear_type();
             info->type_default = FILE_TYPE_IMAGE;
             {
+               size_t _len = 0;
                char new_exts[PATH_MAX_LENGTH];
-               union string_list_elem_attr attr;
-               struct string_list *str_list     = string_list_new();
-               attr.i = 0;
                new_exts[0] = '\0';
 #ifdef HAVE_RBMP
-               string_list_append(str_list, "bmp", attr);
+               _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RPNG
-               string_list_append(str_list, "png", attr);
+               if (new_exts[_len-1] != '\0')
+                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy(new_exts + _len, "png", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RJPEG
-               string_list_append(str_list, "jpeg", attr);
-               string_list_append(str_list, "jpg", attr);
+               if (new_exts[_len-1] != '\0')
+                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
+               if (new_exts[_len-1] != '\0')
+                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy(new_exts + _len, "jpg", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RTGA
-               string_list_append(str_list, "tga", attr);
+               if (new_exts[_len-1] != '\0')
+                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif
-               string_list_join_concat(new_exts,
-                     sizeof(new_exts), str_list, "|");
                if (!string_is_empty(info->exts))
                   free(info->exts);
                info->exts = strdup(new_exts);
-               string_list_free(str_list);
             }
             use_filebrowser    = true;
             break;
