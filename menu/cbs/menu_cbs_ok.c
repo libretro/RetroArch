@@ -5310,12 +5310,11 @@ static int action_ok_download_generic(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          {
-            struct string_list str_list  = {0};
-
-            string_list_initialize(&str_list);
-            if (string_split_noalloc(&str_list, menu_label, ";"))
-               strlcpy(s, str_list.elems[0].data, sizeof(s));
-            string_list_deinitialize(&str_list);
+            char *tok, *save;
+            char *menu_label_cpy         = strdup(menu_label);
+            if ((tok = strtok_r(menu_label_cpy, ";", &save)))
+               strlcpy(s, tok, sizeof(s));
+            free(menu_label_cpy);
          }
          break;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -6905,10 +6904,8 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
                setting->values, "|");
 
             if (idx < tmp_str_list.size)
-            {
                strlcpy(setting->value.target.string,
                   tmp_str_list.elems[idx].data, setting->size);
-            }
 
             string_list_deinitialize(&tmp_str_list);
             break;
