@@ -255,35 +255,25 @@ static int action_get_title_dropdown_item(
 				   STRLEN_CONST("core_option_")))
 	   {
 		   /* This is a core options item */
-		   struct string_list tmp_str_list = {0};
 		   core_option_manager_t *coreopts = NULL;
-
-		   string_list_initialize(&tmp_str_list);
-		   string_split_noalloc(&tmp_str_list, path, "_");
-
-		   if (tmp_str_list.size > 0)
+         const char *opt = strrchr(path, '_');
+		   if (opt)
 		   {
 			   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
 			   if (coreopts)
 			   {
-				   unsigned option_index = string_to_unsigned(
-						   tmp_str_list.elems[(unsigned)tmp_str_list.size - 1].data);
+				   unsigned option_index = string_to_unsigned(opt+1);
 				   const char *title     = core_option_manager_get_desc(
 						   coreopts, option_index, true);
 
 				   if (s && !string_is_empty(title))
 				   {
 					   strlcpy(s, title, len);
-                  /* Clean up before returning */
-                  string_list_deinitialize(&tmp_str_list);
                   return 1;
 				   }
 			   }
 		   }
-
-		   /* Clean up */
-		   string_list_deinitialize(&tmp_str_list);
 	   }
 	   else
 	   {
