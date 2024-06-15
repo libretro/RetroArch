@@ -283,6 +283,8 @@ TVariable* TParseContextBase::getEditableVariable(const char* name)
 {
     bool builtIn;
     TSymbol* symbol = symbolTable.find(name, &builtIn);
+
+    assert(symbol != nullptr);
     if (symbol == nullptr)
         return nullptr;
 

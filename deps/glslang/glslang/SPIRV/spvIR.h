@@ -49,6 +49,7 @@
 #include "spirv.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -264,6 +265,7 @@ public:
     void removeBlock(Block* block)
     {
         auto found = find(blocks.begin(), blocks.end(), block);
+        assert(found != blocks.end());
         blocks.erase(found);
         delete block;
     }
@@ -332,6 +334,7 @@ public:
     spv::Id getTypeId(Id resultId) const { return idToInstruction[resultId]->getTypeId(); }
     StorageClass getStorageClass(Id typeId) const
     {
+        assert(idToInstruction[typeId]->getOpCode() == spv::OpTypePointer);
         return (StorageClass)idToInstruction[typeId]->getImmediateOperand(0);
     }
 
