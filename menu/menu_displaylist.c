@@ -2669,19 +2669,17 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
             if (entry->crc32)
             {
-               struct string_list tmp_str_list = {0};
+               char *elem0           = NULL;
+               char *save            = NULL;
+               char *entry_crc32_cpy = strdup(entry->crc32);
+               const char *con       = strtok_r(entry_crc32_cpy, "|", &save);
 
-               string_list_initialize(&tmp_str_list);
-               string_split_noalloc(&tmp_str_list, entry->crc32, "|");
-
-               if (tmp_str_list.size > 0)
+               if (con)
                {
-                  if (tmp_str_list.size > 1)
+                  elem0              = strdup(con);
+                  if ((con = strtok_r(NULL, "|", &save)))
                   {
-                     const char *elem0 = tmp_str_list.elems[0].data;
-                     const char *elem1 = tmp_str_list.elems[1].data;
-
-                     switch (extension_to_file_hash_type(elem1))
+                     switch (extension_to_file_hash_type(con))
                      {
                         case FILE_TYPE_CRC:
                            if (string_is_equal(crc_str, elem0))
@@ -2699,9 +2697,10 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                            break;
                      }
                   }
+                  free(elem0);
                }
 
-               string_list_deinitialize(&tmp_str_list);
+               free(entry_crc32_cpy);
             }
 
             if (!match_found)
@@ -11750,55 +11749,92 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
    if (!buf || !buf_size)
       return 0;
 
-   for (i = 0; i < buf_size; i++)
+   if (extended)
    {
-      size_t ln;
-      const char *core_pathname    = NULL;
-      struct string_list str_list  = {0};
-
-      /* The end of the buffer, print the last bit */
-      if (*(buf + i) == '\0')
-         break;
-
-      if (*(buf + i) != '\n')
-         continue;
-
-      /* Found a line ending, print the line and compute new line_start */
-      c              = *(buf + i + 1); /* Save the next character  */
-      *(buf + i + 1) = '\0';           /* Replace with \0          */
-
-      /* We need to strip the newline. */
-      ln             = strlen(line_start) - 1;
-      if (line_start[ln] == '\n')
-         line_start[ln] = '\0';
-
-      string_list_initialize(&str_list);
-      string_split_noalloc(&str_list, line_start, " ");
-
-      if (str_list.elems[2].data)
-         core_pathname = str_list.elems[2].data;
-
-      if (extended)
+      for (i = 0; i < buf_size; i++)
       {
-         if (append)
+         size_t ln;
+         struct string_list str_list  = {0};
+         const char *core_pathname    = NULL;
+
+         /* The end of the buffer, print the last bit */
+         if (*(buf + i) == '\0')
+            break;
+
+         if (*(buf + i) != '\n')
+            continue;
+
+         /* Found a line ending, print the line and compute new line_start */
+         c              = *(buf + i + 1); /* Save the next character  */
+         *(buf + i + 1) = '\0';           /* Replace with \0          */
+
+         /* We need to strip the newline. */
+         ln             = strlen(line_start) - 1;
+         if (line_start[ln] == '\n')
+            line_start[ln] = '\0';
+
          {
-            if (menu_entries_append(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
-               count++;
+            char *save           = NULL;
+            char *line_start_cpy = strdup(line_start);
+            const char *con      = strtok_r(line_start_cpy, " ", &save);
+
+            if (con)
+            {
+               if ((con = strtok_r(NULL, " ", &save)))
+               {
+                  if ((con = strtok_r(NULL, " ", &save)))
+                  {
+                     /* Get third parameter */
+                     if (append)
+                     {
+                        if (menu_entries_append(list, con, "",
+                                 MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
+                           count++;
+                     }
+                     else
+                     {
+                        menu_entries_prepend(list, con, "",
+                              MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+                        count++;
+                     }
+                  }
+               }
+            }
+
+            free(line_start_cpy);
          }
-         else
-         {
-            menu_entries_prepend(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-            count++;
-         }
+
+         /* Restore the saved character */
+         *(buf + i + 1) = c;
+         line_start     = buf + i + 1;
       }
-      else
+   }
+   else
+   {
+      for (i = 0; i < buf_size; i++)
       {
+         size_t ln;
+
+         /* The end of the buffer, print the last bit */
+         if (*(buf + i) == '\0')
+            break;
+
+         if (*(buf + i) != '\n')
+            continue;
+
+         /* Found a line ending, print the line and compute new line_start */
+         c              = *(buf + i + 1); /* Save the next character  */
+         *(buf + i + 1) = '\0';           /* Replace with \0          */
+
+         /* We need to strip the newline. */
+         ln             = strlen(line_start) - 1;
+         if (line_start[ln] == '\n')
+            line_start[ln] = '\0';
+
          if (append)
          {
             if (menu_entries_append(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
+                     MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
                count++;
          }
          else
@@ -11807,13 +11843,11 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
                   MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
             count++;
          }
+
+         /* Restore the saved character */
+         *(buf + i + 1) = c;
+         line_start     = buf + i + 1;
       }
-
-      string_list_deinitialize(&str_list);
-
-      /* Restore the saved character */
-      *(buf + i + 1) = c;
-      line_start     = buf + i + 1;
    }
 
    if (append && type != FILE_TYPE_DOWNLOAD_LAKKA)
@@ -13051,16 +13085,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
 #ifdef HAVE_NETWORKING
                char new_label[PATH_MAX_LENGTH];
-               struct string_list str_list = {0};
-               string_list_initialize(&str_list);
-               string_split_noalloc(&str_list, info->path, ";");
+               char *save                  = NULL;
+               char *info_path_cpy         = strdup(info->path);
+               const char *con             = strtok_r(info_path_cpy, ";", &save);
 
-               if (str_list.elems[0].data)
-                  strlcpy(new_label, str_list.elems[0].data, sizeof(new_label));
+               if (con)
+                  strlcpy(new_label, con, sizeof(new_label));
                else
                   new_label[0] = '\0';
-               if (str_list.elems[1].data)
-                  strlcpy(menu->core_buf, str_list.elems[1].data, menu->core_len);
+
+               if ((con = strtok_r(NULL, ";", &save))) /* Get second parameter */
+                  strlcpy(menu->core_buf, con, menu->core_len);
+               free(info_path_cpy);
+
                if ((count = print_buf_lines(
                            info->list, menu->core_buf, new_label,
                            (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL,
@@ -13076,8 +13113,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info->flags       |= MD_FLAG_NEED_REFRESH
                                   | MD_FLAG_NEED_PUSH
                                   | MD_FLAG_NEED_CLEAR;
-
-               string_list_deinitialize(&str_list);
 #endif
             }
             break;
