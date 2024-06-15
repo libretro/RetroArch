@@ -354,22 +354,35 @@ static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
    char query[256];
+   char *tok, *save;
+   char *elem0                   = NULL;
+   char *elem1                   = NULL;
+   char *path_cpy                = NULL;
    int ret                       = -1;
    const char *path              = info->path;
-   struct string_list str_list   = {0};
-   settings_t *settings          = config_get_ptr();
 
    if (!path)
-      goto end;
+      return -1;
 
-   string_list_initialize(&str_list);
-   string_split_noalloc(&str_list, path, "|");
+   path_cpy = strdup(path);
+   tok      = strtok_r(path_cpy, "|", &save);
 
-   database_info_build_query_enum(query, sizeof(query), type,
-         str_list.elems[0].data);
+   if (tok)
+      elem0 = strdup(tok);
+   if ((tok = strtok_r(NULL, "|", &save)))
+      elem1 = strdup(tok);
+   free(path_cpy);
+
+   database_info_build_query_enum(query, sizeof(query), type, elem0);
 
    if (string_is_empty(query))
-      goto end;
+   {
+      if (elem0)
+         free(elem0);
+      if (elem1)
+         free(elem1);
+      return -1;
+   }
 
    if (!string_is_empty(info->path_b))
       free(info->path_b);
@@ -378,15 +391,11 @@ static int deferred_push_cursor_manager_list_generic(
    if (!string_is_empty(info->path))
       free(info->path);
 
-   info->path   = strdup(str_list.elems[1].data);
-   info->path_b = strdup(str_list.elems[0].data);
+   info->path   = elem1;
+   info->path_b = elem0;
    info->path_c = strdup(query);
 
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, settings);
-
-end:
-   string_list_deinitialize(&str_list);
-   return ret;
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY, config_get_ptr());
 }
 
 GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users, DATABASE_QUERY_ENTRY_MAX_USERS)
