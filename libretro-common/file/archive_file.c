@@ -24,8 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <compat/posix_string.h>
 #include <compat/strl.h>
+#include <compat/posix_string.h>
 #include <file/archive_file.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
