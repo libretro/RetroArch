@@ -11754,8 +11754,6 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
       for (i = 0; i < buf_size; i++)
       {
          size_t ln;
-         struct string_list str_list  = {0};
-         const char *core_pathname    = NULL;
 
          /* The end of the buffer, print the last bit */
          if (*(buf + i) == '\0')
