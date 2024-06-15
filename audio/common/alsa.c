@@ -19,8 +19,9 @@
 #include <alsa/asoundlib.h>
 #include <asm-generic/errno.h>
 
+#include "alsa.h"
+
 #include "../audio_driver.h"
-#include "../common/alsa.h"
 #include "../../verbosity.h"
 
 int alsa_init_pcm(snd_pcm_t **pcm,

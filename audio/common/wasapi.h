@@ -23,8 +23,8 @@
 #ifndef RETROARCH_COMMON_WASAPI_H
 #define RETROARCH_COMMON_WASAPI_H
 
-#include "../common/mmdevice_common_inline.h"
-#include "boolean.h"
+#include "mmdevice_common_inline.h"
+#include <boolean.h>
 
 /* Shared buffer size replacement placeholders */
 #define WASAPI_SH_BUFFER_AUDIO_LATENCY 0
