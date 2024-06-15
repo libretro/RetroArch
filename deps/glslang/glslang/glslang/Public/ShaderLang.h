@@ -596,7 +596,7 @@ class TIoMapper;
 // notifiy callbacks, this phase ends with a call to endNotifications.
 // Phase two starts directly after the call to endNotifications
 // and calls all other callbacks to validate and to get the
-// bindings, sets, locations, component and color indices.
+// bindings, sets, locations, component and color indices. 
 //
 // NOTE: that still limit checks are applied to bindings and sets
 // and may result in an error.
@@ -684,6 +684,8 @@ public:
     const TType* getUniformTType(int index) const;         // returns a TType*
     const TType* getUniformBlockTType(int index) const;    // returns a TType*
     const TType* getAttributeTType(int index) const;       // returns a TType*
+
+    void dumpReflection();
 
     // I/O mapping: apply base offsets and map live unbound variables
     // If resolver is not provided it uses the previous approach

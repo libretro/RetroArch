@@ -334,10 +334,15 @@ TFunction* TFunction::clone() const
     return function;
 }
 
-// Anonymous members of a given block should be cloned at a higher level,
-// where they can all be assured to still end up pointing to a single
-// copy of the original container.
-TAnonMember* TAnonMember::clone() const { return 0; }
+TAnonMember* TAnonMember::clone() const
+{
+    // Anonymous members of a given block should be cloned at a higher level,
+    // where they can all be assured to still end up pointing to a single
+    // copy of the original container.
+    assert(0);
+
+    return 0;
+}
 
 TSymbolTableLevel* TSymbolTableLevel::clone() const
 {

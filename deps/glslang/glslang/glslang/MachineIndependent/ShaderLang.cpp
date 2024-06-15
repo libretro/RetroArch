@@ -129,7 +129,7 @@ int MapVersionToIndex(int version)
     case 500: index =  0; break; // HLSL
     case 320: index = 15; break;
     case 460: index = 16; break;
-    default: break;
+    default:  assert(0);  break;
     }
 
     assert(index < VersionCount);
@@ -1904,6 +1904,8 @@ const TType* TProgram::getAttributeTType(int index) const    { return reflection
 const TType* TProgram::getUniformTType(int index) const      { return reflection->getUniform(index).getType(); }
 const TType* TProgram::getUniformBlockTType(int index) const { return reflection->getUniformBlock(index).getType(); }
 unsigned TProgram::getLocalSize(int dim) const               { return reflection->getLocalSize(dim); }
+
+void TProgram::dumpReflection()                      { reflection->dump(); }
 
 //
 // I/O mapping implementation.

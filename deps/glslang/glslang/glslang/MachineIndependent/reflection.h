@@ -66,6 +66,16 @@ public:
             return -1;
         return type->getQualifier().layoutBinding;
     }
+    void dump() const
+    {
+        printf("%s: offset %d, type %x, size %d, index %d, binding %d",
+               name.c_str(), offset, glDefineType, size, index, getBinding() );
+
+        if (counterIndex != -1)
+            printf(", counter %d", counterIndex);
+
+        printf("\n");
+    }
     static TObjectReflection badReflection() { return TObjectReflection(); }
 
     TString name;
@@ -85,7 +95,7 @@ protected:
 class TReflection {
 public:
     TReflection() : badReflection(TObjectReflection::badReflection())
-    {
+    { 
         for (int dim=0; dim<3; ++dim)
             localSize[dim] = 0;
     }
@@ -111,7 +121,8 @@ public:
     {
         if (i >= 0 && i < (int)indexToUniformBlock.size())
             return indexToUniformBlock[i];
-        return badReflection;
+        else
+            return badReflection;
     }
 
     // for mapping an attribute index to the attribute's description
@@ -120,7 +131,8 @@ public:
     {
         if (i >= 0 && i < (int)indexToAttribute.size())
             return indexToAttribute[i];
-        return badReflection;
+        else
+            return badReflection;
     }
 
     // for mapping any name to its index (block names, uniform names and attribute names)
@@ -129,7 +141,8 @@ public:
         TNameToIndex::const_iterator it = nameToIndex.find(name);
         if (it == nameToIndex.end())
             return -1;
-        return it->second;
+        else
+            return it->second;
     }
 
     // see getIndex(const char*)
@@ -137,6 +150,8 @@ public:
 
     // Thread local size
     unsigned getLocalSize(int dim) const { return dim <= 2 ? localSize[dim] : 0; }
+
+    void dump();
 
 protected:
     friend class glslang::TReflectionTraverser;

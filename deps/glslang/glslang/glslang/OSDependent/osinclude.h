@@ -56,6 +56,8 @@ typedef unsigned int (*TThreadEntrypoint)(void*);
 
 void OS_CleanupThreadData(void);
 
+void OS_DumpMemoryCounters();
+
 } // end namespace glslang
 
 #endif // __OSINCLUDE_H

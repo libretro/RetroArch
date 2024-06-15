@@ -807,4 +807,37 @@ bool TReflection::addStage(EShLanguage stage, const TIntermediate& intermediate)
     return true;
 }
 
+void TReflection::dump()
+{
+    printf("Uniform reflection:\n");
+    for (size_t i = 0; i < indexToUniform.size(); ++i)
+        indexToUniform[i].dump();
+    printf("\n");
+
+    printf("Uniform block reflection:\n");
+    for (size_t i = 0; i < indexToUniformBlock.size(); ++i)
+        indexToUniformBlock[i].dump();
+    printf("\n");
+
+    printf("Vertex attribute reflection:\n");
+    for (size_t i = 0; i < indexToAttribute.size(); ++i)
+        indexToAttribute[i].dump();
+    printf("\n");
+
+    if (getLocalSize(0) > 1) {
+        static const char* axis[] = { "X", "Y", "Z" };
+
+        for (int dim=0; dim<3; ++dim)
+            if (getLocalSize(dim) > 1)
+                printf("Local size %s: %d\n", axis[dim], getLocalSize(dim));
+
+        printf("\n");
+    }
+
+    // printf("Live names\n");
+    // for (TNameToIndex::const_iterator it = nameToIndex.begin(); it != nameToIndex.end(); ++it)
+    //    printf("%s: %d\n", it->first.c_str(), it->second);
+    // printf("\n");
+}
+
 } // end namespace glslang
