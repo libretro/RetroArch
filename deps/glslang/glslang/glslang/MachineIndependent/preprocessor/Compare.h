@@ -1,6 +1,8 @@
 #ifndef _MACHINE_INDEPENDENT_COMPARE_H
 #define _MACHINE_INDEPENDENT_COMPARE_H
 
+#include "../../../hlsl/hlslTokens.h"
+
 namespace {
 
 	struct str_eq
