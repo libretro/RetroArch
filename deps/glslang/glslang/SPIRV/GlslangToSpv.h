@@ -48,16 +48,20 @@
 namespace glslang {
 
 struct SpvOptions {
-    SpvOptions() : disableOptimizer(false),
+    SpvOptions() : generateDebugInfo(false), disableOptimizer(true),
         optimizeSize(false) { }
+    bool generateDebugInfo;
     bool disableOptimizer;
     bool optimizeSize;
 };
 
+void GetSpirvVersion(std::string&);
 int GetSpirvGeneratorVersion();
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,
                   SpvOptions* options = nullptr);
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,
                   spv::SpvBuildLogger* logger, SpvOptions* options = nullptr);
+void OutputSpvBin(const std::vector<unsigned int>& spirv, const char* baseName);
+void OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, const char* varName);
 
 }

@@ -146,6 +146,42 @@ TPoolAllocator::~TPoolAllocator()
     }
 }
 
+const unsigned char TAllocation::guardBlockBeginVal = 0xfb;
+const unsigned char TAllocation::guardBlockEndVal   = 0xfe;
+const unsigned char TAllocation::userDataFill       = 0xcd;
+
+#   ifdef GUARD_BLOCKS
+    const size_t TAllocation::guardBlockSize = 16;
+#   else
+    const size_t TAllocation::guardBlockSize = 0;
+#   endif
+
+//
+// Check a single guard block for damage
+//
+#ifdef GUARD_BLOCKS
+void TAllocation::checkGuardBlock(unsigned char* blockMem, unsigned char val, const char* locText) const
+#else
+void TAllocation::checkGuardBlock(unsigned char*, unsigned char, const char*) const
+#endif
+{
+#ifdef GUARD_BLOCKS
+    for (size_t x = 0; x < guardBlockSize; x++) {
+        if (blockMem[x] != val) {
+            const int maxSize = 80;
+            char assertMsg[maxSize];
+
+            // We don't print the assert message.  It's here just to be helpful.
+            snprintf(assertMsg, maxSize, "PoolAlloc: Damage %s %zu byte allocation at 0x%p\n",
+                      locText, size, data());
+            assert(0 && "PoolAlloc: Damage in guard block");
+        }
+    }
+#else
+    assert(guardBlockSize == 0);
+#endif
+}
+
 void TPoolAllocator::push()
 {
     tAllocState state = { currentPageOffset, inUseList };
@@ -205,6 +241,13 @@ void TPoolAllocator::popAll()
 
 void* TPoolAllocator::allocate(size_t numBytes)
 {
+    // If we are using guard blocks, all allocations are bracketed by
+    // them: [guardblock][allocation][guardblock].  numBytes is how
+    // much memory the caller asked for.  allocationSize is the total
+    // size including guard blocks.  In release build,
+    // guardBlockSize=0 and this all gets optimized away.
+    size_t allocationSize = TAllocation::allocationSize(numBytes);
+
     //
     // Just keep some interesting statistics.
     //
@@ -215,23 +258,23 @@ void* TPoolAllocator::allocate(size_t numBytes)
     // Do the allocation, most likely case first, for efficiency.
     // This step could be moved to be inline sometime.
     //
-    if (currentPageOffset + numBytes <= pageSize) {
+    if (currentPageOffset + allocationSize <= pageSize) {
         //
         // Safe to allocate from currentPageOffset.
         //
         unsigned char* memory = reinterpret_cast<unsigned char*>(inUseList) + currentPageOffset;
-        currentPageOffset += numBytes;
+        currentPageOffset += allocationSize;
         currentPageOffset = (currentPageOffset + alignmentMask) & ~alignmentMask;
 
-        return memory;
+        return initializeAllocation(inUseList, memory, numBytes);
     }
 
-    if (numBytes + headerSkip > pageSize) {
+    if (allocationSize + headerSkip > pageSize) {
         //
         // Do a multi-page allocation.  Don't mix these with the others.
         // The OS is efficient and allocating and free-ing multiple pages.
         //
-        size_t numBytesToAlloc = numBytes + headerSkip;
+        size_t numBytesToAlloc = allocationSize + headerSkip;
         tHeader* memory = reinterpret_cast<tHeader*>(::new char[numBytesToAlloc]);
         if (memory == 0)
             return 0;
@@ -264,9 +307,18 @@ void* TPoolAllocator::allocate(size_t numBytes)
     inUseList = memory;
 
     unsigned char* ret = reinterpret_cast<unsigned char*>(inUseList) + headerSkip;
-    currentPageOffset = (headerSkip + numBytes + alignmentMask) & ~alignmentMask;
+    currentPageOffset = (headerSkip + allocationSize + alignmentMask) & ~alignmentMask;
 
-    return ret;
+    return initializeAllocation(inUseList, ret, numBytes);
+}
+
+//
+// Check all allocations in a list for damage by calling check on each.
+//
+void TAllocation::checkAllocList() const
+{
+    for (const TAllocation* alloc = this; alloc != 0; alloc = alloc->prevAlloc)
+        alloc->check();
 }
 
 } // end namespace glslang

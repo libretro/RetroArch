@@ -533,9 +533,9 @@ Op Builder::getMostBasicTypeClass(Id typeId) const
     case OpTypePointer:
         return getMostBasicTypeClass(instr->getIdOperand(1));
     default:
-	break;
+        assert(0);
+        return OpTypeFloat;
     }
-    return OpTypeFloat;
 }
 
 int Builder::getNumTypeConstituents(Id typeId) const
@@ -544,6 +544,10 @@ int Builder::getNumTypeConstituents(Id typeId) const
 
     switch (instr->getOpCode())
     {
+    case OpTypeBool:
+    case OpTypeInt:
+    case OpTypeFloat:
+        return 1;
     case OpTypeVector:
     case OpTypeMatrix:
         return instr->getImmediateOperand(1);
@@ -554,13 +558,10 @@ int Builder::getNumTypeConstituents(Id typeId) const
     }
     case OpTypeStruct:
         return instr->getNumOperands();
-    case OpTypeBool:
-    case OpTypeInt:
-    case OpTypeFloat:
     default:
-	break;
+        assert(0);
+        return 1;
     }
-    return 1;
 }
 
 // Return the lowest-level type of scalar that an homogeneous composite is made out of.
@@ -586,9 +587,9 @@ Id Builder::getScalarTypeId(Id typeId) const
     case OpTypePointer:
         return getScalarTypeId(getContainedTypeId(typeId));
     default:
-	break;
+        assert(0);
+        return NoResult;
     }
-    return NoResult;
 }
 
 // Return the type of 'member' of a composite.
@@ -609,9 +610,9 @@ Id Builder::getContainedTypeId(Id typeId, int member) const
     case OpTypeStruct:
         return instr->getIdOperand(member);
     default:
-	break;
+        assert(0);
+        return NoResult;
     }
-    return NoResult;
 }
 
 // Return the immediately contained type of a given composite type.
@@ -862,6 +863,7 @@ Id Builder::makeFpConstant(Id type, double d, bool specConstant)
                 break;
         }
 
+        assert(false);
         return NoResult;
 }
 
@@ -942,6 +944,7 @@ Id Builder::makeCompositeConstant(Id typeId, const std::vector<Id>& members, boo
         }
         break;
     default:
+        assert(0);
         return makeFloatConstant(0.0);
     }
 
@@ -1797,6 +1800,7 @@ Id Builder::createTextureQueryCall(Op opCode, const TextureParameters& parameter
             break;
 
         default:
+            assert(0);
             break;
         }
         if (isArrayedImageType(getImageType(parameters.sampler)))
@@ -1822,6 +1826,7 @@ Id Builder::createTextureQueryCall(Op opCode, const TextureParameters& parameter
         resultType = isUnsignedResult ? makeUintType(32) : makeIntType(32);
         break;
     default:
+        assert(0);
         break;
     }
 
@@ -2002,6 +2007,8 @@ Id Builder::createConstructor(Decoration precision, const std::vector<Id>& sourc
             accumulateVectorConstituents(sources[i]);
         else if (isMatrix(sources[i]))
             accumulateMatrixConstituents(sources[i]);
+        else
+            assert(0);
 
         if (targetComponent >= numTargetComponents)
             break;

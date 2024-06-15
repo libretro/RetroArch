@@ -588,6 +588,8 @@ void TParseContext::checkIoArrayConsistency(const TSourceLoc& loc, int requiredS
             error(loc, "inconsistent input primitive for array size of", feature, name.c_str());
         else if (language == EShLangTessControl)
             error(loc, "inconsistent output number of vertices for array size of", feature, name.c_str());
+        else
+            assert(0);
     }
 }
 
@@ -1564,6 +1566,7 @@ void TParseContext::builtInOpCheck(const TSourceLoc& loc, const TFunction& fnCan
         case EOpTextureGradOffset:      arg = 4;  break;
         case EOpTextureProjGradOffset:  arg = 4;  break;
         default:
+            assert(0);
             break;
         }
 
@@ -5000,6 +5003,8 @@ void TParseContext::checkNoShaderLayouts(const TSourceLoc& loc, const TShaderQua
             error(loc, message, "max_vertices", "");
         else if (language == EShLangTessControl)
             error(loc, message, "vertices", "");
+        else
+            assert(0);
     }
     if (shaderQualifiers.blendEquation)
         error(loc, message, "blend equation", "");
