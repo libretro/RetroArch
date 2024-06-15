@@ -803,16 +803,16 @@ void TParseVersions::updateExtensionBehavior(const char* extension, TExtensionBe
 // Call for any operation needing full GLSL integer data-type support.
 void TParseVersions::fullIntegerCheck(const TSourceLoc& loc, const char* op)
 {
-    profileRequires(loc, ENoProfile, 130, NULL, op);
-    profileRequires(loc, EEsProfile, 300, NULL, op);
+    profileRequires(loc, ENoProfile, 130, nullptr, op);
+    profileRequires(loc, EEsProfile, 300, nullptr, op);
 }
 
 // Call for any operation needing GLSL double data-type support.
 void TParseVersions::doubleCheck(const TSourceLoc& loc, const char* op)
 {
     requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-    profileRequires(loc, ECoreProfile, 400, NULL, op);
-    profileRequires(loc, ECompatibilityProfile, 400, NULL, op);
+    profileRequires(loc, ECoreProfile, 400, nullptr, op);
+    profileRequires(loc, ECompatibilityProfile, 400, nullptr, op);
 }
 
 // Call for any operation needing GLSL float16 data-type support.
@@ -830,8 +830,8 @@ void TParseVersions::float16Check(const TSourceLoc& loc, const char* op, bool bu
 #endif
         requireExtensions(loc, sizeof(extensions)/sizeof(extensions[0]), extensions, "explicit types");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 
@@ -843,8 +843,8 @@ void TParseVersions::explicitFloat32Check(const TSourceLoc& loc, const char* op,
                                            E_GL_KHX_shader_explicit_arithmetic_types_float32};
         requireExtensions(loc, 2, extensions, "explicit types");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 
@@ -856,8 +856,8 @@ void TParseVersions::explicitFloat64Check(const TSourceLoc& loc, const char* op,
                                            E_GL_KHX_shader_explicit_arithmetic_types_float64};
         requireExtensions(loc, 2, extensions, "explicit types");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 
@@ -869,8 +869,8 @@ void TParseVersions::explicitInt8Check(const TSourceLoc& loc, const char* op, bo
                                            E_GL_KHX_shader_explicit_arithmetic_types_int8};
         requireExtensions(loc, 2, extensions, "explicit types");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 
@@ -881,8 +881,8 @@ void TParseVersions::float16OpaqueCheck(const TSourceLoc& loc, const char* op, b
     if (! builtIn) {
         requireExtensions(loc, 1, &E_GL_AMD_gpu_shader_half_float_fetch, op);
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 #endif
@@ -901,8 +901,8 @@ void TParseVersions::explicitInt16Check(const TSourceLoc& loc, const char* op, b
 #endif
         requireExtensions(loc, sizeof(extensions)/sizeof(extensions[0]), extensions, "explicit types");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 
@@ -914,8 +914,8 @@ void TParseVersions::explicitInt32Check(const TSourceLoc& loc, const char* op, b
                                            E_GL_KHX_shader_explicit_arithmetic_types_int32};
         requireExtensions(loc, 2, extensions, "explicit types");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 
@@ -928,8 +928,8 @@ void TParseVersions::int64Check(const TSourceLoc& loc, const char* op, bool buil
                                            E_GL_KHX_shader_explicit_arithmetic_types_int64};
         requireExtensions(loc, 3, extensions, "shader int64");
         requireProfile(loc, ECoreProfile | ECompatibilityProfile, op);
-        profileRequires(loc, ECoreProfile, 450, NULL, op);
-        profileRequires(loc, ECompatibilityProfile, 450, NULL, op);
+        profileRequires(loc, ECoreProfile, 450, nullptr, op);
+        profileRequires(loc, ECompatibilityProfile, 450, nullptr, op);
     }
 }
 

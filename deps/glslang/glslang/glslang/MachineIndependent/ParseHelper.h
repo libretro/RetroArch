@@ -77,20 +77,20 @@ public:
     TParseContextBase(TSymbolTable& symbolTable, TIntermediate& interm, bool parsingBuiltins, int version,
                       EProfile profile, const SpvVersion& spvVersion, EShLanguage language,
                       TInfoSink& infoSink, bool forwardCompatible, EShMessages messages,
-                      const TString* entryPoint = NULL)
+                      const TString* entryPoint = nullptr)
           : TParseVersions(interm, version, profile, spvVersion, language, infoSink, forwardCompatible, messages),
             scopeMangler("::"),
             symbolTable(symbolTable),
             statementNestingLevel(0), loopNestingLevel(0), structNestingLevel(0), controlFlowNestingLevel(0),
             postEntryPointReturn(false),
             contextPragma(true, false),
-            parsingBuiltins(parsingBuiltins), scanContext(NULL), ppContext(NULL),
+            parsingBuiltins(parsingBuiltins), scanContext(nullptr), ppContext(nullptr),
             limits(resources.limits),
-            globalUniformBlock(NULL),
+            globalUniformBlock(nullptr),
             globalUniformBinding(TQualifier::layoutBindingEnd),
             globalUniformSet(TQualifier::layoutSetEnd)
     {
-        if (entryPoint != NULL)
+        if (entryPoint != nullptr)
             sourceEntryPointName = *entryPoint;
     }
     virtual ~TParseContextBase() { }
@@ -149,14 +149,14 @@ public:
     }
 
     // Manage the global uniform block (default uniforms in GLSL, $Global in HLSL)
-    virtual void growGlobalUniformBlock(const TSourceLoc&, TType&, const TString& memberName, TTypeList* typeList = NULL);
+    virtual void growGlobalUniformBlock(const TSourceLoc&, TType&, const TString& memberName, TTypeList* typeList = nullptr);
 
     // Potentially rename shader entry point function
     void renameShaderFunction(TString*& name) const
     {
         // Replace the entry point name given in the shader with the real entry point name,
         // if there is a substitution.
-        if (name != NULL && *name == sourceEntryPointName && intermediate.getEntryPointName().size() > 0)
+        if (name != nullptr && *name == sourceEntryPointName && intermediate.getEntryPointName().size() > 0)
             name = NewPoolTString(intermediate.getEntryPointName().c_str());
     }
 
@@ -272,7 +272,7 @@ class TParseContext : public TParseContextBase {
 public:
     TParseContext(TSymbolTable&, TIntermediate&, bool parsingBuiltins, int version, EProfile, const SpvVersion& spvVersion, EShLanguage, TInfoSink&,
                   bool forwardCompatible = false, EShMessages messages = EShMsgDefault,
-                  const TString* entryPoint = NULL);
+                  const TString* entryPoint = nullptr);
     virtual ~TParseContext();
 
     bool obeyPrecisionQualifiers() const { return precisionManager.respectingPrecisionQualifiers(); };

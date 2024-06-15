@@ -55,8 +55,8 @@ struct SpvOptions {
 };
 
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,
-                  SpvOptions* options = NULL);
+                  SpvOptions* options = nullptr);
 void GlslangToSpv(const glslang::TIntermediate& intermediate, std::vector<unsigned int>& spirv,
-                  spv::SpvBuildLogger* logger, SpvOptions* options = NULL);
+                  spv::SpvBuildLogger* logger, SpvOptions* options = nullptr);
 
 }

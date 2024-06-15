@@ -51,7 +51,7 @@ const int EndOfInput = -1;
 //
 class TInputScanner {
 public:
-    TInputScanner(int n, const char* const s[], size_t L[], const char* const* names = NULL,
+    TInputScanner(int n, const char* const s[], size_t L[], const char* const* names = nullptr,
                   int b = 0, int f = 0, bool single = false) :
         numSources(n),
          // up to this point, common usage is "char*", but now we need positive 8-bit characters
@@ -63,7 +63,7 @@ public:
         for (int i = 0; i < numSources; ++i) {
             loc[i].init(i - stringBias);
         }
-        if (names != NULL) {
+        if (names != nullptr) {
             for (int i = 0; i < numSources; ++i)
                 loc[i].name = names[i];
         }
@@ -186,8 +186,8 @@ public:
     {
         logicalSourceLoc.string = newString;
         loc[getLastValidSourceIndex()].string = newString;
-        logicalSourceLoc.name = NULL;
-        loc[getLastValidSourceIndex()].name = NULL;
+        logicalSourceLoc.name = nullptr;
+        loc[getLastValidSourceIndex()].name = nullptr;
     }
 
     // for #include content indentation
