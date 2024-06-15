@@ -1292,7 +1292,6 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    int j;
    char val_d[8];
    unsigned count                  = 0;
-   struct string_list tmp_str_list = {0};
    unsigned option_index           = 0;
    unsigned checked                = 0;
    bool checked_found              = false;
@@ -1303,6 +1302,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    const char *lbl_disabled        = NULL;
    const char *val_on_str          = NULL;
    const char *val_off_str         = NULL;
+   const char *opt                 = NULL;
 
    /* Fetch options */
    retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
@@ -1315,17 +1315,10 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    if (string_is_empty(info_path))
       return 0;
 
-   string_list_initialize(&tmp_str_list);
-   string_split_noalloc(&tmp_str_list, info_path, "_");
-
-   if (tmp_str_list.size < 1)
-   {
-      string_list_deinitialize(&tmp_str_list);
+   if (!(opt = strrchr(info_path, '_')))
       return 0;
-   }
 
-   option_index = string_to_unsigned(
-         tmp_str_list.elems[tmp_str_list.size - 1].data);
+   option_index = string_to_unsigned(opt+1);
    val_d[0]     = '\0';
    snprintf(val_d, sizeof(val_d), "%d", option_index);
 
@@ -1334,10 +1327,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    val    = core_option_manager_get_val(coreopts, option_index);
 
    if (!option || string_is_empty(val))
-   {
-      string_list_deinitialize(&tmp_str_list);
       return 0;
-   }
 
    lbl_enabled  = msg_hash_to_str(MENU_ENUM_LABEL_ENABLED);
    lbl_disabled = msg_hash_to_str(MENU_ENUM_LABEL_DISABLED);
@@ -1371,8 +1361,6 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
          }
       }
    }
-
-   string_list_deinitialize(&tmp_str_list);
 
    if (checked_found)
    {
