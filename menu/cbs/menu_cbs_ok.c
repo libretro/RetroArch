@@ -6181,47 +6181,62 @@ static int action_ok_delete_entry(const char *path,
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   char *tok, *save;
    union string_list_elem_attr attr;
    char new_label[PATH_MAX_LENGTH];
+   char *elem0                     = NULL;
+   char *elem1                     = NULL;
+   char *elem2                     = NULL;
    int ret                         = -1;
    char *rdb                       = NULL;
    int len                         = 0;
-   struct string_list str_list     = {0};
    struct string_list str_list2    = {0};
+   char *label_cpy                 = NULL;
 
    if (!label)
       return -1;
 
+   label_cpy                       = strdup(label);
+
    new_label[0]                    =  '\0';
-
-   string_list_initialize(&str_list);
-   if (!string_split_noalloc(&str_list, label, "|"))
-      goto end;
-
-   string_list_initialize(&str_list2);
 
    /* element 0 : label
     * element 1 : value
     * element 2 : database path
     */
+   if ((tok = strtok_r(label_cpy, "|", &save)))
+      elem0 = strdup(tok);
+   if ((tok = strtok_r(NULL, "|", &save)))
+      elem1 = strdup(tok);
+   if ((tok = strtok_r(NULL, "|", &save)))
+      elem2 = strdup(tok);
+   free(label_cpy);
+
+   string_list_initialize(&str_list2);
 
    attr.i = 0;
 
-   len += strlen(str_list.elems[1].data) + 1;
-   string_list_append(&str_list2, str_list.elems[1].data, attr);
+   len += strlen(elem1) + 1;
+   string_list_append(&str_list2, elem1, attr);
+   free(elem1);
 
-   len += strlen(str_list.elems[2].data) + 1;
-   string_list_append(&str_list2, str_list.elems[2].data, attr);
+   len += strlen(elem2) + 1;
+   string_list_append(&str_list2, elem2, attr);
+   free(elem2);
 
    if (!(rdb = (char*)calloc(len, sizeof(char))))
+   {
+      if (elem0)
+         free(elem0);
       goto end;
+   }
 
    string_list_join_concat(rdb, len, &str_list2, "|");
 
    fill_pathname_join_delim(new_label,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-         str_list.elems[0].data, '_',
-         sizeof(new_label));
+         elem0, '_', sizeof(new_label));
+   free(elem0);
 
    ret = generic_action_ok_displaylist_push(
          rdb, NULL,
@@ -6232,7 +6247,6 @@ static int action_ok_rdb_entry_submenu(const char *path,
 end:
    if (rdb)
       free(rdb);
-   string_list_deinitialize(&str_list);
    string_list_deinitialize(&str_list2);
 
    return ret;

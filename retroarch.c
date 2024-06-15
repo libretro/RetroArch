@@ -2168,8 +2168,9 @@ struct string_list *dir_list_new_special(const char *input_dir,
    char ext_shaders[255];
 #endif
    char ext_name[16];
-   const char *exts                  = NULL;
-   bool recursive                    = false;
+   size_t _len         = 0;
+   const char *exts    = NULL;
+   bool recursive      = false;
 
    switch (type)
    {
@@ -2196,36 +2197,36 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            union string_list_elem_attr attr;
-            struct string_list str_list;
-
-            if (!string_list_initialize(&str_list))
-               return NULL;
-
             ext_shaders[0]                   = '\0';
-
-            attr.i = 0;
 
             if (video_shader_is_supported(RARCH_SHADER_CG))
             {
-               string_list_append(&str_list, "cgp", attr);
-               string_list_append(&str_list, "cg", attr);
+               _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "cg", sizeof(ext_shaders) - _len);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
-               string_list_append(&str_list, "glslp", attr);
-               string_list_append(&str_list, "glsl", attr);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "glsl", sizeof(ext_shaders) - _len);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
-               string_list_append(&str_list, "slangp", attr);
-               string_list_append(&str_list, "slang", attr);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "slang", sizeof(ext_shaders) - _len);
             }
 
-            string_list_join_concat(ext_shaders, sizeof(ext_shaders), &str_list, "|");
-            string_list_deinitialize(&str_list);
             exts = ext_shaders;
          }
          break;
@@ -6946,16 +6947,16 @@ static bool retroarch_parse_input_and_config(
             case 'd':
                {
                   unsigned new_port;
-                  unsigned id              = 0;
-                  struct string_list *list = string_split(optarg, ":");
+                  char *tok, *save;
                   int    port              = 0;
+                  unsigned id              = 0;
+                  char *optarg_cpy         = strdup(optarg);
 
-                  if (list && list->size == 2)
-                  {
-                     port = (int)strtol(list->elems[0].data, NULL, 0);
-                     id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
-                  }
-                  string_list_free(list);
+                  if ((tok = strtok_r(optarg_cpy, ":", &save)))
+                     port = (int)strtol(tok, NULL, 0);
+                  if ((tok = strtok_r(NULL, ":", &save)))
+                     id   = (unsigned)strtoul(tok, NULL, 0);
+                  free(optarg_cpy);
 
                   if (port < 1 || port > MAX_USERS)
                   {
