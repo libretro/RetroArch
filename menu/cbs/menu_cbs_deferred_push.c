@@ -358,7 +358,6 @@ static int deferred_push_cursor_manager_list_generic(
    char *elem0                   = NULL;
    char *elem1                   = NULL;
    char *path_cpy                = NULL;
-   int ret                       = -1;
    const char *path              = info->path;
 
    if (!path)
