@@ -411,6 +411,7 @@ static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    char newstr2[PATH_MAX_LENGTH];
+   size_t _len = 0;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -465,15 +466,13 @@ static int general_push(menu_displaylist_info_t *info,
          {
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
-            if (sysinfo)
-               if (!string_is_empty(sysinfo->valid_extensions))
-                  strlcpy(newstr2, sysinfo->valid_extensions,
-                        sizeof(newstr2));
+            if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
+               _len = strlcpy(newstr2 + _len, sysinfo->valid_extensions,
+                     sizeof(newstr2)  - _len);
          }
          break;
       case PUSH_DEFAULT:
          {
-            size_t _len = 0;
             const char *valid_extensions     = NULL;
 
             if (menu_setting_get_browser_selection_type(info->setting) != ST_DIR)
@@ -508,7 +507,6 @@ static int general_push(menu_displaylist_info_t *info,
          {
             char newstr1[PATH_MAX_LENGTH];
             struct string_list str_list2      = {0};
-            size_t _len                       = 0;
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
@@ -607,8 +605,8 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      strlcat(newstr2, "|", sizeof(newstr2));
-      strlcat(newstr2, sysinfo.valid_extensions, sizeof(newstr2));
+      _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
+      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, sizeof(newstr2) - _len);
    }
 #endif
 
@@ -617,9 +615,10 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      strlcat(newstr2, "|", sizeof(newstr2));
-      strlcat(newstr2, sysinfo.valid_extensions,
-            sizeof(newstr2));
+      _len += strlcpy(newstr2 + _len, "|",
+            sizeof(newstr2)   - _len);
+      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
+            sizeof(newstr2)   - _len);
    }
 #endif
 
