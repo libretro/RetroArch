@@ -15330,68 +15330,67 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         case ST_STRING_OPTIONS:
                            {
-                              struct string_list tmp_str_list = {0};
-                              string_list_initialize(&tmp_str_list);
-                              string_split_noalloc(&tmp_str_list,
-                                    setting->values, "|");
+                              char val_d[16];
+                              char *tok, *save;
+                              unsigned i               = 0;
+                              bool checked_found       = false;
+                              unsigned checked         = 0;
+                              char* orig_val           = setting->get_string_representation ?
+                                 strdup(setting->value.target.string) : setting->value.target.string;
+                              char *setting_values_cpy = strdup(setting->values);
+                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              if (tmp_str_list.size > 0)
+                              for (tok = strtok_r(setting_values_cpy, "|", &save); tok;
+                                    tok = strtok_r(NULL, "|", &save))
                               {
-                                 unsigned i;
-                                 char val_s[256], val_d[16];
-                                 unsigned size        = (unsigned)
-                                    tmp_str_list.size;
-                                 bool checked_found   = false;
-                                 unsigned checked     = 0;
-                                 char* orig_val       = setting->get_string_representation ?
-                                    strdup(setting->value.target.string) : setting->value.target.string;
-                                 snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-
-                                 for (i = 0; i < size; i++)
-                                 {
-                                    const char* val = tmp_str_list.elems[i].data;
+                                    i++;
                                     if (setting->get_string_representation)
                                     {
-                                       strlcpy(setting->value.target.string, val, setting->size);
+                                       char val_s[256];
+                                       strlcpy(setting->value.target.string, tok, setting->size);
                                        setting->get_string_representation(setting,
                                              val_s, sizeof(val_s));
-                                       val = val_s;
+                                       if (menu_entries_append(info->list,
+                                                val_s,
+                                                val_d,
+                                                MENU_ENUM_LABEL_NO_ITEMS,
+                                                MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
+                                                i, 0, NULL))
+                                          count++;
+                                    }
+                                    else
+                                    {
+                                       if (menu_entries_append(info->list,
+                                                tok,
+                                                val_d,
+                                                MENU_ENUM_LABEL_NO_ITEMS,
+                                                MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
+                                                i, 0, NULL))
+                                          count++;
                                     }
 
-                                    if (menu_entries_append(info->list,
-                                             val,
-                                             val_d,
-                                             MENU_ENUM_LABEL_NO_ITEMS,
-                                             MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
-                                             i, 0, NULL))
-                                       count++;
-
-                                    if (!checked_found && string_is_equal(
-                                             tmp_str_list.elems[i].data,
-                                             orig_val))
+                                    if (!checked_found && string_is_equal(tok, orig_val))
                                     {
-                                       checked = i;
+                                       checked       = i;
                                        checked_found = true;
                                     }
-                                 }
+                              }
+                              free(setting_values_cpy);
 
-                                 if (setting->get_string_representation)
-                                 {
-                                    strlcpy(setting->value.target.string, orig_val, setting->size);
-                                    free(orig_val);
-                                 }
-
-                                 if (checked_found)
-                                 {
-                                    struct menu_state *menu_st = menu_state_get_ptr();
-                                    menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
-                                    if (cbs)
-                                       cbs->checked            = true;
-                                    menu_st->selection_ptr     = checked;
-                                 }
+                              if (setting->get_string_representation)
+                              {
+                                 strlcpy(setting->value.target.string, orig_val, setting->size);
+                                 free(orig_val);
                               }
 
-                              string_list_deinitialize(&tmp_str_list);
+                              if (checked_found)
+                              {
+                                 struct menu_state *menu_st = menu_state_get_ptr();
+                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                                 if (cbs)
+                                    cbs->checked            = true;
+                                 menu_st->selection_ptr     = checked;
+                              }
                            }
                            break;
                         case ST_INT:
@@ -15686,50 +15685,43 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      case ST_STRING_OPTIONS:
                         {
-                           struct string_list tmp_str_list = {0};
+                           char val_d[16];
+                           char *tok, *save;
+                           unsigned i               = 0;
+                           bool checked_found       = false;
+                           unsigned checked         = 0;
+                           char *setting_values_cpy = strdup(setting->values);
 
-                           string_list_initialize(&tmp_str_list);
-                           string_split_noalloc(&tmp_str_list,
-                                 setting->values, "|");
+                           snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                           if (tmp_str_list.size > 0)
+                           for (tok = strtok_r(setting_values_cpy, "|", &save); tok;
+                                 tok = strtok_r(NULL, "|", &save))
                            {
-                              unsigned i;
-                              char val_d[16];
-                              unsigned size        = (unsigned)tmp_str_list.size;
-                              bool checked_found   = false;
-                              unsigned checked     = 0;
-                              snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
+                              i++;
+                              if (menu_entries_append(info->list,
+                                       tok,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0, NULL))
+                                 count++;
 
-                              for (i = 0; i < size; i++)
+                              if (    !checked_found
+                                    && string_is_equal(tok, setting->value.target.string))
                               {
-                                 if (menu_entries_append(info->list,
-                                          tmp_str_list.elems[i].data,
-                                          val_d,
-                                          MENU_ENUM_LABEL_NO_ITEMS,
-                                          MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0, NULL))
-                                    count++;
-
-                                 if (    !checked_found
-                                       && string_is_equal(tmp_str_list.elems[i].data,
-                                          setting->value.target.string))
-                                 {
-                                    checked = i;
-                                    checked_found = true;
-                                 }
-                              }
-
-                              if (checked_found)
-                              {
-                                 struct menu_state *menu_st = menu_state_get_ptr();
-                                 menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
-                                 if (cbs)
-                                    cbs->checked            = true;
-                                 menu_st->selection_ptr     = checked;
+                                 checked       = i;
+                                 checked_found = true;
                               }
                            }
+                           free(setting_values_cpy);
 
-                           string_list_deinitialize(&tmp_str_list);
+                           if (checked_found)
+                           {
+                              struct menu_state *menu_st = menu_state_get_ptr();
+                              menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
+                              if (cbs)
+                                 cbs->checked            = true;
+                              menu_st->selection_ptr     = checked;
+                           }
                         }
                         break;
                      case ST_INT:
