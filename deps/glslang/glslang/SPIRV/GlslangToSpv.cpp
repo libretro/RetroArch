@@ -449,8 +449,8 @@ spv::Decoration TGlslangToSpvTraverser::TranslateNonUniformDecoration(const glsl
         builder.addExtension("SPV_EXT_descriptor_indexing");
         builder.addCapability(spv::CapabilityShaderNonUniformEXT);
         return spv::DecorationNonUniformEXT;
-    }
-    return spv::DecorationMax;
+    } else
+        return spv::DecorationMax;
 }
 
 // Translate a glslang built-in variable to a SPIR-V built in decoration.  Also generate
@@ -997,20 +997,6 @@ static bool HasNonLayoutQualifiers(const glslang::TType& type, const glslang::TQ
     return qualifier.invariant || (qualifier.hasLocation() && type.getBasicType() == glslang::EbtBlock);
 }
 
-// For low-order part of the generator's magic number. Bump up
-// when there is a change in the style (e.g., if SSA form changes,
-// or a different instruction sequence to do something gets used).
-//
-// return 1; // start
-// return 2; // EOpAtomicCounterDecrement gets a post decrement, to map between GLSL -> SPIR-V
-// return 3; // change/correct barrier-instruction operands, to match memory model group decisions
-// return 4; // some deeper access chains: for dynamic vector component, and local Boolean component
-// return 5; // make OpArrayLength result type be an int with signedness of 0
-// return 6; // revert version 5 change, which makes a different (new) kind of incorrect code,
-// versions 4 and 6 each generate OpArrayLength as it has long been done
-// return 7; // GLSL volatile keyword maps to both SPIR-V decorations Volatile and Coherent
-#define GetSpirvGeneratorVersion() (7)
-
 //
 // Implement the TGlslangToSpvTraverser class.
 //
@@ -1021,7 +1007,7 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion, const gl
       options(options),
       shaderEntry(nullptr), currentFunction(nullptr),
       sequenceDepth(0), logger(buildLogger),
-      builder(spvVersion, (glslang::GetKhronosToolId() << 16) | GetSpirvGeneratorVersion(), logger),
+      builder(spvVersion, (glslang::GetKhronosToolId() << 16) | glslang::GetSpirvGeneratorVersion(), logger),
       inEntryPoint(false), entryPointTerminated(false), linkageOnly(false),
       glslangIntermediate(glslangIntermediate)
 {
@@ -6777,6 +6763,21 @@ spv::Id TGlslangToSpvTraverser::getExtBuiltins(const char* name)
 };  // end anonymous namespace
 
 namespace glslang {
+
+// For low-order part of the generator's magic number. Bump up
+// when there is a change in the style (e.g., if SSA form changes,
+// or a different instruction sequence to do something gets used).
+int GetSpirvGeneratorVersion()
+{
+    // return 1; // start
+    // return 2; // EOpAtomicCounterDecrement gets a post decrement, to map between GLSL -> SPIR-V
+    // return 3; // change/correct barrier-instruction operands, to match memory model group decisions
+    // return 4; // some deeper access chains: for dynamic vector component, and local Boolean component
+    // return 5; // make OpArrayLength result type be an int with signedness of 0
+    // return 6; // revert version 5 change, which makes a different (new) kind of incorrect code,
+                 // versions 4 and 6 each generate OpArrayLength as it has long been done
+    return 7; // GLSL volatile keyword maps to both SPIR-V decorations Volatile and Coherent
+}
 
 //
 // Set up the glslang traversal
