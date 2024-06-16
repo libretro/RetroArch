@@ -330,35 +330,61 @@ bool core_updater_list_get_core(
 static bool core_updater_list_set_date(
       core_updater_list_entry_t *entry, const char *date_str)
 {
-   struct string_list date_list = {0};
+   char *tok, *save;
+   char *elem0        = NULL;
+   char *elem1        = NULL;
+   char *elem2        = NULL;
+   unsigned list_size = 0;
+   char *date_str_cpy = NULL;
 
    if (!entry || string_is_empty(date_str))
-      goto error;
+      return false;
+
+   date_str_cpy = strdup(date_str);
 
    /* Split date string into component values */
-   string_list_initialize(&date_list);
-   if (!string_split_noalloc(&date_list, date_str, "-"))
-         goto error;
+   if ((tok = strtok_r(date_str_cpy, "-", &save)))
+   {
+      elem0 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, "-", &save)))
+   {
+      elem1 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, "-", &save)))
+   {
+      elem2 = strdup(tok);
+      list_size++;
+   }
+   free(date_str_cpy);
 
    /* Date string must have 3 values:
     * [year] [month] [day] */
-   if (date_list.size < 3)
-      goto error;
+   if (list_size < 3)
+   {
+      if (elem0)
+         free(elem0);
+      if (elem1)
+         free(elem1);
+      if (elem2)
+         free(elem2);
+
+      return false;
+   }
 
    /* Convert date string values */
-   entry->date.year  = string_to_unsigned(date_list.elems[0].data);
-   entry->date.month = string_to_unsigned(date_list.elems[1].data);
-   entry->date.day   = string_to_unsigned(date_list.elems[2].data);
+   entry->date.year  = string_to_unsigned(elem0);
+   entry->date.month = string_to_unsigned(elem1);
+   entry->date.day   = string_to_unsigned(elem2);
 
    /* Clean up */
-   string_list_deinitialize(&date_list);
+   free(elem0);
+   free(elem1);
+   free(elem2);
 
    return true;
-
-error:
-   string_list_deinitialize(&date_list);
-
-   return false;
 }
 
 /* Parses crc string and adds value to
@@ -778,12 +804,13 @@ bool core_updater_list_parse_network_data(
       const char *data, size_t len)
 {
    size_t i;
-   char *data_buf                       = NULL;
-   struct string_list network_core_list = {0};
+   char *tok, *save;
+   unsigned list_size = 0;
+   char *data_buf     = NULL;
 
    /* Sanity check */
    if (!core_list || string_is_empty(data) || (len < 1))
-      goto error;
+      return false;
 
    /* We're populating a list 'from scratch' - remove
     * any existing entries */
@@ -792,28 +819,26 @@ bool core_updater_list_parse_network_data(
    /* Input data string is not terminated - have
     * to copy it to a temporary buffer... */
    if (!(data_buf = (char*)malloc((len + 1) * sizeof(char))))
-      goto error;
+      return false;
 
    memcpy(data_buf, data, len * sizeof(char));
    data_buf[len] = '\0';
 
+   list_size     = string_count_occurrences_single_character(data_buf, '\n');
+
+   if (list_size < 1)
+   {
+      free(data_buf);
+      return false;
+   }
+
    /* Split network listing request into lines */
-   string_list_initialize(&network_core_list);
-   if (!string_split_noalloc(&network_core_list, data_buf, "\n"))
-      goto error;
-
-   if (network_core_list.size < 1)
-      goto error;
-
-   /* Temporary data buffer is no longer required */
-   free(data_buf);
-   data_buf = NULL;
-
    /* Loop over lines */
-   for (i = 0; i < network_core_list.size; i++)
+   for (tok = strtok_r(data_buf, "\n", &save); tok;
+        tok = strtok_r(NULL, "\n", &save))
    {
       struct string_list network_core_entry_list  = {0};
-      const char *line = network_core_list.elems[i].data;
+      const char *line = tok;
 
       if (string_is_empty(line))
          continue;
@@ -835,12 +860,13 @@ bool core_updater_list_parse_network_data(
       string_list_deinitialize(&network_core_entry_list);
    }
 
+   /* Temporary data buffer is no longer required */
+   free(data_buf);
+   data_buf = NULL;
+
    /* Sanity check */
    if (RBUF_LEN(core_list->entries) < 1)
-      goto error;
-
-   /* Clean up */
-   string_list_deinitialize(&network_core_list);
+      return false;
 
    /* Sort completed list */
    core_updater_list_qsort(core_list);
@@ -849,14 +875,6 @@ bool core_updater_list_parse_network_data(
    core_list->type = CORE_UPDATER_LIST_TYPE_BUILDBOT;
 
    return true;
-
-error:
-   string_list_deinitialize(&network_core_list);
-
-   if (data_buf)
-      free(data_buf);
-
-   return false;
 }
 
 /* Parses a single play feature delivery core
