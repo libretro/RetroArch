@@ -129,16 +129,16 @@ dylib_t dylib_load(const char *path)
    dylib_t lib = (dylib_t)sceKernelLoadStartModule(path, 0, NULL, 0, NULL, &res);
 #elif IOS
     dylib_t lib;
-    static const char fwSuffix[] = ".framework";
-    if (string_ends_with(path, fwSuffix))
+    static const char fw_suffix[] = ".framework";
+    if (string_ends_with(path, fw_suffix))
     {
-        char fwPath[PATH_MAX_LENGTH] = {0};
-        strlcat(fwPath, path, sizeof(fwPath));
-        size_t sz = strlcat(fwPath, "/", sizeof(fwPath));
-        const char *fwName = path_basename(path);
-        // Assume every framework binary is named for the framework. Not always
-        // a great assumption but correct enough for our uses.
-        strlcpy(fwPath + sz, fwName, strlen(fwName) - STRLEN_CONST(fwSuffix) + 1);
+        char fw_path[PATH_MAX_LENGTH];
+        const char *fw_name = path_basename(path);
+        size_t sz = strlcpy(fw_path, path, sizeof(fw_path));
+        sz += strlcpy(fw_path + sz, "/", sizeof(fw_path) - sz);
+        /* Assume every framework binary is named for the framework. Not always
+         * a great assumption but correct enough for our uses. */
+        strlcpy(fwPath + sz, fw_name, strlen(fw_name) - STRLEN_CONST(fw_suffix) + 1);
         lib = dlopen(fwPath, RTLD_LAZY | RTLD_LOCAL);
     }
     else
