@@ -1305,6 +1305,9 @@ ifeq ($(HAVE_X11), 1)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
    endif
+   ifeq ($(HAVE_XSCRNSAVER),1)
+      LIBS += -lXss
+   endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
    endif

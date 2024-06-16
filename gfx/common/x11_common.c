@@ -204,6 +204,28 @@ void x11_set_window_attr(Display *dpy, Window win)
    x11_set_window_pid(dpy, win);
 }
 
+#ifdef HAVE_XSCRNSAVER
+#include <X11/extensions/scrnsaver.h>
+static bool xss_screensaver_inhibit(Display *dpy, bool enable)
+{
+    int dummy, min, maj;
+    if (!XScreenSaverQueryExtension(dpy, &dummy, &dummy) ||
+        !XScreenSaverQueryVersion(dpy, &maj, &min) ||
+            maj < 1 || (maj == 1 && min < 1)) {
+            return false;
+        }
+    XScreenSaverSuspend(dpy, enable);
+    XResetScreenSaver(dpy);
+    return true;
+}
+#else
+static bool xss_screensaver_inhibit(Display *dpy, bool enable)
+{
+    (void) dpy;
+    return false;
+}
+#endif
+
 static void xdg_screensaver_inhibit(Window wnd)
 {
    int  ret;
@@ -253,9 +275,11 @@ bool x11_suspend_screensaver(void *data, bool enable)
     if (dbus_suspend_screensaver(enable))
        return true;
 #endif
-    if (enable)
-       if (xdg_screensaver_available)
+    if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
+       if (xdg_screensaver_available) {
           xdg_screensaver_inhibit(wnd);
+          return xdg_screensaver_available;
+       }
     return true;
 }
 
