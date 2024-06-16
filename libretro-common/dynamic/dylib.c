@@ -138,8 +138,8 @@ dylib_t dylib_load(const char *path)
         sz += strlcpy(fw_path + sz, "/", sizeof(fw_path) - sz);
         /* Assume every framework binary is named for the framework. Not always
          * a great assumption but correct enough for our uses. */
-        strlcpy(fwPath + sz, fw_name, strlen(fw_name) - STRLEN_CONST(fw_suffix) + 1);
-        lib = dlopen(fwPath, RTLD_LAZY | RTLD_LOCAL);
+        strlcpy(fw_path + sz, fw_name, strlen(fw_name) - STRLEN_CONST(fw_suffix) + 1);
+        lib = dlopen(fw_path, RTLD_LAZY | RTLD_LOCAL);
     }
     else
         lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
