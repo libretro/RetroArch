@@ -6182,15 +6182,12 @@ static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char *tok, *save;
-   union string_list_elem_attr attr;
+   char new_str[PATH_MAX_LENGTH];
    char new_label[PATH_MAX_LENGTH];
+   size_t _len                     = 0;
    char *elem0                     = NULL;
    char *elem1                     = NULL;
    char *elem2                     = NULL;
-   int ret                         = -1;
-   char *rdb                       = NULL;
-   int len                         = 0;
-   struct string_list str_list2    = {0};
    char *label_cpy                 = NULL;
 
    if (!label)
@@ -6212,44 +6209,23 @@ static int action_ok_rdb_entry_submenu(const char *path,
       elem2 = strdup(tok);
    free(label_cpy);
 
-   string_list_initialize(&str_list2);
-
-   attr.i = 0;
-
-   len += strlen(elem1) + 1;
-   string_list_append(&str_list2, elem1, attr);
-   free(elem1);
-
-   len += strlen(elem2) + 1;
-   string_list_append(&str_list2, elem2, attr);
-   free(elem2);
-
-   if (!(rdb = (char*)calloc(len, sizeof(char))))
-   {
-      if (elem0)
-         free(elem0);
-      goto end;
-   }
-
-   string_list_join_concat(rdb, len, &str_list2, "|");
+   _len  = strlcpy(new_str,        elem1, sizeof(new_str));
+   _len += strlcpy(new_str + _len, "|",   sizeof(new_str) - _len);
+   _len += strlcpy(new_str + _len, elem2, sizeof(new_str) - _len);
 
    fill_pathname_join_delim(new_label,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
          elem0, '_', sizeof(new_label));
+
+   free(elem1);
+   free(elem2);
    free(elem0);
 
-   ret = generic_action_ok_displaylist_push(
-         rdb, NULL,
+   return generic_action_ok_displaylist_push(
+         new_str, NULL,
          new_label, type,
          idx, entry_idx,
          ACTION_OK_DL_RDB_ENTRY_SUBMENU);
-
-end:
-   if (rdb)
-      free(rdb);
-   string_list_deinitialize(&str_list2);
-
-   return ret;
 }
 
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
