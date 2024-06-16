@@ -682,26 +682,15 @@ static void core_updater_list_add_entry(
       const char *path_dir_libretro,
       const char *path_libretro_info,
       const char *network_buildbot_url,
-      struct string_list *network_core_entry_list)
+      const char *date_str,
+      const char *crc_str,
+      const char *filename_str)
 {
-   const char *date_str                          = NULL;
-   const char *crc_str                           = NULL;
-   const char *filename_str                      = NULL;
    const core_updater_list_entry_t *search_entry = NULL;
    core_updater_list_entry_t entry               = {0};
 
-   if (!core_list || !network_core_entry_list)
+   if (!core_list)
       goto error;
-
-   /* > Listings must have 3 entries:
-    *   [date] [crc] [filename] */
-   if (network_core_entry_list->size < 3)
-      goto error;
-
-   /* Get handles of the individual listing strings */
-   date_str     = network_core_entry_list->elems[0].data;
-   crc_str      = network_core_entry_list->elems[1].data;
-   filename_str = network_core_entry_list->elems[2].data;
 
    if (   string_is_empty(date_str)
        || string_is_empty(crc_str)
@@ -837,27 +826,44 @@ bool core_updater_list_parse_network_data(
    for (tok = strtok_r(data_buf, "\n", &save); tok;
         tok = strtok_r(NULL, "\n", &save))
    {
-      struct string_list network_core_entry_list  = {0};
+      char *tok2, *save2;
+      char *elem0      = NULL;
+      char *elem1      = NULL;
+      char *elem2      = NULL;
+      char *line_cpy   = NULL;
       const char *line = tok;
 
       if (string_is_empty(line))
          continue;
 
-      string_list_initialize(&network_core_entry_list);
+      line_cpy = strdup(line);
+
       /* Split line into listings info components */
-      string_split_noalloc(&network_core_entry_list, line, " ");
+      if ((tok2 = strtok_r(line_cpy, " ", &save2)))
+         elem0 = strdup(tok2); /* date */
+      if ((tok2 = strtok_r(NULL, " ", &save2)))
+         elem1 = strdup(tok2); /* crc  */
+      if ((tok2 = strtok_r(NULL, " ", &save2)))
+         elem2 = strdup(tok2); /* filename */
+
+      free(line_cpy);
 
       /* Parse listings info and add to core updater
        * list */
-      core_updater_list_add_entry(
-            core_list,
-            path_dir_libretro,
-            path_libretro_info,
-            network_buildbot_url,
-            &network_core_entry_list);
+      /* > Listings must have 3 entries:
+       *   [date] [crc] [filename] */
+      if (elem0 && elem1 && elem2)
+         core_updater_list_add_entry(
+               core_list,
+               path_dir_libretro,
+               path_libretro_info,
+               network_buildbot_url,
+               elem0, elem1, elem2);
 
       /* Clean up */
-      string_list_deinitialize(&network_core_entry_list);
+      free(elem0);
+      free(elem1);
+      free(elem2);
    }
 
    /* Temporary data buffer is no longer required */
