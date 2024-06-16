@@ -8171,7 +8171,7 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
                _MSC_VER);
 #elif defined(__SNC__)
          _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _Len, ": SNC (%d)",
+         _len += snprintf(str_out + _len, str_len - _len, ": SNC (%d)",
                __SN_VER__);
 #elif defined(_WIN32) && defined(__GNUC__)
          _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);

@@ -453,7 +453,7 @@ static void frontend_win32_init(void *data)
 static void init_nvda(void)
 {
 #ifdef HAVE_DYLIB
-   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) 
+   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
          && !nvda_lib)
    {
       if ((nvda_lib = dylib_load("nvdaControllerClient64.dll")))
@@ -750,8 +750,8 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
 {
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
+   char executable_args[PATH_MAX_LENGTH];
    char executable_path[PATH_MAX_LENGTH] = {0};
-   char executable_args[PATH_MAX_LENGTH] = {0};
 
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
@@ -761,7 +761,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    path_set(RARCH_PATH_CORE, executable_path);
 
    /* Remove executable path from arguments given to CreateProcess */
-   snprintf(executable_args, sizeof(executable_args), "%s", strstr(args, ".exe") + 4);
+   strlcpy(executable_args, strstr(args, ".exe") + 4, sizeof(executable_args));
 
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
@@ -853,7 +853,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "412";
    else if (string_is_equal(language,"pl"))
       return "415";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "405";
    return "";
 }
@@ -966,12 +966,12 @@ static bool create_win32_process(char* cmd, const char * input)
       size_t input_len = strlen(input);
       if (!CreatePipe(&rd, &wr, NULL, input_len))
          return false;
-      
+
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-      
+
       WriteFile(wr, input, input_len, &dummy, NULL);
       CloseHandle(wr);
-      
+
       si.dwFlags    |= STARTF_USESTDHANDLES;
       si.hStdInput   = rd;
       si.hStdOutput  = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -1006,7 +1006,7 @@ static bool is_narrator_running_windows(void)
    {
       long res = nvdaController_testIfRunning_func();
 
-      if (res != 0) 
+      if (res != 0)
       {
          /* The running nvda service wasn't found, so revert
             back to the powershell method
@@ -1057,7 +1057,7 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    init_nvda();
 #endif
-   
+
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
@@ -1079,7 +1079,7 @@ static bool accessibility_speak_windows(int speed,
       wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
       long res           = nvdaController_testIfRunning_func();
 
-      if (!wc || res != 0) 
+      if (!wc || res != 0)
       {
          RARCH_ERR("Error communicating with NVDA\n");
          if (wc)
