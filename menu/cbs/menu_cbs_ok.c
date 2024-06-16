@@ -6185,42 +6185,29 @@ static int action_ok_rdb_entry_submenu(const char *path,
    char new_str[PATH_MAX_LENGTH];
    char new_label[PATH_MAX_LENGTH];
    size_t _len                     = 0;
-   char *elem0                     = NULL;
-   char *elem1                     = NULL;
-   char *elem2                     = NULL;
    char *label_cpy                 = NULL;
 
    if (!label)
       return -1;
 
+   new_label[0]                    =  '\0';
    label_cpy                       = strdup(label);
 
-   new_label[0]                    =  '\0';
-
-   /* element 0 : label
-    * element 1 : value
-    * element 2 : database path
-    */
+   /* element 0: label */
    if ((tok = strtok_r(label_cpy, "|", &save)))
-      elem0 = strdup(tok);
+      fill_pathname_join_delim(new_label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+            tok, '_', sizeof(new_label));
+   /* element 1: value */
    if ((tok = strtok_r(NULL, "|", &save)))
-      elem1 = strdup(tok);
+      _len += strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
+   /* element 2: database path */
    if ((tok = strtok_r(NULL, "|", &save)))
-      elem2 = strdup(tok);
+   {
+      _len += strlcpy(new_str + _len, "|", sizeof(new_str) - _len);
+      _len += strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
+   }
    free(label_cpy);
-
-   _len  = strlcpy(new_str,        elem1, sizeof(new_str));
-   _len += strlcpy(new_str + _len, "|",   sizeof(new_str) - _len);
-   _len += strlcpy(new_str + _len, elem2, sizeof(new_str) - _len);
-
-   fill_pathname_join_delim(new_label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-         elem0, '_', sizeof(new_label));
-
-   free(elem1);
-   free(elem2);
-   free(elem0);
-
    return generic_action_ok_displaylist_push(
          new_str, NULL,
          new_label, type,
