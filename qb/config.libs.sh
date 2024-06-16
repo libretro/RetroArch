@@ -505,6 +505,7 @@ if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XCB -lxcb '' xcb '' '' false
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
+   check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
 else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi
