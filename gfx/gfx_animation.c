@@ -1361,15 +1361,14 @@ static void build_ticker_loop_string(
       size_t char_offset1, size_t num_chars1,
       size_t char_offset2, size_t num_chars2,
       size_t char_offset3, size_t num_chars3,
-      char *dest_str, size_t dest_str_len)
+      char *s, size_t len)
 {
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
-      utf8cpy(
-            dest_str, dest_str_len,
+      utf8cpy(s, len,
             utf8skip(src_str, char_offset1), num_chars1);
    else
-      dest_str[0] = '\0';
+      s[0] = '\0';
 
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
@@ -1378,7 +1377,7 @@ static void build_ticker_loop_string(
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(spacer, char_offset2), num_chars2);
-      strlcat(dest_str, tmp, dest_str_len);
+      strlcat(s, tmp, len);
    }
 
    /* Copy 'leading' chunk of source string, if required */
@@ -1388,7 +1387,7 @@ static void build_ticker_loop_string(
       utf8cpy(
             tmp, sizeof(tmp),
             utf8skip(src_str, char_offset3), num_chars3);
-      strlcat(dest_str, tmp, dest_str_len);
+      strlcat(s, tmp, len);
    }
 }
 
