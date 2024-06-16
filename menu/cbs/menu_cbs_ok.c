@@ -6912,16 +6912,22 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
       case ST_STRING_OPTIONS:
          if (setting->get_string_representation)
          {
-            struct string_list tmp_str_list = { 0 };
-            string_list_initialize(&tmp_str_list);
-            string_split_noalloc(&tmp_str_list,
-               setting->values, "|");
+            char *tok, *save;
+            unsigned tok_idx         = 0;
+            char *setting_values_cpy = strdup(setting->values);
 
-            if (idx < tmp_str_list.size)
-               strlcpy(setting->value.target.string,
-                  tmp_str_list.elems[idx].data, setting->size);
+            for (tok = strtok_r(setting_values_cpy, "|", &save); tok != NULL;
+                 tok = strtok_r(NULL, "|", &save), tok_idx++)
+            {
+               if (idx == tok_idx)
+               {
+                  strlcpy(setting->value.target.string, tok,
+                        setting->size);
+                  break;
+               }
+            }
 
-            string_list_deinitialize(&tmp_str_list);
+            free(setting_values_cpy);
             break;
          }
          /* fallthrough */

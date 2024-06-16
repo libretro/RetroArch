@@ -4411,7 +4411,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             struct string_list *str_list = (struct string_list*)data;
 
-            /* Check whether favourties playlist is at capacity */
+            /* Check whether favourites playlist is at capacity */
             if (playlist_size(g_defaults.content_favorites) >=
                   playlist_capacity(g_defaults.content_favorites))
             {
