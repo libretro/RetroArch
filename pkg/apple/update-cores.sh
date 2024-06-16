@@ -116,45 +116,90 @@ else
             dylibs=(${allcores[*]})
         elif [ "$1" = "appstore" ] ; then
             exports=(
-                mupen64plus_next
-                kronos
-                pcsx_rearmed
-                easyrpg
-                dinothawr
-                sameboy
-                mgba
-                gpsp
-                mesen
-                mesen-s
-                genesis_plus_gx
-                genesis_plus_gx_wide
-                fbneo
+                2048
+                a5200
+                anarch
+                ardens
+                atari800
+                #blastem
+                bluemsx
                 bsnes
                 bsnes_hd_beta
-                #flycast
+                cap32
+                crocods
                 desmume
+                dinothawr
+                dirksimple
+                dosbox_pure
+                DoubleCherryGB
+                easyrpg
+                ep128emu_core
+                fbneo
+                fceumm
+                #flycast
+                freechaf
+                freeintv
+                fuse
+                gambatte
+                gearboy
+                gearsystem
+                genesis_plus_gx
+                genesis_plus_gx_wide
+                geolith
+                gme
+                gpsp
+                gw
+                handy
+                kronos
+                mednafen_ngp
+                mednafen_pce
+                mednafen_pce_fast
+                mednafen_psx
+                mednafen_psx_hw
+                mednafen_saturn
+                mednafen_supergrafx
+                mednafen_vb
+                mednafen_wswan
+                melondsds
+                mesen
+                mesen-s
+                mgba
+                mojozork
+                mu
+                mupen64plus_next
+                neocd
+                nestopia
+                np2kai
+                numero
+                nxengine
+                pcsx_rearmed
+                picodrive
+                #play
+                pocketcdg
+                pokemini
+                potator
                 ppsspp
-                stella
-                stella2014
+                prboom
+                prosystem
+                puae
+                px68k
+                quicknes
+                race
+                sameboy
+                scummvm
+                smsplus
                 snes9x
                 snes9x2005
                 snes9x2010
-                vbam
+                stella
+                stella2014
+                tgbdual
+                theodore
+                tic80
+                tyrquake
                 vba_next
-                picodrive
-                np2kai
-                atari800
-                prosystem
-                cap32
-                crocods
-                pocketcdg
-                neocd
-                nestopia
-                fceumm
-                race
-                quicknes
-                smsplus
-                #blastem
+                vbam
+                vecx
                 vice_x128
                 vice_x64
                 vice_x64sc
@@ -164,53 +209,10 @@ else
                 vice_xplus4
                 vice_xscpu64
                 vice_xvic
-                puae
-                mednafen_pce
-                mednafen_pce_fast
-                mednafen_supergrafx
-                mednafen_vb
-                mednafen_wswan
-                mednafen_psx
-                mednafen_psx_hw
-                mednafen_saturn
-                potator
-                vecx
-                tgbdual
-                gw
-                fuse
-                freechaf
-                gambatte
-                freeintv
-                gearsystem
-                gearboy
-                handy
-                tic80
-                wasm4
-                gme
-                tyrquake
-                theodore
-                a5200
-                #play
-                bluemsx
-                px68k
-                xrick
-                ep128emu_core
-                mojozork
-                numero
-                dirksimple
-                scummvm
-                virtualxt
-                geolith
                 vircon32
-                melondsds
-                2048
-                mu
-                dosbox_pure
-                pokemini
-                nxengine
-                prboom
-                mednafen_ngp
-                DoubleCherryGB
+                virtualxt
+                wasm4
+                xrick
             )
             for dylib in "${exports[@]}" ; do
                 find_dylib $dylib
