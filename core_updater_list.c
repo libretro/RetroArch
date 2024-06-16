@@ -689,14 +689,6 @@ static void core_updater_list_add_entry(
    const core_updater_list_entry_t *search_entry = NULL;
    core_updater_list_entry_t entry               = {0};
 
-   if (!core_list)
-      goto error;
-
-   if (   string_is_empty(date_str)
-       || string_is_empty(crc_str)
-       || string_is_empty(filename_str))
-      goto error;
-
    /* Check whether core file is already included
     * in the list (this is *not* an error condition,
     * it just means we can skip the current listing) */
@@ -852,7 +844,9 @@ bool core_updater_list_parse_network_data(
        * list */
       /* > Listings must have 3 entries:
        *   [date] [crc] [filename] */
-      if (elem0 && elem1 && elem2)
+      if (     !string_is_empty(elem0)
+            && !string_is_empty(elem1)
+            && !string_is_empty(elem2))
          core_updater_list_add_entry(
                core_list,
                path_dir_libretro,
