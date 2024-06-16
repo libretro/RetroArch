@@ -1214,9 +1214,14 @@ bool video_display_server_has_refresh_rate(float hz)
 
       for (i = 0; i < size && !rate_exists; i++)
       {
-         if (   (video_list[i].width       == video_driver_width)
-             && (video_list[i].height      == video_driver_height)
-             && (video_list[i].refreshrate == floor(hz)))
+         /* Float difference added to enable 49.95Hz modelines for PAL. *
+          * Actual mode selection will be done in context driver,       *
+          * with some logic in video_switch_refresh_rate_maybe          *   
+          * and in action_cb_push_dropdown_item_resolution              */
+         if (   (video_list[i].width        == video_driver_width)
+             && (video_list[i].height       == video_driver_height)
+             && ((video_list[i].refreshrate == floor(hz)) ||
+                 (fabsf(video_list[i].refreshrate_float - hz) < 0.06f)))
             rate_exists = true;
       }
 
