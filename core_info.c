@@ -261,8 +261,8 @@ static bool CCJSONStringHandler(void *context,
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
-   if (     pCtx->current_string_val 
-         && length 
+   if (     pCtx->current_string_val
+         && length
          && !string_is_empty(pValue))
    {
       if (*pCtx->current_string_val)
@@ -273,7 +273,7 @@ static bool CCJSONStringHandler(void *context,
       {
          if (*pCtx->current_string_list_val)
             string_list_free(*pCtx->current_string_list_val);
-         *pCtx->current_string_list_val = 
+         *pCtx->current_string_list_val =
             string_split(*pCtx->current_string_val, "|");
       }
    }
@@ -315,7 +315,7 @@ static bool CCJSONStartObjectHandler(void *context)
 
    pCtx->object_depth++;
 
-   if (     (pCtx->object_depth == 1) 
+   if (     (pCtx->object_depth == 1)
          && (pCtx->array_depth  == 0))
    {
       if (pCtx->core_info_cache_list)
@@ -323,7 +323,7 @@ static bool CCJSONStartObjectHandler(void *context)
       if (!(pCtx->core_info_cache_list = core_info_cache_list_new()))
          return false;
    }
-   else if ((pCtx->object_depth == 2) 
+   else if ((pCtx->object_depth == 2)
          && (pCtx->array_depth  == 1))
    {
       if (pCtx->core_info)
@@ -341,7 +341,7 @@ static bool CCJSONStartObjectHandler(void *context)
       pCtx->core_info->savestate_support_level =
             CORE_INFO_SAVESTATE_DETERMINISTIC;
    }
-   else if ((pCtx->object_depth == 3) 
+   else if ((pCtx->object_depth == 3)
          && (pCtx->array_depth  == 2))
    {
       if (pCtx->to_firmware)
@@ -349,7 +349,7 @@ static bool CCJSONStartObjectHandler(void *context)
          size_t new_idx            = pCtx->core_info->firmware_count;
          core_info_firmware_t *tmp = (core_info_firmware_t*)
                realloc(pCtx->core_info->firmware,
-                      (pCtx->core_info->firmware_count + 1) 
+                      (pCtx->core_info->firmware_count + 1)
                      * sizeof(core_info_firmware_t));
 
          if (!tmp)
@@ -372,7 +372,7 @@ static bool CCJSONEndObjectHandler(void *context)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
-   if (     (pCtx->object_depth == 2) 
+   if (     (pCtx->object_depth == 2)
          && (pCtx->array_depth  == 1)
          && (pCtx->core_info))
    {
@@ -381,7 +381,7 @@ static bool CCJSONEndObjectHandler(void *context)
       free(pCtx->core_info);
       pCtx->core_info = NULL;
    }
-   else if ((pCtx->object_depth == 3) 
+   else if ((pCtx->object_depth == 3)
          && (pCtx->array_depth == 1))
       pCtx->to_core_file_id = false;
 
@@ -465,7 +465,7 @@ static void core_info_copy(core_info_t *src, core_info_t *dst)
          dst->firmware_count = 0;
    }
 
-   dst->core_file_id.str              = src->core_file_id.str 
+   dst->core_file_id.str              = src->core_file_id.str
       ? strdup(src->core_file_id.str) : NULL;
    dst->core_file_id.hash             = src->core_file_id.hash;
 
@@ -670,7 +670,7 @@ static void core_info_cache_add(
 #ifdef HAVE_CORE_INFO_CACHE
 static core_info_cache_list_t *core_info_cache_list_new(void)
 {
-   core_info_cache_list_t *core_info_cache_list = 
+   core_info_cache_list_t *core_info_cache_list =
       (core_info_cache_list_t *)malloc(sizeof(*core_info_cache_list));
    if (!core_info_cache_list)
       return NULL;
@@ -765,8 +765,8 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       RARCH_WARN("[Core Info]: Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
-            (*rjson_get_error(parser) 
-             ? rjson_get_error(parser) 
+            (*rjson_get_error(parser)
+             ? rjson_get_error(parser)
              : "format error"));
 
       /* Info cache is corrupt - discard it */
@@ -1368,7 +1368,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
          calloc(1, sizeof(*path_list->standalone_exempt_list));
 
    if (   !path_list->dir_list
-       || !path_list->core_list 
+       || !path_list->core_list
        || !path_list->lock_list
        || !path_list->standalone_exempt_list)
       goto error;
@@ -1421,7 +1421,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
                sizeof(*path_list->standalone_exempt_list->list));
 
    if (   !path_list->core_list->list
-       || !path_list->lock_list->list 
+       || !path_list->lock_list->list
        || !path_list->standalone_exempt_list->list)
       goto error;
 
@@ -1899,12 +1899,13 @@ static void core_info_list_resolve_all_extensions(
 
    for (i = 0; i < core_info_list->count; i++)
    {
+      size_t _len;
       if (!core_info_list->list[i].supported_extensions)
          continue;
 
-      strlcat(core_info_list->all_ext,
+      _len = strlcat(core_info_list->all_ext,
             core_info_list->list[i].supported_extensions, all_ext_len);
-      strlcat(core_info_list->all_ext, "|", all_ext_len);
+      strlcpy(core_info_list->all_ext + _len, "|", all_ext_len - _len);
    }
 #ifdef HAVE_7ZIP
    strlcat(core_info_list->all_ext, "7z|", all_ext_len);
@@ -2336,8 +2337,8 @@ bool core_info_init_list(
    core_info_state_t *p_coreinfo          = &core_info_st;
    if (!(p_coreinfo->curr_list            = core_info_list_new(
                dir_cores,
-               !string_is_empty(path_info) 
-               ? path_info 
+               !string_is_empty(path_info)
+               ? path_info
                : dir_cores,
                exts,
                dir_show_hidden_files,
@@ -2481,7 +2482,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
  *
  * e.g.:
  *   snes9x_libretro.dll and snes9x_libretro_android.so are matched
- *   snes9x__2005_libretro.dll and snes9x_libretro_android.so are 
+ *   snes9x__2005_libretro.dll and snes9x_libretro_android.so are
  *   NOT matched
  */
 bool core_info_core_file_id_is_equal(const char *core_path_a,
@@ -2594,7 +2595,7 @@ bool core_info_list_get_display_name(
    info = core_info_find_internal(
          core_info_list, core_path);
 
-   if (   s 
+   if (   s
        && info
        && !string_is_empty(info->display_name))
    {
@@ -2613,7 +2614,7 @@ bool core_info_list_get_display_name(
 core_updater_info_t *core_info_get_core_updater_info(
       const char *info_path)
 {
-   struct config_entry_list 
+   struct config_entry_list
       *entry                 = NULL;
    bool tmp_bool             = false;
    core_updater_info_t *info = NULL;
@@ -2705,7 +2706,7 @@ static int core_info_qsort_func_display_name(const core_info_t *a,
 {
    if (     !a
          || !b
-         || string_is_empty(a->display_name) 
+         || string_is_empty(a->display_name)
          || string_is_empty(b->display_name))
       return 0;
    return strcasecmp(a->display_name, b->display_name);
@@ -2716,7 +2717,7 @@ static int core_info_qsort_func_core_name(const core_info_t *a,
 {
    if (     !a
          || !b
-         || string_is_empty(a->core_name) 
+         || string_is_empty(a->core_name)
          || string_is_empty(b->core_name))
       return 0;
    return strcasecmp(a->core_name, b->core_name);
@@ -2728,7 +2729,7 @@ static int core_info_qsort_func_system_name(const core_info_t *a,
    if (
             !a
          || !b
-         || string_is_empty(a->systemname) 
+         || string_is_empty(a->systemname)
          || string_is_empty(b->systemname))
       return 0;
    return strcasecmp(a->systemname, b->systemname);
