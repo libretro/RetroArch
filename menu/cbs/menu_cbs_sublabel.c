@@ -1523,9 +1523,9 @@ static int action_bind_sublabel_subsystem_load(
 
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
-      strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
+      size_t _len = strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
       if (j != content_get_subsystem_rom_id() - 1)
-         strlcat(buf, "\n", sizeof(buf));
+         _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
    }
 
    if (!string_is_empty(buf))
