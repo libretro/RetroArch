@@ -7164,34 +7164,31 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 
    if (!string_is_empty(entry.sublabel))
    {
-      size_t line_index;
+      char *tok, *save;
       static const char* const
          sublabel_spacer       = RGUI_TICKER_SPACER;
       bool prev_line_empty     = true;
+      char *entry_sublabel_cpy = strdup(entry.sublabel);
+
       /* Sanitise sublabel
        * > Replace newline characters with standard delimiter
        * > Remove whitespace surrounding each sublabel line */
-      struct string_list list  = {0};
+      tok = strtok_r(entry_sublabel_cpy, "\n", &save);
 
-      string_list_initialize(&list);
-
-      if (string_split_noalloc(&list, entry.sublabel, "\n"))
+      while (tok)
       {
-         for (line_index = 0; line_index < list.size; line_index++)
+         const char *line = string_trim_whitespace(tok);
+         if (!string_is_empty(line))
          {
-            const char *line = string_trim_whitespace(
-                  list.elems[line_index].data);
-            if (!string_is_empty(line))
-            {
-               if (!prev_line_empty)
-                  strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
-               strlcat(rgui->menu_sublabel, line, sizeof(rgui->menu_sublabel));
-               prev_line_empty = false;
-            }
+            if (!prev_line_empty)
+               strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
+            strlcat(rgui->menu_sublabel, line, sizeof(rgui->menu_sublabel));
+            prev_line_empty = false;
          }
+         tok = strtok_r(NULL, "\n", &save);
       }
 
-      string_list_deinitialize(&list);
+      free(entry_sublabel_cpy);
    }
 }
 
