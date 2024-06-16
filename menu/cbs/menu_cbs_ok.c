@@ -5949,9 +5949,9 @@ static int action_ok_add_entry_to_playlist(const char *path,
 
 static void action_input_add_entry_to_new_playlist(void *userdata, const char *line)
 {
-   settings_t *settings             = config_get_ptr();
-   size_t path_length               = 0;
    char path[PATH_MAX_LENGTH];
+   settings_t *settings       = config_get_ptr();
+   size_t _len                = 0;
 
    menu_input_dialog_end();
 
@@ -5959,9 +5959,8 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
       return;
 
    /* Create path for new file */
-   path_length = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
-   strlcat(path, ".lpl",  sizeof(path) - path_length);
-
+   _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
+   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist(NULL, path, 0, 0, 0);
 }
 
