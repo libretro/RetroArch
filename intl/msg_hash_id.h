@@ -1876,11 +1876,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
-   "Maksimal Pancaran Cahaya Layar"
+   "Tingkat Serian Layar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Mengatur maksimal pancaran cahaya layar (dalam cd/m2) dari monitor/TV. Kunjungi situs RTings untuk rujukan."
+   "Mengatur tingkat serian layar (dalam cd/m2) dari monitor/TV. Kunjungi situs RTings untuk rujukan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
