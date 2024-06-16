@@ -3600,38 +3600,39 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
    return RARCH_BIND_LIST_END;
 }
 
-void input_config_get_bind_string(
+size_t input_config_get_bind_string(
       void *settings_data,
-      char *buf,
+      char *s,
       const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
-      size_t size)
+      size_t len)
 {
    settings_t *settings                 = (settings_t*)settings_data;
+   size_t _len                          = 0;
    int delim                            = 0;
    bool  input_descriptor_label_show    =
       settings->bools.input_descriptor_label_show;
 
-   *buf                                 = '\0';
+   *s                                 = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
-      input_config_get_bind_string_joykey(
+      _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            buf, "", bind, size);
+            s, "", bind, len);
    else if (bind      && bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(
+      _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "", bind, size);
+            s, "", bind, len);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(
+      _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            buf, "(Auto)", auto_bind, size);
+            s, "(Auto)", auto_bind, len);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(
+      _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "(Auto)", auto_bind, size);
+            s, "(Auto)", auto_bind, len);
 
-   if (*buf)
+   if (*s)
       delim = 1;
 
 #ifndef RARCH_CONSOLE
@@ -3649,15 +3650,10 @@ void input_config_get_bind_string(
       /*empty?*/
       else if (*key != '\0')
       {
-         char keybuf[64];
-
-         keybuf[0] = '\0';
-
          if (delim)
-            strlcat(buf, ", ", size);
-         snprintf(keybuf, sizeof(keybuf),
+            _len += strlcpy(s + _len, ", ", len - _len);
+         _len += snprintf(s + _len, len - _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-         strlcat(buf, keybuf, size);
          delim = 1;
       }
    }
@@ -3700,51 +3696,49 @@ void input_config_get_bind_string(
       if (tag != 0)
       {
          if (delim)
-            strlcat(buf, ", ", size);
-         strlcat(buf, msg_hash_to_str((enum msg_hash_enums)tag), size);
+            _len += strlcpy(s + _len, ", ", len - _len);
+         _len += strlcpy(s + _len, msg_hash_to_str((enum msg_hash_enums)tag), len - _len);
       }
    }
 
    /*completely empty?*/
-   if (*buf == '\0')
-      strlcat(buf, "---", size);
+   if (*s == '\0')
+      _len += strlcpy(s + _len, "---", len - _len);
+   return _len;
 }
 
-void input_config_get_bind_string_joykey(
+size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
-      char *buf, const char *suffix,
-      const struct retro_keybind *bind, size_t size)
+      char *s, const char *suffix,
+      const struct retro_keybind *bind, size_t len)
 {
+   size_t _len = 0;
    if (GET_HAT_DIR(bind->joykey))
    {
       if (      bind->joykey_label
             && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim(buf,
-               bind->joykey_label, suffix, ' ', size);
-      else
+         return fill_pathname_join_delim(s,
+               bind->joykey_label, suffix, ' ', len);
+      _len  = snprintf(s, len,
+            "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
+      switch (GET_HAT_DIR(bind->joykey))
       {
-         size_t len  = snprintf(buf, size,
-               "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
-
-         switch (GET_HAT_DIR(bind->joykey))
-         {
-            case HAT_UP_MASK:
-               strlcpy(buf + len, "Up",    size - len);
-               break;
-            case HAT_DOWN_MASK:
-               strlcpy(buf + len, "Down",  size - len);
-               break;
-            case HAT_LEFT_MASK:
-               strlcpy(buf + len, "Left",  size - len);
-               break;
-            case HAT_RIGHT_MASK:
-               strlcpy(buf + len, "Right", size - len);
-               break;
-            default:
-               strlcpy(buf + len, "?",     size - len);
-               break;
-         }
+         case HAT_UP_MASK:
+            _len += strlcpy(s + _len, "Up",    len - _len);
+            break;
+         case HAT_DOWN_MASK:
+            _len += strlcpy(s + _len, "Down",  len - _len);
+            break;
+         case HAT_LEFT_MASK:
+            _len += strlcpy(s + _len, "Left",  len - _len);
+            break;
+         case HAT_RIGHT_MASK:
+            _len += strlcpy(s + _len, "Right", len - _len);
+            break;
+         default:
+            _len += strlcpy(s + _len, "?",     len - _len);
+            break;
       }
    }
    else
@@ -3752,37 +3746,34 @@ void input_config_get_bind_string_joykey(
       if (      bind->joykey_label
             && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim(buf,
-               bind->joykey_label, suffix, ' ', size);
-      else
-      {
-         size_t _len = strlcpy(buf, "Button ", size);
-         snprintf(buf + _len, size - _len, "%u",
-               (unsigned)bind->joykey);
-      }
+         return fill_pathname_join_delim(s,
+               bind->joykey_label, suffix, ' ', len);
+      _len  = strlcpy(s, "Button ", len);
+      _len += snprintf(s + _len, len - _len, "%u",
+            (unsigned)bind->joykey);
    }
+   return _len;
 }
 
-void input_config_get_bind_string_joyaxis(
+size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
-      char *buf, const char *suffix,
-      const struct retro_keybind *bind, size_t size)
+      char *s, const char *suffix,
+      const struct retro_keybind *bind, size_t len)
 {
+   size_t _len = 0;
    if (      bind->joyaxis_label
          && !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
-      fill_pathname_join_delim(buf,
-            bind->joyaxis_label, suffix, ' ', size);
-   else
-   {
-      size_t _len = strlcpy(buf, "Axis ", size);
-      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf + _len, size - _len, "-%u",
-               (unsigned)AXIS_NEG_GET(bind->joyaxis));
-      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf + _len, size - _len, "+%u",
-               (unsigned)AXIS_POS_GET(bind->joyaxis));
-   }
+      return fill_pathname_join_delim(s,
+            bind->joyaxis_label, suffix, ' ', len);
+   _len = strlcpy(s, "Axis ", len);
+   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      _len += snprintf(s + _len, len - _len, "-%u",
+            (unsigned)AXIS_NEG_GET(bind->joyaxis));
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      _len += snprintf(s + _len, len - _len, "+%u",
+            (unsigned)AXIS_POS_GET(bind->joyaxis));
+   return _len;
 }
 
 void osk_update_last_codepoint(
