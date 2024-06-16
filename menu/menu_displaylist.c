@@ -15355,9 +15355,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                               for (tok = strtok_r(setting_values_cpy, "|", &save); tok;
-                                    tok = strtok_r(NULL, "|", &save))
+                                    tok = strtok_r(NULL, "|", &save), i++)
                               {
-                                    i++;
                                     if (setting->get_string_representation)
                                     {
                                        char val_s[256];
@@ -15709,9 +15708,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
                            for (tok = strtok_r(setting_values_cpy, "|", &save); tok;
-                                 tok = strtok_r(NULL, "|", &save))
+                                 tok = strtok_r(NULL, "|", &save), i++)
                            {
-                              i++;
                               if (menu_entries_append(info->list,
                                        tok,
                                        val_d,
