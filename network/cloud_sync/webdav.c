@@ -824,9 +824,8 @@ static bool webdav_delete(const char *path, cloud_sync_complete_handler_t cb, vo
    }
    else
    {
-      char   dir[PATH_MAX_LENGTH] = {0};
-      size_t _len;
-      _len = strlcat(dir, "deleted/", sizeof(dir));
+      char dir[PATH_MAX_LENGTH];
+      size_t _len = strlcpy(dir, "deleted/", sizeof(dir));
       fill_pathname_basedir(dir + _len, path, sizeof(dir) - _len);
       webdav_ensure_dir(dir, webdav_do_backup, webdav_cb_st);
    }
