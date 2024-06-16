@@ -1356,64 +1356,53 @@ bool gfx_animation_update(
    return ((p_anim->flags & GFX_ANIM_FLAG_IS_ACTIVE) > 0);
 }
 
-static void build_ticker_loop_string(
+static size_t build_ticker_loop_string(
       const char* src_str, const char *spacer,
       size_t char_offset1, size_t num_chars1,
       size_t char_offset2, size_t num_chars2,
       size_t char_offset3, size_t num_chars3,
       char *s, size_t len)
 {
+   size_t _len = 0;
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
-      utf8cpy(s, len,
+      _len += utf8cpy(s + _len, len - _len,
             utf8skip(src_str, char_offset1), num_chars1);
-   else
-      s[0] = '\0';
-
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
-   {
-      char tmp[32];
-      utf8cpy(
-            tmp, sizeof(tmp),
+      _len += utf8cpy(s + _len, len - _len,
             utf8skip(spacer, char_offset2), num_chars2);
-      strlcat(s, tmp, len);
-   }
-
    /* Copy 'leading' chunk of source string, if required */
    if (num_chars3 > 0)
-   {
-      char tmp[80];
-      utf8cpy(
-            tmp, sizeof(tmp),
+      _len += utf8cpy(s + _len, len - _len,
             utf8skip(src_str, char_offset3), num_chars3);
-      strlcat(s, tmp, len);
-   }
+   return _len;
 }
 
-static void build_line_ticker_string(
+static size_t build_line_ticker_string(
       size_t num_display_lines, size_t line_offset,
       struct string_list *lines, size_t lines_size,
       char *s, size_t len)
 {
    size_t i;
-
+   size_t _len = 0;
    for (i = 0; i < (num_display_lines-1); i++)
    {
       size_t offset     = i + line_offset;
       size_t line_index = offset % (lines_size + 1);
       /* Is line valid? */
       if (line_index < lines_size)
-         strlcat(s, lines->elems[line_index].data, len);
-      strlcat(s, "\n", len);
+         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
+      _len    += strlcpy(s + _len, "\n", len - _len);
    }
    {
       size_t offset     = (num_display_lines-1) + line_offset;
       size_t line_index = offset % (lines_size + 1);
       /* Is line valid? */
       if (line_index < lines_size)
-         strlcat(s, lines->elems[line_index].data, len);
+         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
    }
+   return _len;
 }
 
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
