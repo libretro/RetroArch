@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <compat/strl.h>
 #include <array/rbuf.h>
 #include <file/file_path.h>
@@ -6960,7 +6961,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
    char *pch            = NULL;
    unsigned width       = 0;
    unsigned height      = 0;
-   unsigned refreshrate = 0;
+   float refreshrate    = 0.0f;
 
    strlcpy(str, path, sizeof(str));
    pch            = strtok(str, "x");
@@ -6971,10 +6972,10 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       height      = (unsigned)strtoul(pch, NULL, 0);
    pch            = strtok(NULL, "(");
    if (pch)
-      refreshrate = (unsigned)strtoul(pch, NULL, 0);
+      refreshrate = (float)strtod(pch, NULL);
 
    if (video_display_server_set_resolution(width, height,
-         refreshrate, (float)refreshrate, 0, 0, 0, 0))
+         floor(refreshrate), refreshrate, 0, 0, 0, 0))
    {
       settings_t *settings = config_get_ptr();
 #ifdef _MSC_VER
@@ -6986,7 +6987,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       float refresh_exact  = refreshrate;
 
       /* 59 Hz is an inaccurate representation of the real value (59.94).
-       * And since we at this point only have the integer to work with,
+       * In case at this point we only have the integer to work with,
        * the exact float needs to be calculated for 'video_refresh_rate' */
       if (refreshrate == (60.0f * refresh_mod) - 1)
          refresh_exact = 59.94f * refresh_mod;
