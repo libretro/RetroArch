@@ -246,7 +246,6 @@ static bool task_overlay_load_desc(
    bool ret                             = true;
    bool by_pixel                        = false;
    char *key                            = NULL;
-   struct string_list list              = {0};
    const char *x                        = NULL;
    const char *y                        = NULL;
    const char *box                      = NULL;
