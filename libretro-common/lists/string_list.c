@@ -270,9 +270,9 @@ void string_list_join_concat(char *buffer, size_t size,
 
    for (i = 0; i < list->size; i++)
    {
-      strlcat(buffer, list->elems[i].data, size);
+      size_t _len = strlcat(buffer, list->elems[i].data, size);
       if ((i + 1) < list->size)
-         strlcat(buffer, delim, size);
+         strlcpy(buffer + _len, delim, size - _len);
    }
 }
 

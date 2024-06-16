@@ -499,9 +499,9 @@ static int filebrowser_parse(
             allow_parent_directory = false;
          else
          {
-            fill_pathname_home_dir(dir, sizeof(dir));
+            size_t _len = fill_pathname_home_dir(dir, sizeof(dir));
             if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
-               strlcat(dir, "/", sizeof(dir));
+               strlcpy(dir + _len, "/", sizeof(dir) - _len);
             if (string_is_equal(dir, full_path))
                allow_parent_directory = false;
          }
@@ -12115,8 +12115,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         const struct retro_keybind *auto_bind =
                            (const struct retro_keybind*)
                            input_config_get_bind_auto(port, retro_id);
-
-                        input_config_get_bind_string(settings, descriptor,
+                        size_t desc_len = input_config_get_bind_string(
+                              settings, descriptor,
                               keybind, auto_bind, sizeof(descriptor));
 
                         if (!strstr(descriptor, "Auto"))
@@ -12131,7 +12131,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            desc_label[++_len] = ' ';
                            desc_label[++_len] = '\0';
                            strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
-                           strlcpy(descriptor, desc_label, sizeof(descriptor));
+                           desc_len = strlcpy(descriptor, desc_label, sizeof(descriptor));
                         }
 
                         /* Add user index when display driver == rgui and sublabels
@@ -12140,8 +12140,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               && (max_users > 1)
                               && !settings->bools.menu_show_sublabels)
                         {
-                           size_t _len = strlcat(descriptor, " [", sizeof(descriptor));
-                           snprintf(descriptor + _len, sizeof(descriptor) - _len, "%s %u]",
+                           desc_len += strlcpy(descriptor + desc_len, " [", sizeof(descriptor) - desc_len);
+                           snprintf(descriptor + desc_len, sizeof(descriptor) - desc_len, "%s %u]",
                                  msg_val_port, port + 1);
                         }
 
@@ -12168,8 +12168,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         const struct retro_keybind *auto_bind =
                            (const struct retro_keybind*)
                            input_config_get_bind_auto(port, retro_id);
-
-                        input_config_get_bind_string(settings, descriptor,
+                        size_t desc_len = input_config_get_bind_string(
+                              settings, descriptor,
                               keybind, auto_bind, sizeof(descriptor));
 
                         if (!strstr(descriptor, "Auto"))
@@ -12184,7 +12184,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            desc_label[++_len] = ' ';
                            desc_label[++_len] = '\0';
                            strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
-                           strlcpy(descriptor, desc_label, sizeof(descriptor));
+                           desc_len = strlcpy(descriptor, desc_label, sizeof(descriptor));
                         }
 
                         /* Add user index when display driver == rgui and sublabels
@@ -12193,8 +12193,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               && (max_users > 1)
                               && !settings->bools.menu_show_sublabels)
                         {
-                           size_t _len = strlcat(descriptor, " [", sizeof(descriptor));
-                           snprintf(descriptor + _len, sizeof(descriptor) - _len, "%s %u]",
+                           desc_len += strlcpy(descriptor + desc_len, " [", sizeof(descriptor) - desc_len);
+                           snprintf(descriptor + desc_len, sizeof(descriptor) - desc_len, "%s %u]",
                                  val_port, port + 1);
                         }
 
@@ -15225,14 +15225,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   break;
                case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
                   {
+                     size_t _len;
                      char ext_names[32];
 
                      info->type_default = FILE_TYPE_SIDELOAD_CORE;
 
-                     if (frontend_driver_get_core_extension(ext_names, sizeof(ext_names)))
+                     _len = frontend_driver_get_core_extension(ext_names, sizeof(ext_names));
+                     if (_len > 0)
                      {
-                        strlcat(ext_names, "|", sizeof(ext_names));
-                        strlcat(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
+                        _len += strlcpy(ext_names + _len, "|", sizeof(ext_names) - _len);
+                        _len += strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
                      }
                      else
                         strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));
