@@ -4902,7 +4902,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len;
+         size_t len, syslen;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -4911,14 +4911,14 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
 
-         len                = fill_pathname_base(
-               sysname, path, sizeof(sysname));
+         syslen = fill_pathname_base(sysname, path, sizeof(sysname));
          /* Manually strip the extension (and dot) from sysname */
-            sysname[len-4]  =
-            sysname[len-3]  =
-            sysname[len-2]  =
-            sysname[len-1]  = '\0';
-         len                = fill_pathname_join_special(texturepath,
+            sysname[syslen-4]  =
+            sysname[syslen-3]  =
+            sysname[syslen-2]  =
+            sysname[syslen-1]  = '\0';
+         syslen -= 4;
+         len = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
          texturepath[  len] = '.';
@@ -4957,7 +4957,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             image_texture_free(&ti);
          }
 
-         strlcat(sysname, "-content.png", sizeof(sysname));
+         strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          /* Assemble new icon path */
          fill_pathname_join_special(
                content_texturepath, ozone->icons_path, sysname,
