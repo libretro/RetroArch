@@ -367,8 +367,8 @@ static void *win32_display_server_get_resolution_list(
       curr_refreshrate               = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
       curr_orientation               = dm.dmDisplayOrientation;
-#endif
       curr_interlaced                = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+#endif
    }
 
    for (i = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
@@ -409,7 +409,11 @@ static void *win32_display_server_get_resolution_list(
       conf[j].refreshrate_float = 0.0f;
       conf[j].idx         = j;
       conf[j].current     = false;
+#if _WIN32_WINNT >= 0x0500
       conf[j].interlaced  = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+#else
+      conf[j].interlaced  = false;
+#endif
       conf[j].dblscan     = false; /* no flag for doublescan on this platform */
 
       if (     (conf[j].width       == curr_width)
