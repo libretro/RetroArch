@@ -3637,6 +3637,14 @@ MSG_HASH(
    "cloud_sync_destructive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,
+   "cloud_sync_sync_saves"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "cloud_sync_sync_configs"
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
    "cloud_sync_driver"
    )
