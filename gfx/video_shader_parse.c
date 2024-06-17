@@ -876,86 +876,10 @@ void video_shader_resolve_parameters(struct video_shader *shader)
       if (!path_is_valid(path))
          continue;
 
-      /* First try to use the more robust slang implementation
-       * to support #includes. */
+      /* Now uses the same slang parsing for parameters since
+       * it should be the same implementation, but supporting #include directives */
+      slang_preprocess_parse_parameters(path, shader);
 
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      /* FIXME: The check for slang can be removed
-       * if it's sufficiently tested for GLSL/Cg as well,
-       * it should be the same implementation.
-       * The problem with switching currently is that it looks
-       * for a #version string in the first line of the file
-       * which glsl doesn't have */
-
-      if (     string_is_equal(path_get_extension(path), "slang")
-            && slang_preprocess_parse_parameters(path, shader))
-         continue;
-#endif
-
-      /* Read file contents */
-      if (filestream_read_file(path, (void**)&buf, &buf_len))
-      {
-         size_t line_index         = 0;
-         struct string_list lines  = {0};
-         bool lines_inited         = false;
-
-         /* Split into lines */
-         if (buf_len > 0)
-         {
-            string_list_initialize(&lines);
-            lines_inited = string_split_noalloc(&lines, (const char*)buf, "\n");
-         }
-
-         /* Buffer is no longer required - clean up */
-         if ((void*)buf)
-            free((void*)buf);
-
-         if (!lines_inited)
-            continue;
-
-         /* Even though the pass is set in the loop too,
-          * not all passes have parameters */
-         param->pass = (int)i;
-
-         while ((shader->num_parameters < ARRAY_SIZE(shader->parameters))
-               && (line_index < lines.size))
-         {
-            int ret;
-            const char *line = lines.elems[line_index].data;
-            line_index++;
-
-            /* Check if this is a '#pragma parameter' line */
-            if (strncmp("#pragma parameter", line,
-                     STRLEN_CONST("#pragma parameter")))
-               continue;
-
-            /* Parse line */
-            if ((ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-                  param->id,        param->desc,    &param->initial,
-                  &param->minimum, &param->maximum, &param->step)) < 5)
-               continue;
-
-            param->id[63]   = '\0';
-            param->desc[63] = '\0';
-
-            if (ret == 5)
-               param->step  = 0.1f * (param->maximum - param->minimum);
-
-            param->pass     = (int)i;
-
-#ifdef DEBUG
-            RARCH_DBG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
-                  param->desc,    param->id,      param->initial,
-                  param->minimum, param->maximum, param->step, param->pass);
-#endif
-            param->current  = param->initial;
-
-            shader->num_parameters++;
-            param++;
-         }
-
-         string_list_deinitialize(&lines);
-      }
    }
 }
 
