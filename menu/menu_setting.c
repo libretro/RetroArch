@@ -11830,6 +11830,36 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_sync_saves,
+               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_sync_configs,
+               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
          CONFIG_STRING_OPTIONS(
                list, list_info,
                settings->arrays.cloud_sync_driver,
