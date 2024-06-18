@@ -2130,16 +2130,13 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
    /* Extract top/bottom fade strings, if required */
    if (fade_active)
    {
-      /* We waste a handful of clock cycles by using
-       * build_line_ticker_string() here, but it saves
-       * rewriting a heap of code... */
-      build_line_ticker_string(
-            1, top_fade_line_offset, &lines, lines.size,
-            line_ticker->top_fade_str, line_ticker->top_fade_str_len);
-
-      build_line_ticker_string(
-            1, bottom_fade_line_offset, &lines, lines.size,
-            line_ticker->bottom_fade_str, line_ticker->bottom_fade_str_len);
+      size_t top_fade_line_index    = top_fade_line_offset    % (lines.size + 1);
+      size_t bottom_fade_line_index = bottom_fade_line_offset % (lines.size + 1);
+      /* Is line valid? */
+      if (top_fade_line_index < lines.size)
+         strlcpy(line_ticker->top_fade_str, lines.elems[top_fade_line_index].data, line_ticker->top_fade_str_len);
+      if (bottom_fade_line_index < lines.size)
+         strlcpy(line_ticker->bottom_fade_str, lines.elems[bottom_fade_line_index].data, line_ticker->bottom_fade_str_len);
    }
 
    success                  = true;
