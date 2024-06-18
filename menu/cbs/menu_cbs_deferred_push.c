@@ -16,7 +16,6 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
-#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -513,19 +512,16 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
          {
-            char newstr1[PATH_MAX_LENGTH];
-            struct string_list str_list2      = {0};
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            newstr1[0]                        = '\0';
-
-            string_list_initialize(&str_list2);
-
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-                  string_split_noalloc(&str_list2,
-                        sysinfo->valid_extensions, "|");
+            {
+               _len += strlcpy(newstr2 + _len,
+                     sysinfo->valid_extensions,
+                     sizeof(newstr2)   - _len);
+            }
 
             if (!filter_by_current_core)
             {
@@ -533,64 +529,74 @@ static int general_push(menu_displaylist_info_t *info,
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
-                  unsigned x;
-                  union string_list_elem_attr attr;
-                  struct string_list str_list  = {0};
-                  string_list_initialize(&str_list);
-                  attr.i                        = 0;
+                  char *tok, *save;
+                  char *all_ext_cpy    = strdup(list->all_ext);
 
-                  string_split_noalloc(&str_list,
-                        list->all_ext, "|");
-
-                  for (x = 0; x < str_list.size; x++)
+                  /* If the current core already supports
+                   * this extension, skip adding it */
+                  for ( tok = strtok_r(all_ext_cpy, "|", &save); tok;
+                        tok = strtok_r(NULL, "|", &save))
                   {
-                     /* Is extension not already added to
-                      * str_list2? This is the case if
-                      * the current core already supports
-                      * this extension. If so, it was added
-                      * in the loop above this one */
-                     if (!string_list_find_elem(&str_list2,
-                              str_list.elems[x].data))
+                     bool exists = false;
+
+                     if (!string_is_empty(newstr2))
                      {
-                        const char *elem = str_list.elems[x].data;
-                        string_list_append(&str_list2, elem, attr);
+                        char *tok2, *save2;
+                        char *newstr2_cpy = strdup(newstr2);
+                        for ( tok2 = strtok_r(newstr2_cpy, "|", &save2); tok2;
+                              tok2 = strtok_r(NULL, "|", &save2))
+                        {
+                           if (string_is_equal(tok, tok2))
+                           {
+                              exists = true;
+                              break;
+                           }
+                        }
+                        free(newstr2_cpy);
+                     }
+
+                     /* If extension wasn't found in string,
+                      * add it */
+                     if (!exists)
+                     {
+                        if (_len > 0 && newstr2[_len-1] != '\0')
+                           _len += strlcpy(newstr2 + _len, "|",
+                                   sizeof(newstr2) - _len);
+                        _len    += strlcpy(newstr2 + _len, tok,
+                              sizeof(newstr2) - _len);
                      }
                   }
 
-                  string_list_deinitialize(&str_list);
+                  free(all_ext_cpy);
                }
             }
 
-            string_list_join_concat(newstr1, sizeof(newstr1),
-                  &str_list2, "|");
-            string_list_deinitialize(&str_list2);
 
-            _len += strlcpy(newstr2 + _len, newstr1, sizeof(newstr2) - _len);
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
 #if defined(HAVE_DR_MP3)
-               if (newstr2[_len-1] != '\0')
+               if (_len > 0 && newstr2[_len-1] != '\0')
                   _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
                _len    += strlcpy(newstr2 + _len, "mp3", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_STB_VORBIS)
-               if (newstr2[_len-1] != '\0')
+               if (_len > 0 && newstr2[_len-1] != '\0')
                   _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
                _len    += strlcpy(newstr2 + _len, "ogg", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_DR_FLAC)
-               if (newstr2[_len-1] != '\0')
+               if (_len > 0 && newstr2[_len-1] != '\0')
                   _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
                _len    += strlcpy(newstr2 + _len, "flac", sizeof(newstr2) - _len);
 #endif
 #if defined(HAVE_RWAV)
-               if (newstr2[_len-1] != '\0')
+               if (_len > 0 && newstr2[_len-1] != '\0')
                   _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
                _len    += strlcpy(newstr2 + _len, "wav", sizeof(newstr2) - _len);
 #endif
 #ifdef HAVE_IBXM
-               if (newstr2[_len-1] != '\0')
+               if (_len > 0 && newstr2[_len-1] != '\0')
                   _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
                _len    += strlcpy(newstr2 + _len, "s3m", sizeof(newstr2) - _len);
                   _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
@@ -613,8 +619,11 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, sizeof(newstr2) - _len);
+      if (_len > 0 && newstr2[_len-1] != '\0')
+         _len += strlcpy(newstr2 + _len, "|",
+                 sizeof(newstr2) - _len);
+      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
+              sizeof(newstr2) - _len);
    }
 #endif
 
@@ -623,10 +632,11 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      _len += strlcpy(newstr2 + _len, "|",
-            sizeof(newstr2)   - _len);
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-            sizeof(newstr2)   - _len);
+      if (_len > 0 && newstr2[_len-1] != '\0')
+         _len += strlcpy(newstr2 + _len, "|",
+               sizeof(newstr2)   - _len);
+      _len    += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
+               sizeof(newstr2)   - _len);
    }
 #endif
 
