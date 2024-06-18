@@ -13956,6 +13956,10 @@ MSG_HASH(
    "Trófea feloldva"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Ritka trófea feloldva"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Eredménytábla kísérlet elindítva"
    )
