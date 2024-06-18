@@ -5640,6 +5640,7 @@ void bsv_movie_frame_rewind(void)
 {
    input_driver_state_t *input_st = &input_driver_st;
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+   bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
 
    if (!handle)
       return;
@@ -5652,6 +5653,8 @@ void bsv_movie_frame_rewind(void)
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
       intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+      if (recording)
+         intfstream_truncate(handle->file, (int)handle->min_file_pos);
    }
    else
    {
@@ -5663,8 +5666,9 @@ void bsv_movie_frame_rewind(void)
        * plus another. */
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      intfstream_seek(handle->file,
-            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
+      intfstream_seek(handle->file, (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
+      if (recording)
+         intfstream_truncate(handle->file, (int)handle->frame_pos[handle->frame_ptr]);
    }
 
    if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
@@ -5679,6 +5683,7 @@ void bsv_movie_frame_rewind(void)
           * the starting point. Nice and easy. */
 
          intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+         intfstream_truncate(handle->file, 4 * sizeof(uint32_t));
 
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
@@ -5936,17 +5941,14 @@ bool replay_set_serialized_data(void* buf)
       if (is_compatible)
       {
          /* If the state is part of this replay, go back to that state
-            and rewind the replay; otherwise
-            halt playback and go to that state normally.
+            and rewind/fast forward the replay.
 
             If the savestate movie is after the current replay
             length we can replace the current replay data with it,
             but if it's earlier we can rewind the replay to the
             savestate movie time point.
 
-            This can truncate the current recording, so beware!
-
-            TODO/FIXME: Figure out what to do about rewinding across load
+            This can truncate the current replay if we're in recording mode.
          */
          if (loaded_len > handle_idx)
          {
@@ -5957,10 +5959,15 @@ bool replay_set_serialized_data(void* buf)
             intfstream_write(input_st->bsv_movie_state_handle->file, buffer+sizeof(int32_t), loaded_len);
          }
          else
+         {
             intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+            if (recording)
+               intfstream_truncate(input_st->bsv_movie_state_handle->file, loaded_len);
+         }
       }
       else
       {
+         /* otherwise, if recording do not allow the load */
          if (recording)
          {
             const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
@@ -5970,7 +5977,7 @@ bool replay_set_serialized_data(void* buf)
             RARCH_ERR("[Replay] %s.\n", str);
             return false;
          }
-
+         /* if in playback, halt playback and go to that state normally */
          if (playback)
          {
             const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
