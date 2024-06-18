@@ -321,17 +321,9 @@ int64_t intfstream_truncate(intfstream_internal_t *intf, uint64_t len)
       case INTFSTREAM_MEMORY:
          break;
       case INTFSTREAM_CHD:
-#ifdef HAVE_CHD
          break;
-#else
-        break;
-#endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
          break;
-#else
-         break;
-#endif
    }
 
    return 0;
