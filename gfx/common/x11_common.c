@@ -671,6 +671,8 @@ bool x11_alive(void *data)
                case 5: /* Scroll down */
                case 6: /* Scroll wheel left */
                case 7: /* Scroll wheel right */
+               case 8: /* Mouse button 4 */
+               case 9: /* Mouse button 5 */
                   x_input_poll_wheel(&event.xbutton, true);
                   break;
             }
@@ -685,6 +687,13 @@ bool x11_alive(void *data)
             break;
 
          case ButtonRelease:
+            switch (event.xbutton.button)
+            {
+               case 8: /* Mouse button 4 - not handled as click */
+               case 9: /* Mouse button 5 - not handled as click */
+                  x_input_poll_wheel(&event.xbutton, true);
+                  break;
+            }
             break;
 
          case KeyRelease:
