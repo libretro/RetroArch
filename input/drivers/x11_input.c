@@ -86,12 +86,8 @@ static bool x_mouse_button_pressed(
          return x11->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;
-#if 0
       case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return x11->mouse_b4;
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return x11->mouse_b5;
-#endif
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
@@ -266,6 +262,8 @@ static int16_t x_input_state(
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
                case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
                   return x_mouse_state_wheel(id);
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return x11->mouse_m;
@@ -489,7 +487,8 @@ static void x_input_poll(void *data)
    x11->mouse_l             = mask & Button1Mask;
    x11->mouse_m             = mask & Button2Mask;
    x11->mouse_r             = mask & Button3Mask;
-
+   /* Buttons 4 and 5 are not returned here, so they are handled elsewhere. */
+   
    /* > Mouse pointer */
    if (!x11->mouse_grabbed)
    {
