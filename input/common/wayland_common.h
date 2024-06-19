@@ -123,7 +123,7 @@ typedef struct input_ctx_wayland_data
       int delta_x, delta_y;
       bool last_valid;
       bool focus;
-      bool left, right, middle;
+      bool left, right, middle, side, extra;
       bool wu, wd, wl, wr;
    } mouse;
 
