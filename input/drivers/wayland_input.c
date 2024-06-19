@@ -284,7 +284,18 @@ static int16_t input_wl_state(
                   return wl->mouse.right;
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return wl->mouse.middle;
-                  /* TODO/FIXME: Rest of the mouse inputs. */
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  return wl->mouse.side;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  return wl->mouse.extra;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  state        = wl->mouse.wl;
+                  wl->mouse.wl = false;
+                  return state;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  state        = wl->mouse.wr;
+                  wl->mouse.wr = false;
+                  return state;
             }
          }
          break;
