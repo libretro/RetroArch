@@ -375,6 +375,12 @@ typedef struct settings
    {
       float placeholder;
       float video_aspect_ratio;
+      float video_viewport_bias_x;
+      float video_viewport_bias_y;
+#if defined(RARCH_MOBILE)
+      float video_viewport_bias_portrait_x;
+      float video_viewport_bias_portrait_y;
+#endif
       float video_refresh_rate;
       float video_autoswitch_pal_threshold;
       float crt_video_refresh_rate;
