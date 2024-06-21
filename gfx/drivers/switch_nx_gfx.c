@@ -572,50 +572,12 @@ static void switch_update_viewport(switch_video_t *sw,
 
     if (settings->bools.video_scale_integer)
     {
-        video_viewport_get_scaled_integer(&sw->vp, sw->vp.full_width, sw->vp.full_height, desired_aspect, sw->keep_aspect);
+       /* TODO: Does nx use top-left or bottom-left origin?  I'm assuming top left. */
+       video_viewport_get_scaled_integer(&sw->vp, sw->vp.full_width, sw->vp.full_height, desired_aspect, sw->keep_aspect, true);
     }
     else if (sw->keep_aspect)
     {
-#if defined(HAVE_MENU)
-        if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-        {
-            sw->vp.x = sw->vp.y = 0;
-            sw->vp.width = width;
-            sw->vp.height = height;
-        }
-        else
-#endif
-        {
-            float delta;
-            float device_aspect = ((float)sw->vp.full_width) / sw->vp.full_height;
-
-            if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-            {
-                /*
-                    * If the aspect ratios of screen and desired aspect
-                    * ratio are sufficiently equal (floating point stuff),
-                    * assume they are actually equal.
-                */
-            }
-            else if (device_aspect > desired_aspect)
-            {
-                delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-                x = (int)roundf(width * (0.5f - delta));
-                width = (unsigned)roundf(2.0f * width * delta);
-            }
-            else
-            {
-                delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-                y = (int)roundf(height * (0.5f - delta));
-                height = (unsigned)roundf(2.0f * height * delta);
-            }
-        }
-
-        sw->vp.x = x;
-        sw->vp.y = y;
-
-        sw->vp.width = width;
-        sw->vp.height = height;
+      video_viewport_get_scaled_aspect(&sw->vp, width, height, true);
     }
     else
     {

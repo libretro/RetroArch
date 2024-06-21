@@ -996,55 +996,16 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
    {
       video_viewport_get_scaled_integer(&rsx->vp,
             viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect);
-      viewport_width         = rsx->vp.width;
-      viewport_height        = rsx->vp.height;
+            video_driver_get_aspect_ratio(), rsx->keep_aspect,
+            true);
+      viewport_width          = rsx->vp.width;
+      viewport_height         = rsx->vp.height;
    }
    else if (rsx->keep_aspect && !force_full)
    {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* RSX/libgcm has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta            = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x                = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width   = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta             = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y                 = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height   = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      rsx->vp.x               = x;
-      rsx->vp.y               = y;
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
+      video_viewport_get_scaled_aspect(&rsx->vp, viewport_width, viewport_height, true);
+      viewport_width          = rsx->vp.width;
+      viewport_height         = rsx->vp.height;
    }
    else
    {
@@ -1493,7 +1454,8 @@ static void rsx_update_viewport(rsx_t* rsx)
    if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&rsx->vp, viewport_width,
-            viewport_height, video_driver_get_aspect_ratio(), rsx->keep_aspect);
+            viewport_height, video_driver_get_aspect_ratio(), rsx->keep_aspect,
+            true);
       viewport_width         = rsx->vp.width;
       viewport_height        = rsx->vp.height;
    }
@@ -1525,16 +1487,18 @@ static void rsx_update_viewport(rsx_t* rsx)
          }
          else if (device_aspect > desired_aspect)
          {
+            float viewport_bias = settings->floats.video_viewport_bias_x;
             delta           = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
-            x               = (int)roundf(viewport_width * (0.5f - delta));
+            x               = (int)roundf(viewport_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
             viewport_width  = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
+            float viewport_bias = 1.0 - settings->floats.video_viewport_bias_y;
             delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * (0.5f - delta));
+            y               = (int)roundf(viewport_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }

@@ -936,56 +936,13 @@ static void gx2_update_viewport(wiiu_video_t *wiiu)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
             viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), wiiu->keep_aspect);
+            video_driver_get_aspect_ratio(), wiiu->keep_aspect, true);
       viewport_width  = wiiu->vp.width;
       viewport_height = wiiu->vp.height;
    }
    else if (wiiu->keep_aspect)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* GX2 has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta          = (desired_aspect / device_aspect - 1.0f)
-                             / 2.0f + 0.5f;
-            x              = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta           = (device_aspect / desired_aspect - 1.0f)
-                              / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      wiiu->vp.x      = x;
-      wiiu->vp.y      = y;
-      wiiu->vp.width  = viewport_width;
-      wiiu->vp.height = viewport_height;
+      video_viewport_get_scaled_aspect(&vk->vp, viewport_width, viewport_height, true);
    }
    else
    {
