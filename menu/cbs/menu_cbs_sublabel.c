@@ -1251,6 +1251,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_height,       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_y,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_x,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_y,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y)
+#if defined(RARCH_MOBILE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_use_mitm_server,               MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_mitm_server,                   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_custom_mitm_server,            MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER)
@@ -2570,6 +2576,20 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio);
             break;
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_y);
+            break;
+#if defined(RARCH_MOBILE)
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_portrait_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_portrait_y);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio_index);
             break;
