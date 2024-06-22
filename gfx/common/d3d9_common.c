@@ -1323,10 +1323,10 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
 
    vp.x = 0;
    vp.y = 0;
-   vp.width = width;
-   vp.height = height;
-   vp.full_width = width;
-   vp.full_height = height;
+   vp.width = *width;
+   vp.height = *height;
+   vp.full_width = *width;
+   vp.full_height = *height;
 
    if (video_scale_integer && !force_full)
    {
@@ -1339,7 +1339,7 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
    }
    else if (d3d->keep_aspect && !force_full)
    {
-      video_viewport_get_scaled_aspect(vp, viewport_width, viewport_height, true);
+      video_viewport_get_scaled_aspect(&vp, *width, *height, true);
    }
    *x                          = vp.x;
    *y                          = vp.y;
