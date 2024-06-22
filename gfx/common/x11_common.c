@@ -595,6 +595,8 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
       mod |= RETROKMOD_ALT;
    if (state & Mod2Mask)
       mod |= RETROKMOD_NUMLOCK;
+   if (state & Mod3Mask)
+      mod |= RETROKMOD_SCROLLOCK;
    if (state & Mod4Mask)
       mod |= RETROKMOD_META;
 

@@ -636,6 +636,8 @@ void App::OnAcceleratorKey(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args
       mod |= RETROKMOD_CAPSLOCK;
    if ((window->GetKeyState(VirtualKey::Scroll) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
       mod |= RETROKMOD_SCROLLOCK;
+   if ((window->GetKeyState(VirtualKey::NumberKeyLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+      mod |= RETROKMOD_NUMLOCK;
    if ((window->GetKeyState(VirtualKey::LeftWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down ||
          (window->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_META;

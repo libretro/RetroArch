@@ -875,6 +875,14 @@ static INLINE void android_input_poll_event_type_keyboard(
       mod |= RETROKMOD_CTRL;
    if (meta & AMETA_SHIFT_ON)
       mod |= RETROKMOD_SHIFT;
+   if (meta & AMETA_CAPS_LOCK_ON)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (meta & AMETA_NUM_LOCK_ON)
+      mod |= RETROKMOD_NUMLOCK;
+   if (meta & AMETA_SCROLL_LOCK_ON)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (meta & AMETA_META_ON)
+      mod |= RETROKMOD_META;
 
    input_keyboard_event(keydown, keyboardcode,
          keyboardcode, mod, RETRO_DEVICE_KEYBOARD);

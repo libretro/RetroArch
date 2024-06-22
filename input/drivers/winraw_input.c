@@ -581,6 +581,8 @@ static LRESULT CALLBACK winraw_callback(
             mod |= RETROKMOD_CAPSLOCK;
          if (GetKeyState(VK_SCROLL)  & 0x81)
             mod |= RETROKMOD_SCROLLOCK;
+         if (GetKeyState(VK_NUMLOCK) & 0x81)
+            mod |= RETROKMOD_NUMLOCK;
          if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
             mod |= RETROKMOD_META;
 
