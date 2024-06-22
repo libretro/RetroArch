@@ -199,6 +199,26 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
+static uint16_t dinput_get_active_keyboard_mods()
+{
+   uint16_t mod = 0;
+   if (GetKeyState(VK_SHIFT)   & 0x80)
+      mod |= RETROKMOD_SHIFT;
+   if (GetKeyState(VK_CONTROL) & 0x80)
+      mod |= RETROKMOD_CTRL;
+   if (GetKeyState(VK_MENU)    & 0x80)
+      mod |= RETROKMOD_ALT;
+   if (GetKeyState(VK_CAPITAL) & 0x81)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (GetKeyState(VK_SCROLL)  & 0x81)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (GetKeyState(VK_NUMLOCK) & 0x81)
+      mod |= RETROKMOD_NUMLOCK;
+   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+      mod |= RETROKMOD_META;
+   return mod;
+}
+
 static void dinput_keyboard_mods(struct dinput_input *di, int mod)
 {
    switch (mod)
@@ -212,7 +232,8 @@ static void dinput_keyboard_mods(struct dinput_input *di, int mod)
                 || (!vk_shift_l &&   (di->flags & DINP_FLAG_SHIFT_L)))
             {
                input_keyboard_event(vk_shift_l, RETROK_LSHIFT,
-                     0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+                     0, dinput_get_active_keyboard_mods() | RETROKMOD_SHIFT,
+                     RETRO_DEVICE_KEYBOARD);
                if (di->flags & DINP_FLAG_SHIFT_L)
                   di->flags &= ~DINP_FLAG_SHIFT_L;
                else
@@ -223,7 +244,8 @@ static void dinput_keyboard_mods(struct dinput_input *di, int mod)
                 || (!vk_shift_r &&   (di->flags & DINP_FLAG_SHIFT_R)))
             {
                input_keyboard_event(vk_shift_r, RETROK_RSHIFT,
-                     0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+                     0, dinput_get_active_keyboard_mods() | RETROKMOD_SHIFT,
+                     RETRO_DEVICE_KEYBOARD);
                if (di->flags & DINP_FLAG_SHIFT_R)
                   di->flags &= ~DINP_FLAG_SHIFT_R;
                else
@@ -246,7 +268,8 @@ static void dinput_keyboard_mods(struct dinput_input *di, int mod)
             else if (!vk_alt_l && (di->flags & DINP_FLAG_ALT_L))
             {
                input_keyboard_event(vk_alt_l, RETROK_LALT,
-                     0, RETROKMOD_ALT, RETRO_DEVICE_KEYBOARD);
+                     0, dinput_get_active_keyboard_mods() | RETROKMOD_ALT,
+                     RETRO_DEVICE_KEYBOARD);
                if (di->flags & DINP_FLAG_ALT_L)
                   di->flags &= ~DINP_FLAG_ALT_L;
                else
