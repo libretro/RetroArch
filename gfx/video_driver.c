@@ -2113,10 +2113,8 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
 void video_driver_update_viewport(
       struct video_viewport* vp, bool force_full, bool keep_aspect)
 {
-   float            device_aspect  = (float)vp->full_width / vp->full_height;
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
    video_driver_state_t *video_st  = &video_driver_st;
    float video_driver_aspect_ratio = video_st->aspect_ratio;
 
