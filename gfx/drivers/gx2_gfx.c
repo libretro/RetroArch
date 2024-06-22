@@ -923,14 +923,10 @@ static void gx2_set_projection(wiiu_video_t *wiiu)
 
 static void gx2_update_viewport(wiiu_video_t *wiiu)
 {
-   int x                           = 0;
-   int y                           = 0;
    unsigned viewport_width         = wiiu->color_buffer.surface.width;
    unsigned viewport_height        = wiiu->color_buffer.surface.height;
-   float device_aspect             = (float)viewport_width / viewport_height;
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer)
    {
@@ -942,7 +938,7 @@ static void gx2_update_viewport(wiiu_video_t *wiiu)
    }
    else if (wiiu->keep_aspect)
    {
-      video_viewport_get_scaled_aspect(&vk->vp, viewport_width, viewport_height, true);
+      video_viewport_get_scaled_aspect(&wiiu->vp, viewport_width, viewport_height, true);
    }
    else
    {
