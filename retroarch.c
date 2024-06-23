@@ -209,6 +209,10 @@
 
 #include "accessibility.h"
 
+#ifdef HAVE_GAME_AI
+#include "ai/game_ai.h"
+#endif
+
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
 #include "SDL.h"
 #endif
@@ -7790,6 +7794,12 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
       preempt_init(runloop_st);
 #endif
+
+#ifdef HAVE_GAME_AI
+   game_ai_init();
+#endif
+
+
 
    return true;
 

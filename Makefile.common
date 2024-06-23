@@ -2521,4 +2521,9 @@ ifeq ($(HAVE_ODROIDGO2), 1)
          gfx/drivers/oga_gfx.o
 endif
 
+ifeq ($(HAVE_GAME_AI),1)
+   DEFINES += -DHAVE_GAME_AI
+   OBJ += ai/game_ai.o
+endif
+
 ##################################

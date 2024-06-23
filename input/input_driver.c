@@ -58,6 +58,8 @@
 #endif
 #include "../tasks/tasks_internal.h"
 
+#include "../ai/game_ai.h"
+
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Depends on ASCII character values */
@@ -6515,6 +6517,8 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       intfstream_write(input_st->bsv_movie_state_handle->file, &result, 2);
    }
 #endif
+
+   game_ai_test(port, device, idx, id);
 
    return result;
 }
