@@ -3873,15 +3873,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Рассартоўваць захоўванні станаў па тэчкам назваў ядраў"
+   "Сартаванне захаванняў па тэчкам з назваў ядраў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+   "Рассартоўваць файлы захаванняў па тэчкам з назвай выкарыстаных ядраў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Рассартоўваць захоўванні станаў па тэчкам назваў ядраў"
+   "Сартаванне захаванняў станаў па тэчкам з назваў ядраў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   "Рассартоўваць захаванні станаў па тэчкам з назвай выкарыстаных ядраў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Сартаванне захаванняў па тэчкам каталога змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Рассартоўваць файлы захаванняў па тэчкам з назвай каталогаў, дзе размешчана змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Рассартоўваць захоўванні станаў па тэчкам каталога змесціва"
+   "Сартаванне захаванняў станаў па тэчкам каталога змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Рассартоўваць захаванні станаў па тэчкам з назвай каталогаў, дзе размешчана змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
