@@ -2128,11 +2128,9 @@ void video_driver_update_viewport(
             vp,
             vp->full_width,
             vp->full_height,
-            video_driver_aspect_ratio, keep_aspect, false);
+            video_driver_aspect_ratio, keep_aspect, true);
    else if (keep_aspect && !force_full)
-   {
-      video_viewport_get_scaled_aspect(vp, vp->full_width, vp->full_height, false);
-   }
+      video_viewport_get_scaled_aspect(vp, vp->full_width, vp->full_height, true);
 }
 
 void video_driver_restore_cached(void *settings_data)
