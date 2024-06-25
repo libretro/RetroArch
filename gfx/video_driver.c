@@ -2358,7 +2358,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          video_st->av_info.geometry.base_height;
       unsigned int rotation = retroarch_get_rotation();
 #if defined(RARCH_MOBILE)
-      if (aspect_ratio < 1.0f)
+      if (width < height)
       {
          viewport_bias_x = settings->floats.video_viewport_bias_portrait_x;
          viewport_bias_y = settings->floats.video_viewport_bias_portrait_y;
