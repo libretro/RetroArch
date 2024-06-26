@@ -3309,6 +3309,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
+            case RARCH_SCALE_ORIGINAL:
+               pass_info.scale_x      = pass->fbo.scale_x;
+               pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+               break;
          }
 
          switch (pass->fbo.type_y)
@@ -3326,6 +3330,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             case RARCH_SCALE_VIEWPORT:
                pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+               break;
+
+            case RARCH_SCALE_ORIGINAL:
+               pass_info.scale_y      = pass->fbo.scale_x;
+               pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
                break;
          }
       }

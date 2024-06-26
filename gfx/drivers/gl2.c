@@ -1771,6 +1771,11 @@ static void gl2_renderchain_recompute_pass_sizes(
 
       switch (fbo_scale->type_x)
       {
+         case RARCH_SCALE_ORIGINAL:
+            fbo_rect->img_width      = fbo_scale->scale_x * width;
+            fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
+            break;
+
          case RARCH_SCALE_INPUT:
             fbo_rect->img_width      = fbo_scale->scale_x * last_width;
             fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
@@ -1795,6 +1800,11 @@ static void gl2_renderchain_recompute_pass_sizes(
 
       switch (fbo_scale->type_y)
       {
+         case RARCH_SCALE_ORIGINAL:
+            fbo_rect->img_height     = last_height * height;
+            fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
+            break;
+
          case RARCH_SCALE_INPUT:
             fbo_rect->img_height     = last_height * fbo_scale->scale_y;
             fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
