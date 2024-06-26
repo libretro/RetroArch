@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/posix_string.h>
 #include <string/stdstring.h>
 
 #include "glslang.hpp"
