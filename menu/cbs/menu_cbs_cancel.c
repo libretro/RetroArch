@@ -62,7 +62,7 @@ int action_cancel_pop_default(const char *path,
       if (menu_st->driver_ctx->navigation_set)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
       /* Refresh menu */
-      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                       | MENU_ST_FLAG_PREVENT_POPULATE;
       return 0;
    }
@@ -113,16 +113,56 @@ static int action_cancel_cheat_details(const char *path,
 }
 #endif
 
+static const char* find_core_updater_list_flush_target()
+{
+   struct menu_state* menu_st = menu_state_get_ptr();
+   menu_list_t* list = menu_st->entries.list;
+   file_list_t const * const menu_list = MENU_LIST_GET(list, 0);
+   const size_t menu_stack_size = MENU_LIST_GET_STACK_SIZE(list, 0);
+   const char *candidate_label;
+   int all_targets_hashes[] = {
+      MENU_ENUM_LABEL_ONLINE_UPDATER,
+      MENU_ENUM_LABEL_CORE_LIST,
+      MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
+      MSG_UNKNOWN,
+   };
+
+   size_t i;
+   int target_idx;
+   /* Iterate from the top of the stack to the bottom. If we hit zero we hit the bottom of the stack, can choose as last resort. */
+   for(i = menu_stack_size - 1; i > 0; i--)
+   {
+      candidate_label = menu_list->list[i].label;
+      target_idx = 0;
+      while (all_targets_hashes[target_idx] != MSG_UNKNOWN)
+      {
+         if (string_is_equal(candidate_label, msg_hash_to_str(all_targets_hashes[target_idx++]))) return candidate_label;
+      }
+   }
+   return msg_hash_to_str(all_targets_hashes[0]);
+}
+
+static int action_cancel_core_list(const char* path,
+   const char* label, unsigned type, size_t idx)
+{
+   /* When we back out of the filtered core list, clear out any filters we used */
+   struct menu_state* menu_st = menu_state_get_ptr();
+   menu_st->driver_data->deferred_path[0] = '\0';
+   menu_st->driver_data->detect_content_path[0] = '\0';
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_label              = NULL;
-
+   size_t online_updater_idx = 0;
+   size_t load_core_idx = 0;
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
    {
-      menu_search_terms_t *menu_search_terms = 
+      menu_search_terms_t *menu_search_terms =
          menu_entries_search_get_terms();
 
       /* Check whether search terms have been set
@@ -136,12 +176,14 @@ static int action_cancel_core_content(const char *path,
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
          /* Refresh menu */
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                          | MENU_ST_FLAG_PREVENT_POPULATE;
          return 0;
       }
 
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+
+      menu_entries_flush_stack(find_core_updater_list_flush_target(), 0);
+
    }
    else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
       menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
@@ -160,6 +202,13 @@ static int action_cancel_core_content(const char *path,
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST)) ||
+      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)) ||
+      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE)))
+   {
+      BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
+   }
+      
    return -1;
 }
 
@@ -173,6 +222,9 @@ static int menu_cbs_init_bind_cancel_compare_type(
       case FILE_TYPE_DOWNLOAD_URL:
       case FILE_TYPE_DOWNLOAD_CORE:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
+         return 0;
+      case FILE_TYPE_CORE:
+         BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
          return 0;
       case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
          BIND_ACTION_CANCEL(cbs, action_cancel_contentless_core);
