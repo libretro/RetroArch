@@ -46,7 +46,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Núcleos sen Contido"
+   "Núcleos sen Contidos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -61,7 +61,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Accede rápido ás configuracións relevantes do xogo."
+   "Accede rapidamente ás configuracións relevantes da partida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -151,7 +151,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Descarga módulos de extensión, compoñentes e contido para RetroArch."
+   "Descargar complementos, compoñentes e contido para RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -308,7 +308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Núcleos sen Contido"
+   "Núcleos sen Contidos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -1150,7 +1150,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Cambia os axustes da saída de video."
+   "Cambia os axustes da saída de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -1158,7 +1158,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Cambiar a configuración de entrada/saída de audio."
+   "Cambia a configuración de entrada e saída do son."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1221,9 +1221,13 @@ MSG_HASH(
    "Sincronización da nube destrutiva"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Cando está desactivado, os ficheiros móvense a un cartafol de copia de seguranza antes de sobrescribilos ou eliminalos."
-   )
+   )      
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend de sincronización na nube"
@@ -1398,11 +1402,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Xestión enerxética"
+   "Xestión da Enerxía"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Cambia as configuracións da xestión enerxética."
+   "Cambia as configuracións da xestión de enerxía."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -2520,6 +2524,24 @@ MSG_HASH(
    "Desfase personalizado da ventana gráfica que se usa para definir a posición do eixe Y da ventana gráfica.\nIgnoraranse se está activada a \"Escala enteira\"."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Desviación personalizada do porto de vista usada para compensar o porto de vista horizontalmente (se for máis ancho que a altura do contido). 0.0 significa moi á esquerda e 1.0 significa moi á dereita."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Desviación personalizada do porto de vista usada para compensar o porto de vista verticalmente (se for máis alto que a altura do contido). 0.0 significa arriba e 1.0 significa abaixo."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Desviación personalizada do porto de vista usada para desprazar o porto de vista horizontalmente (se for máis ancho que a altura do contido). 0.0 significa á esquerda e 1.0 significa á dereita. (Orientación en retrato)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Desviación personalizada do porto de vista usada para compensar o porto de vista verticalmente (se for máis alto que a altura do contido). 0.0 significa arriba e 1.0 significa abaixo. (Orientación en retrato)"
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Relación de aspecto personalizada (ancho)"
    )
@@ -2691,7 +2713,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
-   "Cambiar a configuración de entrada de audio."
+   "Cambiar a configuración de entrada de son."
    )
 #endif
 MSG_HASH(
@@ -3939,35 +3961,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Ping de Netplay (alternar)"
+   "Ping do Xogo en Rede (alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Activa/desactiva o contador de ping para a sala de netplay actual."
+   "Activa/desactiva o contador de ping para a sala de Xogo en Rede actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Aloxamento de Netplay (alternar)"
+   "Aloxamento de Xogo en Rede (alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Activa/desactiva o hospedaxe de netplay."
+   "Activa/desactiva o hospedaxe de Xogo en Rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Netplay Play/Spectate Mode (alternar)"
+   "Xogo en Rede Modo Xogador / Espectador (alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Cambia a sesión actual de netplay entre os modos \"xogar\" e \"espectador\"."
+   "Cambia a sesión actual do xogo en rede entre os modos \"xogar\" e \"espectador\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Chat de Netplay Player"
+   "Chat de Xogadores no Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Envía unha mensaxe de chat á sesión actual de netplay."
+   "Envía unha mensaxe de chat na sesión actual de Xogo en Rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -4834,11 +4856,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   "Frameskip de avance rápido"
+   "Salto Rápido de Fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Saltar fotogramas segundo a taxa de avance rápido. Isto aforra enerxía e permite o uso da limitación de cadros de terceiros."
+   "Saltar fotogramas segundo a taxa de avance rápido. Isto conserva enerxía e permite o uso de limitación de fotogramas de terceiros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -7131,11 +7153,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Anunciar publicamente Netplay"
+   "Anunciar publicamente o Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "Indica se hai que anunciar xogos de netplay publicamente. Se non se configura, os clientes deben conectarse manualmente en lugar de usar o vestíbulo público."
+   "Indica se hai que anunciar sesións de xogos en rede publicamente. Se non se configura, os clientes deben conectarse manualmente en lugar de usar o vestíbulo público."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -7143,7 +7165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Reenviar conexións de netplay a través dun servidor man-in-the-middle. Útil se o host está detrás dun firewall ou ten problemas con NAT/UPnP."
+   "Reenviar as conexións de xogo en rede a través dun servidor intermediario (man-in-the-middle). Útil se o servidor está detrás dunha devasa (firewall) ou ten problemas con NAT/UPnP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -7187,15 +7209,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-   "O enderezo do host ao que se conectar."
+   "O enderezo do servidor ao que se conectar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "Porto TCP de Netplay"
+   "Porto TCP do Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-   "O porto do enderezo IP do host. Pode ser un porto TCP ou UDP."
+   "O porto do enderezo IP do servidor. Pode ser un porto TCP ou UDP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
@@ -7203,15 +7225,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
-   "O número máximo de conexións activas que o host aceptará antes de rexeitar outras novas."
+   "O número máximo de conexións activas co servidor aceptará antes de rexeitar outras novas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
-   "Limitador de ping"
+   "Limitador de Latencia"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "A latencia de conexión máxima (ping) que aceptará o host. Establéceo en 0 sen límite."
+   "A latencia máxima de conexión (ping) que o servidor aceptará. Axústao a 0 para non ter límite."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -7223,7 +7245,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   "Spectador do servidor - Só Contrasinal"
+   "Espectador do Servidor - Só Contrasinal"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
@@ -7231,7 +7253,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Modo Spectador Netplay"
+   "Modo Espectador do Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
@@ -14923,11 +14945,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Resto de fotogramas"
+   "Pausa de fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Tenta reducir o uso da CPU vsync durmindo o máximo posible despois da presentación do cadro. Deseñado principalmente para sincronización de liña de exploración de terceiros."
+   "Tentar reducir o uso da CPU pola sincronía vertical durmindo o máximo posible tras a presentación do fotograma. Deseñado principalmente para a sincronización de terceiros por scanlines."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
