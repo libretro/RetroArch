@@ -114,10 +114,6 @@ MSG_HASH(
    "Agor y dewislen bwrdd gwaith traddodiadol."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Analluogi mod Kiosk (Ailgychwyn yn angenrheidiol)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Dangoswch yr holl gosodiadau sy'n gysylltiedig â chyfluniad."
    )
@@ -885,6 +881,14 @@ MSG_HASH(
    "Newid gosodiadau arbed."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Logio"
    )
@@ -1018,6 +1022,8 @@ MSG_HASH(
 /* Settings > Video > Scaling */
 
 #if defined(DINGUX)
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 
 /* Settings > Video > HDR */
@@ -1168,6 +1174,12 @@ MSG_HASH(
 #endif
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */

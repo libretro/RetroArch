@@ -133,6 +133,7 @@ typedef struct ui_companion_driver
    bool (*is_active)(void *data);
    struct string_list *(*get_app_icons)(void);
    void (*set_app_icon)(const char *icon);
+   uintptr_t (*get_app_icon_texture)(const char *icon);
    ui_browser_window_t *browser_window;
    ui_msg_window_t     *msg_window;
    ui_window_t         *window;

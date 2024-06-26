@@ -178,6 +178,10 @@ struct android_app
 
    jmethodID getVolumeCount;
    jmethodID getVolumePath;
+   jmethodID inputGrabMouse;
+
+   jmethodID isScreenReaderEnabled;
+   jmethodID accessibilitySpeak;
 
    struct
    {
@@ -362,6 +366,9 @@ extern JNIEnv *jni_thread_getenv(void);
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
+
+bool is_screen_reader_enabled(void);
+
 #endif
 
 #endif

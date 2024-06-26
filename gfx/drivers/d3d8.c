@@ -1159,6 +1159,7 @@ static void d3d8_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   struct video_viewport vp;
    float device_aspect       = (float)*width / *height;
    d3d8_video_t *d3d         = (d3d8_video_t*)data;
    settings_t *settings      = config_get_ptr();
@@ -1167,71 +1168,26 @@ static void d3d8_calculate_rect(void *data,
 
    video_driver_get_size(width, height);
 
-   *x                        = 0;
-   *y                        = 0;
+   vp.x           = 0;
+   vp.y           = 0;
+   vp.width       = *width;
+   vp.height      = *height;
+   vp.full_width  = *width;
+   vp.full_height = *height;
 
    if (video_scale_integer && !force_full)
-   {
-      struct video_viewport vp;
-
-      vp.x                        = 0;
-      vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
-
       video_viewport_get_scaled_integer(&vp,
             *width,
             *height,
             video_driver_get_aspect_ratio(),
-            d3d->keep_aspect);
-
-      *x                          = vp.x;
-      *y                          = vp.y;
-      *width                      = vp.width;
-      *height                     = vp.height;
-   }
+            d3d->keep_aspect,
+            true);
    else if (d3d->keep_aspect && !force_full)
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-
-         *x                          = custom_vp->x;
-         *y                          = custom_vp->y;
-         *width                      = custom_vp->width;
-         *height                     = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta        = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            *x           = (int)(roundf(*width * (0.5f - delta)));
-            *width       = (unsigned)(roundf(2.0f * (*width) * delta));
-         }
-         else
-         {
-            delta        = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            *y           = (int)(roundf(*height * (0.5f - delta)));
-            *height      = (unsigned)(roundf(2.0f * (*height) * delta));
-         }
-      }
-   }
+      video_viewport_get_scaled_aspect(&vp, *width, *height, true);
+   *x                          = vp.x;
+   *y                          = vp.y;
+   *width                      = vp.width;
+   *height                     = vp.height;
 }
 
 static void d3d8_set_viewport(void *data,
@@ -1302,8 +1258,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          IDirect3D8_Release(g_pD3D8);
          g_pD3D8 = NULL;
 
-         ret = d3d8_init_base(d3d, info);
-         if (ret)
+         if ((ret = d3d8_init_base(d3d, info)))
             RARCH_LOG("[D3D8]: Recovered from dead state.\n");
       }
 
@@ -2121,7 +2076,7 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    info.type     = filter_type;
 
    if (threaded)
-      return video_thread_texture_load(&info,
+      return video_thread_texture_handle(&info,
             d3d8_video_texture_load_wrap_d3d);
 
    d3d8_video_texture_load_d3d(&info, &id);

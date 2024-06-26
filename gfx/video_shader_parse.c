@@ -2780,11 +2780,12 @@ static bool video_shader_load_shader_preset_internal(
                len);
       else
       {
+         size_t _len;
          if (string_is_empty(special_name))
             break;
 
-         fill_pathname_join(s, shader_directory, special_name, len);
-         strlcat(s, video_shader_get_preset_extension(types[i]), len);
+         _len = fill_pathname_join(s, shader_directory, special_name, len);
+         strlcpy(s + _len, video_shader_get_preset_extension(types[i]), len - _len);
       }
 
       if (path_is_valid(s))

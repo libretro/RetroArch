@@ -34,6 +34,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
+#include "../../tasks/task_content.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -67,13 +68,16 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
          attr.i = 0;
          NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
          NSString *primary;
+         const char *cstr;
 #if TARGET_OS_TV
          primary = iconfiles[@"CFBundlePrimaryIcon"];
 #else
          primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
 #endif
          list = string_list_new();
-         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+         cstr = [primary cStringUsingEncoding:kCFStringEncodingUTF8];
+         if (cstr)
+            string_list_append(list, cstr, attr);
 
          NSArray<NSString *> *alts;
 #if TARGET_OS_TV
@@ -83,7 +87,11 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
 #endif
          NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
          for (NSString *str in sorted)
-            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+         {
+            cstr = [str cStringUsingEncoding:kCFStringEncodingUTF8];
+            if (cstr)
+               string_list_append(list, cstr, attr);
+         }
       });
 
    return list;
@@ -95,6 +103,40 @@ static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
    if (!string_is_equal(iconName, "Default"))
       str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
+}
+
+static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
+{
+   static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
+   static dispatch_once_t once;
+   dispatch_once(&once, ^{
+      textures = [NSMutableDictionary dictionaryWithCapacity:6];
+   });
+
+   NSString *iconName = [NSString stringWithUTF8String:icon];
+   if (!textures[iconName])
+   {
+      UIImage *img = [UIImage imageNamed:iconName];
+      if (!img)
+      {
+         RARCH_LOG("could not load %s\n", icon);
+         return 0;
+      }
+      NSData *png = UIImagePNGRepresentation(img);
+      if (!png)
+      {
+         RARCH_LOG("could not get png for %s\n", icon);
+         return 0;
+      }
+
+      uintptr_t item;
+      gfx_display_reset_textures_list_buffer(&item, TEXTURE_FILTER_MIPMAP_LINEAR,
+                                             (void*)[png bytes], (unsigned int)[png length], IMAGE_TYPE_PNG,
+                                             NULL, NULL);
+      textures[iconName] = [NSNumber numberWithUnsignedLong:item];
+   }
+
+   return [textures[iconName] unsignedLongValue];
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
@@ -332,6 +374,60 @@ enum
 
    return [super _keyCommandForEvent:event];
 }
+#else
+- (void)handleUIPress:(UIPress *)press withEvent:(UIPressesEvent *)event down:(BOOL)down
+{
+   NSString       *ch = (NSString*)press.key.characters;
+   uint32_t character = 0;
+   uint32_t mod       = 0;
+   NSUInteger mods    = event.modifierFlags;
+
+   if (mods & UIKeyModifierAlphaShift)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (mods & UIKeyModifierShift)
+      mod |= RETROKMOD_SHIFT;
+   if (mods & UIKeyModifierControl)
+      mod |= RETROKMOD_CTRL;
+   if (mods & UIKeyModifierAlternate)
+      mod |= RETROKMOD_ALT;
+   if (mods & UIKeyModifierCommand)
+      mod |= RETROKMOD_META;
+   if (mods & UIKeyModifierNumericPad)
+      mod |= RETROKMOD_NUMLOCK;
+
+   if (ch && ch.length != 0)
+   {
+      unsigned i;
+      character = [ch characterAtIndex:0];
+
+      apple_input_keyboard_event(down,
+                                 (uint32_t)press.key.keyCode, 0, mod,
+                                 RETRO_DEVICE_KEYBOARD);
+
+      for (i = 1; i < ch.length; i++)
+         apple_input_keyboard_event(down,
+                                    0, [ch characterAtIndex:i], mod,
+                                    RETRO_DEVICE_KEYBOARD);
+   }
+
+   apple_input_keyboard_event(down,
+                              (uint32_t)press.key.keyCode, character, mod,
+                              RETRO_DEVICE_KEYBOARD);
+}
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+   for (UIPress *press in presses)
+      [self handleUIPress:press withEvent:event down:YES];
+   [super pressesBegan:presses withEvent:event];
+}
+
+- (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+   for (UIPress *press in presses)
+      [self handleUIPress:press withEvent:event down:NO];
+   [super pressesEnded:presses withEvent:event];
+}
 #endif
 
 #define GSEVENT_TYPE_KEYDOWN 10
@@ -498,22 +594,6 @@ enum
    }
 }
 
-- (NSData *)pngForIcon:(NSString *)iconName
-{
-    UIImage *img;
-    NSData *png;
-    img = [UIImage imageNamed:iconName];
-    if (!img)
-        NSLog(@"could not load %@\n", iconName);
-    else
-    {
-        png = UIImagePNGRepresentation(img);
-        if (!png)
-            NSLog(@"could not get png for %@\n", iconName);
-    }
-    return png;
-}
-
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    char arguments[]   = "retroarch";
@@ -559,6 +639,10 @@ enum
 
    rarch_start_draw_observer();
 
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
+
 #if TARGET_OS_IOS
    [MXMetricManager.sharedManager addSubscriber:self];
 #endif
@@ -571,6 +655,9 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+#if TARGET_OS_TV
+   update_topshelf();
+#endif
    rarch_stop_draw_observer();
 }
 
@@ -583,6 +670,7 @@ enum
 - (void)applicationWillResignActive:(UIApplication *)application
 {
    self.bgDate = [NSDate date];
+   rarch_stop_draw_observer();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -612,12 +700,46 @@ enum
 #endif
 }
 
+-(BOOL)openRetroArchURL:(NSURL *)url
+{
+   if ([url.host isEqualToString:@"topshelf"])
+   {
+      NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+      NSString *ns_path, *ns_core_path;
+      char path[PATH_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      content_ctx_info_t content_info = { 0 };
+      for (NSURLQueryItem *q in comp.queryItems)
+      {
+         if ([q.name isEqualToString:@"path"])
+            ns_path = q.value;
+         else if ([q.name isEqualToString:@"core_path"])
+            ns_core_path = q.value;
+      }
+      if (!ns_path || !ns_core_path)
+         return NO;
+      fill_pathname_expand_special(path, [ns_path UTF8String], sizeof(path));
+      fill_pathname_expand_special(core_path, [ns_core_path UTF8String], sizeof(core_path));
+      RARCH_LOG("TopShelf told us to open %s with %s\n", path, core_path);
+      return task_push_load_content_with_new_core_from_companion_ui(core_path, path,
+                                                                    NULL, NULL, NULL,
+                                                                    &content_info, NULL, NULL);
+   }
+   return NO;
+}
+
 -(BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+    if ([[url scheme] isEqualToString:@"retroarch"])
+        return [self openRetroArchURL:url];
+
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
-   NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
-   /* Copy file to documents directory if it's not already 
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   /* Copy file to documents directory if it's not already
     * inside Documents directory */
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
@@ -625,6 +747,13 @@ enum
             [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
+   task_push_dbscan(
+      settings->paths.directory_playlist,
+      settings->paths.path_content_database,
+      fullpath,
+      false,
+      false,
+      NULL);
    return true;
 }
 
@@ -706,6 +835,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* is_active */
    ui_companion_cocoatouch_get_app_icons,
    ui_companion_cocoatouch_set_app_icon,
+   ui_companion_cocoatouch_get_app_icon_texture,
    NULL, /* browser_window */
    NULL, /* msg_window */
    NULL, /* window */

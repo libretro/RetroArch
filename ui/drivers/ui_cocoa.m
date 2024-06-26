@@ -547,10 +547,11 @@ static ui_application_t ui_application_cocoa = {
        return;
 
    NSRect frame = self.window.frame;
+   NSRect bounds = self.window.contentView.bounds;
    settings->uints.window_position_x      = (unsigned)frame.origin.x;
    settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)frame.size.width;
-   settings->uints.window_position_height = (unsigned)frame.size.height;
+   settings->uints.window_position_width  = (unsigned)bounds.size.width;
+   settings->uints.window_position_height = (unsigned)bounds.size.height;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -564,10 +565,11 @@ static ui_application_t ui_application_cocoa = {
        return;
 
    NSRect frame = self.window.frame;
+   NSRect bounds = self.window.contentView.bounds;
    settings->uints.window_position_x      = (unsigned)frame.origin.x;
    settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)frame.size.width;
-   settings->uints.window_position_height = (unsigned)frame.size.height;
+   settings->uints.window_position_width  = (unsigned)bounds.size.width;
+   settings->uints.window_position_height = (unsigned)bounds.size.height;
 }
 
 @end
@@ -721,10 +723,12 @@ static ui_application_t ui_application_cocoa = {
 - (void)updateWindowedSize:(gfx_ctx_mode_t)mode
 {
    settings_t *settings             = config_get_ptr();
-   bool windowed_full               = settings->bools.video_windowed_fullscreen;
+   BOOL is_fullscreen = (self.window.styleMask
+         & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
+   bool windowed_full               = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
    bool window_save_positions       = settings->bools.video_window_save_positions;
 
-   if (windowed_full)
+   if (is_fullscreen || windowed_full)
        return;
 
    if (window_save_positions)
@@ -791,7 +795,7 @@ static ui_application_t ui_application_cocoa = {
     {
        int ret;
 #ifdef HAVE_QT
-       const ui_application_t *application = &ui_application_qt;
+       const ui_application_t *application = uico_state_get_ptr()->drv->application;
 #else
        const ui_application_t *application = &ui_application_cocoa;
 #endif
@@ -811,7 +815,7 @@ static ui_application_t ui_application_cocoa = {
        if (ret == -1)
        {
 #ifdef HAVE_QT
-          ui_application_qt.quit();
+          application->quit();
 #endif
           break;
        }
@@ -1113,6 +1117,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* is_active */
    NULL, /* get_app_icons */
    NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

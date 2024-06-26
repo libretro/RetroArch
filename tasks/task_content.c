@@ -211,8 +211,8 @@ static bool content_file_override_get_ext(
 bool content_file_override_set(
       const struct retro_system_content_info_override *overrides)
 {
-   content_state_t *p_content = content_state_get_ptr();
    size_t i;
+   content_state_t *p_content = content_state_get_ptr();
 
    if (!p_content || !overrides)
       return false;
@@ -222,28 +222,21 @@ bool content_file_override_set(
 
    for (i = 0; overrides[i].extensions; i++)
    {
-      struct string_list ext_list = {0};
-      size_t j;
+      char *tok, *save;
+      char *overrides_ext_cpy = strdup(overrides[i].extensions);
 
-      /* Get list of extensions affected by override */
-      string_list_initialize(&ext_list);
-      if (!string_split_noalloc(&ext_list,
-            overrides[i].extensions, "|"))
+      /* Get list of extensions affected by overrides */
+      for (tok = strtok_r(overrides_ext_cpy, "|", &save); tok;
+            tok = strtok_r(NULL, "|", &save))
       {
-         string_list_deinitialize(&ext_list);
-         continue;
-      }
-
-      for (j = 0; j < ext_list.size; j++)
-      {
-         const char *ext                   = ext_list.elems[j].data;
-         content_file_override_t *override = NULL;
          size_t num_entries;
+         const char *ext                   = tok;
+         content_file_override_t *override = NULL;
 
          /* Check whether extension has already been
           * registered */
-         if (string_is_empty(ext) ||
-             content_file_override_get_ext(p_content, ext, NULL))
+         if (   string_is_empty(ext)
+             || content_file_override_get_ext(p_content, ext, NULL))
             continue;
 
          /* Add current override to the list */
@@ -252,7 +245,7 @@ bool content_file_override_set(
          if (!RBUF_TRYFIT(p_content->content_override_list,
                num_entries + 1))
          {
-            string_list_deinitialize(&ext_list);
+            free(overrides_ext_cpy);
             return false;
          }
 
@@ -269,7 +262,7 @@ bool content_file_override_set(
          override->persistent_data = overrides[i].persistent_data;
       }
 
-      string_list_deinitialize(&ext_list);
+      free(overrides_ext_cpy);
    }
 
    return true;
@@ -1691,6 +1684,9 @@ static void task_push_to_history_list(
             entry.entry_slot      = runloop_st->entry_state_slot;
 
             command_playlist_push_write(playlist_hist, &entry);
+#if TARGET_OS_TV
+            update_topshelf();
+#endif
          }
       }
    }

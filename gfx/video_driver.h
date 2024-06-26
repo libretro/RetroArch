@@ -416,6 +416,8 @@ typedef struct video_frame_info
    unsigned custom_vp_full_height;
    unsigned black_frame_insertion;
    unsigned bfi_dark_frames;
+   unsigned shader_subframes;
+   unsigned current_subframe;
    unsigned fps_update_interval;
    unsigned memory_update_interval;
    unsigned msg_queue_delay;
@@ -488,6 +490,7 @@ typedef struct video_frame_info
    bool crt_switch_hires_menu;
    bool hdr_enable;
    bool overlay_behind_menu;
+   bool scan_subframes;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -988,18 +991,49 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 
 /**
  * video_viewport_get_scaled_integer:
- * @vp            : Viewport handle
+ * @vp            : Viewport handle.
  * @width         : Width.
  * @height        : Height.
  * @aspect_ratio  : Aspect ratio (in float).
  * @keep_aspect   : Preserve aspect ratio?
+ * @ydown         : Positive y goes "down".
  *
  * Gets viewport scaling dimensions based on
  * scaled integer aspect ratio.
  **/
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
-      float aspect_ratio, bool keep_aspect);
+      float aspect_ratio, bool keep_aspect,
+      bool ydown);
+
+/**
+ * video_viewport_get_scaled_aspect:
+ * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
+ * @width         : Viewport width.
+ * @height        : Viewport height.
+ * @ydown         : Positive y goes "down".
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled non-integer aspect ratio.
+ **/
+void video_viewport_get_scaled_aspect(struct video_viewport *vp,
+      unsigned width, unsigned height, bool ydown);
+
+/**
+ * video_viewport_get_scaled_aspect2:
+ * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
+ * @width         : Viewport width.
+ * @height        : Viewport height.
+ * @ydown         : Positive y goes "down".
+ * @device_aspect : Device aspect ratio.
+ * @desired_aspect: Target aspect ratio.
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled non-integer aspect ratio.
+ **/
+void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+      unsigned width, unsigned height, bool ydown,
+      float device_aspect, float desired_aspect);
 
 /**
  * video_monitor_set_refresh_rate:

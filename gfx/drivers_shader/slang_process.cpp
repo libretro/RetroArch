@@ -161,6 +161,8 @@ static bool slang_process_reflection(
             "FrameCount",
             "FrameDirection",
             "Rotation",
+            "TotalSubFrames",
+            "CurrentSubFrame",
          };
          int size = sizeof(names) / sizeof(*names);
          if (semantic < size)
@@ -230,7 +232,10 @@ static bool slang_process_reflection(
             {
                size = sizeof(names) / sizeof(*names);
                if (semantic < size)
-                  snprintf(texture.id, sizeof(texture.id), "%s%d", names[_semantic], index);
+               {
+                  size_t _len = strlcpy(texture.id, names[_semantic], sizeof(texture.id));
+                  snprintf(texture.id + _len, sizeof(texture.id) - _len, "%d", index);
+               }
                else
                   strlcpy(texture.id, get_semantic_name(sl_reflection.texture_semantic_map, _semantic, index), sizeof(texture.id));
             }
@@ -277,7 +282,10 @@ static bool slang_process_reflection(
             {
                int size = sizeof(names) / sizeof(*names);
                if (semantic < size)
-                  snprintf(uniform.id, sizeof(uniform.id), "%s%d", names[_semantic], index);
+               {
+                  size_t _len = strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
+                  snprintf(uniform.id + _len, sizeof(uniform.id) - _len, "%d", index);
+               }
                else
                   strlcpy(uniform.id, get_semantic_name(sl_reflection.texture_semantic_uniform_map, _semantic, index), sizeof(uniform.id));
             }
@@ -389,7 +397,7 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
 {
    glslang_meta meta;
    struct string_list lines = {0};
-   
+
    if (!string_list_initialize(&lines))
       goto error;
 
@@ -455,7 +463,7 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
-#ifdef ENABLE_HLSL
+#ifdef HAVE_HLSL
             vs_compiler = new CompilerHLSL(output.vertex);
             ps_compiler = new CompilerHLSL(output.fragment);
 #endif
@@ -495,7 +503,7 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
-#ifdef ENABLE_HLSL
+#ifdef HAVE_HLSL
             {
                CompilerHLSL::Options options;
                CompilerHLSL*         vs = (CompilerHLSL*)vs_compiler;

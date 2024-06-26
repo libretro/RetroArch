@@ -831,10 +831,6 @@ bool disk_control_verify_initial_index(
       disk_index_file_set(&disk_control->index_record, 0, NULL);
       disk_index_file_save(&disk_control->index_record);
    }
-   else if (!enabled)
-   {
-      RARCH_LOG("[Disc]: Initial disc index setting disabled.");
-   }
 
    /* If current disk is correct and recorded image
     * path is empty (i.e. first run), need to register

@@ -138,10 +138,6 @@ MSG_HASH(
    "Άνοιγμα του παραδοσιακού μενού επιφάνειας εργασίας."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Απενεργοποίηση Λειτουργίας Kiosk (Απαιτείται Επανεκκίνηση)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Εμφάνιση όλων των σχετικών ρυθμίσεων ρυθμίσεων."
    )
@@ -1153,6 +1149,14 @@ MSG_HASH(
    "Αλλαγή ρυθμίσεων αποθήκευσης."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Όνομα Χρήστη"
    )
@@ -1171,10 +1175,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Περιηγητής Αρχείων"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Αλλαγή ρυθμίσεων προγράμματος περιήγησης."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1295,10 +1295,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Χειριστήριο"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Επιλογή οδηγού χειριστηρίων."
    )
 
 MSG_HASH(
@@ -1623,6 +1619,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Προτιμώμενη Θέση Άξωνα Y Αναλογίας Οθόνης"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Προτιμώμενο Πλάτος Αναλογίας Οθόνης"
@@ -2454,16 +2452,8 @@ MSG_HASH(
    "Εμφάνιση Κρυφών Αρχείων και Καταλόγων"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Εμφάνιση κρυφών αρχείων και καταλόγων στο πρόγραμμα περιήγησης αρχείων."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Φιλτράρισμα άγνωστων επεκτάσεων"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Φιλτράρισμα αρχείων που εμφανίζονται στο πρόγραμμα περιήγησης αρχείων βάσει υποστηριζόμενων επεκτάσεων."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -2594,12 +2584,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "Προκαθορισμένο Επικάλλυμα"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Επιλογή ενός επικαλλύματος από τον περιηγητή αρχείων."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -5330,10 +5322,6 @@ MSG_HASH(
    "Σάρωση"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Η σάρωση του ευρετηρίου ολοκληρώθηκε"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Αποστολή εντολής"
    )
@@ -5438,28 +5426,12 @@ MSG_HASH(
    "Λανθασμένος κωδικός."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Η σάρωση του αρχείου ολοκληρώθηκε"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Αποτυχία ορισμού δίσκου"
-   )
-MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
    "Φυσιολογικά"
    )
 MSG_HASH(
    MSG_NO_DISC_INSERTED,
    "Δεν υπάρχει δίσκος στη μονάδα δίσκου."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Μη έγκυρη διαμόρφωση χειροκίνητης σάρωσης"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Δεν εντοπίστηκε έγκυρο περιεχόμενο"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

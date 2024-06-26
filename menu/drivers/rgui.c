@@ -745,26 +745,26 @@ static const rgui_theme_t rgui_theme_opaque_brogrammer = {
 };
 
 static const rgui_theme_t rgui_theme_dracula = {
-   0xFFBD93F9, /* hover_color */
+   0xFFFF79C6, /* hover_color */
    0xFFF8F8F2, /* normal_color */
-   0xFFFF79C6, /* title_color */
-   0xC02F3240, /* bg_dark_color */
-   0xC02F3240, /* bg_light_color */
-   0xC06272A4, /* border_dark_color */
-   0xC06272A4, /* border_light_color */
-   0xC00F0F0F, /* shadow_color */
-   0xC06272A4  /* particle_color */
+   0xFFBD93F9, /* title_color */
+   0xE6282A36, /* bg_dark_color */
+   0xE6282A36, /* bg_light_color */
+   0xE644475A, /* border_dark_color */
+   0xE644475A, /* border_light_color */
+   0xFF22212C, /* shadow_color */
+   0xE6525F88  /* particle_color */
 };
 
 static const rgui_theme_t rgui_theme_opaque_dracula = {
-   0xFFBD93F9, /* hover_color */
+   0xFFFF79C6, /* hover_color */
    0xFFF8F8F2, /* normal_color */
-   0xFFFF79C6, /* title_color */
-   0xFF1B2936, /* bg_dark_color */
-   0xFF1B2936, /* bg_light_color */
-   0xFF525F88, /* border_dark_color */
-   0xFF525F88, /* border_light_color */
-   0xFF000000, /* shadow_color */
+   0xFFBD93F9, /* title_color */
+   0xFF282A36, /* bg_dark_color */
+   0xFF282A36, /* bg_light_color */
+   0xFF44475A, /* border_dark_color */
+   0xFF44475A, /* border_light_color */
+   0xFF22212C, /* shadow_color */
    0xFF525F88  /* particle_color */
 };
 
@@ -1478,6 +1478,8 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_SWEDISH:
       case RETRO_LANGUAGE_CATALAN_VALENCIA:
       case RETRO_LANGUAGE_CATALAN:
+      case RETRO_LANGUAGE_GALICIAN:
+      case RETRO_LANGUAGE_NORWEGIAN:
          /* We have at least partial support for
           * these languages, but extended ASCII
           * is required */
@@ -7162,34 +7164,31 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 
    if (!string_is_empty(entry.sublabel))
    {
-      size_t line_index;
+      char *tok, *save;
       static const char* const
          sublabel_spacer       = RGUI_TICKER_SPACER;
       bool prev_line_empty     = true;
+      char *entry_sublabel_cpy = strdup(entry.sublabel);
+
       /* Sanitise sublabel
        * > Replace newline characters with standard delimiter
        * > Remove whitespace surrounding each sublabel line */
-      struct string_list list  = {0};
+      tok = strtok_r(entry_sublabel_cpy, "\n", &save);
 
-      string_list_initialize(&list);
-
-      if (string_split_noalloc(&list, entry.sublabel, "\n"))
+      while (tok)
       {
-         for (line_index = 0; line_index < list.size; line_index++)
+         const char *line = string_trim_whitespace(tok);
+         if (!string_is_empty(line))
          {
-            const char *line = string_trim_whitespace(
-                  list.elems[line_index].data);
-            if (!string_is_empty(line))
-            {
-               if (!prev_line_empty)
-                  strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
-               strlcat(rgui->menu_sublabel, line, sizeof(rgui->menu_sublabel));
-               prev_line_empty = false;
-            }
+            if (!prev_line_empty)
+               strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
+            strlcat(rgui->menu_sublabel, line, sizeof(rgui->menu_sublabel));
+            prev_line_empty = false;
          }
+         tok = strtok_r(NULL, "\n", &save);
       }
 
-      string_list_deinitialize(&list);
+      free(entry_sublabel_cpy);
    }
 }
 

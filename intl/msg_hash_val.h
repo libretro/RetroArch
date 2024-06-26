@@ -138,10 +138,6 @@ MSG_HASH(
    "Fa aparèixer un menú en forma de la típica finestra de programari d'ordinador."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desactivar el Mode quiosc (cal reinici)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vore totes les configuracions relacionades amb els ajustos."
    )
@@ -1129,6 +1125,14 @@ MSG_HASH(
    "Canvia els ajustos de guardat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Registres"
    )
@@ -1139,10 +1143,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Navegador d'arxius"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Canvia els ajustos del navegador d'arxius."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1271,10 +1271,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Comandament"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Escull el controlador de comandaments que s'usarà."
    )
 
 MSG_HASH(
@@ -1558,10 +1554,6 @@ MSG_HASH(
    )
 #if defined (WIIU)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimitzar per al comandament de Wii U (cal reinici)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Usa una escala exacta del doble de la resolució del controlador per a l'àrea de visualització. Mantin esta opció desactivada per mostrar la resolució nativa del televisor."
    )
@@ -1835,6 +1827,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    "Indica el diferencial de posició respecte a l'eix Y de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Relació d'aspecte personalitzat (amplària)"
@@ -1850,10 +1844,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Establix l'alçada personalitzada de l'àrea de visualització. Este valor s'usarà si ha sigut escollit «Personalitzat» a l'ajust «Relació d'aspecte»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Retallar sobreescalat (requerirà de reinici)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2654,6 +2644,12 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
 
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -2718,10 +2714,6 @@ MSG_HASH(
    "Vore 'Ajustos'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Mostra el menú 'Ajustos'. (Cal reiniciar a Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Establir contrasenya per activar la secció 'Ajustos'"
    )
@@ -2736,10 +2728,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Vore 'Nuclis sense continguts'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Especifica el tipus de nucli (en cas que hagueren) a mostrar al menú 'Nuclis sense continguts'. Quan s'establix en 'Personalitzat', es pot canviar la disponibilitat de cada nucli individual mitjançant el menú 'Gestiona els nuclis' (Cal reiniciar en Ozone/XMB)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,

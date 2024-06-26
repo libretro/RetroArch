@@ -453,7 +453,7 @@ static void frontend_win32_init(void *data)
 static void init_nvda(void)
 {
 #ifdef HAVE_DYLIB
-   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) 
+   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
          && !nvda_lib)
    {
       if ((nvda_lib = dylib_load("nvdaControllerClient64.dll")))
@@ -750,8 +750,8 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
 {
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
+   char executable_args[PATH_MAX_LENGTH];
    char executable_path[PATH_MAX_LENGTH] = {0};
-   char executable_args[PATH_MAX_LENGTH] = {0};
 
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
@@ -761,7 +761,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    path_set(RARCH_PATH_CORE, executable_path);
 
    /* Remove executable path from arguments given to CreateProcess */
-   snprintf(executable_args, sizeof(executable_args), "%s", strstr(args, ".exe") + 4);
+   strlcpy(executable_args, strstr(args, ".exe") + 4, sizeof(executable_args));
 
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
@@ -831,7 +831,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "401";
    else if (string_is_equal(language,"hu"))
       return "040e";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+   else if (string_is_equal(language, "zh_tw") || string_is_equal(language,"zh"))
       return "804";
    else if (string_is_equal(language,"el"))
       return "408";
@@ -853,7 +853,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "412";
    else if (string_is_equal(language,"pl"))
       return "415";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "405";
    return "";
 }
@@ -896,13 +896,15 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Naayf Desktop";
    else if (string_is_equal(language,"hu"))
       return "Microsoft Szabolcs Desktop";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+   else if (string_is_equal(language, "zh_tw")
+            || string_is_equal(language,"zh-TW")
+            || string_is_equal(language,"zh"))
       return "Microsoft Zhiwei Desktop";
    else if (string_is_equal(language,"el"))
       return "Microsoft Stefanos Desktop";
    else if (string_is_equal(language,"ru"))
       return "Microsoft Pavel Desktop";
-   else if (string_is_equal(language,"nb"))
+   else if (string_is_equal(language,"no") || string_is_equal(language,"nb"))
       return "Microsoft Jon Desktop";
    else if (string_is_equal(language,"da"))
       return "Microsoft Helle Desktop";
@@ -910,7 +912,7 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Heidi Desktop";
    else if (string_is_equal(language,"zh_hk"))
       return "Microsoft Danny Desktop";
-   else if (string_is_equal(language,"zh_cn"))
+   else if (string_is_equal(language,"zh_cn") || string_is_equal(language,"zh-CN"))
       return "Microsoft Kangkang Desktop";
    else if (string_is_equal(language,"tr"))
       return "Microsoft Tolga Desktop";
@@ -918,8 +920,24 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Heami Desktop";
    else if (string_is_equal(language,"pl"))
       return "Microsoft Adam Desktop";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "Microsoft Jakub Desktop";
+   else if (string_is_equal(language,"vi"))
+      return "Microsoft An Desktop";
+   else if (string_is_equal(language,"hr"))
+      return "Microsoft Matej Desktop";
+   else if (string_is_equal(language,"bg"))
+      return "Microsoft Ivan Desktop";
+   else if (string_is_equal(language,"ms"))
+      return "Microsoft Rizwan Desktop";
+   else if (string_is_equal(language,"sl"))
+      return "Microsoft Lado Desktop";
+   else if (string_is_equal(language,"ta"))
+      return "Microsoft Valluvar Desktop";
+   else if (string_is_equal(language,"en_gb"))
+      return "Microsoft George Desktop";
+   else if (string_is_equal(language,"ca") || string_is_equal(language,"ca_ES@valencia"))
+      return "Microsoft Herena Desktop";
    return "";
 }
 
@@ -948,12 +966,12 @@ static bool create_win32_process(char* cmd, const char * input)
       size_t input_len = strlen(input);
       if (!CreatePipe(&rd, &wr, NULL, input_len))
          return false;
-      
+
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-      
+
       WriteFile(wr, input, input_len, &dummy, NULL);
       CloseHandle(wr);
-      
+
       si.dwFlags    |= STARTF_USESTDHANDLES;
       si.hStdInput   = rd;
       si.hStdOutput  = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -988,7 +1006,7 @@ static bool is_narrator_running_windows(void)
    {
       long res = nvdaController_testIfRunning_func();
 
-      if (res != 0) 
+      if (res != 0)
       {
          /* The running nvda service wasn't found, so revert
             back to the powershell method
@@ -1039,7 +1057,7 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    init_nvda();
 #endif
-   
+
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
       const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
@@ -1061,15 +1079,12 @@ static bool accessibility_speak_windows(int speed,
       wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
       long res           = nvdaController_testIfRunning_func();
 
-      if (!wc || res != 0) 
+      if (!wc || res != 0)
       {
          RARCH_ERR("Error communicating with NVDA\n");
-         /* Fallback on powershell immediately and retry */
-         g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
-         g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;
          if (wc)
             free(wc);
-         return accessibility_speak_windows(speed, speak_text, priority);
+         return false;
       }
 
       nvdaController_cancelSpeech_func();

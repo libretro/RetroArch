@@ -21,6 +21,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
+#include <retro_inline.h>
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -264,7 +265,7 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
 static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       const char *dir_fullpath, char *dir_name)
 {
-   int i;
+   size_t i;
    struct string_list *dir_list;
    char                dir_fullpath_slash[PATH_MAX_LENGTH];
 
@@ -272,6 +273,12 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
    fill_pathname_slash(dir_fullpath_slash, sizeof(dir_fullpath_slash));
 
    dir_list = dir_list_new(dir_fullpath_slash, NULL, false, true, true, true);
+
+   if (dir_list->size == 0)
+   {
+	   string_list_free(dir_list);
+	   return;
+   }
 
    file_list_reserve(manifest, manifest->size + dir_list->size);
    for (i = 0; i < dir_list->size; i++)
@@ -295,30 +302,39 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
 static struct string_list *task_cloud_sync_directory_map(void)
 {
    static struct string_list *list = NULL;
+   settings_t *settings = config_get_ptr();
+
    if (!list)
    {
       union string_list_elem_attr attr = {0};
       char  dir[PATH_MAX_LENGTH];
       list = string_list_new();
 
-      string_list_append(list, "config", attr);
-      fill_pathname_application_special(dir,
-            sizeof(dir), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-      list->elems[list->size - 1].userdata = strdup(dir);
+      if (settings->bools.cloud_sync_sync_configs) 
+      {
+         string_list_append(list, "config", attr);
+         fill_pathname_application_special(dir,
+               sizeof(dir), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+         list->elems[list->size - 1].userdata = strdup(dir);
+      }
 
-      string_list_append(list, "saves", attr);
-      list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVEFILE));
+      if (settings->bools.cloud_sync_sync_saves) 
+      {
+         string_list_append(list, "saves", attr);
+         list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVEFILE));
 
-      string_list_append(list, "states", attr);
-      list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVESTATE));
+         string_list_append(list, "states", attr);
+         list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVESTATE));
+      }
    }
+
    return list;
 }
 
 static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = task_cloud_sync_directory_map();
-   int i;
+   size_t i;
 
    if (!(sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
    {
@@ -368,7 +384,10 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
    if (sync_state->current_manifest)
       count += sync_state->current_manifest->size;
 
-   task_set_progress(task, (val * 100) / count);
+   if (count != 0)
+	   task_set_progress(task, (val * 100) / count);
+   else
+	   task_set_progress(task, 100);
 }
 
 static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
@@ -380,7 +399,7 @@ static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *syn
    list->list[idx].userdata = hash;
 }
 
-static inline int task_cloud_sync_key_cmp(struct item_file *left, struct item_file *right)
+static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_file *right)
 {
    char *left_key  = CS_FILE_KEY(left);
    char *right_key = CS_FILE_KEY(right);
@@ -490,7 +509,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    char                directory[PATH_MAX_LENGTH];
    char                filename[PATH_MAX_LENGTH];
    settings_t         *settings = config_get_ptr();
-   int                 i;
+   size_t              i;
 
    /* we're just fetching a file the server has, we can update this now */
    task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);

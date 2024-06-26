@@ -236,7 +236,27 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_POWER,         "Power"},
    {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
    {RETROK_UNDO,          "Undo"},
-   {RETROK_OEM_102,       "OEM-102"}
+   {RETROK_OEM_102,       "OEM-102"},
+
+   {RETROK_BROWSER_BACK,      "Back"},
+   {RETROK_BROWSER_FORWARD,   "Forward"},
+   {RETROK_BROWSER_REFRESH,   "Refresh"},
+   {RETROK_BROWSER_STOP,      "Stop"},
+   {RETROK_BROWSER_SEARCH,    "Search"},
+   {RETROK_BROWSER_FAVORITES, "Favorites"},
+   {RETROK_BROWSER_HOME,      "Home Page"},
+   {RETROK_VOLUME_MUTE,       "Mute"},
+   {RETROK_VOLUME_DOWN,       "Volume Up"},
+   {RETROK_VOLUME_UP,         "Volume Down"},
+   {RETROK_MEDIA_NEXT,        "Next Track"},
+   {RETROK_MEDIA_PREV,        "Previous Track"},
+   {RETROK_MEDIA_STOP,        "Media Stop"},
+   {RETROK_MEDIA_PLAY_PAUSE,  "Media Play"},
+   {RETROK_LAUNCH_MAIL,       "Launch Email"},
+   {RETROK_LAUNCH_MEDIA,      "Launch Media"},
+   {RETROK_LAUNCH_APP1,       "Launch App1"},
+   {RETROK_LAUNCH_APP2,       "Launch App2"}
+
 };
 
 static void *null_menu_init(void **userdata, bool video_is_threaded)
@@ -620,7 +640,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
-void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
    struct menu_state *menu_st  = &menu_driver_state;
 
@@ -988,7 +1008,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 
    /* Copy cached datetime string to input
     * menu_display_ctx_datetime_t struct */
-   strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
+   return strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
 }
 
 /* Display current (battery) power state */
@@ -1556,7 +1576,8 @@ static bool menu_input_key_bind_poll_find_hold_pad(
    /* Axes are a bit tricky ... */
    for (a = 0; a < MENU_MAX_AXES; a++)
    {
-      if (abs(n->axes[a]) >= 20000)
+      if (     abs(n->axes[a]) >= 20000
+            && n->axes[a] != new_state->axis_state[p].rested_axes[a])
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
@@ -4584,11 +4605,10 @@ void menu_entries_get_core_title(char *s, size_t len)
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
-
+   _len += strlcpy(s + _len, " - ",     len - _len);
+   _len += strlcpy(s + _len, core_name, len - _len);
    if (!string_is_empty(core_version))
-      snprintf(s + _len, len - _len, " - %s (%s)", core_name, core_version);
-   else
-      snprintf(s + _len, len - _len, " - %s", core_name);
+      snprintf(s + _len, len - _len, " (%s)", core_version);
 }
 
 static bool menu_driver_init_internal(
@@ -5175,6 +5195,7 @@ unsigned menu_event(
       input_bits_t *p_trigger_input,
       bool display_kb)
 {
+   int i;
    /* Used for key repeat */
    static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
@@ -5222,7 +5243,6 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
-   unsigned i                                      = 0;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
    unsigned navigation_buttons[8]                  =
@@ -6262,7 +6282,8 @@ void menu_driver_toggle(
     * struct is NULL
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
-   bool pause_libretro                = false;
+   bool menu_pause_libretro           = false;
+   bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = (runloop_st->flags &
@@ -6276,10 +6297,13 @@ void menu_driver_toggle(
    if (settings)
    {
 #ifdef HAVE_NETWORKING
-      pause_libretro                  = settings->bools.menu_pause_libretro &&
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+      menu_pause_libretro             = settings->bools.menu_pause_libretro
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
-      pause_libretro                  = settings->bools.menu_pause_libretro;
+      menu_pause_libretro             = settings->bools.menu_pause_libretro;
+#endif
+#ifdef HAVE_AUDIOMIXER
+      audio_enable_menu               = settings->bools.audio_enable_menu;
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6333,16 +6357,6 @@ void menu_driver_toggle(
 
       menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Always disable FF & SM when entering menu. */
-      runloop_st->flags            &= ~RUNLOOP_FLAG_FASTMOTION;
-      runloop_st->flags            &= ~RUNLOOP_FLAG_SLOWMOTION;
-#if defined(HAVE_GFX_WIDGETS)
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
-#endif
-      input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
-      driver_set_nonblock_state();
-
       /* Menu should always run with swap interval 1 if vsync is on. */
       if (     settings->bools.video_vsync
             && current_video->set_nonblock_state)
@@ -6355,11 +6369,10 @@ void menu_driver_toggle(
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro)
+      if (menu_pause_libretro)
       {
-#ifdef PS2
-         command_event(CMD_EVENT_AUDIO_STOP, NULL);
-#endif
+         if (!audio_enable_menu)
+            command_event(CMD_EVENT_AUDIO_STOP, NULL);
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
@@ -6388,11 +6401,10 @@ void menu_driver_toggle(
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (pause_libretro)
+      if (menu_pause_libretro)
       {
-#ifdef PS2
-         command_event(CMD_EVENT_AUDIO_START, NULL);
-#endif
+         if (!audio_enable_menu)
+            command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif

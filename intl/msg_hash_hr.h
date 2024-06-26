@@ -122,10 +122,6 @@ MSG_HASH(
    "Otvori tradicionalni izbornik za radnu površinu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Isključi način rada kioska (Potrebno ponovno pokretanje)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Prikaži sve postavke povezane s konfiguracijom."
    )
@@ -172,6 +168,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
    "Saznaj više o tome kako program funkcionira."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "Resetiraj"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
@@ -356,6 +356,10 @@ MSG_HASH(
    "Licenca"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "Ništa"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
    "Osnovno (spremanje/učitavanje)"
    )
@@ -369,7 +373,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "Izbrši jezgru"
+   "Izbriši jezgru"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
@@ -417,6 +421,54 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "CPU jezgre"
+   )
+MSG_HASH( /* FIXME Maybe add a description? */
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
+   "RetroRating Razina"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   "Dužina zaslona (mm)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   "Visina zaslona (mm)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   "DPI zaslona"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
+   "LibretroDB Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
+   "Cocoa Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
+   "PNG (RPNG) Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
+   "JPEG (RJPEG) Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
+   "BMP (RBMP) Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
+   "TGA (RTGA) Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
+   "SDL 1.2 Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
+   "SDL 2 Podrška"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
@@ -495,6 +547,22 @@ MSG_HASH(
    "PulseAudio podrška"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "CoreAudio Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "CoreAudio V3 Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
+   "DirectSound Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "WASAPI Podrška"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
    "XAudio2 podrška"
    )
@@ -529,6 +597,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
    "mpv podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
+   "CoreText Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
+   "FreeType Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
+   "STB TrueType Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
+   "Netplay (Peer-to-Peer) Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
+   "Video4Linux2 Podrška"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "libusb Podrška"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -565,8 +657,24 @@ MSG_HASH(
    "Regija"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "Mediji"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   "Kontrole"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Narativ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Izdavač"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "Razvojni programer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
@@ -577,18 +685,70 @@ MSG_HASH(
    "Franšiza"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   "TGDB Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   "Famitsu Magazine Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   "Edge Magazine Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   "BBFC Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   "ESRB Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   "ELSPA Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "PEGI Ocjena"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "CERO Ocjena"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    "Serijski broj"
    )
 
 /* Main Menu > Configuration File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "Učitaj konfiguraciju"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "Učitaj postojeću konfiguraciju i zamijeni trenutne vrijednosti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Vrati na zadane postavke"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Ponovno postaviti trenutnu konfiguraciju na zadane vrijednosti."
+   )
 
 /* Main Menu > Help */
 
 
 /* Main Menu > Help > Basic Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   "Potvrdi"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    "Informacije"
@@ -625,6 +785,30 @@ MSG_HASH(
    "Spremanje"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Korisničko ime"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   "Lozinka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   "Izvještavanje"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   "Preglednik datoteka"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
    "Korisničko sučelje"
    )
@@ -659,6 +843,10 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Mapiranje"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "Mediji"
    )
@@ -684,6 +872,10 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   "Kontroler"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -710,6 +902,10 @@ MSG_HASH(
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "Izlaz"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sinkronizacija"
@@ -757,7 +953,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Omjer slike"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   "Konfiguracija"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   "Puno"
+   )
 #if defined(DINGUX)
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 
 /* Settings > Video > HDR */
@@ -769,9 +975,21 @@ MSG_HASH(
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   "Automatski"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "Automatski"
+   )
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "Izlaz"
+   )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
@@ -782,6 +1000,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Sinkronizacija"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   "Mikser"
+   )
 
 /* Settings > Audio > Output */
 
@@ -789,12 +1011,20 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "Zvuk"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   "Uređaj"
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
    "Mikrofon"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+   "Uređaj"
    )
 #endif
 
@@ -811,6 +1041,10 @@ MSG_HASH(
 /* Settings > Audio > MIDI */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "Izlaz"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
    "Glasnoća"
    )
@@ -820,6 +1054,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
    "Glasnoća"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Stanje : N/A"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -831,6 +1069,10 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "ISKLJUČENO"
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -908,6 +1150,12 @@ MSG_HASH(
 #endif
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -1027,6 +1275,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Preuzimanja"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   "Preglednik datoteka"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -1186,6 +1438,26 @@ MSG_HASH(
 /* Settings Options */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Ništa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   "ISKLJUČENO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Ništa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Ništa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OFF,
+   "ISKLJUČENO"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YES,
    "Da"
    )
@@ -1207,6 +1479,18 @@ MSG_HASH(
 
 /* RGUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Ništa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   "ISKLJUČENO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   "ISKLJUČENO"
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
@@ -1222,6 +1506,22 @@ MSG_HASH(
 
 /* MaterialUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   "ISKLJUČENO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   "ISKLJUČENO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   "ISKLJUČENO"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   "ISKLJUČENO"
+   )
 
 /* Qt (Desktop Menu) */
 
@@ -1248,6 +1548,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    "Popisi za reprodukciju"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   "Preglednik datoteka"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,

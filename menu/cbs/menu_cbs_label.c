@@ -123,6 +123,9 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
+         case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
+            break;
          case MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY:
 #ifdef HAVE_CHEATS
             BIND_ACTION_LABEL(cbs, action_bind_label_cheat_browse_address);

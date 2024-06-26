@@ -356,9 +356,14 @@ static bool vulkan_find_extensions(const char * const *exts, unsigned num_exts,
    return true;
 }
 
-static bool vulkan_find_instance_extensions(const char * const *exts, unsigned num_exts)
+static bool vulkan_find_instance_extensions(
+      const char **enabled, unsigned *inout_enabled_count,
+      const char **exts, unsigned num_exts,
+      const char **optional_exts, unsigned num_optional_exts)
 {
    uint32_t property_count;
+   unsigned i;
+   unsigned count                    = *inout_enabled_count;
    bool ret                          = true;
    VkExtensionProperties *properties = NULL;
 
@@ -380,13 +385,21 @@ static bool vulkan_find_instance_extensions(const char * const *exts, unsigned n
 
    if (!vulkan_find_extensions(exts, num_exts, properties, property_count))
    {
-      RARCH_ERR("[Vulkan]: Could not find instance extensions. Will attempt without them.\n");
+      RARCH_ERR("[Vulkan]: Could not find required instance extensions. Will attempt without them.\n");
       ret = false;
       goto end;
    }
 
+   memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
+   count += num_exts;
+
+   for (i = 0; i < num_optional_exts; i++)
+      if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
+         enabled[count++] = optional_exts[i];
+
 end:
    free(properties);
+   *inout_enabled_count = count;
    return ret;
 }
 
@@ -828,6 +841,16 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    return true;
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+#define VULKAN_COLORSPACE_EXTENSION_NAME "VK_EXT_swapchain_colorspace"
+#endif
+
+static const char *vulkan_optional_instance_extensions[] = {
+#ifdef VULKAN_HDR_SWAPCHAIN
+   VULKAN_COLORSPACE_EXTENSION_NAME
+#endif
+};
+
 static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkInstanceCreateInfo *create_info)
 {
    VkResult res;
@@ -836,44 +859,48 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
    VkInstanceCreateInfo info        = *create_info;
    VkInstance instance              = VK_NULL_HANDLE;
-   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 3) * sizeof(const char *));
-   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1) * sizeof(const char *));
+   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 3
+                                                          + ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
+   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1)                * sizeof(const char *));
+   
+   const char *required_extensions[3];
+   uint32_t required_extension_count = 0;
 
    memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
    info.ppEnabledExtensionNames     = instance_extensions;
    info.ppEnabledLayerNames         = instance_layers;
 
-   instance_extensions[info.enabledExtensionCount++] = "VK_KHR_surface";
+   required_extensions[required_extension_count++] = "VK_KHR_surface";
 
    switch (vk->wsi_type)
    {
       case VULKAN_WSI_WAYLAND:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_wayland_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_wayland_surface";
          break;
       case VULKAN_WSI_ANDROID:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_android_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_android_surface";
          break;
       case VULKAN_WSI_WIN32:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_win32_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_win32_surface";
          break;
       case VULKAN_WSI_XLIB:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_xlib_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_xlib_surface";
          break;
       case VULKAN_WSI_XCB:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_xcb_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_xcb_surface";
          break;
       case VULKAN_WSI_MIR:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_mir_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_mir_surface";
          break;
       case VULKAN_WSI_DISPLAY:
-         instance_extensions[info.enabledExtensionCount++] = "VK_KHR_display";
+         required_extensions[required_extension_count++] = "VK_KHR_display";
          break;
       case VULKAN_WSI_MVK_MACOS:
-         instance_extensions[info.enabledExtensionCount++] = "VK_MVK_macos_surface";
+         required_extensions[required_extension_count++] = "VK_MVK_macos_surface";
          break;
       case VULKAN_WSI_MVK_IOS:
-         instance_extensions[info.enabledExtensionCount++] = "VK_MVK_ios_surface";
+         required_extensions[required_extension_count++] = "VK_MVK_ios_surface";
          break;
       case VULKAN_WSI_NONE:
       default:
@@ -882,21 +909,34 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
 
 #ifdef VULKAN_DEBUG
    instance_layers[info.enabledLayerCount++]         = "VK_LAYER_KHRONOS_validation";
-   instance_extensions[info.enabledExtensionCount++] = "VK_EXT_debug_utils";
+   required_extensions[required_extension_count++] = "VK_EXT_debug_utils";
 #endif
 
    layer_count = ARRAY_SIZE(properties);
    vkEnumerateInstanceLayerProperties(&layer_count, properties);
 
-   /* Be careful about validating supported instance extensions when using explicit layers.
-    * If core wants to enable debug layers, we'll have to do deeper validation and query
-    * supported extensions per-layer which is annoying. vkCreateInstance will validate this on its own anyways. */
-   if (  (info.enabledLayerCount == 0)
-      && !vulkan_find_instance_extensions(info.ppEnabledExtensionNames, info.enabledExtensionCount))
+   if (!(vulkan_find_instance_extensions(
+            instance_extensions, &info.enabledExtensionCount,
+            required_extensions, required_extension_count,
+            vulkan_optional_instance_extensions,
+            ARRAY_SIZE(vulkan_optional_instance_extensions))))
    {
       RARCH_ERR("[Vulkan]: Instance does not support required extensions.\n");
       goto end;
    }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* Check if HDR colorspace extension was enabled */
+   vk->context.flags &= ~VK_CTX_FLAG_HDR_SUPPORT;
+   for (i = 0; i < info.enabledExtensionCount; i++)
+   {
+      if (string_is_equal(instance_extensions[i], VULKAN_COLORSPACE_EXTENSION_NAME))
+      {
+         vk->context.flags |= VK_CTX_FLAG_HDR_SUPPORT;
+         break;
+      }
+   }
+#endif
 
    if (info.pApplicationInfo)
    {
@@ -1886,6 +1926,17 @@ retry:
    vulkan_acquire_wait_fences(vk);
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+bool vulkan_is_hdr10_format(VkFormat format)
+{
+   return
+   (
+         format == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+      || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32
+   );
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval)
@@ -2058,26 +2109,33 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      if (settings->bools.video_hdr_enable)
-         vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
-      else
-         vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
-
-      video_driver_unset_hdr_support();
-
-      for (i = 0; i < format_count; i++)
+      if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
-         if (     (formats[i].format     == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
-               && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
-         {
-            format = formats[i];
-            video_driver_set_hdr_support();
-         }
-      }
+         if (settings->bools.video_hdr_enable)
+            vk->context.flags |=  VK_CTX_FLAG_HDR_ENABLE;
+         else
+            vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
-      if (     (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
-            || (format.format == VK_FORMAT_UNDEFINED))
+         video_driver_unset_hdr_support();
+
+         for (i = 0; i < format_count; i++)
+         {
+            if (     (vulkan_is_hdr10_format(formats[i].format))
+                  && (formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT))
+            {
+               format = formats[i];
+               video_driver_set_hdr_support();
+               break;
+            }
+         }
+
+         if (!vulkan_is_hdr10_format(format.format))
+            vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
+      }
+      else
+      {
          vk->context.flags &= ~VK_CTX_FLAG_HDR_ENABLE;
+      }
 
       if (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -2191,8 +2249,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageExtent.height     = swapchain_size.height;
    info.imageArrayLayers       = 1;
    info.imageUsage             =  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-	   			| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-				| VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+                                | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+                                | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                                | VK_IMAGE_USAGE_SAMPLED_BIT;
    info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount  = 0;
    info.pQueueFamilyIndices    = NULL;
@@ -2202,13 +2261,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.clipped                = VK_TRUE;
    info.oldSwapchain           = old_swapchain;
 
-#ifdef _WIN32
-   /* On Windows, do not try to reuse the swapchain.
-    * It causes a lot of issues on nVidia for some reason. */
    info.oldSwapchain = VK_NULL_HANDLE;
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
-#endif
 
    if (vkCreateSwapchainKHR(vk->context.device,
             &info, NULL, &vk->swapchain) != VK_SUCCESS)
@@ -2216,11 +2271,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
    }
-
-#ifndef _WIN32
-   if (old_swapchain != VK_NULL_HANDLE)
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
-#endif
 
    vk->context.swapchain_width        = swapchain_size.width;
    vk->context.swapchain_height       = swapchain_size.height;
@@ -2305,7 +2355,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #ifdef _WIN32
       vulkan_library = dylib_load("vulkan-1.dll");
 #elif __APPLE__
-      vulkan_library = dylib_load("libMoltenVK.dylib");
+      vulkan_library = dylib_load("MoltenVK");
 #else
       vulkan_library = dylib_load("libvulkan.so.1");
       if (!vulkan_library)

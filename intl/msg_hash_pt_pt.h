@@ -41,6 +41,10 @@ MSG_HASH(
    "Explorar"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Núcleos sem conteúdo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importar conteúdo"
    )
@@ -64,12 +68,20 @@ MSG_HASH(
    "Selecione o núcleo que deseja utilizar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Navegue até um executável do núcleo libretro. Onde o navegador inicia depende da sua configuração de Pasta de Núcleos. Se a definição estiver em branco, começará na raiz do sistema de ficheiros.\nSe indicar uma pasta, o menu usará essa pasta como a principal. No entanto, se a sua Pasta de Núcleos é um caminho de ficheiro, irá iniciar na pasta que o contém."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Carregar conteúdo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Selecione o conteúdo que deseja executar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Navegar pelo conteúdo. Para carregar um conteúdo, é necessário um 'Núcleo' e um ficheiro de conteúdo.\nPara escolher onde o menu começa a navegar, escolha a definição 'Pasta do Navegador de Ficheiros'. Caso não seja definida, será iniciada na raiz do sistema de ficheiros.\nO navegador filtrará as extensões para o último núcleo definido em 'Carregar núcleo' e usará no carregamento do conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -123,7 +135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desativar o Modo Kiosk (Reinício necessário)"
+   "Desativar o Modo Quiosque (é necessário reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -206,7 +218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Transfira e instale um núcleo a partir do atualizador online."
+   "Transferir e instalar um núcleo a partir do atualizador online."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -285,6 +297,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Procurar todos os conteúdos correspondentes ao banco de dados através de uma interface de pesquisa categorizada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Núcleos sem conteúdo"
    )
 
 /* Main Menu > Online Updater */
@@ -469,7 +485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   "Nenhum"
+   "Não partilhar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
@@ -551,6 +567,10 @@ MSG_HASH(
    "Data de compilação"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Versão do RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Versão Git"
    )
@@ -573,6 +593,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Núcleos CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT disponível"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -865,12 +889,28 @@ MSG_HASH(
    "Exclusivo de Plataforma"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Pontuação"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
    "Mídia"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
    "Mapeamento de teclas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Jogabilidade"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Narrativa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Definição"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -1069,6 +1109,14 @@ MSG_HASH(
    "Modificar as definições de gravação."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Utilizador"
    )
@@ -1087,10 +1135,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Explorador de ficheiros"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Alterar definições do explorador de ficheiros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
@@ -1219,10 +1263,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Comando"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Driver de comando a ser usado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1396,75 +1436,71 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas. Pode reduzir bastante a desfocagem de movimento ao emular a varrimento CRT, mas à custa do brilho. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo."
+   "Inserir fotograma(s) preto(s) entre fotogramas. Pode reduzir significativamente a desfocagem de movimento ao emular a varrimento CRT, mas à custa do brilho. Não combinar com Intervalo de troca > 1, subfotogramas, Atraso de fotogramas ou Sincronizar com a frequência exata do conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere fotogramas pretos entre fotogramas para melhorar a nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combinar com Intervalo de Troca > 1 (modo automático é suficiente), Atraso de fotogramas ou Sincronizar com a taxa de fotogramas exacta do conteúdo. Deixar o VRR (Taxa de atualização variável) do sistema ativado é a[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Desligado"
+   "Insere fotograma(s) preto(s) entre os fotogramas para maior nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Não combinar com Intervalo de troca > 1, subfotogramas, Atraso de fotogramas, ou Sincronizar com a frequência de fotogramas exata do conteúdo. Deixar o VRR do sistema ligado é aceitável, mas não esta definição. Se [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
-   "1 - Para uma taxa de atualização do ecrã de 120Hz"
+   "1 - Para uma taxa de atualização do ecrã de 120 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
-   "2 - Para uma taxa de atualização do ecrã de 180Hz"
+   "2 - Para uma taxa de atualização do ecrã de 180 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
-   "3 - Para uma taxa de atualização do ecrã de 240Hz"
+   "3 - Para uma taxa de atualização do ecrã de 240 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
-   "4 - Para uma taxa de atualização do ecrã de 300Hz"
+   "4 - Para uma taxa de atualização do ecrã de 300 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
-   "5 - Para uma taxa de atualização do ecrã de 360Hz"
+   "5 - Para uma taxa de atualização do ecrã de 360 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
-   "6 - Para uma taxa de atualização do ecrã de 420Hz"
+   "6 - Para uma taxa de atualização do ecrã de 420 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
-   "7 - Para uma taxa de atualização do ecrã de 480Hz"
+   "7 - Para uma taxa de atualização do ecrã de 480 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
-   "8 - Para uma taxa de atualização do ecrã de 540Hz"
+   "8 - Para uma taxa de atualização do ecrã de 540 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
-   "9 - Para uma taxa de atualização do ecrã de 600Hz"
+   "9 - Para uma taxa de atualização do ecrã de 600 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
-   "10 - Para uma taxa de atualização do ecrã de 660Hz"
+   "10 - Para uma taxa de atualização do ecrã de 660 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
-   "11 - Para uma taxa de atualização do ecrã de 720Hz"
+   "11 - Para uma taxa de atualização do ecrã de 720 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
-   "12 - Para uma taxa de atualização do ecrã de 780Hz"
+   "12 - Para uma taxa de atualização do ecrã de 780 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
-   "13 - Para uma taxa de atualização do ecrã de 840Hz"
+   "13 - Para uma taxa de atualização do ecrã de 840 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
-   "14 - Para uma taxa de atualização do ecrã de 900Hz"
+   "14 - Para uma taxa de atualização do ecrã de 900 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
-   "15 - Para uma taxa de atualização do ecrã de 960Hz"
+   "15 - Para uma taxa de atualização do ecrã de 960 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
@@ -1472,11 +1508,83 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
-   "Ajusta o número de fotogramas pretos na sequência total de digitalização BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. Não é aplicável a 120hz, uma vez que só existe 1 fotograma BFI para trabalhar no total. As definições superiores ao possível limitam-no ao máximo possível para a taxa de atualização escolhida."
+   "Ajusta o número de fotogramas pretos na sequência total de digitalização BFI. Mais equivale a maior nitidez de movimento, menos equivale a maior brilho. Não é aplicável a 120 hz, uma vez que só existe 1 fotograma BFI para trabalhar no total. As definições superiores ao possível limitam-no ao máximo possível para a taxa de atualização escolhida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   "Ajusta o número de fotogramas apresentados na sequência BFI que são pretos. Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. Não é aplicável a 120hz, uma vez que existe apenas um fotograma extra total a 60hz, pelo que tem de ser preto, caso contrário a BFI não estaria ativa."
+   "Ajusta o número de fotogramas apresentados na sequência BFI que são pretos. Mais fotogramas pretos aumentam a nitidez do movimento mas reduzem o brilho. Não é aplicável a 120 hz, uma vez que existe apenas um fotograma extra total a 60 hz, pelo que tem de ser preto, caso contrário a BFI não estaria ativa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Subfotogramas de sombreamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Insere fotograma(s) de sombreador extra entre fotogramas. Permite que os sombreadores façam efeitos que funcionem a um fps mais elevado do que a taxa de conteúdo atual. Deve ser definido para o Hz do ecrã atual. Não combinar com Intervalo de troca > 1, BFI, Atraso de fotogramas ou Sincronizar com a frequência de fotogramas exata do conteúdo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Insere fotograma(s) de sombreador extra entre fotogramas para quaisquer efeitos de sombreador possíveis que tenham sido concebidos para serem executados mais rapidamente do que a taxa de conteúdo. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser usada em taxas de atualização que não sejam múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Não combinar com Intervalo de troca > 1, BFI, Atraso de fotogramas ou Sincronizar com a frequência de fotog[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - Para uma taxa de atualização do ecrã de 120 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - Para uma taxa de atualização do ecrã de 180 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - Para uma taxa de atualização do ecrã de 240 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - Para uma taxa de atualização do ecrã de 300 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - Para uma taxa de atualização do ecrã de 360 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - Para uma taxa de atualização do ecrã de 420 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - Para uma taxa de atualização do ecrã de 480 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - Para uma taxa de atualização do ecrã de 540 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - Para uma taxa de atualização do ecrã de 600 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - Para uma taxa de atualização do ecrã de 660 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - Para uma taxa de atualização do ecrã de 720 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - Para uma taxa de atualização do ecrã de 780 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - Para uma taxa de atualização do ecrã de 840 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - Para uma taxa de atualização do ecrã de 900 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - Para uma taxa de atualização do ecrã de 960 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1537,6 +1645,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    "Aplica um filtro de vídeo movido a CPU. Pode vir a um alto custo de performance. Alguns filtros de vídeo podem só funcionar com núcleos que usam cor 32-bit ou 16-bit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Aplica um filtro de vídeo alimentado por CPU. Pode ter um alto custo de desempenho. Alguns filtros de vídeo podem funcionar apenas para núcleos que usam núcleos de 32 ou 16 bits. Podem ser selecionadas bibliotecas de filtros de vídeo vinculadas dinamicamente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -1747,8 +1859,16 @@ MSG_HASH(
    "Lembrar posição e tamanho da janela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   "Mostra todo o conteúdo numa janela de tamanho fixo com as dimensões especificadas por 'Largura da Janela' e 'Altura da Janela', e guarda o tamanho e a posição atual da janela ao fechar o RetroArch. Quando desativado, o tamanho da janela será definido dinamicamente com base na 'Escala em modo janela'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    "Usar Tamanho de Janela Personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "Mostra todo o conteúdo numa janela de tamanho fixo com as dimensões especificadas por 'Largura da Janela' e 'Altura da Janela'. Quando desativado, o tamanho da janela será definido dinamicamente com base na 'Escala em modo janela'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1811,6 +1931,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Proporção personalizada do ecrã na posição Y"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Proporção personalizada da largura do ecrã"
@@ -1841,6 +1963,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminosidade de Papel Branco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Define a luminância a que o \"papel branco\" deve estar, ou seja, texto legível ou luminância máxima da gama SDR (Standard Dynamic Range). Útil para se ajustar a diferentes condições de iluminação no seu ambiente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
@@ -1880,6 +2006,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
    "Sincronização sólida de fotogramas na GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   "Sincronização com a frequência de fotogramas exata do conteúdo (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Sincronização com a frequência de fotogramas exata do conteúdo. Esta opção é o equivalente a forçar a velocidade x1, permitindo ainda o avanço rápido. Não há desvio da taxa de atualização solicitada pelo núcleo, nem controlo da taxa dinâmica de som."
    )
 
 /* Settings > Audio */
@@ -2009,11 +2143,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   "Controlo dinâmico de taxa de som"
+   "Controlo dinâmico da taxa de áudio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Ajuda a suavizar as imperfeições no sincronismo entre som e vídeo. Caso se encontre desativada, esta opção fará com que a sincronização adequada se torne quase impossível de se concretizar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Definir este valor como 0 desativa o controlo da taxa de áudio. Qualquer outro valor controla o delta de controlo da taxa de áudio.\nDefine a quantidade de taxa de entrada que pode ser ajustada dinamicamente. A taxa de entrada é definida como:\ntaxa de entrada * (1,0 +/- (delta de controlo da taxa))"
    )
 
 /* Settings > Audio > MIDI */
@@ -2060,6 +2198,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Remover"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   "Estado: Não disponível"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -2175,6 +2317,10 @@ MSG_HASH(
    "Gravação de estado"
    )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "Se o suporte do disco virtual estiver fechado, abra-o e retire o disco carregado. Caso contrário, insira o disco selecionado e feche o suporte do disco."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -2191,6 +2337,14 @@ MSG_HASH(
    "Captura de ecrã"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Sincronizar com a velocidade de fotogramas exacta do conteúdo (ativar/desativar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Ativa/desativa a sincronização com a frequência de fotogramas exata do conteúdo."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -2424,6 +2578,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Carregar os shaders automaticamente"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+   "Utilizar ficheiro de parâmetros globais do núcleo"
+   )
 
 /* Settings > Saving */
 
@@ -2595,12 +2753,82 @@ MSG_HASH(
    "Overlay pré-definido"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Seleciona uma camada de sobreposição do explorador de ficheiros."
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Ativar overlay para Lightgun, rato e ponteiro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Utilize qualquer entrada de toque que não esteja a pressionar os controlos de overlay para criar uma entrada de dispositivo que aponte para o núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "Overlay para Lightgun"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Configurar a entrada da lightgun enviada a partir do overlay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "Overlay para rato"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Configurar a entrada do rato enviada a partir do overlay. Nota: os toques de 1, 2 e 3 dedos enviam cliques no botão esquerdo, direito e do meio."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Porta da Lightgun"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Definir a porta principal para receber entrada do overlay da Lightgun."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "Qualquer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Ativar ao toque"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Enviar entrada de disparo com entrada de ponteiro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Atraso de disparo (fotogramas)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Atraso na entrada de disparo para dar tempo ao cursor para se mover. Este atraso também é utilizado para aguardar a contagem correta do multitoque."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Velocidade do rato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Pressione e segure para arrastar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Prima e mantenha premido o ecrã para começar a premir um botão."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Limite de pressão longa (ms)"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -2618,6 +2846,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
    "Mostrar taxa de fotogramas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Notificações de controlo de disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Apresentar uma mensagem no ecrã ao inserir e ejetar discos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -2718,6 +2954,22 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   "Mostrar 'Atualizador online'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   "Mostrar a opção \"Atualizador online\" no menu principal."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+   "Mostrar a capacidade de atualizar núcleos (e ficheiros de informação de núcleos) na opção \"Atualizador online\"."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+   "Mostrar entrada obsoleta para transferir pacotes de miniaturas na opção \"Atualização online\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Menu principal"
    )
@@ -2763,6 +3015,10 @@ MSG_HASH(
 
 /* Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   "Selecione uma imagem para definir como fundo do menu. As imagens manuais e dinâmicas substituem a opção \"Tema de cor\"."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    "Opacidade da imagem de fundo"
@@ -2934,6 +3190,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    "Após a transferência, extrair automaticamente o conteúdo dos ficheiros transferidos."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   "Crie automaticamente uma cópia de segurança de quaisquer núcleos instalados ao efetuar uma atualização online. Permite a reversão fácil para um núcleo em funcionamento se uma atualização introduzir uma regressão."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Especifique o número de cópias de segurança geradas automaticamente a manter para cada núcleo instalado. Quando este limite for atingido, a criação de uma nova cópia de segurança através de uma atualização online irá eliminar a cópia de segurança mais antiga. As cópias de segurança manuais do núcleo não são afetadas por esta definição."
+   )
 
 /* Settings > Playlists */
 
@@ -2958,6 +3222,10 @@ MSG_HASH(
    "Permitir a remoção de entradas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Mostrar núcleos associados nas listas de reprodução"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Núcleo:"
    )
@@ -2965,9 +3233,29 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
    "segundos"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   "Analisar sem correspondência do núcleo"
+   )
    
 /* Settings > Playlists > Playlist Management */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Núcleo padrão"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   "Especifica o núcleo a utilizar no início do conteúdo através de uma entrada de lista de reprodução que não tem uma associação de núcleo existente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
+   "Redefinir associações do núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+   "Remover as associações do núcleo existentes para todas as entradas da lista de reprodução."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Apagar a lista de reprodução"
@@ -3179,6 +3467,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    "Nome do sistema"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Núcleo padrão"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Selecionar um núcleo a ser utilizado por padrão ao iniciar o conteúdo analisado."
+   )
 
 /* Explore tab */
 
@@ -3203,6 +3499,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    "Remover esta entrada da lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Adicionar à lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Adiciona o conteúdo a uma lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Criar nova lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -3595,7 +3907,7 @@ MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   "Nenhum"
+   "Não partilhar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -3800,6 +4112,10 @@ MSG_HASH(
    "Vermelho vulcânico"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC,
+   "Dinâmico"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    "DESLIGADO"
    )
@@ -3862,14 +4178,6 @@ MSG_HASH(
    "Sistemático"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
-   "Ativo e moderno"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
-   "Retroativo"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
    "Sistema retro"
    )
@@ -3916,6 +4224,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Quando ativado, cada item de metadados de conteúdo apresentado na barra lateral direita das listas de reprodução (núcleo associado, tempo de reprodução) ocupará uma única linha, e as cadeias que excedam a largura disponível serão automaticamente deslocadas. Quando desativado, cada item de metadados será exibido estaticamente, ocupando tantas linhas quantas forem necessárias."
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -5127,7 +5439,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Verificação da pasta terminada"
+   "A verificação da pasta foi concluída."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
@@ -5295,15 +5607,107 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
-   "Leitura do ficheiro terminada"
+   "A verificação do ficheiro foi concluída."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Iniciou com sucesso a pesquisa de batota (cheats)."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Falha ao iniciar a pesquisa de batota (cheats)."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "A pesquisa não foi inicializada/iniciada."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Adicionadas %u correspondências."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Falha ao adicionar correspondências."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Código criado a partir da correspondência."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Falha na criação do código."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Correspondência eliminada."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Falha ao definir o disco."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Ocorreu um erro ao definir o último disco utilizado."
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Falha na ligação ao cliente."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Falha na ligação ao anfitrião."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Anfitrião do Netplay completo."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Está banido deste anfitrião."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Falha ao obter o cabeçalho do anfitrião."
+   )
+MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Aviso: Recursos em falta, utilize o Atualizador Online, se disponível."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Aviso: Faltam fontes para o idioma selecionado, utilize o Atualizador Online, se disponível."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Aviso: Idioma não suportado - utilização do inglês."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Foi selecionado um ficheiro DAT de arcada inválido."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "O ficheiro DAT da arcada selecionado é demasiado grande (memória livre insuficiente)."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "As definições de verificação manual não são válidas."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Não foi detetado qualquer conteúdo válido."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Verificando: "
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_ENABLED,
+   "Sincronização com a frequência de fotogramas exata do conteúdo ativada."
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_DISABLED,
+   "Sincronização com a frequência de fotogramas exata do conteúdo desativada."
    )
 
 /* Lakka */
@@ -5441,6 +5845,10 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_QT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+   "Verificação concluída.<br><br>\nPara que o conteúdo seja corretamente verificado, é necessário:\n<ul><li>ter um núcleo compatível já transferido</li>\n<li>ter os \"Ficheiros de Informação de Núcleos\" atualizados através da Atualização Online</li>\n<li>ter \"Bases de dados\" atualizadas através do Atualizador Online</li>\n<li>reiniciar o RetroArch se alguma das ações acima tiver sido realizada</li></ul>\nPor último, o conteúdo deve corresponder às bases de dados existentes de <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. Se ainda não estiver a funcionar, considere a possibilidade de <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar um relatório de erro</a>."
+   )
 #endif
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

@@ -294,6 +294,8 @@ enum vulkan_context_flags
    VK_CTX_FLAG_SWAPCHAIN_IS_SRGB            = (1 << 2),
    VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK = (1 << 3),
    VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4),
+   /* Whether HDR colorspaces are supported by the instance */
+   VK_CTX_FLAG_HDR_SUPPORT                  = (1 << 5),
 };
 
 enum vulkan_emulated_mailbox_flags
@@ -554,7 +556,9 @@ typedef struct vk
    struct vk_per_frame *chain;
    struct vk_image *backbuffer;
 #ifdef VULKAN_HDR_SWAPCHAIN
+   VkRenderPass readback_render_pass;
    struct vk_image main_buffer;
+   struct vk_image readback_image;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    unsigned video_width;
@@ -603,6 +607,7 @@ typedef struct vk
       VkPipeline rgb565_to_rgba8888;
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline hdr;
+      VkPipeline hdr_to_sdr; /* for readback */
 #endif /* VULKAN_HDR_SWAPCHAIN */
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
@@ -727,6 +732,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+bool vulkan_is_hdr10_format(VkFormat format);
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 RETRO_END_DECLS
 

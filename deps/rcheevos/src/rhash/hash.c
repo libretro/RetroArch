@@ -11,6 +11,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <share.h>
 #endif
 
 /* arbitrary limit to prevent allocating and hashing large files */
@@ -53,9 +54,9 @@ static void rc_hash_verbose(const char* message)
 static struct rc_hash_filereader filereader_funcs;
 static struct rc_hash_filereader* filereader = NULL;
 
+#if defined(WINVER) && WINVER >= 0x0500
 static void* filereader_open(const char* path)
 {
-#if defined(WINVER) && WINVER >= 0x0500
   /* Windows requires using wchar APIs for Unicode paths */
   /* Note that MultiByteToWideChar will only be defined for >= Windows 2000 */
   wchar_t* wpath;
@@ -76,21 +77,34 @@ static void* filereader_open(const char* path)
     free(wpath);
     return NULL;
   }
-#if defined(__STDC_WANT_SECURE_LIB__)
-  _wfopen_s(&fp, wpath, L"rb");
-#else
+
+ #if defined(__STDC_WANT_SECURE_LIB__)
+  /* have to use _SH_DENYNO because some cores lock the file while its loaded */
+  fp = _wfsopen(wpath, L"rb", _SH_DENYNO);
+ #else
   fp = _wfopen(wpath, L"rb");
-#endif
+ #endif
+
   free(wpath);
   return fp;
-#elif defined(__STDC_WANT_SECURE_LIB__)
-  FILE* fp;
-  fopen_s(&fp, path, "rb");
-  return fp;
-#else
-  return fopen(path, "rb");
-#endif
 }
+#else /* !WINVER >= 0x0500 */
+static void* filereader_open(const char* path)
+{
+ #if defined(__STDC_WANT_SECURE_LIB__)
+  #if defined(WINVER)
+   /* have to use _SH_DENYNO because some cores lock the file while its loaded */
+   return _fsopen(path, "rb", _SH_DENYNO);
+  #else /* !WINVER */
+   FILE *fp;
+   fopen_s(&fp, path, "rb");
+   return fp;
+  #endif
+ #else /* !__STDC_WANT_SECURE_LIB__ */
+  return fopen(path, "rb");
+ #endif
+}
+#endif /* WINVER >= 0x0500 */
 
 static void filereader_seek(void* file_handle, int64_t offset, int origin)
 {
@@ -528,7 +542,7 @@ static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector
     verbose_message_callback(message);
   }
 
-  if (size < (unsigned)num_read)
+  if (size < (unsigned)num_read) /* we read a whole sector - only hash the part containing file data */
     num_read = (size_t)size;
 
   do
@@ -834,11 +848,17 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
     uint32_t filename_len  = RC_ZIP_READ_LE16(cdir + 0x1C);
     int32_t  extra_len     = RC_ZIP_READ_LE16(cdir + 0x1E);
     int32_t  comment_len   = RC_ZIP_READ_LE16(cdir + 0x20);
+    int32_t  external_attr = RC_ZIP_READ_LE16(cdir + 0x26);
     uint64_t local_hdr_ofs = RC_ZIP_READ_LE32(cdir + 0x2A);
     cdir_entry_len = cdirhdr_size + filename_len + extra_len + comment_len;
 
     if (signature != 0x02014b50) /* expected central directory entry signature */
       break;
+
+    /* Ignore records describing a directory (we only hash file records) */
+    name = (cdir + cdirhdr_size);
+    if (name[filename_len - 1] == '/' || name[filename_len - 1] == '\\' || (external_attr & 0x10))
+        continue;
 
     /* Handle Zip64 fields */
     if (decomp_size == 0xFFFFFFFF || comp_size == 0xFFFFFFFF || local_hdr_ofs == 0xFFFFFFFF)
@@ -893,7 +913,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
     hashindex++;
 
     /* Convert and store the file name in the hash data buffer */
-    for (name = (cdir + cdirhdr_size), name_end = name + filename_len; name != name_end; name++)
+    for (name_end = name + filename_len; name != name_end; name++)
     {
       *(hashdata++) =
         (*name == '\\' ? '/' : /* convert back-slashes to regular slashes */
@@ -1717,7 +1737,7 @@ static int rc_hash_nintendo_3ds_ncch(md5_state_t* md5, void* file_handle, uint8_
         }
 
         AES_init_ctx(&ncch_aes, primary_key);
-        AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], exefs_section_size);
+        AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], (size_t)exefs_section_size);
       }
     }
   }
@@ -2750,6 +2770,14 @@ static int rc_hash_psp(char hash[33], const char* path)
   uint32_t size;
   md5_state_t md5;
 
+  /* https://www.psdevwiki.com/psp/PBP
+   * A PBP file is an archive containing the PARAM.SFO, primary executable, and a bunch of metadata.
+   * While we could extract the PARAM.SFO and primary executable to mimic the normal PSP hashing logic,
+   * it's easier to just hash the entire file. This also helps alleviate issues where the primary
+   * executable is just a game engine and the only differentiating data would be the metadata. */
+  if (rc_path_compare_extension(path, "pbp"))
+    return rc_hash_whole_file(hash, path);
+
   track_handle = rc_cd_open_track(path, 1);
   if (!track_handle)
     return rc_hash_error("Could not open track");
@@ -3765,6 +3793,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         if (rc_path_compare_extension(ext, "pce"))
         {
           iterator->consoles[0] = RC_CONSOLE_PC_ENGINE;
+        }
+        else if (rc_path_compare_extension(ext, "pbp"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_PSP;
         }
         else if (rc_path_compare_extension(ext, "pgm"))
         {

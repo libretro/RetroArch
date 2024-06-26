@@ -405,11 +405,12 @@ static int16_t rwebinput_is_pressed(
    const struct retro_keybind *bind = &binds[id];
    int key                          = bind->key;
 
-   if ((key < RETROK_LAST) && rwebinput_key_pressed(rwebinput, key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !keyboard_mapping_blocked)
-         return 1;
-   if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
-            bind->mbutton, false))
+   if (     (key && key < RETROK_LAST)
+         && rwebinput_key_pressed(rwebinput, key)
+         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+      )
+      return 1;
+   if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse, bind->mbutton, false))
       return 1;
    return 0;
 }
@@ -479,14 +480,14 @@ static int16_t rwebinput_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                if (rwebinput_is_pressed(rwebinput,
                         binds[port], idx, id_plus,
                         keyboard_mapping_blocked))
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                if (rwebinput_is_pressed(rwebinput, 
                         binds[port], idx, id_minus,
@@ -498,11 +499,10 @@ static int16_t rwebinput_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return ((id < RETROK_LAST) && rwebinput->keys[id]);
+         return (id && id < RETROK_LAST) && rwebinput->keys[id];
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return rwebinput_mouse_state(&rwebinput->mouse, id,
-               device == RARCH_DEVICE_MOUSE_SCREEN);
+         return rwebinput_mouse_state(&rwebinput->mouse, id, device == RARCH_DEVICE_MOUSE_SCREEN);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
@@ -527,7 +527,7 @@ static int16_t rwebinput_input_state(
             vp.full_height              = 0;
 
             if (!(video_driver_translate_coord_viewport_wrap(
-                        &vp, mouse->x, mouse->x,
+                        &vp, mouse->x, mouse->y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y)))
                return 0;
 

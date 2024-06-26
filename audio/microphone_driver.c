@@ -19,6 +19,7 @@
 #include <audio/conversion/float_to_s16.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 #include <audio/conversion/dual_mono.h>
 
 #include "microphone_driver.h"

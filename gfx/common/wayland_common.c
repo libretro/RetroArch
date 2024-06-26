@@ -34,7 +34,6 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
-#define APP_ID "org.libretro.RetroArch"
 #define WINDOW_TITLE "RetroArch"
 
 #ifdef HAVE_LIBDECOR_H
@@ -43,10 +42,6 @@
 
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
-
-/* Icon is 16x15 scaled by 16 */
-#define SPLASH_WINDOW_WIDTH 240
-#define SPLASH_WINDOW_HEIGHT 256
 
 #ifndef MFD_CLOEXEC
 #define MFD_CLOEXEC		0x0001U
@@ -135,8 +130,13 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       wl->buffer_height = wl->fractional_scale ?
          FRACTIONAL_SCALE_MULT(wl->height, wl->fractional_scale_num) : wl->height * wl->buffer_scale;
       wl->resize        = true;
-      if (wl->viewport) /* Update viewport */
+      if (wl->viewport)
+      {
+         /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+         wl_surface_commit(wl->surface);
+         wl_display_roundtrip(wl->input.dpy);
+      }
    }
 
    if (floating)
@@ -147,7 +147,10 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
 }
 
 void xdg_toplevel_handle_close(void *data,
-      struct xdg_toplevel *xdg_toplevel) { command_event(CMD_EVENT_QUIT, NULL); }
+      struct xdg_toplevel *xdg_toplevel)
+{
+   frontend_driver_set_signal_handler_state(1);
+}
 
 #ifdef HAVE_LIBDECOR_H
 void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
@@ -200,8 +203,13 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       wl->buffer_height = wl->fractional_scale ?
          FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num) : height * wl->buffer_scale;
       wl->resize        = true;
-      if (wl->viewport) /* Update viewport */
+      if (wl->viewport)
+      {
+         /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+         wl_surface_commit(wl->surface);
+         wl_display_roundtrip(wl->input.dpy);
+      }
    }
 
    state = wl->libdecor_state_new(wl->width, wl->height);
@@ -216,7 +224,10 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
 }
 
 void libdecor_frame_handle_close(struct libdecor_frame *frame,
-      void *data) { command_event(CMD_EVENT_QUIT, NULL); }
+      void *data)
+{
+   frontend_driver_set_signal_handler_state(1);
+}
 void libdecor_frame_handle_commit(struct libdecor_frame *frame,
       void *data) { }
 #endif
@@ -256,9 +267,6 @@ void gfx_ctx_wl_get_video_size_common(void *data,
 
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 {
-   if (wl->input.dpy != NULL && wl->input.fd >= 0)
-      close(wl->input.fd);
-
 #ifdef HAVE_XKBCOMMON
    free_xkb();
 #endif
@@ -718,7 +726,7 @@ bool gfx_ctx_wl_init_common(
          goto error;
       }
 
-      wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
+      wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
       wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
       wl->libdecor_frame_map(wl->libdecor_frame);
 
@@ -744,7 +752,7 @@ bool gfx_ctx_wl_init_common(
       wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
       xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
 
-      xdg_toplevel_set_app_id(wl->xdg_toplevel, APP_ID);
+      xdg_toplevel_set_app_id(wl->xdg_toplevel, WAYLAND_APP_ID);
       xdg_toplevel_set_title(wl->xdg_toplevel, WINDOW_TITLE);
 
       if (wl->deco_manager)
@@ -788,6 +796,9 @@ bool gfx_ctx_wl_init_common(
             wl_display_dispatch(wl->input.dpy);
       }
    }
+
+   // Ignore configure events until splash screen has been replaced
+   wl->ignore_configuration = true;
 
    wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
@@ -836,8 +847,13 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       wl->buffer_height        = wl->fractional_scale ?
          FRACTIONAL_SCALE_MULT(wl->buffer_height, wl->fractional_scale_num) : wl->buffer_height * wl->buffer_scale;
    }
-   if (wl->viewport) /* Update viewport */
+   if (wl->viewport)
+   {
+      /* Stretch old buffer to fill new size, commit/roundtrip to apply */
       wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+      wl_surface_commit(wl->surface);
+      wl_display_roundtrip(wl->input.dpy);
+   }
 
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)

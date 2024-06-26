@@ -32,6 +32,17 @@
 
 RETRO_BEGIN_DECLS
 
+/**
+ * Reads data from \c stdin if supported by the current platform.
+ * @param buf[out] The buffer to read data into.
+ * @param size The length of \c buf in bytes.
+ * @return The number of bytes that were read,
+ * or 0 if there was an error
+ * (including a lack of platform support).
+ * @note \c stdin is commonly used for text,
+ * but this function can read binary data as well.
+ * @see https://man7.org/linux/man-pages/man3/stdout.3.html
+ */
 size_t read_stdin(char *buf, size_t size);
 
 RETRO_END_DECLS

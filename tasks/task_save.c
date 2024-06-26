@@ -57,10 +57,18 @@
 /* Filesystem is in-memory anyway, use huge chunks since each
    read/write is a possible suspend to JS code */
 #define SAVE_STATE_CHUNK 4096 * 4096
-#elif defined(HAVE_LIBNX) || defined(_3DS)
-#define SAVE_STATE_CHUNK 4096 * 10
 #else
-#define SAVE_STATE_CHUNK 4096
+/* A low common denominator write chunk size.  On a slow
+  (speed class 6) SD card, we can write 6MB/s.  That gives us
+  roughly 100KB/frame.
+  This means we can write savestates with one syscall for cores
+  with less than 100KB of state. Class 10 is the standard now
+  even for lousy cards and supports 10MB/s, so you may prefer
+  to put this to 170KB. This all assumes that task_save's loop
+  is iterated once per frame at 60 FPS; if it's updated less
+  frequently this number could be doubled or quadrupled depending
+  on the tickrate. */
+#define SAVE_STATE_CHUNK 100 * 1024
 #endif
 
 #define RASTATE_VERSION 1
@@ -444,8 +452,20 @@ bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
 {
    rastate_size_info_t size;
    size_t len = content_get_rastate_size(&size, true);
-   if (len == 0 || len > buffer_size)
+   if (len == 0)
       return false;
+   if (len > buffer_size)
+   {
+#ifdef DEBUG
+      static size_t last_reported_len = 0;
+      if (len != last_reported_len)
+      {
+         last_reported_len = len;
+         RARCH_WARN("Rewind state size exceeds frame size (%zu > %zu).\n", len, buffer_size);
+      }
+#endif
+      return false;
+   }
    return content_write_serialized_state(buffer, &size, true);
 }
 
@@ -521,8 +541,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
-      size_t err_size = 8192 * sizeof(char);
-      char *err       = (char*)malloc(err_size);
+      char msg[PATH_MAX_LENGTH];
 
       if (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
       {
@@ -530,21 +549,19 @@ static void task_save_handler(retro_task_t *task)
                MSG_FAILED_TO_UNDO_SAVE_STATE);
          RARCH_ERR("[State]: %s \"%s\".\n", failed_undo_str,
                undo_save_buf.path);
-         err[0]      = '\0';
-         snprintf(err, err_size - 1, "%s \"RAM\".", failed_undo_str);
+         snprintf(msg, sizeof(msg), "%s \"RAM\".", failed_undo_str);
       }
       else
       {
-         size_t _len = strlcpy(err,
+         size_t _len = strlcpy(msg,
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
-               err_size - 1);
-         err[  _len] = ' ';
-         err[++_len] = '\0';
-         strlcat(err, state->path, err_size - 1);
+               sizeof(msg));
+         msg[  _len] = ' ';
+         msg[++_len] = '\0';
+         strlcpy(msg + _len, state->path, sizeof(msg) - _len);
       }
 
-      task_set_error(task, strdup(err));
-      free(err);
+      task_set_error(task, strdup(msg));
       task_save_handler_finished(task, state);
       return;
    }

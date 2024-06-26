@@ -542,14 +542,12 @@ const char* xmb_theme_ident(void)
    {
       case XMB_ICON_THEME_FLATUI:
          return "flatui";
-      case XMB_ICON_THEME_RETROACTIVE:
-         return "retroactive";
+      case XMB_ICON_THEME_FLATUX:
+         return "flatux";
       case XMB_ICON_THEME_RETROSYSTEM:
          return "retrosystem";
       case XMB_ICON_THEME_PIXEL:
          return "pixel";
-      case XMB_ICON_THEME_NEOACTIVE:
-         return "neoactive";
       case XMB_ICON_THEME_SYSTEMATIC:
          return "systematic";
       case XMB_ICON_THEME_DOTART:
@@ -2459,7 +2457,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len;
+         size_t len, syslen;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -2469,13 +2467,13 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
-         len = fill_pathname_base(sysname, path, sizeof(sysname));
+         syslen = fill_pathname_base(sysname, path, sizeof(sysname));
          /* Manually strip the extension (and dot) from sysname */
-         sysname[len-4]     =
-         sysname[len-3]     =
-         sysname[len-2]     =
-         sysname[len-1]     = '\0';
-
+         sysname[syslen-4]     =
+         sysname[syslen-3]     =
+         sysname[syslen-2]     =
+         sysname[syslen-1]     = '\0';
+         syslen -= 4;
          len = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
          texturepath[  len] = '.';
@@ -2512,7 +2510,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             image_texture_free(&ti);
          }
 
-         strlcat(sysname, "-content.png", sizeof(sysname));
+         strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          /* Assemble new icon path */
          fill_pathname_join_special(content_texturepath, iconpath, sysname,
                sizeof(content_texturepath));
@@ -2915,7 +2913,13 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
          return xmb->textures.list[XMB_TEXTURE_ADD_FAVORITE];
+      case MENU_ENUM_LABEL_ADD_TO_PLAYLIST:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST:
+         return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
+      case MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST:
+         return xmb->textures.list[XMB_TEXTURE_ADD];
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
@@ -3016,7 +3020,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
-      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
          return xmb->textures.list[XMB_TEXTURE_FAVORITE];
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
@@ -3082,6 +3085,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_OVERLAYS:
          return xmb->textures.list[XMB_TEXTURE_OVERLAY];
+      case MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS:
+      case MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS:
       case MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
@@ -3527,22 +3532,22 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             option in Input # Binds */
          input_id++;
 #endif
-         if (type == input_id + 1)
+         if (type >= input_id + 1 && type <= input_id + 3)
             return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
-         if (type == input_id + 2)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
-         if (type == input_id + 3)
-            return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
          if (type == input_id + 4)
-            return xmb->textures.list[XMB_TEXTURE_RELOAD];
+            return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
          if (type == input_id + 5)
+            return xmb->textures.list[XMB_TEXTURE_INPUT_BIND_ALL];
+         if (type == input_id + 6)
+            return xmb->textures.list[XMB_TEXTURE_RELOAD];
+         if (type == input_id + 7)
             return xmb->textures.list[XMB_TEXTURE_SAVING];
-         if ((type > (input_id + 29)) && (type < (input_id + 41)))
+         if ((type > (input_id + 31)) && (type < (input_id + 43)))
             return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
-         if (type == input_id + 41)
+         if (type == input_id + 43)
             return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
          /* Align to use the same code of Quickmenu controls */
-         input_id = input_id + 6;
+         input_id = input_id + 8;
       }
       else
       {
@@ -6122,7 +6127,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (timedate_enable)
    {
       gfx_display_ctx_datetime_t datetime;
-      char timedate[255];
+      char timedate[256];
+      size_t _len  = 0;
       size_t x_pos = 0;
 
       if (percent_width)
@@ -6164,10 +6170,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       datetime.time_mode      = settings->uints.menu_timedate_style;
       datetime.date_separator = settings->uints.menu_timedate_date_separator;
 
-      menu_display_timedate(&datetime);
+      _len = menu_display_timedate(&datetime);
 
       title_header_max_width = x_pos + font_driver_get_message_width(
-            xmb->font, timedate, strlen(timedate), 1.0f);
+            xmb->font, timedate, _len, 1.0f);
 
       xmb_draw_text(shadows_enable, xmb, settings, timedate,
             video_width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,

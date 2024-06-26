@@ -139,7 +139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "تعطيل وضع Kiosk (مطلوب إعادة التشغيل)"
+   "تعطيل وضع الكشك (مطلوب إعادة التشغيل)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -198,8 +198,24 @@ MSG_HASH(
    "إعادة التشغيل"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "إعادة تشغيل تطبيق RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "خروج"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج مفعل."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج معطل."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "إنهاء RetroArch. إحباط البرنامج بأي طريقة صعبة (مثل SIGKILL، إلخ.) سيتم إنهاء RetroArch دون حفظ التكوين، إلخ. على أمثال يونكس، يسمح SIGINT/SIGTERM بإزالة التشكيلات النظيفة مما يتضمن حفظ الإعدادات عندما يكون مفعلاً."
    )
 
 /* Main Menu > Load Core */
@@ -488,6 +504,10 @@ MSG_HASH(
    "مطلوب الرسومات API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "المسار الكامل للأساس"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "دعم حفظ الحالة"
    )
@@ -506,6 +526,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "البرنامج الثابت فيرموير"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- جاري البحث في: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -530,6 +558,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "منع تعديل النواة المثبتة حاليا. يمكن استخدامها لتجنب التحديثات غير المرغوب فيها عندما يتطلب المحتوى إصدار أساسي محدد (على سبيل المثال مجموعة رومات الآركيد)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "استبعاد من قائمة 'نوى بلا محتوى'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1117,6 +1149,14 @@ MSG_HASH(
    "تغيير اعدادات النواة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "اسم المستخدم"
    )
@@ -1135,10 +1175,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "مستعرض الملفات"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "تغيير إعدادات متصفح الملفات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
@@ -1335,10 +1371,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "نظام تشغيل الجوي باد"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "مشغل Joypad للاستخدام."
    )
 
 MSG_HASH(
@@ -1851,6 +1883,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "نسبة الجوانب المخصصة (موضع X)"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "نسبة الجوانب المخصصة (العرض)"
@@ -3086,16 +3120,8 @@ MSG_HASH(
    "إظهار الملفات والمجلدات المخفية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "إظهار الملفات/الدلائل المخفية داخل متصفح الملفات."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "تصفية ملحقات غير معروفة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "تصفية الملفات التي تظهر في متصفح الملفات عن طريق ملحقات مدعومة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -3334,12 +3360,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
    "عتامة جميع عناصر واجهة المستخدم للتراكب."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "حدد تراكب من متصفح الملفات."
-   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -3355,10 +3383,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "مسار تخطيط الفيديو"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "حدد تخطيط فيديو من متصفح الملفات."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5514,10 +5538,6 @@ MSG_HASH(
    "وضع المشرف"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
-   "أعلى"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
    "المحفوظات والمفضلة"
    )
@@ -5997,10 +6017,6 @@ MSG_HASH(
    "حدد سمة لون مختلفة. اختيار 'مخصص' يمكن استخدام ملفات الإعداد المسبق لقائمة الملفات."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "حدد الإعداد المسبق لقائمة السمة من متصفح الملفات."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "تأثيرات الظل"
    )
@@ -6414,16 +6430,8 @@ MSG_HASH(
    "منهجي"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
-   "نشط جديد"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
    "بكسل"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
-   "مفعل retro"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
@@ -8770,10 +8778,6 @@ MSG_HASH(
    "جار تحليل الملفات"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "اكتمل تحليل المجلد"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "إرسال الأمر"
    )
@@ -9006,44 +9010,8 @@ MSG_HASH(
    "فشل في تحميل الحالة. تم تعطيل تشغيل الأمام."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "انتهى فحص الملف"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "بدأ البحث عن الغش بنجاح"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "فشل في بدء البحث عن الغش"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "البحث لم يتم تهيئته/بدء"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "عدد المطابقة الجديد = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "تم إضافة %u مطابقة"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "فشل في إضافة المطابقات"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "تم إنشاء رمز من المطابقة"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "فشل إنشاء الكود"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "المباراة المحذوفة"
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
@@ -9078,10 +9046,6 @@ MSG_HASH(
    "تم حذف الغش."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "فشل في تعيين القرص"
-   )
-MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "يجب عليك إيقاف أو تعطيل الوضع الصعب للإنجازات لتحميل الحالات."
    )
@@ -9112,10 +9076,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "الحد الأقصى"
-   )
-MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "تحذير: الأصول المفقودة، استخدم التحديث عبر الإنترنت إذا كانت متوفرة"
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -9150,24 +9110,8 @@ MSG_HASH(
    "حدث خطأ أثناء إزالة القائمة مسبقاً."
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "ملف DT غير صالح المحدد"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "ملف DAT المحدد كبير جداً (الذاكرة الحرة غير كافية)"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "فشل في تحميل ملف DT (تنسيق غير صالح؟)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "تكوين الفحص اليدوي غير صالح"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "لم يتم العثور على محتوى صالح"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

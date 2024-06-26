@@ -1380,6 +1380,7 @@ static float audio_driver_monitor_adjust_system_rates(
       float video_refresh_rate,
       unsigned video_swap_interval,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       float audio_max_timing_skew)
 {
    float inp_sample_rate        = input_sample_rate;
@@ -1394,7 +1395,7 @@ static float audio_driver_monitor_adjust_system_rates(
    float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
 
    timing_skew            =
       fabs(1.0f - input_fps / target_video_sync_rate);
@@ -1411,6 +1412,7 @@ static bool video_driver_monitor_adjust_system_rates(
       float audio_max_timing_skew,
       unsigned video_swap_interval,
       unsigned black_frame_insertion,
+      unsigned shader_subframes,
       double input_fps)
 {
    float target_video_sync_rate = timing_skew_hz;
@@ -1421,7 +1423,7 @@ static bool video_driver_monitor_adjust_system_rates(
    float timing_skew                     = 0.0f;
 
    if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval);
+      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
 
    if (!vrr_runloop_enable)
    {
@@ -1448,7 +1450,8 @@ static void driver_adjust_system_rates(
       float audio_max_timing_skew,
       bool video_adaptive_vsync,
       unsigned video_swap_interval,
-      unsigned black_frame_insertion)
+      unsigned black_frame_insertion,
+      unsigned shader_subframes)
 {
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
@@ -1463,6 +1466,7 @@ static void driver_adjust_system_rates(
          (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
          video_swap_interval,
          black_frame_insertion,
+         shader_subframes,
          audio_max_timing_skew,
          video_refresh_rate,
          input_fps);
@@ -1482,6 +1486,7 @@ static void driver_adjust_system_rates(
                   video_refresh_rate,
                   video_swap_interval,
                   black_frame_insertion,
+                  shader_subframes,
                   audio_max_timing_skew);
 
       RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
@@ -1506,6 +1511,7 @@ static void driver_adjust_system_rates(
                audio_max_timing_skew,
                video_swap_interval,
                black_frame_insertion,
+               shader_subframes,
                input_fps))
       {
          /* We won't be able to do VSync reliably
@@ -1626,7 +1632,8 @@ void drivers_init(
                                  settings->floats.audio_max_timing_skew,
                                  settings->bools.video_adaptive_vsync,
                                  settings->uints.video_swap_interval,
-                                 settings->uints.video_black_frame_insertion
+                                 settings->uints.video_black_frame_insertion,
+                                 settings->uints.video_shader_subframes
                                  );
 
    /* Initialize video driver */
@@ -2063,6 +2070,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             unsigned video_swap_interval  = settings->uints.video_swap_interval;
             unsigned
                black_frame_insertion      = settings->uints.video_black_frame_insertion;
+            unsigned shader_subframes     = settings->uints.video_shader_subframes;
 
             video_monitor_set_refresh_rate(*hz);
 
@@ -2077,7 +2085,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                                        audio_max_timing_skew,
                                        video_adaptive_vsync,
                                        video_swap_interval,
-                                       black_frame_insertion
+                                       black_frame_insertion,
+                                       shader_subframes
                                        );
          }
          break;
@@ -2159,8 +2168,9 @@ struct string_list *dir_list_new_special(const char *input_dir,
    char ext_shaders[255];
 #endif
    char ext_name[16];
-   const char *exts                  = NULL;
-   bool recursive                    = false;
+   size_t _len         = 0;
+   const char *exts    = NULL;
+   bool recursive      = false;
 
    switch (type)
    {
@@ -2187,36 +2197,36 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            union string_list_elem_attr attr;
-            struct string_list str_list;
-
-            if (!string_list_initialize(&str_list))
-               return NULL;
-
             ext_shaders[0]                   = '\0';
-
-            attr.i = 0;
 
             if (video_shader_is_supported(RARCH_SHADER_CG))
             {
-               string_list_append(&str_list, "cgp", attr);
-               string_list_append(&str_list, "cg", attr);
+               _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "cg", sizeof(ext_shaders) - _len);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
-               string_list_append(&str_list, "glslp", attr);
-               string_list_append(&str_list, "glsl", attr);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "glsl", sizeof(ext_shaders) - _len);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
-               string_list_append(&str_list, "slangp", attr);
-               string_list_append(&str_list, "slang", attr);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
+               if (ext_shaders[_len-1] != '\0')
+                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "slang", sizeof(ext_shaders) - _len);
             }
 
-            string_list_join_concat(ext_shaders, sizeof(ext_shaders), &str_list, "|");
-            string_list_deinitialize(&str_list);
             exts = ext_shaders;
          }
          break;
@@ -3029,7 +3039,6 @@ static void dir_check_config(void)
    /* PORT */
    ENSURE_DIRECTORY(settings->paths.directory_video_shader);
    ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVESTATE));
-   ENSURE_DIRECTORY(settings->paths.directory_resampler);
    ENSURE_DIRECTORY(dir_get_ptr(RARCH_DIR_SAVEFILE));
    ENSURE_DIRECTORY(settings->paths.directory_screenshot);
    ENSURE_DIRECTORY(settings->paths.directory_system);
@@ -3076,9 +3085,6 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_ACCESSIBILITY) || defined(HAVE_TRANSLATE)
    access_state_t *access_st       = access_state_get_ptr();
 #endif
-#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
-#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st      = menu_state_get_ptr();
 #endif
@@ -3095,12 +3101,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          input_overlay_unload();
 #endif
-#ifdef HAVE_TRANSLATE
-         translation_release(true);
-#ifdef HAVE_GFX_WIDGETS
-         if (p_dispwidget->ai_service_overlay_state != 0)
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
+         /* Because the overlay is a display widget,
+          * it's going to be written
+          * over the menu, so we unset it here. */
+         if (dispwidget_get_ptr()->ai_service_overlay_state != 0)
             gfx_widgets_ai_service_overlay_unload();
-#endif
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:
@@ -3174,11 +3180,6 @@ bool command_event(enum event_command cmd, void *data)
                            accessibility_narrator_speech_speed,
                            (char*)msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
-#endif
-                  translation_release(true);
                   command_event(CMD_EVENT_UNPAUSE, NULL);
                }
                else /* Pause on call */
@@ -3197,24 +3198,18 @@ bool command_event(enum event_command cmd, void *data)
                 * Also, this mode is required for "auto" translation
                 * packages, since you don't want to pause for that.
                 */
-               if (access_st->ai_service_auto != 0)
+               if (access_st->ai_service_auto == 2)
                {
                   /* Auto mode was turned on, but we pressed the
                    * toggle button, so turn it off now. */
-                  translation_release(true);
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
+                  access_st->ai_service_auto = 0;
+#ifdef HAVE_MENU_WIDGETS
+                  gfx_widgets_ai_service_overlay_unload();
 #endif
                }
                else
                {
-#ifdef HAVE_GFX_WIDGETS
-                  if (p_dispwidget->ai_service_overlay_state != 0)
-                     gfx_widgets_ai_service_overlay_unload();
-                  else
-#endif
-                     command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+                  command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
                }
             }
 #endif
@@ -3867,23 +3862,50 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
+         {
+            bool menu_pause_libretro = false;
+            bool audio_enable_menu   = false;
+
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-         if (     settings->bools.audio_enable_menu
-               && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            return false;
+            audio_enable_menu        = settings->bools.audio_enable_menu
+                  && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
 #endif
-         if (!audio_driver_stop())
-            return false;
+#ifdef HAVE_NETWORKING
+            menu_pause_libretro      = settings->bools.menu_pause_libretro
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+            menu_pause_libretro      = settings->bools.menu_pause_libretro;
+#endif
+
+            if (audio_enable_menu || !menu_pause_libretro)
+               return false;
+
+            if (!audio_driver_stop())
+               return false;
+         }
          break;
       case CMD_EVENT_AUDIO_START:
+         {
+            bool menu_pause_libretro = false;
+            bool audio_enable_menu   = false;
+
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-         if (     settings->bools.audio_enable_menu
-               && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            return false;
+            audio_enable_menu        = settings->bools.audio_enable_menu
+                  && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE;
 #endif
-         if (!audio_driver_start(runloop_st->flags &
-                  RUNLOOP_FLAG_SHUTDOWN_INITIATED))
-            return false;
+#ifdef HAVE_NETWORKING
+            menu_pause_libretro      = settings->bools.menu_pause_libretro
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+            menu_pause_libretro      = settings->bools.menu_pause_libretro;
+#endif
+
+            if (audio_enable_menu && !menu_pause_libretro)
+               return false;
+
+            if (!audio_driver_start(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+               return false;
+         }
          break;
 #ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_STOP:
@@ -4077,7 +4099,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            if (!history_list_enable)
+            if (!history_list_enable || !playlist_config.capacity)
                return false;
 
             _msg = msg_hash_to_str(MSG_LOADING_HISTORY_FILE);
@@ -4342,11 +4364,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          }
+         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
-         system("(sleep 1 && shutdown -P now) & disown");
+         system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
 #else
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
@@ -4357,11 +4379,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(__linux__) && !defined(ANDROID)
          if (settings->bools.config_save_on_exit)
          {
-            runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          }
+         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
-         system("(sleep 1 && shutdown -r now) & disown");
+         system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
 #else
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
@@ -4389,7 +4411,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             struct string_list *str_list = (struct string_list*)data;
 
-            /* Check whether favourties playlist is at capacity */
+            /* Check whether favourites playlist is at capacity */
             if (playlist_size(g_defaults.content_favorites) >=
                   playlist_capacity(g_defaults.content_favorites))
             {
@@ -4429,7 +4451,80 @@ bool command_event(enum event_command cmd, void *data)
                      runloop_msg_queue_push(
                            msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if TARGET_OS_TV
+                     update_topshelf();
+#endif
                   }
+               }
+            }
+            break;
+         }
+         case CMD_EVENT_ADD_TO_PLAYLIST:
+         {
+            struct string_list *str_list = (struct string_list*)data;
+            struct menu_state *menu_st     = menu_state_get_ptr();
+            settings_t *settings = config_get_ptr();
+
+            if (str_list)
+            {
+               if (str_list->size >= 7)
+               {
+                  playlist_config_t playlist_config;
+                  playlist_t * playlist;
+
+                  struct playlist_entry entry     = {0};
+                  bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
+
+                  entry.path      = str_list->elems[0].data; /* content_path */
+                  entry.label     = str_list->elems[1].data; /* content_label */
+                  entry.core_path = str_list->elems[2].data; /* core_path */
+                  entry.core_name = str_list->elems[3].data; /* core_name */
+                  entry.crc32     = str_list->elems[4].data; /* crc32 */
+                  entry.db_name   = str_list->elems[5].data; /* db_name */
+
+                  /* load the playlist */
+                  playlist_config.capacity            = COLLECTION_SIZE;
+                  playlist_config.old_format          = settings->bools.playlist_use_old_format;
+                  playlist_config.compress            = settings->bools.playlist_compression;
+                  playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+                  playlist_config_set_base_content_directory(&playlist_config,
+                        settings->bools.playlist_portable_paths
+                        ? settings->paths.directory_menu_content
+                        : NULL);
+                  playlist_config_set_path(&playlist_config, str_list->elems[6].data);
+                  playlist = playlist_init(&playlist_config);
+
+                  /* Check whether favourties playlist is at capacity */
+                  if (playlist_size(playlist) >=
+                        playlist_capacity(playlist))
+                  {
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+                     return true;
+                  }
+
+                  /* Write playlist entry */
+                  if (playlist_push(playlist, &entry))
+                  {
+                     enum playlist_sort_mode current_sort_mode =
+                        playlist_get_sort_mode(playlist);
+
+                     /* New addition - need to resort if option is enabled */
+                     if (     (playlist_sort_alphabetical
+                           && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+                           || (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
+                        playlist_qsort(playlist);
+
+                     playlist_write_file(playlist);
+                     runloop_msg_queue_push(
+                           msg_hash_to_str(MSG_ADDED_TO_PLAYLIST), 1, 180, true, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  }
+                  menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+                  if (menu_st->driver_ctx->environ_cb)
+                     menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+                           NULL, menu_st->userdata);
                }
             }
             break;
@@ -4597,19 +4692,22 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          {
 #ifdef HAVE_NETWORKING
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro
-               && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+            bool menu_pause_libretro = settings->bools.menu_pause_libretro
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
-            bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+            bool menu_pause_libretro = settings->bools.menu_pause_libretro;
 #endif
+
             if (menu_pause_libretro)
             {
+               command_event(CMD_EVENT_AUDIO_STOP, NULL);
 #ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
             }
             else
             {
+               command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
@@ -4972,6 +5070,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_msg)
                   verbose                      = *show_msg;
 
+               if (!settings->bools.notification_show_disk_control)
+                  verbose                      = false;
+
                disk_control_set_eject_state(
                      &sys_info->disk_control, eject, verbose);
 
@@ -5004,6 +5105,9 @@ bool command_event(enum event_command cmd, void *data)
                if (show_msg)
                   verbose     = *show_msg;
 
+               if (!settings->bools.notification_show_disk_control)
+                  verbose     = false;
+
                disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
             else
@@ -5027,6 +5131,9 @@ bool command_event(enum event_command cmd, void *data)
 
                if (show_msg)
                   verbose     = *show_msg;
+
+               if (!settings->bools.notification_show_disk_control)
+                  verbose     = false;
 
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }
@@ -5338,7 +5445,9 @@ bool command_event(enum event_command cmd, void *data)
                bool paused = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
                if (data)
                   paused = *((bool*)data);
-
+               if (     (access_st->ai_service_auto == 0)
+                     && !settings->bools.ai_service_pause)
+                  access_st->ai_service_auto = 1;
                run_translation_service(settings, paused);
             }
 #endif
@@ -6229,7 +6338,8 @@ static void retroarch_print_version(void)
 static void retroarch_print_help(const char *arg0)
 {
    char buf[2048];
-   buf[0] = '\0';
+   size_t _len = 0;
+   buf[0]      = '\0';
 
    frontend_driver_attach_console();
    fputs("\n", stdout);
@@ -6240,7 +6350,7 @@ static void retroarch_print_help(const char *arg0)
 
    fprintf(stdout, "Usage: %s [OPTIONS]... [FILE]\n\n", arg0);
 
-   strlcat(buf,
+   _len = strlcpy(buf + _len,
          "  -h, --help                     "
          "Show this help message.\n"
          "  -v, --verbose                  "
@@ -6251,29 +6361,29 @@ static void retroarch_print_help(const char *arg0)
          "Show version.\n"
          "      --features                 "
          "Print available features compiled into program.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #ifdef HAVE_MENU
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --menu                     "
          "Do not require content or libretro core to be loaded,\n"
          "                                 "
          "  starts directly in menu. If no arguments are passed to\n"
          "                                 "
          "  the program, it is equivalent to using --menu as only argument.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
 #ifdef HAVE_CONFIGFILE
-   strlcat(buf, "  -c, --config=FILE              "
-         "Path for config file.\n", sizeof(buf));
+   _len += strlcpy(buf + _len, "  -c, --config=FILE              "
+         "Path for config file.\n", sizeof(buf) - _len);
 #ifdef _WIN32
-   strlcat(buf, "                                 "
+   _len += strlcpy(buf + _len, "                                 "
          "  Defaults to retroarch.cfg in same directory as retroarch.exe.\n"
          "                                 "
          "  If a default config is not found, the program will attempt to create one.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #else
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "                                 "
          "  By default looks for config in\n"
          "                                 "
@@ -6286,22 +6396,32 @@ static void retroarch_print_help(const char *arg0)
          "  If a default config is not found, the program will attempt to create one\n"
          "                                 "
          "  based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg).\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
-   strlcat(buf, "      --appendconfig=FILE        "
+   _len += strlcpy(buf + _len, "      --appendconfig=FILE        "
          "Extra config files are loaded in, and take priority over\n"
          "                                 "
          "  config selected in -c (or default). Multiple configs are\n"
          "                                 "
          "  delimited by '|'.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
    fputs(buf, stdout);
    buf[0] = '\0';
+   _len   = 0;
+
+   _len += strlcpy(buf + _len,
+         "      --subsystem=NAME           "
+         "Use a subsystem of the libretro core. Multiple content\n"
+         "                                 "
+         "  files are loaded as multiple arguments. If a content\n"
+         "                                 "
+         "  file is skipped, use a blank (\"\") command line argument.\n"
+         , sizeof(buf) - _len);
 
 #ifdef HAVE_DYNAMIC
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "  -L, --libretro=FILE            "
          "Path to libretro implementation. Overrides any config setting.\n"
          "                                 "
@@ -6310,42 +6430,34 @@ static void retroarch_print_help(const char *arg0)
          "  1. The full path to a core shared object library: path/to/<core_name>_libretro.<lib_ext>\n"
          "                                 "
          "  2. A core shared object library 'file name' (*): <core_name>_libretro.<lib_ext>\n"
-         , sizeof(buf));
-   strlcat(buf,
+         , sizeof(buf) - _len);
+   _len += strlcpy(buf + _len,
          "                                 "
          "  3. A core 'short name' (*): <core_name>_libretro OR <core_name>\n"
          "                                 "
          "  (*) If 'file name' or 'short name' do not correspond to an existing full file path,\n"
          "                                 "
          "  the configured frontend 'cores' directory will be searched for a match.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
-   strlcat(buf,
-         "      --subsystem=NAME           "
-         "Use a subsystem of the libretro core. Multiple content\n"
-         "                                 "
-         "  files are loaded as multiple arguments. If a content\n"
-         "                                 "
-         "  file is skipped, use a blank (\"\") command line argument.\n"
-         , sizeof(buf));
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "                                 "
          "  Content must be loaded in an order which depends on the\n"
          "                                 "
          "  particular subsystem used. See verbose log output to learn\n"
          "                                 "
          "  how a particular subsystem wants content to be loaded.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 
 #ifdef HAVE_LIBRETRODB
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --scan=PATH|FILE           "
          "Import content from path.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
-   strlcat(buf,
+   _len = strlcpy(buf + _len,
          "  -f, --fullscreen               "
          "Start the program in fullscreen regardless of config setting.\n"
          "      --set-shader=PATH          "
@@ -6354,18 +6466,20 @@ static void retroarch_print_help(const char *arg0)
          "  Effectively overrides automatic shader presets.\n"
          "                                 "
          "  An empty argument \"\" will disable automatic shader presets.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 
    fputs(buf, stdout);
    buf[0] = '\0';
+   _len   = 0;
 
-   printf(      "  -N, --nodevice=PORT            "
+   _len += snprintf(buf + _len, sizeof(buf) - _len,"  -N, --nodevice=PORT            "
          "Disconnects controller device connected to PORT (1 to %d).\n", MAX_USERS);
-   printf(      "  -A, --dualanalog=PORT          "
+   _len += snprintf(buf + _len, sizeof(buf) - _len,"  -A, --dualanalog=PORT          "
          "Connect a DualAnalog controller to PORT (1 to %d).\n", MAX_USERS);
-   printf(      "  -d, --device=PORT:ID           "
+   _len += snprintf(buf + _len, sizeof(buf) - _len,"  -d, --device=PORT:ID           "
          "Connect a generic device into PORT of the device (1 to %d).\n", MAX_USERS);
-   strlcat(buf,
+
+   _len += strlcpy(buf + _len,
          "                                 "
          "  Format is PORT:ID, where ID is a number corresponding to the particular device.\n"
          "  -M, --sram-mode=MODE           "
@@ -6374,10 +6488,10 @@ static void retroarch_print_help(const char *arg0)
          "  'noload-nosave', 'noload-save', 'load-nosave' or 'load-save'.\n"
          "                                 "
          "  Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 
 #ifdef HAVE_NETWORKING
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "  -H, --host                     "
          "Host netplay as user 1.\n"
          "  -C, --connect=HOST             "
@@ -6390,87 +6504,86 @@ static void retroarch_print_help(const char *arg0)
          "Picks a username (for use with netplay). Not mandatory.\n"
          "      --check-frames=NUMBER      "
          "Check frames when using netplay.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #ifdef HAVE_NETWORK_CMD
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --command                  "
          "Sends a command over UDP to an already running program process.\n"
          "                                 "
          "  Available commands are listed if command is invalid.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "  -P, --play-replay=FILE         "
          "Playback a replay file.\n"
          "  -R, --record-replay=FILE       "
          "Start recording a replay file from the beginning.\n"
          "      --eof-exit                 "
          "Exit upon reaching the end of the replay file.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "  -r, --record=FILE              "
          "Path to record video file. Using mkv extension is recommended.\n"
          "      --recordconfig             "
          "Path to settings used during recording.\n"
          "      --size=WIDTHxHEIGHT        "
          "Overrides output video size when recording.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 
    fputs(buf, stdout);
    buf[0] = '\0';
+   _len   = 0;
 
-   strlcat(buf,
+   _len   = strlcpy(buf + _len,
          "  -D, --detach                   "
          "Detach program from the running console. Not relevant for all platforms.\n"
          "      --max-frames=NUMBER        "
          "Runs for the specified number of frames, then exits.\n"
-         , sizeof(buf));
-
-
+         , sizeof(buf) - _len);
 
 #ifdef HAVE_PATCH
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "  -U, --ups=FILE                 "
          "Specifies path for UPS patch that will be applied to content.\n"
          "      --bps=FILE                 "
          "Specifies path for BPS patch that will be applied to content.\n"
          "      --ips=FILE                 "
          "Specifies path for IPS patch that will be applied to content.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #ifdef HAVE_XDELTA
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --xdelta=FILE              "
          "Specifies path for Xdelta patch that will be applied to content.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif /* HAVE_XDELTA */
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --no-patch                 "
          "Disables all forms of content patching.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif /* HAVE_PATCH */
 
 #ifdef HAVE_SCREENSHOTS
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --max-frames-ss            "
          "Takes a screenshot at the end of max-frames.\n"
          "      --max-frames-ss-path=FILE  "
          "Path to save the screenshot to at the end of max-frames.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
 #ifdef HAVE_ACCESSIBILITY
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --accessibility            "
          "Enables accessibilty for blind users using text-to-speech.\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 #endif
 
-   strlcat(buf,
+   _len += strlcpy(buf + _len,
          "      --load-menu-on-error       "
          "Open menu instead of quitting if specified core or content fails to load.\n"
          "  -e, --entryslot=NUMBER         "
@@ -6479,7 +6592,7 @@ static void retroarch_print_help(const char *arg0)
          "Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n"
          "  -S, --savestate=PATH           "
          "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n"
-         , sizeof(buf));
+         , sizeof(buf) - _len);
 
    fputs(buf, stdout);
 }
@@ -6510,7 +6623,12 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    path_stats = path_stat(path);
 
    /* Check if path is a directory */
-   if ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   if (
+       ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+#if IOS
+       && !string_ends_with(path, ".framework")
+#endif
+       )
    {
       path_clear(RARCH_PATH_CORE);
 
@@ -6986,16 +7104,16 @@ static bool retroarch_parse_input_and_config(
             case 'd':
                {
                   unsigned new_port;
-                  unsigned id              = 0;
-                  struct string_list *list = string_split(optarg, ":");
+                  char *tok, *save;
                   int    port              = 0;
+                  unsigned id              = 0;
+                  char *optarg_cpy         = strdup(optarg);
 
-                  if (list && list->size == 2)
-                  {
-                     port = (int)strtol(list->elems[0].data, NULL, 0);
-                     id   = (unsigned)strtoul(list->elems[1].data, NULL, 0);
-                  }
-                  string_list_free(list);
+                  if ((tok = strtok_r(optarg_cpy, ":", &save)))
+                     port = (int)strtol(tok, NULL, 0);
+                  if ((tok = strtok_r(NULL, ":", &save)))
+                     id   = (unsigned)strtoul(tok, NULL, 0);
+                  free(optarg_cpy);
 
                   if (port < 1 || port > MAX_USERS)
                   {
@@ -8152,64 +8270,80 @@ bool retroarch_override_setting_is_set(
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *str_out, size_t str_len)
 {
+   size_t _len = 0;
    switch (type)
    {
       case RARCH_CAPABILITIES_CPU:
          {
             uint64_t cpu = cpu_features_get();
-            snprintf(str_out, str_len,
-               "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
-               cpu & RETRO_SIMD_MMX ? "MMX " : "",
-               cpu & RETRO_SIMD_MMXEXT ? "MMXEXT " : "",
-               cpu & RETRO_SIMD_SSE ? "SSE " : "",
-               cpu & RETRO_SIMD_SSE2 ? "SSE2 " : "",
-               cpu & RETRO_SIMD_SSE3 ? "SSE3 " : "",
-               cpu & RETRO_SIMD_SSSE3 ? "SSSE3 " : "",
-               cpu & RETRO_SIMD_SSE4 ? "SSE4 " : "",
-               cpu & RETRO_SIMD_SSE42 ? "SSE42 " : "",
-               cpu & RETRO_SIMD_AES ? "AES " : "",
-               cpu & RETRO_SIMD_AVX ? "AVX " : "",
-               cpu & RETRO_SIMD_AVX2 ? "AVX2 " : "",
-               cpu & RETRO_SIMD_NEON ? "NEON " : "",
-               cpu & RETRO_SIMD_VFPV3 ? "VFPV3 " : "",
-               cpu & RETRO_SIMD_VFPV4 ? "VFPV4 " : "",
-               cpu & RETRO_SIMD_VMX ? "VMX " : "",
-               cpu & RETRO_SIMD_VMX128 ? "VMX128 " : "",
-               cpu & RETRO_SIMD_VFPU ? "VFPU " : "",
-               cpu & RETRO_SIMD_PS ? "PS " : "",
-               cpu & RETRO_SIMD_ASIMD ? "ASIMD " : "");
+            if (cpu & RETRO_SIMD_MMX)
+               _len += strlcpy(str_out + _len, "MMX ", str_len - _len);
+            if (cpu & RETRO_SIMD_MMXEXT)
+               _len += strlcpy(str_out + _len, "MMXEXT ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE)
+               _len += strlcpy(str_out + _len, "SSE ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE2)
+               _len += strlcpy(str_out + _len, "SSE2 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE3)
+               _len += strlcpy(str_out + _len, "SSE3 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSSE3)
+               _len += strlcpy(str_out + _len, "SSSE3 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE4)
+               _len += strlcpy(str_out + _len, "SSE4 ", str_len - _len);
+            if (cpu & RETRO_SIMD_SSE42)
+               _len += strlcpy(str_out + _len, "SSE42 ", str_len - _len);
+            if (cpu & RETRO_SIMD_AES)
+               _len += strlcpy(str_out + _len, "AES ", str_len - _len);
+            if (cpu & RETRO_SIMD_AVX)
+               _len += strlcpy(str_out + _len, "AVX ", str_len - _len);
+            if (cpu & RETRO_SIMD_AVX2)
+               _len += strlcpy(str_out + _len, "AVX2 ", str_len - _len);
+            if (cpu & RETRO_SIMD_NEON)
+               _len += strlcpy(str_out + _len, "NEON ", str_len - _len);
+            if (cpu & RETRO_SIMD_VFPV3)
+               _len += strlcpy(str_out + _len, "VFPV3 ", str_len - _len);
+            if (cpu & RETRO_SIMD_VFPV4)
+               _len += strlcpy(str_out + _len, "VFPV4 ", str_len - _len);
+            if (cpu & RETRO_SIMD_VMX)
+               _len += strlcpy(str_out + _len, "VMX ", str_len - _len);
+            if (cpu & RETRO_SIMD_VMX128)
+               _len += strlcpy(str_out + _len, "VMX128 ", str_len - _len);
+            if (cpu & RETRO_SIMD_VFPU)
+               _len += strlcpy(str_out + _len, "VFPU ", str_len - _len);
+            if (cpu & RETRO_SIMD_PS)
+               _len += strlcpy(str_out + _len, "PS ", str_len - _len);
+            if (cpu & RETRO_SIMD_ASIMD)
+               _len += strlcpy(str_out + _len, "ASIMD ", str_len - _len);
             break;
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         snprintf(str_out, str_len, "%s: MSVC (%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               _MSC_VER, (unsigned)
-               (CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": MSVC (%d)",
+               _MSC_VER);
 #elif defined(__SNC__)
-         snprintf(str_out, str_len, "%s: SNC (%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": SNC (%d)",
+               __SN_VER__);
 #elif defined(_WIN32) && defined(__GNUC__)
-         snprintf(str_out, str_len, "%s: MinGW (%d.%d.%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
-               (CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": MinGW (%d.%d.%d)",
+               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #elif defined(__clang__)
-         snprintf(str_out, str_len, "%s: Clang/LLVM (%s) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += strlcpy(str_out + _len, ": Clang/LLVM (", str_len - _len);
+         _len += strlcpy(str_out + _len, __clang_version__, str_len - _len);
+         _len += strlcpy(str_out + _len, ")", str_len - _len);
 #elif defined(__GNUC__)
-         snprintf(str_out, str_len, "%s: GCC (%d.%d.%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
-               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
-               (CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
+         _len += snprintf(str_out + _len, str_len - _len, ": GCC (%d.%d.%d)",
+               __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #else
-         snprintf(str_out, str_len, "%s %u-bit",
-               msg_hash_to_str(MSG_UNKNOWN_COMPILER),
-               (unsigned)(CHAR_BIT * sizeof(size_t)));
+         _len  = strlcpy(str_out, msg_hash_to_str(MSG_UNKNOWN_COMPILER), str_len);
 #endif
+         snprintf(str_out + _len, str_len - _len, " %u-bit",
+               (unsigned)(CHAR_BIT * sizeof(size_t)));
          break;
       default:
       case RARCH_CAPABILITIES_NONE:
@@ -8256,10 +8390,6 @@ bool retroarch_main_quit(void)
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
-#ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st     = access_state_get_ptr();
-#endif
-   struct retro_system_av_info *av_info = &video_st->av_info;
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
@@ -8300,14 +8430,8 @@ bool retroarch_main_quit(void)
    /* Restore original refresh rate, if it has been changed
     * automatically in SET_SYSTEM_AV_INFO */
    if (video_st->video_refresh_rate_original)
-   {
-      RARCH_DBG("[Video]: Restoring original refresh rate: %f Hz\n", video_st->video_refresh_rate_original);
-      /* Set the av_info fps also to the original refresh rate */
-      /* to avoid re-initialization problems */
-      av_info->timing.fps = video_st->video_refresh_rate_original;
-
       video_display_server_restore_refresh_rate();
-   }
+
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
       if (settings->bools.savestate_auto_save &&
@@ -8356,17 +8480,6 @@ bool retroarch_main_quit(void)
    runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
-#endif
-
-#ifdef HAVE_ACCESSIBILITY
-   translation_release(false);
-#ifdef HAVE_THREADS
-   if (access_st->image_lock)
-   {
-      slock_free(access_st->image_lock);
-      access_st->image_lock = NULL;
-   }
-#endif
 #endif
 
    return true;
@@ -8423,6 +8536,8 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"en", RETRO_LANGUAGE_ENGLISH},
       {"hu", RETRO_LANGUAGE_HUNGARIAN},
       {"be", RETRO_LANGUAGE_BELARUSIAN},
+      {"gl", RETRO_LANGUAGE_GALICIAN},
+      {"no", RETRO_LANGUAGE_NORWEGIAN},
    };
 
    if (string_is_empty(iso639))
@@ -8430,7 +8545,7 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
 
    for (i = 0; i < ARRAY_SIZE(pairs); i++)
    {
-      if (strcasestr(iso639, pairs[i].iso639))
+      if (string_starts_with_case_insensitive(iso639, pairs[i].iso639))
       {
          lang = pairs[i].lang;
          break;
@@ -8462,6 +8577,9 @@ void retroarch_favorites_init(void)
       playlist_config.capacity = (size_t)content_favorites_size;
 
    retroarch_favorites_deinit();
+
+   if (!playlist_config.capacity)
+      return;
 
    RARCH_LOG("[Playlist]: %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
@@ -8500,6 +8618,7 @@ bool accessibility_speak_priority(
             accessibility_enable,
             access_st->enabled))
    {
+
       frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
 
@@ -8508,8 +8627,6 @@ bool accessibility_speak_priority(
       if (frontend && frontend->accessibility_speak)
          return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,
                priority);
-
-      RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
          via the audio mixer, which only processes the audio while the
@@ -8518,11 +8635,12 @@ bool accessibility_speak_priority(
          we can use this. */
 #if 0
 #if defined(HAVE_NETWORKING)
-      return accessibility_speak_ai_service(speak_text, voice, priority);
+         return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
 #endif
    }
 
    return true;
 }
+
 #endif

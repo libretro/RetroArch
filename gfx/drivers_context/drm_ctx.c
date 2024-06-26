@@ -365,7 +365,7 @@ bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
       modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
       modeInfo->type        = DRM_MODE_TYPE_USERDEF;
 
-      snprintf(modeInfo->name, 45, "RetroArch_CRT-%dx%d@%.02f%s"
+      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "RetroArch_CRT-%dx%d@%.02f%s"
             , video_st->crt_switch_st.hdisplay
             , video_st->crt_switch_st.vdisplay
             , mode_vrefresh(modeInfo)

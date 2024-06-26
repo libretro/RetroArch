@@ -636,6 +636,8 @@ void App::OnAcceleratorKey(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args
       mod |= RETROKMOD_CAPSLOCK;
    if ((window->GetKeyState(VirtualKey::Scroll) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
       mod |= RETROKMOD_SCROLLOCK;
+   if ((window->GetKeyState(VirtualKey::NumberKeyLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+      mod |= RETROKMOD_NUMLOCK;
    if ((window->GetKeyState(VirtualKey::LeftWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down ||
          (window->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_META;
@@ -939,8 +941,13 @@ extern "C" {
       return (void*)CoreWindow::GetForCurrentThread();
    }
 
+   int current_height = -1;
+
    int uwp_get_height(void)
    {
+       if (current_height != -1)
+           return current_height;
+
       /* This function must be performed within UI thread,
        * otherwise it will cause a crash in specific cases
        * https://github.com/libretro/RetroArch/issues/13491 */
@@ -974,11 +981,17 @@ extern "C" {
          if (corewindow)
             corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
       }
+      current_height = ret;
       return ret;
    }
 
+   int current_width = -1;
+
    int uwp_get_width(void)
    {
+       if (current_width != -1)
+           return current_width;
+
       /* This function must be performed within UI thread,
        * otherwise it will cause a crash in specific cases
        * https://github.com/libretro/RetroArch/issues/13491 */
@@ -1012,7 +1025,7 @@ extern "C" {
          if (corewindow)
             corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
       }
-
+      current_width = returnValue;
       return returnValue;
    }
 

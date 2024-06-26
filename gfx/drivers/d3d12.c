@@ -79,6 +79,8 @@
    } \
 }
 
+#define D3D12_ROLLING_SCANLINE_SIMULATION
+
 typedef struct
 {
    d3d12_texture_t               texture;
@@ -1148,6 +1150,7 @@ static uint32_t d3d12_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 #endif
 
    return flags;
@@ -1722,6 +1725,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->pass[i].frame_count,     /* FrameCount */
             &d3d12->pass[i].frame_direction, /* FrameDirection */
             &d3d12->pass[i].rotation,        /* Rotation */
+            &d3d12->pass[i].total_subframes, /* TotalSubFrames */
+            &d3d12->pass[i].current_subframe,/* CurrentSubFrame */
          }
       };
       /* clang-format on */
@@ -3242,7 +3247,7 @@ static bool d3d12_gfx_frame(
       const char*         msg,
       video_frame_info_t* video_info)
 {
-   unsigned i;
+   unsigned i, k, m;
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
    bool vsync                     = (d3d12->flags & D3D12_ST_FLAG_VSYNC) ? true : false;
@@ -3590,6 +3595,22 @@ static bool d3d12_gfx_frame(
 
          d3d12->pass[i].rotation = retroarch_get_rotation();
 
+         /* Sub-frame info for multiframe shaders (per real content frame). 
+            Should always be 1 for non-use of subframes */
+         if (!(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
+         {
+           if (     black_frame_insertion
+                 || nonblock_state
+                 || runloop_is_slowmotion
+                 || runloop_is_paused
+                 || (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE))
+              d3d12->pass[i].total_subframes = 1;
+           else
+              d3d12->pass[i].total_subframes = video_info->shader_subframes;
+
+           d3d12->pass[i].current_subframe = 1;
+         }
+
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          {
             cbuffer_sem_t* buffer_sem = &d3d12->pass[i].semantics.cbuffers[j];
@@ -3729,8 +3750,33 @@ static bool d3d12_gfx_frame(
 #endif
             cmd->lpVtbl->RSSetViewports(cmd, 1,
                   &d3d12->pass[i].viewport);
-            cmd->lpVtbl->RSSetScissorRects(cmd, 1,
-                  &d3d12->pass[i].scissorRect);
+
+#ifdef D3D12_ROLLING_SCANLINE_SIMULATION  
+            if (      (video_info->shader_subframes > 1)
+                  &&  (video_info->scan_subframes)
+                  &&  !black_frame_insertion
+                  &&  !nonblock_state
+                  &&  !runloop_is_slowmotion
+                  &&  !runloop_is_paused
+                  &&  (!(d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)))
+            {
+               D3D12_RECT scissor_rect;
+
+               scissor_rect.left   = 0;
+               scissor_rect.top    = (unsigned int)(((float)d3d12->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+                                       * (float)video_info->current_subframe);
+               scissor_rect.right  = d3d12->pass[i].viewport.Width;
+               scissor_rect.bottom = (unsigned int)(((float)d3d12->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+                                       * (float)(video_info->current_subframe + 1));
+
+               cmd->lpVtbl->RSSetScissorRects(cmd, 1, &scissor_rect);
+            }
+            else
+#endif // D3D12_ROLLING_SCANLINE_SIMULATION 
+            {
+               cmd->lpVtbl->RSSetScissorRects(cmd, 1, 
+					&d3d12->pass[i].scissorRect);
+            } 
 
             if (i == d3d12->shader_preset->passes - 1)
                start_vertex_location = 0;
@@ -3817,7 +3863,32 @@ static bool d3d12_gfx_frame(
    }
 
    cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->frame.viewport);
-   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->frame.scissorRect);
+
+#ifdef D3D12_ROLLING_SCANLINE_SIMULATION  
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !black_frame_insertion
+         &&  !nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)))
+   {
+      D3D12_RECT scissor_rect;
+
+      scissor_rect.left   = 0;
+      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+                              * (float)video_info->current_subframe);
+      scissor_rect.right  = video_width ;
+      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+                              * (float)(video_info->current_subframe + 1));
+
+      cmd->lpVtbl->RSSetScissorRects(cmd, 1, &scissor_rect);
+   }
+   else
+#endif // D3D12_ROLLING_SCANLINE_SIMULATION 
+   {
+      cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->frame.scissorRect);
+   } 
 
    cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
 
@@ -3977,7 +4048,8 @@ static bool d3d12_gfx_frame(
         && !(d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
         && !nonblock_state
         && !runloop_is_slowmotion
-        && !runloop_is_paused)
+        && !runloop_is_paused
+        && (!(video_info->shader_subframes > 1)))
    {
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
          video_info->bfi_dark_frames = video_info->black_frame_insertion;
@@ -4009,6 +4081,41 @@ static bool d3d12_gfx_frame(
             dx12_inject_black_frame(d3d12);
          }
       }
+   }
+
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  !black_frame_insertion
+         &&  !nonblock_state
+         &&  !runloop_is_slowmotion
+         &&  !runloop_is_paused
+         &&  (!(d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE))
+         &&  (!(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK)))
+   {
+      d3d12->flags |= D3D12_ST_FLAG_FRAME_DUPE_LOCK;
+      for (k = 1; k < video_info->shader_subframes; k++)
+      {
+#ifdef D3D12_ROLLING_SCANLINE_SIMULATION  
+         video_info->current_subframe = k;
+#endif // D3D12_ROLLING_SCANLINE_SIMULATION  
+
+         if (d3d12->shader_preset)
+            for (m = 0; m < d3d12->shader_preset->passes; m++)
+            {
+               d3d12->pass[m].total_subframes = video_info->shader_subframes;
+               d3d12->pass[m].current_subframe = k+1;
+            }
+         if (!d3d12_gfx_frame(d3d12, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            d3d12->flags &= ~D3D12_ST_FLAG_FRAME_DUPE_LOCK;
+            return false;
+         }
+      }
+      d3d12->flags &= ~D3D12_ST_FLAG_FRAME_DUPE_LOCK;
    }
 
    return true;

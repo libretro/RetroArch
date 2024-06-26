@@ -10,23 +10,23 @@
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "گزین فهرست"
+   "فهرست اصلی"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "ساماندهی"
+   "تنظیمات"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "موارد دلخواه"
+   "برگزیده‌ها"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "پیشینه"
+   "تاریخچه"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "تصویر"
+   "تصاویر"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
@@ -34,15 +34,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "ویدئو"
+   "ویدیوها"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "بازی تحت شبکه"
+   "بازی شبکه‌ای"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    "کاوش"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "هسته‌های بی‌محتوا"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -57,7 +61,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "به سرعت به تمام تنظیمات مربوط به بازی دسترسی پیدا کنید."
+   "دسترسی سریع به تمام تنظیمات مربوطه حین بازی."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
@@ -65,7 +69,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "هستهٔ مورد نظر خود را انتخاب کنید."
+   "انتخاب هستهٔ مورد استفاده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -73,11 +81,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "محتوای مورد نظر خود را انتخاب کنید."
+   "انتخاب محتوای موردنظر برای آغاز."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "بارگذاری از دیسک"
+   "بارگذاری دیسک"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
@@ -103,7 +111,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "فهرست‌های پخش"
+   "سیاهه‌های پخش"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -119,43 +127,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "نمایش منوی دسکتاپ"
+   "نمایش فهرست میزکار"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "منوی دسکتاپ مرسوم را باز کن."
+   "باز کردن فهرست سنتی میزکار."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "غیر فعال کردن حالت کیوسک (احتیاج به ریستارت دارد)"
+   "غیرفعال کردن حالت کیوسک (نیازمند شروع مجدد)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "تمام تنظیمات مربوط به پیکربندی را نمایش بده."
+   "نمایش تمام تنظیمات مربوط به پیکربندی."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "به‌روز کننده آنلاین"
+   "به‌روزرسان برخط"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "برای RetroArch، افزونه‌، اجزا و محتوا بارگیری کنید."
+   "بارگیری افزونه، مؤلفه و محتوا برای رتروآرچ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "بازی تحت شبکه"
+   "بازی شبکه‌ای"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "به یک نشست netplay بپیوندید یا آن‌را میزبانی کنید."
+   "میزبانی یا پیوستن به نشست بازی شبکه‌ای."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "ساماندهی"
+   "تنظیمات"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS,
-   "برپاساختن برنامه."
+   "پیکربندی برنامه."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
@@ -163,19 +171,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "اطلاعات سیستم را نمایش بده."
+   "نمایش اطلاعات سامانه."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "فایل‌های پیکربندی"
+   "سند پیکربندی"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "فایل های پیکربندی را مدیریت و ایجاد کنید."
+   "مدیریت و ایجاد اسناد پیکربندی."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   "راهنما"
+   "کمک"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_LIST,
@@ -183,22 +191,34 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "بازآغاز کردن"
+   "شروع مجدد"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "شروع مجدد نرم‌افزار رتروآرچ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "خروج"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "خروج از نرم‌افزار رتروآرچ. ذخیرهٔ پیکربندی در زمان خروج فعال است."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "خروج از نرم‌افزار رتروآرچ. ذخیرهٔ پیکربندی در زمان خروج غیرفعال است."
    )
 
 /* Main Menu > Load Core */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "دریافت هسته"
+   "بارگیری هسته"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "با برنامهٔ بروزرسان، یک هسته را دریافت و نصب می‌کند."
+   "بارگیری و نصب یک هسته از به‌روزرسان برخط."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -279,6 +299,10 @@ MSG_HASH(
    "تمام محتوای مطابق با پایگاه داده را از طریق یک رابط جستجوی طبقه بندی شده مرور کنید."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "هسته‌های بی‌محتوا"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    "هسته‌های نصب‌شده‌ای که می‌توانند بدون بارگذاری محتوا کار کنند، اینجا ظاهر می‌شوند."
    )
@@ -307,23 +331,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "به روزرسانی ریزعکس ها"
+   "به‌روزرسان تصاویر بندانگشتی"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "بسته کامل ریزعکس برای سیستم انتخاب شده را دانلود کن."
+   "بارگیری بستهٔ کامل تصاویر بندانگشتی برای سامانهٔ انتخاب‌شده."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "به روزرسانی ریز عکسهای لیست پخش"
+   "به‌روزرسان تصاویر بندانگشتی لیست پخش"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "تصاویر کوچک را برای ورودی‌های لیست پخش انتخابی دانلود کنید."
+   "بارگیری تصاویر بندانگشتی برای ورودی‌ها در لیست پخش انتخاب شده."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "دانلودر محتوا"
+   "بارگیری‌کنندهٔ محتوا"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
@@ -472,6 +496,10 @@ MSG_HASH(
    "API گرافیکی مورد نیاز"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "مسیر کامل هسته"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "پشتیبانی از ذخیرهٔ وضعیت"
    )
@@ -496,6 +524,10 @@ MSG_HASH(
    "سفت‌افزار"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- جستجو در: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "ناموجود، لازم:"
    )
@@ -518,6 +550,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "از ایجاد تغییر در هستهٔ نصب‌شدهٔ فعلی جلوگیری کنید. ممکن است برای جلوگیری از به‌روزرسانی‌های ناخواسته در زمانی که محتوا به نسخهٔ خاصی از هسته نیاز داشته باشد مفید باشد (مثلاً ROM های آرکید)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "از گزینگان «هسته‌های بدون محتوا» حذف کن"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "جلوگیری از نمایش دادن این هسته در گزینگان/زبانهٔ «هسته‌های بدون محتوا». فقط وقتی که حالت نمایش روی سفارشی تنظیم شده باشد اعمال می‌شود."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -563,6 +603,10 @@ MSG_HASH(
    "تاریخ ساخت"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "نسخهٔ رتروآرچ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "نسخهٔ Git"
    )
@@ -581,6 +625,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "معماری پردازنده"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "هسته‌های پردازنده"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT در دسترس"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -679,8 +731,60 @@ MSG_HASH(
    "پشتیبانی از ریسمان"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
+   "پشتیبانی از KMS/EGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
+   "پشتیبانی از udev"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
+   "پشتیبانی از OpenVG"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
+   "پشتیبانی از EGL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
+   "پشتیبانی از X11"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
    "پشتیبانی از ویلند"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
+   "پشتیبانی از XVideo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
+   "پشتیبانی از ALSA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
+   "پشتیبانی از OSS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
+   "پشتیبانی از OpenAL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
+   "پشتیبانی از OpenSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
+   "پشتیبانی از RSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
+   "پشتیبانی از RoadAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
+   "پشتیبانی از JACK"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
@@ -715,6 +819,14 @@ MSG_HASH(
    "پشتیبانی از 7zip"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
+   "پشتیبانی از کتابخانهٔ پویا"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
+   "بارگذاری پویای زمان اجرای کتابخانهٔ لیبرترو"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
    "پشتیبانی از Cg"
    )
@@ -725,6 +837,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
    "پشتیبانی از HLSL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
+   "پشتیبانی از SDL Image"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
@@ -753,6 +869,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "پشتیبانی از Video4Linux2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
+   "پشتیبانی از libusb"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -825,6 +945,10 @@ MSG_HASH(
    "روایتگر"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   "ژرفانمایی"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
    "ساماندهی"
    )
@@ -889,6 +1013,14 @@ MSG_HASH(
    "درجه‌بندی ELSPA"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   "رده‌بندی PEGI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   "رده‌بندی CERO"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
    "سریال"
    )
@@ -904,23 +1036,55 @@ MSG_HASH(
 /* Main Menu > Configuration File */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "بارگذاری پیکربندی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "بارگذاری پیکربندی موجود و جایگزینی مقادیر فعلی."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "ذخیرهٔ پیکربندی فعلی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "بازنویسی روی سند پیکربندی فعلی."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "ذخیرهٔ پیکربندی جدید"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "ذخیرهٔ پیکربندی فعلی در یک فایل جداگانه."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "بازنشانی به حالت پیش‌فرض"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "بازنشانی پیکربندی فعلی به مقادیر پیشفرض."
    )
 
 /* Main Menu > Help */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
+   "کنترل‌های پایه‌ای فهرست"
+   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   "پیمایش به بالا"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   "یمایش به پایین"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    "تأیید"
@@ -930,8 +1094,20 @@ MSG_HASH(
    "اطلاعات"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   "آغاز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   "تغییر وضعیت فهرست"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    "خروج"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   "تغییر وضعیت صفحه‌کلید"
    )
 
 /* Settings */
@@ -955,6 +1131,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    "صدا"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "تغییر تنظیمات ورودی/خروجی صداتغییر."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -997,12 +1177,52 @@ MSG_HASH(
    "تنظیمات ذخیره کردن را تغییر دهید."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "همگام‌سازی ابری"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "تغییر تنظیمات همگام‌سازی ابری."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "فعال‌سازی همگام‌سازی ابری"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "همگام‌سازی ابری تخریبی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "شیوه‌نامهٔ شبکهٔ فضای ابری که باید استفاده شود."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "نشانی محل ذخیره‌سازی ابری"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "نام کاربری"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "نام کاربری حساب فضای ابری شما."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "گذرواژه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "گذرواژهٔ حساب فضای ابری شما."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1018,7 +1238,67 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "تنظیمات مرورگر فایل را تغییر دهید."
+   "تنظیمات مرورگر سند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "سند پیکربندی."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "پروندهٔ بایگانی فشرده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "سند پیکربندی ضبط."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "سند پیکربندی."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "سند شیدر."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "سند تقلب."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "سند هم‌پوشان."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "سند پایگاه داده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "سند قلم TrueType."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "سند ساده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "ویدیو. برای باز کردن سند در پخش‌کنندهٔ ویدیو این را انتخاب کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "موسیقی. برای باز کردن سند در پخش‌کنندهٔ موسیقی این را انتخاب کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "سند تصویر."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "تصویر. برای باز کردن سند در پخش‌کنندهٔ تصویر این را انتخاب کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "هستهٔ لیبرترو. انتخاب این گزینه این هسته را به این بازی اختصاص می‌دهد."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -1031,6 +1311,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
    "تنظیمات ضبط را تغییر دهید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   "نمایش روی صفحه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   "تغیر تنظیمات اعلانات روی صفحه، هم‌پوشان صفحه‌کلید و هم‌پوشان نمایشگر."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1098,7 +1386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "مسیر"
+   "پوشه"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
@@ -1106,6 +1394,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   "هک‌ها"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
    "نگاشت"
@@ -1140,6 +1432,14 @@ MSG_HASH(
    )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
+   "استیم"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "تغییر تنظیمات مربوط به استیم."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1153,12 +1453,40 @@ MSG_HASH(
    "درایور ورودی برای استفاده. بعضی از درایورهای ویدیویی، یک درایور ورودی متفاوت را اجبار می‌کنند."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "راه‌انداز ورودی. راه‌انداز ورودی ممکن است راه‌انداز دیگری را اجبار کند."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "دستهٔ بازی"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "درایور دستهٔ بازی برای استفاده."
+   "راه‌انداز دسته‌بازی برای استفاده. (نیازمند شروع مجدد)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "راه‌انداز دسته‌بازی DirectInput."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "راه‌انداز دستگاه رابط انسانی سطح پایین."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "راه‌انداز لینوکسی خام، از API قدیمی اهرمک استفاده می‌کند. در صورت امکان به‌جای این از udev استفاده کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "راه‌انداز لینوکسی برای دسته‌بازی‌های متصل به درگاه‌های موازی توسط رابط‌های مخصوص."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "راه‌انداز دسته‌بازی برپایهٔ کتاب‌خانه‌های SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "راه‌انداز دسته‌بازی XInput. غالباً برای دسته‌بازی‌های ایکس‌باکس."
    )
 
 MSG_HASH(
@@ -1170,6 +1498,22 @@ MSG_HASH(
    "درایور درایور ویدیو برای استفاده."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "راه‌انداز OpenGL 1.x. کمترین نگارش موردنیاز: OpenGL 1.1 از شیدرها پشتیبانی نمی‌کند. در صورت امکان از راه‌اندازهای جدیدتر OpenGL استفاده کنید."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "راه‌انداز Direct3D 8 بدون پشتیبانی از شیدر."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "راه‌انداز Direct3D 9 با پشتیبانی از شیدرهای با قالب Cg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "راه‌انداز ویدیوی جاری."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "صدا"
    )
@@ -1177,7 +1521,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "درایور صدا برای استفاده."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "راه‌انداز OpenAL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "راه‌انداز OpenSL."
+   )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "میکروفن"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "راه‌انداز میکروفن برای استفاده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "بازنمونه‌گیر میکروفن"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "راه‌انداز بازنمونه‌گیر میکروفن برای استفاده."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1186,6 +1554,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "درایور بازنمونه‌گیر صدا برای استفاده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "پیاده‌سازی Windowed Sinc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "پیاده‌سازی Convoluted Cosine."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1222,6 +1598,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "فهرست"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "راه‌انداز فهرست برای استفاده (نیازمند شروع مجدد)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone رابط کاربری گرافیکی پیش‌فرض رتروآرچ روی بیشتر سکوها است که برای ناوبری با دسته‌بازی بهینه شده است."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1311,10 +1695,34 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
    "درونیابی تصویر"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   "مشخص کردن روش درونیابی تصویر هنگام تغییر مقیاس محتوا توسط IPU. هنگام استفاده از پالایه‌های ویدیویی مبتنی بر CPU روش‌های «دومکعبی» و «دوخطی» پیشنهاد می‌شود. این گزینه اثری روی عملکرد ندارد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   "دومکعبی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   "دوخطی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   "نزدیک‌ترین همسایه"
+   )
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
    "درونیابی تصویر"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   "نزدیک‌ترین همسایه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   "شبه‌خطی"
    )
 #endif
 #endif
@@ -1330,12 +1738,20 @@ MSG_HASH(
 /* Settings > Video > CRT SwitchRes */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "تنها برای نمایشگرهای CRT. سعی می‌کند وضوح و نرخ تازه‌سازی دقیق هسته/بازی را استفاده کند."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
    "فراتفکیک‌پذیری CRT"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
    "مرکز کردن محور X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "استفاده از فهرست با وضوح بالا"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -1357,10 +1773,6 @@ MSG_HASH(
    "یکی از نمایشگرها را برای استفاده برگزینید."
    )
 #if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "بهینه‌سازی برای دسته‌بازی Wii U (نیازمند بازآغاز)"
-   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
@@ -1378,10 +1790,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "نرخ تازه‌سازی عمودی"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   "تخمین نرخ تازه‌سازی نمایشگر"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   "مقدار دقیق تخمین نرخ تازه‌سازی نمایشگر برحسب هرتز."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "تنظیم نرخ تازه‌سازی گزارش شده توسط نمایشگر"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "نرخ تازه‌سازی‌ای گزارش شده توسط راه‌انداز نمایشگر."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "تعویض خودکار نرخ تازه‌سازی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   "تنها در حالت تمام‌صفحهٔ اختصاصی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   "تنها در حالت تمام‌صفحهٔ پنجره‌ای"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   "تمام حالت‌های تمام‌صفحه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "آستانهٔ خودکار نرخ تازه‌سازی پال"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "بیشینهٔ نرخ تازه‌سازی، پال در نظر گرفته شود."
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
    "نرخ تازه‌سازی عمودی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+   "تنظیم نرخ تازه‌سازی عمودی صفحه. «۵۰ هرتز» منجر به نرم‌تر شدن ویدئو برای محتوای پال می‌شود."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
@@ -1395,12 +1851,80 @@ MSG_HASH(
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "شروع در حالت تمام‌صفحه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "شروع در حالت تمام‌صفحه. این مورد را در زمان اجرا نیز می‌توانید تغییر دهید. همچنین توسط خط فرمان قابل بازنویسی است."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "حالت پنجره‌ای تمام‌صفحه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   "در حالت تمام‌صفحه، استفاده از پنجرهٔ تمام‌صفحه به منظور پرهیز از تغییر حالت نمایش ترجیح داده شود."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "عرض تمام‌صفحه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "تنظیم اندازهٔ عرض تمام‌صفحه برای حالت تمام‌صفحهٔ غیرپنجره‌ای. اگر تنظیم نشود، از وضوح میزکار استفاده خواهد شد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "ارتفاع تمام‌صفحه"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   "تنظیم اندازهٔ ارتفاع تمام‌صفحه برای حالت تمام‌صفحهٔ غیرپنجره‌ای. اگر تنظیم نشود، از وضوح میزکار استفاده خواهد شد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   "اجبار وضوح روی UWP"
+   )
 
 /* Settings > Video > Windowed Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    "مقیاس پنجره‌ای"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   "شفافیت پنجره"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   "شفافیت پنجره را تنظیم می‌کند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "نمایش تزئینات پنجره"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "نوار عنوان و خط حاشیهٔ پنجره نمایش داده شود."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   "نمایش نوار فهرست"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   "نوار فهرست پنجره، نمایش داده شود."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   "به خاطر سپاری اندازه و موقعیت پنجره"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   "استفاده از اندازهٔ سفارشی برای پنجره"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1443,6 +1967,20 @@ MSG_HASH(
    "نسبت ابعاد حفظ شود"
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   "نرخ نسبت سفارشی (موقعیت Y)"
+   )
+#if defined(RARCH_MOBILE)
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "نرخ نسبت سفارشی (عرض)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "نرخ نسبت سفارشی (ارتفاع)"
+   )
 
 /* Settings > Video > HDR */
 
@@ -1455,8 +1993,24 @@ MSG_HASH(
    "فعال‌سازی HDR در صورت پشتیبانی نمایشگر."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
+   "اوج روشنایی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "تنظیم اوج روشنایی‌ای که صفحه نمایش‌تان می‌تواند بازتولید کند (بر حسب cd/m2). بخش RTings را برای میزان اوج روشنایی صفحه‌تان ببنید."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "کنتراست"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "گسترش گاما"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "به محض تبدیل فضای رنگ به فضای خطی، تصمیم‌گیری شود که آیا از گاموت رنگی گسترش‌یافته برای رسیدن به HDR10 استفاده شود یا خیر."
    )
 
 /* Settings > Video > Synchronization */
@@ -1474,12 +2028,28 @@ MSG_HASH(
    "خودکار"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "تاخیر فریم (میلی ثانیه)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "کاهش تاخیر به قیمت افزایش خطر خراب شدن ویدئو. این کار، تاخیری بر حسب میلی‌ثانیه به انتهای نمایش ویدئو و پیش از فریم هسته اضافه می‌کند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "تنظیم می‌کند که چند میلی‌ثانیه تاخیر به انتهای نمایش ویدئو و پیش از هستهٔ در حال اجرا اضافه شود. می‌تواند تاخیر را به قیمت افزایش خطر خراب شدن تصویر کاهش دهد. مقدار بیشینه، %d است."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "تأخیر خودکار فریم"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "خودکار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "مؤثر"
    )
 
 /* Settings > Audio */
@@ -1493,6 +2063,10 @@ MSG_HASH(
    "تنظیمات خروجی صدا را تغییر دهید."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "میکروفن"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -1550,12 +2124,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "ساکت کردن در زمان جلو کشیدن تصویر"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   "افزونهٔ DSP"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   "حذف افزونهٔ DSP"
+   )
 
 /* Settings > Audio > Output */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "صدا"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   "فعال‌سازی خروجی صدا."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -1565,12 +2151,20 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "میکروفن"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "دستگاه"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
    "کیفیت بازنمونه‌گیر"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "نرخ ورودی پیش‌فرض (هرتز)"
    )
 #endif
 
@@ -1678,7 +2272,31 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "انتخاب صفحه‌کلید فیزیکی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "انتخاب این دستگاه به‌عنوان صفحه‌کلید فیزیکی به‌جای دسته‌بازی."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   "ورودی حسگرهای کمکی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "در صورت پشتیبانی توسط سخت‌افزار فعلی، ورودی را از شتاب‌سنج، ژیروسکوپ و حسگر نوری فعال می‌کند. ممکن است تأثیر روی عملکرد داشته باشد یا روی بعضی از سکوها مصرف نیرو را افزایش دهد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   "قاپیدن خودکار ماوس ماوس"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   "فعال‌سازی قاپیدن ماوس هنگام تمرکز روی برنامه."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "فعال سازی خودکار حالت «تمرکز بازی»"
@@ -1694,6 +2312,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
    "تشخیص"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "حساسیت آنالوگ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   "تنظیم حساسیت اهرمک‌های آنالوگ."
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "اتمام مهلت"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "تعلیق"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   "حالت توربو"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "انتخاب رفتار کلی حالت توربو."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   "کلاسیک"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "کلاسیک (تغییر وضعیت)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   "یک دکمه (تغییر وضعیت)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "یک دکمه (نگه داشتن)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+   "دکمهٔ پیشفرض توربو"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -1761,27 +2423,55 @@ MSG_HASH(
    "برگرداندن"
    )
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   "حجم صدای خروجی را افزایش می‌دهد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   "کاهش حجم صدا"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   "حجم صدای خروجی را کاهش می‌دهد."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    "بارگیری وضعیت"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   "بارگذاری وضعیت ذخیره‌شده از شیار وضعیت فعلی."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
    "ذخیرهٔ وضعیت"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   "ذخیرهٔ وضعیت در شیار انتخاب شدهٔ فعلی."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را افزایش دهید."
+   "افزایش شمارهٔ شیار ذخیرهٔ وضعیت انتخاب شده."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   "شیار ذخیرهٔ وضعیت قبلی"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "شمارهٔ شکاف ذخیرهٔ وضعیت انتخاب شدهٔ فعلی را کاهش دهید."
+   "کاهش شمارهٔ شیار ذخیرهٔ وضعیت انتخاب شده."
    )
 
 
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   "ثبت نماگرفت"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "تمام‌صفحه (تغییر حالت)"
@@ -1856,6 +2546,14 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+   "برای دوباره اجراشدن از نمونه دوم از هسته رترو‌آرچ استفاده می‌کند. از مشکلات صدا در هنگام بارگیری وضعیت جلوگیری می‌شود."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+   "مخفی کردن هشدار های بازاجرایی"
+   )
 
 /* Settings > Core */
 
@@ -1869,6 +2567,10 @@ MSG_HASH(
 
 
 
+MSG_HASH(
+   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   "هسته در حال بارگیری است"
+)
 #endif
 /* Settings > Configuration */
 
@@ -1898,28 +2600,122 @@ MSG_HASH(
 /* Settings > Recording */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   "کیفیت ضبط"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    "سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   "پایین"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY,
+   "متوسط"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   "بالا"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   "پیکربندی سفارشی ضبط"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   "رشته‌های ضبط"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   "استفاده از ضبط با GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH,
+   "توییچ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE,
+   "یوتیوب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "محلی"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    "سفارشی"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   "کیفیت استریم"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
    "سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   "کم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "متوسط"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   "زیاد"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "پیکربندی استریم سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   "عنوان استریم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAMING_URL,
+   "لینک استریم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   "پورت UDP استریم"
    )
 
 /* Settings > On-Screen Display */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "نمایش اعلان"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   "نمایش اعلان"
+   )
 
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "تاچ‌پد"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   "دسته (فیزیکی)"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -1958,6 +2754,14 @@ MSG_HASH(
 #ifdef HAVE_LAKKA
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   "نمایش «به‌روزرسان برخط»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   "نمایش «به‌روزرسان برخط» در فهرست اصلی."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    "نمایش «اطلاعات»"
    )
@@ -1966,12 +2770,16 @@ MSG_HASH(
    "نمایش گزینهٔ «اطلاعات» در گزینگان اصلی."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-   "نمایش «موارد دلخواه»"
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+   "نمایش «شروع مجدد رتروآرچ»"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "نمایش گزینگان «موارد دلخواه» (در Ozone/XMB نیازمند بازآغاز است)"
+   MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+   "نمایش «شروع مجدد رتروآرچ» در فهرست اصلی."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   "نمایش «موارد دلخواه»"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -1984,6 +2792,22 @@ MSG_HASH(
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "نمایش «شروع مجدد»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "نمایش گزینهٔ شروع مجدد محتوا."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   "نمایش «آغاز ضبط»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   "نمایش گزینهٔ «آغاز ضبط»."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
    "نمایش «سایه‌زن‌ها»"
@@ -2011,6 +2835,22 @@ MSG_HASH(
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+   "نمایش «ضبط»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+   "نمایش تنظیمات «ضبط»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+   "نمایش «پوشه»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+   "نمایش تنظیمات «پوشه»."
+   )
 
 
 /* Settings > User Interface > Appearance */
@@ -2059,6 +2899,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "سفارشی"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   "بیشترین اتصالات هم‌زمان"
+   )
 
 /* Settings > Network > Updater */
 
@@ -2087,6 +2931,22 @@ MSG_HASH(
 
 /* Settings > User */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   "حریم خصوصی"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   "تنظیمات حریم خصوصی را تغییر می‌دهد."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   "حساب‌ها"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   "حساب‌هایی که پیکربندی شده‌اند را مدیریت می‌کند."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    "نام کاربری"
@@ -2129,6 +2989,14 @@ MSG_HASH(
    "بارگیری‌ها"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   "فایل‌های بارگیری شده در این پوشه نگهداری می‌شوند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+   "دارایی‌ها"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    "تصاویر بندانگشتی"
    )
@@ -2137,12 +3005,48 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "مرورگر فایل"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+   "پایگاه‌های داده در این پوشه نگهداری می‌شوند."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "سایه‌زن‌های ویدیو"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
    "سایه‌زن‌های ویدیوی بر پایهٔ کارت گرافیک در این مسیر نگهداری شده‌اند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   "ضبط‌ها"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   "ضبط‌ها در این پوشه نگهداری می‌شوند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   "پیکربندی‌های ضبط"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+   "پیکربندی‌های ضبط‌ها در این پوشه نگهداری می‌شوند."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   "هم‌پوشان‌ها در این پوشه نگهداری می‌شوند."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "هم‌پوشان‌های صفحه‌کلید در این مسیر نگهداری می‌شوند."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+   "نماگرفت‌ها"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+   "نماگرفت‌ها در این پوشه ذخیره می‌شوند."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -2186,8 +3090,136 @@ MSG_HASH(
 
 /* Explore tab */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "سال انتشار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "تعداد بازیکن"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
    "منطقه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "برچسب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   "جستجوی نام..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   "نمایش همه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "پالایهٔ بیشتر"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   "همه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   "افزودن پالایهٔ بیشتر"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   "%u مورد"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   "بر حسب توسعه‌دهنده"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   "بر حسب ناشر"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   "بر حسب سال انتشار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   "بر حسب تعداد بازیکن"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   "بر حسب سبک (ژانر)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   "بر حسب دستاوردها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   "بر حسب دسته‌بندی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   "بر حسب زبان"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   "بر حسب منطقه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
+   "بر حسب کنسول اختصاصی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   "بر حسب سکوی اختصاصی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   "بر حسب امتیاز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   "بر حسب رسانه"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   "بر حسب دسته‌ها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   "بر حسب سبک هنری"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   "بر حسب سبک بازی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   "بر حسب روایت"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   "بر حسب سرعت"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   "بر حسب چشم‌انداز"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   "بر حسب تنظیمات"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   "بر حسب ویژگی‌های دیداری"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   "بر حسب برچسب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   "بر حسب نام سامانه"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
@@ -2251,12 +3283,20 @@ MSG_HASH(
 
 /* Playlist Item > Set Core Association */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+   "هستهٔ جاری"
+   )
 
 /* Playlist Item > Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
    "نام"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
+   "مسیر سند"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
@@ -2279,27 +3319,79 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "بازآغاز کردن"
+   "شروع مجدد"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "شروع مجدد محتوا از ابتدا."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "بستن محتوا"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   "ثبت نماگرفت"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   "شیار وضعیت"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATE_SLOT,
+   "تغییر شیار وضعیت انتخاب شده."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
    "ذخیرهٔ وضعیت"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_STATE,
+   "ذخیرهٔ یک وضعیت در شیار انتخاب شدهٔ فعلی."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "بارگیری وضعیت"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_STATE,
+   "بارگذاری یک وضعیت ذخیره‌شده از شیار وضعیت فعلی."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   "تغییر شیار وضعیت انتخاب شده."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
    "افزودن به موارد دلخواه"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   "شروع ضبط"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+   "شروع ضبط ویدیو."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "توقف ضبط"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   "توقف ضبط ویدیو."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   "گزینه‌های هسته"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "کنترل‌ها"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   "تقلب‌ها"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
@@ -2332,6 +3424,10 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "آغاز یا شروع مجدد جستجوی تقلب"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
@@ -2385,6 +3481,10 @@ MSG_HASH(
 
 /* Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+   "میانگین"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
    "هیچکدام"
@@ -2534,6 +3634,10 @@ MSG_HASH(
    "اطلاعات"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   "لطفاً به‌منظور اعتمال تغییرات برنامه را بازراه‌اندازی کنید."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_STOP,
    "توقف"
    )
@@ -2569,6 +3673,10 @@ MSG_HASH(
    "کاربر"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "آغاز"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
    "در جستجوی محتوای سازگار…"
    )
@@ -2583,6 +3691,18 @@ MSG_HASH(
 
 /* Unused (Only Exist in Translation Files) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
+   "پشتیبانی از ضبط"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
+   "ذخیرهٔ خروجی ضبط به‌عنوان..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
+   "ذخیرهٔ ضبط‌ها در پوشهٔ خروجی"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
    "ادامه"
@@ -2614,6 +3734,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
    "خروج"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "پیمایش به بالا"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "تغییر وضعیت صفحه‌کلید"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "تغییر وضعیت فهرست"
+   )
 
 /* Discord Status */
 
@@ -2628,6 +3760,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "به موارد دلخواه افزوده شد"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "شروع ضبط شکست خورد."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "وضعیت در شیار #%d ذخیره شد."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "وضعیت در شیار #%d ذخیره شد (خودکار)."
+   )
+MSG_HASH(
+   MSG_STATE_SLOT,
+   "شیار وضعیت"
    )
 
 /* Lakka */
@@ -2649,7 +3797,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "ریستارت رتروآرچ"
+   "شروع مجدد رتروآرچ"
    )
 #ifdef HAVE_LIBNX
 #endif

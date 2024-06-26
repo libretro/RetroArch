@@ -82,7 +82,6 @@
 #include "../../msg_hash.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
-#include "../../translation_defines.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -798,7 +797,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
    }
 
    fill_pathname_join_special(path, basenode, "type", sizeof(path));
- 
+
    if (!filestream_exists(path))
       goto status;
 
@@ -813,7 +812,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       buf = NULL;
    }
 
-status:     
+status:
    fill_pathname_join_special(path, basenode, "status", sizeof(path));
 
    if (!filestream_exists(path))
@@ -1303,7 +1302,7 @@ static void frontend_unix_set_screen_brightness(int value)
 
    /* Device tree should have 'label = "backlight";' if control is desirable */
    filestream_read_file("/sys/class/backlight/backlight/max_brightness",
-                        &buffer, NULL);
+                        (void **)&buffer, NULL);
    if (buffer)
    {
       sscanf(buffer, "%u", &max_brightness);
@@ -2091,6 +2090,12 @@ static void frontend_unix_init(void *data)
          "getVolumeCount", "()I");
    GET_METHOD_ID(env, android_app->getVolumePath, class,
          "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->inputGrabMouse, class,
+         "inputGrabMouse", "(Z)V");
+   GET_METHOD_ID(env, android_app->isScreenReaderEnabled, class,
+         "isScreenReaderEnabled", "()Z");
+   GET_METHOD_ID(env, android_app->accessibilitySpeak, class,
+         "accessibilitySpeak", "(Ljava/lang/String;)V");
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
@@ -2789,142 +2794,98 @@ static bool is_narrator_running_unix(void)
    return (kill(speak_pid, 0) == 0);
 }
 
-/**
- * Returns the espeak-compatible string representation of the translation language enum value.
- */
-static const char* espeak_get_str(enum translation_lang id)
+static const char* accessibility_unix_language_code(const char* language)
 {
-   switch (id)
-   {
-      case TRANSLATION_LANG_EN:
-         return "en";
-      case TRANSLATION_LANG_ES:
-         return "es";
-      case TRANSLATION_LANG_FR:
-         return "fr";
-      case TRANSLATION_LANG_IT:
-         return "it";
-      case TRANSLATION_LANG_DE:
-         return "de";
-      case TRANSLATION_LANG_JP:
-         return "ja";
-      case TRANSLATION_LANG_NL:
-         return "nl";
-      case TRANSLATION_LANG_CS:
-         return "cs";
-      case TRANSLATION_LANG_DA:
-         return "da";
-      case TRANSLATION_LANG_SV:
-         return "sv";
-      case TRANSLATION_LANG_HR:
-         return "hr";
-      case TRANSLATION_LANG_KO:
-         return "ko";
-      case TRANSLATION_LANG_ZH_CN:
-      case TRANSLATION_LANG_ZH_TW:
-         return "cmn";
-      case TRANSLATION_LANG_CA:
-         return "ca";
-      case TRANSLATION_LANG_BG:
-         return "bg";
-      case TRANSLATION_LANG_BN:
-         return "bn";
-      case TRANSLATION_LANG_EU:
-         return "eu";
-      case TRANSLATION_LANG_AZ:
-         return "az";
-      case TRANSLATION_LANG_AR:
-         return "ar";
-      case TRANSLATION_LANG_SQ:
-         return "sq";
-      case TRANSLATION_LANG_AF:
-         return "af";
-      case TRANSLATION_LANG_EO:
-         return "eo";
-      case TRANSLATION_LANG_ET:
-         return "et";
-      case TRANSLATION_LANG_FI:
-         return "fi";
-      case TRANSLATION_LANG_KA:
-         return "ka";
-      case TRANSLATION_LANG_EL:
-         return "el";
-      case TRANSLATION_LANG_GU:
-         return "gu";
-      case TRANSLATION_LANG_HT:
-         return "ht";
-      case TRANSLATION_LANG_HE:
-         return "he";
-      case TRANSLATION_LANG_HI:
-         return "hi";
-      case TRANSLATION_LANG_HU:
-         return "hu";
-      case TRANSLATION_LANG_IS:
-         return "is";
-      case TRANSLATION_LANG_ID:
-         return "id";
-      case TRANSLATION_LANG_GA:
-         return "ga";
-      case TRANSLATION_LANG_KN:
-         return "kn";
-      case TRANSLATION_LANG_LA:
-         return "la";
-      case TRANSLATION_LANG_LV:
-         return "lv";
-      case TRANSLATION_LANG_LT:
-         return "lt";
-      case TRANSLATION_LANG_MK:
-         return "mk";
-      case TRANSLATION_LANG_MS:
-         return "ms";
-      case TRANSLATION_LANG_MT:
-         return "mt";
-      case TRANSLATION_LANG_NO:
-         return "nb";
-      case TRANSLATION_LANG_FA:
-         return "fa";
-      case TRANSLATION_LANG_PL:
-         return "pl";
-      case TRANSLATION_LANG_PT:
-         return "pt";
-      case TRANSLATION_LANG_RO:
-         return "ro";
-      case TRANSLATION_LANG_RU:
-         return "ru";
-      case TRANSLATION_LANG_SR:
-         return "sr";
-      case TRANSLATION_LANG_SK:
-         return "sk";
-      case TRANSLATION_LANG_SL:
-         return "sl";
-      case TRANSLATION_LANG_SW:
-         return "sw";
-      case TRANSLATION_LANG_TA:
-         return "ta";
-      case TRANSLATION_LANG_TE:
-         return "te";
-      case TRANSLATION_LANG_TH:
-         return "th";
-      case TRANSLATION_LANG_TR:
-         return "tr";
-      case TRANSLATION_LANG_UK:
-         return "uk";
-      case TRANSLATION_LANG_BE:
-         return "be";
-      case TRANSLATION_LANG_UR:
-         return "ur";
-      case TRANSLATION_LANG_VI:
-         return "vi";
-      case TRANSLATION_LANG_CY:
-         return "cy";
-      case TRANSLATION_LANG_AST:
-      case TRANSLATION_LANG_TL:
-      case TRANSLATION_LANG_GL:
-      case TRANSLATION_LANG_YI:
-      case TRANSLATION_LANG_DONT_CARE:
-      case TRANSLATION_LANG_LAST:
-         break;
-   }
+   if (
+         string_is_equal(language, "en") ||
+         string_is_equal(language, "it") ||
+         string_is_equal(language, "sv") ||
+         string_is_equal(language, "fr") ||
+         string_is_equal(language, "de") ||
+         string_is_equal(language, "he") ||
+         string_is_equal(language, "id") ||
+         string_is_equal(language, "es") ||
+         string_is_equal(language, "nl") ||
+         string_is_equal(language, "ro") ||
+         string_is_equal(language, "th") ||
+         string_is_equal(language, "ja") ||
+         string_is_equal(language, "sk") ||
+         string_is_equal(language, "hi") ||
+         string_is_equal(language, "ar") ||
+         string_is_equal(language, "hu") ||
+         string_is_equal(language, "el") ||
+         string_is_equal(language, "ru") ||
+         string_is_equal(language, "nb") ||
+         string_is_equal(language, "da") ||
+         string_is_equal(language, "fi") ||
+         string_is_equal(language, "tr") ||
+         string_is_equal(language, "ko") ||
+         string_is_equal(language, "pl") ||
+         string_is_equal(language, "cs") ||
+         string_is_equal(language, "eo") ||
+         string_is_equal(language, "vi") ||
+         string_is_equal(language, "fa") ||
+         string_is_equal(language, "uk") ||
+         string_is_equal(language, "be") ||
+         string_is_equal(language, "hr") ||
+         string_is_equal(language, "bg") ||
+         string_is_equal(language, "bn") ||
+         string_is_equal(language, "eu") ||
+         string_is_equal(language, "az") ||
+         string_is_equal(language, "sq") ||
+         string_is_equal(language, "af") ||
+         string_is_equal(language, "et") ||
+         string_is_equal(language, "ka") ||
+         string_is_equal(language, "gu") ||
+         string_is_equal(language, "ht") ||
+         string_is_equal(language, "is") ||
+         string_is_equal(language, "ga") ||
+         string_is_equal(language, "kn") ||
+         string_is_equal(language, "la") ||
+         string_is_equal(language, "lv") ||
+         string_is_equal(language, "lt") ||
+         string_is_equal(language, "mk") ||
+         string_is_equal(language, "ms") ||
+         string_is_equal(language, "mt") ||
+         string_is_equal(language, "sr") ||
+         string_is_equal(language, "sl") ||
+         string_is_equal(language, "sw") ||
+         string_is_equal(language, "ta") ||
+         string_is_equal(language, "te") ||
+         string_is_equal(language, "ur") ||
+         string_is_equal(language, "cy")
+      )
+      return language;
+   else if (
+         string_is_equal(language, "no") ||
+         string_is_equal(language, "nb")
+      )
+      return "nb";
+   else if (string_is_equal(language, "en_gb"))
+      return "en-gb";
+   else if (
+         string_is_equal(language, "ca") ||
+         string_is_equal(language, "ca_ES@valencia")
+      )
+      return "ca";
+   else if (
+         string_is_equal(language, "pt_pt") ||
+         string_is_equal(language, "pt")
+      )
+      return "pt";
+   else if (string_is_equal(language, "pt_bt"))
+      return "pt-br";
+   else if (
+         string_is_equal(language, "zh") ||
+         string_is_equal(language, "zh_cn") ||
+         string_is_equal(language, "zh_tw") ||
+         string_is_equal(language, "zh-CN") ||
+         string_is_equal(language, "zh-TW")
+      )
+      return "cmn";
+   else if (string_is_equal(language, "zh_hk"))
+      return "yue";
+   /* default voice as fallback */
    return "en";
 }
 
@@ -2932,9 +2893,7 @@ static bool accessibility_speak_unix(int speed,
       const char* speak_text, int priority)
 {
    int pid;
-   settings_t *settings   = config_get_ptr();
-   unsigned target_lang   = settings->uints.ai_service_target_lang;
-   const char *language   = espeak_get_str((enum translation_lang)target_lang);
+   const char* language   = accessibility_unix_language_code(get_user_language_iso639_1(true));
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
@@ -2994,7 +2953,7 @@ static bool accessibility_speak_unix(int speed,
             /* Tell the system that we'll ignore the exit status of the child
              * process.  This prevents zombie processes. */
             signal(SIGCHLD, SIG_IGN);
-	 }
+         }
    }
 
 end:
@@ -3002,6 +2961,40 @@ end:
       free(voice_out);
    if (speed_out)
       free(speed_out);
+   return true;
+}
+#endif
+
+#ifdef ANDROID
+bool is_screen_reader_enabled(void)
+{
+   JNIEnv *env = jni_thread_getenv();
+   jboolean                  jbool   = JNI_FALSE;
+
+   if (env != NULL)
+      CALL_BOOLEAN_METHOD(env, jbool,
+            g_android->activity->clazz, g_android->isScreenReaderEnabled);
+
+   return jbool == JNI_TRUE;
+}
+
+static bool is_narrator_running_android(void)
+{
+   /* Screen reader is speaking on Android is controlled by the operating
+    * system, so return false to align with the rest of the API. */
+   return false;
+}
+
+static bool accessibility_speak_android(int speed,
+      const char* speak_text, int priority)
+{
+   JNIEnv *env = jni_thread_getenv();
+
+   if (env != NULL)
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->accessibilitySpeak,
+            (*env)->NewStringUTF(env, speak_text));
+
    return true;
 }
 #endif
@@ -3063,8 +3056,8 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    is_narrator_running_unix,     /* is_narrator_running */
    accessibility_speak_unix,     /* accessibility_speak */
 #else
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
+   is_narrator_running_android,                         /* is_narrator_running */
+   accessibility_speak_android,                         /* accessibility_speak */
 #endif
 #ifdef FERAL_GAMEMODE
    frontend_unix_set_gamemode,

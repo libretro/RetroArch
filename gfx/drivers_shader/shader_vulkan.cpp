@@ -512,6 +512,9 @@ class Pass
          cache(cache),
          num_sync_indices(num_sync_indices),
          final_pass(final_pass)
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION         
+         ,simulate_scanline(false)
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION         
       {}
 
       ~Pass();
@@ -546,6 +549,11 @@ class Pass
       void notify_sync_index(unsigned index) { sync_index = index; }
       void set_frame_count(uint64_t count) { frame_count = count; }
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
+      void set_shader_subframes(uint32_t ts) { total_subframes = ts; }
+      void set_current_shader_subframe(uint32_t cs) { current_subframe = cs; }
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION      
+      void set_simulate_scanline(bool simulate) { simulate_scanline = simulate; }
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION      
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_name(const char *name) { pass_name = name; }
@@ -579,6 +587,9 @@ class Pass
       unsigned num_sync_indices;
       unsigned sync_index;
       bool final_pass;
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION      
+      bool simulate_scanline;
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
 
       Size2D get_output_size(const Size2D &original_size,
             const Size2D &max_source) const;
@@ -636,6 +647,8 @@ class Pass
       uint32_t rotation           = 0;
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
+      uint32_t total_subframes    = 1;
+      uint32_t current_subframe   = 1;
 
       size_t ubo_offset           = 0;
       std::string pass_name;
@@ -693,6 +706,11 @@ struct vulkan_filter_chain
 
       void set_frame_count(uint64_t count);
       void set_frame_count_period(unsigned pass, unsigned period);
+      void set_shader_subframes(uint32_t total_subframes);
+      void set_current_shader_subframe(uint32_t current_subframe);
+ #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION     
+      void set_simulate_scanline(bool simulate_scanline);
+ #endif // VULKAN_ROLLING_SCANLINE_SIMULATION     
       void set_frame_direction(int32_t direction);
       void set_rotation(uint32_t rot);
       void set_pass_name(unsigned pass, const char *name);
@@ -1687,6 +1705,29 @@ void vulkan_filter_chain::set_frame_count_period(
    passes[pass]->set_frame_count_period(period);
 }
 
+void vulkan_filter_chain::set_shader_subframes(uint32_t total_subframes)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_shader_subframes(total_subframes);
+}
+
+void vulkan_filter_chain::set_current_shader_subframe(uint32_t current_subframe)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_current_shader_subframe(current_subframe);
+}
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+void vulkan_filter_chain::set_simulate_scanline(bool simulate_scanline)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_simulate_scanline(simulate_scanline);
+}
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+
 void vulkan_filter_chain::set_frame_direction(int32_t direction)
 {
    unsigned i;
@@ -2595,6 +2636,12 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      total_subframes);
+
+   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      current_subframe);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
 
@@ -2732,18 +2779,39 @@ void Pass::build_commands(
 
    if (final_pass)
    {
-      const VkRect2D sci = {
-         {
-            int32_t(current_viewport.x),
-            int32_t(current_viewport.y)
-         },
-         {
-            uint32_t(current_viewport.width),
-            uint32_t(current_viewport.height)
-         },
-      };
       vkCmdSetViewport(cmd, 0, 1, &current_viewport);
-      vkCmdSetScissor(cmd, 0, 1, &sci);
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+      if (simulate_scanline)
+      {
+         const VkRect2D sci = {
+            {
+               int32_t(current_viewport.x),
+               int32_t((current_viewport.height / float(total_subframes)) 
+                        * float(current_subframe - 1))
+            },
+            {
+               uint32_t(current_viewport.width),
+               uint32_t(current_viewport.height / float(total_subframes))
+            },
+         };
+         vkCmdSetScissor(cmd, 0, 1, &sci);
+      }
+      else
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION 
+      {
+         const VkRect2D sci = {
+            {
+               int32_t(current_viewport.x),
+               int32_t(current_viewport.y)
+            },
+            {
+               uint32_t(current_viewport.width),
+               uint32_t(current_viewport.height)
+            },
+         };
+         vkCmdSetScissor(cmd, 0, 1, &sci);
+      }     
    }
    else
    {
@@ -2753,16 +2821,37 @@ void Pass::build_commands(
          float(current_framebuffer_size.height),
          0.0f, 1.0f
       };
-      const VkRect2D sci = {
-         { 0, 0 },
-         {
-            current_framebuffer_size.width,
-            current_framebuffer_size.height
-         },
-      };
 
       vkCmdSetViewport(cmd, 0, 1, &_vp);
-      vkCmdSetScissor(cmd, 0, 1, &sci);
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+      if (simulate_scanline)
+      {
+         const VkRect2D sci = {
+            {
+               0,
+               int32_t((float(current_framebuffer_size.height) / float(total_subframes)) 
+                        * float(current_subframe - 1))
+            },
+            {
+               uint32_t(current_framebuffer_size.width),
+               uint32_t(float(current_framebuffer_size.height) / float(total_subframes))
+            },
+         };
+         vkCmdSetScissor(cmd, 0, 1, &sci);
+      }
+      else
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+      {
+         const VkRect2D sci = {
+            { 0, 0 },
+            {
+               current_framebuffer_size.width,
+               current_framebuffer_size.height
+            },
+         };
+         vkCmdSetScissor(cmd, 0, 1, &sci);
+      }      
    }
 
    vkCmdDraw(cmd, 4, 1, 0, 0);
@@ -3173,7 +3262,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
 
             /* If final pass explicitly emits RGB10, consider it HDR color space. */
-            if (explicit_format && pass_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+            if (explicit_format && vulkan_is_hdr10_format(pass_format))
                chain->set_hdr10();
 
             if (explicit_format && pass_format != pass_info.rt_format)
@@ -3362,6 +3451,29 @@ void vulkan_filter_chain_set_frame_count_period(
 {
    chain->set_frame_count_period(pass, period);
 }
+
+void vulkan_filter_chain_set_shader_subframes(
+      vulkan_filter_chain_t *chain,
+      uint32_t tot_subframes)
+{
+   chain->set_shader_subframes(tot_subframes);
+}
+
+void vulkan_filter_chain_set_current_shader_subframe(
+      vulkan_filter_chain_t *chain,
+      uint32_t cur_subframe)
+{
+   chain->set_current_shader_subframe(cur_subframe);
+}
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+void vulkan_filter_chain_set_simulate_scanline(
+      vulkan_filter_chain_t *chain,
+      bool simulate_scanline)
+{
+   chain->set_simulate_scanline(simulate_scanline);
+}
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
 
 void vulkan_filter_chain_set_frame_direction(
       vulkan_filter_chain_t *chain,

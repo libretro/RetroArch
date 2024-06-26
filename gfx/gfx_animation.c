@@ -1356,65 +1356,53 @@ bool gfx_animation_update(
    return ((p_anim->flags & GFX_ANIM_FLAG_IS_ACTIVE) > 0);
 }
 
-static void build_ticker_loop_string(
+static size_t build_ticker_loop_string(
       const char* src_str, const char *spacer,
       size_t char_offset1, size_t num_chars1,
       size_t char_offset2, size_t num_chars2,
       size_t char_offset3, size_t num_chars3,
-      char *dest_str, size_t dest_str_len)
+      char *s, size_t len)
 {
+   size_t _len = 0;
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
-      utf8cpy(
-            dest_str, dest_str_len,
+      _len += utf8cpy(s + _len, len - _len,
             utf8skip(src_str, char_offset1), num_chars1);
-   else
-      dest_str[0] = '\0';
-
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
-   {
-      char tmp[32];
-      utf8cpy(
-            tmp, sizeof(tmp),
+      _len += utf8cpy(s + _len, len - _len,
             utf8skip(spacer, char_offset2), num_chars2);
-      strlcat(dest_str, tmp, dest_str_len);
-   }
-
    /* Copy 'leading' chunk of source string, if required */
    if (num_chars3 > 0)
-   {
-      char tmp[80];
-      utf8cpy(
-            tmp, sizeof(tmp),
+      _len += utf8cpy(s + _len, len - _len,
             utf8skip(src_str, char_offset3), num_chars3);
-      strlcat(dest_str, tmp, dest_str_len);
-   }
+   return _len;
 }
 
-static void build_line_ticker_string(
+static size_t build_line_ticker_string(
       size_t num_display_lines, size_t line_offset,
-      struct string_list *lines,
-      char *dest_str, size_t dest_str_len)
+      struct string_list *lines, size_t lines_size,
+      char *s, size_t len)
 {
    size_t i;
-
+   size_t _len = 0;
    for (i = 0; i < (num_display_lines-1); i++)
    {
       size_t offset     = i + line_offset;
-      size_t line_index = offset % (lines->size + 1);
+      size_t line_index = offset % (lines_size + 1);
       /* Is line valid? */
-      if (line_index < lines->size)
-         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
-      strlcat(dest_str, "\n", dest_str_len);
+      if (line_index < lines_size)
+         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
+      _len    += strlcpy(s + _len, "\n", len - _len);
    }
    {
       size_t offset     = (num_display_lines-1) + line_offset;
-      size_t line_index = offset % (lines->size + 1);
+      size_t line_index = offset % (lines_size + 1);
       /* Is line valid? */
-      if (line_index < lines->size)
-         strlcat(dest_str, lines->elems[line_index].data, dest_str_len);
+      if (line_index < lines_size)
+         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
    }
+   return _len;
 }
 
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
@@ -1898,15 +1886,15 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
    if (!line_ticker)
       return false;
 
-   if (string_is_empty(line_ticker->str) ||
-       (line_ticker->line_len < 1) ||
-       (line_ticker->max_lines < 1))
+   if (    string_is_empty(line_ticker->str)
+       || (line_ticker->line_len  < 1)
+       || (line_ticker->max_lines < 1))
       goto end;
 
    /* Line wrap input string */
    line_ticker_str_len = strlen(line_ticker->str);
    wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
-   if (!(wrapped_str = (char*)malloc(wrapped_str_len)))
+   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
       goto end;
    wrapped_str[0] = '\0';
 
@@ -1957,7 +1945,7 @@ bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker)
 
    /* Build output string from required lines */
    build_line_ticker_string(
-      line_ticker->max_lines, line_offset, &lines,
+      line_ticker->max_lines, line_offset, &lines, lines.size,
       line_ticker->s, line_ticker->len);
 
    success                  = true;
@@ -2136,22 +2124,19 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *li
 
    /* Build output string from required lines */
    build_line_ticker_string(
-         num_display_lines, line_offset, &lines,
+         num_display_lines, line_offset, &lines, lines.size,
          line_ticker->dst_str, line_ticker->dst_str_len);
 
    /* Extract top/bottom fade strings, if required */
    if (fade_active)
    {
-      /* We waste a handful of clock cycles by using
-       * build_line_ticker_string() here, but it saves
-       * rewriting a heap of code... */
-      build_line_ticker_string(
-            1, top_fade_line_offset, &lines,
-            line_ticker->top_fade_str, line_ticker->top_fade_str_len);
-
-      build_line_ticker_string(
-            1, bottom_fade_line_offset, &lines,
-            line_ticker->bottom_fade_str, line_ticker->bottom_fade_str_len);
+      size_t top_fade_line_index    = top_fade_line_offset    % (lines.size + 1);
+      size_t bottom_fade_line_index = bottom_fade_line_offset % (lines.size + 1);
+      /* Is line valid? */
+      if (top_fade_line_index < lines.size)
+         strlcpy(line_ticker->top_fade_str, lines.elems[top_fade_line_index].data, line_ticker->top_fade_str_len);
+      if (bottom_fade_line_index < lines.size)
+         strlcpy(line_ticker->bottom_fade_str, lines.elems[bottom_fade_line_index].data, line_ticker->bottom_fade_str_len);
    }
 
    success                  = true;

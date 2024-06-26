@@ -425,6 +425,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES), len);
              break;
+          case MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES), len);
+             break;
+          case MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES), len);
+             break;
           case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY), len);
              break;
@@ -482,6 +488,8 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                 unsigned mode = settings ? settings->uints.input_turbo_mode : INPUT_TURBO_MODE_LAST;
                 if (mode == INPUT_TURBO_MODE_CLASSIC)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC), len);
+                else if (mode == INPUT_TURBO_MODE_CLASSIC_TOGGLE)
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE), len);
                 else if (mode == INPUT_TURBO_MODE_SINGLEBUTTON)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON), len);
                 else if (mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD)

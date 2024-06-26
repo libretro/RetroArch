@@ -138,10 +138,6 @@ MSG_HASH(
    "開啟傳統風格的桌面選單。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "關閉展示模式 (需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "顯示設定相關的全部選項。"
    )
@@ -1193,9 +1189,13 @@ MSG_HASH(
    "嘗試將雲端設定檔、記憶存檔與狀態同步到雲端儲存供應商。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "若未啟用，覆蓋或刪除前檔案將會移動到備份資料夾。"
-   )
+   )      
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "雲端同步後端"
@@ -1239,10 +1239,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "檔案瀏覽器"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "變更檔案瀏覽器相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -1491,10 +1487,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "控制器"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "設定遊戲控制器使用的驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -2038,10 +2030,6 @@ MSG_HASH(
    )
 #if defined (WIIU)
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "優化Wii U控制器 (需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "開啟時使用控制器精準2倍比例作為顯示, 關閉時使用原始解析度輸出顯示。"
    )
@@ -2367,6 +2355,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    "自訂影像顯示垂直位置, 正數向下移動, 負數向上移動。\n開啟「整數縮放」時此選項被忽略。"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "自訂寬度"
@@ -2382,10 +2372,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "自訂影像顯示高度, 設定「寬高比」為<自訂>時套用此選項。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "裁剪過度掃描 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -3016,10 +3002,6 @@ MSG_HASH(
    "設定應用程式支援控制器的數量。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "輪詢方式 (需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "設定應用程式進行輸入輪詢的方式, 設定為<較早>或<稍晚>可減少按鍵輸入延遲, 取決於裝置的效能。"
    )
@@ -3044,10 +3026,6 @@ MSG_HASH(
    "自動載入隨插即用配置檔, 選項「連接埠#控制器」中可建立隨插即用配置檔。"
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "禁用視窗標誌鍵 (需要重新啟動)"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "開啟時禁用[Windows標誌鍵]所有的組合。"
@@ -3258,10 +3236,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "控制器斷開解決方法 (Android)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "控制器斷開後重新連接的解決方法, 請使用兩個相同的控制器中斷。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -4530,16 +4504,8 @@ MSG_HASH(
    "顯示隱藏的檔案和資料夾"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "在檔案瀏覽器中, 顯示隱藏的檔案和資料夾。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "只顯示支援的檔案"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "在檔案瀏覽器中, 只顯示支援的檔案。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4552,10 +4518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "記住最後載入檔案的位置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "記住本次執行「開始資料夾」最後載入的檔案位置, 重新啟動後還原為設定位置。"
    )
 
 /* Settings > Frame Throttle */
@@ -4960,7 +4922,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "載入覆蓋元件並預設為應用程式使用。"
+   "從檔案瀏覽器選擇覆疊設定"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -5058,8 +5020,38 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "設定螢幕直向顯示時, 覆蓋元件的垂直位置, 正數為向上偏移, 負數為向下偏移。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "啟用覆疊介面的光線槍、滑鼠以及指向裝置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "於核心中使用非按下覆疊介面的任何觸控以建立指向裝置的輸入。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "覆疊介面的光線槍"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "設定在覆疊介面的光線槍輸入傳送。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "覆疊介面的滑鼠"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "設定在覆疊介面的滑鼠輸入傳送。備註: 單指、雙指、三指的輕碰各自傳送滑鼠左鍵、右鍵、以及中鍵的點按操作。"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -5075,10 +5067,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
    "載入藝術佈景 (預設)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "載入藝術佈景並預設為應用程式使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5621,10 +5609,6 @@ MSG_HASH(
    "選項「啟動時開啟桌面選單」的進階設定。\n此選項關閉時「啟動時開啟桌面選單」選項將失效。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "允許使用桌面選單 (需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "啟動時開啟桌面選單"
    )
@@ -5758,10 +5742,6 @@ MSG_HASH(
    "顯示「設定」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "顯示「設定」選項, 關閉此選項請先輸入設定密碼, 避免錯誤發生。\nOzone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "輸入顯示設定選項的密碼"
    )
@@ -5774,56 +5754,28 @@ MSG_HASH(
    "顯示「我的最愛」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "顯示「我的最愛」列表, Ozone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "顯示「圖片」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "顯示「圖片」列表, Ozone和XMB主題變更此選項時需要重新啟動。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "顯示「音樂」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "顯示「音樂」列表, Ozone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "顯示「影片」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "顯示「影片」列表, Ozone和XMB主題變更此選項時需要重新啟動。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "顯示「連線對戰」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "顯示「連線對戰」選項, Ozone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "顯示「歷史」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "顯示「歷史」列表, Ozone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "顯示「匯入遊戲」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "顯示「匯入遊戲」選項, Ozone和XMB主題變更此選項時需要重新啟動。"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -5846,24 +5798,12 @@ MSG_HASH(
    "顯示「列表」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "顯示全部列表, Ozone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "顯示「搜尋」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "顯示「搜尋」選項, Ozone和XMB主題變更此選項時需要重新啟動。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "顯示「應用核心」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "設定「應用核心」列表顯示類型, 設定<自訂>時可透過「管理核心」選項, 設定核心是否顯示於列表中。\nOzone和XMB主題變更此選項時需要重新啟動。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -9028,10 +8968,6 @@ MSG_HASH(
    "記住最後載入著色器的位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "記住本次執行「載入」著色器配置檔最後的位置, 重新啟動後還原為預設位置。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "載入著色器配置檔並自動設置通道和參數。"
    )
@@ -9560,10 +9496,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "自動朗讀模式"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
-   "頂端"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -10197,10 +10129,6 @@ MSG_HASH(
    "設定選單主題的配色, 設定<自訂>時可自訂選單預設主題。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "設定選單使用的主題。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    "開啟時選單可顯示執行的內容。"
    )
@@ -10675,10 +10603,6 @@ MSG_HASH(
    "標籤邊距水平偏移"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "顯示設定選項"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "顯示設定選項, 密碼輸入正確後, 需要重新啟動應用程式。"
    )
@@ -10730,16 +10654,8 @@ MSG_HASH(
    "主機化 (Systematic)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
-   "單色圓滑 (NeoActive)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
    "像素圖 (Pixel)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
-   "復古圓滑 (RetroActive)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
@@ -10853,16 +10769,8 @@ MSG_HASH(
    "隱藏左側欄位名稱文字只顯示圖示。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "截斷列表名稱 (需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "隱藏列表連接號「-」之前的文字, 例如「Sony - PlayStation」 只顯示「PlayStation」。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "排列截斷名稱 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -10966,10 +10874,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "顯示開關圖示不使用文字表達方式。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "列表圖示 (需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -13538,10 +13442,6 @@ MSG_HASH(
    "掃描中"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "掃描完成。"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "傳送指令"
    )
@@ -13898,44 +13798,8 @@ MSG_HASH(
    "無法載入即時存檔, 已關閉搶占幀數。"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "掃描完成。"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "成功建立新的搜尋。"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "無法建立金手指搜尋"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "未建立新的搜尋。"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "搜尋結果: %u個。"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "加入搜尋結果: %u個。"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "無法加入到列表中"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "已成功加入到列表中。"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "無法建立代碼"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "已刪除指定位置。"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -13972,30 +13836,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "已刪除金手指。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "無法放入映像檔"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "無法連線到用戶端"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "無法連線到主機"
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "連線遊戲主機已滿。"
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "您已被這主機加入黑名單。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "無法從主機端接收標題。"
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14038,18 +13878,6 @@ MSG_HASH(
    "最高"
    )
 MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "警告: 缺少主題資源, 如果可連線, 請使用線上更新。"
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "警告: 缺少所選語言的字型, 如果可連線, 請使用線上更新。"
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "警告: 不支持的語言 - 預設為英語。"
-   )
-MSG_HASH(
    MSG_DUMPING_DISC,
    "正在轉存光碟片..."
    )
@@ -14082,24 +13910,8 @@ MSG_HASH(
    "無法刪除著色器配置。"
    )
 MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "選擇的大型電玩資料庫無效。"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "選擇的大型電玩資料庫過大, 可用記憶體不足。"
-   )
-MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "無法載入大型電玩資料庫, 無效的檔案格式。"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "未指定資料夾或未輸入自訂列表名稱。"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "沒有偵測到有效的檔案"
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,

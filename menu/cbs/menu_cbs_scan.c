@@ -57,6 +57,12 @@ int action_scan_file(const char *path,
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
+#if IOS
+   char dir_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
+   menu_path = dir_path;
+#endif
+
    fill_pathname_join_special(fullpath, menu_path, path, sizeof(fullpath));
 
    task_push_dbscan(
@@ -80,6 +86,12 @@ int action_scan_directory(const char *path,
    const char *path_content_db    = settings->paths.path_content_database;
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+#if IOS
+   char dir_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
+   menu_path = dir_path;
+#endif
 
    if (path)
       fill_pathname_join_special(fullpath, menu_path, path, sizeof(fullpath));
@@ -219,7 +231,7 @@ static int action_scan_input_desc(const char *path,
       inp_desc_user      = (unsigned)(player_no_str - 1);
       /* This hardcoded value may cause issues if any entries are added on
          top of the input binds */
-      key                = (unsigned)(idx - 6);
+      key                = (unsigned)(idx - 8);
       /* Select the reorderer bind */
       key                =
             (key < RARCH_ANALOG_BIND_LIST_END) ? input_config_bind_order[key] : key;

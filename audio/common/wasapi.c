@@ -15,16 +15,17 @@
  */
 
 #include "wasapi.h"
-#include <stdio.h>
 #ifdef HAVE_MICROPHONE
-#include "audio/microphone_driver.h"
+#include "../microphone_driver.h"
 #endif
-#include "queues/fifo_queue.h"
-#include "lists/string_list.h"
-#include "configuration.h"
-#include "verbosity.h"
-#include "string/stdstring.h"
+#include <string/stdstring.h>
+#include <queues/fifo_queue.h>
+#include <lists/string_list.h>
+
 #include "mmdevice_common.h"
+
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 const char *hresult_name(HRESULT hr)
 {
@@ -228,8 +229,6 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
  */
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
 {
-   static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
-   const bool preferred_formats[]          = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
    bool result                             = false;
@@ -256,7 +255,6 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          }
          else
          {
-            result = false;
             RARCH_ERR("[WASAPI]: Windows suggested a format, but RetroArch can't use it.\n");
          }
          break;
@@ -267,13 +265,17 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
           * Usually happens with exclusive mode.
           * RetroArch will try selecting a format. */
          size_t i, j;
-         WAVEFORMATEXTENSIBLE possible_format;
-         HRESULT format_check_hr;
+         bool preferred_formats[2];
+         preferred_formats[0] = (format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE);
+         preferred_formats[1] = (format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE);
          RARCH_WARN("[WASAPI]: Requested format not supported, and Windows could not suggest one. RetroArch will do so.\n");
          for (i = 0; i < ARRAY_SIZE(preferred_formats); ++i)
          {
+            static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
             for (j = 0; j < ARRAY_SIZE(preferred_rates); ++j)
             {
+               HRESULT format_check_hr;
+               WAVEFORMATEXTENSIBLE possible_format;
                wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels);
                format_check_hr = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *) &possible_format, NULL);
                if (SUCCEEDED(format_check_hr))
@@ -287,13 +289,11 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
             }
          }
          RARCH_ERR("[WASAPI]: Failed to select client format: No suitable format available.\n");
-         result = false;
          break;
       }
       default:
          /* Something else went wrong. */
          RARCH_ERR("[WASAPI]: Failed to select client format: %s.\n", hresult_name(hr));
-         result = false;
          break;
    }
 done:
@@ -441,8 +441,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    }
 
    /* Use audio latency setting for buffer size if allowed */
-   if (     sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD
-         || sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER)
+   if (     (sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD)
+         || (sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER))
    {
       /* Buffer_duration is in 100ns units. */
       buffer_duration = latency * 10000.0;

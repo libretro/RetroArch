@@ -20,7 +20,6 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
-#include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lrc_hash.h>
@@ -233,12 +232,20 @@ static bool task_overlay_load_desc(
    char overlay_desc_key[32];
    char overlay_key[64];
    char overlay[256];
+   char *tok, *save;
+   unsigned list_size                   = 0;
+   char *elem0                          = NULL;
+   char *elem1                          = NULL;
+   char *elem2                          = NULL;
+   char *elem3                          = NULL;
+   char *elem4                          = NULL;
+   char *elem5                          = NULL;
+   char *overlay_cpy                    = NULL;
    float tmp_float                      = 0.0f;
    bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
    char *key                            = NULL;
-   struct string_list list              = {0};
    const char *x                        = NULL;
    const char *y                        = NULL;
    const char *box                      = NULL;
@@ -273,25 +280,50 @@ static bool task_overlay_load_desc(
       goto end;
    }
 
-   string_list_initialize(&list);
-   if (!string_split_noalloc(&list, overlay, ", "))
+   overlay_cpy = strdup(overlay);
+   if ((tok = strtok_r(overlay_cpy, ", ", &save)))
    {
-      RARCH_ERR("[Overlay]: Failed to split overlay desc.\n");
-      ret = false;
-      goto end;
+      elem0 = strdup(tok);
+      list_size++;
    }
+   if ((tok = strtok_r(NULL, ", ", &save)))
+   {
+      elem1 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, ", ", &save)))
+   {
+      elem2 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, ", ", &save))) /* box */
+   {
+      elem3 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, ", ", &save)))
+   {
+      elem4 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, ", ", &save)))
+   {
+      elem5 = strdup(tok);
+      list_size++;
+   }
+   free(overlay_cpy);
 
-   if (list.size < 6)
+   if (list_size < 6)
    {
       RARCH_ERR("[Overlay]: Overlay desc is invalid. Requires at least 6 tokens.\n");
       ret = false;
       goto end;
    }
 
-   key            = list.elems[0].data;
-   x              = list.elems[1].data;
-   y              = list.elems[2].data;
-   box            = list.elems[3].data;
+   key                 = elem0;
+   x                   = elem1;
+   y                   = elem2;
+   box                 = elem3;
 
    desc->retro_key_idx = 0;
    BIT256_CLEAR_ALL(desc->button_mask);
@@ -390,8 +422,8 @@ static bool task_overlay_load_desc(
          break;
    }
 
-   desc->range_x = (float)strtod(list.elems[4].data, NULL) * width_mod;
-   desc->range_y = (float)strtod(list.elems[5].data, NULL) * height_mod;
+   desc->range_x = (float)strtod(elem4, NULL) * width_mod;
+   desc->range_y = (float)strtod(elem5, NULL) * height_mod;
 
    _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
 
@@ -471,7 +503,18 @@ static bool task_overlay_load_desc(
    input_overlay->pos ++;
 
 end:
-   string_list_deinitialize(&list);
+   if (elem0)
+      free(elem0);
+   if (elem1)
+      free(elem1);
+   if (elem2)
+      free(elem2);
+   if (elem3)
+      free(elem3);
+   if (elem4)
+      free(elem4);
+   if (elem5)
+      free(elem5);
    return ret;
 }
 
@@ -799,25 +842,55 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         struct string_list  list = {0};
+         char *tok, *save;
+         char *elem0              = NULL;
+         char *elem1              = NULL;
+         char *elem2              = NULL;
+         char *elem3              = NULL;
+         unsigned list_size       = 0;
+         char *cfg_rect_array_cpy = strdup(overlay->config.rect.array);
 
-         string_list_initialize(&list);
+         if ((tok = strtok_r(cfg_rect_array_cpy, ", ", &save)))
+         {
+            elem0 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem1 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem2 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem3 = strdup(tok);
+            list_size++;
+         }
+         free(cfg_rect_array_cpy);
 
-         if (     !string_split_noalloc(
-                  &list, overlay->config.rect.array, ", ")
-               || list.size < 4)
+         if (list_size < 4)
          {
             RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
                   overlay->config.rect.array);
-            string_list_deinitialize(&list);
+            free(elem0);
+            free(elem1);
+            free(elem2);
+            free(elem3);
             goto error;
          }
 
-         overlay->x = (float)strtod(list.elems[0].data, NULL);
-         overlay->y = (float)strtod(list.elems[1].data, NULL);
-         overlay->w = (float)strtod(list.elems[2].data, NULL);
-         overlay->h = (float)strtod(list.elems[3].data, NULL);
-         string_list_deinitialize(&list);
+         overlay->x = (float)strtod(elem0, NULL);
+         overlay->y = (float)strtod(elem1, NULL);
+         overlay->w = (float)strtod(elem2, NULL);
+         overlay->h = (float)strtod(elem3, NULL);
+         free(elem0);
+         free(elem1);
+         free(elem2);
+         free(elem3);
       }
 
       /* Assume for now that scaling center is in the middle.

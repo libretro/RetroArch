@@ -199,6 +199,26 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
+static uint16_t dinput_get_active_keyboard_mods()
+{
+   uint16_t mod = 0;
+   if (GetKeyState(VK_SHIFT)   & 0x80)
+      mod |= RETROKMOD_SHIFT;
+   if (GetKeyState(VK_CONTROL) & 0x80)
+      mod |= RETROKMOD_CTRL;
+   if (GetKeyState(VK_MENU)    & 0x80)
+      mod |= RETROKMOD_ALT;
+   if (GetKeyState(VK_CAPITAL) & 0x81)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (GetKeyState(VK_SCROLL)  & 0x81)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (GetKeyState(VK_NUMLOCK) & 0x81)
+      mod |= RETROKMOD_NUMLOCK;
+   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+      mod |= RETROKMOD_META;
+   return mod;
+}
+
 static void dinput_keyboard_mods(struct dinput_input *di, int mod)
 {
    switch (mod)
@@ -212,7 +232,8 @@ static void dinput_keyboard_mods(struct dinput_input *di, int mod)
                 || (!vk_shift_l &&   (di->flags & DINP_FLAG_SHIFT_L)))
             {
                input_keyboard_event(vk_shift_l, RETROK_LSHIFT,
-                     0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+                     0, dinput_get_active_keyboard_mods() | RETROKMOD_SHIFT,
+                     RETRO_DEVICE_KEYBOARD);
                if (di->flags & DINP_FLAG_SHIFT_L)
                   di->flags &= ~DINP_FLAG_SHIFT_L;
                else
@@ -223,7 +244,8 @@ static void dinput_keyboard_mods(struct dinput_input *di, int mod)
                 || (!vk_shift_r &&   (di->flags & DINP_FLAG_SHIFT_R)))
             {
                input_keyboard_event(vk_shift_r, RETROK_RSHIFT,
-                     0, RETROKMOD_SHIFT, RETRO_DEVICE_KEYBOARD);
+                     0, dinput_get_active_keyboard_mods() | RETROKMOD_SHIFT,
+                     RETRO_DEVICE_KEYBOARD);
                if (di->flags & DINP_FLAG_SHIFT_R)
                   di->flags &= ~DINP_FLAG_SHIFT_R;
                else
@@ -246,7 +268,8 @@ static void dinput_keyboard_mods(struct dinput_input *di, int mod)
             else if (!vk_alt_l && (di->flags & DINP_FLAG_ALT_L))
             {
                input_keyboard_event(vk_alt_l, RETROK_LALT,
-                     0, RETROKMOD_ALT, RETRO_DEVICE_KEYBOARD);
+                     0, dinput_get_active_keyboard_mods() | RETROKMOD_ALT,
+                     RETRO_DEVICE_KEYBOARD);
                if (di->flags & DINP_FLAG_ALT_L)
                   di->flags &= ~DINP_FLAG_ALT_L;
                else
@@ -583,9 +606,7 @@ static int16_t dinput_input_state(
                      {
                         if (binds[port][i].valid)
                         {
-                           if (dinput_mouse_button_pressed(
-                                    di, port, binds[port][i].mbutton)
-                              )
+                           if (dinput_mouse_button_pressed(di, port, binds[port][i].mbutton))
                               ret |= (1 << i);
                         }
                      }
@@ -597,13 +618,13 @@ static int16_t dinput_input_state(
                      {
                         if (binds[port][i].valid)
                         {
-                           if ((binds[port][i].key < RETROK_LAST) &&
-                                 di->state[rarch_keysym_lut
-                                 [(enum retro_key)binds[port][i].key]] & 0x80)
+                           if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                                 && di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
                               ret |= (1 << i);
                         }
                      }
                   }
+
                   return ret;
                }
 
@@ -611,26 +632,22 @@ static int16_t dinput_input_state(
                {
                   if (binds[port][id].valid)
                   {
-                     if  (binds[port][id].key < RETROK_LAST
-                           && (di->state[rarch_keysym_lut
-                              [(enum retro_key)binds[port][id].key]] & 0x80)
-                           && (   (id == RARCH_GAME_FOCUS_TOGGLE)
-                              || !keyboard_mapping_blocked)
-                         )
+                     if (     binds[port][id].key && binds[port][id].key < RETROK_LAST
+                           && (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
+                           && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                        )
                         return 1;
-                     else if (
-                           settings->uints.input_mouse_index[port] == 0
-                           && dinput_mouse_button_pressed(
-                              di, port, binds[port][id].mbutton)
-                           )
-                        return 1;
+                     else if (settings->uints.input_mouse_index[port] == 0)
+                     {
+                        if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
+                           return 1;
+                     }
                   }
                }
             }
             break;
          case RETRO_DEVICE_KEYBOARD:
-            return (id < RETROK_LAST) &&
-               di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
+            return (id && id < RETROK_LAST) && di->state[rarch_keysym_lut[(enum retro_key)id]] & 0x80;
          case RETRO_DEVICE_ANALOG:
             {
                int16_t ret           = 0;
@@ -648,13 +665,13 @@ static int16_t dinput_input_state(
                id_minus_key          = binds[port][id_minus].key;
                id_plus_key           = binds[port][id_plus].key;
 
-               if (id_plus_valid && id_plus_key < RETROK_LAST)
+               if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
                   unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                   if (di->state[sym] & 0x80)
                      ret = 0x7fff;
                }
-               if (id_minus_valid && id_minus_key < RETROK_LAST)
+               if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
                {
                   unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                   if (di->state[sym] & 0x80)
@@ -832,6 +849,7 @@ static int16_t dinput_input_state(
                         ? bind_joykey  : autobind_joykey;
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
+
                      if (binds[port][new_id].valid)
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -841,22 +859,18 @@ static int16_t dinput_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if (
-                              binds[port][new_id].key < RETROK_LAST
+                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && di->state[rarch_keysym_lut
-                              [(enum retro_key)binds[port][new_id].key]] & 0x80
-                              )
+                              && di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
                            return 1;
                         else
                         {
                            settings = config_get_ptr();
-                           if (
-                                 settings->uints.input_mouse_index[port] == 0
-                                 && dinput_mouse_button_pressed(
-                                    di, port, binds[port][new_id].mbutton)
-                              )
-                              return 1;
+                           if (settings->uints.input_mouse_index[port] == 0)
+                           {
+                              if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
+                                 return 1;
+                           }
                         }
                      }
                   }
