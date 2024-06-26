@@ -1170,10 +1170,10 @@ static void d3d8_calculate_rect(void *data,
 
    vp.x           = 0;
    vp.y           = 0;
-   vp.width       = width;
-   vp.height      = height;
-   vp.full_width  = width;
-   vp.full_height = height;
+   vp.width       = *width;
+   vp.height      = *height;
+   vp.full_width  = *width;
+   vp.full_height = *height;
 
    if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(&vp,

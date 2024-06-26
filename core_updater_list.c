@@ -784,7 +784,6 @@ bool core_updater_list_parse_network_data(
       const char *network_buildbot_url,
       const char *data, size_t len)
 {
-   size_t i;
    char *tok, *save;
    unsigned list_size = 0;
    char *data_buf     = NULL;
