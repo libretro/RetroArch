@@ -170,7 +170,7 @@ SlangProcess::SlangProcess()
 
    while (token)
    {
-      const char *value_str = strtok_r(0, delims, &save);
+      const char *value_str = strtok_r(NULL, delims, &save);
       int             value = (int)strtoul(value_str, nullptr, 0);
 
       if (string_starts_with_size(token, "Max", STRLEN_CONST("Max")))
@@ -385,7 +385,7 @@ SlangProcess::SlangProcess()
       else if (string_is_equal(token, "doWhileLoops"))
          Resources.limits.doWhileLoops = (value != 0);
 
-      token = strtok_r(0, delims, &save);
+      token = strtok_r(NULL, delims, &save);
    }
 }
 
