@@ -1159,35 +1159,31 @@ static void d3d8_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   struct video_viewport vp;
    float device_aspect       = (float)*width / *height;
    d3d8_video_t *d3d         = (d3d8_video_t*)data;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-   struct video_viewport vp;
 
    video_driver_get_size(width, height);
 
-   vp.x = 0;
-   vp.y = 0;
-   vp.width = width;
-   vp.height = height;
-   vp.full_width = width;
+   vp.x           = 0;
+   vp.y           = 0;
+   vp.width       = width;
+   vp.height      = height;
+   vp.full_width  = width;
    vp.full_height = height;
 
    if (video_scale_integer && !force_full)
-   {
       video_viewport_get_scaled_integer(&vp,
             *width,
             *height,
             video_driver_get_aspect_ratio(),
             d3d->keep_aspect,
             true);
-   }
    else if (d3d->keep_aspect && !force_full)
-   {
-      video_viewport_get_scaled_aspect(vp, viewport_width, viewport_height, true);
-   }
+      video_viewport_get_scaled_aspect(&vp, *width, *height, true);
    *x                          = vp.x;
    *y                          = vp.y;
    *width                      = vp.width;
@@ -1262,8 +1258,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          IDirect3D8_Release(g_pD3D8);
          g_pD3D8 = NULL;
 
-         ret = d3d8_init_base(d3d, info);
-         if (ret)
+         if ((ret = d3d8_init_base(d3d, info)))
             RARCH_LOG("[D3D8]: Recovered from dead state.\n");
       }
 
