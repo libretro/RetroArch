@@ -1197,9 +1197,21 @@ MSG_HASH(
    "Synchronisation destructive avec le Cloud"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Synchronisation : Sauvegardes/Sauvegardes instantanées"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
+   "Synchronisation : Fichiers de configuration"
    )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Lorsque cette option est activée, les sauvegardes/sauvegardes instantanées seront synchronisés avec le cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Lorsque cette option est activée, les fichiers de configuration seront synchronisés avec le cloud."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Lorsque cette option est désactivée, les fichiers sont déplacés vers un dossier de sauvegarde avant d'être remplacés ou supprimés."
@@ -2527,7 +2539,55 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    "Décalage de la fenêtre d'affichage sur l'axe Y.\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Biais d'ancrage X de la fenêtre d'affichage"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Biais d'ancrage X de la fenêtre d'affichage"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Biais d'ancrage Y de la fenêtre d'affichage"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Biais d'ancrage Y de la fenêtre d'affichage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Biais de la fenêtre d'affichage personnalisé utilisé pour décaler la fenêtre d'affichage horizontalement (si plus large que la hauteur du contenu). 0.0 signifie tout à gauche et 1.0 signifie tout à droite."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Biais de la fenêtre d'affichage personnalisé utilisé pour décaler la fenêtre d'affichage verticalement (si plus grande que la hauteur du contenu). 0.0 signifie tout en haut et 1.0 signifie tout en bas."
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Biais d'ancrage X de la fenêtre d'affichage (orientation portrait)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Biais d'ancrage X de la fenêtre d'affichage (orientation portrait)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Biais d'ancrage Y de la fenêtre d'affichage (orientation portrait)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Biais d'ancrage Y de la fenêtre d'affichage (orientation portrait)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Biais de la fenêtre d'affichage personnalisé utilisé pour décaler la fenêtre d'affichage horizontalement (si plus large que la hauteur du contenu). 0.0 signifie tout à gauche et 1.0 signifie tout à droite. (Orientation portrait)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Biais de la fenêtre d'affichage personnalisé utilisé pour décaler la fenêtre d'affichage verticalement (si plus grande que la hauteur du contenu). 0.0 signifie tout en haut et 1.0 signifie tout en bas. (Orientation portrait)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,

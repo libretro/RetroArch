@@ -1229,9 +1229,21 @@ MSG_HASH(
    "破壊的なクラウド同期"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "同期: セーブ/ステート"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
+   "同期: 設定ファイル"
    )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "有効にすると、セーブ/ステートがクラウドに同期されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "有効にすると、設定ファイルがクラウドに同期されます。"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "無効にすると、ファイルは上書きまたは削除される前にバックアップフォルダに移動されます。"
@@ -2545,9 +2557,57 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "表示領域の Y軸位置を定義するために使用されるカスタム表示領域オフセットです。\n[整数倍拡大] が有効の場合は無視されます。"
+   "表示領域の Y 軸位置を定義するために使用されるカスタム表示領域オフセットです。\n[整数倍拡大] が有効の場合は無視されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "表示領域 X 座標補正"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "表示領域 X 座標補正"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "表示領域 Y 座標補正"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "表示領域 Y 座標補正"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "表示領域がコンテンツの幅より広い場合、水平方向のオフセットに使用される補正値です。0.0 は左端を、1.0 は右端を表します。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "表示領域がコンテンツの高さより高い場合、垂直方向のオフセットに使用される補正値です。0.0 は上端を、1.0 は下端を表します。"
    )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "表示領域 X 座標補正 (縦向き)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "表示領域 X 座標補正 (縦向き)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "表示領域 Y 座標補正 (縦向き)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "表示領域 Y 座標補正 (縦向き)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "表示領域がコンテンツの幅より広い場合、水平方向のオフセットに使用される補正値です。0.0 は左端を、1.0 は右端を表します (縦向き)。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "表示領域がコンテンツの高さより高い場合、垂直方向のオフセットに使用される補正値です。0.0 は上端を、1.0 は下端を表します (縦向き)。"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
