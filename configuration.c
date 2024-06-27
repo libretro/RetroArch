@@ -2203,6 +2203,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("gcdwebserver_alert",            &settings->bools.gcdwebserver_alert, true, true, false);
 #endif
 
+#ifdef HAVE_GAME_AI
+   SETTING_BOOL("ai_player_override", &settings->bools.ai_player_override, true, 0, false);
+#endif
+
    *size = count;
 
    return tmp;

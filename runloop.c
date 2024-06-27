@@ -244,6 +244,10 @@
 #include "JITSupport.h"
 #endif
 
+#if HAVE_GAME_AI
+#include "ai/game_ai.h"
+#endif
+
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
@@ -7677,6 +7681,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
        * should be reset once core is deinitialised */
       input_state_get_ptr()->flags   |=  INP_FLAG_REMAPPING_CACHE_ACTIVE;
       runloop_st->current_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
+
+#ifdef HAVE_GAME_AI
+      // load models
+      game_ai_load("test", runloop_st->current_core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM), runloop_st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM));
+#endif
       return true;
    }
 
@@ -7816,6 +7825,10 @@ void core_run(void)
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
 
    current_core->retro_run();
+
+#ifdef HAVE_GAME_AI
+   game_ai_think();
+#endif
 
    if (      late_polling
          && (!(current_core->flags & RETRO_CORE_FLAG_INPUT_POLLED)))

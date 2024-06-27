@@ -16372,3 +16372,13 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "stopped."
    )
+#ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   "AI player override"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
+   "AI player override sublabel"
+   )
+#endif

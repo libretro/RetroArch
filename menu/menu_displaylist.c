@@ -3892,7 +3892,20 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
       }
+#if HAVE_GAME_AI
+      /*if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION),
+               msg_hash_to_str(MENU_ENUM_LABEL_GAME_AI_MENU_OPTION),
+               MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+               MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM, 0, 0, NULL))
+            count++;*/
+
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
    }
+#endif
 
    return count;
 }
@@ -11089,6 +11102,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,    PARSE_ONLY_BOOL},
 #endif
+
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,            PARSE_ONLY_BOOL},
             };
 

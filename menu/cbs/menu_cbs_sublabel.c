@@ -1380,6 +1380,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_create_backup,                 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_restore_backup_list,                      MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_delete_backup_list,                       MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST)
 
+#ifdef HAVE_GAME_AI
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_ai_menu_option,                       MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION)
+#endif
+
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -5620,6 +5624,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_backup_entry);
             break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_GAME_AI_MENU_OPTION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_game_ai_menu_option);
+            break;
+#endif
          default:
             return -1;
       }

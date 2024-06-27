@@ -1075,6 +1075,11 @@ typedef struct settings
 #if defined(HAVE_COCOATOUCH)
       bool gcdwebserver_alert;
 #endif
+
+#ifdef HAVE_GAME_AI
+      bool ai_player_override;
+#endif
+
    } bools;
 
 } settings_t;

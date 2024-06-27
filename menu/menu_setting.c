@@ -23172,6 +23172,24 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
 
+#ifdef HAVE_GAME_AI
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.ai_player_override,
+                  MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);                
+#endif
+
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;

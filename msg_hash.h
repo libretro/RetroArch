@@ -4217,6 +4217,11 @@ enum msg_hash_enums
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
 
+
+   #ifdef HAVE_GAME_AI
+   MENU_LABEL(GAME_AI_MENU_OPTION),
+   #endif
+
    MSG_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */

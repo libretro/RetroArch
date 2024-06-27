@@ -6518,7 +6518,13 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
    }
 #endif
 
-   game_ai_test(port, device, idx, id);
+#ifdef HAVE_GAME_AI
+   if(settings->bools.ai_player_override)
+   {
+      if(port == 0)
+         result |= game_ai_input(port, device, idx, id, result);
+   }
+#endif
 
    return result;
 }

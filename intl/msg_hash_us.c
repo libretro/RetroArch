@@ -501,6 +501,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD), len);
              break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_GAME_AI_MENU_OPTION:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_GAMEMODE_ENABLE), len);
+            break;
+#endif
+
           default:
              if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

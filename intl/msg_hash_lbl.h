@@ -6566,3 +6566,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_GAMEMODE_ENABLE,
    "game_mode_enable"
    )
+#ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+   "ai_player_override_01"
+   )
+#endif
