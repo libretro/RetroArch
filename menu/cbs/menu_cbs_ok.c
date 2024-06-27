@@ -5598,9 +5598,10 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    menu_st->selection_ptr       = 0;
 
    /* Check if we need to quit */
-   check_quit_on_close();
+   if (should_quit_on_close())
+      return generic_action_ok_command(CMD_EVENT_QUIT);
 
-   /* Unload core */
+   /* Otherwise, unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* If close content was selected via any means other than
