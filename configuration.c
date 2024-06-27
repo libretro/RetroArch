@@ -3970,7 +3970,7 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       else if (!path_is_directory(settings->paths.directory_screenshot))
       {
-         RARCH_WARN("[Config]: 'screenshot_directory' is not an existing directory, ignoring..\n");
+         RARCH_WARN("[Config]: 'screenshot_directory' is not an existing directory, screenshots will save to the content directory..\n");
          *settings->paths.directory_screenshot = '\0';
       }
    }
@@ -4129,7 +4129,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.savefile));
       }
       else
-         RARCH_WARN("[Config]: 'savefile_directory' is not a directory, ignoring..\n");
+         RARCH_WARN("[Config]: 'savefile_directory' is not a directory, falling back to \"%s\"\n", dir_get_ptr(RARCH_DIR_SAVEFILE));
    }
 
    if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
@@ -4155,7 +4155,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.replay));
       }
       else
-         RARCH_WARN("[Config]: 'savestate_directory' is not a directory, ignoring..\n");
+         RARCH_WARN("[Config]: 'savestate_directory' is not a directory, falling back to \"%s\"\n", dir_get_ptr(RARCH_DIR_SAVESTATE));
    }
 
    config_read_keybinds_conf(conf);
