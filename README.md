@@ -4,7 +4,6 @@
 
 
 # RetroArch (with Machine Learning support)
-Warning: Still in early prototype phase
 This is a fork of RetroArch that supports overriding player input with ML models.
 Currently it supports only one game, NHL94 Genesis (1 on 1 version)
 In the Quick Menu you can turn on the override feature and the model will play as player 1
