@@ -2,6 +2,25 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/retroarch)
 [![Crowdin](https://badges.crowdin.net/retroarch/localized.svg)](https://crowdin.com/project/retroarch)
 
+
+# RetroArch (with Machine Learning support)
+Warning: Still in early prototype phase
+This is a fork of RetroArch that supports overriding player input with ML models.
+Currently it supports only one game, NHL94 Genesis (1 on 1 version)
+In the Quick Menu you can turn on the override feature and the model will play as player 1
+
+## Build
+git clone https://github.com/MatPoliquin/stable-retro-scripts
+and follow the instructions to build the ef_lib (Emulator frontend library that uses Pytorch C++)
+
+```
+git clone https://github.com/MatPoliquin/RetroArchML.git
+cd RetroArchML
+./configure
+export LD_LIBRARY_PATH=/paht/to/ef_lib
+./retroarch
+```
+
 # RetroArch
 
 RetroArch is the reference frontend for the libretro API.
