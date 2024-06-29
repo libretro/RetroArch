@@ -270,7 +270,7 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
             hdr->keys[i] = key;
             l            = strlen(str);
             t            = malloc(l + 1);
-            memcpy(t, s, l);
+            memcpy(t, str, l);
             t[l]         = '\0';
             if (str)
                hdr->key_strs[i] = t;
