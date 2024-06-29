@@ -599,6 +599,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_favorites_size,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_unified_controls,   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_info_button,     MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_search_button,   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_left_analog_in_menu,  MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_right_analog_in_menu, MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_press_twice,              MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_crop_overscan,           MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN)
@@ -4505,6 +4507,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_disable_search_button);
+            break;
+         case MENU_ENUM_LABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_disable_left_analog_in_menu);
+            break;
+         case MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_disable_right_analog_in_menu);
             break;
          case MENU_ENUM_LABEL_QUIT_PRESS_TWICE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_press_twice);
