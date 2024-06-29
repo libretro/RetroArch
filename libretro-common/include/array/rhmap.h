@@ -104,6 +104,7 @@
 #include <string.h> /* for memcpy, memset */
 #include <stddef.h> /* for ptrdiff_t, size_t */
 #include <stdint.h> /* for uint32_t */
+#include <string.h> /* for strdup */
 
 #define RHMAP_LEN(b) ((b) ? RHMAP__HDR(b)->len : 0)
 #define RHMAP_MAX(b) ((b) ? RHMAP__HDR(b)->maxlen : 0)
