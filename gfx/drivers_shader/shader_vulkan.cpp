@@ -1496,7 +1496,7 @@ bool vulkan_filter_chain::init_feedback()
 bool vulkan_filter_chain::init_alias()
 {
    int i;
-   
+
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
@@ -3145,7 +3145,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
-      if (!glslang_compile_shader(pass->source.path, &output))
+      if (!glslang_compile_shader(pass->source.path, &output, path ))
       {
          RARCH_ERR("[Vulkan]: Failed to compile shader: \"%s\".\n",
                pass->source.path);

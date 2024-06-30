@@ -2593,7 +2593,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
-      if (!glslang_compile_shader(pass->source.path, &output))
+      if (!glslang_compile_shader(pass->source.path, &output, path))
       {
          RARCH_ERR("[GLCore]: Failed to compile shader: \"%s\".\n",
                pass->source.path);
