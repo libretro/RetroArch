@@ -3645,13 +3645,17 @@ static int generic_action_ok_remap_file_operation(const char *path,
 #ifdef HAVE_CONFIGFILE
    char content_dir_name[PATH_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
-   struct menu_state *menu_st            = menu_state_get_ptr();
-   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
-   const char *core_name                 = sys_info ? sys_info->info.library_name : NULL;
-   const char *rarch_path_basename       = path_get(RARCH_PATH_BASENAME);
-   bool has_content                      = !string_is_empty(rarch_path_basename);
-   settings_t *settings                  = config_get_ptr();
-   const char *directory_input_remapping = settings->paths.directory_input_remapping;
+   struct menu_state *menu_st             = menu_state_get_ptr();
+   rarch_system_info_t *sys_info          = &runloop_state_get_ptr()->system;
+   const char *core_name                  = sys_info ? sys_info->info.library_name : NULL;
+   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
+   bool has_content                       = !string_is_empty(rarch_path_basename);
+   settings_t *settings                   = config_get_ptr();
+   const char *directory_input_remapping  = settings->paths.directory_input_remapping;
+   unsigned joypad_port                   = settings->uints.input_joypad_index[0];
+   const char *input_device_name          = input_config_get_device_name(joypad_port);
+   char *remap_path                       = NULL;
+   bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
    content_dir_name[0] = '\0';
    remap_file_path[0]  = '\0';
@@ -3661,11 +3665,28 @@ static int generic_action_ok_remap_file_operation(const char *path,
    if (string_is_empty(core_name))
       return -1;
 
+   if (sort_remaps_by_controller && input_device_name && !string_is_empty(input_device_name))
+   {
+      size_t total_len = strlen(core_name) + strlen(input_device_name) + 2;
+      remap_path = (char *)malloc(total_len);
+
+      strlcpy(remap_path, core_name, total_len);
+      strlcat(remap_path, "/", total_len);
+      strlcat(remap_path, input_device_name, total_len);
+   }
+   else
+   {
+      size_t total_len = strlen(core_name) + 1;
+      remap_path = (char *)malloc(total_len);
+
+      strlcpy(remap_path, core_name, total_len);
+   }
+
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_AS:
          fill_pathname_join_special_ext(remap_file_path,
-               directory_input_remapping, core_name,
+               directory_input_remapping, remap_path,
                path,
                FILE_PATH_REMAP_EXTENSION,
                sizeof(remap_file_path));
@@ -3673,7 +3694,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
       case ACTION_OK_REMAP_FILE_REMOVE_CORE:
          fill_pathname_join_special_ext(remap_file_path,
-               directory_input_remapping, core_name,
+               directory_input_remapping, remap_path,
                core_name,
                FILE_PATH_REMAP_EXTENSION,
                sizeof(remap_file_path));
@@ -3682,7 +3703,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       case ACTION_OK_REMAP_FILE_REMOVE_GAME:
          if (has_content)
             fill_pathname_join_special_ext(remap_file_path,
-                  directory_input_remapping, core_name,
+                  directory_input_remapping, remap_path,
                   path_basename(rarch_path_basename),
                   FILE_PATH_REMAP_EXTENSION,
                   sizeof(remap_file_path));
@@ -3695,13 +3716,15 @@ static int generic_action_ok_remap_file_operation(const char *path,
                   rarch_path_basename, sizeof(content_dir_name));
 
             fill_pathname_join_special_ext(remap_file_path,
-                  directory_input_remapping, core_name,
+                  directory_input_remapping, remap_path,
                   content_dir_name,
                   FILE_PATH_REMAP_EXTENSION,
                   sizeof(remap_file_path));
          }
          break;
    }
+
+   free(remap_path);
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {

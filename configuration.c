@@ -2114,6 +2114,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_allow_turbo_dpad",        &settings->bools.input_allow_turbo_dpad, true, DEFAULT_ALLOW_TURBO_DPAD, false);
    SETTING_BOOL("input_auto_mouse_grab",         &settings->bools.input_auto_mouse_grab, true, DEFAULT_INPUT_AUTO_MOUSE_GRAB, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
+   SETTING_BOOL("input_remap_sort_by_controller_enable",      &settings->bools.input_remap_sort_by_controller_enable, true, false, false);
    SETTING_BOOL("input_hotkey_device_merge",     &settings->bools.input_hotkey_device_merge, true, DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, false);
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
 #ifdef HAVE_MENU
@@ -4571,6 +4572,7 @@ bool config_load_remap(const char *directory_input_remapping,
    char game_path[PATH_MAX_LENGTH];
    /* final path for content-dir-specific configuration (prefix+suffix) */
    char content_path[PATH_MAX_LENGTH];
+
    config_file_t *new_conf                = NULL;
    rarch_system_info_t *sys_info          = (rarch_system_info_t*)data;
    const char *core_name                  = sys_info ? sys_info->info.library_name : NULL;
@@ -4580,6 +4582,10 @@ bool config_load_remap(const char *directory_input_remapping,
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    settings_t *settings                   = config_st;
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
+   unsigned joypad_port                   = settings->uints.input_joypad_index[0];
+   const char *input_device_name          = input_config_get_device_name(joypad_port);
+   char *remap_path                       = NULL;
+   bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
    content_dir_name[0] = '\0';
    core_path[0]        = '\0';
@@ -4592,6 +4598,23 @@ bool config_load_remap(const char *directory_input_remapping,
        || string_is_empty(directory_input_remapping))
       return false;
 
+   if (sort_remaps_by_controller && input_device_name && !string_is_empty(input_device_name))
+   {
+      size_t total_len = strlen(core_name) + strlen(input_device_name) + 2;
+      remap_path = (char *)malloc(total_len);
+
+      strlcpy(remap_path, core_name, total_len);
+      strlcat(remap_path, "/", total_len);
+      strlcat(remap_path, input_device_name, total_len);
+   }
+   else
+   {
+      size_t total_len = strlen(core_name) + 1;
+      remap_path = (char *)malloc(total_len);
+
+      strlcpy(remap_path, core_name, total_len);
+   }
+
    /* Concatenate strings into full paths for core_path,
     * game_path, content_path */
    if (has_content)
@@ -4601,23 +4624,25 @@ bool config_load_remap(const char *directory_input_remapping,
       game_name = path_basename_nocompression(rarch_path_basename);
 
       fill_pathname_join_special_ext(game_path,
-            directory_input_remapping, core_name,
+            directory_input_remapping, remap_path,
             game_name,
             FILE_PATH_REMAP_EXTENSION,
             sizeof(game_path));
 
       fill_pathname_join_special_ext(content_path,
-            directory_input_remapping, core_name,
+            directory_input_remapping, remap_path,
             content_dir_name,
             FILE_PATH_REMAP_EXTENSION,
             sizeof(content_path));
    }
 
    fill_pathname_join_special_ext(core_path,
-         directory_input_remapping, core_name,
+         directory_input_remapping, remap_path,
          core_name,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(core_path));
+
+   free(remap_path);
 
    /* If a game remap file exists, load it. */
    if (has_content && (new_conf = config_file_new_from_path_to_string(game_path)))
