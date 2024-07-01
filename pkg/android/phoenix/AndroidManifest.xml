@@ -10,8 +10,6 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
@@ -25,8 +23,10 @@
         android:isGame="true"
         android:banner="@drawable/banner"
         android:extractNativeLibs="true"
-        android:requestLegacyExternalStorage="true"
         tools:ignore="UnusedAttribute">
+        <activity
+          android:name=".browser.mainmenu.MigrateRetroarchFolderActivity"
+          android:exported="false"/>
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

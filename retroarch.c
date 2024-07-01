@@ -3723,6 +3723,12 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CLOSE_CONTENT:
 #ifdef HAVE_MENU
+         /* If we need to quit, skip unloading the core to avoid performing
+          * cleanup actions (like writing autosave state) twice. */
+         if (should_quit_on_close()) {
+            command_event(CMD_EVENT_QUIT, NULL);
+            break;
+         }
          /* Closing content via hotkey requires toggling menu
           * and resetting the position later on to prevent
           * going to empty Quick Menu */
@@ -3731,8 +3737,6 @@ bool command_event(enum event_command cmd, void *data)
             menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
-         /* Check if we need to quit Retroarch */
-         check_quit_on_close();
 #else
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -8365,7 +8369,7 @@ void retroarch_fail(int error_code, const char *error)
 }
 
 /* Called on close content, checks if we need to also exit retroarch */
-void check_quit_on_close(void)
+bool should_quit_on_close(void)
 {
 #ifdef HAVE_MENU
    settings_t *settings   = config_get_ptr();
@@ -8376,8 +8380,9 @@ void check_quit_on_close(void)
             || (settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_ENABLED)
       )
-      command_event(CMD_EVENT_QUIT, NULL);
+      return true;
 #endif
+   return false;
 }
 
 /*
