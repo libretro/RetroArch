@@ -5011,6 +5011,14 @@ MSG_HASH(
    "disable_search_button"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "disable_left_analog_in_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "disable_right_analog_in_menu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
    "quit_press_twice"
    )

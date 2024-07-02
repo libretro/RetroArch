@@ -6786,7 +6786,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
          }
 
-         /* Read input from both analog sticks. */
+         /* Read input from analog sticks according to settings. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
             unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
@@ -6794,6 +6794,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
             unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
 
+            if ((settings->bools.menu_disable_left_analog  && s == RETRO_DEVICE_INDEX_ANALOG_LEFT ) ||
+                (settings->bools.menu_disable_right_analog && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+                continue;
             if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
             {
                x_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
