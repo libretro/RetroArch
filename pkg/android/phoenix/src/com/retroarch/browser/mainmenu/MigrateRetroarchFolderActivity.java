@@ -13,7 +13,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
@@ -24,18 +23,10 @@ import android.util.Pair;
 import com.retroarch.R;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
 
 @TargetApi(26)
 public class MigrateRetroarchFolderActivity extends Activity
@@ -43,9 +34,9 @@ public class MigrateRetroarchFolderActivity extends Activity
     final int REQUEST_CODE_GET_OLD_RETROARCH_FOLDER = 125;
 
     @Override
-    public void onCreate(Bundle savedInstanceState)
+    public void onStart()
     {
-        super.onCreate(savedInstanceState);
+        super.onStart();
 
         // Needs v26 for some of the file handling functions below.
         // Remove the TargetApi annotation to see which.
@@ -53,7 +44,7 @@ public class MigrateRetroarchFolderActivity extends Activity
         if (android.os.Build.VERSION.SDK_INT < 26) {
             finish();
         }
-        if(needToMigrate()){
+        if(true || needToMigrate()){
             askToMigrate();
         }else{
             finish();
@@ -88,7 +79,6 @@ public class MigrateRetroarchFolderActivity extends Activity
     void askToMigrate()
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setCancelable(false);
         builder.setTitle(R.string.migrate_retroarch_folder_dialog_title);
         builder.setMessage(R.string.migrate_retroarch_folder_dialog_message);
         builder.setNegativeButton(R.string.migrate_retroarch_folder_dialog_negative, new DialogInterface.OnClickListener() {
@@ -138,7 +128,7 @@ public class MigrateRetroarchFolderActivity extends Activity
         final ProgressDialog pd = new ProgressDialog(this);
         pd.setMax(100);
         pd.setTitle(R.string.migrate_retroarch_folder_inprogress);
-        pd.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         pd.setCancelable(false);
 
         CopyThread thread = new CopyThread()
@@ -149,10 +139,11 @@ public class MigrateRetroarchFolderActivity extends Activity
                 pd.show();
             }
             @Override
-            protected void onProgressUpdate(String... params)
+            protected void onProgressUpdate(Pair<Integer, String>... params)
             {
                 super.onProgressUpdate(params);
-                pd.setMessage(params[0]);
+                pd.setProgress(params[0].first);
+                pd.setMessage(params[0].second);
             }
             @Override
             protected void onPostExecute(Boolean ok)
@@ -170,7 +161,7 @@ public class MigrateRetroarchFolderActivity extends Activity
     {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
         editor.putBoolean("external_retroarch_folder_needs_migrate", false);
-        editor.apply();
+        editor.commit();
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(ok ?
@@ -185,24 +176,27 @@ public class MigrateRetroarchFolderActivity extends Activity
         builder.create().show();
     }
 
-    class CopyThread extends AsyncTask<Uri, String, Boolean>
+    class CopyThread extends AsyncTask<Uri, Pair<Integer, String>, Boolean>
     {
+        String PACKAGE_NAME;
         ContentResolver resolver;
+        Uri sourceRoot;
         boolean error;
-        @Override
-        protected void onPreExecute()
+        ArrayList<int[]> progress;
+        public CopyThread()
         {
+            PACKAGE_NAME = MigrateRetroarchFolderActivity.this.getPackageName();
             resolver = MigrateRetroarchFolderActivity.this.getContentResolver();
-            error = false;
         }
         @Override
         protected Boolean doInBackground(Uri... params)
         {
-            Uri source = params[0];
+            sourceRoot = params[0];
             error = false;
-            String destination = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + MigrateRetroarchFolderActivity.this.getPackageName() + "/files/RetroArch";
-            copyFolder(source, new File(destination));
-            patchConfig();
+            progress = new ArrayList<>();
+
+            String destination = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files/RetroArch";
+            copyFolder(sourceRoot, new File(destination));
             return !error;
         }
         void copyFolder(Uri sourceUri, File dest)
@@ -220,8 +214,8 @@ public class MigrateRetroarchFolderActivity extends Activity
             }catch(IllegalArgumentException ex){ //for root selected by document picker
                 sourceChildrenResolver = DocumentsContract.buildChildDocumentsUriUsingTree(sourceUri, DocumentsContract.getTreeDocumentId(sourceUri));
             }
+            progress.add(new int[]{0, 1});
             try(
-                    //list children of directory
                     Cursor c = resolver.query(sourceChildrenResolver, new String[]{DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE}, null, null, null)
             ) {
                 if(c == null) {
@@ -229,6 +223,7 @@ public class MigrateRetroarchFolderActivity extends Activity
                     error = true;
                     return;
                 }
+                progress.get(progress.size() - 1)[1] = c.getCount();
                 while(c.moveToNext()){ //loop through children returned
                     String childFilename = c.getString(1);
                     Uri childUri = DocumentsContract.buildDocumentUriUsingTree(sourceUri, c.getString(0));
@@ -248,59 +243,24 @@ public class MigrateRetroarchFolderActivity extends Activity
                             error = true;
                         }
                     }
-                    publishProgress(destFile.toString());
+                    progress.get(progress.size() - 1)[0]++;
+                    publishProgress(new Pair<Integer, String>(getProgressPercentage(), destFile.getPath()));
                 }
             }catch(Exception ex){
                 Log.e("MigrateRetroarchFolder", "Error while copying", ex);
                 error = true;
             }
+            progress.remove(progress.size() - 1);
         }
-        void patchConfig(){
-            String appDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + MigrateRetroarchFolderActivity.this.getPackageName() + "/files";
-            String legacyDefaultRetroarchPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/RetroArch";
-            String migratedRetroarchPath = appDir + "/RetroArch";
-
-            final ArrayList<Path> files = new ArrayList<>();
-            try (
-                    Stream<Path> s = Files.find(Paths.get(appDir), 30, new BiPredicate<Path, BasicFileAttributes>() {
-                        @Override
-                        public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
-                            String p = path.toString();
-                            return p.endsWith(".lpl") || p.endsWith(".cfg");
-                        }
-                    })
-            ){
-                // yes it's a roudabout way to gather it in a list, but Stream.collect is throwing type errors
-                s.forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        files.add(path);
-                    }
-                });
-            }catch(IOException ex){
-                Log.e("MigrateRetroarchFolder", "Error searching for config files", ex);
-                error = true;
-                return;
+        int getProgressPercentage()
+        {
+            float sum = 0;
+            int lastDenominator = 1;
+            for(int[] frac : progress){
+                sum += ((float) frac[0]) / frac[1] / lastDenominator;
+                lastDenominator *= frac[1];
             }
-
-            for(Path file : files){
-                try{
-                    //back up before patching
-                    Path backupFile = file.resolveSibling(file.getFileName() + ".old");
-                    Files.copy(file, backupFile, StandardCopyOption.REPLACE_EXISTING);
-
-                    //replace old retroarch prefix with new path
-                    //assumes default old path, doesn't help if user has relocated it
-                    //not doing any syntactical analysis because the search string is pretty long and unique
-                    String contents = new String(Files.readAllBytes(file));
-                    String replaced = contents.replace(legacyDefaultRetroarchPath, migratedRetroarchPath);
-                    Files.write(file, replaced.getBytes(StandardCharsets.UTF_8));
-                }catch(IOException ex){
-                    Log.e("MigrateRetroarchFolder", "Error patching file " + file.toAbsolutePath(), ex);
-                    error = true;
-                    return;
-                }
-            }
+            return (int) (sum * 100);
         }
     }
 }
