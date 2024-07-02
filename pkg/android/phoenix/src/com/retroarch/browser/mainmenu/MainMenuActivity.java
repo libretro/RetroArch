@@ -12,6 +12,14 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 
+import java.util.List;
+import java.util.ArrayList;
+import android.content.pm.PackageManager;
+import android.Manifest;
+import android.content.DialogInterface;
+import android.app.AlertDialog;
+import android.util.Log;
+
 /**
  * {@link PreferenceActivity} subclass that provides all of the
  * functionality of the main menu screen.
@@ -19,7 +27,6 @@ import android.provider.Settings;
 public final class MainMenuActivity extends PreferenceActivity
 {
 	public static String PACKAGE_NAME;
-	final int REQUEST_CODE_START = 120;
 
 	public void finalStartup()
 	{
@@ -57,14 +64,6 @@ public final class MainMenuActivity extends PreferenceActivity
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data)
-	{
-		if(requestCode == REQUEST_CODE_START) {
-			finalStartup();
-		}
-	}
-
-	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
@@ -76,7 +75,6 @@ public final class MainMenuActivity extends PreferenceActivity
 
 		UserPreferences.updateConfigFile(this);
 
-		Intent i = new Intent(this, MigrateRetroarchFolderActivity.class);
-		startActivityForResult(i, REQUEST_CODE_START);
+		finalStartup();
 	}
 }
