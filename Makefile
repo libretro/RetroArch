@@ -239,21 +239,21 @@ install: $(TARGET)
 	cp $(TARGET) $(DESTDIR)$(BIN_DIR)
 	cp tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	cp retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)
-	cp com.libretro.RetroArch.appdata.xml $(DESTDIR)$(DATA_DIR)/metainfo
-	cp org.libretro.RetroArch.desktop $(DESTDIR)$(DATA_DIR)/applications
+	cp com.libretro.RetroArch.metainfo.xml $(DESTDIR)$(DATA_DIR)/metainfo
+	cp com.libretro.RetroArch.desktop $(DESTDIR)$(DATA_DIR)/applications
 	cp docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
-	cp media/retroarch.svg $(DESTDIR)$(DATA_DIR)/pixmaps
+	cp media/com.libretro.RetroArch.svg $(DESTDIR)$(DATA_DIR)/pixmaps
 	cp COPYING $(DESTDIR)$(DOC_DIR)
 	cp README.md $(DESTDIR)$(DOC_DIR)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	chmod 644 $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	chmod 644 $(DESTDIR)$(DATA_DIR)/applications/org.libretro.RetroArch.desktop
-	chmod 644 $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.appdata.xml
+	chmod 644 $(DESTDIR)$(DATA_DIR)/applications/com.libretro.RetroArch.desktop
+	chmod 644 $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.metainfo.xml
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
-	chmod 644 $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
+	chmod 644 $(DESTDIR)$(DATA_DIR)/pixmaps/com.libretro.RetroArch.svg
 	@if test -d media/assets && test $(HAVE_ASSETS); then \
 		echo "Installing media assets..."; \
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/assets; \
@@ -274,9 +274,9 @@ uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	rm -f $(DESTDIR)$(DATA_DIR)/applications/org.libretro.RetroArch.desktop
-	rm -f $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.appdata.xml
-	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
+	rm -f $(DESTDIR)$(DATA_DIR)/applications/com.libretro.RetroArch.desktop
+	rm -f $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.metainfo.xml
+	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/com.libretro.RetroArch.svg
 	rm -f $(DESTDIR)$(DOC_DIR)/COPYING
 	rm -f $(DESTDIR)$(DOC_DIR)/COPYING.assets
 	rm -f $(DESTDIR)$(DOC_DIR)/README.md

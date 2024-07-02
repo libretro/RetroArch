@@ -63,19 +63,19 @@ sed -i \
 
 sed -i \
   's|^Exec=retroarch|Exec=retroarch --menu|' \
-  %{buildroot}/usr/share/applications/org.libretro.RetroArch.desktop
+  %{buildroot}/usr/share/applications/com.libretro.RetroArch.desktop
 
   # Install icon file in the correct place
   mkdir -p %{buildroot}/usr/share/icons/hicolor/86x86/apps
   install -m 644 "./media/retroarch-96x96.png" "%{buildroot}/usr/share/icons/hicolor/86x86/apps/retroarch.png"
-  rm "%{buildroot}/usr/share/pixmaps/retroarch.svg"
+  rm "%{buildroot}/usr/share/pixmaps/com.libretro.RetroArch.svg"
   rmdir "%{buildroot}/usr/share/pixmaps"
 
 %files
 %doc README.md
 %config /etc/retroarch.cfg
 %{_prefix}/bin/retroarch
-%{_prefix}/share/applications/org.libretro.RetroArch.desktop
+%{_prefix}/share/applications/com.libretro.RetroArch.desktop
 %{_prefix}/share/man/man6/*.6*
 %{_prefix}/share/icons/hicolor/86x86/apps/retroarch.*
 %{_prefix}/share/doc/retroarch/*
