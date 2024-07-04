@@ -1162,14 +1162,16 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  **/
 const char *sanitize_path_part(const char *path_part)
 {
+   int i, j, len = 0;
+   char *temp = NULL;
+   const char *special_chars = "<>:\"/\\|?*";
+
    if (string_is_empty(path_part))
       return NULL;
 
-   int i, j = 0;
-   int len = strlen(path_part);
-   char *temp = (char *)malloc((len + 1) * sizeof(char));
-   const char *special_chars = "<>:\"/\\|?*";
-
+   len = strlen(path_part);
+   temp = (char *)malloc((len + 1) * sizeof(char));
+   
    for (i = 0; path_part[i] != '\0'; i++) {
       /* Check if the current character is one of the special characters */ 
       if (strchr(special_chars, path_part[i]) == NULL) {
