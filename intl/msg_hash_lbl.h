@@ -3894,6 +3894,10 @@ MSG_HASH(
    "threaded_data_runloop_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ICON_THUMBNAILS,
+   "icon_thumbnails"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS,
    "thumbnails"
    )

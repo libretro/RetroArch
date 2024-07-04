@@ -1127,6 +1127,40 @@ bool gfx_display_reset_textures_list(
    return true;
 }
 
+bool gfx_display_reset_icon_texture(
+      const char *texture_path,
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height)
+{
+   char texpath[PATH_MAX_LENGTH];
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (string_is_empty(texture_path))
+      return false;
+
+   strcpy(texpath, texture_path);
+
+   if (!image_texture_load(&ti, texpath))
+      return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
+
+   video_driver_texture_load(&ti,
+         filter_type, item);
+   image_texture_free(&ti);
+
+   return true;
+}
+
 void gfx_display_deinit_white_texture(void)
 {
    if (gfx_white_texture)
