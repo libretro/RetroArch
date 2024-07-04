@@ -1171,15 +1171,15 @@ const char *sanitize_path_part(const char *path_part)
    const char *special_chars = "<>:\"/\\|?*";
 
    for (i = 0; path_part[i] != '\0'; i++) {
-      // Check if the current character is one of the special characters
+      /* Check if the current character is one of the special characters */ 
       if (strchr(special_chars, path_part[i]) == NULL) {
-         // If not, copy it to the temporary array
+         /*  If not, copy it to the temporary array */
          temp[j++] = path_part[i];
       }
    }
    temp[j] = '\0';
 
-   // Return the new string
+   /* Return the new string */
    return temp;
 }
 
