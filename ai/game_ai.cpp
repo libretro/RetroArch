@@ -1,10 +1,15 @@
 #include "game_ai.h"
 #include <stdio.h>
 #include <assert.h>
-#include <dlfcn.h>
 #include <bitset>
 #include <iostream>
 #include <string>
+
+#ifdef _WIN32
+#include <windows.h> 
+#else
+#include <dlfcn.h>
+#endif
 
 #include "../../stable-retro-scripts/ef_lib/GameAI.h"
 
@@ -32,6 +37,26 @@ extern "C" void game_ai_init()
 
    if(CreateGameAI == nullptr)
    {
+#ifdef _WIN32
+    HINSTANCE hinstLib; 
+    BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
+
+    hinstLib = LoadLibrary(TEXT("game_ai.dll"));
+    assert(hinstLib);
+
+    char full_module_path[MAX_PATH];
+    DWORD dwLen = GetModuleFileNameA(hinstLib, (char *) &full_module_path, MAX_PATH);
+
+    _splitpath((const char *) full_module_path, NULL, (char *) game_ai_lib_path, NULL, NULL);
+    std::cout << game_ai_lib_path << std::endl;
+
+    if (hinstLib != NULL) 
+    { 
+        CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
+
+        assert(CreateGameAI);
+    } 
+#else
       void *myso = dlopen("libgame_ai.so", RTLD_NOW);
       assert(myso);
 
@@ -39,6 +64,7 @@ extern "C" void game_ai_init()
 
       CreateGameAI = reinterpret_cast<creategameai_t>(dlsym(myso, "CreateGameAI"));
       assert(CreateGameAI);
+#endif
    }
 }
 
