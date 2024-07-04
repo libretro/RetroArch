@@ -552,6 +552,19 @@ size_t fill_pathname_abbreviated_or_relative(char *out_path,
 		const char *in_refpath, const char *in_path, size_t size);
 
 /**
+ * sanitize_path_part:
+ *
+ * @path_part               : directory or filename
+ *
+ * Takes single part of a path eg. single filename 
+ * or directory, and removes any special chars that are
+ * unavailable.
+ * 
+ * @returns new string that has been sanitized
+ **/
+const char *sanitize_path_part(const char *path_part);
+
+/**
  * pathname_conform_slashes_to_os:
  *
  * @path               : path

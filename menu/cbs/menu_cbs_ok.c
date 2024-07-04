@@ -3654,6 +3654,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    const char *directory_input_remapping  = settings->paths.directory_input_remapping;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
    const char *input_device_name          = input_config_get_device_name(joypad_port);
+   const char *input_device_dir           = NULL;
    char *remap_path                       = NULL;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
 
@@ -3665,20 +3666,33 @@ static int generic_action_ok_remap_file_operation(const char *path,
    if (string_is_empty(core_name))
       return -1;
 
-   if (sort_remaps_by_controller && input_device_name && !string_is_empty(input_device_name))
+   if (   sort_remaps_by_controller 
+       && input_device_name != NULL 
+       && !string_is_empty(input_device_name))
    {
-      size_t total_len = strlen(core_name) + strlen(input_device_name) + 2;
+      // Ensure directory does not contain special chars
+      input_device_dir = sanitize_path_part(input_device_name);
+      
+      // Allocate memory for the new path
+      size_t total_len = strlen(core_name) + strlen(input_device_dir) + 2;
       remap_path = (char *)malloc(total_len);
 
+      // Build the new path with the controller name
       strlcpy(remap_path, core_name, total_len);
       strlcat(remap_path, "/", total_len);
-      strlcat(remap_path, input_device_name, total_len);
+      strlcat(remap_path, input_device_dir, total_len);
+
+      // Deallocate as we no longer this
+      free(input_device_dir);
+      input_device_dir = NULL;
    }
    else
    {
+      // Allocate memory for the new path
       size_t total_len = strlen(core_name) + 1;
       remap_path = (char *)malloc(total_len);
 
+      // We're not using controller path, just use core name
       strlcpy(remap_path, core_name, total_len);
    }
 
