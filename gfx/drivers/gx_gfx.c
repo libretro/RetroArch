@@ -1011,58 +1011,23 @@ static void gx_resize(gx_video_t *gx,
    /* Ignore this for custom resolutions */
    if (gx->keep_aspect && gx_mode.efbHeight >= 192)
    {
+#ifdef HW_RVL
+      float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
+         4.0 / 3.0 : 16.0 / 9.0;
+#else
+      float device_aspect = 4.0 / 3.0;
+#endif
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect    = 1.0;
       if (     (gx->orientation == ORIENTATION_VERTICAL)
             || (gx->orientation == ORIENTATION_FLIPPED_ROTATED))
          desired_aspect    = 1.0 / desired_aspect;
-
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-
-         if (!custom_vp->width || !custom_vp->height)
-         {
-            custom_vp->x      = 0;
-            custom_vp->y      = 0;
-            custom_vp->width  = gx->vp.full_width;
-            custom_vp->height = gx->vp.full_height;
-         }
-
-         x      = custom_vp->x;
-         y      = custom_vp->y;
-         width  = custom_vp->width;
-         height = custom_vp->height;
-      }
-      else
-      {
-         float delta;
-#ifdef HW_RVL
-         float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
-            4.0 / 3.0 : 16.0 / 9.0;
-#else
-         float device_aspect = 4.0 / 3.0;
-#endif
-         if (fabs(device_aspect - desired_aspect) < 0.0001)
-         {
-            /* If the aspect ratios of screen and desired aspect ratio
-             * are sufficiently equal (floating point stuff),
-             * assume they are actually equal. */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-            x     = (unsigned)(width * (0.5 - delta));
-            width = (unsigned)(2.0 * width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-            y      = (unsigned)(height * (0.5 - delta));
-            height = (unsigned)(2.0 * height * delta);
-         }
-      }
+      video_viewport_get_scaled_aspect2(&gx->vp, width, height, true, device_aspect, desired_aspect);
+      x = gx->vp.x;
+      y = gx->vp.y;
+      width = gx->vp.width;
+      height = gx->vp.height;
    }
 
    /* Overscan correction */

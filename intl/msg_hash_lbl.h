@@ -3637,6 +3637,14 @@ MSG_HASH(
    "cloud_sync_destructive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,
+   "cloud_sync_sync_saves"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "cloud_sync_sync_configs"
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
    "cloud_sync_driver"
    )
@@ -4130,6 +4138,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
    "aspect_ratio_index"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "video_viewport_bias_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "video_viewport_bias_y"
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "video_viewport_bias_portrait_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "video_viewport_bias_portrait_y"
+   )
+#endif
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,

@@ -273,8 +273,10 @@ void cocoa_file_load_with_detect_core(const char *filename);
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
-        else if ([self didMicroGamepadPress:press.type])
+        else if (!press.key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
+        else
+            [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
 

@@ -5598,9 +5598,10 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    menu_st->selection_ptr       = 0;
 
    /* Check if we need to quit */
-   check_quit_on_close();
+   if (should_quit_on_close())
+      return generic_action_ok_command(CMD_EVENT_QUIT);
 
-   /* Unload core */
+   /* Otherwise, unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* If close content was selected via any means other than
@@ -6845,9 +6846,8 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-
 static int generic_action_ok_dropdown_setting(const char *path, const char *label,
-      unsigned type, size_t idx)
+      unsigned type, size_t idx, size_t entry_idx)
 {
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
@@ -6910,12 +6910,6 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_setting(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
 static int action_ok_push_dropdown_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6925,22 +6919,24 @@ static int action_ok_push_dropdown_item(const char *path,
 int action_cb_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char str[100];
-   char *pch            = NULL;
+   char *save           = NULL;
+   char *tok            = NULL;
    unsigned width       = 0;
    unsigned height      = 0;
    float refreshrate    = 0.0f;
+   char *str            = path ? strdup(path) : NULL;
 
-   strlcpy(str, path, sizeof(str));
-   pch            = strtok(str, "x");
-   if (pch)
-      width       = (unsigned)strtoul(pch, NULL, 0);
-   pch            = strtok(NULL, " ");
-   if (pch)
-      height      = (unsigned)strtoul(pch, NULL, 0);
-   pch            = strtok(NULL, "(");
-   if (pch)
-      refreshrate = (float)strtod(pch, NULL);
+   if (!str)
+      return -1;
+
+   if ((tok = strtok_r(str, "x", &save)))
+      width       = (unsigned)strtoul(tok, NULL, 0);
+   if ((tok = strtok_r(NULL, " ", &save)))
+      height      = (unsigned)strtoul(tok, NULL, 0);
+   if ((tok = strtok_r(NULL, "(", &save)))
+      refreshrate = (float)strtod(tok, NULL);
+
+   free(str);
 
    if (video_display_server_set_resolution(width, height,
          floor(refreshrate), refreshrate, 0, 0, 0, 0))
@@ -7304,6 +7300,7 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
 static int action_ok_push_dropdown_item_input_select_reserved_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+    unsigned user;
     const char *no_device;
     const char *reserved_device_name;
     enum msg_hash_enums enum_idx;
@@ -7311,7 +7308,6 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
     settings_t *settings         = config_get_ptr();
     const char *menu_path        = NULL;
     struct menu_state *menu_st   = menu_state_get_ptr();
-    unsigned user;
 
     menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
     enum_idx = (enum msg_hash_enums)atoi(menu_path);
@@ -9243,7 +9239,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting);
+            BIND_ACTION_OK(cbs, generic_action_ok_dropdown_setting);
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);

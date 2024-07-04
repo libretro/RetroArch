@@ -1217,9 +1217,25 @@ MSG_HASH(
    "Bulut Eşitleme Koruması"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Eşitleyici: Kayıtlar/Durumlar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Eşitleyici: Yapılandırma Dosyaları"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Etkinleştirildiğinde, kayıtlar/durumlar bulut ile eşitlenecektir."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Etkinleştirildiğinde yapılandırma dosyaları bulut ile eşitlenecektir."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Devre dışı bırakıldığında, dosyalar üzerine yazılmadan veya silinmeden önce yedek klasörüne taşınır."
-   )
+   )      
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Bulut Eşitleyici Arka Uç"
@@ -2539,6 +2555,56 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    "Görünüm penceresinin Y ekseni konumunu tanımlamak için kullanılan özel görünüm alanı ofseti.\n'Tam sayı Ölçeği' etkinse bunlar yok sayılır."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Görünüm Bağlantı Noktası X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Görünüm Bağlantı Noktası X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Görünüm Bağlantı Noktası Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Görünüm Bağlantı Noktası Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Görüntü alanını yatay olarak dengelemek için kullanılan özel görüntü alanı sapması (içerik yüksekliğinden daha genişse).  0,0 en sol, 1,0 ise en sağ anlamına gelir."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Görüntü alanını dikey olarak dengelemek için kullanılan özel görüntü alanı sapması (içerik yüksekliğinden daha uzunsa).  0,0 üst, 1,0 ise alt anlamına gelir."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Görünüm Bağlantı Noktası X (Portre Yönü)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Görünüm Bağlantı Noktası X (Portre Yönü)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Görünüm Bağlantı Noktası Y (Portre Yönü)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Görünüm Bağlantı Noktası Y (Portre Yönü)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Görüntü alanını yatay olarak dengelemek için kullanılan özel görüntü alanı sapması (içerik yüksekliğinden daha genişse).  0,0 en sol, 1,0 ise en sağ anlamına gelir. (Portre Yönü)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Görüntü alanını dikey olarak dengelemek için kullanılan özel görüntü alanı sapması (içerik yüksekliğinden daha uzunsa).  0,0 üst, 1,0 ise alt anlamına gelir. (Portre Yönü)"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Özel En Boy Oranı (Genişlik)"

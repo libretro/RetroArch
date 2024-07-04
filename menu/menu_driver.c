@@ -5195,6 +5195,7 @@ unsigned menu_event(
       input_bits_t *p_trigger_input,
       bool display_kb)
 {
+   int i;
    /* Used for key repeat */
    static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
@@ -5242,7 +5243,6 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
-   unsigned i                                      = 0;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
    unsigned navigation_buttons[8]                  =

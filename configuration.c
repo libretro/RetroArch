@@ -1769,6 +1769,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("location_allow",                &settings->bools.location_allow, true, false, false);
    SETTING_BOOL("cloud_sync_enable",             &settings->bools.cloud_sync_enable, true, false, false);
    SETTING_BOOL("cloud_sync_destructive",        &settings->bools.cloud_sync_destructive, true, false, false);
+   SETTING_BOOL("cloud_sync_sync_saves",         &settings->bools.cloud_sync_sync_saves, true, true, false);
+   SETTING_BOOL("cloud_sync_sync_configs",       &settings->bools.cloud_sync_sync_configs, true, true, false);
    SETTING_BOOL("discord_allow",                 &settings->bools.discord_enable, true, false, false);
 #ifdef HAVE_MIST
    SETTING_BOOL("steam_rich_presence_enable",    &settings->bools.steam_rich_presence_enable, true, false, false);
@@ -2255,6 +2257,12 @@ static struct config_float_setting *populate_settings_float(
 #endif
 
    SETTING_FLOAT("video_aspect_ratio",           &settings->floats.video_aspect_ratio, true, DEFAULT_ASPECT_RATIO, false);
+   SETTING_FLOAT("video_viewport_bias_x",        &settings->floats.video_viewport_bias_x, true, DEFAULT_VIEWPORT_BIAS_X, false);
+   SETTING_FLOAT("video_viewport_bias_y",        &settings->floats.video_viewport_bias_y, true, DEFAULT_VIEWPORT_BIAS_Y, false);
+#if defined(RARCH_MOBILE)
+   SETTING_FLOAT("video_viewport_bias_portrait_x", &settings->floats.video_viewport_bias_portrait_x, true, DEFAULT_VIEWPORT_BIAS_PORTRAIT_X, false);
+   SETTING_FLOAT("video_viewport_bias_portrait_y", &settings->floats.video_viewport_bias_portrait_y, true, DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y, false);
+#endif
    SETTING_FLOAT("video_refresh_rate",           &settings->floats.video_refresh_rate, true, DEFAULT_REFRESH_RATE, false);
    SETTING_FLOAT("video_autoswitch_pal_threshold", &settings->floats.video_autoswitch_pal_threshold, true, DEFAULT_AUTOSWITCH_PAL_THRESHOLD, false);
    SETTING_FLOAT("crt_video_refresh_rate",       &settings->floats.crt_video_refresh_rate, true, DEFAULT_CRT_REFRESH_RATE, false);

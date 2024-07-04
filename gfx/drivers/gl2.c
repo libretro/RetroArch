@@ -1273,11 +1273,8 @@ static void gl2_set_viewport(gl2_t *gl,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
-   unsigned height          = gl->video_height;
-   int x                    = 0;
-   int y                    = 0;
-   float device_aspect      = (float)viewport_width / viewport_height;
-
+   float device_aspect = (float) viewport_width / (float)viewport_height;
+   
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
             gl->ctx_data, viewport_width, viewport_height);
@@ -1287,54 +1284,17 @@ static void gl2_set_viewport(gl2_t *gl,
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false);
+            (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false,
+            false);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
    else if ((gl->flags & GL2_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl->vp.x      = x;
-      gl->vp.y      = y;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.full_height = gl->video_height;
+      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
+      viewport_width  = gl->vp.width;
+      viewport_height = gl->vp.height;
    }
    else
    {
@@ -1342,12 +1302,6 @@ static void gl2_set_viewport(gl2_t *gl,
       gl->vp.width  = viewport_width;
       gl->vp.height = viewport_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl->vp.y *= 2;
-#endif
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl2_set_projection(gl, &default_ortho, allow_rotate);

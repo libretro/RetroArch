@@ -1097,6 +1097,14 @@ MSG_HASH(
    "Ubah pengaturan penyimpanan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sync: Configuration Files"
+   )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "When disabled, files are moved to a backup folder before being overwritten or deleted."
+   )      
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Pencatatan Log"
    )
@@ -1839,6 +1847,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu Y dari area pandang.\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Rasio Aspek Kustom (Lebar)"

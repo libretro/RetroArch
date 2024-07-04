@@ -257,6 +257,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_saving_settings_list,          MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_settings_list,      MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_enable,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_destructive,        MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_saves,        MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_configs,        MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_driver,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_url,                MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_username,           MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME)
@@ -1252,6 +1254,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_height,       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_y,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_x,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_y,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y)
+#if defined(RARCH_MOBILE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_use_mitm_server,               MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_mitm_server,                   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_custom_mitm_server,            MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER)
@@ -2571,6 +2579,20 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio);
             break;
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_y);
+            break;
+#if defined(RARCH_MOBILE)
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_portrait_x);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_portrait_y);
+            break;
+#endif
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio_index);
             break;
@@ -5033,6 +5055,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_destructive);
             break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_sync_saves);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_sync_configs);
+            break;                        
          case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_driver);
             break;

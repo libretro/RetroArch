@@ -9802,6 +9802,24 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+#if defined(RARCH_MOBILE)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+#endif
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
@@ -10690,12 +10708,14 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,      PARSE_ONLY_BOOL           },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE, PARSE_ONLY_BOOL           },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,      PARSE_ONLY_STRING_OPTIONS },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,         PARSE_ONLY_STRING         },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,    PARSE_ONLY_STRING         },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,    PARSE_ONLY_STRING         },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,       PARSE_ONLY_BOOL           },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,  PARSE_ONLY_BOOL           },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,   PARSE_ONLY_BOOL           },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS, PARSE_ONLY_BOOL           },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,       PARSE_ONLY_STRING_OPTIONS },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,          PARSE_ONLY_STRING         },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,     PARSE_ONLY_STRING         },
+               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,     PARSE_ONLY_STRING         },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

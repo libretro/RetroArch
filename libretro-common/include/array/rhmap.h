@@ -104,6 +104,7 @@
 #include <string.h> /* for memcpy, memset */
 #include <stddef.h> /* for ptrdiff_t, size_t */
 #include <stdint.h> /* for uint32_t */
+#include <string.h> /* for strlen */
 
 #define RHMAP_LEN(b) ((b) ? RHMAP__HDR(b)->len : 0)
 #define RHMAP_MAX(b) ((b) ? RHMAP__HDR(b)->maxlen : 0)
@@ -260,7 +261,21 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
       }
       if (!hdr->keys[i])
       {
-         if (add) { hdr->len++; hdr->keys[i] = key; if (str) hdr->key_strs[i] = strdup(str); return (ptrdiff_t)i; }
+         if (add)
+         {
+            int l;
+            char *t;
+
+            hdr->len++;
+            hdr->keys[i] = key;
+            l            = strlen(str);
+            t            = malloc(l + 1);
+            memcpy(t, str, l);
+            t[l]         = '\0';
+            if (str)
+               hdr->key_strs[i] = t;
+            return (ptrdiff_t)i;
+         }
          return (ptrdiff_t)-1;
       }
    }

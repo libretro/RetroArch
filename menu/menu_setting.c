@@ -11851,6 +11851,36 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_sync_saves,
+               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_sync_configs,
+               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
          CONFIG_STRING_OPTIONS(
                list, list_info,
                settings->arrays.cloud_sync_driver,
@@ -12949,6 +12979,84 @@ static bool setting_append_list(
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.video_viewport_bias_x,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+                  DEFAULT_VIEWPORT_BIAS_X,
+                  "%.2f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
+            (*list)[list_info->index - 1].offset_by = 0;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.video_viewport_bias_y,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+                  DEFAULT_VIEWPORT_BIAS_Y,
+                  "%.2f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
+            (*list)[list_info->index - 1].offset_by = 0;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+#if defined(RARCH_MOBILE)
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.video_viewport_bias_portrait_x,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+                  DEFAULT_VIEWPORT_BIAS_PORTRAIT_X,
+                  "%.2f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
+            (*list)[list_info->index - 1].offset_by = 0;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.video_viewport_bias_portrait_y,
+                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+                  DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y,
+                  "%.2f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.05, true, true);
+            (*list)[list_info->index - 1].offset_by = 0;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+                                               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+#endif
 
             CONFIG_UINT(
                   list, list_info,
