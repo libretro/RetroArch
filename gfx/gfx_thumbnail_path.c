@@ -728,8 +728,7 @@ bool gfx_thumbnail_set_icon_playlist(
    /* Playlist entry is valid -> it is now 'safe' to
     * extract any remaining playlist metadata
     * (i.e. thumbnail display modes) */
-   path_data->playlist_icon_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;  //PLAYLIST_THUMBNAIL_MODE_LOGO;
-         //playlist_get_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_ICON);
+   path_data->playlist_icon_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 
    return true;
 }
