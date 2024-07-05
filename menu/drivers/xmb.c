@@ -268,8 +268,15 @@ enum xmb_pending_thumbnail_type
    XMB_PENDING_THUMBNAIL_NONE = 0,
    XMB_PENDING_THUMBNAIL_RIGHT,
    XMB_PENDING_THUMBNAIL_LEFT,
-   XMB_PENDING_THUMBNAIL_BOTH
+   XMB_PENDING_THUMBNAIL_BOTH,
+   XMB_PENDING_THUMBNAIL_ICONS
 };
+
+typedef struct 
+{
+   gfx_thumbnail_path_data_t thumbnail_path_data;
+   gfx_thumbnail_t icon;
+} xmb_icons_t;
 
 /* NOTE: If you change this you HAVE to update
  * xmb_alloc_node() and xmb_copy_node() */
@@ -279,6 +286,7 @@ typedef struct
    char *console_name;
    uintptr_t icon;
    uintptr_t content_icon;
+   xmb_icons_t thumbnail_icon;
    float alpha;
    float label_alpha;
    float zoom;
@@ -336,6 +344,7 @@ typedef struct xmb_handle
       gfx_thumbnail_t left;
       gfx_thumbnail_t savestate;
       enum xmb_pending_thumbnail_type pending;
+      enum xmb_pending_thumbnail_type pending_icons;
    } thumbnails;
 
    struct
@@ -581,6 +590,7 @@ static xmb_node_t *xmb_alloc_node(void)
    node->alpha        = node->label_alpha  = 0;
    node->zoom         = node->x = node->y  = 0;
    node->icon         = node->content_icon = 0;
+   node->thumbnail_icon.icon.texture       = 0;
    node->fullpath     = NULL;
    node->console_name = NULL;
 
@@ -596,6 +606,7 @@ static void xmb_free_node(xmb_node_t *node)
       free(node->fullpath);
 
    node->fullpath = NULL;
+   gfx_thumbnail_reset(&node->thumbnail_icon.icon);
 
    free(node);
 }
@@ -636,6 +647,7 @@ static xmb_node_t *xmb_copy_node(const xmb_node_t *old_node)
    *new_node              = *old_node;
    new_node->fullpath     = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
    new_node->console_name = old_node->console_name ? strdup(old_node->console_name) : NULL;
+   new_node->thumbnail_icon.icon.texture = 0;
 
    return new_node;
 }
@@ -875,7 +887,8 @@ static void xmb_draw_icon(
       unsigned video_width,
       unsigned video_height,
       bool shadows_enable,
-      int icon_size,
+      int icon_size_x,
+      int icon_size_y,
       uintptr_t texture,
       float x,
       float y,
@@ -891,10 +904,10 @@ static void xmb_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
 
-   if (     (x < (-icon_size / 2.0f))
+   if (     (x < (-icon_size_x / 2.0f))
          || (x > width)
-         || (y < (icon_size  / 2.0f))
-         || (y > height + icon_size)
+         || (y < (icon_size_y / 2.0f))
+         || (y > height + icon_size_y)
       )
       return;
 
@@ -903,8 +916,8 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width           = icon_size;
-   draw.height          = icon_size;
+   draw.width           = icon_size_x;
+   draw.height          = icon_size_y;
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
@@ -1368,6 +1381,30 @@ static void xmb_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&xmb->thumbnails.savestate);
 }
 
+static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)xmb_handle_ptr;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t list_size       = (unsigned)selection_buf->size;
+
+   if (!xmb)
+      return;
+
+   xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
+   gfx_thumbnail_cancel_pending_requests();
+   for(size_t i =0; i < list_size ; i++)
+   {
+      xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
+      if(node)
+      {
+         gfx_thumbnail_reset(&node->thumbnail_icon.icon);
+      }
+
+   }
+}
+
 static void xmb_set_thumbnail_content(void *data, const char *s)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)data;
@@ -1480,6 +1517,45 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    }
 }
 
+static void xmb_set_dynamic_icon_content(
+   void *xmb_handle_ptr, 
+   const char *s, 
+   size_t selection, 
+   xmb_icons_t *thumbnail_icon)
+{
+   xmb_handle_t *xmb          = (xmb_handle_t*)xmb_handle_ptr;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   gfx_thumbnail_path_data_t *thumbnail_path_data = &thumbnail_icon->thumbnail_path_data;
+
+   if (!xmb)
+      return;
+
+   if (xmb->is_playlist)
+   {
+      /* Playlist content */
+      if (string_is_empty(s))
+      {
+         menu_list_t *menu_list = menu_st->entries.list;
+         size_t list_size       = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+         file_list_t *list      = MENU_LIST_GET_SELECTION(menu_list, 0);
+         bool playlist_valid    = false;
+         size_t playlist_index  = selection;
+
+         /* Get playlist index corresponding
+          * to the selected entry */
+         if (    list
+             && (selection < list_size)
+             && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+         {
+            playlist_valid = true;
+            playlist_index = list->list[selection].entry_idx;
+         }
+        gfx_thumbnail_set_icon_playlist(thumbnail_path_data,
+            playlist_valid ? playlist_get_cached() : NULL, playlist_index);
+      }
+   }
+}
+
 static void xmb_update_savestate_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)data;
@@ -1512,7 +1588,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
-   unsigned i, end, height;
+   unsigned i, end, height, entry_start, entry_end;
    size_t num                 = 0;
    int threshold              = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -1534,6 +1610,7 @@ static void xmb_selection_pointer_changed(
    menu_st->entries.begin     = num;
 
    video_driver_get_size(NULL, &height);
+   xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
 
    for (i = 0; i < end; i++)
    {
@@ -1547,6 +1624,21 @@ static void xmb_selection_pointer_changed(
 
       iy               = xmb_item_y(xmb, i, selection);
       real_iy          = iy + xmb->margins_screen_top;
+
+   if (xmb->is_playlist)
+      {
+         xmb_icons_t *thumbnail_icon = &node->thumbnail_icon;
+         if(i>=entry_start && i<=entry_end)
+         {
+            /* Playlist updates */
+            xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
+            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
+            gfx_thumbnail_cancel_pending_requests();
+
+            if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
+               xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+         }
+      }
 
       if (i == selection)
       {
@@ -2165,6 +2257,44 @@ static void xmb_tab_set_selection(void *data)
          menu_st->selection_ptr     = tab_selection;
          xmb_selection_pointer_changed(xmb, false);
       }
+   }
+}
+
+static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
+{
+   unsigned i, entry_start, entry_end, height;
+   struct menu_state *menu_st       = menu_state_get_ptr();
+   menu_list_t *menu_list           = menu_st->entries.list;
+   file_list_t *selection_buf       = MENU_LIST_GET_SELECTION(menu_list, 0);
+   unsigned end                     = (unsigned)selection_buf->size;
+   size_t selection                 = menu_st->selection_ptr;
+
+   if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
+   {
+      //  Clear current textures if they are there
+      xmb_unload_icon_thumbnail_textures(xmb);
+
+      entry_start      = 0;
+      entry_end        = end;
+
+      video_driver_get_size(NULL, &height);
+      xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &entry_start, &entry_end);
+      if(xmb->is_playlist)
+      {
+         xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
+
+         for (i = entry_start; i <= entry_end; i++)
+         {
+            xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
+
+            if(!node)
+               continue;
+
+            xmb_icons_t *thumbnail_icon = &node->thumbnail_icon;
+            xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
+            gfx_thumbnail_cancel_pending_requests();
+         }
+      } 
    }
 }
 
@@ -2812,6 +2942,11 @@ static void xmb_populate_entries(void *data,
       xmb_list_open(xmb);
 
    xmb_set_title(xmb);
+
+   if(xmb->is_playlist)
+   {
+      xmb_populate_dynamic_icons(xmb);
+   }
 
    if (xmb->allow_dynamic_wallpaper)
       xmb_update_dynamic_wallpaper(xmb, false);
@@ -3660,7 +3795,7 @@ static int xmb_draw_item(
       unsigned height)
 {
    menu_entry_t entry;
-   float icon_x, icon_y, label_offset;
+   float icon_x, icon_y, label_offset, gfx_icon_x, gfx_icon_y, gfx_icon_height, gfx_icon_width;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    char tmp[255];
@@ -4230,6 +4365,29 @@ static int xmb_draw_item(
          }
       }
 
+      gfx_icon_x      = x;
+      gfx_icon_y      = y;
+      gfx_icon_height = gfx_icon_width  = xmb->icon_size;
+
+      bool show_icon_thumbnail          =
+            (xmb->is_playlist 
+            && gfx_thumbnail_is_enabled(&node->thumbnail_icon.thumbnail_path_data, GFX_THUMBNAIL_ICON)
+            && (node->thumbnail_icon.icon.status == GFX_THUMBNAIL_STATUS_AVAILABLE));
+
+      if (show_icon_thumbnail)
+      {
+         texture = node->thumbnail_icon.icon.texture;
+         gfx_icon_width = gfx_icon_height = (xmb->icon_size * 1.8);   //  Logos need to be bigger but not overlap
+
+         gfx_thumbnail_get_draw_dimensions(
+            &node->thumbnail_icon.icon,
+            gfx_icon_width, gfx_icon_height, 1.0f,
+            &gfx_icon_width, &gfx_icon_height);
+
+         //  Adjust icon location by recentering with half width and height
+         gfx_icon_x = gfx_icon_x + xmb->icon_size - gfx_icon_width;
+         gfx_icon_y = gfx_icon_y - (xmb->icon_size / 2) + (gfx_icon_height / 2);
+      }
       xmb_draw_icon(
             userdata,
             p_disp,
@@ -4237,10 +4395,11 @@ static int xmb_draw_item(
             video_width,
             video_height,
             shadows_enable,
-            xmb->icon_size,
+            gfx_icon_width,
+            gfx_icon_height,
             texture,
-            x,
-            y,
+            gfx_icon_x,
+            gfx_icon_y,
             width,
             height,
             1.0,
@@ -4265,6 +4424,7 @@ static int xmb_draw_item(
             video_width,
             video_height,
             shadows_enable,
+            xmb->icon_size,
             xmb->icon_size,
             texture_switch,
             node->x + xmb->margins_screen_left
@@ -4773,6 +4933,36 @@ static int xmb_menu_entry_action(
    return generic_menu_entry_action(userdata, entry, i, new_action);
 }
 
+static bool xmb_load_dynamic_icon(const char *icon_path,
+   gfx_thumbnail_t *icon)
+{
+   unsigned width, height;
+   //  Wierd unwanted state
+   if(icon->status == GFX_THUMBNAIL_STATUS_UNKNOWN &&
+         icon->texture > 0)
+      gfx_thumbnail_reset(icon);
+
+   if(gfx_display_reset_icon_texture(
+         icon_path,
+         &icon->texture, 
+         TEXTURE_FILTER_MIPMAP_LINEAR, 
+         &width, 
+         &height))
+   {
+      icon->width          = width;
+      icon->height         = height;
+      icon->alpha          = 0.0f;
+      icon->delay_timer    = 0.0f;
+      icon->flags          &= ~(GFX_THUMB_FLAG_FADE_ACTIVE
+                              | GFX_THUMB_FLAG_CORE_ASPECT);
+      icon->status         = GFX_THUMBNAIL_STATUS_AVAILABLE;
+
+      return true;
+   }
+
+   return false;
+}
+
 static void xmb_render(void *data,
       unsigned width, unsigned height, bool is_idle)
 {
@@ -4791,9 +4981,16 @@ static void xmb_render(void *data,
    struct menu_state *menu_st     = menu_state_get_ptr();
    menu_input_t *menu_input       = &menu_st->input_state;
    menu_list_t *menu_list         = menu_st->entries.list;
-   size_t end                     = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   file_list_t *selection_buf     = MENU_LIST_GET_SELECTION(menu_list, 0);
+   size_t end                     = selection_buf->size;
    gfx_display_t *p_disp          = disp_get_ptr();
    gfx_animation_t *p_anim        = anim_get_ptr();
+   size_t selection               = menu_st->selection_ptr;
+   playlist_t *playlist           = playlist_get_cached();
+   unsigned first                 = 0;
+   unsigned last                  = (unsigned)end;
+   unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
+   bool network_on_demand_thumbnails        = settings->bools.network_on_demand_thumbnails;
 
    if (!xmb)
       return;
@@ -4971,6 +5168,40 @@ static void xmb_render(void *data,
                /* Do nothing */
                break;
          }
+      }
+   }
+   
+   /* Handle any pending icon thumbnail load requests */
+   if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
+   {
+      /* Based on height of screen calculate the available entries that are visible */
+      if (height)
+         xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &first, &last);
+
+      xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
+      for (i = first; i <= last; i++)
+      {
+         xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
+         xmb_icons_t  *thumbnail_icon = &node->thumbnail_icon;
+
+         if(thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+         {
+            if(!xmb_load_dynamic_icon(thumbnail_icon->thumbnail_path_data.icon_path,
+                  &thumbnail_icon->icon))
+            {
+               gfx_thumbnail_request_stream(
+                  &thumbnail_icon->thumbnail_path_data,
+                  p_anim,
+                  GFX_THUMBNAIL_ICON,
+                  playlist, i,
+                  &thumbnail_icon->icon,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
+            }
+         }
+
+         if (thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+            xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
       }
    }
 
@@ -5781,6 +6012,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_height,
             shadows_enable,
             xmb->icon_size,
+            xmb->icon_size,
             xmb->textures.list[XMB_TEXTURE_ARROW],
             xmb->x + xmb->margins_screen_left +
             xmb->icon_spacing_horizontal -
@@ -6089,6 +6321,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_height,
                   shadows_enable,
                   xmb->icon_size,
+                  xmb->icon_size,   
                   xmb->textures.list[
                   powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
                   (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
@@ -6147,6 +6380,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                video_width,
                video_height,
                shadows_enable,
+               xmb->icon_size,
                xmb->icon_size,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
                video_width - xmb->margins_title_left + margin_offset - x_pos,
@@ -6259,6 +6493,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_width,
                   video_height,
                   shadows_enable,
+                  xmb->icon_size,
                   xmb->icon_size,
                   texture,
                   x,
@@ -7733,6 +7968,7 @@ static void xmb_context_destroy(void *data)
       video_driver_texture_unload(&xmb->textures.list[i]);
 
    xmb_unload_thumbnail_textures(xmb);
+   xmb_unload_icon_thumbnail_textures(xmb);
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);

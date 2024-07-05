@@ -3894,6 +3894,10 @@ MSG_HASH(
    "system_info_entry"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ICON_THUMBNAILS,
+   "icon_thumbnails"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_TAKE_SCREENSHOT,
    "take_screenshot"
    )

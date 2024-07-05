@@ -293,6 +293,11 @@ bool gfx_display_reset_textures_list(
       unsigned *width,
       unsigned *height);
 
+bool gfx_display_reset_icon_texture(
+      const char *texture_path,
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height);
+      
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item,
         enum texture_filter_type filter_type,
