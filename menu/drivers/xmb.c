@@ -1388,13 +1388,14 @@ static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t list_size       = (unsigned)selection_buf->size;
+   size_t i;
 
    if (!xmb)
       return;
 
    xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_cancel_pending_requests();
-   for(size_t i =0; i < list_size ; i++)
+   for(i =0; i < list_size ; i++)
    {
       xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
       if(node)
@@ -2271,7 +2272,7 @@ static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
 
    if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
    {
-      //  Clear current textures if they are there
+      /*  Clear current textures if they are there  */
       xmb_unload_icon_thumbnail_textures(xmb);
 
       entry_start      = 0;
@@ -2285,12 +2286,13 @@ static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
 
          for (i = entry_start; i <= entry_end; i++)
          {
+            xmb_icons_t *thumbnail_icon;
             xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
 
             if(!node)
                continue;
 
-            xmb_icons_t *thumbnail_icon = &node->thumbnail_icon;
+            thumbnail_icon = &node->thumbnail_icon;
             xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
             gfx_thumbnail_cancel_pending_requests();
          }
@@ -3818,6 +3820,7 @@ static int xmb_draw_item(
    bool show_switch_icons              = settings->bools.menu_xmb_switch_icons;
    unsigned show_history_icons         = settings->uints.playlist_show_history_icons;
    unsigned vertical_fade_factor       = settings->uints.menu_xmb_vertical_fade_factor;
+   bool show_icon_thumbnail;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -4369,7 +4372,7 @@ static int xmb_draw_item(
       gfx_icon_y      = y;
       gfx_icon_height = gfx_icon_width  = xmb->icon_size;
 
-      bool show_icon_thumbnail          =
+      show_icon_thumbnail          =
             (xmb->is_playlist 
             && gfx_thumbnail_is_enabled(&node->thumbnail_icon.thumbnail_path_data, GFX_THUMBNAIL_ICON)
             && (node->thumbnail_icon.icon.status == GFX_THUMBNAIL_STATUS_AVAILABLE));
