@@ -104,7 +104,6 @@
 #include <string.h> /* for memcpy, memset */
 #include <stddef.h> /* for ptrdiff_t, size_t */
 #include <stdint.h> /* for uint32_t */
-#include <string.h> /* for strlen */
 
 #define RHMAP_LEN(b) ((b) ? RHMAP__HDR(b)->len : 0)
 #define RHMAP_MAX(b) ((b) ? RHMAP__HDR(b)->maxlen : 0)
@@ -229,6 +228,23 @@ RHMAP__UNUSED static void* rhmap__grow(void* old_ptr, size_t elem_size, size_t r
    return new_vals;
 }
 
+/* This is just a custom version of strdup so we don't have an inherent
+ * dependency on strdup for this file. It is functionally equivalent to
+ * a system-provided strdup */
+static char *rhmap_strdup(const char *s)
+{
+    char *out;
+    int count = 0;
+    while (s[count])
+        ++count;
+    ++count;
+    out = malloc(sizeof(char) * count);
+    out[--count] = 0;
+    while (--count >= 0)
+        out[count] = s[count];
+    return out;
+}
+
 RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, const char * str, int add, size_t del)
 {
    uint32_t i;
@@ -263,17 +279,10 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
       {
          if (add)
          {
-            int l;
-            char *t;
-
             hdr->len++;
             hdr->keys[i] = key;
-            l            = strlen(str);
-            t            = malloc(l + 1);
-            memcpy(t, str, l);
-            t[l]         = '\0';
             if (str)
-               hdr->key_strs[i] = t;
+               hdr->key_strs[i] = rhmap_strdup(str);
             return (ptrdiff_t)i;
          }
          return (ptrdiff_t)-1;
