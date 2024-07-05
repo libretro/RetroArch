@@ -4588,6 +4588,7 @@ bool config_load_remap(const char *directory_input_remapping,
    char *remap_path                       = NULL;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
    size_t remap_path_total_len            = 0;
+   size_t _len                            = 0;
 
    content_dir_name[0] = '\0';
    core_path[0]        = '\0';
@@ -4605,16 +4606,16 @@ bool config_load_remap(const char *directory_input_remapping,
        && !string_is_empty(input_device_name))
    {
       /* Ensure directory does not contain special chars */ 
-      input_device_dir = sanitize_path_part(input_device_name);
+      input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
       
       /* Allocate memory for the new path */
       remap_path_total_len = strlen(core_name) + strlen(input_device_dir) + 2;
       remap_path = (char *)malloc(remap_path_total_len);
 
       /*  Build the new path with the controller name */
-      strlcpy(remap_path, core_name, remap_path_total_len);
-      strlcat(remap_path, "/", remap_path_total_len);
-      strlcat(remap_path, input_device_dir, remap_path_total_len);
+      _len  = strlcpy(remap_path, core_name, remap_path_total_len);
+      _len += strlcpy(remap_path + _len, "/", remap_path_total_len - _len);
+      _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
 
       /* Deallocate as we no longer this */ 
       free((char*)input_device_dir);

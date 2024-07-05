@@ -1160,7 +1160,7 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  * 
  * @returns new string that has been sanitized
  **/
-const char *sanitize_path_part(const char *path_part)
+const char *sanitize_path_part(const char *path_part, size_t size)
 {
    int i;
    int j = 0;
@@ -1171,16 +1171,14 @@ const char *sanitize_path_part(const char *path_part)
    if (string_is_empty(path_part))
       return NULL;
 
-   len = strlen(path_part);
-   temp = (char *)malloc((len + 1) * sizeof(char));
+   temp = (char *)malloc((size + 1) * sizeof(char));
 
-   for (i = 0; path_part[i] != '\0'; i++) {
+   for (i = 0; path_part[i] != '\0'; i++)
       /* Check if the current character is one of the special characters */ 
-      if (strchr(special_chars, path_part[i]) == NULL) {
+      if (strchr(special_chars, path_part[i]) == NULL)
          /*  If not, copy it to the temporary array */
          temp[j++] = path_part[i];
-      }
-   }
+
    temp[j] = '\0';
 
    /* Return the new string */
