@@ -3681,8 +3681,8 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
       /* Build the new path with the controller name */ 
       _len  = strlcpy(remap_path, core_name, remap_path_total_len);
-      _len += strlcat(remap_path + _len, "/", remap_path_total_len - _len);
-      _len += strlcat(remap_path + _len, input_device_dir, remap_path_total_len - _len);
+      _len += strlcpy(remap_path + _len, "/", remap_path_total_len - _len);
+      _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
 
       /* Deallocate as we no longer this */ 
       free((char*)input_device_dir);
