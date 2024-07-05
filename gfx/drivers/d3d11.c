@@ -3641,6 +3641,7 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    uint8_t* bufferRow;
    uint32_t y;
    uint32_t x;
+   bool ret;
 
    if(!d3d11)
       return false;
@@ -3677,25 +3678,32 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    d3d11->context->lpVtbl->Map(d3d11->context, BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map);
    BackBufferData = (const uint8_t*)Map.pData;
 
-    /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
-   for (y = 0; y < d3d11->vp.height; y++, BackBufferData += Map.RowPitch)
+   /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
+   if(StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
    {
-      bufferRow = buffer + 3 * (d3d11->vp.height - y - 1) * d3d11->vp.width;
-
-      for (x = 0; x < d3d11->vp.width; x++)
+      for (y = 0; y < d3d11->vp.height; y++, BackBufferData += Map.RowPitch)
       {
-         bufferRow[3 * x + 2] = BackBufferData[4 * x + 0];
-         bufferRow[3 * x + 1] = BackBufferData[4 * x + 1];
-         bufferRow[3 * x + 0] = BackBufferData[4 * x + 2];
+         bufferRow = buffer + 3 * (d3d11->vp.height - y - 1) * d3d11->vp.width;
+
+         for (x = 0; x < d3d11->vp.width; x++)
+         {
+            bufferRow[3 * x + 2] = BackBufferData[4 * x + 0];
+            bufferRow[3 * x + 1] = BackBufferData[4 * x + 1];
+            bufferRow[3 * x + 0] = BackBufferData[4 * x + 2];
+         }
       }
+      ret = true;
    }
+   else
+      ret = false;
 
    d3d11->context->lpVtbl->Unmap(d3d11->context, BackBufferStaging, 0);
 
    /* Release the backbuffer staging. */
    BackBufferStaging->lpVtbl->Release(BackBufferStaging);
    BackBufferStagingTexture->lpVtbl->Release(BackBufferStagingTexture);
-   return true;
+   
+   return ret;
 }
 
 static void d3d11_set_menu_texture_frame(
