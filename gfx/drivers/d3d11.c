@@ -3649,7 +3649,10 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /*This implementation produces wrong result when using HDR*/
    #ifdef HAVE_DXGI_HDR
    if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
+   {
+      RARCH_ERR("[D3D11]: HDR screenshot not supported.\n");
       return false;
+   }
    #endif
 
    /* Get the back buffer. */
@@ -3701,7 +3704,10 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
       ret = true;
    }
    else
+   {
+      RARCH_ERR("[D3D11]: Unexpected swapchain format.\n");
       ret = false;
+   }
 
    d3d11->context->lpVtbl->Unmap(d3d11->context, BackBufferStaging, 0);
 
