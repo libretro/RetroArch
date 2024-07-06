@@ -3648,7 +3648,6 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 
    /*This implementation produces wrong result when using HDR*/
    #ifdef HAVE_DXGI_HDR
-   
    if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
       return false;
    #endif
