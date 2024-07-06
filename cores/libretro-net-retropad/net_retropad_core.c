@@ -8,7 +8,6 @@
  * - Allow changing IP address and port in runtime
  * - Input recording / Combos
  * - Enable test input loading from menu
- * - Visualization of aux inputs (gyro, accelero, light)
 */
 
 #include <stdio.h>
@@ -60,6 +59,8 @@
 #define KEYBOARD_OFFSET 1000
 #define NETRETROPAD_SCREEN_PAD 0
 #define NETRETROPAD_SCREEN_KEYBOARD 1
+#define NETRETROPAD_SCREEN_SENSORS 2
+#define EVENT_RATE 60
 
 struct descriptor {
    int device;
@@ -82,6 +83,12 @@ struct remote_joypad_message {
 
 static bool keyboard_state[RETROK_LAST];
 static bool keyboard_state_validated[RETROK_LAST];
+static bool tilt_sensor_enabled = false;
+static bool gyro_sensor_enabled = false;
+static bool lux_sensor_enabled  = false;
+static float tilt_sensor_values[3] = {0};
+static float gyro_sensor_values[3] = {0};
+static float lux_sensor_value = 0.0f;
 
 static int s;
 static int port;
@@ -97,6 +104,8 @@ static retro_audio_sample_batch_t NETRETROPAD_CORE_PREFIX(audio_batch_cb);
 static retro_environment_t NETRETROPAD_CORE_PREFIX(environ_cb);
 static retro_input_poll_t NETRETROPAD_CORE_PREFIX(input_poll_cb);
 static retro_input_state_t NETRETROPAD_CORE_PREFIX(input_state_cb);
+static retro_sensor_get_input_t NETRETROPAD_CORE_PREFIX(sensor_get_input_cb);
+static retro_set_sensor_state_t NETRETROPAD_CORE_PREFIX(sensor_set_state_cb);
 
 static uint16_t *frame_buf;
 
@@ -130,6 +139,8 @@ static struct descriptor analog_button = {
    .id_max = RETRO_DEVICE_ID_JOYPAD_R3
 };
 
+/* Sensors are not fed to the descriptors. */
+
 static struct descriptor *descriptors[] = {
    &joypad,
    &analog,
@@ -137,6 +148,7 @@ static struct descriptor *descriptors[] = {
 };
 
 static uint16_t analog_item_colors[32];
+static uint16_t sensor_item_colors[70];
 
 static uint16_t combo_def[] =
 {
@@ -359,6 +371,38 @@ end:
 /* Test input file handling end */
 /********************************/
 
+static void sensors_init(void)
+{
+
+   struct retro_sensor_interface sensor_interface = {0};
+	if (NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE, &sensor_interface)) {
+
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Sensor interface supported, enabling.\n");
+
+		NETRETROPAD_CORE_PREFIX(sensor_get_input_cb) = sensor_interface.get_sensor_input;
+		NETRETROPAD_CORE_PREFIX(sensor_set_state_cb) = sensor_interface.set_sensor_state;
+
+
+		if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb) && NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)) {
+
+			if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ACCELEROMETER_ENABLE, EVENT_RATE)) {
+				tilt_sensor_enabled = true;
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Tilt sensor enabled.\n");
+			}
+
+			if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_GYROSCOPE_ENABLE, EVENT_RATE)) {
+				gyro_sensor_enabled = true;
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Gyro sensor enabled.\n");
+			}
+
+			if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ILLUMINANCE_ENABLE, EVENT_RATE)) {
+				lux_sensor_enabled = true;
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Lux sensor enabled.\n");
+			}
+		}
+	}
+}
+
 static void draw_background(void)
 {
    if (frame_buf)
@@ -367,7 +411,7 @@ static void draw_background(void)
       /* Body is 255 * 142 within the 320 * 240 frame */
       uint16_t *pixel = frame_buf + 49 * 320 + 32;
 
-      if (current_screen == NETRETROPAD_SCREEN_PAD)
+      if (current_screen == NETRETROPAD_SCREEN_PAD || current_screen == NETRETROPAD_SCREEN_SENSORS)
          for (rle = 0; rle < sizeof(body); )
          {
             uint16_t color = 0;
@@ -405,6 +449,8 @@ static void flip_screen(void)
    if      (current_screen == NETRETROPAD_SCREEN_PAD)
       current_screen = NETRETROPAD_SCREEN_KEYBOARD;
    else if (current_screen == NETRETROPAD_SCREEN_KEYBOARD)
+      current_screen = NETRETROPAD_SCREEN_SENSORS;
+   else if (current_screen == NETRETROPAD_SCREEN_SENSORS)
       current_screen = NETRETROPAD_SCREEN_PAD;
    draw_background();
 }
@@ -445,6 +491,13 @@ void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
       free(descriptors[i]->value);
       descriptors[i]->value = NULL;
    }
+
+   if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb) && NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)) 
+   {
+      NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, EVENT_RATE);
+      NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_GYROSCOPE_DISABLE, EVENT_RATE);
+      NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ILLUMINANCE_DISABLE, EVENT_RATE);
+	}
 }
 
 unsigned NETRETROPAD_CORE_PREFIX(retro_api_version)(void)
@@ -618,7 +671,7 @@ void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       { "net_retropad_ip_octet2", "IP address part 2; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|134|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|234|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
       { "net_retropad_ip_octet3", "IP address part 3; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|134|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|234|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
       { "net_retropad_ip_octet4", "IP address part 4; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|134|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|234|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
-      { "net_retropad_screen", "Start screen; Retropad|Keyboard tester" },
+      { "net_retropad_screen", "Start screen; Retropad|Keyboard tester|Sensor tester" },
       { "net_retropad_hide_analog_mismatch", "Hide mismatching analog button inputs; True|False" },
       { NULL, NULL },
    };
@@ -637,7 +690,6 @@ void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       NETRETROPAD_CORE_PREFIX(log_cb) = logger.log;
 
    NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &kcb);
-
 }
 
 static void netretropad_check_variables(void)
@@ -662,9 +714,10 @@ static void netretropad_check_variables(void)
    snprintf(server, sizeof(server), "%s.%s.%s.%s", var.value, var2.value, var3.value, var4.value);
    port = atoi(port_var.value);
 
-   if (screen_var.value &&
-       ((current_screen == NETRETROPAD_SCREEN_PAD && strstr(screen_var.value,"Keyboard")) ||
-        (current_screen == NETRETROPAD_SCREEN_KEYBOARD && strstr(screen_var.value,"Retropad"))))
+   while (screen_var.value && !(
+        (current_screen == NETRETROPAD_SCREEN_PAD      && strstr(screen_var.value,"Retropad")) ||
+        (current_screen == NETRETROPAD_SCREEN_KEYBOARD && strstr(screen_var.value,"Keyboard")) ||
+        (current_screen == NETRETROPAD_SCREEN_SENSORS  && strstr(screen_var.value,"Sensor"))))
       flip_screen();
    if (hide_a_var.value && strstr(hide_a_var.value,"True"))
       hide_analog_mismatch = true;
@@ -712,6 +765,9 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    uint32_t input_state = 0;
    uint32_t expected_input = 0;
    uint16_t *pixel      = frame_buf + 49 * 320 + 32;
+
+   if (!current_frame && current_screen == NETRETROPAD_SCREEN_SENSORS)
+      sensors_init();
 
    current_frame++;
    /* Update input states and send them if needed */
@@ -779,6 +835,84 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
       }
    }
 
+   /* Accelerometer and gyroscope. */
+
+	if (tilt_sensor_enabled) {
+		tilt_sensor_values[0] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ACCELEROMETER_X);
+		tilt_sensor_values[1] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ACCELEROMETER_Y);
+		tilt_sensor_values[2] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ACCELEROMETER_Z);
+	}
+	if (gyro_sensor_enabled) {
+		gyro_sensor_values[0] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_GYROSCOPE_X);
+		gyro_sensor_values[1] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_GYROSCOPE_Y);
+		gyro_sensor_values[2] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_GYROSCOPE_Z);
+	}
+	if (lux_sensor_enabled)
+	{
+      lux_sensor_value = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ILLUMINANCE);
+   }
+
+   if (tilt_sensor_enabled || gyro_sensor_enabled || lux_sensor_enabled)
+   {
+      int j;
+      bool range_found = false;
+      
+      /*NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,
+         "[Remote Retropad] %1.3f %1.3f %1.3f %1.3f %1.3f %1.3f %1.3f\n",
+         tilt_sensor_values[0], tilt_sensor_values[1], tilt_sensor_values[2],
+         gyro_sensor_values[0], gyro_sensor_values[1], gyro_sensor_values[2],
+         lux_sensor_value);*/
+
+      memset(sensor_item_colors,0,sizeof(sensor_item_colors));
+      for (i = 0; i <= 6; i++)
+      {
+         unsigned median_index = 5;
+         bool range_found = false;
+         float value;
+
+         /* Accelerometer display range: from 0 to 1g, covering tilt from a horizontal to a vertical position. */
+         if (i < 3)
+         {
+            value = tilt_sensor_values[i]/9.81;
+            median_index += (i+1)*10;
+         }
+         else if (i < 6)
+         {
+            value = gyro_sensor_values[i-3];
+            median_index += (i+1)*10;
+         }
+         else
+         {
+            /* Lux sensor approximate range: 10-10000, mapped using log10 / 4 */
+            value = lux_sensor_value > 0 ? (float)log10(lux_sensor_value)/4.0f: 0;
+         }
+         if (value > 1.0f)
+            value = 1.0f;
+         else if (value < -1.0f)
+            value = -1.0f;
+
+         for(j = 3 ; j > 0 && !range_found ; j--)
+         {
+            float boundary = j*0.25f;
+            if (value > 0 && value > boundary)
+            {
+               sensor_item_colors[median_index+j] = (uint16_t)(32*4*(value-boundary)) << 11;
+               range_found = true;
+            }
+            else if (value < 0 && value < boundary*-1.0f)
+            {
+               sensor_item_colors[median_index-j] = (uint16_t)(32*4*(boundary-value)) << 11;
+               range_found = true;
+            }
+         }
+         if (value != 0.0f && !range_found)
+         {
+            sensor_item_colors[median_index]   = (uint16_t)(fabsf(32*4*value)) << 11;
+         }
+      }
+   }
+
+
    /* Input test section start. */
 
    /* Check for predefined combo inputs. */
@@ -817,8 +951,8 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
                "[Remote RetroPad]: Proceeding to test step %d at frame %d, next: %d\n",
                current_test_step,current_frame,next_teststep_frame+INITIAL_FRAMES);
-            if((input_test_steps[current_test_step].expected_button <  KEYBOARD_OFFSET && current_screen == NETRETROPAD_SCREEN_KEYBOARD) ||
-               (input_test_steps[current_test_step].expected_button >= KEYBOARD_OFFSET && current_screen == NETRETROPAD_SCREEN_PAD))
+            while((input_test_steps[current_test_step].expected_button <  KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_PAD) ||
+                  (input_test_steps[current_test_step].expected_button >= KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_KEYBOARD))
                   flip_screen();
          }
          else
@@ -970,6 +1104,43 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             }
             else
                pixel += keyboard_buttons[rle++];
+
+            paint = !paint;
+         }
+
+         pixel += 65;
+      }
+   }
+   else if (current_screen == NETRETROPAD_SCREEN_SENSORS)
+   {
+      for (rle = 0; rle < ARRAY_SIZE(sensor_buttons); )
+      {
+         unsigned runs;
+         char      paint = 0;
+
+         for (runs = sensor_buttons[rle++]; runs > 0; runs--)
+         {
+            if (paint)
+            {
+               unsigned count;
+               uint16_t color;
+
+               /* Same color scheme as for retropad buttons */
+               if (sensor_item_colors[sensor_buttons[rle]])
+               {
+                  color = sensor_item_colors[sensor_buttons[rle]];
+               }
+               else
+               {
+                  color = 0xffff;
+               }
+               rle++;
+
+               for (count = sensor_buttons[rle++]; count > 0; count--)
+                  *pixel++ = color;
+            }
+            else
+               pixel += sensor_buttons[rle++];
 
             paint = !paint;
          }

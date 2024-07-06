@@ -364,6 +364,9 @@ input_driver_t *input_drivers[] = {
 #ifdef DJGPP
    &input_dos,
 #endif
+#ifdef HAVE_TEST_DRIVERS
+   &input_test,
+#endif
    &input_null,
    NULL,
 };
@@ -4418,11 +4421,24 @@ bool video_driver_init_input(
    void              *new_data    = NULL;
    input_driver_t         **input = &input_driver_st.current_driver;
    if (*input)
+#if HAVE_TEST_DRIVERS
+      if (strcmp(settings->arrays.input_driver,"test") != 0)
+         /* Test driver not in use, keep selected driver */
+         return true;
+      else if (string_is_empty(settings->paths.test_input_file_general))
+          {
+            RARCH_LOG("[Input]: Test input driver selected, but no input file provided - falling back.\n");
+            return true;
+          }
+      else
+         RARCH_LOG("[Video]: Graphics driver initialized an input driver, but ignoring it as test input driver is in use.\n");
+#else
       return true;
-
-   /* Video driver didn't provide an input driver,
-    * so we use configured one. */
-   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+#endif
+   else
+      /* Video driver didn't provide an input driver,
+       * so we use configured one. */
+      RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");
 
    if (tmp)
