@@ -4387,7 +4387,7 @@ static int xmb_draw_item(
             gfx_icon_width, gfx_icon_height, 1.0f,
             &gfx_icon_width, &gfx_icon_height);
 
-         //  Adjust icon location by recentering with half width and height
+         /*  Adjust icon location by recentering with half width and height */
          gfx_icon_x = gfx_icon_x + xmb->icon_size - gfx_icon_width;
          gfx_icon_y = gfx_icon_y - (xmb->icon_size / 2) + (gfx_icon_height / 2);
       }
@@ -4940,7 +4940,7 @@ static bool xmb_load_dynamic_icon(const char *icon_path,
    gfx_thumbnail_t *icon)
 {
    unsigned width, height;
-   //  Wierd unwanted state
+   /* Wierd unwanted state */
    if(icon->status == GFX_THUMBNAIL_STATUS_UNKNOWN &&
          icon->texture > 0)
       gfx_thumbnail_reset(icon);
