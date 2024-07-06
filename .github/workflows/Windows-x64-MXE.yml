@@ -9,16 +9,19 @@ on:
 permissions:
   contents: read
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 
+    container:
       image: git.libretro.com:5050/libretro-infrastructure/libretro-build-mxe-win64-cross:gcc10
       options: --user root
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Compile RA
       run: |
         export MOC=/usr/lib/mxe/usr/x86_64-w64-mingw32.shared/qt5/bin/moc
@@ -29,7 +32,7 @@ jobs:
     - name: Get short SHA
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-    
+
     - uses: actions/upload-artifact@v3
       with:
         name: retroarch${{ steps.slug.outputs.sha8 }}
