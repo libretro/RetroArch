@@ -3633,7 +3633,7 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    ID3D11Texture2D* BackBuffer;
    DXGISwapChain m_SwapChain;
    ID3D11Texture2D* BackBufferStagingTexture;
-   ID3D11Resource* BackBufferStaging = NULL; /* This will hold the ID3D11Resource instance */
+   ID3D11Resource* BackBufferStaging = NULL;
    ID3D11Resource* BackBufferResource = NULL;
    D3D11_TEXTURE2D_DESC StagingDesc;
    D3D11_MAPPED_SUBRESOURCE Map;
@@ -3643,14 +3643,21 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    uint32_t x;
    bool ret;
 
-   if(!d3d11)
+   if (!d3d11)
       return false;
+
+   /*This implementation produces wrong result when using HDR*/
+   #ifdef HAVE_DXGI_HDR
+   
+   if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
+      return false;
+   #endif
 
    /* Get the back buffer. */
    m_SwapChain = d3d11->swapChain;
    m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, &IID_ID3D11Texture2D, (void*)(&BackBuffer));
 
-   if(!BackBuffer)
+   if (!BackBuffer)
       return false;
 
    if (!is_idle)
@@ -3679,7 +3686,7 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    BackBufferData = (const uint8_t*)Map.pData;
 
    /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
-   if(StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
+   if (StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
    {
       for (y = 0; y < d3d11->vp.height; y++, BackBufferData += Map.RowPitch)
       {
