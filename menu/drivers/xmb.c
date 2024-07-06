@@ -941,8 +941,8 @@ static void xmb_draw_icon(
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
       if (scale_factor < 1)
       {
-         draw.x         = draw.x + (icon_size-draw.width)/2;
-         draw.y         = draw.y + (icon_size-draw.width)/2;
+         draw.x         = draw.x + (icon_size_x-draw.width)/2;
+         draw.y         = draw.y + (icon_size_y-draw.width)/2;
       }
 #endif
       if (draw.height > 0 && draw.width > 0)
@@ -957,8 +957,8 @@ static void xmb_draw_icon(
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
    if (scale_factor < 1)
    {
-      draw.x            = draw.x + (icon_size-draw.width)/2;
-      draw.y            = draw.y + (icon_size-draw.width)/2;
+      draw.x            = draw.x + (icon_size_x-draw.width)/2;
+      draw.y            = draw.y + (icon_size_y-draw.width)/2;
    }
 #endif
    if (draw.height > 0 && draw.width > 0)
@@ -4380,7 +4380,7 @@ static int xmb_draw_item(
       if (show_icon_thumbnail)
       {
          texture = node->thumbnail_icon.icon.texture;
-         gfx_icon_width = gfx_icon_height = (xmb->icon_size * 1.8);   //  Logos need to be bigger but not overlap
+         gfx_icon_width = gfx_icon_height = (xmb->icon_size * 1.8); 
 
          gfx_thumbnail_get_draw_dimensions(
             &node->thumbnail_icon.icon,
