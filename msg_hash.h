@@ -4219,6 +4219,7 @@ enum msg_hash_enums
 
 
    #ifdef HAVE_GAME_AI
+   MENU_LABEL(QUICK_MENU_SHOW_GAME_AI),
    MENU_LABEL(GAME_AI_MENU_OPTION),
    #endif
 

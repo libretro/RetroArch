@@ -84,7 +84,8 @@ extern "C" void game_ai_think()
       assert(ga);
 
       std::string data_path((char *)game_ai_lib_path);
-      data_path += "/data/NHL941on1-Genesis";
+      data_path += "/data/";
+      data_path += g_game_name;
 
       ga->Init(data_path.c_str(), (void *) g_ram_ptr, g_ram_size);
    }

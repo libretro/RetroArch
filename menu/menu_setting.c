@@ -23175,9 +23175,9 @@ static bool setting_append_list(
 #ifdef HAVE_GAME_AI
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.ai_player_override,
-                  MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
-                  MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+                  &settings->bools.quick_menu_show_game_ai,
+                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,
+                  MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
                   1,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
@@ -23186,7 +23186,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_NONE);                
+                  SD_FLAG_NONE);             
 #endif
 
 

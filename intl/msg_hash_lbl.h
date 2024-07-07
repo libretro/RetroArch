@@ -6571,4 +6571,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
    "ai_player_override_01"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,
+   "quick_menu_show_game_ai"
+   )
 #endif

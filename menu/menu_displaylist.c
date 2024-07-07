@@ -3904,6 +3904,16 @@ static int menu_displaylist_parse_load_content_settings(
                         MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
+
+      if (settings->bools.quick_menu_show_game_ai)
+      {
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+            count++;
+      }
    }
 #endif
 
@@ -11074,6 +11084,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,                 PARSE_ONLY_BOOL},
+
+#ifdef HAVE_GAME_AI
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,                 PARSE_ONLY_BOOL},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
