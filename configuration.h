@@ -1077,8 +1077,10 @@ typedef struct settings
 #endif
 
 #ifdef HAVE_GAME_AI
-      bool ai_player_override;
       bool quick_menu_show_game_ai;
+      bool game_ai_override_p1;
+      bool game_ai_override_p2;
+      bool game_ai_show_debug;
 #endif
 
    } bools;

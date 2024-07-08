@@ -23186,7 +23186,52 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_NONE);             
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.game_ai_override_p1,
+                  MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.game_ai_override_p2,
+                  MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.game_ai_show_debug,
+                  MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);                
 #endif
 
 

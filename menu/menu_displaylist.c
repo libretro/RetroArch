@@ -3908,8 +3908,8 @@ static int menu_displaylist_parse_load_content_settings(
       if (settings->bools.quick_menu_show_game_ai)
       {
          if (menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS),
                MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
@@ -8361,6 +8361,29 @@ unsigned menu_displaylist_build_list(
          }
 #endif
          break;
+
+#ifdef HAVE_GAME_AI
+      case DISPLAYLIST_OPTIONS_GAME_AI:
+         //cheat_manager_alloc_if_empty();
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+         }
+               
+         break;
+#endif
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
          menu_entries_clear(list);
          {
@@ -14376,6 +14399,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_MIST
          case DISPLAYLIST_STEAM_SETTINGS_LIST:
 #endif
+#ifdef HAVE_GAME_AI
+         case DISPLAYLIST_OPTIONS_GAME_AI:
+#endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
             count = menu_displaylist_build_list(info->list, settings, type, false);
@@ -16012,6 +16038,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags |= MD_FLAG_NEED_REFRESH
                          | MD_FLAG_NEED_PUSH;
             break;
+
          case DISPLAYLIST_NONE:
             break;
       }

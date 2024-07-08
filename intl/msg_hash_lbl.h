@@ -6568,11 +6568,23 @@ MSG_HASH(
    )
 #ifdef HAVE_GAME_AI
 MSG_HASH(
-   MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
-   "ai_player_override_01"
+   MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS,
+   "core_game_ai_options"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,
    "quick_menu_show_game_ai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
+   "game_ai_override_p1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2,
+   "game_ai_override_p2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
+   "game_ai_show_debug"
    )
 #endif
