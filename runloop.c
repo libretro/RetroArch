@@ -7684,7 +7684,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
 #ifdef HAVE_GAME_AI
       // load models
-      game_ai_load("test", runloop_st->current_core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM), runloop_st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM));
+      game_ai_load("test", runloop_st->current_core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM), runloop_st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), libretro_log_cb);
 #endif
       return true;
    }
@@ -7827,7 +7827,8 @@ void core_run(void)
    current_core->retro_run();
 
 #ifdef HAVE_GAME_AI
-   game_ai_think();
+   settings_t *settings        = config_get_ptr();
+   game_ai_think(settings->bools.game_ai_override_p1, settings->bools.game_ai_override_p2, settings->bools.game_ai_show_debug);
 #endif
 
    if (      late_polling
