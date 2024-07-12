@@ -2061,9 +2061,12 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
       {
          video_viewport_t *custom_vp = &settings->video_viewport_custom;
          x                           = custom_vp->x;
-         y                           = custom_vp->y - custom_vp->height;
+         y                           = custom_vp->y;
          if (!ydown)
+         {
+            y = y + custom_vp->height;
             y = vp->full_height - y;
+         }
          viewport_width              = custom_vp->width;
          viewport_height             = custom_vp->height;
       }
