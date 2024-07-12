@@ -3411,6 +3411,8 @@ static void *vulkan_init(const video_info_t *video,
    video_driver_get_size(&temp_width, &temp_height);
    vk->video_width       = temp_width;
    vk->video_height      = temp_height;
+   vk->translate_x       = 0.0;
+   vk->translate_y       = 0.0;
 
    RARCH_LOG("[Vulkan]: Using resolution %ux%u.\n", temp_width, temp_height);
 
@@ -3762,25 +3764,40 @@ static void vulkan_set_projection(vk_t *vk,
          0.0f,     0.0f,    0.0f,    0.0f ,
          0.0f,     0.0f,    0.0f,    1.0f }
    };
+   math_matrix_4x4 trn     = {
+      {  1.0f,     0.0f,    0.0f,    0.0f ,
+         0.0f,     1.0f,    0.0f,    0.0f ,
+         0.0f,     0.0f,    1.0f,    0.0f ,
+         vk->translate_x/(float)vk->vp.width,
+         vk->translate_y/(float)vk->vp.height,
+         0.0f,
+         1.0f }
+   };
+   math_matrix_4x4 tmp     = {
+      {  1.0f,     0.0f,    0.0f,    0.0f ,
+         0.0f,     1.0f,    0.0f,    0.0f ,
+         0.0f,     0.0f,    1.0f,    0.0f ,
+         0.0f,     0.0f,    0.0f,    1.0f }
+   };
 
    /* Calculate projection. */
    matrix_4x4_ortho(vk->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
    if (!allow_rotate)
+      tmp = vk->mvp_no_rot;
+   else
    {
-      vk->mvp = vk->mvp_no_rot;
-      return;
+      radians                 = M_PI * vk->rotation / 180.0f;
+      cosine                  = cosf(radians);
+      sine                    = sinf(radians);
+      MAT_ELEM_4X4(rot, 0, 0) = cosine;
+      MAT_ELEM_4X4(rot, 0, 1) = -sine;
+      MAT_ELEM_4X4(rot, 1, 0) = sine;
+      MAT_ELEM_4X4(rot, 1, 1) = cosine;
+      matrix_4x4_multiply(tmp, rot, vk->mvp_no_rot);
    }
-
-   radians                 = M_PI * vk->rotation / 180.0f;
-   cosine                  = cosf(radians);
-   sine                    = sinf(radians);
-   MAT_ELEM_4X4(rot, 0, 0) = cosine;
-   MAT_ELEM_4X4(rot, 0, 1) = -sine;
-   MAT_ELEM_4X4(rot, 1, 0) = sine;
-   MAT_ELEM_4X4(rot, 1, 1) = cosine;
-   matrix_4x4_multiply(vk->mvp, rot, vk->mvp_no_rot);
+   matrix_4x4_multiply(vk->mvp, trn, tmp);
 }
 
 static void vulkan_set_rotation(void *data, unsigned rotation)
@@ -3827,8 +3844,6 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
             video_driver_get_aspect_ratio(),
             vk->flags & VK_FLAG_KEEP_ASPECT,
             true);
-      vk->vp.x = MAX(vk->vp.x, 0);
-      vk->vp.y = MAX(vk->vp.y, 0);
       viewport_width  = vk->vp.width;
       viewport_height = vk->vp.height;
    }
@@ -3845,6 +3860,21 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       vk->vp.width  = viewport_width;
       vk->vp.height = viewport_height;
    }
+
+   if (vk->vp.x < 0)
+   {
+      vk->translate_x = (float)vk->vp.x;
+      vk->vp.x = 0.0;
+   }
+   else
+      vk->translate_x = 0.0;
+   if (vk->vp.y < 0)
+   {
+      vk->translate_y = (float)vk->vp.y;
+      vk->vp.y = 0.0;
+   }
+   else
+      vk->translate_y = 0.0;
 
    vulkan_set_projection(vk, &ortho, allow_rotate);
 
