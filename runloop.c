@@ -7826,9 +7826,14 @@ void core_run(void)
 
    current_core->retro_run();
 
+   
+
 #ifdef HAVE_GAME_AI
    settings_t *settings        = config_get_ptr();
-   game_ai_think(settings->bools.game_ai_override_p1, settings->bools.game_ai_override_p2, settings->bools.game_ai_show_debug);
+   video_driver_state_t *video_st= video_state_get_ptr();
+
+   game_ai_think(settings->bools.game_ai_override_p1, settings->bools.game_ai_override_p2, settings->bools.game_ai_show_debug,
+    video_st->frame_cache_data, video_st->frame_cache_width, video_st->frame_cache_height, video_st->frame_cache_pitch);
 #endif
 
    if (      late_polling
