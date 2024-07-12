@@ -577,6 +577,8 @@ typedef struct vk
    VkViewport vk_vp;
    VkRenderPass render_pass;
    struct video_viewport vp;
+   float translate_x;
+   float translate_y;
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_image backbuffers[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_texture default_texture;
