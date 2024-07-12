@@ -9832,17 +9832,14 @@ unsigned menu_displaylist_build_list(
                         count++;
                      break;
                   case ASPECT_RATIO_CUSTOM:
-                     if (!settings->bools.video_scale_integer)
-                     {
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                                 MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                                 PARSE_ONLY_INT, false) == 0)
-                           count++;
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                                 MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                                 PARSE_ONLY_INT, false) == 0)
-                           count++;
-                     }
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                              PARSE_ONLY_INT, false) == 0)
+                        count++;
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                              PARSE_ONLY_INT, false) == 0)
+                        count++;
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
                               PARSE_ONLY_UINT, false) == 0)
