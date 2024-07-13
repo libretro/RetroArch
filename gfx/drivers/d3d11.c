@@ -3690,6 +3690,7 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
    if (StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
    {
+      BackBufferData += Map.RowPitch * d3d11->vp.y;
       for (y = 0; y < d3d11->vp.height; y++, BackBufferData += Map.RowPitch)
       {
          bufferRow = buffer + 3 * (d3d11->vp.height - y - 1) * d3d11->vp.width;
