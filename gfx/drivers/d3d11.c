@@ -3696,9 +3696,9 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 
          for (x = 0; x < d3d11->vp.width; x++)
          {
-            bufferRow[3 * x + 2] = BackBufferData[4 * x + 0];
-            bufferRow[3 * x + 1] = BackBufferData[4 * x + 1];
-            bufferRow[3 * x + 0] = BackBufferData[4 * x + 2];
+            bufferRow[3 * x + 2] = BackBufferData[4 * (x + (int)d3d11->frame.viewport.TopLeftX) + 0];
+            bufferRow[3 * x + 1] = BackBufferData[4 * (x + (int)d3d11->frame.viewport.TopLeftX) + 1];
+            bufferRow[3 * x + 0] = BackBufferData[4 * (x + (int)d3d11->frame.viewport.TopLeftX) + 2];
          }
       }
       ret = true;
