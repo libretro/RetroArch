@@ -12,9 +12,5 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.com.libretro.dist.RetroArchGroup</string>
-	</array>
 </dict>
 </plist>
