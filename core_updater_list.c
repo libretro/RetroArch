@@ -40,7 +40,7 @@ struct core_updater_list
 };
 
 /* Cached ('global') core updater list */
-static core_updater_list_t *core_list_cached = NULL;
+static core_updater_list_t *core_list_cached;
 
 /**************************************/
 /* Initialisation / De-Initialisation */
