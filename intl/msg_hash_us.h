@@ -15058,6 +15058,14 @@ MSG_HASH(
    "Submitted %s for %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Rank: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Best: %s" /* Best: [value] */
+   )
+MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
    "Change thumbnail type"
    )
