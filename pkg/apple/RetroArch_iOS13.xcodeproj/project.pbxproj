@@ -25,13 +25,10 @@
 		0712A7722B807AE400C9765F /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0712A7712B807AE400C9765F /* TVServices.framework */; };
 		0712A7762B807AE400C9765F /* ContentProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 0712A7752B807AE400C9765F /* ContentProvider.m */; };
 		0712A77A2B807AE400C9765F /* RetroArchTopShelfExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0712A7702B807AE400C9765F /* RetroArchTopShelfExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0718BC5F2ABBA807001F2CBE /* Network.framework */; };
 		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
-		073734A62A093ACA00BF7397 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 073734A52A093ACA00BF7397 /* AltKit */; };
 		0753AD192C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
 		0753AD1A2C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
-		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
 		077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E428F549D000E47A75 /* SwiftUI.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
@@ -184,7 +181,6 @@
 		076A9EAF2C438E1D00504BDF /* RetroArchiOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; name = RetroArchiOS.entitlements; path = iOS/RetroArchiOS.entitlements; sourceTree = SOURCE_ROOT; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
-		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -501,7 +497,6 @@
 				9204BE1B1D319EF300BD49DB /* CoreAudio.framework in Frameworks */,
 				9204BE1C1D319EF300BD49DB /* UIKit.framework in Frameworks */,
 				9204BE1D1D319EF300BD49DB /* Foundation.framework in Frameworks */,
-				0789FC302A07847E00D042B7 /* AltKit in Frameworks */,
 				9204BE1E1D319EF300BD49DB /* CoreGraphics.framework in Frameworks */,
 				9204BE1F1D319EF300BD49DB /* GLKit.framework in Frameworks */,
 				9204BE201D319EF300BD49DB /* OpenGLES.framework in Frameworks */,
@@ -515,8 +510,6 @@
 				076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */,
 				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
 				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
-				073734A62A093ACA00BF7397 /* AltKit in Frameworks */,
-				0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -540,14 +533,6 @@
 				0712A7772B807AE400C9765F /* Info.plist */,
 			);
 			path = RetroArchTopShelfExtension;
-			sourceTree = "<group>";
-		};
-		0789FC2D2A07845300D042B7 /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				0789FC2E2A07845300D042B7 /* AltKit */,
-			);
-			name = Packages;
 			sourceTree = "<group>";
 		};
 		83D632D719ECFCC4009E3161 /* iOS */ = {
@@ -1192,7 +1177,6 @@
 			children = (
 				0753AD182C86144200874A42 /* BaseConfig.xcconfig */,
 				077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */,
-				0789FC2D2A07845300D042B7 /* Packages */,
 				96AFAE9C16C1D976009DE44C /* Main Entry Core */,
 				92B9EAE024E04F8800E6CFB2 /* Sources */,
 				9222F2082315DAD50097C0FD /* Launch Screen.storyboard */,
@@ -1324,7 +1308,6 @@
 			);
 			name = RetroArchiOS;
 			packageProductDependencies = (
-				0789FC2F2A07847E00D042B7 /* AltKit */,
 			);
 			productName = RetroArch;
 			productReference = 9204BE2B1D319EF300BD49DB /* RetroArch.app */;
@@ -1348,7 +1331,6 @@
 			);
 			name = RetroArchTV;
 			packageProductDependencies = (
-				073734A52A093ACA00BF7397 /* AltKit */,
 			);
 			productName = RetroArchTV;
 			productReference = 926C77D721FD1E6500103EDE /* RetroArchTV.app */;
@@ -2060,17 +2042,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		073734A52A093ACA00BF7397 /* AltKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AltKit;
-		};
-		0789FC2F2A07847E00D042B7 /* AltKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AltKit;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 96AFAE1C16C1D4EA009DE44C /* Project object */;
 }
