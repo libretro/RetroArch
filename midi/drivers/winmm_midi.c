@@ -349,7 +349,7 @@ static bool winmm_midi_write_long_event(winmm_midi_buffer_t *buf,
 
    buf->data[i++] = delta_time;
    buf->data[i++] = 0;
-   buf->data[i++] = MEVT_F_LONG << 24 | MEVT_LONGMSG << 24 | data_size;
+   buf->data[i++] = MEVT_F_LONG | MEVT_LONGMSG << 24 | data_size;
 
    memcpy(&buf->data[i], data, data_size);
    buf->header.dwBytesRecorded += sizeof(DWORD) * 3 + data_size;
