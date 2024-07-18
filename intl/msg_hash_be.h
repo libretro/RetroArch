@@ -4009,6 +4009,10 @@ MSG_HASH(
    "Файлы журналаў з адбіткамі часу"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+   "Пры журналяванні ў файл перанакіроўвае вывад з кожнага сеанса RetroArch у новы файл з адбіткам часу. Калі адключана, журнал будзе перазапісвацца пры кожным перазапуску RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    "Лічыльнікі прадукцыйнасці"
    )
@@ -4029,7 +4033,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Фільтраваць невядомыя пашырэнні"
+   "Фільтраванне невядомых пашырэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Фільтраваць файлы, якія паказваюцца файлавым аглядальнікам, па пашырэннях, якія падтрымліваюцца."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "Выкарыстанне ўбудаванага медыяпрайгравальніка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+   "Фільтраванне па бягучаму ядру"
    )
 
 /* Settings > Frame Throttle */
@@ -8127,6 +8143,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    "Порт %d назва прылады: %s (#%d)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "Прайграць з дапамогай медыяпрайгравальніка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
