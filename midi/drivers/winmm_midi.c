@@ -321,7 +321,7 @@ static bool winmm_midi_write_short_event(winmm_midi_buffer_t *buf,
 
    buf->data[i++] = delta_time;
    buf->data[i++] = 0;
-   buf->data[i] = MEVT_F_SHORT << 24;
+   buf->data[i] = MEVT_F_SHORT;
    if (data_size == 0)
       buf->data[i] |= MEVT_NOP;
    else
