@@ -19,65 +19,6 @@
 #include "display_sdl2.h"
 #include "log.h"
 
-//============================================================
-//  custom_video::get_sdl_hwinfo_from_sdl_window
-//============================================================
-void get_sdl_hwinfo_from_sdl_window(SDL_Window* window)
-{
-	SDL_SysWMinfo m_sdlwminfo;
-
-	SDL_VERSION(&m_sdlwminfo.version);
-	if(! SDL_GetWindowWMInfo(window, &m_sdlwminfo))
-	{
-		log_error("Couldn't get the SDL WMInfo\n");
-		return;
-	}
-	const char *subsystem = "an unsupported or unknown system!";
-	switch((int)m_sdlwminfo.subsystem)
-	{
-		case SDL_SYSWM_UNKNOWN:
-		case SDL_SYSWM_COCOA:
-		case SDL_SYSWM_UIKIT:
-#if SDL_VERSION_ATLEAST(2, 0, 2)
-		case SDL_SYSWM_WAYLAND:
-#endif
-		case SDL_SYSWM_MIR:
-#if SDL_VERSION_ATLEAST(2, 0, 3)
-		case SDL_SYSWM_WINRT:
-#endif
-#if SDL_VERSION_ATLEAST(2, 0, 4)
-		case SDL_SYSWM_ANDROID:
-#endif
-#if SDL_VERSION_ATLEAST(2, 0, 5)
-		case SDL_SYSWM_VIVANTE:
-#endif
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-		case SDL_SYSWM_OS2:
-#endif
-#if SDL_VERSION_ATLEAST(2, 0, 12)
-		case SDL_SYSWM_HAIKU:
-#endif
-		case SDL_SYSWM_DIRECTFB:
-			break;
-		case SDL_SYSWM_WINDOWS:
-			subsystem = "Microsoft Windows(TM)";
-			break;
-		case SDL_SYSWM_X11:
-			subsystem = "X Window System";
-			break;
-#if SDL_VERSION_ATLEAST(2, 0, 16)
-		case SDL_SYSWM_KMSDRM:
-			subsystem = "KMSDRM";
-			break;
-#endif
-	}
-	log_info("Switchres/SDL2: Detected SDL version %d.%d.%d on %s\n",
-		(int)m_sdlwminfo.version.major,
-		(int)m_sdlwminfo.version.minor,
-		(int)m_sdlwminfo.version.patch,
-		subsystem);
-}
-
 
 //============================================================
 //  sdl2_display::sdl2_display
@@ -147,6 +88,11 @@ bool sdl2_display::init(void* pf_data)
 
 	//SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 
+	// Get SDL version information
+	SDL_version version;
+	SDL_GetVersion(&version);
+	log_info("Switchres/SDL2: Detected SDL version %d.%d.%d\n",	(int)version.major, (int)version.minor, (int)version.patch);
+
 	SDL_Window* window = NULL;
 	Uint32 id = 0;
 
@@ -184,9 +130,6 @@ bool sdl2_display::init(void* pf_data)
 		else
 			log_verbose("Switchres/SDL2: (%s:%d) No SDL2 window found, don't expect things to work good\n", __FUNCTION__, __LINE__);
 	}
-
-	if(m_sdlwindow)
-		get_sdl_hwinfo_from_sdl_window(m_sdlwindow);
 
 	// Need a check to see if SDL2 can refresh the modelist
 	return true;
