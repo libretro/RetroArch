@@ -1000,6 +1000,7 @@ static uint32_t d3d11_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
@@ -3626,6 +3627,100 @@ static void d3d11_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d11->vp;
 }
 
+static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   ID3D11Texture2D* BackBuffer;
+   DXGISwapChain m_SwapChain;
+   ID3D11Texture2D* BackBufferStagingTexture;
+   ID3D11Resource* BackBufferStaging = NULL;
+   ID3D11Resource* BackBufferResource = NULL;
+   D3D11_TEXTURE2D_DESC StagingDesc;
+   D3D11_MAPPED_SUBRESOURCE Map;
+   const uint8_t* BackBufferData;
+   uint8_t* bufferRow;
+   uint32_t y;
+   uint32_t x;
+   bool ret;
+
+   if (!d3d11)
+      return false;
+
+   /*This implementation produces wrong result when using HDR*/
+   #ifdef HAVE_DXGI_HDR
+   if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
+   {
+      RARCH_ERR("[D3D11]: HDR screenshot not supported.\n");
+      return false;
+   }
+   #endif
+
+   /* Get the back buffer. */
+   m_SwapChain = d3d11->swapChain;
+   m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, &IID_ID3D11Texture2D, (void*)(&BackBuffer));
+
+   if (!BackBuffer)
+      return false;
+
+   if (!is_idle)
+   {
+      video_driver_cached_frame();
+   }
+
+   /* Set the staging desc. */
+   BackBuffer->lpVtbl->GetDesc(BackBuffer, &StagingDesc);
+   StagingDesc.Usage = D3D11_USAGE_STAGING;
+   StagingDesc.BindFlags = 0;
+   StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+   /* Create the back buffer staging texture. */
+   d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
+
+   BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, &IID_ID3D11Resource, (void**)&BackBufferStaging);
+
+   BackBuffer->lpVtbl->QueryInterface(BackBuffer, &IID_ID3D11Resource, (void**)&BackBufferResource);
+
+   /* Copy back buffer to back buffer staging. */
+   d3d11->context->lpVtbl->CopyResource(d3d11->context, BackBufferStaging, BackBufferResource);
+
+   /* Create the image. */
+   d3d11->context->lpVtbl->Map(d3d11->context, BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map);
+   BackBufferData = (const uint8_t*)Map.pData;
+
+   /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
+   if (StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
+   {
+      BackBufferData += Map.RowPitch * d3d11->vp.y;
+      for (y = 0; y < d3d11->vp.height; y++, BackBufferData += Map.RowPitch)
+      {
+         bufferRow = buffer + 3 * (d3d11->vp.height - y - 1) * d3d11->vp.width;
+
+         for (x = 0; x < d3d11->vp.width; x++)
+         {
+            bufferRow[3 * x + 2] = BackBufferData[4 * (x + d3d11->vp.x) + 0];
+            bufferRow[3 * x + 1] = BackBufferData[4 * (x + d3d11->vp.x) + 1];
+            bufferRow[3 * x + 0] = BackBufferData[4 * (x + d3d11->vp.x) + 2];
+         }
+      }
+      ret = true;
+   }
+   else
+   {
+      RARCH_ERR("[D3D11]: Unexpected swapchain format.\n");
+      ret = false;
+   }
+
+   d3d11->context->lpVtbl->Unmap(d3d11->context, BackBufferStaging, 0);
+
+   /* Release the backbuffer staging. */
+   BackBufferStaging->lpVtbl->Release(BackBufferStaging);
+   BackBufferResource->lpVtbl->Release(BackBufferResource);
+   BackBufferStagingTexture->lpVtbl->Release(BackBufferStagingTexture);
+   BackBuffer->lpVtbl->Release(BackBuffer);
+   
+   return ret;
+}
+
 static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
@@ -3858,7 +3953,7 @@ video_driver_t video_d3d11 = {
    NULL, /* set_viewport */
    d3d11_gfx_set_rotation,
    d3d11_gfx_viewport_info,
-   NULL, /* read_viewport  */
+   d3d11_gfx_read_viewport,
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d11_get_overlay_interface,

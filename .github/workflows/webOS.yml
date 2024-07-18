@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download ares-cli-rs
-        uses: robinraju/release-downloader@v1.9
+        uses: robinraju/release-downloader@v1.11
         with:
           repository: "webosbrew/ares-cli-rs"
           latest: true
@@ -32,7 +35,7 @@ jobs:
         run: sudo apt-get -yq install ./temp/*.deb
 
       - name: Download webOS NDK
-        uses: robinraju/release-downloader@v1.9
+        uses: robinraju/release-downloader@v1.11
         with:
           repository: "openlgtv/buildroot-nc4"
           latest: true
