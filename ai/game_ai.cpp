@@ -77,8 +77,7 @@ extern "C" void game_ai_init()
 
 extern "C" void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log)
 {
-   //g_game_name = "NHL941on1-Genesis";
-   g_game_name = "SuperMarioBros-Nes";
+   g_game_name = name;
 
    g_ram_ptr = ram_ptr;
    g_ram_size = ram_size;
@@ -122,7 +121,7 @@ extern "C" void game_ai_think(bool override_p1, bool override_p2, bool show_debu
       data_path += "/data/";
       data_path += g_game_name;
 
-      ga->Init(data_path.c_str(), (void *) g_ram_ptr, g_ram_size);
+      ga->Init((void *) g_ram_ptr, g_ram_size);
 
       ga->SetDebugLog(game_ai_debug_log);
    }
@@ -147,10 +146,6 @@ extern "C" void game_ai_think(bool override_p1, bool override_p2, bool show_debu
             ga->Think(b, 1, frame_data, frame_width, frame_height, frame_pitch, pixel_format);
             array_to_bits_16(g_buttons_bits[1], b);
          }
-
-         /*for(int bit=0; bit<=15; bit++){
-            g_buttons_bits[1] |= b[bit] ? (1 << bit) : 0;
-		   }*/
       }
 		
 		g_frameCount=0;
