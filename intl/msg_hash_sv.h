@@ -2244,16 +2244,8 @@ MSG_HASH(
    "Anpassa bildformat (X-position)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Anpassad visningsportoffset som används för att definiera X-axelns position för visningsporten.\nDessa ignoreras om 'Heltalsskala' är aktiverat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Anpassa bildformat (Y-position)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Anpassad visningsportoffset som används för att definiera Y-axelns position för visningsporten.\nDessa ignoreras om 'Heltalsskala' är aktiverat."
    )
 #if defined(RARCH_MOBILE)
 #endif

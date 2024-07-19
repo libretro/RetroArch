@@ -2528,16 +2528,8 @@ MSG_HASH(
    "Relación de aspecto personalizada (posición X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Desprazamento da ventana gráfica personalizada que se usa para definir a posición do eixe X da ventana gráfica.\nIgnoraranse se se activa a \"Escala enteira\"."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relación de aspecto personalizada (posición Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Desfase personalizado da ventana gráfica que se usa para definir a posición do eixe Y da ventana gráfica.\nIgnoraranse se está activada a \"Escala enteira\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
