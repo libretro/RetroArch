@@ -2557,7 +2557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "表示領域の X 軸位置を定義するために使用されるカスタム表示領域オフセットです。\n[整数倍拡大] が有効の場合は無視されます。"
+   "表示領域の X 軸位置を定義するために使用されるオフセット値です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2565,7 +2565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "表示領域の Y 軸位置を定義するために使用されるカスタム表示領域オフセットです。\n[整数倍拡大] が有効の場合は無視されます。"
+   "表示領域の Y 軸位置を定義するために使用されるオフセット値です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,

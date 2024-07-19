@@ -2548,16 +2548,8 @@ MSG_HASH(
    "Довільне співвідношення сторін (значення X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Задати значення зсуву області перегляду по осі Х.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Довільне співвідношення сторін (значення Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Задати значення зсуву області перегляду по осі Y.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
    )
 #if defined(RARCH_MOBILE)
 #endif

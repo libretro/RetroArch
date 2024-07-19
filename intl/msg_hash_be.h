@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Агледзець змесціва. Для загрузкі неабходны 'ядро' ды файл са змесцівам.\nЗадайце 'каталог аглядальніка файлаў', дзе меню пачне агляд змесціва. Калі не зададзена, будзе пачынацца з кораню.\nАглядальнік будзе фільтраваць пашырэнні згодна з апошнім ядром, выбраным праз 'Загрузі[...]"
+   "Агледзець змесціва. Для загрузкі неабходны 'ядро' ды файл са змесцівам.\nЗадайце 'каталог браўзера файлаў', дзе меню пачне агляд змесціва. Калі не зададзена, будзе пачынацца з кораню.\nБраўзер будзе фільтраваць пашырэнні згодна з апошнім ядром, выбраным праз 'Загрузіць ядро', [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -1278,11 +1278,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Файлавы аглядальнік"
+   "Файлавы браўзер"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Змяніць налады файлавага аглядальніка."
+   "Змяніць налады файлавага браўзера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -4029,7 +4029,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Паказваць схаваныя файлы ды каталогі ў файлавым аглядальніку."
+   "Паказваць схаваныя файлы ды каталогі ў файлавым браўзеры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -4037,7 +4037,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Фільтраваць файлы, якія паказваюцца файлавым аглядальнікам, па пашырэннях, якія падтрымліваюцца."
+   "Фільтраваць файлы, якія паказваюцца файлавым браўзерам, па пашырэннях, якія падтрымліваюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4047,12 +4047,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Фільтраванне па бягучаму ядру"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   "Памятаць апошні выкарыстаны пачатковы каталог"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
+   "Адкрываць файлавы браўзер на апошнім выкарыстаным месцы пры загрузцы змесціва з пачатковага каталога. Заўвага: месца будзе скінута да прадвызначанага пры перазапуску RetroArch."
+   )
 
 /* Settings > Frame Throttle */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Перамотка назад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Змяніць налады перамоткі назад."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+   "Лічыльнік часу кадра"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -4929,11 +4945,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
-   "Паказ 'Файлавы аглядальнік'"
+   "Паказ 'Файлавы браўзер'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
-   "Паказваць налады 'Файлавы аглядальнік'."
+   "Паказваць налады 'Файлавы браўзер'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
@@ -5746,11 +5762,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Файлавы аглядальнік"
+   "Файлавы браўзер"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Задаць пачатковы каталог для файлавага аглядальніка."
+   "Задаць пачатковы каталог для файлавага браўзера."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -7831,7 +7847,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Файлавы аглядальнік"
+   "Файлавы браўзер"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,

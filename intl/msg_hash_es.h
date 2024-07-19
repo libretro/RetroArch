@@ -2548,16 +2548,8 @@ MSG_HASH(
    "Relación de aspecto personalizada (posición X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Indica el diferencial de posición respecto al eje X del área de visualización.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relación de aspecto personalizada (posición Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Indica el diferencial de posición respecto al eje Y del área de visualización.\nEste valor se ignorará si la opción «Escalar usando números enteros» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,

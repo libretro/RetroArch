@@ -2473,7 +2473,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Benutzerdefinierter Versatz des Ansichtsfensters, welcher die X-Achsenposition definiert.\nDieser wird ignoriert, wenn \"Ganzzahlige Skalierung\" aktiviert ist."
+   "Benutzerdefinierter Viewport-Offset zur Definition der X-Achsenposition des Viewports."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2481,7 +2481,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Benutzerdefinierter Versatz des Ansichtsfensters, welcher die Y-Achsenposition definiert.\nDieser wird ignoriert, wenn \"Ganzzahlige Skalierung\" aktiviert ist."
+   "Angepasster Viewport-Offset zur Definition der Y-Achsenposition des Viewports."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,

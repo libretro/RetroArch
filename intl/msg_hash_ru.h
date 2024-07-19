@@ -2565,7 +2565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Ручная установка смещения области отображения по оси X.\nНе учитывается, если включено 'Целочисленное масштабирование'."
+   "Значение сдвига области вывода изображения, используемое для определения положения области по оси X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2573,7 +2573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Ручная установка смещения области отображения по оси Y.\nНе учитывается, если включено 'Целочисленное масштабирование'."
+   "Значение сдвига области вывода изображения, используемое для определения положения области по оси Y."
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -14264,6 +14264,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Отправлено %s для %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Ранг: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Лучший результат: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

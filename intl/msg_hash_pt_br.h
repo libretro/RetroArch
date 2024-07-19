@@ -2292,16 +2292,8 @@ MSG_HASH(
    "Posição X personalizada da proporção de tela"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Deslocamento personalizado no eixo-X da janela de exibição. \nSerá ignorado caso o \"Dimensionamento com valores inteiros\" estiver ativado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Posição Y personalizada da proporção de tela"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Deslocamento personalizado no eixo-Y da janela de exibição. \nSerá ignorado caso o \"dimensionamento com valores inteiros\" estiver ativado."
    )
 #if defined(RARCH_MOBILE)
 #endif

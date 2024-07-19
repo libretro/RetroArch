@@ -1816,16 +1816,8 @@ MSG_HASH(
    "Relació d'aspecte personalitzat (posició X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Indica el diferencial de posició respecte a l'eix X de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relació d'aspecte personalitzat (posició Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Indica el diferencial de posició respecte a l'eix Y de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
    )
 #if defined(RARCH_MOBILE)
 #endif
