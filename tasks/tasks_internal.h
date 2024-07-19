@@ -308,6 +308,7 @@ void menu_explore_wait_for_init_task(void);
 extern const char* const input_builtin_autoconfs[];
 
 /* cloud sync tasks */
+void task_push_cloud_sync_update_driver(void);
 void task_push_cloud_sync(void);
 
 RETRO_END_DECLS
