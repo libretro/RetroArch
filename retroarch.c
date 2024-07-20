@@ -6955,7 +6955,8 @@ static bool retroarch_parse_input_and_config(
             case 'd':
                {
                   unsigned new_port;
-                  char *tok, *save;
+                  char *save;
+                  char *tok                = NULL;
                   int    port              = 0;
                   unsigned id              = 0;
                   char *optarg_cpy         = strdup(optarg);

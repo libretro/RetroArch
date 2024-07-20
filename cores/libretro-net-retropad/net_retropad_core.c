@@ -62,7 +62,8 @@
 #define NETRETROPAD_SCREEN_SENSORS 2
 #define EVENT_RATE 60
 
-struct descriptor {
+struct descriptor
+{
    int device;
    int port_min;
    int port_max;
@@ -73,7 +74,8 @@ struct descriptor {
    uint16_t *value;
 };
 
-struct remote_joypad_message {
+struct remote_joypad_message
+{
    int port;
    int device;
    int index;
@@ -83,12 +85,12 @@ struct remote_joypad_message {
 
 static bool keyboard_state[RETROK_LAST];
 static bool keyboard_state_validated[RETROK_LAST];
-static bool tilt_sensor_enabled = false;
-static bool gyro_sensor_enabled = false;
-static bool lux_sensor_enabled  = false;
+static bool tilt_sensor_enabled    = false;
+static bool gyro_sensor_enabled    = false;
+static bool lux_sensor_enabled     = false;
 static float tilt_sensor_values[3] = {0};
 static float gyro_sensor_values[3] = {0};
-static float lux_sensor_value = 0.0f;
+static float lux_sensor_value      = 0.0f;
 
 static int s;
 static int port;
@@ -305,7 +307,8 @@ static bool input_test_file_read(const char* file_path)
    /* Initialise JSON parser */
    if (!(parser = rjson_open_rfile(file)))
    {
-      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,"[Remote RetroPad]: Failed to create JSON parser.\n");
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[Remote RetroPad]: Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -492,7 +495,7 @@ void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
       descriptors[i]->value = NULL;
    }
 
-   if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb) && NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)) 
+   if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb) && NETRETROPAD_CORE_PREFIX(sensor_get_input_cb))
    {
       NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, EVENT_RATE);
       NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_GYROSCOPE_DISABLE, EVENT_RATE);
@@ -525,14 +528,14 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_info)(
 void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
       struct retro_system_av_info *info)
 {
-   info->timing.fps = 60.0;
-   info->timing.sample_rate = 30000.0;
+   info->timing.fps            = 60.0;
+   info->timing.sample_rate    = 30000.0;
 
-   info->geometry.base_width  = 320;
-   info->geometry.base_height = 240;
-   info->geometry.max_width   = 320;
-   info->geometry.max_height  = 240;
-   info->geometry.aspect_ratio = 4.0 / 3.0;
+   info->geometry.base_width   = 320;
+   info->geometry.base_height  = 240;
+   info->geometry.max_width    = 320;
+   info->geometry.max_height   = 240;
+   info->geometry.aspect_ratio = 4.0f / 3.0f;
 }
 
 static void NETRETROPAD_CORE_PREFIX(update_keyboard_cb)(bool down, unsigned keycode,
@@ -641,13 +644,11 @@ static void open_UDP_socket()
    if (s && s != SOCKET_ERROR)
       socket_close(s);
 
-   s = socket_create(
+   if ((s = socket_create(
          "retropad",
          SOCKET_DOMAIN_INET,
          SOCKET_TYPE_DATAGRAM,
-         SOCKET_PROTOCOL_UDP);
-
-   if (s == SOCKET_ERROR)
+         SOCKET_PROTOCOL_UDP)) == SOCKET_ERROR)
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "socket failed");
 
    /* setup address structure */
@@ -715,9 +716,9 @@ static void netretropad_check_variables(void)
    port = atoi(port_var.value);
 
    while (screen_var.value && !(
-        (current_screen == NETRETROPAD_SCREEN_PAD      && strstr(screen_var.value,"Retropad")) ||
-        (current_screen == NETRETROPAD_SCREEN_KEYBOARD && strstr(screen_var.value,"Keyboard")) ||
-        (current_screen == NETRETROPAD_SCREEN_SENSORS  && strstr(screen_var.value,"Sensor"))))
+           (current_screen == NETRETROPAD_SCREEN_PAD      && strstr(screen_var.value,"Retropad"))
+        || (current_screen == NETRETROPAD_SCREEN_KEYBOARD && strstr(screen_var.value,"Keyboard"))
+        || (current_screen == NETRETROPAD_SCREEN_SENSORS  && strstr(screen_var.value,"Sensor"))))
       flip_screen();
    if (hide_a_var.value && strstr(hide_a_var.value,"True"))
       hide_analog_mismatch = true;
@@ -761,6 +762,7 @@ void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 {
    int i;
+   unsigned j;
    unsigned rle;
    uint32_t input_state = 0;
    uint32_t expected_input = 0;
@@ -836,34 +838,34 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    }
 
    /* Accelerometer and gyroscope. */
-
-	if (tilt_sensor_enabled) {
+	if (tilt_sensor_enabled)
+   {
 		tilt_sensor_values[0] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ACCELEROMETER_X);
 		tilt_sensor_values[1] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ACCELEROMETER_Y);
 		tilt_sensor_values[2] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ACCELEROMETER_Z);
 	}
-	if (gyro_sensor_enabled) {
+
+	if (gyro_sensor_enabled)
+   {
 		gyro_sensor_values[0] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_GYROSCOPE_X);
 		gyro_sensor_values[1] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_GYROSCOPE_Y);
 		gyro_sensor_values[2] = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_GYROSCOPE_Z);
 	}
+
 	if (lux_sensor_enabled)
-	{
       lux_sensor_value = NETRETROPAD_CORE_PREFIX(sensor_get_input_cb)(0, RETRO_SENSOR_ILLUMINANCE);
-   }
 
    if (tilt_sensor_enabled || gyro_sensor_enabled || lux_sensor_enabled)
    {
       int j;
-      bool range_found = false;
-      
+
       /*NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,
          "[Remote Retropad] %1.3f %1.3f %1.3f %1.3f %1.3f %1.3f %1.3f\n",
          tilt_sensor_values[0], tilt_sensor_values[1], tilt_sensor_values[2],
          gyro_sensor_values[0], gyro_sensor_values[1], gyro_sensor_values[2],
          lux_sensor_value);*/
 
-      memset(sensor_item_colors,0,sizeof(sensor_item_colors));
+      memset(sensor_item_colors, 0, sizeof(sensor_item_colors));
       for (i = 0; i <= 6; i++)
       {
          unsigned median_index = 5;
@@ -873,19 +875,17 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          /* Accelerometer display range: from 0 to 1g, covering tilt from a horizontal to a vertical position. */
          if (i < 3)
          {
-            value = tilt_sensor_values[i]/9.81;
+            value         = tilt_sensor_values[i]/9.81;
             median_index += (i+1)*10;
          }
          else if (i < 6)
          {
-            value = gyro_sensor_values[i-3];
+            value         = gyro_sensor_values[i-3];
             median_index += (i+1)*10;
          }
-         else
-         {
-            /* Lux sensor approximate range: 10-10000, mapped using log10 / 4 */
+         else /* Lux sensor approximate range: 10-10000, mapped using log10 / 4 */
             value = lux_sensor_value > 0 ? (float)log10(lux_sensor_value)/4.0f: 0;
-         }
+
          if (value > 1.0f)
             value = 1.0f;
          else if (value < -1.0f)
@@ -893,7 +893,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
          for(j = 3 ; j > 0 && !range_found ; j--)
          {
-            float boundary = j*0.25f;
+            float boundary = j * 0.25f;
             if (value > 0 && value > boundary)
             {
                sensor_item_colors[median_index+j] = (uint16_t)(32*4*(value-boundary)) << 11;
@@ -905,10 +905,9 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
                range_found = true;
             }
          }
+
          if (value != 0.0f && !range_found)
-         {
             sensor_item_colors[median_index]   = (uint16_t)(fabsf(32*4*value)) << 11;
-         }
       }
    }
 
@@ -916,18 +915,20 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    /* Input test section start. */
 
    /* Check for predefined combo inputs. */
-   for (unsigned j = 0; j < sizeof(combo_def)/sizeof(combo_def[0]); j++)
+   for (j = 0; j < sizeof(combo_def) / sizeof(combo_def[0]); j++)
    {
       if ((input_state & combo_def[j]) == combo_def[j])
          combo_state_validated |= 1 << j;
    }
 
-/* Print a log for A+B combination, but only once while those are pressed */
+   /* Print a log for A+B combination, but only once while those are pressed */
    if (input_state & ((1 << RETRO_DEVICE_ID_JOYPAD_A | 1 << RETRO_DEVICE_ID_JOYPAD_B) & 0x0000ffff))
    {
       if (!dump_state_blocked)
       {
-         NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,"[Remote RetroPad]: Validated state: %08x combo: %08x\n",input_state_validated, combo_state_validated);
+         NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+               "[Remote RetroPad]: Validated state: %08x combo: %08x\n",
+               input_state_validated, combo_state_validated);
          dump_state_blocked = true;
       }
    }
@@ -951,19 +952,23 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
                "[Remote RetroPad]: Proceeding to test step %d at frame %d, next: %d\n",
                current_test_step,current_frame,next_teststep_frame+INITIAL_FRAMES);
-            while((input_test_steps[current_test_step].expected_button <  KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_PAD) ||
-                  (input_test_steps[current_test_step].expected_button >= KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_KEYBOARD))
+            while(
+                     (input_test_steps[current_test_step].expected_button <  KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_PAD)
+                  || (input_test_steps[current_test_step].expected_button >= KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_KEYBOARD))
                   flip_screen();
          }
          else
          {
             char buf[1024];
+            unsigned i;
             unsigned pass_count = 0;
-            for(unsigned i=0; i<last_test_step;i++)
+            for(i = 0; i < last_test_step; i++)
                if (input_test_steps[i].detected)
                   pass_count++;
             message.msg = buf;
-            snprintf(buf,sizeof(buf),"Test sequence finished, result: %d/%d inputs detected",pass_count,last_test_step);
+            snprintf(buf, sizeof(buf),
+                  "Test sequence finished, result: %d/%d inputs detected",
+                  pass_count, last_test_step);
             message.frames = ONE_TEST_STEP_FRAMES * 3;
             NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
 
@@ -1037,9 +1042,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
                }
                /* Red gradient for active analog button inputs, from 0 to 0xa000 */
                else if (button_analog && analog_item_colors[retropad_buttons[rle] - 32])
-               {
                   color = analog_item_colors[retropad_buttons[rle] - 32];
-               }
                else if (button_analog && hide_analog_mismatch && input_state & button_analog)
                   color = 0xA000;
                else
@@ -1116,24 +1119,18 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
       for (rle = 0; rle < ARRAY_SIZE(sensor_buttons); )
       {
          unsigned runs;
-         char      paint = 0;
+         char paint = 0;
 
          for (runs = sensor_buttons[rle++]; runs > 0; runs--)
          {
             if (paint)
             {
                unsigned count;
-               uint16_t color;
+               uint16_t color = 0xffff;
 
                /* Same color scheme as for retropad buttons */
                if (sensor_item_colors[sensor_buttons[rle]])
-               {
                   color = sensor_item_colors[sensor_buttons[rle]];
-               }
-               else
-               {
-                  color = 0xffff;
-               }
                rle++;
 
                for (count = sensor_buttons[rle++]; count > 0; count--)
@@ -1167,7 +1164,7 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info
    else
    {
       struct retro_message message;
-      message.msg = "Initiating test sequence...";
+      message.msg    = "Initiating test sequence...";
       message.frames = INITIAL_FRAMES;
       NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
    }
@@ -1178,10 +1175,7 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info
 void NETRETROPAD_CORE_PREFIX(retro_unload_game)(void)
 {}
 
-unsigned NETRETROPAD_CORE_PREFIX(retro_get_region)(void)
-{
-   return RETRO_REGION_NTSC;
-}
+unsigned NETRETROPAD_CORE_PREFIX(retro_get_region)(void) { return RETRO_REGION_NTSC; }
 
 bool NETRETROPAD_CORE_PREFIX(retro_load_game_special)(unsigned type,
       const struct retro_game_info *info, size_t num)
@@ -1192,10 +1186,7 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game_special)(unsigned type,
    return false;
 }
 
-size_t NETRETROPAD_CORE_PREFIX(retro_serialize_size)(void)
-{
-   return 0;
-}
+size_t NETRETROPAD_CORE_PREFIX(retro_serialize_size)(void) { return 0; }
 
 bool NETRETROPAD_CORE_PREFIX(retro_serialize)(void *data, size_t size)
 {
@@ -1218,11 +1209,7 @@ void *NETRETROPAD_CORE_PREFIX(retro_get_memory_data)(unsigned id)
    return NULL;
 }
 
-size_t NETRETROPAD_CORE_PREFIX(retro_get_memory_size)(unsigned id)
-{
-   (void)id;
-   return 0;
-}
+size_t NETRETROPAD_CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
 
 void NETRETROPAD_CORE_PREFIX(retro_cheat_reset)(void)
 {}
